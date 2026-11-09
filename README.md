@@ -132,6 +132,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 ## Utilities
 
 - [Vector Centroid API](workflows/vector-centroid-api/) - Accept a GET request containing numeric vectors and return their coordinate-wise mean as JSON.
+- [German Synonym Lookup](workflows/german-synonym-lookup/) - Look up German synonym groups in OpenThesaurus.
 
 ## Analytics
 
