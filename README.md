@@ -26,6 +26,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Commerce](#commerce)
 - [Utilities](#utilities)
 - [Analytics](#analytics)
+- [Lifestyle](#lifestyle)
 - [Contribute](#contribute)
 - [Licensing](#licensing)
 
@@ -131,6 +132,10 @@ A growing collection of automation workflows for connecting apps and getting rep
 ## Analytics
 
 - [Segment Event Tracker](workflows/segment-event-tracker/) - Send one Segment Track event with an optional user ID or a fresh anonymous identity.
+
+## Lifestyle
+
+- [Daily Cocktail Photo in Telegram](workflows/daily-cocktail-telegram/) - Send Telegram one random cocktail photo and its available preparation instructions each evening.
 
 ## Contribute
 

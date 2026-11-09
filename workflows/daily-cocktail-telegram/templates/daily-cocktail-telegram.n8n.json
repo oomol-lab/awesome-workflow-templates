@@ -1,0 +1,129 @@
+{
+  "name": "Daily Cocktail Photo in Telegram",
+  "nodes": [
+    {
+      "name": "Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        1150,
+        300
+      ],
+      "parameters": {
+        "resource": "message",
+        "operation": "sendPhoto",
+        "chatId": "@YOUR_TELEGRAM_CHANNEL",
+        "binaryData": false,
+        "file": "={{ $json.photo }}",
+        "replyMarkup": "none",
+        "additionalFields": "={{ $json.caption === null ? {} : {caption: $json.caption} }}"
+      },
+      "typeVersion": 1,
+      "id": "daily-cocktail-telegram-0"
+    },
+    {
+      "name": "Cron",
+      "type": "n8n-nodes-base.cron",
+      "position": [
+        530,
+        300
+      ],
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "mode": "custom",
+              "cronExpression": "0 0 20 * * *"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1,
+      "id": "daily-cocktail-telegram-1"
+    },
+    {
+      "name": "HTTP Request",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        730,
+        300
+      ],
+      "parameters": {
+        "authentication": "none",
+        "method": "GET",
+        "url": "https://www.thecocktaildb.com/api/json/v1/1/random.php",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": false,
+              "neverError": false
+            }
+          }
+        }
+      },
+      "typeVersion": 4.2,
+      "id": "daily-cocktail-telegram-2"
+    },
+    {
+      "id": "daily-cocktail-telegram-select",
+      "name": "Select photo and instructions",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        930,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const select = function cocktailPhoto({ body }) {\n  const drink = Array.isArray(body?.drinks) && body.drinks[0];\n  const photo = drink?.strDrinkThumb;\n  const parts = typeof photo === 'string' && /^https?:\\/\\/(\\[[0-9a-f:.]+\\]|[^\\s/\\\\?#@:%\\[\\]<>\"`]+)(?::(\\d{1,5}))?(?:[/?#][^\\s\\\\]*)?$/i.exec(photo);\n  if (!parts || /[\\u0000-\\u0020\\u007f]/.test(photo) || parts[2] && Number(parts[2]) > 65535) throw new Error('TheCocktailDB returned no usable HTTP(S) photo URL');\n  const caption = drink.strInstructions ?? null;\n  if (caption !== null && typeof caption !== 'string') throw new Error('TheCocktailDB instructions must be text or absent');\n  if (caption !== null && caption.length > 1024) throw new Error('The cocktail instructions exceed the Telegram Action caption limit');\n  return { photo, caption };\n}\n\nreturn {json:select({body:$json})};"
+      }
+    }
+  ],
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC"
+  },
+  "connections": {
+    "Cron": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Select photo and instructions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select photo and instructions": {
+      "main": [
+        [
+          {
+            "node": "Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {}
+}
