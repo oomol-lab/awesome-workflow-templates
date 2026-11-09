@@ -59,6 +59,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Article to Social Posts](workflows/article-to-social-posts/) - Repurpose your article or transcript into an X thread and LinkedIn post while instructing the model to use only source material.
 - [Airtable SMS Broadcast](workflows/airtable-sms-broadcast/) - Read Airtable contacts and send each one a personalized SMS through Twilio.
 - [Reddit Trend Log](workflows/reddit-trend-log/) - Rank a subreddit’s hot posts, ask AI for trends and content ideas, and record one daily analysis row in Google Sheets.
+- [SEO Seed Keywords](workflows/seo-seed-keywords/) - Generate 15–20 SEO seed keywords from a B2B software customer profile, including its pain points, goals, and current solutions.
 
 ## Support
 
