@@ -1,0 +1,192 @@
+{
+  "name": "X Search Digest",
+  "description": "Searches X through Xquik, normalizes results, and builds an email-ready social listening digest.",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "manual-trigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "query",
+              "name": "query",
+              "value": "n8n automation",
+              "type": "string"
+            },
+            {
+              "id": "limit",
+              "name": "limit",
+              "value": 10,
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "search-settings",
+      "name": "Search Settings",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "color": 3,
+        "width": 300,
+        "height": 120,
+        "content": "## Xquik API key\nCreate a Header Auth credential: X-API-Key = your Xquik key, and select it on Search X with Xquik. Edit query/limit in Search Settings. This reads one response and returns tweets/digest/cursor without posting or paging automatically. No key or environment expression is stored in this template."
+      },
+      "id": "api-key-note",
+      "name": "API Key Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        460,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://xquik.com/api/v1/x/tweets/search",
+        "method": "GET",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "={{ $json.query }}"
+            },
+            {
+              "name": "limit",
+              "value": "={{ $json.limit }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 120000,
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "search-x-with-xquik",
+      "name": "Search X with Xquik",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        700,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function buildDigest({body,query}) {\n  if(!body||typeof body!=='object'||Array.isArray(body)||!Array.isArray(body.tweets))throw new Error('Xquik did not return a tweets array.');\n  const more=body.has_next_page??body.has_more??false;\n  if(typeof more!=='boolean')throw new Error('Xquik pagination flag must be boolean.');\n  const cursor=body.next_cursor??'';\n  if(typeof cursor!=='string')throw new Error('Xquik cursor must be text.');\n  const tweets=body.tweets.map(tweet=>{\n    if(!tweet||typeof tweet!=='object'||Array.isArray(tweet))throw new Error('Xquik returned an invalid tweet.');\n    const sourceId=tweet.id??tweet.tweet_id??tweet.rest_id??'';\n    if(typeof sourceId!=='string'&&!Number.isSafeInteger(sourceId))throw new Error('Xquik tweet ID must be text or a safe integer.');\n    const id=String(sourceId);\n    const text=tweet.text??tweet.full_text??tweet.content??'';\n    const url=tweet.url??(id?'https://x.com/i/web/status/'+encodeURIComponent(id):'');\n    const sourceAuthor=tweet.author??tweet.user??{};\n    const author=sourceAuthor.username??sourceAuthor.screen_name??sourceAuthor.name??'';\n    const created_at=tweet.createdAt??tweet.created_at??tweet.created??tweet.timestamp??'';\n    if([text,url,author,created_at].some(value=>typeof value!=='string'))throw new Error('Xquik text, URL, author and timestamp must be strings.');\n    const metrics=tweet.metrics??Object.fromEntries(['likeCount','retweetCount','replyCount','quoteCount','viewCount','bookmarkCount'].filter(name=>Object.hasOwn(tweet,name)).map(name=>[name,tweet[name]]));\n    if(!metrics||typeof metrics!=='object'||Array.isArray(metrics))throw new Error('Xquik metrics must be an object.');\n    return {id,url,text,author,created_at,metrics};\n  });\n  const lines=tweets.length?tweets.map((tweet,index)=>(index+1)+'. '+tweet.text+(tweet.author?' by '+tweet.author:'')+(tweet.url?'\\n'+tweet.url:'')):['No matching X posts found for this query.'];\n  return {query,results_count:tweets.length,has_more:more,next_cursor:cursor,tweets,digest:lines.join('\\n\\n')};\n}\n\nreturn [{json:buildDigest({body:$input.first().json,query:$('Validate search settings').first().json.query})}];\n"
+      },
+      "id": "build-digest",
+      "name": "Build Digest",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        940,
+        300
+      ]
+    },
+    {
+      "id": "validate-xquik-query",
+      "name": "Validate search settings",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        450,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function prepareSearch({query,limit}) {\n  if(typeof query!=='string'||!query.trim()||query.length>4096)throw new Error('query must contain 1–4096 characters.');\n  if(!Number.isInteger(limit)||limit<1||limit>10000)throw new Error('limit must be an integer from 1 to 10000.');\n  return {query,limit};\n}\n\nreturn [{json:prepareSearch($input.first().json)}];\n"
+      }
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Search Settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Settings": {
+      "main": [
+        [
+          {
+            "node": "Validate search settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search X with Xquik": {
+      "main": [
+        [
+          {
+            "node": "Build Digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate search settings": {
+      "main": [
+        [
+          {
+            "node": "Search X with Xquik",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [
+    {
+      "name": "Xquik"
+    },
+    {
+      "name": "X"
+    },
+    {
+      "name": "Social Listening"
+    },
+    {
+      "name": "Marketing"
+    }
+  ],
+  "active": false,
+  "pinData": {}
+}
