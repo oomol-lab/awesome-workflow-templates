@@ -1,0 +1,231 @@
+{
+  "name": "01 - Lead dal sito → Registro + Notifiche",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Configurazione\n\nCollega Google Sheets, Telegram e Gmail. Imposta il tuo spreadsheet ID e crea il foglio Lead con le colonne Data, Nome, Email, Telefono, Messaggio, Stato.\n\nImposta il Chat ID Telegram e modifica la firma nel nodo Estrai campi del lead. Il fuso orario iniziale è UTC.\n\nIl webhook accetta nome/name, email, telefono/phone e messaggio/message. Una email valida è obbligatoria. La riga viene salvata prima della notifica e della risposta email.",
+        "height": 420,
+        "width": 400
+      },
+      "id": "nota-setup",
+      "name": "Nota di setup",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -60,
+        -220
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "nuovo-lead",
+        "options": {}
+      },
+      "id": "webhook-lead",
+      "name": "Nuovo lead dal sito",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        400,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const prepare = ({ body, timezone, signature }) => {\n  if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(String(body.email || ''))) {\n    throw new Error('A valid lead email is required before saving or notifying.');\n  }\n  const escapeMarkdown = (text) => text\n    .replace(/([\\\\_*[\\]])/g, '\\\\$1')\n    .replaceAll(String.fromCharCode(96), '\\\\' + String.fromCharCode(96));\n  const parts = Object.fromEntries(\n    new Intl.DateTimeFormat('en-GB', {\n      timeZone: timezone, day: '2-digit', month: '2-digit', year: 'numeric',\n      hour: '2-digit', minute: '2-digit', hourCycle: 'h23',\n    }).formatToParts(new Date()).map((part) => [part.type, part.value]),\n  );\n  const lead = {\n    nome: String(body.nome || body.name || 'Non indicato'),\n    email: String(body.email || ''),\n    telefono: String(body.telefono || body.phone || 'Non indicato'),\n    messaggio: String(body.messaggio || body.message || ''),\n    data: parts.day + '/' + parts.month + '/' + parts.year + ' ' + parts.hour + ':' + parts.minute,\n  };\n  return {\n    lead,\n    values: [[lead.data, lead.nome, lead.email, lead.telefono, lead.messaggio, 'Nuovo']],\n    alert: '🔔 *Nuovo lead dal sito!*\\n\\n👤 ' + escapeMarkdown(lead.nome) + '\\n📧 ' + escapeMarkdown(lead.email) + '\\n📞 ' + escapeMarkdown(lead.telefono) + '\\n\\n💬 ' + escapeMarkdown(lead.messaggio),\n    email: lead.email,\n    reply: 'Ciao ' + lead.nome + ',\\n\\ngrazie per averci contattato! Abbiamo ricevuto la tua richiesta e ti risponderemo entro poche ore lavorative.\\n\\nNel frattempo, se la cosa è urgente, puoi chiamarci direttamente.\\n\\nA presto,\\n' + signature,\n  };\n};\n\nreturn $input.all().map((item, index) => {\n  const result = prepare({body: item.json.body, timezone: $now.zoneName, signature: \"[IL TUO NOME / AZIENDA]\"});\n  return {json: {...result.lead, alert: result.alert, reply: result.reply}, pairedItem: {item: index}};\n});\n"
+      },
+      "id": "set-campi",
+      "name": "Estrai campi del lead",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        620,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_SPREADSHEET_ID"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Lead"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Data": "={{ $json.data }}",
+            "Nome": "={{ $json.nome }}",
+            "Email": "={{ $json.email }}",
+            "Telefono": "={{ $json.telefono }}",
+            "Messaggio": "={{ $json.messaggio }}",
+            "Stato": "Nuovo"
+          },
+          "schema": [
+            {
+              "id": "Data",
+              "displayName": "Data",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Nome",
+              "displayName": "Nome",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Telefono",
+              "displayName": "Telefono",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Messaggio",
+              "displayName": "Messaggio",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Stato",
+              "displayName": "Stato",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ]
+        },
+        "options": {
+          "cellFormat": "RAW",
+          "useAppend": true
+        }
+      },
+      "id": "sheets-append",
+      "name": "Salva nel Registro Lead",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        840,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "INSERISCI-CHAT-ID",
+        "text": "={{ $('Estrai campi del lead').item.json.alert }}",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "telegram-notifica",
+      "name": "Avvisami su Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1060,
+        -120
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Estrai campi del lead').item.json.email }}",
+        "subject": "Abbiamo ricevuto la tua richiesta ✔",
+        "message": "={{ $('Estrai campi del lead').item.json.reply }}",
+        "options": {
+          "appendAttribution": false
+        },
+        "emailType": "text"
+      },
+      "id": "gmail-cortesia",
+      "name": "Email di cortesia al cliente",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1060,
+        120
+      ]
+    }
+  ],
+  "connections": {
+    "Nuovo lead dal sito": {
+      "main": [
+        [
+          {
+            "node": "Estrai campi del lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Estrai campi del lead": {
+      "main": [
+        [
+          {
+            "node": "Salva nel Registro Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Salva nel Registro Lead": {
+      "main": [
+        [
+          {
+            "node": "Avvisami su Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Avvisami su Telegram": {
+      "main": [
+        [
+          {
+            "node": "Email di cortesia al cliente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC"
+  },
+  "pinData": {},
+  "active": false
+}
