@@ -1,0 +1,155 @@
+{
+  "name": "WooCommerce Refunded Order to Slack",
+  "nodes": [
+    {
+      "name": "Order Updated",
+      "type": "n8n-nodes-base.wooCommerceTrigger",
+      "position": [
+        320,
+        500
+      ],
+      "parameters": {
+        "event": "order.updated"
+      },
+      "typeVersion": 1,
+      "id": "woocommerce-refund-slack-alert-0"
+    },
+    {
+      "name": "If Refund and Over 100",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        770,
+        500
+      ],
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $json.total }}",
+              "value2": 100,
+              "operation": "largerEqual"
+            }
+          ],
+          "string": [
+            {
+              "value1": "={{ $json.status }}",
+              "value2": "refunded",
+              "operation": "equal"
+            }
+          ]
+        },
+        "combineOperation": "all"
+      },
+      "typeVersion": 1,
+      "id": "woocommerce-refund-slack-alert-1"
+    },
+    {
+      "name": "Send to Slack",
+      "type": "n8n-nodes-base.slack",
+      "position": [
+        1230,
+        500
+      ],
+      "parameters": {
+        "authentication": "accessToken",
+        "resource": "message",
+        "operation": "post",
+        "channel": "YOUR_SLACK_CHANNEL_ID",
+        "text": "={{ $json.text }}",
+        "jsonParameters": false,
+        "attachments": "={{ $json.attachments.map(attachment => ({...attachment, fields: {item: attachment.fields}})) }}",
+        "blocksUi": {
+          "blocksValues": []
+        },
+        "otherOptions": {
+          "sendAsUser": ""
+        }
+      },
+      "typeVersion": 1,
+      "id": "woocommerce-refund-slack-alert-2"
+    },
+    {
+      "id": "woocommerce-refund-slack-alert-format",
+      "name": "Format refund notification",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1000,
+        500
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const format = function refundMessage({ body }) {\n  const escape = (text) => text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\n  if (!Number.isSafeInteger(body.id) || body.id < 1) throw new Error('WooCommerce order ID is missing or invalid');\n  for (const field of ['status', 'total', 'currency', 'date_modified']) if (typeof body[field] !== 'string') throw new Error('WooCommerce order is missing ' + field);\n  const money = typeof body.currency_symbol === 'string' && body.currency_symbol ? body.currency_symbol + body.total : body.currency + ' ' + body.total;\n  const footer = '*Order updated:* ' + escape(body.date_modified);\n  if (footer.length > 300) throw new Error('Order timestamp exceeds Slack footer size');\n  const text = ':x: A refund has been issued :x:';\n  return { text, attachments: [{ color: '#FF0000', fallback: text, fields: [\n    { title: 'Order ID', value: String(body.id), short: true },\n    { title: 'Status', value: escape(body.status), short: true },\n    { title: 'Total', value: escape(money), short: true },\n  ], footer }] };\n}\n\nreturn {json:format({body:$json.body})};"
+      }
+    },
+    {
+      "id": "woocommerce-refund-slack-alert-amount",
+      "name": "Read order total and status",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        540,
+        500
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const read = function orderAmount({ body }) {\n  if (typeof body.total !== 'string' || !/^\\d+(?:\\.\\d+)?$/.test(body.total) || !Number.isFinite(Number(body.total))) throw new Error('WooCommerce order total must be a nonnegative decimal string');\n  if (typeof body.status !== 'string' || !body.status) throw new Error('WooCommerce order status is missing');\n  return { total: Number(body.total), status: body.status };\n}\n\nreturn {json:{body:$json,...read({body:$json})}};"
+      }
+    }
+  ],
+  "active": false,
+  "settings": {
+    "saveManualExecutions": true,
+    "saveExecutionProgress": true,
+    "saveDataSuccessExecution": "all",
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Order Updated": {
+      "main": [
+        [
+          {
+            "node": "Read order total and status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read order total and status": {
+      "main": [
+        [
+          {
+            "node": "If Refund and Over 100",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Refund and Over 100": {
+      "main": [
+        [
+          {
+            "node": "Format refund notification",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Format refund notification": {
+      "main": [
+        [
+          {
+            "node": "Send to Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {}
+}
