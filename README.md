@@ -114,6 +114,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Harvest Client Creator](workflows/harvest-client-creator/) - Create a Harvest client with a configured name and return its complete record.
 - [Confluence Knowledge Search](workflows/confluence-knowledge-search/) - Search Confluence for supplied text and return the first result’s title, article link, and excerpt.
 - [Google Sheet Record Lookup](workflows/google-sheet-record-lookup/) - List a Google Sheet’s columns, read one column with row numbers, or retrieve a record by its physical row number.
+- [Box Folder Creator](workflows/box-folder-creator/) - Create a named folder in Box and return its metadata.
 
 ## Content
 
