@@ -104,7 +104,6 @@ A growing collection of automation workflows for connecting apps and getting rep
 
 - [Shortcut Text Transformer](workflows/shortcut-text-transformer/) - Translate, correct grammar, shorten, or expand text from an Apple Shortcut and return the result as plain text.
 - [Telegram Journal Reminder](workflows/telegram-journal-reminder/) - Send a daily Telegram journal prompt containing yesterday’s UTC date.
-- [Telegram Daily Meeting List](workflows/telegram-daily-meeting-list/) - Send today’s Google Calendar meeting list to Telegram each morning.
 - [Telegram Weather Reply](workflows/telegram-weather-reply/) - Reply to each Telegram message with the current weather in a configured city.
 - [Todoist to Notion Sync](workflows/todoist-to-notion-sync/) - Create Notion rows for labeled Todoist tasks, then add each Notion link to its task and replace the routing label.
 - [Glasp Highlight Export](workflows/glasp-highlight-export/) - Collect new Glasp highlight documents every six hours, format text and Markdown, and track exported document IDs for 30 days.
