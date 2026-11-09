@@ -1,0 +1,193 @@
+{
+  "name": "GitHub Issues to Telegram",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "2f3cac64-7326-471d-8f6a-1677a4ff5a6d",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -540,
+        -560
+      ],
+      "parameters": {
+        "color": 5,
+        "content": "### Get Github Issues HTTP Request \n- Edit the OWNER and REPO NAME in the respective fields\n- The request is configured with query parameters of *state*, *since* and *labels*"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "13809408-63f3-4161-87f2-c5d950274aa9",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -260,
+        -560
+      ],
+      "parameters": {
+        "color": 3,
+        "width": 180,
+        "content": "### Extract Fields\nExtract fields like title, comments, created_at, etc from the github api response"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "3df26230-c2b0-44d5-98da-cccbca493c8f",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -40,
+        -560
+      ],
+      "parameters": {
+        "color": 3,
+        "width": 180,
+        "content": "### Filter on Fields\nFilter issues based on number of comments"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "819bd3f8-8d23-4299-ac1d-ae9762f944dd",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        220,
+        -680
+      ],
+      "parameters": {
+        "color": 5,
+        "width": 200,
+        "height": 280,
+        "content": "### Send message to Telegram User\n- This node is configured to send *issue title* and *url* to your user id\n- Create a new telegram bot using the instructions [here](https://core.telegram.org/bots/tutorial#obtain-your-bot-token) and configure bot token in the telegram credential\n- Chat ID can be your username or your username ID"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "9e08036f-e082-424d-b536-349d236a40ec",
+      "name": "Send Message to @user",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        280,
+        -380
+      ],
+      "parameters": {
+        "resource": "message",
+        "operation": "sendMessage",
+        "chatId": "@YOUR_TELEGRAM_CHANNEL",
+        "text": "={{ $json.text }}",
+        "additionalFields": {
+          "parse_mode": "HTML",
+          "appendAttribution": false
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "0cfd2924-64c0-4f8b-a15b-7e619d5b21bf",
+      "name": "Select issues with few comments",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -220,
+        -380
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const select = function eligibleIssues({ issues }) {\n  const escape = (text) => String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;');\n  const notifications = [];\n  issues.forEach((issue, sourceIndex) => {\n    if (issue.pull_request) return;\n    if (!Number.isInteger(issue.comments) || issue.comments < 0) throw new Error('GitHub returned an invalid comment count');\n    if (issue.comments >= 5) return;\n    if (typeof issue.title !== 'string' || typeof issue.html_url !== 'string') throw new Error('GitHub returned an issue without its title or URL');\n    const url = new URL(issue.html_url);\n    if (!['http:', 'https:'].includes(url.protocol)) throw new Error('GitHub returned an invalid issue URL');\n    const text = 'New Issue:  ' + escape(issue.title) + ' <a href=\"' + escape(url.href) + '\">Link</a>';\n    if (text.length > 4096) throw new Error('The issue alert exceeds Telegram’s message limit');\n    notifications.push({ text, sourceIndex });\n  });\n  return { notifications, count: notifications.length };\n}\n\nreturn select({issues:$input.all().map(item=>item.json)}).notifications.map(({text,sourceIndex})=>({json:{text},pairedItem:{item:sourceIndex}}));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "eacbb029-03b9-46d6-9f2e-edaab70cce10",
+      "name": "Run every 10 minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        -780,
+        -380
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 10
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "d87f01e3-8277-4dbb-bcc0-4ca2e1c794d4",
+      "name": "Get Github Issues",
+      "type": "n8n-nodes-base.github",
+      "position": [
+        -480,
+        -380
+      ],
+      "parameters": {
+        "authentication": "accessToken",
+        "resource": "repository",
+        "operation": "getIssues",
+        "owner": {
+          "__rl": true,
+          "mode": "name",
+          "value": "YOUR_GITHUB_OWNER"
+        },
+        "repository": {
+          "__rl": true,
+          "mode": "name",
+          "value": "YOUR_GITHUB_REPO"
+        },
+        "returnAll": false,
+        "limit": 50,
+        "getRepositoryIssuesFilters": {
+          "since": "={{ new Date(Date.now() - 30 * 60 * 1000).toISOString() }}",
+          "state": "open",
+          "labels": "Bug"
+        }
+      },
+      "typeVersion": 1
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC"
+  },
+  "connections": {
+    "Run every 10 minutes": {
+      "main": [
+        [
+          {
+            "node": "Get Github Issues",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Github Issues": {
+      "main": [
+        [
+          {
+            "node": "Select issues with few comments",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select issues with few comments": {
+      "main": [
+        [
+          {
+            "node": "Send Message to @user",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
