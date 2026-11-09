@@ -1,0 +1,148 @@
+{
+  "name": "WooCommerce Large Order to Slack",
+  "nodes": [
+    {
+      "name": "Order Created",
+      "type": "n8n-nodes-base.wooCommerceTrigger",
+      "position": [
+        340,
+        500
+      ],
+      "parameters": {
+        "event": "order.created"
+      },
+      "typeVersion": 1,
+      "id": "woocommerce-large-order-slack-alert-0"
+    },
+    {
+      "name": "Send to Slack",
+      "type": "n8n-nodes-base.slack",
+      "position": [
+        1230,
+        500
+      ],
+      "parameters": {
+        "authentication": "accessToken",
+        "resource": "message",
+        "operation": "post",
+        "channel": "YOUR_SLACK_CHANNEL_ID",
+        "text": "={{ $json.text }}",
+        "jsonParameters": false,
+        "attachments": "={{ $json.attachments.map(attachment => ({...attachment, fields: {item: attachment.fields}})) }}",
+        "blocksUi": {
+          "blocksValues": []
+        },
+        "otherOptions": {
+          "sendAsUser": ""
+        }
+      },
+      "typeVersion": 1,
+      "id": "woocommerce-large-order-slack-alert-1"
+    },
+    {
+      "name": "Price over 100",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        770,
+        500
+      ],
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $json.total }}",
+              "value2": 100,
+              "operation": "largerEqual"
+            }
+          ]
+        },
+        "combineOperation": "all"
+      },
+      "typeVersion": 1,
+      "id": "woocommerce-large-order-slack-alert-2"
+    },
+    {
+      "id": "woocommerce-large-order-slack-alert-format",
+      "name": "Format order notification",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1000,
+        500
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const format = function orderMessage({ body }) {\n  const escape = (text) => text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\n  if (!Number.isSafeInteger(body.id) || body.id < 1) throw new Error('WooCommerce order ID is missing or invalid');\n  for (const field of ['status', 'total', 'currency', 'date_created', 'transaction_id']) if (typeof body[field] !== 'string') throw new Error('WooCommerce order is missing ' + field);\n  const href = body._links?.self?.[0]?.href;\n  if (typeof href !== 'string') throw new Error('WooCommerce order self link is missing');\n  const link = new URL(href);\n  if (!['http:', 'https:'].includes(link.protocol) || link.username || link.password) throw new Error('Order link must be an HTTP(S) URL without credentials');\n  const money = typeof body.currency_symbol === 'string' && body.currency_symbol ? body.currency_symbol + body.total : body.currency + ' ' + body.total;\n  const footer = '*Ordered:* ' + escape(body.date_created) + ' | *Transaction ID:* ' + escape(body.transaction_id);\n  if (footer.length > 300) throw new Error('Order metadata exceeds Slack footer size');\n  const text = ':sparkles: There is a new order :sparkles:';\n  return { text, attachments: [{ color: '#66FF00', fallback: text, fields: [\n    { title: 'Order ID', value: String(body.id), short: true },\n    { title: 'Status', value: escape(body.status), short: true },\n    { title: 'Total', value: escape(money), short: true },\n    { title: 'Link', value: escape(href), short: false },\n  ], footer }] };\n}\n\nreturn {json:format({body:$json.body})};"
+      }
+    },
+    {
+      "id": "woocommerce-large-order-slack-alert-amount",
+      "name": "Read order total and status",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        540,
+        500
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const read = function orderAmount({ body }) {\n  if (typeof body.total !== 'string' || !/^\\d+(?:\\.\\d+)?$/.test(body.total) || !Number.isFinite(Number(body.total))) throw new Error('WooCommerce order total must be a nonnegative decimal string');\n  if (typeof body.status !== 'string' || !body.status) throw new Error('WooCommerce order status is missing');\n  return { total: Number(body.total), status: body.status };\n}\n\nreturn {json:{body:$json,...read({body:$json})}};"
+      }
+    }
+  ],
+  "active": false,
+  "settings": {
+    "saveManualExecutions": true,
+    "saveExecutionProgress": true,
+    "saveDataSuccessExecution": "all",
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Order Created": {
+      "main": [
+        [
+          {
+            "node": "Read order total and status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read order total and status": {
+      "main": [
+        [
+          {
+            "node": "Price over 100",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Price over 100": {
+      "main": [
+        [
+          {
+            "node": "Format order notification",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Format order notification": {
+      "main": [
+        [
+          {
+            "node": "Send to Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {}
+}

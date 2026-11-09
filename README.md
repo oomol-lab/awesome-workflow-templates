@@ -97,6 +97,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 ## Commerce
 
 - [WooCommerce Product to Slack](workflows/woocommerce-product-slack-alert/) - Post new WooCommerce product names, prices, and links to Slack.
+- [WooCommerce Large Order to Slack](workflows/woocommerce-large-order-slack-alert/) - Post a Slack alert when a new WooCommerce order total is at least 100.
 
 ## Contribute
 
