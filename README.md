@@ -55,6 +55,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 ## Development
 
 - [n8n Execution Diagnostics](workflows/n8n-execution-diagnostics/) - Classify structured n8n execution errors and return affected nodes, error counts, and suggested investigation steps.
+- [n8n Silent Workflow Check](workflows/n8n-silent-workflow-check/) - Check active n8n workflows for missing or stale executions and return a report with the inspected page limits.
 
 ## Contribute
 
