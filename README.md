@@ -117,6 +117,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Google Sheet Record Lookup](workflows/google-sheet-record-lookup/) - List a Google Sheet’s columns, read one column with row numbers, or retrieve a record by its physical row number.
 - [Box Folder Creator](workflows/box-folder-creator/) - Create a named folder in Box and return its metadata.
 - [Asana Task Creator](workflows/asana-task-creator/) - Create an Asana task with a name in an existing workspace.
+- [Gmail AI Labeler](workflows/gmail-ai-labeler/) - Poll incoming Gmail messages, classify each body into existing Inquiry, Partnership and Notification labels, and add each message’s own label IDs.
 
 ## Content
 
