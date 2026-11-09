@@ -43,6 +43,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Coda Table Row Creator](workflows/coda-table-row-creator/) - Submit one new Coda table row containing three configured column values.
 - [Gmail Label Switcher](workflows/gmail-label-switcher/) - Move a batch of Gmail messages from one label to another.
 - [Dropbox Public Image Archive](workflows/dropbox-public-image-archive/) - Create a Dropbox folder, save a public image into it, and list the folder after the file is saved.
+- [Bitcoin Price Alert](workflows/bitcoin-price-alert/) - Check CoinPaprika every 15 minutes and send a Telegram alert when Bitcoin’s 24-hour USD change reaches +5% or −5%.
 
 ## Marketing
 

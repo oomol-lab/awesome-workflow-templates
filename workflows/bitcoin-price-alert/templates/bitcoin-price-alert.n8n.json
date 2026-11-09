@@ -1,0 +1,213 @@
+{
+  "name": "Bitcoin price alert to Telegram with CoinPaprika",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Bitcoin price alert\n\nPoll the public CoinPaprika BTC ticker every 15 minutes. Configure Telegram in Send Telegram alert and replace @YOUR_TELEGRAM_CHANNEL with the chat ID or channel username. Each poll sends a message when the 24-hour change is at least +5% or at most -5%. Repeated large moves produce repeated alerts.",
+        "height": 360,
+        "width": 380
+      },
+      "id": "a1111111-1111-4111-8111-111111111111",
+      "name": "About this template",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -360,
+        40
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "*/15 * * * *"
+            }
+          ]
+        }
+      },
+      "id": "b2222222-2222-4222-8222-222222222222",
+      "name": "Every 15 minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        120,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://api.coinpaprika.com/v1/tickers/btc-bitcoin",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        },
+        "method": "GET"
+      },
+      "id": "c3333333-3333-4333-8333-333333333333",
+      "name": "Get BTC price (CoinPaprika)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        340,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cond-up",
+              "leftValue": "={{ $json.move24 }}",
+              "rightValue": 5,
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            },
+            {
+              "id": "cond-down",
+              "leftValue": "={{ $json.move24 }}",
+              "rightValue": -5,
+              "operator": {
+                "type": "number",
+                "operation": "lte"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "id": "d4444444-4444-4444-8444-444444444444",
+      "name": "Big 24h move?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        560,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "@YOUR_TELEGRAM_CHANNEL",
+        "text": "={{ $json.text }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "e5555555-5555-4555-8555-555555555555",
+      "name": "Send Telegram alert",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        800,
+        180
+      ]
+    },
+    {
+      "id": "validate-bitcoin-metrics",
+      "name": "Validate Bitcoin Metrics",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        450,
+        240
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const validate = function bitcoinMetrics({ payload }) {\n  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) throw new Error('CoinPaprika response must be an object.');\n  const move24 = payload.quotes?.USD?.percent_change_24h;\n  if (!Number.isFinite(move24)) throw new Error('Missing or nonnumeric Bitcoin 24-hour change.');\n  return { payload, move24 };\n}\n\nreturn $input.all().map((item,index)=>({json:validate({payload:item.json}),pairedItem:{item:index}}));\n"
+      }
+    },
+    {
+      "id": "format-bitcoin-alert",
+      "name": "Format Bitcoin Alert",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        180
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const format = function bitcoinMessage({ payload }) {\n  const usd = payload?.quotes?.USD;\n  for (const field of ['price', 'percent_change_24h', 'percent_change_7d']) if (!Number.isFinite(usd?.[field])) throw new Error('Missing or nonnumeric Bitcoin metric: ' + field);\n  return { text: `Bitcoin big 24h move alert\\n\\nPrice: $${usd.price.toFixed(2)}\\n24h change: ${usd.percent_change_24h.toFixed(2)}%\\n7d change: ${usd.percent_change_7d.toFixed(2)}%\\n\\nSource: CoinPaprika (keyless, no API key)` };\n}\n\nreturn $input.all().map((item,index)=>({json:format({payload:item.json.payload}),pairedItem:{item:index}}));\n"
+      }
+    }
+  ],
+  "connections": {
+    "Every 15 minutes": {
+      "main": [
+        [
+          {
+            "node": "Get BTC price (CoinPaprika)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get BTC price (CoinPaprika)": {
+      "main": [
+        [
+          {
+            "node": "Validate Bitcoin Metrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Big 24h move?": {
+      "main": [
+        [
+          {
+            "node": "Format Bitcoin Alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Validate Bitcoin Metrics": {
+      "main": [
+        [
+          {
+            "node": "Big 24h move?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Bitcoin Alert": {
+      "main": [
+        [
+          {
+            "node": "Send Telegram alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC"
+  },
+  "pinData": {},
+  "active": false
+}
