@@ -1,0 +1,158 @@
+{
+  "name": "[n8n Template] AI Morning Brief",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 8 * * *"
+            }
+          ]
+        }
+      },
+      "id": "b2c3d4e5-0001-0001-0001-b2c3d4e50001",
+      "name": "Every Day 8am",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [
+        200,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const business = function buildContext({ tasks, timezone }) {\n  if (!Array.isArray(tasks) || !tasks.every((task) => typeof task === 'string' && task.trim())) {\n    throw new Error('tasks must be a list of non-empty strings');\n  }\n  const date = new Date().toLocaleDateString('en-US', {\n    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: timezone,\n  });\n  const taskList = tasks.join('\\n- ');\n  return {\n    date,\n    tasks: taskList,\n    prompt: `Today is ${date}.\\n\\nMy tasks for today:\\n- ${taskList}\\n\\nPlease give me a motivating, concise morning brief (3-5 sentences) that:\\n1. Acknowledges today's date/day\\n2. Highlights the key priorities\\n3. Ends with one actionable focus tip`,\n  };\n}\n\nreturn $input.all().map((item, index) => { const result = business({tasks: [\"Check emails\",\"Team standup at 10am\",\"Review pull requests\"], timezone: $now.zoneName}); return {json: result, pairedItem: {item: index}}; });\n"
+      },
+      "id": "b2c3d4e5-0002-0002-0002-b2c3d4e50002",
+      "name": "Build Context",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        420,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "anthropicApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({model:'claude-haiku-4-5',max_tokens:300,messages:[{role:'user',content:$json.prompt}]}) }}",
+        "options": {}
+      },
+      "id": "b2c3d4e5-0003-0003-0003-b2c3d4e50003",
+      "name": "Generate Brief",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        640,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.line.me/v2/bot/message/push",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({to:'YOUR_LINE_USER_ID',messages:$json.texts.map(text=>({type:'text',text}))}) }}",
+        "options": {}
+      },
+      "id": "b2c3d4e5-0004-0004-0004-b2c3d4e50004",
+      "name": "Send via LINE",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        1080,
+        300
+      ]
+    },
+    {
+      "id": "format-line-message",
+      "name": "Format LINE message",
+      "position": [
+        860,
+        300
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const business = function lineText({ summary }) {\n  if (typeof summary !== 'string' || !summary.trim()) throw new Error('The model returned no morning brief');\n  const text = '🌅 Morning Brief\\n\\n' + summary;\n  if (text.length > 5000) throw new Error('The morning brief exceeds the LINE message limit');\n  return { texts: [text] };\n}\n\nreturn $input.all().map((item, index) => { const result = business({summary:item.json.content?.[0]?.text}); return {json: result, pairedItem: {item: index}}; });\n"
+      }
+    }
+  ],
+  "connections": {
+    "Every Day 8am": {
+      "main": [
+        [
+          {
+            "node": "Build Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Context": {
+      "main": [
+        [
+          {
+            "node": "Generate Brief",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Brief": {
+      "main": [
+        [
+          {
+            "node": "Format LINE message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format LINE message": {
+      "main": [
+        [
+          {
+            "node": "Send via LINE",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC"
+  },
+  "pinData": {}
+}
