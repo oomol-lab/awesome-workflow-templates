@@ -1,0 +1,182 @@
+{
+  "name": "Google Books Add to Shelf",
+  "nodes": [
+    {
+      "name": "On clicking 'execute'",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        260,
+        300
+      ],
+      "parameters": {},
+      "typeVersion": 1,
+      "id": "google-books-add-to-shelf-0"
+    },
+    {
+      "id": "google-books-add-to-shelf-config",
+      "name": "Configure book and shelf",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        320,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const volumeId = 'YOUR_VOLUME_ID';\nconst shelfId = '2';\nif (!volumeId || !shelfId) throw new Error('Configure the volume and bookshelf IDs');\nreturn [{ json: { volumeId, shelfId } }];"
+      }
+    },
+    {
+      "name": "Google Books",
+      "type": "n8n-nodes-base.googleBooks",
+      "position": [
+        520,
+        300
+      ],
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "volume",
+        "operation": "get",
+        "volumeId": "={{ encodeURIComponent($json.volumeId) }}"
+      },
+      "typeVersion": 1,
+      "id": "google-books-add-to-shelf-1"
+    },
+    {
+      "id": "google-books-add-to-shelf-add",
+      "name": "Add volume to My Library",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        720,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'https://www.googleapis.com/books/v1/mylibrary/bookshelves/' + encodeURIComponent($node['Configure book and shelf'].json.shelfId) + '/addVolume' }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleBooksOAuth2Api",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "volumeId",
+              "value": "={{ $json.id }}"
+            }
+          ]
+        },
+        "sendBody": false,
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text",
+              "outputPropertyName": "body",
+              "fullResponse": true
+            }
+          },
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "google-books-add-to-shelf-confirm",
+      "name": "Confirm bookshelf addition",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        920,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if (![200, 204].includes($json.statusCode) || $json.body !== undefined && $json.body !== '') throw new Error('Google Books did not confirm the completed bookshelf addition');\nreturn { json: { added: true } };"
+      }
+    },
+    {
+      "name": "Google Books2",
+      "type": "n8n-nodes-base.googleBooks",
+      "position": [
+        1120,
+        300
+      ],
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "bookshelfVolume",
+        "operation": "getAll",
+        "myLibrary": true,
+        "shelfId": "={{ encodeURIComponent($node['Configure book and shelf'].json.shelfId) }}",
+        "returnAll": false,
+        "limit": 40
+      },
+      "typeVersion": 1,
+      "id": "google-books-add-to-shelf-3"
+    }
+  ],
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "On clicking 'execute'": {
+      "main": [
+        [
+          {
+            "node": "Configure book and shelf",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configure book and shelf": {
+      "main": [
+        [
+          {
+            "node": "Google Books",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Books": {
+      "main": [
+        [
+          {
+            "node": "Add volume to My Library",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add volume to My Library": {
+      "main": [
+        [
+          {
+            "node": "Confirm bookshelf addition",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm bookshelf addition": {
+      "main": [
+        [
+          {
+            "node": "Google Books2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {}
+}

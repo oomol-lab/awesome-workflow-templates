@@ -121,6 +121,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Box Folder Creator](workflows/box-folder-creator/) - Create a named folder in Box and return its metadata.
 - [Asana Task Creator](workflows/asana-task-creator/) - Create an Asana task with a name in an existing workspace.
 - [Gmail AI Labeler](workflows/gmail-ai-labeler/) - Poll incoming Gmail messages, classify each body into existing Inquiry, Partnership and Notification labels, and add each message’s own label IDs.
+- [Google Books Add to Shelf](workflows/google-books-add-to-shelf/) - Get a Google Books volume, add it to My Library and list the first bookshelf page.
 
 ## Content
 
