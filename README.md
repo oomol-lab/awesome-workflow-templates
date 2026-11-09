@@ -42,6 +42,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Trello Card Creator](workflows/trello-card-creator/) - Create one Trello card with a name and description in the list you select.
 - [Coda Table Row Creator](workflows/coda-table-row-creator/) - Submit one new Coda table row containing three configured column values.
 - [Gmail Label Switcher](workflows/gmail-label-switcher/) - Move a batch of Gmail messages from one label to another.
+- [Dropbox Public Image Archive](workflows/dropbox-public-image-archive/) - Create a Dropbox folder, save a public image into it, and list the folder after the file is saved.
 
 ## Marketing
 
