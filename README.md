@@ -38,6 +38,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [GitHub Release Slack Alerts](workflows/github-release-slack-alerts/) - Check configured GitHub repositories daily and notify Slack when their latest release was published within the last 24 hours.
 - [Calendar Event Creator](workflows/calendar-event-creator/) - Create one Google Calendar event with the calendar, title, and start/end times you configure.
 - [Google Task Creator](workflows/google-task-creator/) - Create one Google Tasks item in the task list you select.
+- [Todoist Task Creator](workflows/todoist-task-creator/) - Create one Todoist task in the project you select.
 
 ## Marketing
 
