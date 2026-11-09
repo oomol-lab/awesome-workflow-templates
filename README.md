@@ -77,6 +77,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Webhook Request Classifier](workflows/webhook-request-classifier/) - Classify an incoming request as support, sales, technical, or general and return its priority and summary as JSON.
 - [Customer Feedback Sentiment](workflows/customer-feedback-sentiment/) - Classify submitted customer feedback with AI and save the feedback, contact information, and sentiment in Google Sheets.
 - [Discord Feedback Router](workflows/discord-feedback-router/) - Classify one feedback message and send its department instruction to the configured customer-success, IT, or support channel in Discord.
+- [Zendesk Ticket Creator](workflows/zendesk-ticket-creator/) - Create one Zendesk support ticket with a subject and initial comment.
 
 ## Development
 
