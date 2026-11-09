@@ -99,6 +99,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Todoist to Notion Sync](workflows/todoist-to-notion-sync/) - Create Notion rows for labeled Todoist tasks, then add each Notion link to its task and replace the routing label.
 - [Glasp Highlight Export](workflows/glasp-highlight-export/) - Collect new Glasp highlight documents every six hours, format text and Markdown, and track exported document IDs for 30 days.
 - [Hacker News Yearly Lookback](workflows/hacker-news-yearly-lookback/) - Read the Hacker News front page for this UTC calendar day across past years, summarize selected headlines, and send one Telegram message.
+- [ClickUp Task Creator](workflows/clickup-task-creator/) - Create one ClickUp task in a configured list and return its complete record.
 
 ## Content
 
