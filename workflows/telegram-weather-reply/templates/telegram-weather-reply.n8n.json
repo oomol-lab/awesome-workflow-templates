@@ -1,0 +1,138 @@
+{
+  "name": "Telegram Weather Reply",
+  "nodes": [
+    {
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "position": [
+        270,
+        220
+      ],
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "typeVersion": 1.2,
+      "id": "telegram-weather-reply-0"
+    },
+    {
+      "name": "OpenWeatherMap",
+      "type": "n8n-nodes-base.openWeatherMap",
+      "position": [
+        480,
+        220
+      ],
+      "parameters": {
+        "operation": "currentWeather",
+        "format": "metric",
+        "locationSelection": "cityName",
+        "cityName": "berlin,de",
+        "language": ""
+      },
+      "typeVersion": 1,
+      "id": "telegram-weather-reply-1"
+    },
+    {
+      "name": "Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        880,
+        220
+      ],
+      "parameters": {
+        "resource": "message",
+        "operation": "sendMessage",
+        "chatId": "={{ $(\"Read reply destination\").item.json.chatId }}",
+        "text": "={{ $json.text }}",
+        "additionalFields": {
+          "parse_mode": "HTML",
+          "appendAttribution": false
+        }
+      },
+      "typeVersion": 1,
+      "id": "telegram-weather-reply-2"
+    },
+    {
+      "id": "weather-format",
+      "name": "Format current weather",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        670,
+        220
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const format = function weatherReply({ weather }) {\n  const description = weather.weather?.[0]?.description;\n  const temperature = weather.main?.temp, feelsLike = weather.main?.feels_like;\n  if (typeof description !== 'string' || !description || !Number.isFinite(temperature) || !Number.isFinite(feelsLike)) throw new Error('OpenWeather returned incomplete current-weather data');\n  const escaped = description.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\n  const text = `Right now, we have ${escaped}. The temperature is ${temperature}°C but it really feels like ${feelsLike}°C 🙂`;\n  if (text.length > 4096) throw new Error('The weather reply exceeds Telegram’s message limit');\n  return { text };\n}\n\nreturn {json:format({weather:$json})};"
+      }
+    },
+    {
+      "id": "weather-chat",
+      "name": "Read reply destination",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        375,
+        220
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const read = function telegramChat({ body }) {\n  const chatId = body?.message?.chat?.id;\n  if (!Number.isSafeInteger(chatId) || chatId === 0) throw new Error('Telegram update has no valid message chat ID');\n  return { chatId: String(chatId) };\n}\n\nreturn {json:read({body:$json})};"
+      }
+    }
+  ],
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC"
+  },
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Read reply destination",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read reply destination": {
+      "main": [
+        [
+          {
+            "node": "OpenWeatherMap",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenWeatherMap": {
+      "main": [
+        [
+          {
+            "node": "Format current weather",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format current weather": {
+      "main": [
+        [
+          {
+            "node": "Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {}
+}

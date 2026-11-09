@@ -81,6 +81,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Shortcut Text Transformer](workflows/shortcut-text-transformer/) - Translate, correct grammar, shorten, or expand text from an Apple Shortcut and return the result as plain text.
 - [Telegram Journal Reminder](workflows/telegram-journal-reminder/) - Send a daily Telegram journal prompt containing yesterday’s UTC date.
 - [Telegram Daily Meeting List](workflows/telegram-daily-meeting-list/) - Send today’s Google Calendar meeting list to Telegram each morning.
+- [Telegram Weather Reply](workflows/telegram-weather-reply/) - Reply to each Telegram message with the current weather in a configured city.
 
 ## Content
 
