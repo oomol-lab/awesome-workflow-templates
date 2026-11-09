@@ -21,6 +21,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Support](#support)
 - [Development](#development)
 - [Research](#research)
+- [Productivity](#productivity)
 - [Contribute](#contribute)
 - [Licensing](#licensing)
 
@@ -71,6 +72,10 @@ A growing collection of automation workflows for connecting apps and getting rep
 ## Research
 
 - [Domain Filtered Research](workflows/domain-filtered-research/) - Ask Perplexity a research question with domain and one-month publication filters, and return the answer with citation URLs.
+
+## Productivity
+
+- [Shortcut Text Transformer](workflows/shortcut-text-transformer/) - Translate, correct grammar, shorten, or expand text from an Apple Shortcut and return the result as plain text.
 
 ## Contribute
 
