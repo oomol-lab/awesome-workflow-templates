@@ -55,6 +55,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Negative Feedback Alert](workflows/negative-feedback-alert/) - Analyze a Typeform feedback submission and post its text and score to Mattermost only when the score is negative.
 - [Feedback Sentiment Routing](workflows/feedback-sentiment-routing/) - Save positive Typeform feedback in Notion and notify Slack, or create a Trello card for neutral and negative feedback.
 - [Form Testimonial Capture](workflows/form-testimonial-capture/) - Analyze submitted feedback and create a Strapi entry only when its sentiment score is greater than 0.4.
+- [Live Tennis Discord Alert](workflows/live-tennis-discord-alert/) - Check the first page of live tennis matches every five minutes and announce previously unseen match IDs in Discord.
 
 ## Marketing
 

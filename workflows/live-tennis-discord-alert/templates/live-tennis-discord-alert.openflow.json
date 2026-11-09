@@ -1,0 +1,440 @@
+{
+  "kind": "open-flow-workflow",
+  "version": 1,
+  "name": "Live Tennis Discord Alert",
+  "content": {
+    "modelVersion": 14,
+    "document": {
+      "bindings": {},
+      "graph": {
+        "nodes": {
+          "n_5bea6a30e83ff463": {
+            "name": "Every five minutes",
+            "kind": "cron",
+            "cronTimes": [
+              {
+                "type": "cron",
+                "expression": "*/5 * * * *",
+                "timezone": "UTC"
+              }
+            ]
+          },
+          "n_bf53b1dd0d68d738": {
+            "inputs": {
+              "url": {
+                "kind": "value",
+                "value": "https://api.livetennisapi.com/api/public/v1/matches?status=live&limit=50&offset=0"
+              },
+              "auth.token": {
+                "kind": "unset"
+              }
+            },
+            "name": "Read first live match page",
+            "timeoutMs": 300000,
+            "kind": "task",
+            "task": {
+              "inputs": [
+                {
+                  "jsonSchema": {
+                    "type": "string"
+                  },
+                  "nullable": false,
+                  "handle": "url"
+                },
+                {
+                  "jsonSchema": {
+                    "type": "string"
+                  },
+                  "nullable": false,
+                  "handle": "auth.token"
+                }
+              ],
+              "outputs": [
+                {
+                  "jsonSchema": {},
+                  "nullable": true,
+                  "handle": "body"
+                },
+                {
+                  "jsonSchema": {
+                    "type": "integer"
+                  },
+                  "nullable": false,
+                  "handle": "statusCode"
+                },
+                {
+                  "jsonSchema": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    }
+                  },
+                  "nullable": false,
+                  "handle": "headers"
+                }
+              ],
+              "name": "Read first live match page",
+              "executor": {
+                "method": "GET",
+                "query": {
+                  "mode": "fields",
+                  "names": []
+                },
+                "headers": {
+                  "mode": "fields",
+                  "names": []
+                },
+                "bodyFormat": "none",
+                "authentication": {
+                  "type": "apiKey",
+                  "name": "X-API-Key",
+                  "in": "header"
+                },
+                "responseFormat": "json",
+                "statusPolicy": "success",
+                "kind": "http-request"
+              }
+            }
+          },
+          "n_5a014e988f515270": {
+            "inputs": {
+              "body": {
+                "kind": "sources",
+                "sources": [
+                  {
+                    "kind": "node",
+                    "nodeId": "n_bf53b1dd0d68d738",
+                    "output": "body"
+                  }
+                ]
+              }
+            },
+            "name": "Check and format matches",
+            "kind": "task",
+            "task": {
+              "inputs": [
+                {
+                  "jsonSchema": {},
+                  "nullable": true,
+                  "handle": "body"
+                }
+              ],
+              "outputs": [
+                {
+                  "jsonSchema": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "text": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 2000
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "text"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "maxItems": 50
+                  },
+                  "nullable": false,
+                  "handle": "matches"
+                },
+                {
+                  "jsonSchema": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "nullable": false,
+                  "handle": "received"
+                },
+                {
+                  "jsonSchema": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "nullable": false,
+                  "handle": "unique"
+                },
+                {
+                  "jsonSchema": {
+                    "type": "boolean"
+                  },
+                  "nullable": true,
+                  "handle": "hasMore"
+                }
+              ],
+              "name": "Check and format matches",
+              "moduleId": "n_a917022a1ac657d4",
+              "capabilities": [
+                {
+                  "kind": "connector",
+                  "mode": "independent",
+                  "actions": []
+                }
+              ]
+            }
+          },
+          "n_a288ee1fefc8cf0d": {
+            "inputs": {
+              "items": {
+                "kind": "sources",
+                "sources": [
+                  {
+                    "kind": "node",
+                    "nodeId": "n_5a014e988f515270",
+                    "output": "matches"
+                  }
+                ]
+              }
+            },
+            "name": "Stage unseen match IDs",
+            "kind": "task",
+            "task": {
+              "inputs": [
+                {
+                  "jsonSchema": {
+                    "type": "array"
+                  },
+                  "nullable": false,
+                  "handle": "items"
+                }
+              ],
+              "outputs": [
+                {
+                  "jsonSchema": {
+                    "type": "array"
+                  },
+                  "nullable": false,
+                  "handle": "items"
+                },
+                {
+                  "jsonSchema": {
+                    "type": "array"
+                  },
+                  "nullable": false,
+                  "handle": "duplicates"
+                }
+              ],
+              "name": "Stage unseen match IDs",
+              "executor": {
+                "fields": [
+                  "id"
+                ],
+                "kind": "skip-duplicates"
+              }
+            }
+          },
+          "n_38392f195140004c": {
+            "inputs": {
+              "matches": {
+                "kind": "sources",
+                "sources": [
+                  {
+                    "kind": "node",
+                    "nodeId": "n_a288ee1fefc8cf0d",
+                    "output": "items"
+                  }
+                ]
+              },
+              "channelId": {
+                "kind": "value",
+                "value": "YOUR_DISCORD_CHANNEL_ID"
+              }
+            },
+            "name": "Announce new matches in Discord",
+            "kind": "task",
+            "task": {
+              "inputs": [
+                {
+                  "jsonSchema": {
+                    "type": "array"
+                  },
+                  "nullable": false,
+                  "handle": "matches"
+                },
+                {
+                  "jsonSchema": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "nullable": false,
+                  "handle": "channelId"
+                }
+              ],
+              "outputs": [
+                {
+                  "jsonSchema": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "nullable": false,
+                  "handle": "sent"
+                }
+              ],
+              "name": "Announce new matches in Discord",
+              "moduleId": "n_e0138d5a53644ee4",
+              "capabilities": [
+                {
+                  "kind": "connector",
+                  "mode": "independent",
+                  "actions": [
+                    {
+                      "action": "discordbot.create_message"
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          "n_31cd008bf85c9695": {
+            "name": "Match delivery summary",
+            "kind": "outputs",
+            "outputDefs": [
+              {
+                "jsonSchema": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "nullable": false,
+                "handle": "received"
+              },
+              {
+                "jsonSchema": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "nullable": false,
+                "handle": "unique"
+              },
+              {
+                "jsonSchema": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "nullable": false,
+                "handle": "newMatches"
+              },
+              {
+                "jsonSchema": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "nullable": false,
+                "handle": "sent"
+              },
+              {
+                "jsonSchema": {
+                  "type": "boolean"
+                },
+                "nullable": true,
+                "handle": "hasMore"
+              }
+            ],
+            "outputMappings": {
+              "received": {
+                "kind": "sources",
+                "sources": [
+                  {
+                    "kind": "node",
+                    "nodeId": "n_5a014e988f515270",
+                    "output": "received"
+                  }
+                ]
+              },
+              "unique": {
+                "kind": "sources",
+                "sources": [
+                  {
+                    "kind": "node",
+                    "nodeId": "n_5a014e988f515270",
+                    "output": "unique"
+                  }
+                ]
+              },
+              "newMatches": {
+                "kind": "sources",
+                "sources": [
+                  {
+                    "kind": "node",
+                    "nodeId": "n_38392f195140004c",
+                    "output": "sent"
+                  }
+                ]
+              },
+              "sent": {
+                "kind": "sources",
+                "sources": [
+                  {
+                    "kind": "node",
+                    "nodeId": "n_38392f195140004c",
+                    "output": "sent"
+                  }
+                ]
+              },
+              "hasMore": {
+                "kind": "sources",
+                "sources": [
+                  {
+                    "kind": "node",
+                    "nodeId": "n_5a014e988f515270",
+                    "output": "hasMore"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "edges": [
+          {
+            "source": "n_5bea6a30e83ff463",
+            "target": "n_bf53b1dd0d68d738"
+          },
+          {
+            "source": "n_bf53b1dd0d68d738",
+            "target": "n_5a014e988f515270"
+          },
+          {
+            "source": "n_5a014e988f515270",
+            "target": "n_a288ee1fefc8cf0d"
+          },
+          {
+            "source": "n_a288ee1fefc8cf0d",
+            "target": "n_38392f195140004c"
+          },
+          {
+            "source": "n_38392f195140004c",
+            "target": "n_31cd008bf85c9695"
+          }
+        ]
+      }
+    },
+    "modules": {
+      "n_a917022a1ac657d4": {
+        "name": "Check and format matches",
+        "imports": [],
+        "source": "export default function prepareMatches({ body }) {\n  if (!body || typeof body !== 'object' || Array.isArray(body) || !Array.isArray(body.data)) {\n    throw new Error('Live Tennis API must return an object with a data array.');\n  }\n  if (body.data.length > 50) throw new Error('The first match page exceeds the configured 50-item limit.');\n  const hasMore = body.meta?.has_more ?? null;\n  if (hasMore !== null && typeof hasMore !== 'boolean') throw new Error('Invalid match pagination metadata.');\n  const matches = [], ids = new Set();\n  for (const match of body.data) {\n    if (!match || typeof match !== 'object' || Array.isArray(match) || !Number.isSafeInteger(match.id) || match.id < 1) {\n      throw new Error('Every match must have a positive integer ID.');\n    }\n    const p1 = match.players?.p1?.name, p2 = match.players?.p2?.name, status = match.status;\n    if ([p1, p2, status].some(value => typeof value !== 'string' || !value.trim())) {\n      throw new Error('Every match must have both player names and a status.');\n    }\n    const text = `🎾 New live match: ${p1} vs ${p2} — ${status}`;\n    if (text.length > 2000) throw new Error('A match announcement exceeds Discord’s 2000-character limit.');\n    const id = String(match.id);\n    if (ids.has(id)) continue;\n    ids.add(id);\n    matches.push({ id, text });\n  }\n  return { matches, received: body.data.length, unique: matches.length, hasMore };\n}\n"
+      },
+      "n_e0138d5a53644ee4": {
+        "name": "Announce new matches in Discord",
+        "imports": [],
+        "source": "export default async function announceMatches({ matches, channelId }, context) {\n  if (!Array.isArray(matches) || matches.length > 50 || matches.some(match => !match || typeof match.id !== 'string' || typeof match.text !== 'string' || !match.text || match.text.length > 2000)) {\n    throw new Error('Invalid deduplicated match announcements.');\n  }\n  let sent = 0;\n  for (const match of matches) {\n    if (context.signal.aborted) throw new Error('Match delivery was cancelled.');\n    await context.actions.call('discordbot.create_message', { channel_id: channelId, content: match.text });\n    sent++;\n  }\n  return { sent };\n}\n"
+      }
+    }
+  },
+  "presentation": {
+    "designer": {
+      "version": 1,
+      "flow": {
+        "direction": "vertical"
+      }
+    }
+  }
+}
