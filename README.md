@@ -46,6 +46,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Gmail Label Switcher](workflows/gmail-label-switcher/) - Move a batch of Gmail messages from one label to another.
 - [Dropbox Public Image Archive](workflows/dropbox-public-image-archive/) - Create a Dropbox folder, save a public image into it, and list the folder after the file is saved.
 - [Bitcoin Price Alert](workflows/bitcoin-price-alert/) - Check CoinPaprika every 15 minutes and send a Telegram alert when Bitcoin’s 24-hour USD change reaches +5% or −5%.
+- [Exact-Match Quote Guard](workflows/exact-match-quote-guard/) - Validate extracted line items against a synthetic example catalog and return a calculated quote, review request, or rejection.
 
 ## Marketing
 
