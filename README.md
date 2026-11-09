@@ -23,6 +23,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Research](#research)
 - [Productivity](#productivity)
 - [Content](#content)
+- [Commerce](#commerce)
 - [Contribute](#contribute)
 - [Licensing](#licensing)
 
@@ -92,6 +93,10 @@ A growing collection of automation workflows for connecting apps and getting rep
 ## Content
 
 - [OpenAI Text to Speech](workflows/openai-text-to-speech/) - Convert supplied text into an MP3 with OpenAI tts-1 and return a downloadable audio file.
+
+## Commerce
+
+- [WooCommerce Product to Slack](workflows/woocommerce-product-slack-alert/) - Post new WooCommerce product names, prices, and links to Slack.
 
 ## Contribute
 
