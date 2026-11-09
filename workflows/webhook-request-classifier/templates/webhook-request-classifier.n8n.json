@@ -1,0 +1,149 @@
+{
+  "name": "[n8n Template] Smart Webhook AI Router",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ai-router",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "d4e5f6a7-0001-0001-0001-d4e5f6a70001",
+      "name": "Incoming Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        200,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "anthropicApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({model:'claude-haiku-4-5',max_tokens:100,system:\"You are a request classifier. Analyze the incoming request and respond with ONLY a JSON object: {\\\"route\\\": \\\"<route_name>\\\", \\\"priority\\\": \\\"high|medium|low\\\", \\\"summary\\\": \\\"<one sentence>\\\"}\\n\\nAvailable routes: support, sales, technical, general\",messages:[{role:'user',content:'Classify this request: '+$json.requestJson}]}) }}",
+        "options": {}
+      },
+      "id": "d4e5f6a7-0002-0002-0002-d4e5f6a70002",
+      "name": "Claude Classifier",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        640,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const business = function classifierResult({ text }) {\n  let parsed;\n  try {\n    const raw = text.trim();\n    try { parsed = JSON.parse(raw); }\n    catch { parsed = JSON.parse(raw.slice(raw.indexOf('{'), raw.lastIndexOf('}') + 1)); }\n    if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('Expected an object');\n  } catch {\n    parsed = { route: 'general', priority: 'medium', summary: 'Unable to classify' };\n  }\n  const route = typeof parsed.route === 'string' ? parsed.route.toLowerCase() : '';\n  const priority = typeof parsed.priority === 'string' ? parsed.priority.toLowerCase() : '';\n  return {\n    response: {\n      received: true,\n      route: ['support', 'sales', 'technical', 'general'].includes(route) ? route : 'general',\n      priority: ['high', 'medium', 'low'].includes(priority) ? priority : 'medium',\n      summary: typeof parsed.summary === 'string' ? parsed.summary : '',\n    },\n  };\n}\n\nreturn $input.all().map((item, index) => { const result = business({text:item.json.content?.[0]?.text}); return {json: result, pairedItem: {item: index}}; });\n"
+      },
+      "id": "d4e5f6a7-0003-0003-0003-d4e5f6a70003",
+      "name": "Parse Classification",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        860,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json.response }}",
+        "options": {}
+      },
+      "id": "d4e5f6a7-0005-0005-0005-d4e5f6a70005",
+      "name": "Return Route Result",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1080,
+        300
+      ]
+    },
+    {
+      "id": "prepare-classifier-request",
+      "name": "Prepare request",
+      "position": [
+        420,
+        300
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const business = function classifierRequest({ body }) {\n  if (body === null || typeof body !== 'object' || !Object.hasOwn(body, 'request')) {\n    throw new Error('Provide the request to classify in the request field');\n  }\n  return { requestJson: JSON.stringify(body.request) };\n}\n\nreturn $input.all().map((item, index) => { const result = business({body:item.json.body}); return {json: result, pairedItem: {item: index}}; });\n"
+      }
+    }
+  ],
+  "connections": {
+    "Incoming Webhook": {
+      "main": [
+        [
+          {
+            "node": "Prepare request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare request": {
+      "main": [
+        [
+          {
+            "node": "Claude Classifier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude Classifier": {
+      "main": [
+        [
+          {
+            "node": "Parse Classification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Classification": {
+      "main": [
+        [
+          {
+            "node": "Return Route Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC"
+  },
+  "pinData": {}
+}

@@ -43,6 +43,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 ## Support
 
 - [Phone Call Log](workflows/phone-call-log/) - Record caller details, duration, supplied summary, and the first 500 transcript characters in Google Sheets from a webhook.
+- [Webhook Request Classifier](workflows/webhook-request-classifier/) - Classify an incoming request as support, sales, technical, or general and return its priority and summary as JSON.
 
 ## Contribute
 
