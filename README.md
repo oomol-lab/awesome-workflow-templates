@@ -109,6 +109,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Hacker News Yearly Lookback](workflows/hacker-news-yearly-lookback/) - Read the Hacker News front page for this UTC calendar day across past years, summarize selected headlines, and send one Telegram message.
 - [ClickUp Task Creator](workflows/clickup-task-creator/) - Create one ClickUp task in a configured list and return its complete record.
 - [Harvest Client Creator](workflows/harvest-client-creator/) - Create a Harvest client with a configured name and return its complete record.
+- [Confluence Knowledge Search](workflows/confluence-knowledge-search/) - Search Confluence for supplied text and return the first result’s title, article link, and excerpt.
 
 ## Content
 
