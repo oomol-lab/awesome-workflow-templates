@@ -1,0 +1,243 @@
+{
+  "nodes": [
+    {
+      "id": "6ea4e702-1af8-407b-b653-964a519db1c2",
+      "name": "Basic LLM Chain",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "position": [
+        1560,
+        -360
+      ],
+      "parameters": {
+        "text": "=You are a highly skilled news categorizer, specializing in indentifying interesting stuff from Hacker News front-page headlines.\n\nYou are provided with JSON data containing a list of dates and their corresponding top headlines from the Hacker News front page. Each headline will also include a URL linking to the original article or discussion. Importantly, the dates provided will be the SAME DAY across MULTIPLE YEARS (e.g., January 1st, 2023, January 1st, 2022, January 1st, 2021, etc.). You need to indentify key headlines and also analyze how the tech landscape has evolved over the years, as reflected in the headlines for this specific day.\n\nYour task is to indentify top 10-15 headlines from across the years from the given json data and return in Markdown formatted bullet points categorizing into themes and adding markdown hyperlinks to the source URL with Prefixing Year before the headline. Follow the Output Foramt Mentioned.\n\n**Input Format:**\n\n```json\n[\n {\n \"headlines\": [\n \"Headline 1 Title [URL1]\",\n \"Headline 2 Title [URL2]\",\n \"Headline 3 Title [URL3]\",\n ...\n ]\n \"date\": \"YYYY-MM-DD\",\n },\n {\n \"headlines\": [\n \"Headline 1 Title [URL1]\",\n \"Headline 2 Title [URL2]\",\n ...\n ]\n \"date\": \"YYYY-MM-DD\",\n },\n ...\n]\n```\n\n**Output Format In Markdown**\n\n```\n# HN Lookback <FullMonthName-DD> | <start YYYY> to <end YYYY> \n\n## [Theme 1]\n- YYYY [Headline 1](URL1)\n- YYYY [Headline 2](URL2)\n...\n\n## [Theme 2]\n- YYYY [Headline 1](URL1)\n- YYYY [Headline 2](URL2)\n...\n\n... \n\n## <this is optional>\n<if any interesing ternds emerge mention them in oneline>\n```\n\n**Here is the Json data for Hackernews Headlines across the years**\n\n```\n{{ $json.data }}\n```",
+        "promptType": "define"
+      },
+      "typeVersion": 1.7
+    },
+    {
+      "id": "b5a97c2a-0c3b-4ebe-aec5-7bca6b55ad4c",
+      "name": "Google Gemini Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "position": [
+        1740,
+        -200
+      ],
+      "parameters": {
+        "options": {},
+        "modelName": "models/gemini-3.8-flash"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "18cba750-aef5-451d-880f-2c12d8540d78",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        -380,
+        -360
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 21 * * *"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "341da616-8670-4cd9-b47a-ee25e2ae9862",
+      "name": "CreateYearsList",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -200,
+        -360
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function archiveDates({timestamp}) {\n  const current=new Date(timestamp);\n  if(!Number.isFinite(current.getTime()))throw new Error('Invalid schedule timestamp.');\n  const month=current.getUTCMonth(),day=current.getUTCDate(),dates=[];\n  for(let year=current.getUTCFullYear();year>=2007;year--){\n    const date=new Date(Date.UTC(year,month,day));\n    if(date.getUTCMonth()!==month||date.getUTCDate()!==day)continue;\n    const value=date.toISOString().slice(0,10);\n    if(value<'2007-02-19')continue;\n    dates.push(value);\n  }\n  return {dates,count:dates.length};\n}\n\nreturn archiveDates({timestamp:$input.first().json.timestamp}).dates.map(date=>({json:{date},pairedItem:{item:0}}));\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "6f827071-718f-4e27-9f7a-cc50296f7bc4",
+      "name": "GetFrontPage",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        420,
+        -360
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "https://news.ycombinator.com/front",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "day",
+              "value": "={{ $json.date }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 3000
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "text",
+              "fullResponse": true,
+              "outputPropertyName": "body"
+            }
+          }
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "2abbc0e9-ed1e-4ba0-9d2f-7c3cd314a0fe",
+      "name": "Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        2020,
+        -360
+      ],
+      "parameters": {
+        "resource": "message",
+        "operation": "sendMessage",
+        "chatId": "@YOUR_TELEGRAM_CHANNEL",
+        "text": "={{ $json.text }}",
+        "additionalFields": {
+          "parse_mode": "Markdown",
+          "appendAttribution": false
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "extract-hn-archive-pages",
+      "name": "Extract dated headlines",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        920,
+        280
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function decodeText(value) {\n  const named={amp:'&',lt:'<',gt:'>',quot:'\"',apos:\"'\",nbsp:' '};\n  return value.replace(/&(#x[0-9a-f]+|#\\d+|[a-z]+);/gi,(entity,key)=>{\n    if(key[0]!=='#')return named[key.toLowerCase()]??entity;\n    const number=key[1].toLowerCase()==='x'?parseInt(key.slice(2),16):Number(key.slice(1));\n    return number>0&&number<=0x10ffff&&!(number>=0xd800&&number<=0xdfff)?String.fromCodePoint(number):entity;\n  });\n}\n\nfunction extractArchives({pages}) {\n  const archives=pages.map(({date,html})=>{\n    if(typeof html!=='string'||!/<html\\b/i.test(html)||!/Hacker News/i.test(html))throw new Error('The archive response is not a Hacker News page.');\n    const headlines=[];\n    const pattern=/<span\\b[^>]*class=[\"'][^\"']*\\btitleline\\b[^\"']*[\"'][^>]*>\\s*<a\\b([^>]*)>([\\s\\S]*?)<\\/a>/gi;\n    for(const match of html.matchAll(pattern)){\n      const href=match[1].match(/\\bhref\\s*=\\s*(?:\"([^\"]*)\"|'([^']*)')/i);\n      if(!href)throw new Error('A Hacker News title is missing its URL.');\n      const url=new URL(decodeText(href[1]??href[2]),'https://news.ycombinator.com/');\n      if(!['http:','https:'].includes(url.protocol))throw new Error('Unexpected headline URL scheme.');\n      const title=decodeText(match[2].replace(/<[^>]*>/g,'')).replace(/\\s+/g,' ').trim();\n      if(!title)throw new Error('Empty Hacker News title.');\n      headlines.push(title+' ['+url.href+']');\n    }\n    return {date,headlines};\n  });\n  return {archives,data:JSON.stringify(archives)};\n}\n\nconst pages=$input.all().map((item,index)=>{if(item.json.statusCode<200||item.json.statusCode>=300)throw new Error('Hacker News archive request failed');return {date:$('CreateYearsList').itemMatching(index).json.date,html:item.json.body};});\nreturn [{json:extractArchives({pages})}];\n"
+      }
+    },
+    {
+      "id": "validate-hn-summary",
+      "name": "Check Telegram summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1390,
+        280
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function validateSummary({text}) {\n  if(typeof text!=='string'||!text.trim())throw new Error('The model did not return a summary.');\n  if(text.length>4096)throw new Error('The summary exceeds the Telegram message limit of 4096 characters.');\n  return {text};\n}\n\nreturn [{json:validateSummary({text:$input.first().json.text})}];\n"
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "CreateYearsList",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CreateYearsList": {
+      "main": [
+        [
+          {
+            "node": "GetFrontPage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GetFrontPage": {
+      "main": [
+        [
+          {
+            "node": "Extract dated headlines",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract dated headlines": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Check Telegram summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Telegram summary": {
+      "main": [
+        [
+          {
+            "node": "Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Hacker News Yearly Lookback",
+  "settings": {
+    "timezone": "UTC"
+  },
+  "active": false
+}
