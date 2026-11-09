@@ -1,0 +1,234 @@
+{
+  "name": "Google Sheet Record Lookup",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "manual-sheet-lookup",
+      "name": "Run Sheet Lookup",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -600,
+        0
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "manual-sheet-query",
+      "name": "Lookup Query",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -400,
+        0
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "lookup-operation",
+              "name": "operation",
+              "type": "string",
+              "value": "column_names"
+            },
+            {
+              "id": "lookup-query",
+              "name": "query",
+              "type": "string",
+              "value": ""
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "89af21df-1125-4df6-9d43-a643e02bb53f",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "position": [
+        -400,
+        300
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "configure-sheet-lookup",
+      "name": "Sheet Settings",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -180,
+        150
+      ],
+      "parameters": {
+        "includeOtherFields": true,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "lookup-spreadsheet",
+              "name": "spreadsheetId",
+              "type": "string",
+              "value": "YOUR_SPREADSHEET_ID"
+            },
+            {
+              "id": "lookup-range",
+              "name": "range",
+              "type": "string",
+              "value": "'Sheet1'"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "prepare-sheet-lookup",
+      "name": "Prepare Lookup Query",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        60,
+        150
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function lookupRequest({ operation, query }) {\n  if (!['column_names', 'column_values', 'row'].includes(operation)) throw new Error('Use column_names, column_values, or row.');\n  if (query != null && typeof query !== 'string') throw new Error('The lookup query must be text.');\n  const text = query ?? '';\n  if (operation === 'column_values' && !text.trim()) throw new Error('Supply the exact column name.');\n  if (operation === 'row' && (!/^[1-9]\\d*$/.test(text) || !Number.isSafeInteger(Number(text)))) throw new Error('Supply a positive physical row number as text.');\n  return { operation, query: text };\n}\n\nfunction prepareSheetLookup({ operation, query, spreadsheetId, range }) {\n  const lookup = lookupRequest({ operation, query });\n  if (typeof spreadsheetId !== 'string' || !/^[A-Za-z0-9_-]+$/.test(spreadsheetId) || /YOUR_SPREADSHEET_ID/.test(spreadsheetId)) throw new Error('Configure your Google spreadsheet ID before running.');\n  if (typeof range !== 'string' || !/^'(?:[^'\\u0000-\\u001f\\u007f]|'')+'$/.test(range)) throw new Error('Configure the complete tab as a single-quoted A1 sheet name.');\n  return { ...lookup, spreadsheetId, range };\n}\n\nreturn $input.all().map((item,index)=>({json:prepareSheetLookup(item.json),pairedItem:{item:index}}));\n"
+      }
+    },
+    {
+      "id": "read-sheet-values",
+      "name": "Read Complete Sheet Tab",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        300,
+        150
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ \"https://sheets.googleapis.com/v4/spreadsheets/\" + encodeURIComponent($json.spreadsheetId) + \"/values/\" + encodeURIComponent($json.range) }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "majorDimension",
+              "value": "ROWS"
+            },
+            {
+              "name": "valueRenderOption",
+              "value": "UNFORMATTED_VALUE"
+            },
+            {
+              "name": "dateTimeRenderOption",
+              "value": "FORMATTED_STRING"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "format-sheet-lookup",
+      "name": "Return Sheet Lookup",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        540,
+        150
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function lookupSheet({ values, majorDimension = 'ROWS', operation, query }) {\n  if (majorDimension !== 'ROWS' || !Array.isArray(values) || values.some(row => !Array.isArray(row))) throw new Error('Google Sheets must return row-oriented cell values.');\n  const isEmpty = value => value == null || value === '';\n  const nonempty = row => row.some(value => !isEmpty(value));\n  const headerIndex = values.findIndex(nonempty);\n  if (headerIndex < 0) return { response: '[]' };\n  const headers = values[headerIndex];\n  if (headers.some(name => typeof name !== 'string' || !name.trim() || name === 'row_number') || new Set(headers).size !== headers.length) throw new Error('Use unique nonempty text headers; row_number is reserved.');\n  const columns = ['row_number', ...headers];\n  const records = [];\n  for (let index = headerIndex + 1; index < values.length; index++) {\n    const cells = values[index];\n    if (!nonempty(cells)) continue;\n    if (cells.slice(headers.length).some(value => !isEmpty(value))) throw new Error('Every populated column needs a header.');\n    records.push(Object.fromEntries([['row_number', index + 1], ...headers.map((name, column) => [name, cells[column] ?? ''])]));\n  }\n  let result;\n  if (operation === 'column_names') result = columns;\n  else if (operation === 'column_values') {\n    if (!columns.includes(query)) throw new Error('The requested column does not exist.');\n    result = records.map(record => Object.fromEntries([['row_number', record.row_number], [query, record[query]]]));\n  } else if (operation === 'row') result = records.filter(record => record.row_number === Number(query));\n  else throw new Error('Use column_names, column_values, or row.');\n  return { response: JSON.stringify(result) };\n}\n\nfunction formatSheetLookup(input) {\n  return lookupSheet(input);\n}\n\nreturn $input.all().map((item,index)=>({json:lookupSheet({...$(\"Prepare Lookup Query\").itemMatching(index).json,values:item.json.values??[],majorDimension:item.json.majorDimension??\"ROWS\"}),pairedItem:{item:index}}));\n"
+      }
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Run Sheet Lookup": {
+      "main": [
+        [
+          {
+            "node": "Lookup Query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lookup Query": {
+      "main": [
+        [
+          {
+            "node": "Sheet Settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Sheet Settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sheet Settings": {
+      "main": [
+        [
+          {
+            "node": "Prepare Lookup Query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Lookup Query": {
+      "main": [
+        [
+          {
+            "node": "Read Complete Sheet Tab",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Complete Sheet Tab": {
+      "main": [
+        [
+          {
+            "node": "Return Sheet Lookup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
