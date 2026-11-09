@@ -114,6 +114,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 
 - [OpenAI Text to Speech](workflows/openai-text-to-speech/) - Convert supplied text into an MP3 with OpenAI tts-1 and return a downloadable audio file.
 - [GitHub Prompt Runner](workflows/github-prompt-runner/) - Read a prompt file from GitHub, fill its variables, and return one text response from a configured model.
+- [Webpage Markdown Extractor](workflows/webpage-markdown-extractor/) - Fetch one page through Firecrawl and return its Markdown content with the reported page status.
 
 ## Commerce
 

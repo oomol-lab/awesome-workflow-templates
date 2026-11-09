@@ -1,0 +1,143 @@
+{
+  "name": "get_a_web_page",
+  "tags": [
+    {
+      "id": "7v5QbLiQYkQ7zGTK",
+      "name": "tools",
+      "createdAt": "2025-01-08T16:33:21.887Z",
+      "updatedAt": "2025-01-08T16:33:21.887Z"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "290cc9b8-e4b1-4124-ab0e-afbb02a9072b",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "position": [
+        -460,
+        -100
+      ],
+      "parameters": {
+        "inputSource": "workflowInputs",
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "url",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "f256ed59-ba61-4912-9a75-4e7703547de5",
+      "name": "FireCrawl",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -220,
+        -100
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.firecrawl.dev/v2/scrape",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {url:$json.url,formats:[\"markdown\"],maxAge:0,onlyMainContent:true,timeout:30000} }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "a28bdbe6-fa59-4bf1-b0ab-c34ebb10cf0f",
+      "name": "Read Markdown and Page Status",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -20,
+        -100
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const prepare = function ({ result }) {\n  if (!result || typeof result !== 'object' || Array.isArray(result) || result.success !== true) {\n    throw new Error('Firecrawl did not report a successful scrape.');\n  }\n  const response = result.data?.markdown;\n  if (typeof response !== 'string' || !response.trim()) {\n    throw new Error('Firecrawl did not return nonempty Markdown.');\n  }\n  const status = result.data?.metadata?.statusCode;\n  return { response, pageStatus: Number.isInteger(status) && status >= 100 && status <= 599 ? status : null };\n}\n\nreturn $input.all().map((item,index)=>({json:prepare({result:item.json}),pairedItem:{item:index}}));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "fcd26213-038a-453f-80e5-a3936e4c2d06",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -480,
+        -340
+      ],
+      "parameters": {
+        "width": 620,
+        "height": 200,
+        "content": "## Fetch one page as Markdown\n\nCall this workflow with {\"url\":\"https://example.com/page\"}. Configure FireCrawl HTTP Header Auth as Authorization: Bearer <your Firecrawl API key>. The v2 scrape uses Markdown, main content, maxAge0 and30000ms timeout. Return response and optional pageStatus. API success does not imply target HTTP success: a target error page can also contain Markdown. See README."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "validate-markdown-url",
+      "name": "Validate Page URL",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -300,
+        -100
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const prepare = function ({ url }) {\n  if (typeof url !== 'string' || !/^https?:\\/\\/[^\\s/]+(?:\\/[^\\s]*)?$/i.test(url.trim())) {\n    throw new Error('Supply one nonempty HTTP or HTTPS page URL.');\n  }\n  return { url: url.trim() };\n}\n\nreturn $input.all().map((item,index)=>({json:prepare(item.json),pairedItem:{item:index}}));"
+      }
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Validate Page URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Page URL": {
+      "main": [
+        [
+          {
+            "node": "FireCrawl",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FireCrawl": {
+      "main": [
+        [
+          {
+            "node": "Read Markdown and Page Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
