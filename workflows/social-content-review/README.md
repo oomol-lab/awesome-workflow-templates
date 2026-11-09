@@ -11,7 +11,7 @@ Generate a set of social content, then review grammar, tone, formatting, and has
 
 ## Setup
 
-For Open Flow, select a configured `llama3:8b` model in every model step. For n8n, connect the model steps to an OpenAI-compatible Ollama credential, using the `/v1` base URL of an Ollama service reachable from n8n. Confirm that it serves `llama3:8b`. You can choose another available model in both formats; its wording and quality may differ.
+For Open Flow, select a configured `llama3:8b` model in every model step. For n8n, connect each attached **Ollama Model** to an Ollama credential with the base URL of a service reachable from n8n. Confirm that it serves `llama3:8b`. The native Ollama models send each step's generation budget as `num_predict`. You can choose another available model in both formats; its wording and quality may differ.
 
 In Open Flow, use Run and supply `topic`, `brand_voice`, and `target_audience`. In n8n, edit those three values in **Content Parameters** and use Execute Workflow.
 
