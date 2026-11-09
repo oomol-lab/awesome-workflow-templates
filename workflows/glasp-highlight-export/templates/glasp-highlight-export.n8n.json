@@ -1,0 +1,203 @@
+{
+  "name": "Glasp Highlight Export",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 */6 * * *"
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        220,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function prepareState({snapshot,startedAt}) {\n  const state=snapshot??{};\n  if(!state||typeof state!=='object'||Array.isArray(state))throw new Error('Glasp tracking state must be an object.');\n  const now=Date.parse(startedAt);\n  if(!Number.isFinite(now))throw new Error('Invalid Glasp run start time.');\n  const exportedDocs=state.exportedDocs??{};\n  if(!exportedDocs||typeof exportedDocs!=='object'||Array.isArray(exportedDocs))throw new Error('Glasp exportedDocs must be an object.');\n  for(const date of Object.values(exportedDocs))if(typeof date!=='string'||!Number.isFinite(Date.parse(date)))throw new Error('Glasp tracking dates must be valid timestamps.');\n  const base=state.lastRunAt?Date.parse(state.lastRunAt):now-24*60*60*1000;\n  if(!Number.isFinite(base))throw new Error('Invalid saved Glasp checkpoint.');\n  return {updatedAfter:new Date(base-5*60*1000).toISOString(),startedAt,exportedDocs:{...exportedDocs}};\n}\n\n\nconst sd=$getWorkflowStaticData('global');\nreturn [{json:prepareState({snapshot:{lastRunAt:sd.lastRunAt??null,exportedDocs:sd.exportedDocs??{}},startedAt:new Date().toISOString()})}];\n"
+      },
+      "id": "prepare-params",
+      "name": "Prepare Parameters",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.glasp.co/v1/highlights/export",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "updatedAfter",
+              "value": "={{ $json.updatedAfter }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          },
+          "pagination": {
+            "pagination": {
+              "paginationMode": "responseContainsNextURL",
+              "nextURL": "={{ 'https://api.glasp.co/v1/highlights/export?updatedAfter=' + encodeURIComponent($json.updatedAfter) + ($pageCount === 0 ? '' : '&pageCursor=' + encodeURIComponent($response.body?.nextPageCursor ?? '')) }}",
+              "paginationCompleteWhen": "other",
+              "completeExpression": "={{ !$response.body?.nextPageCursor }}",
+              "limitPagesFetched": true,
+              "maxRequests": 100,
+              "requestInterval": 0
+            }
+          }
+        }
+      },
+      "id": "http-glasp-api",
+      "name": "Glasp API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        700,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function formatPages({pages,exportedDocs,startedAt,completedAt}) {\n  if(!Array.isArray(pages)||!pages.length||pages.length>100)throw new Error('Expected 1–100 Glasp pages.');\n  const results=[];\n  for(const page of pages){\n    if(!page||typeof page!=='object'||!Array.isArray(page.results))throw new Error('Glasp page is missing results.');\n    if(page.nextPageCursor!=null&&typeof page.nextPageCursor!=='string')throw new Error('Invalid Glasp cursor.');\n    results.push(...page.results);\n  }\n  if(pages.at(-1).nextPageCursor)throw new Error('Glasp pagination is incomplete; tracking has not advanced.');\n  const text=(value,name,fallback='')=>{if(value==null)return fallback;if(typeof value!=='string')throw new Error('Glasp '+name+' must be text.');return value;};\n  const fresh=[];\n  for(const doc of results){\n    if(!doc||typeof doc!=='object'||Array.isArray(doc)||typeof doc.id!=='string'||!doc.id)throw new Error('Glasp document ID must be nonempty text.');\n    if(!Array.isArray(doc.highlights))throw new Error('Glasp highlights must be an array.');\n    if(!Object.hasOwn(exportedDocs,doc.id)&&doc.highlights.length)fresh.push(doc);\n  }\n  const tracked=Object.fromEntries(Object.entries(exportedDocs));\n  const documents=fresh.map(doc=>{\n    const title=text(doc.title,'title')||'Untitled';\n    const url=text(doc.url,'url'),glasp_url=text(doc.glasp_url,'glasp_url');\n    const tags=doc.tags??[];\n    if(!Array.isArray(tags)||tags.some(tag=>typeof tag!=='string'))throw new Error('Glasp tags must be an array of strings.');\n    const document_note=text(doc.document_note,'document_note');\n    const lines=['## '+title,'','**URL:** '+url,'**Glasp:** '+glasp_url];\n    if(tags.length)lines.push('**Tags:** '+tags.join(', '));\n    if(document_note)lines.push('**Note:** '+document_note);\n    lines.push('','### Highlights','');\n    const highlights=doc.highlights.map(highlight=>{\n      if(!highlight||typeof highlight!=='object'||Array.isArray(highlight))throw new Error('Glasp highlight must be an object.');\n      const timestamp=text(highlight.highlighted_at,'highlighted_at');\n      if(!Number.isFinite(Date.parse(timestamp)))throw new Error('Glasp highlight time must be valid.');\n      const result={id:text(highlight.id,'highlight ID'),text:text(highlight.text,'highlight text'),note:text(highlight.note,'highlight note'),color:text(highlight.color,'highlight color'),highlighted_at:timestamp};\n      lines.push(result.text.split('\\n').map(line=>'> '+line).join('\\n'));\n      if(result.note)lines.push('','**Note:** '+result.note);\n      lines.push('','- *'+result.color+' highlight, '+new Date(timestamp).toISOString().slice(0,10)+'*','');\n      return result;\n    });\n    Object.defineProperty(tracked,doc.id,{value:completedAt,enumerable:true,writable:true,configurable:true});\n    return {documentId:doc.id,title,url,glasp_url,domain:text(doc.domain,'domain'),category:text(doc.category,'category'),tags,author:text(doc.author,'author'),thumbnail_url:text(doc.thumbnail_url,'thumbnail_url'),document_note,is_favorite:doc.is_favorite??false,highlightCount:highlights.length,highlightsText:highlights.map(highlight=>highlight.text+(highlight.note?' [Note: '+highlight.note+']':'')).join('\\n\\n'),highlightsMarkdown:lines.join('\\n'),highlights,createdAt:text(doc.created_at,'created_at'),updatedAt:text(doc.updated_at,'updated_at')};\n  });\n  const oldest=Date.parse(completedAt)-30*24*60*60*1000;\n  for(const[id,exportedAt]of Object.entries(tracked))if(Date.parse(exportedAt)<oldest)delete tracked[id];\n  return {documents,count:documents.length,message:documents.length?'Highlights prepared.':'No new highlights found.',tracking:{lastRunAt:startedAt,exportedDocs:tracked}};\n}\n\n\nconst prepared=$('Prepare Parameters').first().json;\nconst pages=$input.all().map(item=>{if(item.json.statusCode<200||item.json.statusCode>=300)throw new Error('Glasp export failed');return item.json.body;});\nconst result=formatPages({pages,exportedDocs:prepared.exportedDocs,startedAt:prepared.startedAt,completedAt:new Date().toISOString()});\nconst sd=$getWorkflowStaticData('global');sd.lastRunAt=result.tracking.lastRunAt;sd.exportedDocs=result.tracking.exportedDocs;\nreturn result.count?result.documents.map(json=>({json})):[{json:{message:result.message,count:0}}];\n"
+      },
+      "id": "filter-and-format",
+      "name": "Filter & Format",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        940,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Glasp Highlight Export\nSelect Header Auth on Glasp API: Authorization = Bearer <your access token>. Every 6 hours UTC, read up to 100 pages, format untracked documents, and retain tracking for 30 days. A nonempty final cursor fails without advancing tracking. This template returns text/Markdown; no destination is connected. See README before extending it. No access token is stored in this file.",
+        "height": 440,
+        "width": 360
+      },
+      "id": "sticky-note-destination",
+      "name": "Sticky Note - Destination Guide",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1200,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Glasp Highlight Export\nSelect Header Auth on Glasp API: Authorization = Bearer <your access token>. Every 6 hours UTC, read up to 100 pages, format untracked documents, and retain tracking for 30 days. A nonempty final cursor fails without advancing tracking. This template returns text/Markdown; no destination is connected. See README before extending it. No access token is stored in this file.",
+        "height": 320,
+        "width": 360
+      },
+      "id": "sticky-note-setup",
+      "name": "Sticky Note - Setup",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        180,
+        -100
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Glasp Highlight Export\nSelect Header Auth on Glasp API: Authorization = Bearer <your access token>. Every 6 hours UTC, read up to 100 pages, format untracked documents, and retain tracking for 30 days. A nonempty final cursor fails without advancing tracking. This template returns text/Markdown; no destination is connected. See README before extending it. No access token is stored in this file.",
+        "height": 220,
+        "width": 360
+      },
+      "id": "sticky-note-security",
+      "name": "Sticky Note - Security",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        600,
+        -100
+      ]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Prepare Parameters",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Parameters": {
+      "main": [
+        [
+          {
+            "node": "Glasp API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Glasp API": {
+      "main": [
+        [
+          {
+            "node": "Filter & Format",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC"
+  },
+  "tags": [
+    {
+      "name": "Glasp"
+    },
+    {
+      "name": "Highlights"
+    },
+    {
+      "name": "Export"
+    },
+    {
+      "name": "Automation"
+    }
+  ],
+  "pinData": {},
+  "active": false
+}
