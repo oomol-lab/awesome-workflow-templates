@@ -39,6 +39,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [GitHub & Dev.to Engagement](workflows/github-devto-engagement-monitor/) - Collect GitHub stars, forks and open issues alongside Dev.to reactions and comments every 12 hours.
 - [Airtable Tweet Drafts](workflows/airtable-tweet-drafts/) - Generate a tweet draft for a randomly selected hashtag and save the draft and hashtag in Airtable for review.
 - [AI Content to Slack](workflows/ai-content-to-slack/) - Generate a blog, newsletter, or social posts from a webhook request, notify Slack, and return the complete draft as JSON.
+- [Blog Writing Pipeline](workflows/blog-writing-pipeline/) - Generate research notes, an outline, a Markdown blog draft, and an edited post with four separate model steps.
 
 ## Support
 
