@@ -51,6 +51,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Blog Writing Pipeline](workflows/blog-writing-pipeline/) - Generate research notes, an outline, a Markdown blog draft, and an edited post with four separate model steps.
 - [Social Content Review](workflows/social-content-review/) - Generate X, LinkedIn, Reddit, and Instagram drafts, review them with a second model call, and return the complete content set.
 - [Article to Social Posts](workflows/article-to-social-posts/) - Repurpose your article or transcript into an X thread and LinkedIn post while instructing the model to use only source material.
+- [Airtable SMS Broadcast](workflows/airtable-sms-broadcast/) - Read Airtable contacts and send each one a personalized SMS through Twilio.
 
 ## Support
 
