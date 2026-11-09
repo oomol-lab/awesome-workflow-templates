@@ -36,6 +36,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Morning Brief to LINE](workflows/morning-brief-to-line/) - Turn your configured daily tasks into a concise AI morning brief and send it to LINE at 08:00.
 - [Transport Request Intake](workflows/transport-request-intake/) - Normalize a transport request and return missing fields, readiness status, and a JSON request with numeric weight.
 - [GitHub Release Slack Alerts](workflows/github-release-slack-alerts/) - Check configured GitHub repositories daily and notify Slack when their latest release was published within the last 24 hours.
+- [Calendar Event Creator](workflows/calendar-event-creator/) - Create one Google Calendar event with the calendar, title, and start/end times you configure.
 
 ## Marketing
 
