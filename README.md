@@ -57,6 +57,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Feedback Sentiment Routing](workflows/feedback-sentiment-routing/) - Save positive Typeform feedback in Notion and notify Slack, or create a Trello card for neutral and negative feedback.
 - [Form Testimonial Capture](workflows/form-testimonial-capture/) - Analyze submitted feedback and create a Strapi entry only when its sentiment score is greater than 0.4.
 - [Live Tennis Discord Alert](workflows/live-tennis-discord-alert/) - Check the first page of live tennis matches every five minutes and announce previously unseen match IDs in Discord.
+- [Telegram Spotify Player](workflows/telegram-spotify-player/) - Turn a Telegram song description into a Spotify search, queue the first match, request next/resume playback and reply with the observed player status.
 
 ## Marketing
 

@@ -1,0 +1,642 @@
+{
+  "name": "Play with Spotify from Telegram",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "0395b3e4-94ef-49ea-9b4c-8f908e62f8c6",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "position": [
+        -60,
+        20
+      ],
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "263edf45-58a0-45e8-91f8-601bc62c7d6f",
+      "name": "OpenAI - Ask about a track",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "position": [
+        120,
+        -120
+      ],
+      "parameters": {
+        "resource": "text",
+        "operation": "message",
+        "modelId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "gpt-4o-mini"
+        },
+        "messages": {
+          "values": [
+            {
+              "role": "user",
+              "content": "=get artist and song name from '{{ $json.text }}'. Reply only eg. 'track:song name artist:artist name'"
+            }
+          ]
+        },
+        "simplify": true,
+        "jsonOutput": false,
+        "hideTools": "hide",
+        "options": {}
+      },
+      "typeVersion": 1.8
+    },
+    {
+      "id": "086aef8b-533a-4c33-9952-29d5adb152c8",
+      "name": "Search track",
+      "type": "n8n-nodes-base.spotify",
+      "onError": "continueErrorOutput",
+      "position": [
+        540,
+        -200
+      ],
+      "parameters": {
+        "resource": "track",
+        "operation": "search",
+        "returnAll": false,
+        "limit": 1,
+        "query": "={{ $json.query }}",
+        "filters": {}
+      },
+      "typeVersion": 1,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "08af6055-ba52-4cb2-a561-ea04ac55279f",
+      "name": "Add song",
+      "type": "n8n-nodes-base.spotify",
+      "onError": "continueErrorOutput",
+      "position": [
+        780,
+        -240
+      ],
+      "parameters": {
+        "resource": "player",
+        "operation": "addSongToQueue",
+        "id": "={{ $json.uri }}"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "2dbdafa4-3b6f-4a14-813c-4e10da10abad",
+      "name": "Next Song",
+      "type": "n8n-nodes-base.spotify",
+      "onError": "continueErrorOutput",
+      "position": [
+        980,
+        -280
+      ],
+      "parameters": {
+        "resource": "player",
+        "operation": "nextSong"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "cb8d42aa-0c7e-45a5-90b5-b91e483dd13a",
+      "name": "Resume play",
+      "type": "n8n-nodes-base.spotify",
+      "notes": "We don't have to stop here on error. An error is thrown from Spotify if the player is already playing.",
+      "onError": "continueRegularOutput",
+      "position": [
+        1240,
+        -380
+      ],
+      "parameters": {
+        "resource": "player",
+        "operation": "resume"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "089e1070-b013-454c-9f6c-55b909e06c1d",
+      "name": "Currently Playing",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueErrorOutput",
+      "position": [
+        1420,
+        -300
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.spotify.com/v1/me/player/currently-playing",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "spotifyOAuth2Api",
+        "options": {
+          "timeout": 300000,
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "e9df0dcf-b166-45a3-910b-787b3718bbcf",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        120,
+        -300
+      ],
+      "parameters": {
+        "color": 5,
+        "width": 254.05813953488382,
+        "content": "## Telegram Spotify player\n\nOne text message -> model search query -> first matching track -> queue -> next -> resume -> observed status -> Telegram reply. Configure Telegram, the model, all Spotify nodes and the Spotify OAuth credential on the current-state HTTP read. Spotify Premium and an active device are required. Restrict trusted Telegram users as appropriate.\n\nCommands are sequential requests, but Spotify does not guarantee Player API execution ordering. Inspect the reported current item. No workflow-level retries or deduplication. A failed write can leave playback changed; check before repeating. Resume failure still proceeds to reading current state, as in the source.\n\nModel gpt-4o-mini is scheduled to retire January 14, 2027; update configuration before that date. See README for account scopes, failures and changes."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "0d95000d-7efd-402a-9a34-47ababb2f53e",
+      "name": "Track Was Found",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        620,
+        -440
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "spotify-found",
+              "leftValue": "={{ $json.found }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "f1785140-8e97-43e1-9d84-aedc8b8d5e06",
+      "name": "Return message to Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        760,
+        220
+      ],
+      "parameters": {
+        "resource": "message",
+        "operation": "sendMessage",
+        "chatId": "={{ $('Read Telegram Request').first().json.chatId }}",
+        "text": "={{ $json.reply }}",
+        "additionalFields": {
+          "parse_mode": "HTML",
+          "appendAttribution": false
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "spotify-request",
+      "name": "Read Telegram Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const prepare = function readRequest({ update }) {\n  const message = update?.message;\n  if (!message || typeof message.text !== 'string' || !message.text.trim()) throw new Error('Send a nonempty text song request.');\n  if (!Number.isSafeInteger(message.chat?.id)) throw new Error('The Telegram message has no valid chat ID.');\n  return { text: message.text, chatId: message.chat.id };\n}\n\nreturn [{json:prepare({update:$input.first().json}),pairedItem:{item:0}}];\n"
+      }
+    },
+    {
+      "id": "spotify-query",
+      "name": "Check Search Query",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        650,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const prepare = function prepareQuery({ completion }) {\n  if (typeof completion !== 'string' || !completion.trim()) throw new Error('The model did not return a search query.');\n  return { query: completion.trim() };\n}\n\nreturn [{json:prepare({completion:$input.first().json.message.content}),pairedItem:{item:0}}];\n"
+      }
+    },
+    {
+      "id": "spotify-select-track",
+      "name": "Select First Track",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1100,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const choose = function chooseTrack({ tracks }) {\n  if (!tracks || typeof tracks !== 'object' || !Array.isArray(tracks.items)) throw new Error('Spotify search did not return a track list.');\n  const first = tracks.items[0];\n  if (first === undefined) return { found: false, track: null };\n  if (!first || typeof first !== 'object' || Array.isArray(first)) throw new Error('The first search result must be a track object.');\n  return { found: true, track: first };\n}\n\nconst items=$input.all().map(item=>item.json); const tracks=items.length===1&&Object.keys(items[0]).length===0?[]:items;return [{json:choose({tracks:{items:tracks}}),pairedItem:{item:0}}];\n"
+      }
+    },
+    {
+      "id": "spotify-queue-uri",
+      "name": "Prepare Selected Track URI",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1400,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const prepare = function prepareQueueItem({ track }) {\n  if (!track || typeof track.id !== 'string' || !/^[A-Za-z0-9]+$/.test(track.id)) throw new Error('The selected track has no valid ID.');\n  return { uri: 'spotify:track:' + track.id };\n}\n\nreturn [{json:prepare({track:$input.first().json.track}),pairedItem:{item:0}}];\n"
+      }
+    },
+    {
+      "id": "spotify-not-found",
+      "name": "Song Not Found",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1350,
+        500
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const format = function formatReply({ mode, playback }) {\n  const failures = {\n    search: 'Spotify search failed. No playback commands were attempted.',\n    queue: 'Spotify could not confirm adding the track to the queue. Check Spotify before repeating the request.',\n    skip: 'Spotify could not confirm skipping to the next track. An earlier queue command may already have completed.',\n    current: 'Playback commands were sent, but the current state could not be read. Check Spotify before repeating the request.',\n  };\n  let text, status;\n  if (mode === 'not_found') { text = 'Song not found.'; status = 'not_found'; }\n  else if (Object.hasOwn(failures, mode)) { text = failures[mode]; status = 'failed'; }\n  else if (mode === 'observed') {\n    if (playback !== null && (!playback || typeof playback !== 'object' || Array.isArray(playback) || playback.error)) throw new Error('Invalid Spotify playback response.');\n    if (playback?.is_playing !== undefined && typeof playback.is_playing !== 'boolean') throw new Error('Invalid Spotify play/pause status.');\n    const item = playback?.item;\n    if (item == null) {\n      text = 'Playback commands were sent, but Spotify reported no current item.'; status = 'unavailable';\n    } else {\n      if (typeof item.name !== 'string' || !item.name) throw new Error('The current Spotify item has no title.');\n      const artists = Array.isArray(item.artists) ? item.artists.map(artist => artist?.name).filter(name => typeof name === 'string' && name) : [];\n      const album = typeof item.album?.name === 'string' ? item.album.name : '';\n      const state = playback.is_playing === true ? 'playing' : playback.is_playing === false ? 'paused' : 'unknown';\n      text = 'Spotify reports: ' + item.name + (artists.length ? ' — ' + artists.join(', ') : '') + (album ? '\\nAlbum: ' + album : '') + '\\nPlayback: ' + state;\n      status = 'observed';\n    }\n  } else throw new Error('Unknown Spotify reply mode.');\n  const reply = text.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');\n  if (reply.length > 4096) throw new Error('The Spotify status exceeds Telegram’s message limit.');\n  return { reply, status };\n}\n\nreturn [{json:format({mode:\"not_found\",playback:null}),pairedItem:{item:0}}];\n"
+      }
+    },
+    {
+      "id": "spotify-search-failed",
+      "name": "Search Failed",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1100,
+        500
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const format = function formatReply({ mode, playback }) {\n  const failures = {\n    search: 'Spotify search failed. No playback commands were attempted.',\n    queue: 'Spotify could not confirm adding the track to the queue. Check Spotify before repeating the request.',\n    skip: 'Spotify could not confirm skipping to the next track. An earlier queue command may already have completed.',\n    current: 'Playback commands were sent, but the current state could not be read. Check Spotify before repeating the request.',\n  };\n  let text, status;\n  if (mode === 'not_found') { text = 'Song not found.'; status = 'not_found'; }\n  else if (Object.hasOwn(failures, mode)) { text = failures[mode]; status = 'failed'; }\n  else if (mode === 'observed') {\n    if (playback !== null && (!playback || typeof playback !== 'object' || Array.isArray(playback) || playback.error)) throw new Error('Invalid Spotify playback response.');\n    if (playback?.is_playing !== undefined && typeof playback.is_playing !== 'boolean') throw new Error('Invalid Spotify play/pause status.');\n    const item = playback?.item;\n    if (item == null) {\n      text = 'Playback commands were sent, but Spotify reported no current item.'; status = 'unavailable';\n    } else {\n      if (typeof item.name !== 'string' || !item.name) throw new Error('The current Spotify item has no title.');\n      const artists = Array.isArray(item.artists) ? item.artists.map(artist => artist?.name).filter(name => typeof name === 'string' && name) : [];\n      const album = typeof item.album?.name === 'string' ? item.album.name : '';\n      const state = playback.is_playing === true ? 'playing' : playback.is_playing === false ? 'paused' : 'unknown';\n      text = 'Spotify reports: ' + item.name + (artists.length ? ' — ' + artists.join(', ') : '') + (album ? '\\nAlbum: ' + album : '') + '\\nPlayback: ' + state;\n      status = 'observed';\n    }\n  } else throw new Error('Unknown Spotify reply mode.');\n  const reply = text.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');\n  if (reply.length > 4096) throw new Error('The Spotify status exceeds Telegram’s message limit.');\n  return { reply, status };\n}\n\nreturn [{json:format({mode:\"search\",playback:null}),pairedItem:{item:0}}];\n"
+      }
+    },
+    {
+      "id": "spotify-queue-failed",
+      "name": "Queue Uncertain",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1550,
+        500
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const format = function formatReply({ mode, playback }) {\n  const failures = {\n    search: 'Spotify search failed. No playback commands were attempted.',\n    queue: 'Spotify could not confirm adding the track to the queue. Check Spotify before repeating the request.',\n    skip: 'Spotify could not confirm skipping to the next track. An earlier queue command may already have completed.',\n    current: 'Playback commands were sent, but the current state could not be read. Check Spotify before repeating the request.',\n  };\n  let text, status;\n  if (mode === 'not_found') { text = 'Song not found.'; status = 'not_found'; }\n  else if (Object.hasOwn(failures, mode)) { text = failures[mode]; status = 'failed'; }\n  else if (mode === 'observed') {\n    if (playback !== null && (!playback || typeof playback !== 'object' || Array.isArray(playback) || playback.error)) throw new Error('Invalid Spotify playback response.');\n    if (playback?.is_playing !== undefined && typeof playback.is_playing !== 'boolean') throw new Error('Invalid Spotify play/pause status.');\n    const item = playback?.item;\n    if (item == null) {\n      text = 'Playback commands were sent, but Spotify reported no current item.'; status = 'unavailable';\n    } else {\n      if (typeof item.name !== 'string' || !item.name) throw new Error('The current Spotify item has no title.');\n      const artists = Array.isArray(item.artists) ? item.artists.map(artist => artist?.name).filter(name => typeof name === 'string' && name) : [];\n      const album = typeof item.album?.name === 'string' ? item.album.name : '';\n      const state = playback.is_playing === true ? 'playing' : playback.is_playing === false ? 'paused' : 'unknown';\n      text = 'Spotify reports: ' + item.name + (artists.length ? ' — ' + artists.join(', ') : '') + (album ? '\\nAlbum: ' + album : '') + '\\nPlayback: ' + state;\n      status = 'observed';\n    }\n  } else throw new Error('Unknown Spotify reply mode.');\n  const reply = text.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');\n  if (reply.length > 4096) throw new Error('The Spotify status exceeds Telegram’s message limit.');\n  return { reply, status };\n}\n\nreturn [{json:format({mode:\"queue\",playback:null}),pairedItem:{item:0}}];\n"
+      }
+    },
+    {
+      "id": "spotify-skip-failed",
+      "name": "Skip Uncertain",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1750,
+        500
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const format = function formatReply({ mode, playback }) {\n  const failures = {\n    search: 'Spotify search failed. No playback commands were attempted.',\n    queue: 'Spotify could not confirm adding the track to the queue. Check Spotify before repeating the request.',\n    skip: 'Spotify could not confirm skipping to the next track. An earlier queue command may already have completed.',\n    current: 'Playback commands were sent, but the current state could not be read. Check Spotify before repeating the request.',\n  };\n  let text, status;\n  if (mode === 'not_found') { text = 'Song not found.'; status = 'not_found'; }\n  else if (Object.hasOwn(failures, mode)) { text = failures[mode]; status = 'failed'; }\n  else if (mode === 'observed') {\n    if (playback !== null && (!playback || typeof playback !== 'object' || Array.isArray(playback) || playback.error)) throw new Error('Invalid Spotify playback response.');\n    if (playback?.is_playing !== undefined && typeof playback.is_playing !== 'boolean') throw new Error('Invalid Spotify play/pause status.');\n    const item = playback?.item;\n    if (item == null) {\n      text = 'Playback commands were sent, but Spotify reported no current item.'; status = 'unavailable';\n    } else {\n      if (typeof item.name !== 'string' || !item.name) throw new Error('The current Spotify item has no title.');\n      const artists = Array.isArray(item.artists) ? item.artists.map(artist => artist?.name).filter(name => typeof name === 'string' && name) : [];\n      const album = typeof item.album?.name === 'string' ? item.album.name : '';\n      const state = playback.is_playing === true ? 'playing' : playback.is_playing === false ? 'paused' : 'unknown';\n      text = 'Spotify reports: ' + item.name + (artists.length ? ' — ' + artists.join(', ') : '') + (album ? '\\nAlbum: ' + album : '') + '\\nPlayback: ' + state;\n      status = 'observed';\n    }\n  } else throw new Error('Unknown Spotify reply mode.');\n  const reply = text.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');\n  if (reply.length > 4096) throw new Error('The Spotify status exceeds Telegram’s message limit.');\n  return { reply, status };\n}\n\nreturn [{json:format({mode:\"skip\",playback:null}),pairedItem:{item:0}}];\n"
+      }
+    },
+    {
+      "id": "spotify-current-failed",
+      "name": "Player State Failed",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1950,
+        500
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const format = function formatReply({ mode, playback }) {\n  const failures = {\n    search: 'Spotify search failed. No playback commands were attempted.',\n    queue: 'Spotify could not confirm adding the track to the queue. Check Spotify before repeating the request.',\n    skip: 'Spotify could not confirm skipping to the next track. An earlier queue command may already have completed.',\n    current: 'Playback commands were sent, but the current state could not be read. Check Spotify before repeating the request.',\n  };\n  let text, status;\n  if (mode === 'not_found') { text = 'Song not found.'; status = 'not_found'; }\n  else if (Object.hasOwn(failures, mode)) { text = failures[mode]; status = 'failed'; }\n  else if (mode === 'observed') {\n    if (playback !== null && (!playback || typeof playback !== 'object' || Array.isArray(playback) || playback.error)) throw new Error('Invalid Spotify playback response.');\n    if (playback?.is_playing !== undefined && typeof playback.is_playing !== 'boolean') throw new Error('Invalid Spotify play/pause status.');\n    const item = playback?.item;\n    if (item == null) {\n      text = 'Playback commands were sent, but Spotify reported no current item.'; status = 'unavailable';\n    } else {\n      if (typeof item.name !== 'string' || !item.name) throw new Error('The current Spotify item has no title.');\n      const artists = Array.isArray(item.artists) ? item.artists.map(artist => artist?.name).filter(name => typeof name === 'string' && name) : [];\n      const album = typeof item.album?.name === 'string' ? item.album.name : '';\n      const state = playback.is_playing === true ? 'playing' : playback.is_playing === false ? 'paused' : 'unknown';\n      text = 'Spotify reports: ' + item.name + (artists.length ? ' — ' + artists.join(', ') : '') + (album ? '\\nAlbum: ' + album : '') + '\\nPlayback: ' + state;\n      status = 'observed';\n    }\n  } else throw new Error('Unknown Spotify reply mode.');\n  const reply = text.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');\n  if (reply.length > 4096) throw new Error('The Spotify status exceeds Telegram’s message limit.');\n  return { reply, status };\n}\n\nreturn [{json:format({mode:\"current\",playback:null}),pairedItem:{item:0}}];\n"
+      }
+    },
+    {
+      "id": "spotify-observed",
+      "name": "Format Observed Player State",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1950,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const format = function formatReply({ mode, playback }) {\n  const failures = {\n    search: 'Spotify search failed. No playback commands were attempted.',\n    queue: 'Spotify could not confirm adding the track to the queue. Check Spotify before repeating the request.',\n    skip: 'Spotify could not confirm skipping to the next track. An earlier queue command may already have completed.',\n    current: 'Playback commands were sent, but the current state could not be read. Check Spotify before repeating the request.',\n  };\n  let text, status;\n  if (mode === 'not_found') { text = 'Song not found.'; status = 'not_found'; }\n  else if (Object.hasOwn(failures, mode)) { text = failures[mode]; status = 'failed'; }\n  else if (mode === 'observed') {\n    if (playback !== null && (!playback || typeof playback !== 'object' || Array.isArray(playback) || playback.error)) throw new Error('Invalid Spotify playback response.');\n    if (playback?.is_playing !== undefined && typeof playback.is_playing !== 'boolean') throw new Error('Invalid Spotify play/pause status.');\n    const item = playback?.item;\n    if (item == null) {\n      text = 'Playback commands were sent, but Spotify reported no current item.'; status = 'unavailable';\n    } else {\n      if (typeof item.name !== 'string' || !item.name) throw new Error('The current Spotify item has no title.');\n      const artists = Array.isArray(item.artists) ? item.artists.map(artist => artist?.name).filter(name => typeof name === 'string' && name) : [];\n      const album = typeof item.album?.name === 'string' ? item.album.name : '';\n      const state = playback.is_playing === true ? 'playing' : playback.is_playing === false ? 'paused' : 'unknown';\n      text = 'Spotify reports: ' + item.name + (artists.length ? ' — ' + artists.join(', ') : '') + (album ? '\\nAlbum: ' + album : '') + '\\nPlayback: ' + state;\n      status = 'observed';\n    }\n  } else throw new Error('Unknown Spotify reply mode.');\n  const reply = text.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');\n  if (reply.length > 4096) throw new Error('The Spotify status exceeds Telegram’s message limit.');\n  return { reply, status };\n}\n\nreturn [{json:format({mode:\"observed\",playback:($input.first().json.statusCode===204?null:$input.first().json.body)}),pairedItem:{item:0}}];\n"
+      }
+    },
+    {
+      "id": "spotify-reply-context",
+      "name": "Reply Context",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        2200,
+        200
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "spotify-result",
+      "name": "Song Request Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2640,
+        200
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return [{json:{...$('Reply Context').first().json,query:$('Check Search Query').first().json.query}}];"
+      }
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Read Telegram Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Telegram Request": {
+      "main": [
+        [
+          {
+            "node": "OpenAI - Ask about a track",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI - Ask about a track": {
+      "main": [
+        [
+          {
+            "node": "Check Search Query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Search Query": {
+      "main": [
+        [
+          {
+            "node": "Search track",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search track": {
+      "main": [
+        [
+          {
+            "node": "Select First Track",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Search Failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select First Track": {
+      "main": [
+        [
+          {
+            "node": "Track Was Found",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Track Was Found": {
+      "main": [
+        [
+          {
+            "node": "Prepare Selected Track URI",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Song Not Found",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Selected Track URI": {
+      "main": [
+        [
+          {
+            "node": "Add song",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add song": {
+      "main": [
+        [
+          {
+            "node": "Next Song",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Queue Uncertain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Next Song": {
+      "main": [
+        [
+          {
+            "node": "Resume play",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Skip Uncertain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resume play": {
+      "main": [
+        [
+          {
+            "node": "Currently Playing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Currently Playing": {
+      "main": [
+        [
+          {
+            "node": "Format Observed Player State",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Player State Failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Song Not Found": {
+      "main": [
+        [
+          {
+            "node": "Reply Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Failed": {
+      "main": [
+        [
+          {
+            "node": "Reply Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Queue Uncertain": {
+      "main": [
+        [
+          {
+            "node": "Reply Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Skip Uncertain": {
+      "main": [
+        [
+          {
+            "node": "Reply Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Player State Failed": {
+      "main": [
+        [
+          {
+            "node": "Reply Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Observed Player State": {
+      "main": [
+        [
+          {
+            "node": "Reply Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reply Context": {
+      "main": [
+        [
+          {
+            "node": "Return message to Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Return message to Telegram": {
+      "main": [
+        [
+          {
+            "node": "Song Request Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
