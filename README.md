@@ -37,6 +37,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 ## Marketing
 
 - [GitHub & Dev.to Engagement](workflows/github-devto-engagement-monitor/) - Collect GitHub stars, forks and open issues alongside Dev.to reactions and comments every 12 hours.
+- [Airtable Tweet Drafts](workflows/airtable-tweet-drafts/) - Generate a tweet draft for a randomly selected hashtag and save the draft and hashtag in Airtable for review.
 
 ## Support
 

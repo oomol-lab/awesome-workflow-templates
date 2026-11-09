@@ -1,0 +1,150 @@
+{
+  "nodes": [
+    {
+      "name": "On clicking 'execute'",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        250,
+        300
+      ],
+      "parameters": {},
+      "typeVersion": 1,
+      "id": "airtable-tweet-drafts-0"
+    },
+    {
+      "name": "FunctionItem",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        450,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const business = function chooseHashtag({ hashtags }) {\n  if (!Array.isArray(hashtags) || !hashtags.length || !hashtags.every((hashtag) => typeof hashtag === 'string' && /^#\\S+$/.test(hashtag))) {\n    throw new Error('hashtags must contain at least one hashtag');\n  }\n  return { hashtag: hashtags[Math.floor(Math.random() * hashtags.length)] };\n}\n\nreturn $input.all().map((item, index) => { const result = business({hashtags:['#techtwitter','#n8n']}); return {json: result, pairedItem: {item: index}}; });\n"
+      },
+      "typeVersion": 2,
+      "id": "airtable-tweet-drafts-1"
+    },
+    {
+      "name": "HTTP Request",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "position": [
+        650,
+        300
+      ],
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Generate a tweet, with under 100 characters, about and including the hashtag {{ $json.hashtag }}:"
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.7,
+          "maxTokens": 64,
+          "topP": 1
+        }
+      },
+      "typeVersion": 1.8,
+      "id": "airtable-tweet-drafts-2"
+    },
+    {
+      "name": "Airtable",
+      "type": "n8n-nodes-base.airtable",
+      "position": [
+        1050,
+        300
+      ],
+      "parameters": {
+        "table": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_AIRTABLE_TABLE_ID"
+        },
+        "options": {},
+        "operation": "append",
+        "application": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_AIRTABLE_BASE_ID"
+        },
+        "authentication": "airtableTokenApi",
+        "addAllFields": true
+      },
+      "typeVersion": 1,
+      "id": "airtable-tweet-drafts-3"
+    },
+    {
+      "name": "Set",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        850,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const business = function airtableDraft({ hashtag, content }) {\n  if (typeof content !== 'string' || !content.trim()) throw new Error('The model returned no draft');\n  return { records: [{ fields: { Hashtag: hashtag, Content: content } }] };\n}\n\nreturn $input.all().map((item, index) => { const result = business({hashtag:$('FunctionItem').itemMatching(index).json.hashtag,content:item.json.message?.content}); return {json: result.records[0].fields, pairedItem: {item: index}}; });\n"
+      },
+      "typeVersion": 2,
+      "id": "airtable-tweet-drafts-4"
+    }
+  ],
+  "connections": {
+    "Set": {
+      "main": [
+        [
+          {
+            "node": "Airtable",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FunctionItem": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Set",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "On clicking 'execute'": {
+      "main": [
+        [
+          {
+            "node": "FunctionItem",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC"
+  },
+  "active": false,
+  "pinData": {}
+}
