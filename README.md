@@ -29,6 +29,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 
 - [Unread Email Digest](workflows/unread-email-digest/) - Summarize unread Gmail messages with AI and send a prioritized weekday morning digest to Telegram.
 - [Invoice Payment Reminders](workflows/invoice-payment-reminders/) - Email Italian payment reminders for unpaid invoices that are overdue or due within three days, every weekday morning.
+- [Event Feedback Report](workflows/event-feedback-report/) - Summarize Google Sheets event feedback into an AI report covering sentiment and improvement ideas, and email it with Gmail.
 
 ## Marketing
 
