@@ -1,0 +1,514 @@
+{
+  "name": "Extract personal data with a self-hosted LLM Mistral NeMo",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "7e67ae65-88aa-4e48-aa63-2d3a4208cf4b",
+      "name": "Run Extraction",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        -500,
+        20
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "e064921c-69e6-4cfe-a86e-4e3aa3a5314a",
+      "name": "Ollama Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "position": [
+        -280,
+        420
+      ],
+      "parameters": {
+        "model": "mistral-nemo:latest",
+        "options": {
+          "keepAlive": "2h",
+          "temperature": 0.1
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "23681a6c-cf62-48cb-86ee-08d5ce39bc0a",
+      "name": "Extract Communication Record",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "onError": "continueErrorOutput",
+      "position": [
+        -240,
+        20
+      ],
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.text }}",
+        "messages": {
+          "messageValues": [
+            {
+              "type": "SystemMessagePromptTemplate",
+              "message": "={{ $json.instructions }}"
+            }
+          ]
+        },
+        "batching": {
+          "batchSize": 1
+        }
+      },
+      "typeVersion": 1.7
+    },
+    {
+      "id": "8f4d1b4b-58c0-41ec-9636-ac555e440821",
+      "name": "Report Extraction Request Failure",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        200,
+        140
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const pack = function communicationResult({ record, repaired, error }) {\n  return { result: { status: record == null ? 'failed' : 'extracted', record, repaired, error: record == null ? error || 'No valid communication record was returned.' : null } };\n}\n\nreturn [{json:pack({record:null,repaired:false,error:\"The extraction model request failed.\"}).result,pairedItem:{item:0}}];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "f4d77736-4470-48b4-8f61-149e09b70e3e",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -560,
+        -160
+      ],
+      "parameters": {
+        "color": 2,
+        "width": 960,
+        "height": 500,
+        "content": "## Communication record extraction\n\nEdit Set Communication Text and connect Ollama Chat Model to a service with mistral-nemo:latest. The shared model uses temperature 0.1 and n8n keepAlive 2h. Native model adapters may retry transient request failures.\n\nA valid first completion returns the record. Invalid JSON or fields get one correction step, then return an extracted or failed result. Model request failures use the failure paths and never trigger a format correction without a completion. Current-time context is UTC. Verify extracted contacts against submitted text. No contact system is modified."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "9625294f-3cb4-4465-9dae-9976e0cf5053",
+      "name": "Validate First Record",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        200,
+        -80
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const parse = function parseCommunication({ completion }) {\n  if (typeof completion !== 'string') return { valid: false, record: null, completion: '', error: 'The completion must be text.' };\n  let parsed;\n  try {\n    const lines = completion.trim().split('\\n');\n    let start = -1, end = -1;\n    for (let index = 0; index < lines.length; index++) {\n      const line = lines[index].trim();\n      if (start === -1 && /^```(?:json)?$/.test(line)) start = index;\n      else if (start !== -1 && line === '```') { end = index; break; }\n    }\n    parsed = JSON.parse(start !== -1 && end !== -1 ? lines.slice(start + 1, end).join('\\n') : completion.trim());\n    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed) && parsed.output && typeof parsed.output === 'object' && !Array.isArray(parsed.output)) parsed = parsed.output;\n  } catch { return { valid: false, record: null, completion, error: 'The completion is not valid JSON.' }; }\n  const invalid = (error) => ({ valid: false, record: null, completion, error });\n  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return invalid('Expected a JSON object.');\n  for (const name of ['name', 'commtype']) if (typeof parsed[name] !== 'string') return invalid('Required property must be a string: ' + name);\n  if (!['email', 'phone', 'other'].includes(parsed.commtype)) return invalid('commtype must be email, phone, or other.');\n  for (const name of ['surname', 'contacts', 'timestamp', 'subject']) if (parsed[name] !== undefined && typeof parsed[name] !== 'string') return invalid('Optional property must be a string when present: ' + name);\n  if (parsed.timestamp !== undefined) {\n    const match = /^(\\d{4})-(\\d{2})-(\\d{2})T(\\d{2}):(\\d{2}):(\\d{2})(?:\\.\\d+)?(Z|[+-](\\d{2}):(\\d{2}))$/.exec(parsed.timestamp);\n    if (!match || !Number.isFinite(Date.parse(parsed.timestamp))) return invalid('timestamp must be a valid date-time with timezone.');\n    const [year, month, day, hour, minute, second] = match.slice(1, 7).map(Number);\n    const leap = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);\n    const days = [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];\n    if (month < 1 || month > 12 || day < 1 || day > days[month - 1] || hour > 23 || minute > 59 || second > 59 || (match[8] && (Number(match[8]) > 23 || Number(match[9]) > 59))) return invalid('timestamp must be a valid calendar date-time.');\n  }\n  const record = Object.fromEntries(['name', 'surname', 'commtype', 'contacts', 'timestamp', 'subject'].filter((name) => parsed[name] !== undefined).map((name) => [name, parsed[name]]));\n  return { valid: true, record, completion, error: '' };\n}\n\nreturn [{json:parse({completion:$input.first().json.text}),pairedItem:{item:0}}];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "communication-text",
+      "name": "Set Communication Text",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -460,
+        20
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "communication-text-value",
+              "name": "text",
+              "type": "string",
+              "value": "Ada Lovelace emailed about an invoice. Her contact address is ada@example.com."
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "prepare-communication",
+      "name": "Prepare Extraction",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -220,
+        20
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const prepare = function prepareCommunication({ text }) {\n  if (typeof text !== 'string' || !text.trim()) throw new Error('Communication text is required.');\n  const schema = { type: 'object', properties: { name: { type: 'string', description: 'Name of the user' }, surname: { type: 'string', description: 'Surname of the user' }, commtype: { type: 'string', enum: ['email', 'phone', 'other'], description: 'Method of communication' }, contacts: { type: 'string', description: 'Contact details. ONLY IF PROVIDED' }, timestamp: { type: 'string', format: 'date-time', description: 'When the communication occurred' }, subject: { type: 'string', description: 'Brief description of the communication topic' } }, required: ['name', 'commtype'] };\n  const now = new Date().toISOString();\n  return { text, now, instructions: 'Please analyse the incoming communication. Extract information according to the JSON schema. Today is: \"' + now + '\". Include contacts only if provided in the text. Return only a JSON object; do not invent missing optional fields.\\n\\nJSON schema:\\n' + JSON.stringify(schema) };\n}\n\nreturn [{json:prepare($input.first().json),pairedItem:{item:0}}];\n"
+      }
+    },
+    {
+      "id": "first-record-valid",
+      "name": "First Record Valid",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        220,
+        20
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "first-record-valid-valid",
+              "leftValue": "={{ $json.valid }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "correct-communication-record",
+      "name": "Correct Record Once",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        440,
+        200
+      ],
+      "onError": "continueErrorOutput",
+      "parameters": {
+        "promptType": "define",
+        "text": "=Instructions:\n--------------\n{{ $('Prepare Extraction').first().json.instructions }}\n--------------\nCompletion:\n--------------\n{{ $json.completion }}\n--------------\n\nAbove, the Completion did not satisfy the constraints given in the Instructions.\nError:\n--------------\n{{ $json.error }}\n--------------\n\nPlease try again. Please only respond with an answer that satisfies the constraints laid out in the Instructions:",
+        "batching": {
+          "batchSize": 1
+        }
+      }
+    },
+    {
+      "id": "validate-corrected-record",
+      "name": "Validate Corrected Record",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        660,
+        200
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const parse = function parseCommunication({ completion }) {\n  if (typeof completion !== 'string') return { valid: false, record: null, completion: '', error: 'The completion must be text.' };\n  let parsed;\n  try {\n    const lines = completion.trim().split('\\n');\n    let start = -1, end = -1;\n    for (let index = 0; index < lines.length; index++) {\n      const line = lines[index].trim();\n      if (start === -1 && /^```(?:json)?$/.test(line)) start = index;\n      else if (start !== -1 && line === '```') { end = index; break; }\n    }\n    parsed = JSON.parse(start !== -1 && end !== -1 ? lines.slice(start + 1, end).join('\\n') : completion.trim());\n    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed) && parsed.output && typeof parsed.output === 'object' && !Array.isArray(parsed.output)) parsed = parsed.output;\n  } catch { return { valid: false, record: null, completion, error: 'The completion is not valid JSON.' }; }\n  const invalid = (error) => ({ valid: false, record: null, completion, error });\n  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return invalid('Expected a JSON object.');\n  for (const name of ['name', 'commtype']) if (typeof parsed[name] !== 'string') return invalid('Required property must be a string: ' + name);\n  if (!['email', 'phone', 'other'].includes(parsed.commtype)) return invalid('commtype must be email, phone, or other.');\n  for (const name of ['surname', 'contacts', 'timestamp', 'subject']) if (parsed[name] !== undefined && typeof parsed[name] !== 'string') return invalid('Optional property must be a string when present: ' + name);\n  if (parsed.timestamp !== undefined) {\n    const match = /^(\\d{4})-(\\d{2})-(\\d{2})T(\\d{2}):(\\d{2}):(\\d{2})(?:\\.\\d+)?(Z|[+-](\\d{2}):(\\d{2}))$/.exec(parsed.timestamp);\n    if (!match || !Number.isFinite(Date.parse(parsed.timestamp))) return invalid('timestamp must be a valid date-time with timezone.');\n    const [year, month, day, hour, minute, second] = match.slice(1, 7).map(Number);\n    const leap = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);\n    const days = [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];\n    if (month < 1 || month > 12 || day < 1 || day > days[month - 1] || hour > 23 || minute > 59 || second > 59 || (match[8] && (Number(match[8]) > 23 || Number(match[9]) > 59))) return invalid('timestamp must be a valid calendar date-time.');\n  }\n  const record = Object.fromEntries(['name', 'surname', 'commtype', 'contacts', 'timestamp', 'subject'].filter((name) => parsed[name] !== undefined).map((name) => [name, parsed[name]]));\n  return { valid: true, record, completion, error: '' };\n}\n\nreturn [{json:parse({completion:$input.first().json.text}),pairedItem:{item:0}}];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "corrected-record-valid",
+      "name": "Corrected Record Valid",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        880,
+        200
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "corrected-record-valid-valid",
+              "leftValue": "={{ $json.valid }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "first-extracted-record",
+      "name": "Use First Record",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        -120
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const pack = function communicationResult({ record, repaired, error }) {\n  return { result: { status: record == null ? 'failed' : 'extracted', record, repaired, error: record == null ? error || 'No valid communication record was returned.' : null } };\n}\n\nreturn [{json:pack({record:$input.first().json.record,repaired:false,error:''}).result,pairedItem:{item:0}}];\n"
+      }
+    },
+    {
+      "id": "corrected-extracted-record",
+      "name": "Use Corrected Record",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1100,
+        100
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const pack = function communicationResult({ record, repaired, error }) {\n  return { result: { status: record == null ? 'failed' : 'extracted', record, repaired, error: record == null ? error || 'No valid communication record was returned.' : null } };\n}\n\nreturn [{json:pack({record:$input.first().json.record,repaired:true,error:''}).result,pairedItem:{item:0}}];\n"
+      }
+    },
+    {
+      "id": "report-invalid-record",
+      "name": "Report Invalid Corrected Record",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1100,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const pack = function communicationResult({ record, repaired, error }) {\n  return { result: { status: record == null ? 'failed' : 'extracted', record, repaired, error: record == null ? error || 'No valid communication record was returned.' : null } };\n}\n\nreturn [{json:pack({record:null,repaired:true,error:$input.first().json.error}).result,pairedItem:{item:0}}];\n"
+      }
+    },
+    {
+      "id": "report-correction-failure",
+      "name": "Report Correction Request Failure",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        420
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const pack = function communicationResult({ record, repaired, error }) {\n  return { result: { status: record == null ? 'failed' : 'extracted', record, repaired, error: record == null ? error || 'No valid communication record was returned.' : null } };\n}\n\nreturn [{json:pack({record:null,repaired:true,error:\"The correction model request failed.\"}).result,pairedItem:{item:0}}];\n"
+      }
+    },
+    {
+      "id": "extraction-result",
+      "name": "Extraction Result",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1350,
+        20
+      ],
+      "parameters": {}
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC"
+  },
+  "connections": {
+    "Run Extraction": {
+      "main": [
+        [
+          {
+            "node": "Set Communication Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Communication Text": {
+      "main": [
+        [
+          {
+            "node": "Prepare Extraction",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Extraction": {
+      "main": [
+        [
+          {
+            "node": "Extract Communication Record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Communication Record": {
+      "main": [
+        [
+          {
+            "node": "Validate First Record",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Report Extraction Request Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate First Record": {
+      "main": [
+        [
+          {
+            "node": "First Record Valid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "First Record Valid": {
+      "main": [
+        [
+          {
+            "node": "Use First Record",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Correct Record Once",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Correct Record Once": {
+      "main": [
+        [
+          {
+            "node": "Validate Corrected Record",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Report Correction Request Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Corrected Record": {
+      "main": [
+        [
+          {
+            "node": "Corrected Record Valid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Corrected Record Valid": {
+      "main": [
+        [
+          {
+            "node": "Use Corrected Record",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Report Invalid Corrected Record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Extract Communication Record",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Correct Record Once",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Use First Record": {
+      "main": [
+        [
+          {
+            "node": "Extraction Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Use Corrected Record": {
+      "main": [
+        [
+          {
+            "node": "Extraction Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Report Invalid Corrected Record": {
+      "main": [
+        [
+          {
+            "node": "Extraction Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Report Extraction Request Failure": {
+      "main": [
+        [
+          {
+            "node": "Extraction Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Report Correction Request Failure": {
+      "main": [
+        [
+          {
+            "node": "Extraction Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
