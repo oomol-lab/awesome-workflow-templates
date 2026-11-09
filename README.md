@@ -18,6 +18,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Sales](#sales)
 - [Operations](#operations)
 - [Marketing](#marketing)
+- [Support](#support)
 - [Contribute](#contribute)
 - [Licensing](#licensing)
 
@@ -35,6 +36,10 @@ A growing collection of automation workflows for connecting apps and getting rep
 ## Marketing
 
 - [GitHub & Dev.to Engagement](workflows/github-devto-engagement-monitor/) - Collect GitHub stars, forks and open issues alongside Dev.to reactions and comments every 12 hours.
+
+## Support
+
+- [Phone Call Log](workflows/phone-call-log/) - Record caller details, duration, supplied summary, and the first 500 transcript characters in Google Sheets from a webhook.
 
 ## Contribute
 

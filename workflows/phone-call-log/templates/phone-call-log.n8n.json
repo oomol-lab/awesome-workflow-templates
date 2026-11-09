@@ -1,0 +1,229 @@
+{
+  "name": "VoiceAgent Lite — Simple Call Logger",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "voiceagent-lite",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "trigger",
+      "name": "Call Received",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        200,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const { randomUUID } = require('crypto');\n\nconst prepare = function prepareCall({ body }) {\n  if (!body || typeof body !== 'object' || Array.isArray(body)) throw new Error('Call data must be an object.');\n  const text = (value) => value == null ? '' : String(value);\n  const callId = text(body.call_id) || randomUUID();\n  const caller = text(body.caller_name || body.from) || 'Unknown';\n  const phone = text(body.caller_phone || body.from);\n  const duration = body.duration == null || body.duration === '' ? 0 : Number(body.duration);\n  if (!Number.isFinite(duration) || duration < 0) throw new Error('Call duration must be a nonnegative number.');\n  const transcript = text(body.transcript).slice(0, 500);\n  const summary = text(body.summary);\n  const receivedAt = new Date().toISOString();\n  return { callId, caller, phone, duration, transcript, summary, receivedAt, values: [[callId, receivedAt, caller, phone, duration, summary, transcript]] };\n}\n\nreturn $input.all().map((item, index) => ({json: prepare({body: item.json.body ?? item.json}), pairedItem: {item: index}}));\n"
+      },
+      "id": "parse",
+      "name": "Parse Call",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        420,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_SPREADSHEET_ID"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Calls"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Call ID": "={{ $json.callId }}",
+            "Date": "={{ $json.receivedAt }}",
+            "Caller": "={{ $json.caller }}",
+            "Phone": "={{ $json.phone }}",
+            "Duration": "={{ $json.duration }}",
+            "Summary": "={{ $json.summary }}",
+            "Transcript": "={{ $json.transcript }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Call ID",
+              "displayName": "Call ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Date",
+              "displayName": "Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Caller",
+              "displayName": "Caller",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Phone",
+              "displayName": "Phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Duration",
+              "displayName": "Duration",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Summary",
+              "displayName": "Summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Transcript",
+              "displayName": "Transcript",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ]
+        },
+        "options": {
+          "cellFormat": "RAW",
+          "useAppend": true
+        }
+      },
+      "id": "log",
+      "name": "Log to Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        660,
+        400
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 1000
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: true, callId: $('Parse Call').item.json.callId, caller: $('Parse Call').item.json.caller }) }}"
+      },
+      "id": "respond",
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        900,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## VoiceAgent Lite\nSimple call logging.\nNo AI analysis, no calendar.\nJust log calls to Sheets.",
+        "width": 260,
+        "height": 120,
+        "color": 6
+      },
+      "id": "note",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        120,
+        220
+      ]
+    }
+  ],
+  "connections": {
+    "Call Received": {
+      "main": [
+        [
+          {
+            "node": "Parse Call",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Call": {
+      "main": [
+        [
+          {
+            "node": "Log to Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log to Sheets": {
+      "main": [
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "timezone": "UTC"
+  },
+  "tags": [
+    {
+      "name": "VoiceAgent",
+      "id": "voiceagent"
+    },
+    {
+      "name": "AutoFlow",
+      "id": "autoflow"
+    },
+    {
+      "name": "Lite",
+      "id": "lite"
+    }
+  ],
+  "active": false,
+  "pinData": {}
+}
