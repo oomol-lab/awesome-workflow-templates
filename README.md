@@ -40,6 +40,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Google Task Creator](workflows/google-task-creator/) - Create one Google Tasks item in the task list you select.
 - [Todoist Task Creator](workflows/todoist-task-creator/) - Create one Todoist task in the project you select.
 - [Trello Card Creator](workflows/trello-card-creator/) - Create one Trello card with a name and description in the list you select.
+- [Coda Table Row Creator](workflows/coda-table-row-creator/) - Submit one new Coda table row containing three configured column values.
 
 ## Marketing
 
