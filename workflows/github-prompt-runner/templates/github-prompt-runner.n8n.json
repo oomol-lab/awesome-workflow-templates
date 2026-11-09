@@ -1,0 +1,240 @@
+{
+  "name": "GitHub Prompt Runner",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "34781446-b06e-41eb-83b8-b96bda1a5595",
+      "name": "When clicking ‘Test workflow’",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        -80,
+        0
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "c53b7243-7c82-47e0-a5ee-bd82bc51c386",
+      "name": "GitHub",
+      "type": "n8n-nodes-base.github",
+      "position": [
+        600,
+        0
+      ],
+      "parameters": {
+        "resource": "file",
+        "operation": "get",
+        "owner": {
+          "__rl": true,
+          "mode": "name",
+          "value": "={{ $json.owner }}"
+        },
+        "repository": {
+          "__rl": true,
+          "mode": "name",
+          "value": "={{ $json.repo }}"
+        },
+        "filePath": "={{ $json.path }}",
+        "asBinaryProperty": true,
+        "binaryPropertyName": "data",
+        "additionalParameters": {}
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "26aa4e6a-c487-4cdf-91d5-df660cf826a6",
+      "name": "Set Prompt Settings",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        180,
+        0
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "prompt-owner",
+              "name": "owner",
+              "type": "string",
+              "value": "YOUR_GITHUB_OWNER"
+            },
+            {
+              "id": "prompt-repository",
+              "name": "repo",
+              "type": "string",
+              "value": "YOUR_REPOSITORY"
+            },
+            {
+              "id": "prompt-path",
+              "name": "path",
+              "type": "string",
+              "value": "prompts/example.md"
+            },
+            {
+              "id": "prompt-variables",
+              "name": "variables",
+              "type": "object",
+              "value": {
+                "company": "Example Company",
+                "product": "Workflow templates",
+                "features": "Reusable automations",
+                "sector": "Software"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "9d92f581-8cd9-448c-aa1d-023a96c1ddda",
+      "name": "Check and Fill Prompt Variables",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1900,
+        -20
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function substitutePrompt({ promptText, variables }) {\n  if (typeof promptText !== 'string' || !promptText.trim()) throw new Error('The GitHub prompt file must contain UTF-8 text.');\n  if (!variables || typeof variables !== 'object' || Array.isArray(variables) || Object.values(variables).some(value => typeof value !== 'string')) throw new Error('Prompt variables must be an object of strings.');\n  const keys = [...new Set([...promptText.matchAll(/{{(.*?)}}/g)].map(match => match[1].trim().split('.').pop().trim()))];\n  const missing = keys.filter(key => !Object.hasOwn(variables, key));\n  if (missing.length) throw new Error('Missing prompt variables: ' + missing.join(', '));\n  const prompt = promptText.replace(/{{(.*?)}}/g, (_, expression) => variables[expression.trim().split('.').pop().trim()]);\n  return { prompt };\n}\n\nfunction prepareGitHubPrompt({ file, variables }) {\n  if (!file || file.type !== 'file' || typeof file.decoded_content !== 'string') throw new Error('GitHub must return a regular UTF-8 prompt file.');\n  if ((typeof file.size === 'number' && file.size > 1048576) || new TextEncoder().encode(file.decoded_content).length > 1048576) throw new Error('The prompt file must be at most 1 MiB.');\n  return substitutePrompt({ promptText: file.decoded_content, variables });\n}\n\nconst bytes=await this.helpers.getBinaryDataBuffer(0,\"data\");\nif(bytes.length>1048576)throw new Error(\"The prompt file must be at most 1 MiB.\");\nconst text=bytes.toString(\"utf8\");\nif(!Buffer.from(text,\"utf8\").equals(bytes))throw new Error(\"The GitHub prompt file must contain UTF-8 text.\");\nreturn [{json:substitutePrompt({promptText:text.replace(/^\\uFEFF/,\"\"),variables:$(\"Set Prompt Settings\").first().json.variables}),pairedItem:{item:0}}];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "51447c90-a222-4172-a49b-86ec43332559",
+      "name": "Run Completed Prompt",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "position": [
+        2440,
+        -20
+      ],
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.prompt }}",
+        "messages": {
+          "messageValues": [
+            {
+              "type": "SystemMessagePromptTemplate",
+              "message": "You are a helpful assistant"
+            }
+          ]
+        },
+        "batching": {
+          "batchSize": 1
+        }
+      },
+      "typeVersion": 1.7
+    },
+    {
+      "id": "1f070dc3-3d25-41d8-b534-912ba7c8b2b0",
+      "name": "Prompt Output",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        2800,
+        -20
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "01a30683-c348-4712-a3b1-739fc4a17718",
+              "name": "promptResponse",
+              "type": "string",
+              "value": "={{ $json.text }}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "2d12a6e2-7976-41b0-8cb2-01466b28269d",
+      "name": "Ollama Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "position": [
+        2480,
+        200
+      ],
+      "parameters": {
+        "model": "llama3.2",
+        "options": {}
+      },
+      "typeVersion": 1
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "When clicking ‘Test workflow’": {
+      "main": [
+        [
+          {
+            "node": "Set Prompt Settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Prompt Settings": {
+      "main": [
+        [
+          {
+            "node": "GitHub",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GitHub": {
+      "main": [
+        [
+          {
+            "node": "Check and Fill Prompt Variables",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check and Fill Prompt Variables": {
+      "main": [
+        [
+          {
+            "node": "Run Completed Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run Completed Prompt": {
+      "main": [
+        [
+          {
+            "node": "Prompt Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Run Completed Prompt",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
