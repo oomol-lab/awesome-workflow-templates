@@ -1,0 +1,257 @@
+{
+  "kind": "open-flow-workflow",
+  "version": 1,
+  "name": "Vector Centroid API",
+  "content": {
+    "modelVersion": 14,
+    "document": {
+      "bindings": {},
+      "graph": {
+        "nodes": {
+          "n_36b7a5fb0c159c37": {
+            "name": "Receive vectors by GET",
+            "kind": "webhook",
+            "bodyFields": [],
+            "method": "GET",
+            "options": {
+              "responseBody": {
+                "kind": "workflow-outputs",
+                "output": "result",
+                "timeoutMs": 10000
+              },
+              "responseHeaders": {
+                "Content-Type": "application/json; charset=utf-8"
+              },
+              "responseStatusCode": 200
+            }
+          },
+          "n_986b4e14fd435c0e": {
+            "inputs": {
+              "query": {
+                "kind": "sources",
+                "sources": [
+                  {
+                    "kind": "node",
+                    "nodeId": "n_36b7a5fb0c159c37",
+                    "output": "query"
+                  }
+                ]
+              }
+            },
+            "name": "Parse vectors query parameter",
+            "kind": "task",
+            "task": {
+              "inputs": [
+                {
+                  "jsonSchema": {
+                    "type": "object"
+                  },
+                  "nullable": false,
+                  "handle": "query"
+                }
+              ],
+              "outputs": [
+                {
+                  "jsonSchema": {},
+                  "nullable": true,
+                  "handle": "vectors"
+                },
+                {
+                  "jsonSchema": {
+                    "type": "string"
+                  },
+                  "nullable": true,
+                  "handle": "error"
+                }
+              ],
+              "name": "Parse vectors query parameter",
+              "moduleId": "n_8449dea7448dceb8",
+              "capabilities": [
+                {
+                  "kind": "connector",
+                  "mode": "independent",
+                  "actions": []
+                }
+              ]
+            }
+          },
+          "n_dcef560ec7aeec69": {
+            "inputs": {
+              "vectors": {
+                "kind": "sources",
+                "sources": [
+                  {
+                    "kind": "node",
+                    "nodeId": "n_986b4e14fd435c0e",
+                    "output": "vectors"
+                  }
+                ]
+              },
+              "error": {
+                "kind": "sources",
+                "sources": [
+                  {
+                    "kind": "node",
+                    "nodeId": "n_986b4e14fd435c0e",
+                    "output": "error"
+                  }
+                ]
+              }
+            },
+            "name": "Validate and average coordinates",
+            "kind": "task",
+            "task": {
+              "inputs": [
+                {
+                  "jsonSchema": {},
+                  "nullable": true,
+                  "handle": "vectors"
+                },
+                {
+                  "jsonSchema": {
+                    "type": "string"
+                  },
+                  "nullable": true,
+                  "handle": "error"
+                }
+              ],
+              "outputs": [
+                {
+                  "jsonSchema": {
+                    "oneOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "centroid": {
+                            "type": "array",
+                            "items": {
+                              "type": "number"
+                            }
+                          }
+                        },
+                        "required": [
+                          "centroid"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "error": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "error"
+                        ],
+                        "additionalProperties": false
+                      }
+                    ]
+                  },
+                  "nullable": false,
+                  "handle": "result"
+                }
+              ],
+              "name": "Validate and average coordinates",
+              "moduleId": "n_d5d885f06d2590e8",
+              "capabilities": [
+                {
+                  "kind": "connector",
+                  "mode": "independent",
+                  "actions": []
+                }
+              ]
+            }
+          },
+          "n_f337eb92e62d55f6": {
+            "name": "Centroid JSON response",
+            "kind": "outputs",
+            "outputDefs": [
+              {
+                "jsonSchema": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "centroid": {
+                          "type": "array",
+                          "items": {
+                            "type": "number"
+                          }
+                        }
+                      },
+                      "required": [
+                        "centroid"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": false
+                    }
+                  ]
+                },
+                "nullable": false,
+                "handle": "result"
+              }
+            ],
+            "outputMappings": {
+              "result": {
+                "kind": "sources",
+                "sources": [
+                  {
+                    "kind": "node",
+                    "nodeId": "n_dcef560ec7aeec69",
+                    "output": "result"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "edges": [
+          {
+            "source": "n_36b7a5fb0c159c37",
+            "target": "n_986b4e14fd435c0e"
+          },
+          {
+            "source": "n_986b4e14fd435c0e",
+            "target": "n_dcef560ec7aeec69"
+          },
+          {
+            "source": "n_dcef560ec7aeec69",
+            "target": "n_f337eb92e62d55f6"
+          }
+        ]
+      }
+    },
+    "modules": {
+      "n_8449dea7448dceb8": {
+        "name": "Parse vectors query parameter",
+        "imports": [],
+        "source": "export default function vectorRequest({ query }) {\n  if (typeof query.vectors !== 'string' || !query.vectors) return { vectors: null, error: 'Invalid input: Expected an array of vectors.' };\n  try {\n    let nonFinite = false;\n    const vectors = JSON.parse(query.vectors, (_key, value) => {\n      if (typeof value === 'number' && !Number.isFinite(value)) nonFinite = true;\n      return value;\n    });\n    if (nonFinite) return { vectors: null, error: 'Vectors must contain finite numbers.' };\n    return { vectors, error: null };\n  }\n  catch { return { vectors: null, error: 'Invalid input: vectors must be valid JSON.' }; }\n}\n"
+      },
+      "n_d5d885f06d2590e8": {
+        "name": "Validate and average coordinates",
+        "imports": [],
+        "source": "export default function vectorCentroid({ vectors, error }) {\n  const fail = (error) => ({ result: { error } });\n  if (error) return fail(error);\n  if (!Array.isArray(vectors) || vectors.length === 0) return fail('Invalid input: Expected an array of vectors.');\n  if (!vectors.every(Array.isArray)) return fail('Each vector must be an array.');\n  const dimension = vectors[0].length;\n  if (!vectors.every((vector) => vector.length === dimension)) return fail('Vectors have inconsistent dimensions.');\n  if (!vectors.every((vector) => vector.every((value) => typeof value === 'number' && Number.isFinite(value)))) return fail('Vectors must contain finite numbers.');\n  const centroid = Array.from({ length: dimension }, (_, index) => {\n    let scale = 0;\n    for (const vector of vectors) scale = Math.max(scale, Math.abs(vector[index]));\n    if (scale === 0) return 0;\n    let sum = 0, correction = 0;\n    for (const vector of vectors) {\n      const adjusted = vector[index] / scale - correction;\n      const next = sum + adjusted;\n      correction = (next - sum) - adjusted;\n      sum = next;\n    }\n    return (sum / vectors.length) * scale;\n  });\n  if (!centroid.every(Number.isFinite)) return fail('Centroid exceeds the finite numeric range.');\n  return { result: { centroid } };\n}\n"
+      }
+    }
+  },
+  "presentation": {
+    "designer": {
+      "version": 1,
+      "flow": {
+        "direction": "vertical"
+      }
+    }
+  }
+}
