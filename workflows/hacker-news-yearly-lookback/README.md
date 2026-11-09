@@ -23,7 +23,7 @@ The workflow requests this month and day for every year from the run's year down
 
 Each date reads one public `/front?day=YYYY-MM-DD` page, without paging through additional archive pages. Both formats use a 30-second per-page timeout and reject redirects. Open Flow waits for each page to finish, then waits three seconds before requesting the next; it limits the collection task to 30 minutes and each response to its HTTP runtime's 1 MiB limit. n8n retains the source's three-second request-start spacing, so slow requests can overlap. Both formats wait for all requested pages before extraction and summarization.
 
-The archive's title links are kept with their requested date, including relative links resolved against Hacker News. One model generation step receives the complete dated headline set and the source's summary prompt. The requested 10–15 headlines and themes are model guidance, not a guaranteed count or factual verification.
+The archive's title links are kept with their requested date. Absolute HTTP(S) links are preserved; archive-relative links use the Hacker News origin. One model generation step receives the complete dated headline set and the source's summary prompt. The requested 10–15 headlines and themes are model guidance, not a guaranteed count or factual verification.
 
 An HTTP or extraction failure prevents the model and notification. Empty or oversized model output stops before Telegram. The summary is sent using Telegram's Markdown mode and must fit its 4,096-character limit; invalid model-generated Markdown can also fail delivery. No workflow-level retry, persistent checkpoint, or cross-run deduplication is configured. Model adapters and providers can retry transient requests internally. Repeating a run can send another summary.
 
@@ -33,6 +33,7 @@ An HTTP or extraction failure prevents the model and notification. Empty or over
 - Extract headline URLs alongside their titles and preserve each requested date directly.
 - Replace the historical Gemini model configuration with Gemini 3.8 Flash while retaining the complete summary prompt.
 - Make response format, timeout, redirect behavior, and Telegram message validation explicit.
+- Keep headline link handling compatible with n8n's Code runtime.
 
 ## Source and license
 
