@@ -1,0 +1,362 @@
+{
+  "nodes": [
+    {
+      "id": "manual-api-operations",
+      "name": "Run Operations Export",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -840,
+        0
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "example-api-operations",
+      "name": "Service To Export",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -600,
+        0
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "service-name",
+              "name": "service",
+              "type": "string",
+              "value": "Example Service"
+            },
+            {
+              "id": "documentation-url",
+              "name": "url",
+              "type": "string",
+              "value": "https://example.com/docs"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "109b6c3a-9b16-40cc-9186-5045df387b52",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "position": [
+        -600,
+        240
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "api-operations-settings",
+      "name": "Operations Sheet Settings",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -360,
+        120
+      ],
+      "parameters": {
+        "includeOtherFields": true,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "operations-spreadsheet",
+              "name": "spreadsheetId",
+              "type": "string",
+              "value": "YOUR_SPREADSHEET_ID"
+            },
+            {
+              "id": "operations-range",
+              "name": "range",
+              "type": "string",
+              "value": "'Operations'"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "prepare-api-operations",
+      "name": "Prepare Export Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -120,
+        120
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function prepareOperationsExport({ service, url, spreadsheetId, range, eventType }) {\n  if (eventType != null && eventType !== 'generate') throw new Error('This component handles only generate requests.');\n  if (typeof service !== 'string' || !service.trim()) throw new Error('Supply the exact service name used in the operations sheet.');\n  if (typeof url !== 'string' || !url.trim()) throw new Error('Supply the service documentation URL.');\n  if (typeof spreadsheetId !== 'string' || !/^[A-Za-z0-9_-]+$/.test(spreadsheetId) || /YOUR_SPREADSHEET_ID/.test(spreadsheetId)) throw new Error('Configure your operations spreadsheet ID.');\n  if (typeof range !== 'string' || !/^'(?:[^'\\u0000-\\u001f\\u007f]|'')+'$/.test(range)) throw new Error('Configure the complete operations tab as a single-quoted A1 sheet name.');\n  return { service, url, spreadsheetId, range, createdAt: new Date().toISOString() };\n}\n\nreturn $input.all().map((item,index)=>({json:prepareOperationsExport({...item.json,...(item.json.data??{}),spreadsheetId:item.json.spreadsheetId,range:item.json.range}),pairedItem:{item:index}}));\n"
+      }
+    },
+    {
+      "id": "read-api-operations",
+      "name": "Read Operations Table",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        120,
+        120
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ \"https://sheets.googleapis.com/v4/spreadsheets/\" + encodeURIComponent($json.spreadsheetId) + \"/values/\" + encodeURIComponent($json.range) }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "majorDimension",
+              "value": "ROWS"
+            },
+            {
+              "name": "valueRenderOption",
+              "value": "UNFORMATTED_VALUE"
+            },
+            {
+              "name": "dateTimeRenderOption",
+              "value": "FORMATTED_STRING"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "build-api-operations",
+      "name": "Build Operations Export",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        360,
+        120
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function sheetTable({ values, majorDimension = \"ROWS\" }) {\n  if (majorDimension !== \"ROWS\" || !Array.isArray(values) || values.some((row) => !Array.isArray(row)))\n    throw Error(\"Google Sheets must return row-oriented cell values.\");\n  const isEmpty = (value) => value == null || value === \"\", nonempty = (row) => row.some((value) => !isEmpty(value)), headerIndex = values.findIndex(nonempty);\n  if (headerIndex < 0)\n    return { columns: [], records: [] };\n  const headers = values[headerIndex];\n  if (headers.some((name) => typeof name !== \"string\" || !name.trim() || name === \"row_number\") || new Set(headers).size !== headers.length)\n    throw Error(\"Use unique nonempty text headers; row_number is reserved.\");\n  const columns = [\"row_number\", ...headers], records = [];\n  for (let index = headerIndex + 1;index < values.length; index++) {\n    const cells = values[index];\n    if (!nonempty(cells))\n      continue;\n    if (cells.slice(headers.length).some((value) => !isEmpty(value)))\n      throw Error(\"Every populated column needs a header.\");\n    records.push(Object.fromEntries([[\"row_number\", index + 1], ...headers.map((name, column) => [name, cells[column] ?? \"\"])]));\n  }\n  return { columns, records };\n}\n\nfunction buildOperationsExport({ values, majorDimension, service, url, createdAt }) {\n  const table = sheetTable({ values, majorDimension });\n  const required = ['service', 'resource', 'operation', 'description', 'url', 'method'];\n  if (table.columns.length && required.some(name => !table.columns.includes(name))) throw new Error('The operations tab needs service, resource, operation, description, url and method columns.');\n  const groups = new Map();\n  let operationCount = 0;\n  for (const row of table.records) {\n    if (String(row.service) !== service) continue;\n    for (const key of ['resource', 'operation', 'url', 'method']) if (typeof row[key] !== 'string' || !row[key].trim()) throw new Error('Each matching operation needs resource, operation, url and method text.');\n    if (typeof row.description !== 'string') throw new Error('Operation descriptions must be text.');\n    if (row.documentation_url != null && typeof row.documentation_url !== 'string') throw new Error('Method documentation URLs must be text when supplied.');\n    const resource = row.resource.toLowerCase().trim().replace(/\\bapi\\b/g, '').replace(/\\s+/g, ' ').trim();\n    if (!resource) continue;\n    if (!groups.has(resource)) groups.set(resource, { resource: resource[0].toUpperCase() + resource.slice(1), operations: [] });\n    const description = row.description.trim(), period = description.indexOf('.');\n    const operation = row.operation.trim();\n    groups.get(resource).operations.push({ operation: operation[0].toUpperCase() + operation.slice(1), description: period > 0 ? description.slice(0, period + 1) : description, ApiUrl: row.url, method: row.method.trim().toUpperCase(), method_documentation_url: row.documentation_url || '' });\n    operationCount++;\n  }\n  if (typeof createdAt !== 'string' || Number.isNaN(Date.parse(createdAt))) throw new Error('The export needs its run-start timestamp.');\n  const timestamp = new Date(createdAt).toISOString().slice(0, 19).replace(/[-:]/g, '').replace('T', '_') + 'Z';\n  const prefix = service.replace(/[^\\p{L}\\p{N}_-]+/gu, '_').replace(/^_+|_+$/g, '').toLowerCase() || 'service';\n  const filename = prefix + '_api_operations_' + timestamp + '.json';\n  const text = JSON.stringify({ documentation_url: url, endpoints: [...groups.values()] }, null, 4);\n  if (new TextEncoder().encode(text).byteLength > 5000000) throw new Error('The generated JSON text exceeds the 5,000,000-byte content budget.');\n  return { hasOperations: operationCount > 0, operationCount, filename, text };\n}\n\nreturn $input.all().map((item,index)=>({json:buildOperationsExport({...$(\"Prepare Export Request\").itemMatching(index).json,values:item.json.values??[],majorDimension:item.json.majorDimension??\"ROWS\"}),pairedItem:{item:index}}));\n"
+      }
+    },
+    {
+      "id": "check-api-operations",
+      "name": "Has Matching Operations?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        600,
+        120
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "has-api-operations",
+              "leftValue": "={{ $json.hasOperations }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "e60b7ccb-baa2-4095-8425-0e20bcdbfdd2",
+      "name": "Save JSON Text To Drive",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [
+        840,
+        0
+      ],
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "file",
+        "operation": "createFromText",
+        "name": "={{ $json.filename }}",
+        "content": "={{ $json.text }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "root",
+          "cachedResultName": "/ (Root folder)"
+        },
+        "options": {
+          "convertToGoogleDocument": false
+        }
+      },
+      "typeVersion": 3
+    },
+    {
+      "id": "confirm-api-operations",
+      "name": "Confirm Saved Export",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1080,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function operationsExportReply({ exported, id, filename }) {\n  if (!exported) return { exported: false, response: { id: null, filename: null } };\n  if (typeof id !== 'string' || !id.trim() || typeof filename !== 'string' || !filename.trim()) throw new Error('Google Drive did not acknowledge the created export file.');\n  return { exported: true, response: { id, filename } };\n}\n\nreturn $input.all().map((item,index)=>({json:operationsExportReply({exported:true,id:item.json.id,filename:$(\"Build Operations Export\").itemMatching(index).json.filename}),pairedItem:{item:index}}));\n"
+      }
+    },
+    {
+      "id": "empty-api-operations",
+      "name": "Return No Operations",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        840,
+        240
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function operationsExportReply({ exported, id, filename }) {\n  if (!exported) return { exported: false, response: { id: null, filename: null } };\n  if (typeof id !== 'string' || !id.trim() || typeof filename !== 'string' || !filename.trim()) throw new Error('Google Drive did not acknowledge the created export file.');\n  return { exported: true, response: { id, filename } };\n}\n\nreturn $input.all().map((item,index)=>({json:operationsExportReply({exported:false}),pairedItem:{item:index}}));\n"
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Run Operations Export": {
+      "main": [
+        [
+          {
+            "node": "Service To Export",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Service To Export": {
+      "main": [
+        [
+          {
+            "node": "Operations Sheet Settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Operations Sheet Settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Operations Sheet Settings": {
+      "main": [
+        [
+          {
+            "node": "Prepare Export Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Export Request": {
+      "main": [
+        [
+          {
+            "node": "Read Operations Table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Operations Table": {
+      "main": [
+        [
+          {
+            "node": "Build Operations Export",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Operations Export": {
+      "main": [
+        [
+          {
+            "node": "Has Matching Operations?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Matching Operations?": {
+      "main": [
+        [
+          {
+            "node": "Save JSON Text To Drive",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Return No Operations",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save JSON Text To Drive": {
+      "main": [
+        [
+          {
+            "node": "Confirm Saved Export",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "API Operations Schema Export",
+  "active": false
+}

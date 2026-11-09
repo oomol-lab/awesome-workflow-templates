@@ -27,6 +27,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Utilities](#utilities)
 - [Analytics](#analytics)
 - [Lifestyle](#lifestyle)
+- [Developer Tools](#developer-tools)
 - [Contribute](#contribute)
 - [Licensing](#licensing)
 
@@ -143,6 +144,10 @@ A growing collection of automation workflows for connecting apps and getting rep
 ## Lifestyle
 
 - [Daily Cocktail Photo in Telegram](workflows/daily-cocktail-telegram/) - Send Telegram one random cocktail photo and its available preparation instructions each evening.
+
+## Developer Tools
+
+- [API Operations Schema Export](workflows/api-operations-schema-export/) - Group a service’s API operation rows from Google Sheets into a custom JSON catalog and save the export in Google Drive.
 
 ## Contribute
 
