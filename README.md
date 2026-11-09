@@ -58,6 +58,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Form Testimonial Capture](workflows/form-testimonial-capture/) - Analyze submitted feedback and create a Strapi entry only when its sentiment score is greater than 0.4.
 - [Live Tennis Discord Alert](workflows/live-tennis-discord-alert/) - Check the first page of live tennis matches every five minutes and announce previously unseen match IDs in Discord.
 - [Telegram Spotify Player](workflows/telegram-spotify-player/) - Turn a Telegram song description into a Spotify search, queue the first match, request next/resume playback and reply with the observed player status.
+- [Resilient API Record Validator](workflows/resilient-api-record-validator/) - Fetch public JSON records with bounded retries, normalize names and emails, and report missing fields or a safe failure record.
 
 ## Marketing
 
