@@ -25,6 +25,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Content](#content)
 - [Commerce](#commerce)
 - [Utilities](#utilities)
+- [Analytics](#analytics)
 - [Contribute](#contribute)
 - [Licensing](#licensing)
 
@@ -123,6 +124,10 @@ A growing collection of automation workflows for connecting apps and getting rep
 ## Utilities
 
 - [Vector Centroid API](workflows/vector-centroid-api/) - Accept a GET request containing numeric vectors and return their coordinate-wise mean as JSON.
+
+## Analytics
+
+- [Segment Event Tracker](workflows/segment-event-tracker/) - Send one Segment Track event with an optional user ID or a fresh anonymous identity.
 
 ## Contribute
 
