@@ -1,0 +1,165 @@
+{
+  "nodes": [
+    {
+      "name": "Github Trigger",
+      "type": "n8n-nodes-base.githubTrigger",
+      "position": [
+        500,
+        350
+      ],
+      "parameters": {
+        "authentication": "accessToken",
+        "owner": {
+          "__rl": true,
+          "mode": "name",
+          "value": "your-github-owner"
+        },
+        "repository": {
+          "__rl": true,
+          "mode": "name",
+          "value": "your-github-repo"
+        },
+        "events": [
+          "star"
+        ],
+        "options": {}
+      },
+      "typeVersion": 1,
+      "id": "github-star-slack-alert-0"
+    },
+    {
+      "name": "IF",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        920,
+        350
+      ],
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.action }}",
+              "value2": "created",
+              "operation": "equal"
+            }
+          ]
+        },
+        "combineOperation": "all"
+      },
+      "typeVersion": 1,
+      "id": "github-star-slack-alert-1"
+    },
+    {
+      "name": "Slack - Add",
+      "type": "n8n-nodes-base.slack",
+      "position": [
+        1140,
+        230
+      ],
+      "parameters": {
+        "authentication": "accessToken",
+        "resource": "message",
+        "operation": "post",
+        "channel": "YOUR_SLACK_CHANNEL_ID",
+        "text": "={{ $json.text }}",
+        "jsonParameters": false,
+        "attachments": "={{ $json.attachments }}",
+        "blocksUi": {
+          "blocksValues": []
+        },
+        "otherOptions": {
+          "sendAsUser": ""
+        }
+      },
+      "typeVersion": 1,
+      "id": "github-star-slack-alert-2"
+    },
+    {
+      "name": "Slack - Remove",
+      "type": "n8n-nodes-base.slack",
+      "position": [
+        1140,
+        470
+      ],
+      "parameters": {
+        "authentication": "accessToken",
+        "resource": "message",
+        "operation": "post",
+        "channel": "YOUR_SLACK_CHANNEL_ID",
+        "text": "={{ $json.text }}",
+        "jsonParameters": false,
+        "attachments": "={{ $json.attachments }}",
+        "blocksUi": {
+          "blocksValues": []
+        },
+        "otherOptions": {
+          "sendAsUser": ""
+        }
+      },
+      "typeVersion": 1,
+      "id": "github-star-slack-alert-3"
+    },
+    {
+      "id": "github-star-slack-alert-format",
+      "name": "Format added or removed star",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        700,
+        350
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const format = function starMessage({ body }) {\n  if (!['created', 'deleted'].includes(body.action)) throw new Error('Expected a GitHub star created or deleted action');\n  const total = body.repository?.stargazers_count, sender = body.sender;\n  if (!Number.isSafeInteger(total) || total < 0 || !sender || typeof sender.login !== 'string' || !sender.login) throw new Error('GitHub star event is missing its count or sender');\n  for (const field of ['avatar_url', 'html_url']) {\n    if (typeof sender[field] !== 'string') throw new Error('GitHub sender is missing ' + field);\n    const url = new URL(sender[field]);\n    if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password) throw new Error('GitHub sender URLs must use HTTP(S) without credentials');\n  }\n  const escape = (text) => text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\n  const added = body.action === 'created';\n  const title = (added ? 'Got new star from: ' : 'Star got removed by: ') + escape(sender.login);\n  const message = 'The project has now: ' + total + ' Stars';\n  return { action: body.action, text: title + '\\n' + message, attachments: [{ color: added ? '#88FF00' : '#ff0000', fallback: title + '. ' + message, title, title_link: sender.html_url, image_url: sender.avatar_url, text: message }] };\n}\n\nreturn {json:format({body:$json.body})};"
+      }
+    }
+  ],
+  "connections": {
+    "Github Trigger": {
+      "main": [
+        [
+          {
+            "node": "Format added or removed star",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format added or removed star": {
+      "main": [
+        [
+          {
+            "node": "IF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF": {
+      "main": [
+        [
+          {
+            "node": "Slack - Add",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Slack - Remove",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "GitHub Star Alerts in Slack",
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false,
+  "pinData": {}
+}

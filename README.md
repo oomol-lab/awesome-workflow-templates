@@ -80,6 +80,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [n8n Silent Workflow Check](workflows/n8n-silent-workflow-check/) - Check active n8n workflows for missing or stale executions and return a report with the inspected page limits.
 - [GitHub Issues to Telegram](workflows/github-low-comment-issues-telegram/) - Notify Telegram about recently updated open Bug issues with fewer than five comments.
 - [Output Completion Check](workflows/output-completion-check/) - Check a completed-record batch for distinct nonempty IDs, invalid records, duplicates, and a configured minimum count.
+- [GitHub Star Alerts in Slack](workflows/github-star-slack-alert/) - Post Slack alerts when a repository gains or loses a GitHub star.
 
 ## Research
 
