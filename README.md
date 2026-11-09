@@ -74,6 +74,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [SEO Seed Keywords](workflows/seo-seed-keywords/) - Generate 15–20 SEO seed keywords from a B2B software customer profile, including its pain points, goals, and current solutions.
 - [X Search Digest](workflows/x-search-digest/) - Search X once through Xquik and return normalized posts, a readable digest, and pagination information.
 - [Typeform to Demio Registration](workflows/typeform-demio-registration/) - Register a Typeform respondent for a configured Demio event using their name and email.
+- [WordPress Post Categorizer](workflows/wordpress-post-categorizer/) - Read WordPress post pages, classify every title into one configured category, validate the complete batch and replace each post’s category assignment.
 
 ## Support
 
