@@ -29,6 +29,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Lifestyle](#lifestyle)
 - [Developer Tools](#developer-tools)
 - [Communication](#communication)
+- [Customer Support](#customer-support)
 - [Contribute](#contribute)
 - [Licensing](#licensing)
 
@@ -153,6 +154,10 @@ A growing collection of automation workflows for connecting apps and getting rep
 ## Communication
 
 - [Twilio SMS Sender](workflows/twilio-sms-sender/) - Submit one text message to Twilio with a sender and recipient number.
+
+## Customer Support
+
+- [Freshdesk Ticket Creator](workflows/freshdesk-ticket-creator/) - Create an open, low-priority Freshdesk ticket for a requester email.
 
 ## Contribute
 
