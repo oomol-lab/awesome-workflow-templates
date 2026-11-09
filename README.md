@@ -51,6 +51,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Exact-Match Quote Guard](workflows/exact-match-quote-guard/) - Validate extracted line items against a synthetic example catalog and return a calculated quote, review request, or rejection.
 - [Communication Record Extractor](workflows/communication-record-extractor/) - Extract a communication record from supplied text, validate its fields, and allow one model correction when the output format is invalid.
 - [JSON Feed Telegram Alert](workflows/json-feed-telegram-alert/) - Poll a JSON feed every five minutes and send matching new entries to Telegram, keeping a timestamp watermark after successful delivery.
+- [Negative Feedback Alert](workflows/negative-feedback-alert/) - Analyze a Typeform feedback submission and post its text and score to Mattermost only when the score is negative.
 
 ## Marketing
 
