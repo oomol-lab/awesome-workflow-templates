@@ -99,6 +99,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 ## Research
 
 - [Domain Filtered Research](workflows/domain-filtered-research/) - Ask Perplexity a research question with domain and one-month publication filters, and return the answer with citation URLs.
+- [Web Search Results](workflows/web-search-results/) - Run one Tavily web search and return up to five ranked results with a title, URL and snippet.
 
 ## Productivity
 

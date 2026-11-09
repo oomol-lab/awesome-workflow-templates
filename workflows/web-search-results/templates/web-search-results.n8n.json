@@ -1,0 +1,173 @@
+{
+  "nodes": [
+    {
+      "id": "2c1cc9d6-50e0-4928-a1ec-c95e754857f4",
+      "name": "When clicking ‘Test workflow’",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        -460,
+        80
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "740cffc4-d20a-4b83-8e00-39ccb0d4311e",
+      "name": "Search Query",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        60,
+        80
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "search-query",
+              "name": "query",
+              "type": "string",
+              "value": "latest AI agent frameworks"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "03bbc419-51c5-4e53-b9f7-1dfe533174a1",
+      "name": "Tavily Search",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        320,
+        80
+      ],
+      "parameters": {
+        "url": "https://api.tavily.com/search",
+        "method": "POST",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {query:$json.query,...{\"max_results\":5,\"search_depth\":\"basic\",\"topic\":\"general\",\"auto_parameters\":false,\"include_answer\":false,\"include_raw_content\":false,\"include_images\":false}} }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "c47bee08-5123-414e-adb5-b1815ec30b4e",
+      "name": "Format Results",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        580,
+        80
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const prepare = function ({ results }) {\n  if (!Array.isArray(results) || results.length > 5) throw new Error('Expected at most five Tavily search results.');\n  return { results: results.map(result => {\n    if (!result || typeof result !== 'object' || Array.isArray(result) || typeof result.title !== 'string' || typeof result.url !== 'string' || typeof result.content !== 'string') throw new Error('A search result is missing its title, URL or snippet.');\n    return { title: result.title, url: result.url, snippet: result.content };\n  }) };\n}\n\nreturn $input.all().flatMap((item,index)=>prepare({results:item.json.results}).results.map(json=>({json,pairedItem:{item:index}})));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "f218e9b7-d8b8-44f3-b8db-880d973641f4",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -220,
+        -260
+      ],
+      "parameters": {
+        "width": 520,
+        "height": 280,
+        "content": "## Web search results\n\nSet one query in Search Query. Configure Tavily Search HTTP Header Auth with Authorization: Bearer <your Tavily API key>. Tavily basic/general search requests up to5 results and disables generated answers, raw page content, images and automatic parameter selection. Format Results returns title/url/snippet items in provider order. No LLM or additional page crawl is included. See README."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "ef81ab75-8903-4cf5-bf0f-6f370c7ffb07",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        320,
+        260
+      ],
+      "parameters": {
+        "color": 5,
+        "width": 420,
+        "height": 160,
+        "content": "## Source backend change\n\nThe source used Superhighway. Its official endpoint now reports shutdown on2026-10-26. This adaptation uses Tavily in both formats. Results, snippets, ranking and API allowance differ. An empty results array is a successful zero-match result; malformed or failed responses stop without a false success. Keep API keys in credentials."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "validate-web-search-query",
+      "name": "Validate Search Query",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        420,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const prepare = function ({ query }) {\n  if (typeof query !== 'string' || !query.trim()) throw new Error('Enter a nonempty search query.');\n  return { query: query.trim() };\n}\n\nreturn $input.all().map((item,index)=>({json:prepare(item.json),pairedItem:{item:index}}));"
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Test workflow’": {
+      "main": [
+        [
+          {
+            "node": "Search Query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Query": {
+      "main": [
+        [
+          {
+            "node": "Validate Search Query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Search Query": {
+      "main": [
+        [
+          {
+            "node": "Tavily Search",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tavily Search": {
+      "main": [
+        [
+          {
+            "node": "Format Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {},
+  "name": "Live Web Research Agent with Superhighway",
+  "active": false
+}
