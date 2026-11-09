@@ -1,0 +1,137 @@
+{
+  "name": "02 - Promemoria scadenze pagamenti",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## ⚙️ CONFIGURAZIONE (5 min)\n\n1. **Google Sheets**: prepara un foglio 'Fatture' con le colonne:\n   `Numero | Cliente | Email | Importo | Scadenza (gg/mm/aaaa) | Stato`\n   Lo Stato deve essere `Pagata` oppure `Da pagare`.\n2. Collega le credenziali Google nel nodo 'Leggi fatture' e seleziona il foglio.\n3. **Gmail**: collega l'account che invierà i solleciti.\n4. Il controllo parte ogni mattina alle 8:00. Invia il promemoria se la scadenza è tra 3 giorni o se è già passata.\n\n💡 Personalizza il testo dell'email nel nodo 'Invia sollecito' con il tono della tua azienda.",
+        "height": 380,
+        "width": 400
+      },
+      "id": "nota-setup",
+      "name": "Nota di setup",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -60,
+        -200
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 8 * * 1-5"
+            }
+          ]
+        }
+      },
+      "id": "schedule-mattina",
+      "name": "Ogni mattina alle 8 (lun-ven)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        400,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_SPREADSHEET_ID"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Invoices"
+        },
+        "options": {}
+      },
+      "id": "sheets-leggi",
+      "name": "Leggi fatture",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        620,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const prepare = function invoiceReminders({ values, timezone, signature, now }) {\n  if (!Array.isArray(values)) throw new Error('Invoice values must be an array.');\n  if (!values.length) return { reminders: [], count: 0 };\n  const headers = values[0];\n  const required = ['Numero', 'Cliente', 'Email', 'Importo', 'Scadenza', 'Stato'];\n  if (!Array.isArray(headers) || required.some((header) => !headers.includes(header))) throw new Error('Invoice sheet headers must include ' + required.join(', ') + '.');\n  for (const header of required) if (headers.filter((name) => name === header).length !== 1) throw new Error('Duplicate invoice header: ' + header);\n  const dateParts = new Intl.DateTimeFormat('en-GB', { timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(now ? new Date(now) : new Date());\n  const part = (name) => Number(dateParts.find((value) => value.type === name).value);\n  const today = Date.UTC(part('year'), part('month') - 1, part('day'));\n  const reminders = [];\n  for (const [sourceIndex, row] of values.slice(1).entries()) {\n    if (!Array.isArray(row)) throw new Error('Invoice row must be an array.');\n    const invoice = Object.fromEntries(headers.map((header, index) => [header, row[index] ?? '']));\n    if (String(invoice.Stato).trim().toLowerCase() === 'pagata') continue;\n    const match = /^(\\d{1,2})\\/(\\d{1,2})\\/(\\d{4})$/.exec(String(invoice.Scadenza).trim());\n    if (!match) continue;\n    const [, day, month, year] = match.map(Number);\n    const due = new Date(Date.UTC(year, month - 1, day));\n    if (due.getUTCFullYear() !== year || due.getUTCMonth() !== month - 1 || due.getUTCDate() !== day) continue;\n    const daysRemaining = Math.round((due.getTime() - today) / 86400000);\n    if (daysRemaining > 3) continue;\n    const to = String(invoice.Email).trim();\n    if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(to)) throw new Error('Invalid email for invoice ' + invoice.Numero + '.');\n    const overdue = daysRemaining < 0;\n    const dueText = `${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}/${year}`;\n    reminders.push({\n      to, daysRemaining, sourceIndex,\n      subject: `Promemoria: fattura ${invoice.Numero} ${overdue ? 'scaduta' : 'in scadenza'}`,\n      body: `Gentile ${invoice.Cliente},\\n\\nle ricordiamo che la fattura n. ${invoice.Numero} di € ${invoice.Importo} ${overdue ? 'risulta scaduta il' : 'è in scadenza il'} ${dueText}.\\n\\nSe il pagamento è già stato effettuato, la preghiamo di ignorare questo messaggio.\\n\\nPer qualsiasi chiarimento siamo a disposizione.\\n\\nCordiali saluti,\\n${signature}`,\n    });\n  }\n  return { reminders, count: reminders.length };\n}\n\nconst headers = [\"Numero\",\"Cliente\",\"Email\",\"Importo\",\"Scadenza\",\"Stato\"];\nconst items = $input.all();\nconst values = [headers, ...items.map(item => headers.map(header => item.json[header] ?? ''))];\nreturn prepare({values, timezone: $now.zoneName, signature: '[LA TUA AZIENDA]', now: $now.toISO()}).reminders.map(reminder => ({json: reminder, pairedItem: {item: reminder.sourceIndex}}));\n"
+      },
+      "id": "code-filtra",
+      "name": "Trova scadenze imminenti",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        840,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.to }}",
+        "subject": "={{ $json.subject }}",
+        "emailType": "text",
+        "message": "={{ $json.body }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "gmail-sollecito",
+      "name": "Invia sollecito",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1060,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Ogni mattina alle 8 (lun-ven)": {
+      "main": [
+        [
+          {
+            "node": "Leggi fatture",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leggi fatture": {
+      "main": [
+        [
+          {
+            "node": "Trova scadenze imminenti",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trova scadenze imminenti": {
+      "main": [
+        [
+          {
+            "node": "Invia sollecito",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC"
+  },
+  "pinData": {},
+  "active": false
+}

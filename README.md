@@ -28,6 +28,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 ## Operations
 
 - [Unread Email Digest](workflows/unread-email-digest/) - Summarize unread Gmail messages with AI and send a prioritized weekday morning digest to Telegram.
+- [Invoice Payment Reminders](workflows/invoice-payment-reminders/) - Email Italian payment reminders for unpaid invoices that are overdue or due within three days, every weekday morning.
 
 ## Marketing
 
