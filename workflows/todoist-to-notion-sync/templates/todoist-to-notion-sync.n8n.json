@@ -1,0 +1,189 @@
+{
+  "name": "Todoist to Notion Sync",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "0122196d-e051-4154-9e39-3ddbfe26858f",
+      "name": "On schedule",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        640,
+        280
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "seconds",
+              "secondsInterval": 30
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "1a15e1cc-cdd5-4a49-aa7a-a0779f858e69",
+      "name": "Get all tasks with specific label",
+      "type": "n8n-nodes-base.todoist",
+      "position": [
+        860,
+        280
+      ],
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "task",
+        "operation": "getAll",
+        "returnAll": false,
+        "limit": 50,
+        "filters": {
+          "labelId": "send-to-notion"
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "35b13f4a-da38-4d63-9fbf-7c36c97cbc11",
+      "name": "Add to Notion database",
+      "type": "n8n-nodes-base.notion",
+      "position": [
+        1240,
+        280
+      ],
+      "parameters": {
+        "authentication": "apiKey",
+        "resource": "databasePage",
+        "operation": "create",
+        "databaseId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_NOTION_DATABASE_ID"
+        },
+        "title": "={{ $json.content }}",
+        "simple": false,
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Todoist ID|rich_text",
+              "richText": false,
+              "textContent": "={{ $json.id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "id": "f3144751-28b0-48e1-9331-f25f55a5ddf6",
+      "name": "Replace label on task",
+      "type": "n8n-nodes-base.todoist",
+      "position": [
+        1660,
+        280
+      ],
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "task",
+        "operation": "update",
+        "taskId": "={{ $json.taskId }}",
+        "updateFields": {
+          "labels": "={{ $json.labels }}",
+          "description": "={{ $json.description }}"
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "sync-task-validation",
+      "name": "Prepare task batch",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1030,
+        280
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const validate = function validateSyncTasks({ tasks }) {\n  return { tasks: tasks.map((task) => {\n    if (typeof task.id !== 'string' || !task.id || task.id.length > 2000) throw new Error('A Todoist task has an invalid text ID');\n    if (typeof task.content !== 'string' || !task.content || task.content.length > 2000) throw new Error('A Todoist task title cannot fit in a Notion title field');\n    if (!Array.isArray(task.labels) || task.labels.some((label) => typeof label !== 'string' || !label)) throw new Error('Todoist did not return the task label names');\n    if (task.description != null && typeof task.description !== 'string') throw new Error('A Todoist task has an invalid description');\n    return { id: task.id, content: task.content, description: task.description ?? '', labels: task.labels };\n  }) };\n}\n\nreturn validate({tasks:$input.all().map(item=>item.json)}).tasks.map((json,index)=>({json,pairedItem:{item:index}}));"
+      }
+    },
+    {
+      "id": "sync-task-updates",
+      "name": "Prepare task updates",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1450,
+        280
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const prepare = function prepareSyncUpdates({ created, tasks, sourceLabel, sentLabel }) {\n  if (typeof sentLabel !== 'string' || !sentLabel) throw new Error('Configure a completed-sync label');\n  if (created.length !== tasks.length || created.some(({ taskId }, index) => taskId !== tasks[index].id)) throw new Error('Notion page results are not associated with their Todoist tasks');\n  const updates = created.map(({ page }, index) => {\n    const task = tasks[index];\n    return {\n    taskId: task.id,\n    labels: [...new Set([...task.labels.filter((label) => label !== sourceLabel), sentLabel])],\n    description: 'Notion Link:  ' + page.url + '\\n\\n' + task.description,\n    };\n  });\n  return { updates };\n}\n\nconst tasks=$input.all().map((_,index)=>$(\"Prepare task batch\").itemMatching(index).json);\nconst created=$input.all().map((item,index)=>({taskId:tasks[index].id,page:item.json}));\nreturn prepare({created,tasks,sourceLabel:$node[\"Get all tasks with specific label\"].parameter.filters.labelId,sentLabel:\"sent\"}).updates.map((json,index)=>({json,pairedItem:{item:index}}));"
+      }
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC"
+  },
+  "connections": {
+    "On schedule": {
+      "main": [
+        [
+          {
+            "node": "Get all tasks with specific label",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get all tasks with specific label": {
+      "main": [
+        [
+          {
+            "node": "Prepare task batch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare task batch": {
+      "main": [
+        [
+          {
+            "node": "Add to Notion database",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add to Notion database": {
+      "main": [
+        [
+          {
+            "node": "Prepare task updates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare task updates": {
+      "main": [
+        [
+          {
+            "node": "Replace label on task",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

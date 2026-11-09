@@ -86,6 +86,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Telegram Journal Reminder](workflows/telegram-journal-reminder/) - Send a daily Telegram journal prompt containing yesterday’s UTC date.
 - [Telegram Daily Meeting List](workflows/telegram-daily-meeting-list/) - Send today’s Google Calendar meeting list to Telegram each morning.
 - [Telegram Weather Reply](workflows/telegram-weather-reply/) - Reply to each Telegram message with the current weather in a configured city.
+- [Todoist to Notion Sync](workflows/todoist-to-notion-sync/) - Create Notion rows for labeled Todoist tasks, then add each Notion link to its task and replace the routing label.
 
 ## Content
 
