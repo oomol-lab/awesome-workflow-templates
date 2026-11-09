@@ -19,6 +19,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Operations](#operations)
 - [Marketing](#marketing)
 - [Support](#support)
+- [Development](#development)
 - [Contribute](#contribute)
 - [Licensing](#licensing)
 
@@ -47,6 +48,10 @@ A growing collection of automation workflows for connecting apps and getting rep
 
 - [Phone Call Log](workflows/phone-call-log/) - Record caller details, duration, supplied summary, and the first 500 transcript characters in Google Sheets from a webhook.
 - [Webhook Request Classifier](workflows/webhook-request-classifier/) - Classify an incoming request as support, sales, technical, or general and return its priority and summary as JSON.
+
+## Development
+
+- [n8n Execution Diagnostics](workflows/n8n-execution-diagnostics/) - Classify structured n8n execution errors and return affected nodes, error counts, and suggested investigation steps.
 
 ## Contribute
 
