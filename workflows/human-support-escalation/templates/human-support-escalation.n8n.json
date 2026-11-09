@@ -1,0 +1,229 @@
+{
+  "name": "Human Support Escalation",
+  "nodes": [
+    {
+      "id": "manual-human-support",
+      "name": "Run Support Handoff",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -650,
+        0
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "example-human-support",
+      "name": "Support Request",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -400,
+        0
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "support-message",
+              "name": "chatInput",
+              "type": "string",
+              "value": "I need help with my account. Please contact ada@example.com."
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "951cc691-b422-4ce6-901f-b7feb3afd1ad",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "position": [
+        -400,
+        220
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "check-support-input",
+      "name": "Check Contact Email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -160,
+        100
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const supportMessagePrefix = \"A user had a question the bot couldn't answer. Here's their message: \";\n\nfunction prepareHumanSupport({ chatInput }) {\n  if (typeof chatInput !== 'string' || !chatInput.trim()) throw new Error('Supply the question or support request as text.');\n  const hasEmail = /([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\\.[a-zA-Z0-9_-]+)/i.test(chatInput);\n  const text = supportMessagePrefix + chatInput;\n  if (hasEmail && text.length > 40000) throw new Error('The support message exceeds the 40,000-character budget.');\n  return { hasEmail, text };\n}\n\nreturn $input.all().map((item,index)=>({json:prepareHumanSupport(item.json),pairedItem:{item:index}}));\n"
+      }
+    },
+    {
+      "id": "990ecd3b-6aa0-4b17-8d01-d606b9164fa8",
+      "name": "Email Included?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        80,
+        100
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "support-has-email",
+              "leftValue": "={{ $json.hasEmail }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "d14da0ae-06ca-422b-b5b6-e7759e74c787",
+      "name": "Notify Human Support",
+      "type": "n8n-nodes-base.slack",
+      "position": [
+        340,
+        0
+      ],
+      "parameters": {
+        "authentication": "accessToken",
+        "resource": "message",
+        "operation": "post",
+        "messageType": "text",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_SLACK_SUPPORT_CHANNEL_ID"
+        },
+        "text": "={{ $json.text }}",
+        "otherOptions": {
+          "mrkdwn": true,
+          "includeLinkToWorkflow": false
+        }
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "id": "confirm-human-support",
+      "name": "Confirm Support Notification",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        600,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const missingEmailResponse = \"I'm sorry I don't know the answer. Please repeat your question and include your email address so I can request help.\";\nconst supportNotifiedResponse = \"Thank you for getting in touch. I've messaged a human to help.\";\n\nfunction humanSupportReply({ delivered, ts, channelId }) {\n  if (!delivered) return { response: missingEmailResponse };\n  if (typeof ts !== 'string' || !ts.trim() || typeof channelId !== 'string' || !channelId.trim()) throw new Error('Slack did not acknowledge the support message.');\n  return { response: supportNotifiedResponse };\n}\n\nreturn $input.all().map((item,index)=>({json:humanSupportReply({delivered:true,ts:item.json.message_timestamp,channelId:item.json.channel}),pairedItem:{item:index}}));\n"
+      }
+    },
+    {
+      "id": "request-contact-email",
+      "name": "Request Contact Email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        340,
+        240
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const missingEmailResponse = \"I'm sorry I don't know the answer. Please repeat your question and include your email address so I can request help.\";\nconst supportNotifiedResponse = \"Thank you for getting in touch. I've messaged a human to help.\";\n\nfunction humanSupportReply({ delivered, ts, channelId }) {\n  if (!delivered) return { response: missingEmailResponse };\n  if (typeof ts !== 'string' || !ts.trim() || typeof channelId !== 'string' || !channelId.trim()) throw new Error('Slack did not acknowledge the support message.');\n  return { response: supportNotifiedResponse };\n}\n\nreturn $input.all().map((item,index)=>({json:humanSupportReply({delivered:false}),pairedItem:{item:index}}));\n"
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Run Support Handoff": {
+      "main": [
+        [
+          {
+            "node": "Support Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Support Request": {
+      "main": [
+        [
+          {
+            "node": "Check Contact Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Check Contact Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Contact Email": {
+      "main": [
+        [
+          {
+            "node": "Email Included?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email Included?": {
+      "main": [
+        [
+          {
+            "node": "Notify Human Support",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Request Contact Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify Human Support": {
+      "main": [
+        [
+          {
+            "node": "Confirm Support Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false
+}
