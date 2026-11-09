@@ -1,0 +1,252 @@
+{
+  "name": "ClientFlow Lite — Simple Onboarding (Email + Log)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "clientflow-lite",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "trigger",
+      "name": "New Client",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        200,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const { randomUUID } = require('crypto');\n\nconst prepare = function prepareClient({ body, senderName }) {\n  if (!body || typeof body !== 'object' || Array.isArray(body)) throw new Error('Client data must be an object.');\n  const text = (value) => value == null ? '' : String(value).trim();\n  const name = text(body.client_name || body.name);\n  const email = text(body.client_email || body.email);\n  if (!name) throw new Error('Client name required.');\n  if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) throw new Error('A valid client email is required.');\n  const company = text(body.company_name || body.company);\n  const projectType = text(body.project_type) || 'General';\n  const clientId = 'CF-' + randomUUID();\n  const onboardedAt = new Date().toISOString();\n  return {\n    name, email, company, projectType, clientId, onboardedAt,\n    subject: `Welcome aboard, ${name}!`,\n    message: `Hi ${name},\\n\\nWelcome! We're excited to start working on your ${projectType} project.\\n\\nWe'll be in touch soon with next steps and a kick-off meeting invite.\\n\\nBest regards,\\n${text(senderName) || 'The Team'}`,\n    values: [[clientId, name, email, company, projectType, onboardedAt]],\n  };\n}\n\nreturn $input.all().map((item, index) => ({json: prepare({body: item.json.body ?? item.json, senderName: \"The Team\"}), pairedItem: {item: index}}));\n"
+      },
+      "id": "validate",
+      "name": "Validate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        420,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.email }}",
+        "subject": "={{ $json.subject }}",
+        "emailType": "text",
+        "message": "={{ $json.message }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "send-email",
+      "name": "Gmail: Welcome Email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        660,
+        300
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 1000
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_SPREADSHEET_ID"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Clients"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Client ID": "={{ $('Validate').item.json.clientId }}",
+            "Name": "={{ $('Validate').item.json.name }}",
+            "Email": "={{ $('Validate').item.json.email }}",
+            "Company": "={{ $('Validate').item.json.company }}",
+            "Project": "={{ $('Validate').item.json.projectType }}",
+            "Onboarded": "={{ $('Validate').item.json.onboardedAt }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Client ID",
+              "displayName": "Client ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Company",
+              "displayName": "Company",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Project",
+              "displayName": "Project",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Onboarded",
+              "displayName": "Onboarded",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ]
+        },
+        "options": {
+          "cellFormat": "RAW",
+          "useAppend": true
+        }
+      },
+      "id": "log-sheets",
+      "name": "Log to Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        660,
+        500
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 1000
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: true, clientId: $('Validate').item.json.clientId, name: $('Validate').item.json.name }) }}"
+      },
+      "id": "respond",
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        900,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## ClientFlow Lite\n\nSimplest onboarding: welcome email + sheet log.\nNo Stripe, Calendar, or Slack.\nPerfect for solo freelancers.",
+        "width": 300,
+        "height": 160,
+        "color": 6
+      },
+      "id": "note",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        120,
+        180
+      ]
+    }
+  ],
+  "connections": {
+    "New Client": {
+      "main": [
+        [
+          {
+            "node": "Validate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate": {
+      "main": [
+        [
+          {
+            "node": "Gmail: Welcome Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log to Sheets": {
+      "main": [
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail: Welcome Email": {
+      "main": [
+        [
+          {
+            "node": "Log to Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "timezone": "UTC"
+  },
+  "tags": [
+    {
+      "name": "ClientFlow",
+      "id": "clientflow"
+    },
+    {
+      "name": "AutoFlow",
+      "id": "autoflow"
+    },
+    {
+      "name": "Lite",
+      "id": "lite"
+    }
+  ],
+  "active": false,
+  "pinData": {}
+}
