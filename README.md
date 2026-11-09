@@ -34,6 +34,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Client Onboarding](workflows/client-onboarding/) - Welcome a new client by Gmail, record their project in Google Sheets, and return the client ID to your form or CRM.
 - [Pipedrive Deal Creator](workflows/pipedrive-deal-creator/) - Create one Pipedrive deal with a configured title using API v2.
 - [Chargebee Customer Creator](workflows/chargebee-customer-creator/) - Create a Chargebee customer with a configured first and last name.
+- [Salesmate Company Creator](workflows/salesmate-company-creator/) - Create a Salesmate company with a name and an existing owner.
 
 ## Operations
 
