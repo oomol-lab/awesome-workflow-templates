@@ -93,6 +93,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [GitHub Issues to Telegram](workflows/github-low-comment-issues-telegram/) - Notify Telegram about recently updated open Bug issues with fewer than five comments.
 - [Output Completion Check](workflows/output-completion-check/) - Check a completed-record batch for distinct nonempty IDs, invalid records, duplicates, and a configured minimum count.
 - [GitHub Star Alerts in Slack](workflows/github-star-slack-alert/) - Post Slack alerts when a repository gains or loses a GitHub star.
+- [PagerDuty Incident Create and Update](workflows/pagerduty-incident-create-and-update/) - Create a PagerDuty incident, change its title and retrieve the same incident.
 
 ## Research
 
