@@ -52,6 +52,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Communication Record Extractor](workflows/communication-record-extractor/) - Extract a communication record from supplied text, validate its fields, and allow one model correction when the output format is invalid.
 - [JSON Feed Telegram Alert](workflows/json-feed-telegram-alert/) - Poll a JSON feed every five minutes and send matching new entries to Telegram, keeping a timestamp watermark after successful delivery.
 - [Negative Feedback Alert](workflows/negative-feedback-alert/) - Analyze a Typeform feedback submission and post its text and score to Mattermost only when the score is negative.
+- [Feedback Sentiment Routing](workflows/feedback-sentiment-routing/) - Save positive Typeform feedback in Notion and notify Slack, or create a Trello card for neutral and negative feedback.
 
 ## Marketing
 
