@@ -105,6 +105,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Glasp Highlight Export](workflows/glasp-highlight-export/) - Collect new Glasp highlight documents every six hours, format text and Markdown, and track exported document IDs for 30 days.
 - [Hacker News Yearly Lookback](workflows/hacker-news-yearly-lookback/) - Read the Hacker News front page for this UTC calendar day across past years, summarize selected headlines, and send one Telegram message.
 - [ClickUp Task Creator](workflows/clickup-task-creator/) - Create one ClickUp task in a configured list and return its complete record.
+- [Harvest Client Creator](workflows/harvest-client-creator/) - Create a Harvest client with a configured name and return its complete record.
 
 ## Content
 
