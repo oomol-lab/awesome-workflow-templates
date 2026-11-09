@@ -21,7 +21,7 @@ The workflow normalizes whitespace and sends the first 9,000 characters to the m
 
 - Fix whitespace normalization so it collapses actual whitespace rather than matching a literal backslash.
 - Validate that the submitted source contains text before calling the model.
-- Use a normal LLM step for the single generation request; the source step does not need tools or conversation memory.
+- Replace the source tool-less Agent with a Basic LLM Chain in n8n, keeping its system and user instructions. The single generation request does not need tools or conversation memory.
 
 ## Source and license
 
