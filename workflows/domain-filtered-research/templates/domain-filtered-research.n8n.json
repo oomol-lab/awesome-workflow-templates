@@ -1,0 +1,186 @@
+{
+  "nodes": [
+    {
+      "id": "293b70f0-06e8-4db5-befd-bfaed1f3575a",
+      "name": "When clicking ‘Test workflow’",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        -460,
+        80
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "1c473546-6280-412d-9f8e-b43962365d78",
+      "name": "Set Params",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        -160,
+        -60
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "8b5c6ca0-5ca8-4f67-abc1-44341cf419bc",
+              "name": "system_prompt",
+              "type": "string",
+              "value": "Answer the question using retrieved sources. Cite sources and distinguish facts from uncertainty."
+            },
+            {
+              "id": "7c36c362-6269-4564-b6fe-f82126bc8f5e",
+              "name": "user_prompt",
+              "type": "string",
+              "value": "What are the differences between n8n and Make?"
+            },
+            {
+              "id": "4366d2b5-ad22-445a-8589-fddab1caa1ab",
+              "name": "domains",
+              "type": "string",
+              "value": "n8n.io, make.com"
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "894bd6a4-5db7-45fb-a8e0-1a81af068bbf",
+      "name": "Clean Output",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        580,
+        -100
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const readAnswer = function researchResult({ response }) {\n  const answer = response?.choices?.[0]?.message?.content;\n  if (typeof answer !== 'string' || !answer.trim()) throw new Error('Perplexity returned no answer text.');\n  const citations = response.citations ?? [];\n  if (!Array.isArray(citations) || citations.some((citation) => typeof citation !== 'string')) throw new Error('Perplexity citations must be a string array.');\n  return { output: answer, citations };\n}\n\nreturn $input.all().map((item,index)=>({json:readAnswer({response:item.json}),pairedItem:{item:index}}));\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "52d3a832-8c9b-4356-ad2a-377340678a58",
+      "name": "Perplexity Request",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        240,
+        40
+      ],
+      "parameters": {
+        "url": "https://api.perplexity.ai/chat/completions",
+        "method": "POST",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        },
+        "jsonBody": "={{ $json.request }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "48657f2c-d1dd-4d7e-8014-c27748e63e58",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -140,
+        -440
+      ],
+      "parameters": {
+        "width": 480,
+        "height": 300,
+        "content": "## Perplexity setup\n\nConnect a Header Auth credential in Perplexity Request: header name Authorization, value Bearer followed by your API key. Keep the key in the credential. An account with API credits is required. Edit the research question, system instructions, and domains in Set Params."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "e0daabee-c145-469e-93c2-c759c303dc2a",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        100,
+        260
+      ],
+      "parameters": {
+        "color": 5,
+        "width": 480,
+        "height": 120,
+        "content": "## Search settings\n\nUses the Sonar-compatible synchronous completion route, with selected domains and a month publication-recency filter. The service may rewrite legacy requests to newer models. Inspect returned citation URLs and verify generated claims."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "prepare-filtered-research",
+      "name": "Prepare Filtered Research",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        40,
+        -60
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const prepare = function researchRequest({ user_prompt, system_prompt, domains }) {\n  if (typeof user_prompt !== 'string' || !user_prompt.trim()) throw new Error('A research question is required.');\n  if (typeof domains !== 'string') throw new Error('Provide a comma-separated domain list.');\n  const filters = domains.split(',').map((domain) => domain.trim()).filter(Boolean);\n  if (!filters.length) throw new Error('At least one search domain is required.');\n  if (system_prompt != null && typeof system_prompt !== 'string') throw new Error('System instructions must be text.');\n  return { request: {\n    model: 'sonar',\n    messages: [\n      { role: 'system', content: system_prompt?.trim() || 'Answer the question using retrieved sources. Cite sources and distinguish facts from uncertainty.' },\n      { role: 'user', content: user_prompt.trim() },\n    ],\n    temperature: 0.2, top_p: 0.9, search_domain_filter: filters,\n    search_recency_filter: 'month', return_images: false,\n    top_k: 0, stream: false, presence_penalty: 0, frequency_penalty: 1,\n  } };\n}\n\nreturn $input.all().map((item,index)=>({json:prepare(item.json),pairedItem:{item:index}}));\n"
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Set Params": {
+      "main": [
+        [
+          {
+            "node": "Prepare Filtered Research",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Perplexity Request": {
+      "main": [
+        [
+          {
+            "node": "Clean Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Test workflow’": {
+      "main": [
+        [
+          {
+            "node": "Set Params",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Filtered Research": {
+      "main": [
+        [
+          {
+            "node": "Perplexity Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "timezone": "UTC"
+  },
+  "active": false
+}

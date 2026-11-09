@@ -20,6 +20,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Marketing](#marketing)
 - [Support](#support)
 - [Development](#development)
+- [Research](#research)
 - [Contribute](#contribute)
 - [Licensing](#licensing)
 
@@ -66,6 +67,10 @@ A growing collection of automation workflows for connecting apps and getting rep
 
 - [n8n Execution Diagnostics](workflows/n8n-execution-diagnostics/) - Classify structured n8n execution errors and return affected nodes, error counts, and suggested investigation steps.
 - [n8n Silent Workflow Check](workflows/n8n-silent-workflow-check/) - Check active n8n workflows for missing or stale executions and return a report with the inspected page limits.
+
+## Research
+
+- [Domain Filtered Research](workflows/domain-filtered-research/) - Ask Perplexity a research question with domain and one-month publication filters, and return the answer with citation URLs.
 
 ## Contribute
 
