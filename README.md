@@ -32,6 +32,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 
 - [Website Lead Capture](workflows/website-lead-capture/) - Save website enquiries to Google Sheets, alert your team on Telegram, and send a Gmail reply.
 - [Client Onboarding](workflows/client-onboarding/) - Welcome a new client by Gmail, record their project in Google Sheets, and return the client ID to your form or CRM.
+- [Pipedrive Deal Creator](workflows/pipedrive-deal-creator/) - Create one Pipedrive deal with a configured title using API v2.
 
 ## Operations
 
