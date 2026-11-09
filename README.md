@@ -22,6 +22,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Development](#development)
 - [Research](#research)
 - [Productivity](#productivity)
+- [Content](#content)
 - [Contribute](#contribute)
 - [Licensing](#licensing)
 
@@ -79,6 +80,10 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Shortcut Text Transformer](workflows/shortcut-text-transformer/) - Translate, correct grammar, shorten, or expand text from an Apple Shortcut and return the result as plain text.
 - [Telegram Journal Reminder](workflows/telegram-journal-reminder/) - Send a daily Telegram journal prompt containing yesterday’s UTC date.
 - [Telegram Daily Meeting List](workflows/telegram-daily-meeting-list/) - Send today’s Google Calendar meeting list to Telegram each morning.
+
+## Content
+
+- [OpenAI Text to Speech](workflows/openai-text-to-speech/) - Convert supplied text into an MP3 with OpenAI tts-1 and return a downloadable audio file.
 
 ## Contribute
 
