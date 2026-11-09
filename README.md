@@ -115,6 +115,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Confluence Knowledge Search](workflows/confluence-knowledge-search/) - Search Confluence for supplied text and return the first result’s title, article link, and excerpt.
 - [Google Sheet Record Lookup](workflows/google-sheet-record-lookup/) - List a Google Sheet’s columns, read one column with row numbers, or retrieve a record by its physical row number.
 - [Box Folder Creator](workflows/box-folder-creator/) - Create a named folder in Box and return its metadata.
+- [Asana Task Creator](workflows/asana-task-creator/) - Create an Asana task with a name in an existing workspace.
 
 ## Content
 
