@@ -1,0 +1,391 @@
+{
+  "name": "Discord AI bot",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "6f188270-2c08-491f-bf52-c4a152b33aa0",
+      "name": "When clicking \"Execute Workflow\"",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        1220,
+        780
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "e4839de2-fc04-40b0-b6bc-596455ad93fe",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "position": [
+        1220,
+        580
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "discord-feedback-router",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "0d28fe8e-da80-458b-9a75-d316019cb3ae",
+      "name": "Analyze User Request",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "position": [
+        1420,
+        680
+      ],
+      "parameters": {
+        "resource": "text",
+        "operation": "message",
+        "modelId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "gpt-4o-mini-2024-07-18"
+        },
+        "messages": {
+          "values": [
+            {
+              "role": "system",
+              "content": "Act as a service desk agent and help to categorize user messages. Return back only JSON without quotations. Do not return anything else."
+            },
+            {
+              "role": "user",
+              "content": "=Here is a user feedback: \"{{ $json.feedback }}\". Please analyse it and put into one of the categories:\n1. \"success-story\" for user appraisal or success story. this will be processed by customer success department\n2. \"urgent-issue\" for extreme dissatisfaction or an urgent problem. this will be escalated to the IT team. Please assess if the request is really urgent and whether it has an immediate impact on the client. If the ticket doesn't look like an immediate problem or an extreme dissatisfaction then proceed as a normal ticket.\n3. \"ticket\" for everything else. This will be processed as normal by customer support team.\n\nPlease return back a JSON with the following structure: category (string), feedback (string), instruction (string).\nCategory must match the analysed category. feedback must match the original text. instruction should contain a text for a department according to the category with a one sentense summary of the feedback. Please be polite and friendly to the colleagues."
+            }
+          ]
+        },
+        "simplify": true,
+        "jsonOutput": false,
+        "hideTools": "hide",
+        "options": {
+          "temperature": 0.5,
+          "maxTokens": 500
+        }
+      },
+      "typeVersion": 1.8
+    },
+    {
+      "id": "ce1c4198-ce21-4436-9ccb-4a2a078cd06e",
+      "name": "Select category",
+      "type": "n8n-nodes-base.switch",
+      "position": [
+        1840,
+        680
+      ],
+      "parameters": {
+        "dataType": "string",
+        "value1": "={{ $json.category }}",
+        "rules": {
+          "rules": [
+            {
+              "value2": "success-story"
+            },
+            {
+              "output": 1,
+              "value2": "urgent-issue"
+            },
+            {
+              "output": 2,
+              "value2": "ticket"
+            }
+          ]
+        },
+        "fallbackOutput": 3
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "839cc38d-b393-4fc1-a068-47a8fcf55e3f",
+      "name": "Parse JSON",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1640,
+        680
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const parse = function parseFeedback(inputs) {\n  if (typeof inputs.completion !== 'string') throw new Error('The classifier did not return text.');\n  const text = inputs.completion.trim().replace(/^```(?:json)?\\s*\\n?([\\s\\S]*?)\\n?```$/i, '$1');\n  let reply;\n  try { reply = JSON.parse(text); }\n  catch {\n    // Retain the source's repair for literal newlines inside JSON strings.\n    reply = JSON.parse(text.replace(/\\n(?=[^\"]*\"(?:[^\"]*\"[^\"]*\")*[^\"]*$)/g, '\\\\n'));\n  }\n  if (!reply || typeof reply !== 'object' || Array.isArray(reply) || typeof reply.category !== 'string' || !reply.category.trim()) throw new Error('The classifier must return a category string.');\n  const category = reply.category.trim().toLowerCase();\n  const known = ['success-story', 'urgent-issue', 'ticket'].includes(category);\n  const instruction = typeof reply.instruction === 'string' ? reply.instruction : '';\n  if (instruction.length > 2000 || known && !instruction.trim()) throw new Error('A routed instruction must contain 1–2000 characters.');\n  return { category, instruction, feedback: inputs.feedback, status: known ? 'routed' : 'ignored' };\n}\n\nreturn [{json:parse({completion:$input.first().json.message.content,feedback:$('Check Feedback Text').first().json.feedback}),pairedItem:{item:0}}];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "4c150439-89af-42bd-bbdc-905d13ada76b",
+      "name": "User Success Dept",
+      "type": "n8n-nodes-base.discord",
+      "position": [
+        2120,
+        460
+      ],
+      "parameters": {
+        "authentication": "botToken",
+        "resource": "message",
+        "operation": "send",
+        "guildId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DISCORD_SERVER_ID"
+        },
+        "sendTo": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_SUCCESS_CHANNEL_ID"
+        },
+        "content": "={{ $json.instruction }}",
+        "options": {}
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "9a5e5335-9e6c-4f1f-a0f0-b1b022956549",
+      "name": "IT Dept",
+      "type": "n8n-nodes-base.discord",
+      "position": [
+        2120,
+        620
+      ],
+      "parameters": {
+        "authentication": "botToken",
+        "resource": "message",
+        "operation": "send",
+        "guildId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DISCORD_SERVER_ID"
+        },
+        "sendTo": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_IT_CHANNEL_ID"
+        },
+        "content": "={{ $json.instruction }}",
+        "options": {}
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "d6d6250a-3a24-49f1-a597-47ebc179949c",
+      "name": "Helpdesk",
+      "type": "n8n-nodes-base.discord",
+      "position": [
+        2120,
+        780
+      ],
+      "parameters": {
+        "authentication": "botToken",
+        "resource": "message",
+        "operation": "send",
+        "guildId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DISCORD_SERVER_ID"
+        },
+        "sendTo": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_SUPPORT_CHANNEL_ID"
+        },
+        "content": "={{ $json.instruction }}",
+        "options": {}
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "example-discord-feedback",
+      "name": "Example Feedback",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "example-feedback",
+              "name": "feedback",
+              "type": "string",
+              "value": "Our production integration has stopped working and customers cannot sign in."
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "check-discord-feedback",
+      "name": "Check Feedback Text",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        100
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const prepare = function prepareFeedback(inputs) {\n  if (typeof inputs.feedback !== 'string' || !inputs.feedback.trim()) throw new Error('Supply nonempty feedback text.');\n  return { feedback: inputs.feedback };\n}\n\nconst item=$input.first().json;return [{json:prepare({feedback:item.body?.feedback??item.feedback}),pairedItem:{item:0}}];\n"
+      }
+    },
+    {
+      "id": "discord-feedback-result",
+      "name": "Feedback Routing Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1300,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return [{json:$('Parse JSON').first().json,pairedItem:{item:0}}];"
+      }
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "callerPolicy": "workflowsFromSameOwner",
+    "saveManualExecutions": true,
+    "saveDataSuccessExecution": "all",
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "When clicking \"Execute Workflow\"": {
+      "main": [
+        [
+          {
+            "node": "Example Feedback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Example Feedback": {
+      "main": [
+        [
+          {
+            "node": "Check Feedback Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Check Feedback Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Feedback Text": {
+      "main": [
+        [
+          {
+            "node": "Analyze User Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze User Request": {
+      "main": [
+        [
+          {
+            "node": "Parse JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse JSON": {
+      "main": [
+        [
+          {
+            "node": "Select category",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select category": {
+      "main": [
+        [
+          {
+            "node": "User Success Dept",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "IT Dept",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Helpdesk",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Feedback Routing Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "User Success Dept": {
+      "main": [
+        [
+          {
+            "node": "Feedback Routing Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IT Dept": {
+      "main": [
+        [
+          {
+            "node": "Feedback Routing Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Helpdesk": {
+      "main": [
+        [
+          {
+            "node": "Feedback Routing Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
