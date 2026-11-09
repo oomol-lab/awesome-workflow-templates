@@ -1,0 +1,205 @@
+{
+  "kind": "open-flow-workflow",
+  "version": 1,
+  "name": "Transport Request Intake",
+  "content": {
+    "modelVersion": 14,
+    "document": {
+      "bindings": {},
+      "graph": {
+        "nodes": {
+          "n_839e60879d9b766e": {
+            "name": "Transport request",
+            "kind": "webhook",
+            "bodyFields": [
+              {
+                "jsonSchema": {},
+                "nullable": true,
+                "handle": "pickup_postcode"
+              },
+              {
+                "jsonSchema": {},
+                "nullable": true,
+                "handle": "delivery_postcode"
+              },
+              {
+                "jsonSchema": {},
+                "nullable": true,
+                "handle": "pickup_date"
+              },
+              {
+                "jsonSchema": {},
+                "nullable": true,
+                "handle": "weight_kg"
+              }
+            ],
+            "method": "POST",
+            "options": {
+              "responseBody": {
+                "kind": "workflow-outputs",
+                "timeoutMs": 30000
+              }
+            }
+          },
+          "n_7cc437424ed55ae2": {
+            "inputs": {
+              "body": {
+                "kind": "sources",
+                "sources": [
+                  {
+                    "kind": "node",
+                    "nodeId": "n_839e60879d9b766e",
+                    "output": "body"
+                  }
+                ]
+              }
+            },
+            "name": "Normalize and check request",
+            "kind": "task",
+            "task": {
+              "inputs": [
+                {
+                  "jsonSchema": {
+                    "type": "object"
+                  },
+                  "nullable": false,
+                  "handle": "body"
+                }
+              ],
+              "outputs": [
+                {
+                  "jsonSchema": {
+                    "type": "string",
+                    "enum": [
+                      "ready",
+                      "needs_review"
+                    ]
+                  },
+                  "nullable": false,
+                  "handle": "status"
+                },
+                {
+                  "jsonSchema": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "nullable": false,
+                  "handle": "missing_fields"
+                },
+                {
+                  "jsonSchema": {
+                    "type": "object"
+                  },
+                  "nullable": false,
+                  "handle": "normalized_request"
+                }
+              ],
+              "name": "Normalize and check request",
+              "moduleId": "n_bd68a9447093af00",
+              "capabilities": [
+                {
+                  "kind": "connector",
+                  "mode": "independent",
+                  "actions": []
+                }
+              ]
+            }
+          },
+          "n_015630de3c7fe4d8": {
+            "name": "Transport readiness",
+            "kind": "outputs",
+            "outputDefs": [
+              {
+                "jsonSchema": {
+                  "type": "string",
+                  "enum": [
+                    "ready",
+                    "needs_review"
+                  ]
+                },
+                "nullable": false,
+                "handle": "status"
+              },
+              {
+                "jsonSchema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "nullable": false,
+                "handle": "missing_fields"
+              },
+              {
+                "jsonSchema": {
+                  "type": "object"
+                },
+                "nullable": false,
+                "handle": "normalized_request"
+              }
+            ],
+            "outputMappings": {
+              "status": {
+                "kind": "sources",
+                "sources": [
+                  {
+                    "kind": "node",
+                    "nodeId": "n_7cc437424ed55ae2",
+                    "output": "status"
+                  }
+                ]
+              },
+              "missing_fields": {
+                "kind": "sources",
+                "sources": [
+                  {
+                    "kind": "node",
+                    "nodeId": "n_7cc437424ed55ae2",
+                    "output": "missing_fields"
+                  }
+                ]
+              },
+              "normalized_request": {
+                "kind": "sources",
+                "sources": [
+                  {
+                    "kind": "node",
+                    "nodeId": "n_7cc437424ed55ae2",
+                    "output": "normalized_request"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "edges": [
+          {
+            "source": "n_839e60879d9b766e",
+            "target": "n_7cc437424ed55ae2"
+          },
+          {
+            "source": "n_7cc437424ed55ae2",
+            "target": "n_015630de3c7fe4d8"
+          }
+        ]
+      }
+    },
+    "modules": {
+      "n_bd68a9447093af00": {
+        "name": "Normalize and check request",
+        "imports": [],
+        "source": "export default function transportIntake({ body }) {\n  if (!body || typeof body !== 'object' || Array.isArray(body)) throw new Error('Transport request must be a JSON object.');\n  const text = (value) => value == null ? '' : String(value).trim();\n  const raw = text(body.weight_kg).replace(/\\s/g, '').replace(',', '.');\n  const weight = /^[+-]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)$/.test(raw) ? Number(raw) : NaN;\n  const normalized_request = { pickup_postcode: text(body.pickup_postcode), delivery_postcode: text(body.delivery_postcode), pickup_date: text(body.pickup_date), weight_kg: Number.isFinite(weight) ? weight : null };\n  const missing_fields = Object.entries(normalized_request).filter(([, value]) => value === '' || value === null).map(([field]) => field);\n  return { status: missing_fields.length ? 'needs_review' : 'ready', missing_fields, normalized_request };\n}\n"
+      }
+    }
+  },
+  "presentation": {
+    "designer": {
+      "version": 1,
+      "flow": {
+        "direction": "vertical"
+      }
+    }
+  }
+}

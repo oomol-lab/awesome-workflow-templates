@@ -1,0 +1,87 @@
+{
+  "name": "Transport Request Intake Lite",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "transport-intake-lite",
+        "responseMode": "responseNode"
+      },
+      "id": "webhook-start",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "disabled": false,
+      "description": "Accepts a transport request via POST webhook"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const normalize = function transportIntake({ body }) {\n  if (!body || typeof body !== 'object' || Array.isArray(body)) throw new Error('Transport request must be a JSON object.');\n  const text = (value) => value == null ? '' : String(value).trim();\n  const raw = text(body.weight_kg).replace(/\\s/g, '').replace(',', '.');\n  const weight = /^[+-]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)$/.test(raw) ? Number(raw) : NaN;\n  const normalized_request = { pickup_postcode: text(body.pickup_postcode), delivery_postcode: text(body.delivery_postcode), pickup_date: text(body.pickup_date), weight_kg: Number.isFinite(weight) ? weight : null };\n  const missing_fields = Object.entries(normalized_request).filter(([, value]) => value === '' || value === null).map(([field]) => field);\n  return { status: missing_fields.length ? 'needs_review' : 'ready', missing_fields, normalized_request };\n}\n\nreturn $input.all().map((item,index) => ({json: normalize({body: item.json.body ?? item.json}), pairedItem: {item:index}}));\n"
+      },
+      "id": "normalize-fields",
+      "name": "Normalize Fields",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "disabled": false,
+      "description": "Trim strings and convert weight to number"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "respond-webhook",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        880,
+        0
+      ],
+      "disabled": false,
+      "description": "Return JSON response with status, missing fields, and normalized data"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Normalize Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Fields": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "description": "Free demonstration workflow - Transport Request Intake Lite by AW Automation. Normalizes four basic fields and returns ready or needs_review. No credentials or paid APIs required.",
+  "active": false
+}
