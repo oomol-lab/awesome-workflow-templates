@@ -39,6 +39,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Calendar Event Creator](workflows/calendar-event-creator/) - Create one Google Calendar event with the calendar, title, and start/end times you configure.
 - [Google Task Creator](workflows/google-task-creator/) - Create one Google Tasks item in the task list you select.
 - [Todoist Task Creator](workflows/todoist-task-creator/) - Create one Todoist task in the project you select.
+- [Trello Card Creator](workflows/trello-card-creator/) - Create one Trello card with a name and description in the list you select.
 
 ## Marketing
 
