@@ -92,6 +92,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Mautic Contact Reader](workflows/mautic-contact-reader/) - Read the first 30 contact records from a Mautic instance.
 - [SERPBear Ranking Report](workflows/serpbear-ranking-report/) - Analyze one domain’s tracked SERPBear keyword rankings and save a dated SEO report in Baserow.
 - [Bannerbear Template Image](workflows/bannerbear-template-image/) - Render a Bannerbear template with layer changes and return the completed image.
+- [Umami Weekly SEO Report](workflows/umami-weekly-seo-report/) - Summarize self-hosted Umami traffic, compare two rolling weeks of page visitors, and save both analyses in one Baserow row.
 
 ## Support
 
