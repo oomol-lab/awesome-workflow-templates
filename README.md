@@ -187,6 +187,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Pennylane Invoice Creator](workflows/pennylane-invoice-creator/) - Receive a protected invoice request, find or create its Pennylane customer, and return a finalized invoice without sending email.
 - [Xero Invoice Reader](workflows/xero-invoice-reader/) - Read up to 100 invoice records from a Xero organization.
 - [Invoice Ninja Client Reader](workflows/invoice-ninja-client-reader/) - Read the first 50 clients from an Invoice Ninja v5 instance.
+- [Hebrew WhatsApp Invoice Reminders](workflows/hebrew-whatsapp-invoice-reminders/) - Send Hebrew WAHA reminders for open invoices exactly 7, 14 or 30 calendar days overdue, and record each accepted reminder in Google Sheets.
 
 ## Contribute
 
