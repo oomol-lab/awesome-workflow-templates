@@ -1,0 +1,342 @@
+{
+  "name": "SERPBear analytics template",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "2ad0eb40-6628-4c6b-bc15-7081e7712f1a",
+      "name": "When clicking ‘Test workflow’",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        260,
+        380
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "5a3c9ad8-a562-4bb0-bb11-c325552d8101",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        260,
+        160
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "weeksInterval": 1,
+              "triggerAtDay": [
+                0
+              ],
+              "triggerAtHour": 0,
+              "triggerAtMinute": 0
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "bdfa7388-f9b3-4145-90de-2e58138e14bf",
+      "name": "Read SERPBear Rankings",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        580,
+        260
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "https://YOUR_SERPBEAR_HOST/api/keywords",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "domain",
+              "value": "={{ $json.domain }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "executeOnce": false,
+      "typeVersion": 4.2,
+      "alwaysOutputData": false
+    },
+    {
+      "id": "c169f4e3-ab60-4b46-9f49-cf27a13dd7c6",
+      "name": "Summarize Ranking History",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        820,
+        260
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const prepare = function ({body, domain, reportDate}) {\n  if (!body || typeof body !== 'object' || !Array.isArray(body.keywords)) throw new Error('SERPBear did not return a keywords array.');\n  const summaries = body.keywords.map((keyword, index) => {\n    if (!keyword || typeof keyword !== 'object' || typeof keyword.keyword !== 'string' || !keyword.keyword.trim()) throw new Error('Keyword ' + index + ' has no keyword text.');\n    if (keyword.domain !== domain) throw new Error('A keyword does not match the configured domain.');\n    if (!Number.isInteger(keyword.position) || keyword.position < 0) throw new Error('A keyword has an invalid position.');\n    const history = keyword.history ?? {};\n    if (typeof history !== 'object' || Array.isArray(history)) throw new Error('A keyword has invalid history.');\n    const observations = Object.entries(history).map(([date, position]) => {\n      const parsed = /^\\d{4}-\\d{2}-\\d{2}$/.test(date) ? new Date(date + 'T00:00:00Z') : null;\n      if (!parsed || !Number.isFinite(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== date || !Number.isInteger(position) || position < 0) throw new Error('A keyword has an invalid history observation.');\n      return {date, position};\n    }).sort((a, b) => a.date.localeCompare(b.date)).slice(-7);\n    const ranked = observations.filter(observation => observation.position > 0);\n    const mean = ranked.length ? ranked.reduce((sum, observation) => sum + observation.position, 0) / ranked.length : null;\n    const currentPosition = keyword.position === 0 ? null : keyword.position;\n    const trend = currentPosition === null ? 'not in top 100' : mean === null ? 'insufficient ranked history' : currentPosition < mean ? 'improving' : currentPosition > mean ? 'declining' : 'stable';\n    return {keyword: keyword.keyword, device: typeof keyword.device === 'string' ? keyword.device : '', country: typeof keyword.country === 'string' ? keyword.country : '', currentPosition, averagePosition: mean === null ? null : Math.round(mean * 10) / 10, observations: observations.length, rankedObservations: ranked.length, trend, url: typeof keyword.url === 'string' && keyword.url ? keyword.url : 'not ranking'};\n  });\n  const prompt = `Here's the SEO ranking data for ${domain} as of ${reportDate} (UTC):\\n\\n${summaries.length ? summaries.map(keyword => `Keyword: ${JSON.stringify(keyword.keyword)}\\nDevice: ${keyword.device}\\nCountry: ${keyword.country}\\nCurrent Position: ${keyword.currentPosition ?? 'not in top 100'}\\nLatest-7-observation Ranked Average: ${keyword.averagePosition ?? 'no ranked history'}\\nObservations: ${keyword.observations}, ranked: ${keyword.rankedObservations}\\nTrend: ${keyword.trend}\\nRanking URL: ${keyword.url}\\n`).join('\\n') : 'No tracked keywords were returned for this domain. Do not invent keyword rankings.'}\\n\\nAn observation with position 0 means not in the top 100. The average excludes these observations; no numeric average is claimed for unranked history. These are the latest available history observations, not necessarily seven consecutive calendar days.\\n\\nPlease analyze this data and provide:\\n1. Key observations about ranking performance\\n2. Keywords showing the most improvement\\n3. Keywords needing attention\\n4. Suggested actions for improvement`;\n  return {summaries, messages: [{role: 'user', content: 'You are an SEO expert. This is keyword data for my site. Can you summarize the data into a table and then give me some suggestions:' + prompt}]};\n}\n\nconst scope=$(\"Prepare Report Scope\").first().json;return [{json:prepare({body:$input.first().json,domain:scope.domain,reportDate:scope.reportDate}),pairedItem:{item:0}}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "cc6e16a7-db46-42fe-837a-59ce635c906c",
+      "name": "Analyze Keyword Rankings",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        1060,
+        260
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://openrouter.ai/api/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {model:\"meta-llama/llama-3.1-70b-instruct\",messages:$json.messages} }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "typeVersion": 4.2,
+      "alwaysOutputData": false
+    },
+    {
+      "id": "a623f06c-1dfe-4d04-a7fd-fed7049a7588",
+      "name": "Save Ranking Report",
+      "type": "n8n-nodes-base.baserow",
+      "position": [
+        1340,
+        260
+      ],
+      "parameters": {
+        "authentication": "databaseToken",
+        "resource": "row",
+        "operation": "create",
+        "tableId": 1,
+        "dataToSend": "autoMapInputData",
+        "inputsToIgnore": ""
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "e8048faf-bbed-4e48-b273-d1a50a767e76",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        220,
+        -360
+      ],
+      "parameters": {
+        "color": 5,
+        "width": 614.709677419355,
+        "height": 208.51612903225802,
+        "content": "## Weekly SERPBear ranking report\n\nManual or Sunday00:00UTC → configured canonical /api/keywords?domain → latest7available ranked-history mean → one OpenRouter analysis step → one Baserow row. Keep API keys in Header Auth credentials. Source tutorial: https://rumjahn.com/how-to-create-an-a-i-agent-to-analyze-serpbear-keyword-rankings-using-n8n-for-free-without-any-coding-skills-required/"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "1a18e685-79db-423f-992a-5e0d4ddeb672",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        520,
+        -80
+      ],
+      "parameters": {
+        "width": 214.75050403225822,
+        "height": 531.7318548387107,
+        "content": "## SERPBear\n\nConfigure domain/blog in Prepare Report Scope and the canonical HTTPS host in Read SERPBear Rankings. Header Auth: Authorization: Bearer <your SERPBear API key>. Read timeout30seconds; no redirects. Rank0means outside top100; average excludes zeros and handles missing history. These are latest7observations, not necessarily consecutive days."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "99895baf-75d0-4af2-87de-5b8951186e78",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        980,
+        -60
+      ],
+      "parameters": {
+        "color": 3,
+        "width": 225.99936321742769,
+        "height": 508.95792207792226,
+        "content": "## OpenRouter\n\nSelect Header Auth Authorization: Bearer <your OpenRouter API key>. The source free route currently has no endpoints; this adaptation uses paid meta-llama/llama-3.1-70b-instruct. Check model availability/pricing before activation. Literal JSON message, no added temperature/token budget, no workflow retry."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "07d03511-98b0-4f4a-8e68-96ca177fb246",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1240,
+        -40
+      ],
+      "parameters": {
+        "color": 6,
+        "width": 331.32883116883124,
+        "height": 474.88,
+        "content": "## Baserow Cloud\n\nCreate Date(date), Note(long text), Blog(text). In Save Ranking Report select Database Token credentials with host https://api.baserow.io and your table. Native node reads field metadata then creates the row. Unknown-result failures may already have written a row; no deduplication/retry. See README."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "prepare-serpbear-scope",
+      "name": "Prepare Report Scope",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        400,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const prepare = function ({domain, blog}) {\n  if (typeof domain !== 'string' || !domain.trim() || /[\\s\\/@:?#]/u.test(domain.trim())) throw new Error('Set the tracked SERPBear domain, without a protocol or path.');\n  if (typeof blog !== 'string' || !blog.trim()) throw new Error('Set the Baserow Blog label.');\n  return {domain: domain.trim(), blog: blog.trim(), reportDate: new Date().toISOString().slice(0, 10)};\n}\n\nreturn [{json:prepare({domain:\"example.com\",blog:\"Example site\"}),pairedItem:{item:0}}];"
+      }
+    },
+    {
+      "id": "prepare-serpbear-report",
+      "name": "Prepare Report Row",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const prepare = function ({completion, reportDate, blog}) {\n  const report = completion?.choices?.[0]?.message?.content;\n  if (typeof report !== 'string' || !report.trim()) throw new Error('OpenRouter did not return report text.');\n  return {report, row: {Date: reportDate, Note: report, Blog: blog}};\n}\n\nconst scope=$(\"Prepare Report Scope\").first().json;return [{json:prepare({completion:$input.first().json,reportDate:scope.reportDate,blog:scope.blog}).row,pairedItem:{item:0}}];"
+      }
+    },
+    {
+      "id": "confirm-saved-serpbear-report",
+      "name": "Confirm Saved Report",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1600,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const row=$input.first().json;if(!Number.isInteger(row.id)||row.id<=0)throw new Error(\"Baserow did not confirm a created row ID.\");return [{json:row,pairedItem:{item:0}}];"
+      }
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC"
+  },
+  "connections": {
+    "When clicking ‘Test workflow’": {
+      "main": [
+        [
+          {
+            "node": "Prepare Report Scope",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Prepare Report Scope",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Report Scope": {
+      "main": [
+        [
+          {
+            "node": "Read SERPBear Rankings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read SERPBear Rankings": {
+      "main": [
+        [
+          {
+            "node": "Summarize Ranking History",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Summarize Ranking History": {
+      "main": [
+        [
+          {
+            "node": "Analyze Keyword Rankings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze Keyword Rankings": {
+      "main": [
+        [
+          {
+            "node": "Prepare Report Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Report Row": {
+      "main": [
+        [
+          {
+            "node": "Save Ranking Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Ranking Report": {
+      "main": [
+        [
+          {
+            "node": "Confirm Saved Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
