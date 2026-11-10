@@ -1,0 +1,202 @@
+{
+  "nodes": [
+    {
+      "name": "Receive the contact form",
+      "type": "n8n-nodes-base.typeformTrigger",
+      "position": [
+        100,
+        240
+      ],
+      "parameters": {
+        "authentication": "accessToken",
+        "formId": "YOUR_TYPEFORM_FORM_ID",
+        "simplifyAnswers": false,
+        "onlyAnswers": false
+      },
+      "typeVersion": 1,
+      "id": "typeform-contacts-airtable-slack-trigger"
+    },
+    {
+      "id": "typeform-contacts-airtable-slack-prepare",
+      "name": "Read the name and email answers",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        320,
+        240
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function typeformContactSubmission({ response, nameQuestion, emailQuestion }) {\n  if (!response || !Array.isArray(response.definition?.fields) || !Array.isArray(response.answers)) throw new Error('Expected the complete Typeform submission');\n  const read = (selector, type) => {\n    if (typeof selector !== 'string' || !selector) throw new Error('Configure the contact question selector');\n    const fields = response.definition.fields.filter(field => field?.id === selector || field?.ref === selector || field?.title === selector);\n    if (fields.length !== 1 || typeof fields[0].id !== 'string' || !fields[0].id || response.definition.fields.filter(field => field?.id === fields[0].id).length !== 1) throw new Error('The contact question must identify exactly one form field');\n    const answers = response.answers.filter(answer => answer?.field?.id === fields[0].id);\n    if (answers.length !== 1 || answers[0].type !== type || typeof answers[0][type] !== 'string' || !answers[0][type].trim()) throw new Error('Expected one nonempty ' + type + ' answer for the contact question');\n    return answers[0][type];\n  };\n  const fields = { Name: read(nameQuestion, 'text'), Email: read(emailQuestion, 'email') };\n  if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(fields.Email)) throw new Error('The contact email must be a valid address');\n  return { fields, records: [{ fields }], parts: contactNotificationParts(fields) };\n}\n\nfunction contactNotificationParts(fields) {\n  const text = '*New Submission* 🙌\\nName: ' + fields.Name + '\\nEmail: ' + fields.Email, chunks = [];\n  let chunk = '';\n  for (const character of text) {\n    if (chunk.length + character.length > 3900) { chunks.push(chunk); chunk = ''; }\n    chunk += character;\n  }\n  if (chunk) chunks.push(chunk);\n  const parts = chunks.map((content, index) => chunks.length > 1 ? 'Part ' + (index + 1) + '/' + chunks.length + '\\n' + content : content);\n  if (parts.some(part => part.length > 4000)) throw new Error('The contact notification part exceeds the message budget');\n  return parts;\n}\n\nif($json.event_type!==\"form_response\")throw new Error(\"Expected a completed Typeform response\");return {json:typeformContactSubmission({response:$json.form_response,nameQuestion:\"Let's start with your name.\",emailQuestion:\"What's your email address?\"}).fields};"
+      }
+    },
+    {
+      "id": "typeform-contacts-airtable-slack-create",
+      "name": "Create the Airtable contact record",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 1,
+      "position": [
+        540,
+        240
+      ],
+      "parameters": {
+        "authentication": "airtableTokenApi",
+        "application": "YOUR_AIRTABLE_BASE_ID",
+        "table": "YOUR_AIRTABLE_TABLE_ID",
+        "operation": "append",
+        "addAllFields": true,
+        "options": {
+          "typecast": false
+        }
+      }
+    },
+    {
+      "id": "typeform-contacts-airtable-slack-confirm",
+      "name": "Confirm the saved contact record",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        760,
+        240
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function airtableFormRecord({ records }) {\n  if (!Array.isArray(records) || records.length !== 1 || typeof records[0]?.id !== 'string' || !records[0].id || !records[0].fields || typeof records[0].fields !== 'object' || Array.isArray(records[0].fields)) throw new Error('Airtable did not confirm one saved record; creation may already have occurred');\n  return { record: records[0] };\n}\n\nfunction typeformContactSubmission({ response, nameQuestion, emailQuestion }) {\n  if (!response || !Array.isArray(response.definition?.fields) || !Array.isArray(response.answers)) throw new Error('Expected the complete Typeform submission');\n  const read = (selector, type) => {\n    if (typeof selector !== 'string' || !selector) throw new Error('Configure the contact question selector');\n    const fields = response.definition.fields.filter(field => field?.id === selector || field?.ref === selector || field?.title === selector);\n    if (fields.length !== 1 || typeof fields[0].id !== 'string' || !fields[0].id || response.definition.fields.filter(field => field?.id === fields[0].id).length !== 1) throw new Error('The contact question must identify exactly one form field');\n    const answers = response.answers.filter(answer => answer?.field?.id === fields[0].id);\n    if (answers.length !== 1 || answers[0].type !== type || typeof answers[0][type] !== 'string' || !answers[0][type].trim()) throw new Error('Expected one nonempty ' + type + ' answer for the contact question');\n    return answers[0][type];\n  };\n  const fields = { Name: read(nameQuestion, 'text'), Email: read(emailQuestion, 'email') };\n  if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(fields.Email)) throw new Error('The contact email must be a valid address');\n  return { fields, records: [{ fields }], parts: contactNotificationParts(fields) };\n}\n\nfunction contactNotificationParts(fields) {\n  const text = '*New Submission* 🙌\\nName: ' + fields.Name + '\\nEmail: ' + fields.Email, chunks = [];\n  let chunk = '';\n  for (const character of text) {\n    if (chunk.length + character.length > 3900) { chunks.push(chunk); chunk = ''; }\n    chunk += character;\n  }\n  if (chunk) chunks.push(chunk);\n  const parts = chunks.map((content, index) => chunks.length > 1 ? 'Part ' + (index + 1) + '/' + chunks.length + '\\n' + content : content);\n  if (parts.some(part => part.length > 4000)) throw new Error('The contact notification part exceeds the message budget');\n  return parts;\n}\n\nconst items=$input.all();if(items.length!==1)throw new Error(\"Expected one created contact record\");const record=airtableFormRecord({records:[items[0].json]}).record;const fields=$(\"Read the name and email answers\").first().json;const parts=contactNotificationParts(fields);return parts.map((text,index)=>({json:{record,text,index:index+1},pairedItem:{item:0}}));"
+      }
+    },
+    {
+      "id": "typeform-contacts-airtable-slack-loop",
+      "name": "Post contact parts one at a time",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        980,
+        240
+      ],
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      }
+    },
+    {
+      "id": "typeform-contacts-airtable-slack-slack",
+      "name": "Notify the Slack channel",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 1,
+      "position": [
+        1200,
+        240
+      ],
+      "parameters": {
+        "authentication": "accessToken",
+        "resource": "message",
+        "operation": "post",
+        "channel": "YOUR_SLACK_CHANNEL_ID",
+        "text": "={{ $json.text }}",
+        "jsonParameters": false,
+        "attachments": [],
+        "otherOptions": {}
+      }
+    },
+    {
+      "id": "typeform-contacts-airtable-slack-receipt",
+      "name": "Confirm the Slack contact notice",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1420,
+        240
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const requests=$(\"Confirm the saved contact record\").all();if(!Number.isInteger($runIndex)||$runIndex<0||$runIndex>=requests.length)throw new Error(\"Invalid contact message index\");const request=requests[$runIndex].json,channel=$(\"Notify the Slack channel\").params.channel;if($json.ok!==true||typeof $json.ts!==\"string\"||!/^\\d+\\.\\d+$/.test($json.ts)||$json.channel!==channel)throw new Error(\"Slack did not confirm the contact notice; the record and earlier messages may already exist\");return {json:{record:request.record,part:request.index,message:$json}};"
+      }
+    }
+  ],
+  "connections": {
+    "Receive the contact form": {
+      "main": [
+        [
+          {
+            "node": "Read the name and email answers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the name and email answers": {
+      "main": [
+        [
+          {
+            "node": "Create the Airtable contact record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create the Airtable contact record": {
+      "main": [
+        [
+          {
+            "node": "Confirm the saved contact record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm the saved contact record": {
+      "main": [
+        [
+          {
+            "node": "Post contact parts one at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Post contact parts one at a time": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Notify the Slack channel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify the Slack channel": {
+      "main": [
+        [
+          {
+            "node": "Confirm the Slack contact notice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm the Slack contact notice": {
+      "main": [
+        [
+          {
+            "node": "Post contact parts one at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Typeform Contacts to Airtable and Slack",
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false,
+  "pinData": {}
+}

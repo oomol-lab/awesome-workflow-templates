@@ -151,6 +151,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Typeform Request to ClickUp](workflows/typeform-request-to-clickup/) - Route four types of Typeform requests into ClickUp lists with the request details and priority.
 - [Google Drive New Files to Notion](workflows/google-drive-new-files-to-notion/) - Record newly created Google Drive files in a Notion data source with their names and original viewer links.
 - [Typeform Answers to Airtable](workflows/typeform-answers-to-airtable/) - Save the answers of each completed Typeform submission as one Airtable record using matching question and column names.
+- [Typeform Contacts to Airtable and Slack](workflows/typeform-contacts-airtable-slack/) - Save the name and email from a completed Typeform submission in Airtable, then notify a Slack channel after the record is confirmed.
 
 ## Content
 
