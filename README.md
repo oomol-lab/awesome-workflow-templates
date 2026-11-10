@@ -84,6 +84,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [WordPress Post Categorizer](workflows/wordpress-post-categorizer/) - Read WordPress post pages, classify every title into one configured category, validate the complete batch and replace each post’s category assignment.
 - [ActiveCampaign Contact Upsert](workflows/activecampaign-contact-upsert/) - Create or update an ActiveCampaign contact by email with a first and last name.
 - [Mailchimp Member Creator](workflows/mailchimp-member-creator/) - Add a subscribed Mailchimp audience member with an email address and first name.
+- [Newsletter Unsubscribe](workflows/newsletter-unsubscribe/) - Mark one newsletter subscriber inactive in Airtable and confirm the update, using a record ID supplied through a form or JSON request.
 
 ## Support
 

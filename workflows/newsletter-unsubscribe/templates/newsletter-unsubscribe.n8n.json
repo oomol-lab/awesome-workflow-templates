@@ -1,0 +1,194 @@
+{
+  "nodes": [
+    {
+      "id": "0eb62e75-228b-452b-80ab-f9ef3ad33204",
+      "name": "Unsubscribe Form",
+      "type": "n8n-nodes-base.formTrigger",
+      "position": [
+        -400,
+        0
+      ],
+      "parameters": {
+        "options": {
+          "path": "newsletter-unsubscribe",
+          "appendAttribution": false,
+          "respondWithOptions": {
+            "values": {
+              "respondWith": "text",
+              "formSubmittedText": "You have been unsubscribed."
+            }
+          }
+        },
+        "formTitle": "Unsubscribe from Learn Something Every Day",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "ID",
+              "requiredField": true
+            },
+            {
+              "fieldType": "dropdown",
+              "fieldLabel": "Reason For Unsubscribe",
+              "multiselect": true,
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Emails not relevant"
+                  },
+                  {
+                    "option": "Too many Emails"
+                  },
+                  {
+                    "option": "I did not sign up to this service"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "formDescription": "We're sorry to see you go! Please take a moment to help us improve the service.",
+        "responseMode": "lastNode"
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "prepare-newsletter-unsubscribe",
+      "name": "Prepare Subscriber Update",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -120,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function prepareNewsletterUnsubscribe({ ID, baseId, tableIdOrName }) {\n  const text = (value, prefix, name) => {\n    if (typeof value !== 'string' || !new RegExp('^' + prefix + '[A-Za-z0-9]+$').test(value.trim())) throw new Error('Configure a valid ' + name + '.');\n    return value.trim();\n  };\n  const recordId = text(ID, 'rec', 'subscriber record ID');\n  return { baseId: text(baseId, 'app', 'Airtable base ID'), tableIdOrName: text(tableIdOrName, 'tbl', 'subscribers table ID'), recordId, records: [{ id: recordId, fields: { Status: 'inactive' } }] };\n}\nfunction newsletterUnsubscribeInput({ body, baseId, tableIdOrName }) {\n  return prepareNewsletterUnsubscribe({ ID: body?.ID, baseId, tableIdOrName });\n}\n\nconst settings={\"baseId\":\"YOUR_AIRTABLE_BASE_ID\",\"tableIdOrName\":\"YOUR_SUBSCRIBERS_TABLE_ID\"};\nreturn $input.all().map((item,index)=>({json:prepareNewsletterUnsubscribe({...item.json,...settings}),pairedItem:{item:index}}));\n"
+      }
+    },
+    {
+      "id": "2213a81f-53a9-4142-9586-e87b88710eec",
+      "name": "Update Subscriber",
+      "type": "n8n-nodes-base.airtable",
+      "position": [
+        160,
+        0
+      ],
+      "parameters": {
+        "authentication": "airtableTokenApi",
+        "resource": "record",
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.baseId }}"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.tableIdOrName }}"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $json.recordId }}",
+            "Status": "inactive"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": false
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "active",
+                  "value": "active"
+                },
+                {
+                  "name": "inactive",
+                  "value": "inactive"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "typecast": false
+        }
+      },
+      "typeVersion": 2.1,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "confirm-newsletter-unsubscribe",
+      "name": "Confirm Inactive Subscription",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function confirmNewsletterUnsubscribe({ records, recordId }) {\n  if (!Array.isArray(records) || records.length !== 1 || records[0]?.id !== recordId || records[0]?.fields?.Status !== 'inactive') throw new Error('Airtable did not confirm the requested subscriber as inactive.');\n  return { body: { unsubscribed: true } };\n}\n\nreturn $input.all().map((item,index)=>({json:confirmNewsletterUnsubscribe({records:[item.json],recordId:$('Prepare Subscriber Update').itemMatching(index).json.recordId}),pairedItem:{item:index}}));\n"
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Unsubscribe Form": {
+      "main": [
+        [
+          {
+            "node": "Prepare Subscriber Update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Subscriber Update": {
+      "main": [
+        [
+          {
+            "node": "Update Subscriber",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Subscriber": {
+      "main": [
+        [
+          {
+            "node": "Confirm Inactive Subscription",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Newsletter Unsubscribe",
+  "active": false
+}
