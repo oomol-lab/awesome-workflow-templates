@@ -133,6 +133,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Gmail AI Labeler](workflows/gmail-ai-labeler/) - Poll incoming Gmail messages, classify each body into existing Inquiry, Partnership and Notification labels, and add each message’s own label IDs.
 - [Google Books Add to Shelf](workflows/google-books-add-to-shelf/) - Get a Google Books volume, add it to My Library and list the first bookshelf page.
 - [Zoom Meeting Creator](workflows/zoom-meeting-creator/) - Create a Zoom meeting for the connected user with a configurable topic.
+- [Google Text Translator](workflows/google-text-translator/) - Translate one text or HTML input with Google Cloud Translation Basic.
 
 ## Content
 
