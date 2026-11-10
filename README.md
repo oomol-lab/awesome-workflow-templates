@@ -170,6 +170,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Jira Issue Creator](workflows/jira-issue-creator/) - Create a Jira Cloud issue with a project ID, issue type ID and summary.
 - [CircleCI Pipeline Lookup](workflows/circleci-pipeline-lookup/) - Read a CircleCI pipeline by project and pipeline number.
 - [Travis CI Build Request](workflows/travisci-build-request/) - Request a Travis CI Cloud build for a repository branch.
+- [Rundeck Job Runner](workflows/rundeck-job-runner/) - Request execution of an existing Rundeck job and return its execution record.
 
 ## Communication
 

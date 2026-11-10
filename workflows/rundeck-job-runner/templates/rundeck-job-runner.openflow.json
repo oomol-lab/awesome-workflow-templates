@@ -1,0 +1,236 @@
+{
+  "kind": "open-flow-workflow",
+  "version": 1,
+  "name": "Rundeck Job Runner",
+  "content": {
+    "modelVersion": 14,
+    "document": {
+      "bindings": {},
+      "graph": {
+        "nodes": {
+          "n_1c350750b0686f0f": {
+            "name": "Run configured Rundeck job",
+            "kind": "start",
+            "inputDefs": []
+          },
+          "n_23902a969abcf141": {
+            "inputs": {
+              "url": {
+                "kind": "value",
+                "value": "https://rundeck.example.com/api/17/job/YOUR_JOB_ID/run"
+              },
+              "body": {
+                "kind": "value",
+                "value": {
+                  "argString": ""
+                }
+              },
+              "header.Accept": {
+                "kind": "value",
+                "value": "application/json"
+              },
+              "auth.token": {
+                "kind": "unset"
+              }
+            },
+            "name": "Request Rundeck execution",
+            "kind": "task",
+            "task": {
+              "inputs": [
+                {
+                  "jsonSchema": {
+                    "type": "string"
+                  },
+                  "nullable": false,
+                  "handle": "url"
+                },
+                {
+                  "jsonSchema": {
+                    "type": "string"
+                  },
+                  "nullable": true,
+                  "handle": "header.Accept"
+                },
+                {
+                  "jsonSchema": {},
+                  "nullable": true,
+                  "handle": "body"
+                },
+                {
+                  "jsonSchema": {
+                    "type": "string"
+                  },
+                  "nullable": false,
+                  "handle": "auth.token"
+                }
+              ],
+              "outputs": [
+                {
+                  "jsonSchema": {},
+                  "nullable": true,
+                  "handle": "body"
+                },
+                {
+                  "jsonSchema": {
+                    "type": "integer"
+                  },
+                  "nullable": false,
+                  "handle": "statusCode"
+                },
+                {
+                  "jsonSchema": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    }
+                  },
+                  "nullable": false,
+                  "handle": "headers"
+                }
+              ],
+              "name": "Request Rundeck execution",
+              "executor": {
+                "method": "POST",
+                "query": {
+                  "mode": "fields",
+                  "names": []
+                },
+                "headers": {
+                  "mode": "fields",
+                  "names": [
+                    "Accept"
+                  ]
+                },
+                "bodyFormat": "json",
+                "authentication": {
+                  "type": "apiKey",
+                  "name": "X-Rundeck-Auth-Token",
+                  "in": "header"
+                },
+                "responseFormat": "json",
+                "statusPolicy": "success",
+                "kind": "http-request"
+              }
+            }
+          },
+          "n_8b183e745247b222": {
+            "inputs": {
+              "body": {
+                "kind": "sources",
+                "sources": [
+                  {
+                    "kind": "node",
+                    "nodeId": "n_23902a969abcf141",
+                    "output": "body"
+                  }
+                ]
+              },
+              "statusCode": {
+                "kind": "sources",
+                "sources": [
+                  {
+                    "kind": "node",
+                    "nodeId": "n_23902a969abcf141",
+                    "output": "statusCode"
+                  }
+                ]
+              }
+            },
+            "name": "Confirm execution request",
+            "kind": "task",
+            "task": {
+              "inputs": [
+                {
+                  "jsonSchema": {},
+                  "nullable": true,
+                  "handle": "body"
+                },
+                {
+                  "jsonSchema": {
+                    "type": "integer"
+                  },
+                  "nullable": false,
+                  "handle": "statusCode"
+                }
+              ],
+              "outputs": [
+                {
+                  "jsonSchema": {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  "nullable": false,
+                  "handle": "execution"
+                }
+              ],
+              "name": "Confirm execution request",
+              "moduleId": "n_5be4e513fa0cb968",
+              "capabilities": [
+                {
+                  "kind": "connector",
+                  "mode": "independent",
+                  "actions": []
+                }
+              ]
+            }
+          },
+          "n_512b4f4c92ded822": {
+            "name": "Requested Rundeck execution",
+            "kind": "outputs",
+            "outputDefs": [
+              {
+                "jsonSchema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "nullable": false,
+                "handle": "execution"
+              }
+            ],
+            "outputMappings": {
+              "execution": {
+                "kind": "sources",
+                "sources": [
+                  {
+                    "kind": "node",
+                    "nodeId": "n_8b183e745247b222",
+                    "output": "execution"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "edges": [
+          {
+            "source": "n_1c350750b0686f0f",
+            "target": "n_23902a969abcf141"
+          },
+          {
+            "source": "n_23902a969abcf141",
+            "target": "n_8b183e745247b222"
+          },
+          {
+            "source": "n_8b183e745247b222",
+            "target": "n_512b4f4c92ded822"
+          }
+        ]
+      }
+    },
+    "modules": {
+      "n_5be4e513fa0cb968": {
+        "name": "Confirm execution request",
+        "imports": [],
+        "source": "function readRundeckExecution(body, statusCode) {\n  if (!Number.isInteger(statusCode) || statusCode < 200 || statusCode >= 300 || !body || typeof body !== 'object' || Array.isArray(body) || body.error === true) {\n    throw new Error('Rundeck did not accept the execution request');\n  }\n  const id = body.id;\n  if (!(typeof id === 'number' && Number.isInteger(id) && id > 0) && !(typeof id === 'string' && /^[0-9]+$/.test(id) && !/^0+$/.test(id))) {\n    throw new Error('Rundeck did not return an execution ID');\n  }\n  return body;\n}\nexport default async function rundeckResult({ body, statusCode }) {\n  return { execution: readRundeckExecution(body, statusCode) };\n}\n"
+      }
+    }
+  },
+  "presentation": {
+    "designer": {
+      "version": 1,
+      "flow": {
+        "direction": "vertical"
+      }
+    }
+  }
+}
