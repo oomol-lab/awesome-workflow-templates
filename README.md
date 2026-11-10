@@ -30,6 +30,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Developer Tools](#developer-tools)
 - [Communication](#communication)
 - [Customer Support](#customer-support)
+- [Finance](#finance)
 - [Contribute](#contribute)
 - [Licensing](#licensing)
 
@@ -160,6 +161,10 @@ A growing collection of automation workflows for connecting apps and getting rep
 ## Customer Support
 
 - [Freshdesk Ticket Creator](workflows/freshdesk-ticket-creator/) - Create an open, low-priority Freshdesk ticket for a requester email.
+
+## Finance
+
+- [Pennylane Invoice Creator](workflows/pennylane-invoice-creator/) - Receive a protected invoice request, find or create its Pennylane customer, and return a finalized invoice without sending email.
 
 ## Contribute
 
