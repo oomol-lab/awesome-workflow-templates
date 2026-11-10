@@ -1,0 +1,118 @@
+{
+  "nodes": [
+    {
+      "name": "Google Drive Trigger",
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "position": [
+        100,
+        240
+      ],
+      "parameters": {
+        "authentication": "oAuth2",
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "event": "fileCreated",
+        "options": {},
+        "triggerOn": "specificFolder",
+        "folderToWatch": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_DRIVE_FOLDER_ID",
+          "mode": "id"
+        }
+      },
+      "typeVersion": 1,
+      "id": "google-drive-new-file-email-alert-0"
+    },
+    {
+      "id": "google-drive-new-file-email-alert-prepare",
+      "name": "Validate new files",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        320,
+        240
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function driveNewFileEvents({ events }) {\n  if (!Array.isArray(events)) throw new Error('Expected a Google Drive event batch');\n  const seen = new Set();\n  const files = events.map(event => {\n    if (!event || event.eventType !== 'file_created' || event.itemType !== 'file' || typeof event.fileId !== 'string' || !event.fileId || typeof event.name !== 'string') throw new Error('Expected a complete new-file event');\n    if (seen.has(event.fileId)) throw new Error('Duplicate Google Drive file in this batch');\n    seen.add(event.fileId);\n    return { fileId: event.fileId, name: event.name };\n  });\n  return { files };\n}\n\nconst items=$input.all();const files=driveNewFileEvents({events:items.map(item=>({eventType:\"file_created\",itemType:\"file\",fileId:item.json.id,name:item.json.name}))}).files;return files.map((file,index)=>({json:file,pairedItem:{item:index}}));"
+      }
+    },
+    {
+      "name": "Email one new-file alert",
+      "type": "n8n-nodes-base.emailSend",
+      "position": [
+        540,
+        240
+      ],
+      "parameters": {
+        "fromEmail": "sender@example.com",
+        "toEmail": "recipient@example.com",
+        "subject": "File Update",
+        "text": "={{ \"A file in your Google Drive file folder has been created: \" + $json.name }}",
+        "options": {}
+      },
+      "typeVersion": 1,
+      "id": "google-drive-new-file-email-alert-2"
+    },
+    {
+      "id": "google-drive-new-file-email-alert-confirmed",
+      "name": "Confirm the email acceptance",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        760,
+        240
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if(!Array.isArray($json.accepted)||!$json.accepted.length||$json.accepted.some(value=>typeof value!==\"string\"||!value.trim())||($json.messageId!=null&&typeof $json.messageId!==\"string\")||!Array.isArray($json.rejected)||$json.rejected.length||typeof $json.response!==\"string\")throw new Error(\"SMTP did not confirm the file notification\");\nreturn {json:{fileId:$(\"Validate new files\").item.json.fileId,messageId:$json.messageId??null,accepted:$json.accepted,rejected:$json.rejected,response:$json.response}};"
+      }
+    }
+  ],
+  "connections": {
+    "Google Drive Trigger": {
+      "main": [
+        [
+          {
+            "node": "Validate new files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate new files": {
+      "main": [
+        [
+          {
+            "node": "Email one new-file alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email one new-file alert": {
+      "main": [
+        [
+          {
+            "node": "Confirm the email acceptance",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Google Drive New File Email Alert",
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false,
+  "pinData": {}
+}

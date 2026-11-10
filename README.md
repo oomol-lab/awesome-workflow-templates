@@ -196,6 +196,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Mailgun Email Sender](workflows/mailgun-email-sender/) - Send a plain-text email through Mailgun and return its queue acceptance result.
 - [Rocket.Chat Message Sender](workflows/rocketchat-message-sender/) - Post one text message to a Rocket.Chat room or user.
 - [Gmail AI Reply Draft](workflows/gmail-ai-reply-draft/) - Assess incoming Gmail messages, generate replies only when needed and save them as drafts in the original conversations.
+- [Google Drive New File Email Alert](workflows/google-drive-new-file-email-alert/) - Watch a Google Drive folder for newly created files and send one plain-text email for each file.
 
 ## Customer Support
 
