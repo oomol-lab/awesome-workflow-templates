@@ -1,0 +1,101 @@
+{
+  "name": "Hacker News Popular Items",
+  "nodes": [
+    {
+      "id": "adb528f1-b87b-4bb2-99e1-776fd839522e",
+      "name": "Export Hacker News Items",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "hacker-news-search-read",
+      "name": "Read Popular Items",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        260,
+        0
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "https://hn.algolia.com/api/v1/search",
+        "authentication": "none",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "hitsPerPage",
+              "value": "50"
+            },
+            {
+              "name": "tags",
+              "value": ""
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "hacker-news-snapshot",
+      "name": "Build JSON Snapshot",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        520,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function hackerNewsSnapshot({ body, statusCode, bodyEncoding = null }) {\n  if (statusCode !== 200) throw new Error('Hacker News search did not return HTTP 200.');\n  if (bodyEncoding !== null) throw new Error('Expected a JSON search response.');\n  if (!body || typeof body !== 'object' || Array.isArray(body) || !Array.isArray(body.hits)) throw new Error('The search response must contain a hits array.');\n  if (body.hits.length > 50) throw new Error('The search returned more than the requested fifty items.');\n  const text = (value, name) => {\n    if (value === null || value === undefined) return null;\n    if (typeof value !== 'string') throw new Error('Invalid ' + name + ' in search result.');\n    return value;\n  };\n  const items = body.hits.map(hit => {\n    if (!hit || typeof hit !== 'object' || Array.isArray(hit)) throw new Error('Invalid search item.');\n    if (hit.points !== null && hit.points !== undefined && (typeof hit.points !== 'number' || !Number.isFinite(hit.points))) throw new Error('Invalid points in search result.');\n    return { title: text(hit.title, 'title'), points: hit.points ?? null, url: text(hit.url, 'url'), created_at: text(hit.created_at, 'created_at'), author: text(hit.author, 'author') };\n  });\n  return { response: JSON.stringify(items), count: items.length };\n}\n\nconst result=hackerNewsSnapshot({...$input.first().json,bodyEncoding:null});return [{json:result}];\n"
+      }
+    }
+  ],
+  "connections": {
+    "Export Hacker News Items": {
+      "main": [
+        [
+          {
+            "node": "Read Popular Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Popular Items": {
+      "main": [
+        [
+          {
+            "node": "Build JSON Snapshot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false,
+  "pinData": {}
+}
