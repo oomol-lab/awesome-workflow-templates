@@ -1,0 +1,475 @@
+{
+  "nodes": [
+    {
+      "id": "0252e47e-0e50-4024-92a0-74b554c8cbd1",
+      "name": "When clicking ‘Test workflow’",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        -760,
+        40
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "9f074bdb-b1a6-4c36-be1c-203f78092657",
+      "name": "When Executed by Another Workflow",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "position": [
+        -760,
+        -200
+      ],
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "facts"
+            },
+            {
+              "name": "text"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "8dd3f67c-e36f-4b03-8f9f-9b52ea23e0ed",
+      "name": "Edit Fields",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        -460,
+        40
+      ],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "facts",
+              "name": "facts",
+              "type": "string",
+              "value": "The workshop starts at 10:00. It is held online."
+            },
+            {
+              "id": "text",
+              "name": "text",
+              "type": "string",
+              "value": "The workshop starts at 10:00. It is held in Berlin."
+            }
+          ]
+        },
+        "options": {}
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "prepare-minicheck",
+      "name": "Prepare Claim Batch",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function splitGroundedClaims(text) {\n  if(typeof text!=='string'||!text.trim())throw new Error('Article text is empty.');\n  const dates=[...text.matchAll(/\\b\\d{1,2}\\.\\s*(?:(?:Januar|Februar|März|April|Mai|Juni|Juli|August|September|Oktober|November|Dezember)|\\d{1,2}\\.)\\s*\\d{2,4}\\b/gi)].map(match=>[match.index,match.index+match[0].length]);\n  const lists=[...text.matchAll(/^\\s*\\d+\\.\\s+/gm)].map(match=>[match.index,match.index+match[0].length]);\n  const protectedRanges=[...dates,...lists].sort((a,b)=>a[0]-b[0]);\n  let protectedIndex=0;\n  const boundaries=[...text.matchAll(/(?<=[.!?])\\s+(?=[A-ZÄÖÜ]|$)/g)].filter(match=>{\n    while(protectedIndex<protectedRanges.length&&protectedRanges[protectedIndex][1]<=match.index)protectedIndex++;\n    const range=protectedRanges[protectedIndex];\n    return !range||match.index<=range[0]||match.index>=range[1];\n  });\n  const claims=[];let offset=0;for(const boundary of boundaries){const claim=text.slice(offset,boundary.index).trim();if(claim)claims.push(claim);offset=boundary.index+boundary[0].length;}const last=text.slice(offset).trim();if(last)claims.push(last);return claims;\n}\nfunction prepareGroundedClaims({documents}){\n  if(!Array.isArray(documents))throw new Error('Provide an array of facts/text document pairs.');\n  const claims=[];\n  for(const [documentIndex,document] of documents.entries()){\n    if(!document||typeof document.facts!=='string'||!document.facts.trim())throw new Error('Reference facts are empty.');\n    for(const [claimIndex,claim] of splitGroundedClaims(document.text).entries())claims.push({documentIndex,claimIndex,claim});\n  }\n  return {documents,claims};\n}\n\nreturn [{json:prepareGroundedClaims({documents:$input.all().map(item=>({facts:item.json.facts,text:item.json.text}))}),pairedItem:{item:0}}];"
+      }
+    },
+    {
+      "id": "has-claims",
+      "name": "Has Claims",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "any-claims",
+              "leftValue": "={{ $json.claims.length > 0 }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "split-minicheck",
+      "name": "Split All Claims",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const plan=$input.first().json;return plan.claims.map(claim=>({json:{...claim,facts:plan.documents[claim.documentIndex].facts},pairedItem:{item:0}}));"
+      }
+    },
+    {
+      "id": "c3944f89-e267-4df0-8fc4-9281eac4e759",
+      "name": "Basic LLM Chain4",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "position": [
+        880,
+        0
+      ],
+      "parameters": {
+        "promptType": "define",
+        "text": "=Document: {{ $json.facts }}\nClaim: {{ $json.claim }}",
+        "batching": {
+          "batchSize": 1,
+          "delayBetweenBatches": 0
+        }
+      },
+      "typeVersion": 1.7
+    },
+    {
+      "id": "4e53c7f1-ab9f-42be-a253-9328b209fc68",
+      "name": "Ollama Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "position": [
+        880,
+        200
+      ],
+      "parameters": {
+        "model": "bespoke-minicheck:latest",
+        "options": {}
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "collect-minicheck",
+      "name": "Collect All Claim Checks",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function validateMiniCheckText(content){if(typeof content!=='string')throw new Error('Bespoke-MiniCheck answer is not text.');const verdict=content.trim();if(verdict!=='Yes'&&verdict!=='No')throw new Error('Bespoke-MiniCheck must answer Yes or No.');return verdict;}\nfunction readMiniCheckVerdict(response){\n  if(!response||typeof response!=='object'||response.done!==true||response.model!=='bespoke-minicheck:latest'||response.message?.role!=='assistant'||typeof response.message.content!=='string')throw new Error('Ollama did not return a complete bespoke-minicheck answer.');\n  return validateMiniCheckText(response.message.content);\n}\n\nconst plan=$(\"Prepare Claim Batch\").first().json,items=$input.all();if(plan.claims.length&&items.length!==plan.claims.length)throw new Error(\"Claim judgment count differs from input.\");const checks=plan.claims.map((claim,index)=>({...claim,verdict:validateMiniCheckText(items[index].json.text)})),unsupported=checks.filter(item=>item.verdict===\"No\");return [{json:{checks,unsupported,count:unsupported.length,summaryInput:JSON.stringify(unsupported)},pairedItem:{item:0}}];"
+      }
+    },
+    {
+      "id": "has-unsupported",
+      "name": "Has Unsupported Claims",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1340,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "negative-claims",
+              "leftValue": "={{ $json.count > 0 }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "82640408-9db4-4a12-9136-1a22985b609b",
+      "name": "Basic LLM Chain",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "position": [
+        1560,
+        0
+      ],
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a fact-checking assistant. Your task is to analyze a list of statements, each accompanied by a \"yes\" or \"no\" indicating whether the statement is correct. Follow these guidelines:\n\n1. Review Process:\n a) Carefully read through each statement and its corresponding yes/no answer.\n b) Identify which statements are marked as incorrect (no).\n c) Ignore chit-chat sentences or statements that don't contain factual information.\n d) Count the total number of incorrect factual statements.\n\n2. Statement Classification:\n - Factual Statements: Contains specific information, data, or claims that can be verified.\n - Chit-chat/Non-factual: General comments, introductions, or transitions that don't present verifiable facts.\n\n3. Summary Structure:\n a) Overview: Provide a brief summary of the number of factual errors found.\n b) List of Problems: Enumerate the incorrect factual statements.\n c) Final Assessment: Offer a concise evaluation of the overall state of the article's factual accuracy.\n\n4. Prioritization:\n - Focus only on the factual statements marked as incorrect (no).\n - Ignore statements marked as correct (yes) and non-factual chit-chat.\n\n5. Feedback Tone:\n - Maintain a neutral and objective tone.\n - Present the information factually without additional commentary.\n\n6. Output Format:\n Present your summary in the following structure:\n\n ## Problem Summary\n [Number] incorrect factual statements were identified in the article.\n\n ## List of Incorrect Factual Statements\n 1. [First incorrect factual statement]\n 2. [Second incorrect factual statement]\n 3. [Third incorrect factual statement]\n (Continue listing all incorrect factual statements)\n\n ## Final Assessment\n Based on the number of incorrect factual statements:\n - If 0-1 errors: The article appears to be highly accurate and may only need minor factual adjustments.\n - If 2-3 errors: The article requires some revision to address these factual inaccuracies.\n - If 4 or more errors: The article needs significant revision to improve its factual accuracy.\n\nRemember, your role is to provide a clear, concise summary of the incorrect factual statements to help the writing team quickly understand what needs to be addressed. Ignore any chit-chat or non-factual statements in your analysis and summary.\n\n{{ $json.summaryInput }}"
+      },
+      "typeVersion": 1.7
+    },
+    {
+      "id": "719054ef-0863-4e52-8390-23313c750aac",
+      "name": "Ollama Model",
+      "type": "@n8n/n8n-nodes-langchain.lmOllama",
+      "position": [
+        1560,
+        200
+      ],
+      "parameters": {
+        "model": "qwen2.5:1.5b",
+        "options": {}
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "finish-minicheck",
+      "name": "Finish Grounded Report",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1780,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function finishGroundedReport({checks,unsupported,completion}){\n  if(!Array.isArray(checks)||!Array.isArray(unsupported))throw new Error('Grounded check results are missing.');\n  const summary=unsupported.length===0?'No unsupported claims were identified by the configured checker.':completion;\n  if(typeof summary!=='string'||!summary.trim())throw new Error('The grounded-check summary is empty.');\n  return {checks,unsupported,count:unsupported.length,summary:summary.trim()};\n}\n\nconst checked=$(\"Collect All Claim Checks\").first().json;return [{json:finishGroundedReport({...checked,completion:$input.first().json.text??null}),pairedItem:{item:0}}];"
+      }
+    },
+    {
+      "id": "6595eb25-32ce-49f5-a013-b87d7f3c65d3",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1480,
+        -320
+      ],
+      "parameters": {
+        "width": 860,
+        "height": 600,
+        "content": "## Build a summary\n\nThis is useful to run it in an agentic workflow. You may remove the summary part and return the raw array with the found issues."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "9f6cde97-d2a7-44e4-b715-321ec1e68bd3",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -240,
+        -320
+      ],
+      "parameters": {
+        "width": 760,
+        "height": 600,
+        "content": "## Split into sentences"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "1ceb8f3c-c00b-4496-82b2-20578550c4be",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        540,
+        -320
+      ],
+      "parameters": {
+        "width": 920,
+        "height": 600,
+        "content": "## Fact checking\n\nThis use a small ollama model that is specialized on that task: https://ollama.com/library/bespoke-minicheck\n\nYou have to install it before use with `ollama pull bespoke-minicheck`."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "6e340925-d4e5-4fe1-ba9d-a89a23b68226",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -860,
+        -20
+      ],
+      "parameters": {
+        "width": 600,
+        "height": 300,
+        "content": "## Test workflow\n"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "5561d606-93d2-4887-839d-8ce2230ff30c",
+      "name": "Sticky Note4",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -860,
+        -320
+      ],
+      "parameters": {
+        "width": 600,
+        "height": 280,
+        "content": "## Entrypoint to use in other workflows\n"
+      },
+      "typeVersion": 1
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Test workflow’": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Prepare Claim Batch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Prepare Claim Batch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Claim Batch": {
+      "main": [
+        [
+          {
+            "node": "Has Claims",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Claims": {
+      "main": [
+        [
+          {
+            "node": "Split All Claims",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Collect All Claim Checks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split All Claims": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain4": {
+      "main": [
+        [
+          {
+            "node": "Collect All Claim Checks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect All Claim Checks": {
+      "main": [
+        [
+          {
+            "node": "Has Unsupported Claims",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Unsupported Claims": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Finish Grounded Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Finish Grounded Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain4",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Grounded Article MiniCheck",
+  "active": false
+}

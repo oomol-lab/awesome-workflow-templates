@@ -34,6 +34,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Community](#community)
 - [Content Creation](#content-creation)
 - [Recruiting](#recruiting)
+- [Content Review](#content-review)
 - [Contribute](#contribute)
 - [Licensing](#licensing)
 
@@ -222,6 +223,10 @@ A growing collection of automation workflows for connecting apps and getting rep
 ## Recruiting
 
 - [Hacker News Hiring to Airtable](workflows/hacker-news-hiring-to-airtable/) - Find recent Who is hiring threads, read their job comments and extract the first five into structured Airtable recruiting records.
+
+## Content Review
+
+- [Grounded Article MiniCheck](workflows/grounded-article-minicheck/) - Check article sentences against supplied reference facts with Bespoke-MiniCheck and summarize unsupported claims for editorial review.
 
 ## Contribute
 
