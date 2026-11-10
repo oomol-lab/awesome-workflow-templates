@@ -90,6 +90,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Newsletter Subscriber Enrollment](workflows/newsletter-subscriber-enrollment/) - Create or reactivate an Airtable newsletter subscription by email, then send a plain-text Gmail confirmation.
 - [Mautic Contact Reader](workflows/mautic-contact-reader/) - Read the first 30 contact records from a Mautic instance.
 - [SERPBear Ranking Report](workflows/serpbear-ranking-report/) - Analyze one domain’s tracked SERPBear keyword rankings and save a dated SEO report in Baserow.
+- [Bannerbear Template Image](workflows/bannerbear-template-image/) - Render a Bannerbear template with layer changes and return the completed image.
 
 ## Support
 
