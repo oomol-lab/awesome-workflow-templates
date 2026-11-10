@@ -161,6 +161,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Text Hash Generator](workflows/text-hash-generator/) - Generate an MD5 checksum of UTF-8 text as a hexadecimal string.
 - [DMY to MDY Date Converter](workflows/dmy-to-mdy-date-converter/) - Convert a valid DD/MM/YYYY calendar date to MM/DD/YYYY.
 - [Current UTC Date and Weekday](workflows/current-utc-date-and-weekday/) - Return the current UTC timestamp and matching English weekday from one clock reading.
+- [Rename JSON Key](workflows/rename-json-key/) - Rename the top-level JSON field key to newkey while keeping its value and other fields.
 
 ## Analytics
 
