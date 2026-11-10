@@ -1,0 +1,256 @@
+{
+  "nodes": [
+    {
+      "id": "fa143713-0a54-465b-bfeb-cfb180871ab4",
+      "name": "Watch for new Drive files",
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "position": [
+        100,
+        240
+      ],
+      "parameters": {
+        "authentication": "oAuth2",
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "event": "fileCreated",
+        "options": {},
+        "triggerOn": "specificFolder",
+        "folderToWatch": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_DRIVE_FOLDER_ID",
+          "mode": "id"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "google-drive-new-files-to-notion-320",
+      "name": "Validate the new-file links",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        320,
+        240
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function driveNotionFiles({ events }) {\n  if (!Array.isArray(events)) throw new Error('Expected a Google Drive event batch');\n  const seen = new Set();\n  const files = events.map(event => {\n    if (!event || event.eventType !== 'file_created' || event.itemType !== 'file' || typeof event.fileId !== 'string' || !event.fileId || typeof event.name !== 'string' || typeof event.webViewLink !== 'string' || !/^https:\\/\\/[^\\s/]+\\//.test(event.webViewLink)) throw new Error('Expected a new file with its original HTTPS viewer link');\n    if (seen.has(event.fileId)) throw new Error('Duplicate Google Drive file in this batch');\n    seen.add(event.fileId);\n    return { fileId: event.fileId, name: event.name, webViewLink: event.webViewLink };\n  });\n  return { files };\n}\n\nconst items=$input.all();const files=driveNotionFiles({events:items.map(item=>({eventType:\"file_created\",itemType:\"file\",fileId:item.json.id,name:item.json.name,webViewLink:item.json.webViewLink}))}).files;return [{json:{files}}];"
+      }
+    },
+    {
+      "id": "google-drive-new-files-to-notion-540",
+      "name": "Read the Notion data source",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        540,
+        240
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.notion.com/v1/data_sources/YOUR_NOTION_DATA_SOURCE_ID",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Notion-Version",
+              "value": "2026-03-11"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "neverError": false
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "google-drive-new-files-to-notion-760",
+      "name": "Prepare the Notion pages",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        760,
+        240
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function driveNotionSchema({ dataSource }) {\n  if (!dataSource || dataSource.object !== 'data_source' || typeof dataSource.id !== 'string' || !dataSource.id || dataSource.in_trash === true || !dataSource.properties || typeof dataSource.properties !== 'object') throw new Error('Expected the configured Notion data source');\n  const titles = Object.entries(dataSource.properties).filter(([, property]) => property?.type === 'title');\n  if (titles.length !== 1 || dataSource.properties.File?.type !== 'files') throw new Error('Notion needs one title property and a File property of type files');\n  return { dataSourceId: dataSource.id, titleKey: titles[0][0] };\n}\n\nconst schema=driveNotionSchema({dataSource:$input.first().json});return $(\"Validate the new-file links\").first().json.files.map(file=>{const properties={File:{files:[{name:file.name,type:\"external\",external:{url:file.webViewLink}}]}};if(file.name!==\"\")properties[schema.titleKey]={title:[{type:\"text\",text:{content:file.name}}]};return {json:{fileId:file.fileId,parent:{type:\"data_source_id\",data_source_id:schema.dataSourceId},properties},pairedItem:{item:0}};});"
+      }
+    },
+    {
+      "id": "google-drive-new-files-to-notion-loop",
+      "name": "Record files one at a time",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        900,
+        240
+      ],
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      }
+    },
+    {
+      "id": "google-drive-new-files-to-notion-980",
+      "name": "Create one Notion file record",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        980,
+        240
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.notion.com/v1/pages",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Notion-Version",
+              "value": "2026-03-11"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ {parent:$json.parent,properties:$json.properties} }}",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "neverError": false
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "google-drive-new-files-to-notion-1200",
+      "name": "Confirm the saved Notion page",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        240
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const requests=$(\"Prepare the Notion pages\").all();if(!Number.isInteger($runIndex)||$runIndex<0||$runIndex>=requests.length)throw new Error(\"Invalid single-file loop index\");const request=requests[$runIndex].json;if($json.object!==\"page\"||typeof $json.id!==\"string\"||!$json.id||$json.parent?.data_source_id!==request.parent.data_source_id)throw new Error(\"Notion did not confirm the page in the selected data source; creation may already have occurred\");return {json:{fileId:request.fileId,page:$json}};"
+      }
+    }
+  ],
+  "connections": {
+    "Watch for new Drive files": {
+      "main": [
+        [
+          {
+            "node": "Validate the new-file links",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate the new-file links": {
+      "main": [
+        [
+          {
+            "node": "Read the Notion data source",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the Notion data source": {
+      "main": [
+        [
+          {
+            "node": "Prepare the Notion pages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare the Notion pages": {
+      "main": [
+        [
+          {
+            "node": "Record files one at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record files one at a time": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Create one Notion file record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create one Notion file record": {
+      "main": [
+        [
+          {
+            "node": "Confirm the saved Notion page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm the saved Notion page": {
+      "main": [
+        [
+          {
+            "node": "Record files one at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Google Drive New Files to Notion",
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false,
+  "pinData": {}
+}
