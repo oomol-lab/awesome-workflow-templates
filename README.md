@@ -95,6 +95,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Discord Feedback Router](workflows/discord-feedback-router/) - Classify one feedback message and send its department instruction to the configured customer-success, IT, or support channel in Discord.
 - [Zendesk Ticket Creator](workflows/zendesk-ticket-creator/) - Create one Zendesk support ticket with a subject and initial comment.
 - [Human Support Escalation](workflows/human-support-escalation/) - Check a support request for an email address and notify a Slack support channel, or return a prompt asking for contact details.
+- [Help Scout Inbox Reader](workflows/helpscout-inbox-reader/) - Read up to 50 Help Scout inboxes with their complete properties.
 
 ## Development
 
