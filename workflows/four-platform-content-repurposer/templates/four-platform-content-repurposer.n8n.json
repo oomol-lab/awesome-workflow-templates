@@ -1,0 +1,646 @@
+{
+  "name": "FlowScribe Lite — Quick 4-Platform Repurpose",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "four-platform-content-repurposer",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "trigger-webhook",
+      "name": "Receive Content",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        200,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const {randomUUID}=require('crypto');\n\nconst prepare = function prepareRepurposing({request}) {\n  if (!request || typeof request !== 'object' || Array.isArray(request)) throw new Error('Submit a content object.');\n  const content=request.content||request.text||'';\n  if(typeof content!=='string'||content.trim().length<50) throw new Error('Content must be at least 50 characters.');\n  const title=request.title||'Untitled',brandVoice=request.brand_voice||'professional yet approachable';\n  if(typeof title!=='string'||typeof brandVoice!=='string') throw new Error('Title and brand_voice must be strings.');\n  return {content,title,brandVoice,requestId:randomUUID(),processedAt:new Date().toISOString()};\n}\n\nreturn [{json:prepare({request:$input.first().json.body??$input.first().json}),pairedItem:{item:0}}];"
+      },
+      "id": "validate-input",
+      "name": "Validate Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        400,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Title: {{ $('Validate Input').first().json.title }}\nBrand Voice: {{ $('Validate Input').first().json.brandVoice }}\n\nContent:\n{{ $('Validate Input').first().json.content }}",
+        "messages": {
+          "messageValues": [
+            {
+              "type": "SystemMessagePromptTemplate",
+              "message": "Analyze the content and extract: 5 key points, core message in one sentence, 10 hashtags, 5 SEO keywords. Respond in JSON: { keyPoints, coreMessage, hashtags, seoKeywords }"
+            }
+          ]
+        },
+        "batching": {
+          "batchSize": 1
+        }
+      },
+      "id": "ai-analysis",
+      "name": "AI: Quick Analysis",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        400,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const prepare = function preparePlatformPrompts({analysis,title,brandVoice,requestId}) {\n  if(!analysis||typeof analysis!=='object'||Array.isArray(analysis)) throw new Error('The analysis must be a JSON object.');\n  for(const name of ['keyPoints','hashtags','seoKeywords']) if(!Array.isArray(analysis[name])||analysis[name].some(value=>typeof value!=='string'||!value.trim())) throw new Error('The analysis has invalid '+name+'.');\n  if(typeof analysis.coreMessage!=='string'||!analysis.coreMessage.trim()) throw new Error('The analysis has no core message.');\n  return {title,brandVoice,requestId,keyPointsJson:JSON.stringify(analysis.keyPoints),coreMessage:analysis.coreMessage};\n}\n\nreturn [{json:prepare({analysis:$input.first().json,...$('Validate Input').first().json}),pairedItem:{item:0}}];"
+      },
+      "id": "merge-data",
+      "name": "Prepare Platform Prompts",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        800,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Title: {{ $('Prepare Platform Prompts').first().json.title }}\nKey Points: {{ $('Prepare Platform Prompts').first().json.keyPointsJson }}\nCore Message: {{ $('Prepare Platform Prompts').first().json.coreMessage }}\nBrand Voice: {{ $('Prepare Platform Prompts').first().json.brandVoice }}",
+        "messages": {
+          "messageValues": [
+            {
+              "type": "SystemMessagePromptTemplate",
+              "message": "Create a Twitter/X thread (5-7 tweets, each under 280 chars). First tweet: powerful hook. Last: CTA + hashtags. Use numbered format 1/, 2/. JSON: { \"thread\": [\"tweet1\", ...] }"
+            }
+          ]
+        },
+        "batching": {
+          "batchSize": 1
+        }
+      },
+      "id": "gen-twitter",
+      "name": "Generate: Twitter Thread",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        660,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Title: {{ $('Prepare Platform Prompts').first().json.title }}\nKey Points: {{ $('Prepare Platform Prompts').first().json.keyPointsJson }}\nCore Message: {{ $('Prepare Platform Prompts').first().json.coreMessage }}\nBrand Voice: {{ $('Prepare Platform Prompts').first().json.brandVoice }}",
+        "messages": {
+          "messageValues": [
+            {
+              "type": "SystemMessagePromptTemplate",
+              "message": "Create a LinkedIn post: bold first line, short paragraphs, personal insight, end with question, 3-5 hashtags. 1300-1800 chars. JSON: { \"post\": \"...\" }"
+            }
+          ]
+        },
+        "batching": {
+          "batchSize": 1
+        }
+      },
+      "id": "gen-linkedin",
+      "name": "Generate: LinkedIn Post",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        920,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Title: {{ $('Prepare Platform Prompts').first().json.title }}\nKey Points: {{ $('Prepare Platform Prompts').first().json.keyPointsJson }}\nBrand Voice: {{ $('Prepare Platform Prompts').first().json.brandVoice }}",
+        "messages": {
+          "messageValues": [
+            {
+              "type": "SystemMessagePromptTemplate",
+              "message": "Create an Instagram caption: hook line, micro-story, emojis, CTA, 20-30 hashtags in separate block. JSON: { \"caption\": \"...\", \"hashtags\": [...] }"
+            }
+          ]
+        },
+        "batching": {
+          "batchSize": 1
+        }
+      },
+      "id": "gen-instagram",
+      "name": "Generate: Instagram Caption",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        1180,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Title: {{ $('Prepare Platform Prompts').first().json.title }}\nKey Points: {{ $('Prepare Platform Prompts').first().json.keyPointsJson }}\nBrand Voice: {{ $('Prepare Platform Prompts').first().json.brandVoice }}",
+        "messages": {
+          "messageValues": [
+            {
+              "type": "SystemMessagePromptTemplate",
+              "message": "Create a Facebook post: relatable opening, story format, 100-250 words, conversation question at end, no external links, friendly tone. JSON: { \"post\": \"...\" }"
+            }
+          ]
+        },
+        "batching": {
+          "batchSize": 1
+        }
+      },
+      "id": "gen-facebook",
+      "name": "Generate: Facebook Post",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        1440,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const collect = function collectPlatformDrafts({requestId,title,twitter,linkedin,instagram,facebook}) {\n  for(const [name,value] of Object.entries({twitter,linkedin,instagram,facebook})) if(!value||typeof value!=='object'||Array.isArray(value)) throw new Error(name+' must be a JSON object.');\n  if(!Array.isArray(twitter.thread)||twitter.thread.length===0||twitter.thread.some(value=>typeof value!=='string'||!value.trim())) throw new Error('The X draft has no complete thread.');\n  for(const [name,value] of [['LinkedIn post',linkedin.post],['Instagram caption',instagram.caption],['Facebook post',facebook.post]]) if(typeof value!=='string'||!value.trim()) throw new Error('The '+name+' is missing.');\n  if(!Array.isArray(instagram.hashtags)||instagram.hashtags.some(value=>typeof value!=='string'||!value.trim())) throw new Error('The Instagram hashtags are invalid.');\n  const completedAt=new Date().toISOString();\n  return {values:[[requestId,title,completedAt,JSON.stringify(twitter.thread),linkedin.post,instagram.caption,facebook.post]],result:{success:true,requestId,title,completedAt,platforms:['twitter','linkedin','instagram','facebook'],drafts:{twitter,linkedin,instagram,facebook},message:'4 platform drafts generated and logged to Google Sheets.'}};\n}\n\nreturn [{json:collect({requestId:$('Validate Input').first().json.requestId,title:$('Validate Input').first().json.title,twitter:$('Generate: Twitter Thread').first().json,linkedin:$('Generate: LinkedIn Post').first().json,instagram:$('Generate: Instagram Caption').first().json,facebook:$('Generate: Facebook Post').first().json}),pairedItem:{item:0}}];"
+      },
+      "id": "collect-results",
+      "name": "Collect Results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1300,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_SPREADSHEET_ID"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Lite Log"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Request ID": "={{ $json.values[0][0] }}",
+            "Title": "={{ $json.values[0][1] }}",
+            "Completed At": "={{ $json.values[0][2] }}",
+            "Twitter Thread": "={{ $json.values[0][3] }}",
+            "LinkedIn Post": "={{ $json.values[0][4] }}",
+            "Instagram Caption": "={{ $json.values[0][5] }}",
+            "Facebook Post": "={{ $json.values[0][6] }}"
+          },
+          "schema": [
+            {
+              "id": "Request ID",
+              "displayName": "Request ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Title",
+              "displayName": "Title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Completed At",
+              "displayName": "Completed At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Twitter Thread",
+              "displayName": "Twitter Thread",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "LinkedIn Post",
+              "displayName": "LinkedIn Post",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Instagram Caption",
+              "displayName": "Instagram Caption",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Facebook Post",
+              "displayName": "Facebook Post",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ]
+        },
+        "options": {
+          "cellFormat": "RAW",
+          "useAppend": true
+        }
+      },
+      "id": "save-sheets",
+      "name": "Save to Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        1520,
+        400
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 1000
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $('Collect Results').first().json.result }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "respond-success",
+      "name": "Respond: Success",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1520,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Four platform drafts\n\nPOST content (at least50characters), optional title and brand_voice. Configure all five OpenAI models and the Lite Log sheet; see README for seven columns and Code crypto prerequisite. Five JSON model steps run in order, then all four drafts are checked before one Sheet append and final reply. Review drafts before posting; no social platform is published. Selected model shuts down2027-01-14. Open Flow final replies wait at most60seconds; inspect longer executions before resubmitting.",
+        "width": 350,
+        "height": 200,
+        "color": 6
+      },
+      "id": "note-overview",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        120,
+        160
+      ]
+    },
+    {
+      "id": "repurpose-model-analysis",
+      "name": "Analyze the source content Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        400,
+        200
+      ],
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "id",
+          "value": "gpt-4o-mini-2024-07-18"
+        },
+        "options": {
+          "temperature": 0.3,
+          "maxTokens": 1000,
+          "responseFormat": "json_object",
+          "maxRetries": 0
+        }
+      }
+    },
+    {
+      "id": "repurpose-model-twitter",
+      "name": "Write the X thread Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        660,
+        200
+      ],
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "id",
+          "value": "gpt-4o-mini-2024-07-18"
+        },
+        "options": {
+          "temperature": 0.7,
+          "maxTokens": 1200,
+          "responseFormat": "json_object",
+          "maxRetries": 0
+        }
+      }
+    },
+    {
+      "id": "repurpose-model-linkedin",
+      "name": "Write the LinkedIn post Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        920,
+        200
+      ],
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "id",
+          "value": "gpt-4o-mini-2024-07-18"
+        },
+        "options": {
+          "temperature": 0.7,
+          "maxTokens": 1000,
+          "responseFormat": "json_object",
+          "maxRetries": 0
+        }
+      }
+    },
+    {
+      "id": "repurpose-model-instagram",
+      "name": "Write the Instagram caption Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1180,
+        200
+      ],
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "id",
+          "value": "gpt-4o-mini-2024-07-18"
+        },
+        "options": {
+          "temperature": 0.75,
+          "maxTokens": 1200,
+          "responseFormat": "json_object",
+          "maxRetries": 0
+        }
+      }
+    },
+    {
+      "id": "repurpose-model-facebook",
+      "name": "Write the Facebook post Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1440,
+        200
+      ],
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "id",
+          "value": "gpt-4o-mini-2024-07-18"
+        },
+        "options": {
+          "temperature": 0.7,
+          "maxTokens": 800,
+          "responseFormat": "json_object",
+          "maxRetries": 0
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Receive Content": {
+      "main": [
+        [
+          {
+            "node": "Validate Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Input": {
+      "main": [
+        [
+          {
+            "node": "AI: Quick Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI: Quick Analysis": {
+      "main": [
+        [
+          {
+            "node": "Prepare Platform Prompts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Platform Prompts": {
+      "main": [
+        [
+          {
+            "node": "Generate: Twitter Thread",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate: Twitter Thread": {
+      "main": [
+        [
+          {
+            "node": "Generate: LinkedIn Post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate: LinkedIn Post": {
+      "main": [
+        [
+          {
+            "node": "Generate: Instagram Caption",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate: Instagram Caption": {
+      "main": [
+        [
+          {
+            "node": "Generate: Facebook Post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate: Facebook Post": {
+      "main": [
+        [
+          {
+            "node": "Collect Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect Results": {
+      "main": [
+        [
+          {
+            "node": "Save to Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save to Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Respond: Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze the source content Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI: Quick Analysis",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write the X thread Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Generate: Twitter Thread",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write the LinkedIn post Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Generate: LinkedIn Post",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write the Instagram caption Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Generate: Instagram Caption",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write the Facebook post Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Generate: Facebook Post",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true
+  },
+  "tags": [
+    {
+      "name": "FlowScribe",
+      "id": "flowscribe"
+    },
+    {
+      "name": "AutoFlow",
+      "id": "autoflow"
+    },
+    {
+      "name": "Lite",
+      "id": "lite"
+    }
+  ],
+  "active": false,
+  "pinData": {}
+}
