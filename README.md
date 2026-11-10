@@ -32,6 +32,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Customer Support](#customer-support)
 - [Finance](#finance)
 - [Community](#community)
+- [Content Creation](#content-creation)
 - [Contribute](#contribute)
 - [Licensing](#licensing)
 
@@ -207,6 +208,10 @@ A growing collection of automation workflows for connecting apps and getting rep
 ## Community
 
 - [Disqus Forum Reader](workflows/disqus-forum-reader/) - Read public Disqus forum details by forum short name.
+
+## Content Creation
+
+- [Vancine Seedance Video](workflows/vancine-seedance-video/) - Submit one Seedance text-to-video task to Vancine, poll its status with a bounded wait loop and return the completed video URL.
 
 ## Contribute
 

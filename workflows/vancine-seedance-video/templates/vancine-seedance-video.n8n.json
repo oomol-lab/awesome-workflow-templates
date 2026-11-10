@@ -1,0 +1,419 @@
+{
+  "name": "Vancine Seedance Video",
+  "nodes": [
+    {
+      "id": "vancine-start",
+      "name": "Run Video Generation",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "parameters": {},
+      "position": [
+        0,
+        300
+      ]
+    },
+    {
+      "id": "vancine-settings",
+      "name": "Configure Video Request",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "vancine-model",
+              "name": "model",
+              "value": "YOUR_SUPPORTED_SEEDANCE_MODEL_ID",
+              "type": "string"
+            },
+            {
+              "id": "vancine-prompt",
+              "name": "prompt",
+              "value": "A timelapse of a flower blooming at sunrise",
+              "type": "string"
+            },
+            {
+              "id": "vancine-size",
+              "name": "size",
+              "value": "1280x720",
+              "type": "string"
+            },
+            {
+              "id": "vancine-maxPolls",
+              "name": "maxPolls",
+              "value": 120,
+              "type": "number"
+            },
+            {
+              "id": "vancine-intervalSeconds",
+              "name": "intervalSeconds",
+              "value": 5,
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "position": [
+        220,
+        300
+      ]
+    },
+    {
+      "id": "vancine-request",
+      "name": "Validate Video Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function prepare({ model, prompt, size }) {\n  for (const [name, value] of Object.entries({ model, prompt, size })) {\n    if (typeof value !== 'string' || value.trim() === '' || /^YOUR_/i.test(value)) throw new Error('Configure a nonempty Vancine ' + name + '.');\n  }\n  return { body: { model, prompt, size } };\n}\n\nreturn {json:{...$json,...prepare($json)}};"
+      },
+      "position": [
+        440,
+        300
+      ]
+    },
+    {
+      "id": "vancine-submit",
+      "name": "Submit One Vancine Task",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://vancine.com/v1/video/generations",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.body }}",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": false,
+              "neverError": false
+            }
+          }
+        }
+      },
+      "position": [
+        660,
+        300
+      ]
+    },
+    {
+      "id": "vancine-init",
+      "name": "Save Task and Poll Settings",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function collect({ submission, previousState, response, maxPolls }) {\n  if (!Number.isSafeInteger(maxPolls) || maxPolls < 1) throw new Error('maxPolls must be a positive integer.');\n  let state, status = 'queued', result_url = '', pending = true;\n  if (previousState === null) {\n    if (response !== null) throw new Error('Unexpected poll response before initialization.');\n    const taskId = submission?.task_id || submission?.id || submission?.data?.task_id || submission?.data?.id;\n    if (typeof taskId !== 'string' || taskId.trim() === '') throw new Error('Vancine submission returned no task ID; inspect the service before submitting again.');\n    state = { taskId, polls: 0 };\n  } else {\n    if (typeof previousState.taskId !== 'string' || previousState.taskId.trim() === '' || !Number.isSafeInteger(previousState.polls) || previousState.polls < 0 || previousState.polls >= maxPolls) throw new Error('Invalid Vancine polling state.');\n    state = { taskId: previousState.taskId, polls: previousState.polls + 1 };\n    if (!response || typeof response !== 'object' || Array.isArray(response)) throw new Error('Vancine returned no task status object.');\n    const data = response.data && typeof response.data === 'object' && !Array.isArray(response.data) ? response.data : {};\n    const reportedId = data.task_id || response.task_id || response.id || data.id;\n    if (reportedId !== undefined && reportedId !== state.taskId) throw new Error('The Vancine poll response belongs to another task.');\n    status = data.status || response.status;\n    if (typeof status !== 'string' || status.trim() === '') throw new Error('Vancine returned no task status.');\n    if (status === 'SUCCESS' || status === 'completed') {\n      result_url = data.result_url || response.metadata?.url || data.data?.content?.video_url || '';\n      if (typeof result_url !== 'string' || !/^https?:\\/\\/[^\\s<>]+$/i.test(result_url)) throw new Error('Completed Vancine task has no HTTP(S) result URL.');\n      pending = false;\n    } else if (status === 'FAILURE' || status === 'failed') {\n      const reason = data.fail_reason || data.error?.message || response.error?.message || 'unknown';\n      throw new Error('Seedance task ' + state.taskId + ' failed: ' + String(reason));\n    } else if (state.polls >= maxPolls) {\n      throw new Error('Polling exceeded ' + maxPolls + ' attempts for task ' + state.taskId + '; the remote task may still be running.');\n    }\n  }\n  return { state, task_id: state.taskId, pollUrl: 'https://vancine.com/v1/video/generations/' + encodeURIComponent(state.taskId), polls: state.polls, pending, status, result_url };\n}\n\nconst settings=$(\"Configure Video Request\").first().json;return {json:{...collect({submission:$json,previousState:null,response:null,maxPolls:settings.maxPolls}),maxPolls:settings.maxPolls,intervalSeconds:settings.intervalSeconds}};"
+      },
+      "position": [
+        880,
+        300
+      ]
+    },
+    {
+      "id": "vancine-wait",
+      "name": "Wait Before Next Poll",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "parameters": {
+        "resume": "timeInterval",
+        "amount": "={{ $json.intervalSeconds }}",
+        "unit": "seconds"
+      },
+      "position": [
+        1100,
+        300
+      ]
+    },
+    {
+      "id": "vancine-poll",
+      "name": "Read Vancine Task Status",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.pollUrl }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": false,
+              "neverError": false
+            }
+          }
+        }
+      },
+      "position": [
+        1320,
+        300
+      ]
+    },
+    {
+      "id": "vancine-carry",
+      "name": "Carry Poll State",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "parameters": {
+        "assignments": {
+          "assignments": []
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "position": [
+        1320,
+        560
+      ]
+    },
+    {
+      "id": "vancine-merge",
+      "name": "Merge Response and State",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "parameters": {
+        "mode": "append",
+        "numberInputs": 2
+      },
+      "position": [
+        1540,
+        300
+      ]
+    },
+    {
+      "id": "vancine-state",
+      "name": "Check Status and Poll Limit",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function collect({ submission, previousState, response, maxPolls }) {\n  if (!Number.isSafeInteger(maxPolls) || maxPolls < 1) throw new Error('maxPolls must be a positive integer.');\n  let state, status = 'queued', result_url = '', pending = true;\n  if (previousState === null) {\n    if (response !== null) throw new Error('Unexpected poll response before initialization.');\n    const taskId = submission?.task_id || submission?.id || submission?.data?.task_id || submission?.data?.id;\n    if (typeof taskId !== 'string' || taskId.trim() === '') throw new Error('Vancine submission returned no task ID; inspect the service before submitting again.');\n    state = { taskId, polls: 0 };\n  } else {\n    if (typeof previousState.taskId !== 'string' || previousState.taskId.trim() === '' || !Number.isSafeInteger(previousState.polls) || previousState.polls < 0 || previousState.polls >= maxPolls) throw new Error('Invalid Vancine polling state.');\n    state = { taskId: previousState.taskId, polls: previousState.polls + 1 };\n    if (!response || typeof response !== 'object' || Array.isArray(response)) throw new Error('Vancine returned no task status object.');\n    const data = response.data && typeof response.data === 'object' && !Array.isArray(response.data) ? response.data : {};\n    const reportedId = data.task_id || response.task_id || response.id || data.id;\n    if (reportedId !== undefined && reportedId !== state.taskId) throw new Error('The Vancine poll response belongs to another task.');\n    status = data.status || response.status;\n    if (typeof status !== 'string' || status.trim() === '') throw new Error('Vancine returned no task status.');\n    if (status === 'SUCCESS' || status === 'completed') {\n      result_url = data.result_url || response.metadata?.url || data.data?.content?.video_url || '';\n      if (typeof result_url !== 'string' || !/^https?:\\/\\/[^\\s<>]+$/i.test(result_url)) throw new Error('Completed Vancine task has no HTTP(S) result URL.');\n      pending = false;\n    } else if (status === 'FAILURE' || status === 'failed') {\n      const reason = data.fail_reason || data.error?.message || response.error?.message || 'unknown';\n      throw new Error('Seedance task ' + state.taskId + ' failed: ' + String(reason));\n    } else if (state.polls >= maxPolls) {\n      throw new Error('Polling exceeded ' + maxPolls + ' attempts for task ' + state.taskId + '; the remote task may still be running.');\n    }\n  }\n  return { state, task_id: state.taskId, pollUrl: 'https://vancine.com/v1/video/generations/' + encodeURIComponent(state.taskId), polls: state.polls, pending, status, result_url };\n}\n\nconst items=$input.all().map(item=>item.json);if(items.length!==2)throw new Error(\"A poll response and state are required.\");const [response,previous]=items;return [{json:{...collect({submission:null,previousState:previous.state,response,maxPolls:previous.maxPolls}),maxPolls:previous.maxPolls,intervalSeconds:previous.intervalSeconds}}];"
+      },
+      "position": [
+        1760,
+        300
+      ]
+    },
+    {
+      "id": "vancine-pending",
+      "name": "Task Still Pending",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "vancine-is-pending",
+              "leftValue": "={{ $json.pending }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "position": [
+        1980,
+        300
+      ]
+    },
+    {
+      "id": "vancine-result",
+      "name": "Completed Video URL",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const {task_id,status,result_url,polls}=$json;return {json:{task_id,status,result_url,polls}};"
+      },
+      "position": [
+        2200,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Vancine Seedance video\n\nConfigure a supported model, prompt and size. Select one Authorization: Bearer <API key> Header Auth credential on both HTTP nodes. One submission is followed by a five-second wait before each status request, with at most120 polls by default. Current data.status/data.result_url/data.fail_reason fields take priority. HTTP error, task failure or polling limit stops the run without resubmitting or canceling the remote task. Source collection and complete setup are in README.",
+        "width": 480,
+        "height": 896
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -368,
+        48
+      ],
+      "id": "82ebe33f-4cdd-4ee4-9300-c5e5eb7fe099",
+      "name": "Source and setup"
+    }
+  ],
+  "connections": {
+    "Run Video Generation": {
+      "main": [
+        [
+          {
+            "node": "Configure Video Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configure Video Request": {
+      "main": [
+        [
+          {
+            "node": "Validate Video Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Video Request": {
+      "main": [
+        [
+          {
+            "node": "Submit One Vancine Task",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Submit One Vancine Task": {
+      "main": [
+        [
+          {
+            "node": "Save Task and Poll Settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Task and Poll Settings": {
+      "main": [
+        [
+          {
+            "node": "Wait Before Next Poll",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait Before Next Poll": {
+      "main": [
+        [
+          {
+            "node": "Read Vancine Task Status",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Carry Poll State",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Vancine Task Status": {
+      "main": [
+        [
+          {
+            "node": "Merge Response and State",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Carry Poll State": {
+      "main": [
+        [
+          {
+            "node": "Merge Response and State",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Response and State": {
+      "main": [
+        [
+          {
+            "node": "Check Status and Poll Limit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Status and Poll Limit": {
+      "main": [
+        [
+          {
+            "node": "Task Still Pending",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Task Still Pending": {
+      "main": [
+        [
+          {
+            "node": "Wait Before Next Poll",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Completed Video URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false,
+  "pinData": {}
+}
