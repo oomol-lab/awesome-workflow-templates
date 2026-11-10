@@ -55,6 +55,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Calendly Booking to Notion](workflows/calendly-booking-to-notion/) - Add each new Calendly booking to Notion with the invitee name, email and a configured status.
 - [WooCommerce Customer to Mautic](workflows/woocommerce-customer-to-mautic/) - Create a missing Mautic contact or update its name when a WooCommerce customer changes.
 - [LeadPilot Cold Email Drafts](workflows/leadpilot-cold-email-drafts/) - Write personalized cold-email and follow-up drafts for every supplied lead, then save the complete batch in Google Sheets for review.
+- [Sheet Contacts through Dropcontact to Lemlist](workflows/sheet-contacts-dropcontact-lemlist/) - Read a sheet contact batch, enrich it with French company information, wait 45 seconds and create every returned contact as a Lemlist campaign lead.
 
 ## Operations
 

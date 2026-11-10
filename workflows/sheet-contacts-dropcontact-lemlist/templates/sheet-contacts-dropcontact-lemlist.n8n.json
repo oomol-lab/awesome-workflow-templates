@@ -1,0 +1,180 @@
+{
+  "nodes": [
+    {
+      "name": "Import the sheet contacts",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        100,
+        240
+      ],
+      "parameters": {},
+      "typeVersion": 1,
+      "id": "sheet-contacts-dropcontact-lemlist-start"
+    },
+    {
+      "name": "Read every configured contact row",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        330,
+        240
+      ],
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "sheet",
+        "operation": "read",
+        "sheetId": "YOUR_SPREADSHEET_ID",
+        "range": "A:K",
+        "rawData": false,
+        "keyRow": 0,
+        "dataStartRow": 1,
+        "options": {
+          "valueRenderMode": "UNFORMATTED_VALUE",
+          "continue": false
+        }
+      },
+      "typeVersion": 1,
+      "id": "sheet-contacts-dropcontact-lemlist-read"
+    },
+    {
+      "id": "sheet-contacts-dropcontact-lemlist-contacts",
+      "name": "Map the complete contact batch",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        560,
+        240
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function sheetDropcontactContacts({ rows }) {\n  if (!Array.isArray(rows) || rows.length === 0) throw new Error('Expected the complete spreadsheet rows');\n  if (rows.length > 250) throw new Error('The source submits one enrichment batch; choose a range containing at most 250 contacts before running');\n  const fields = { email: 'email', firstName: 'first_name', lastName: 'last_name', fullName: 'full_name', companyName: 'company', website: 'website', LinkedIn: 'linkedin' };\n  const data = rows.map((row, index) => {\n    if (!row || typeof row !== 'object' || Array.isArray(row)) throw new Error('Invalid spreadsheet contact at row ' + (index + 2));\n    const contact = {};\n    for (const [column, field] of Object.entries(fields)) {\n      const value = row[column];\n      if (value === undefined || value === null || value === '') continue;\n      if (typeof value !== 'string') throw new Error('Contact column ' + column + ' must contain text at row ' + (index + 2));\n      if (value.trim()) contact[field] = value;\n    }\n    if (!(contact.email || contact.linkedin || ((contact.company || contact.website) && ((contact.first_name && contact.last_name) || contact.full_name)))) throw new Error('Contact row ' + (index + 2) + ' needs email, LinkedIn, or a name and company/website');\n    return contact;\n  });\n  return { data, count: data.length, hasContacts: data.length > 0 };\n}\n\nconst rows=$input.all().map(item=>item.json);if(!rows.length)return [];const batch=sheetDropcontactContacts({rows});return batch.data.map((contact,index)=>({json:contact,pairedItem:{item:index}}));"
+      }
+    },
+    {
+      "name": "Enrich the complete contact batch",
+      "type": "n8n-nodes-base.dropcontact",
+      "position": [
+        790,
+        240
+      ],
+      "parameters": {
+        "resource": "contact",
+        "operation": "enrich",
+        "email": "={{ $json.email ?? \"\" }}",
+        "simplify": false,
+        "options": {
+          "siren": true,
+          "language": "fr",
+          "waitTime": 45
+        },
+        "additionalFields": {
+          "first_name": "={{ $json.first_name }}",
+          "last_name": "={{ $json.last_name }}",
+          "full_name": "={{ $json.full_name }}",
+          "company": "={{ $json.company }}",
+          "website": "={{ $json.website }}",
+          "linkedin": "={{ $json.linkedin }}"
+        }
+      },
+      "typeVersion": 1,
+      "id": "sheet-contacts-dropcontact-lemlist-enrich"
+    },
+    {
+      "id": "sheet-contacts-dropcontact-lemlist-plans",
+      "name": "Validate every enriched lead",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1020,
+        240
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function dropcontactLeadPlans({ data, error, success, status, raw, count, campaignId }) {\n  if (error !== false || success !== true || status !== 'succeeded') throw new Error('Dropcontact enrichment is not complete after the source wait; do not submit the batch again without checking its request ID');\n  if (!Array.isArray(data) || data.length !== count) throw new Error('Dropcontact did not return the complete contact batch');\n  if (raw !== null && raw !== undefined && (!Array.isArray(raw.data) || raw.data.length !== count || raw.data.some(record => !record || typeof record !== 'object' || Array.isArray(record)))) throw new Error('Dropcontact returned an invalid or incomplete raw contact batch');\n  if (typeof campaignId !== 'string' || !campaignId.trim()) throw new Error('Configure the Lemlist campaign ID');\n  const campaignPath = encodeURIComponent(campaignId);\n  const plans = data.map((record, index) => {\n    if (!record || typeof record !== 'object' || Array.isArray(record) || !Array.isArray(record.email) || !record.email.length || typeof record.email[0]?.email !== 'string' || !record.email[0].email.trim()) throw new Error('Contact ' + (index + 1) + ' has no first enriched email; no leads have been created by this step');\n    const email = record.email[0].email;\n    const body = {};\n    for (const [target, source] of [['firstName', 'first_name'], ['lastName', 'last_name'], ['companyName', 'company']]) {\n      if (record[source] === undefined) continue;\n      if (record[source] !== null && typeof record[source] !== 'string') throw new Error('Invalid enriched field ' + source + ' at contact ' + (index + 1));\n      body[target] = record[source];\n    }\n    return { email, emailPath: encodeURIComponent(email), campaignPath, endpoint: '/campaigns/' + campaignPath + '/leads/' + encodeURIComponent(email), body };\n  });\n  return { plans, enriched: data, count };\n}\n\nconst data=$input.all().map(item=>item.json);const count=$(\"Map the complete contact batch\").all().length;const result=dropcontactLeadPlans({data,error:false,success:true,status:\"succeeded\",raw:null,count,campaignId:\"YOUR_LEMLIST_CAMPAIGN_ID\"});return result.plans.map((plan,index)=>({json:plan,pairedItem:{item:index}}));"
+      }
+    },
+    {
+      "name": "Create the Lemlist campaign lead",
+      "type": "n8n-nodes-base.lemlist",
+      "position": [
+        1250,
+        240
+      ],
+      "parameters": {
+        "resource": "lead",
+        "operation": "create",
+        "campaignId": "={{ $json.campaignPath }}",
+        "email": "={{ $json.emailPath }}",
+        "additionalFields": {
+          "firstName": "={{ $json.body.firstName }}",
+          "lastName": "={{ $json.body.lastName }}",
+          "companyName": "={{ $json.body.companyName }}"
+        }
+      },
+      "typeVersion": 1,
+      "id": "sheet-contacts-dropcontact-lemlist-create"
+    }
+  ],
+  "connections": {
+    "Import the sheet contacts": {
+      "main": [
+        [
+          {
+            "node": "Read every configured contact row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read every configured contact row": {
+      "main": [
+        [
+          {
+            "node": "Map the complete contact batch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Map the complete contact batch": {
+      "main": [
+        [
+          {
+            "node": "Enrich the complete contact batch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enrich the complete contact batch": {
+      "main": [
+        [
+          {
+            "node": "Validate every enriched lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate every enriched lead": {
+      "main": [
+        [
+          {
+            "node": "Create the Lemlist campaign lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Sheet Contacts through Dropcontact to Lemlist",
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false,
+  "pinData": {}
+}
