@@ -1,0 +1,218 @@
+{
+  "nodes": [
+    {
+      "name": "Typeform Trigger",
+      "type": "n8n-nodes-base.typeformTrigger",
+      "position": [
+        100,
+        300
+      ],
+      "parameters": {
+        "formId": "YOUR_TYPEFORM_FORM_ID",
+        "simplifyAnswers": false,
+        "onlyAnswers": false
+      },
+      "typeVersion": 1,
+      "id": "typeform-problem-report-routing-0"
+    },
+    {
+      "id": "typeform-problem-report-routing-report",
+      "name": "Read the problem report",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        320,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function typeformProblemReport({ response }) {\n  if (!response || !Array.isArray(response.answers) || !Array.isArray(response.definition?.fields)) throw new Error('Expected a complete Typeform problem report');\n  const read = (title, type) => {\n    const fields = response.definition.fields.filter(field => field?.title === title);\n    if (fields.length !== 1 || typeof fields[0].id !== 'string' || !fields[0].id || response.definition.fields.filter(field => field?.id === fields[0].id).length !== 1) throw new Error('The ' + title + ' question must identify one field');\n    const answers = response.answers.filter(answer => answer?.field?.id === fields[0].id);\n    if (answers.length !== 1 || answers[0].type !== type) throw new Error('Expected one ' + type + ' answer for ' + title);\n    return answers[0][type];\n  };\n  const report = { Email: read('Email', 'email'), Name: read('Name', 'text'), Severity: read('Severity', 'number'), Problem: read('Problem', 'text') };\n  for (const key of ['Email', 'Name', 'Problem']) if (typeof report[key] !== 'string' || !report[key].trim()) throw new Error('The ' + key + ' answer must contain text');\n  if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(report.Email)) throw new Error('The Email answer must contain an email address');\n  if (typeof report.Severity !== 'number' || !Number.isFinite(report.Severity)) throw new Error('The Severity answer must be a finite number');\n  return { report, values: [[report.Email, report.Name, String(report.Severity), report.Problem]], message: 'Email: ' + report.Email + '\\nName: ' + report.Name + '\\nSeverity: ' + report.Severity + '\\n\\nProblem:\\n' + report.Problem, urgent: report.Severity > 7 };\n}\n\nreturn $input.all().flatMap((item,index)=>item.json.event_type === \"form_response\" ? [{json:typeformProblemReport({response:item.json.form_response}).report,pairedItem:{item:index}}] : []);"
+      }
+    },
+    {
+      "name": "Log the problem in Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        540,
+        300
+      ],
+      "parameters": {
+        "resource": "sheet",
+        "operation": "append",
+        "sheetId": "YOUR_SPREADSHEET_ID",
+        "range": "Problems!A:D",
+        "keyRow": 0,
+        "options": {
+          "valueInputMode": "RAW"
+        }
+      },
+      "typeVersion": 1,
+      "id": "typeform-problem-report-routing-2"
+    },
+    {
+      "name": "Route by severity",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        760,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{$(\"Read the problem report\").first().json.Severity}}",
+              "operation": "larger",
+              "value2": 7
+            }
+          ]
+        }
+      },
+      "typeVersion": 1,
+      "id": "typeform-problem-report-routing-3"
+    },
+    {
+      "name": "Send severe problems to Slack",
+      "type": "n8n-nodes-base.slack",
+      "position": [
+        980,
+        180
+      ],
+      "parameters": {
+        "resource": "message",
+        "operation": "post",
+        "channel": "YOUR_SLACK_CHANNEL_ID",
+        "text": "={{ \"Email: \" + $(\"Read the problem report\").first().json.Email + \"\\nName: \" + $(\"Read the problem report\").first().json.Name + \"\\nSeverity: \" + $(\"Read the problem report\").first().json.Severity + \"\\n\\nProblem:\\n\" + $(\"Read the problem report\").first().json.Problem }}",
+        "attachments": [],
+        "otherOptions": {}
+      },
+      "typeVersion": 1,
+      "id": "typeform-problem-report-routing-4"
+    },
+    {
+      "name": "Email other problems",
+      "type": "n8n-nodes-base.emailSend",
+      "position": [
+        980,
+        440
+      ],
+      "parameters": {
+        "fromEmail": "sender@example.com",
+        "toEmail": "support@example.com",
+        "subject": "User Reported Problem",
+        "text": "={{ \"Email: \" + $(\"Read the problem report\").first().json.Email + \"\\nName: \" + $(\"Read the problem report\").first().json.Name + \"\\nSeverity: \" + $(\"Read the problem report\").first().json.Severity + \"\\n\\nProblem:\\n\" + $(\"Read the problem report\").first().json.Problem }}",
+        "options": {}
+      },
+      "typeVersion": 1,
+      "id": "typeform-problem-report-routing-5"
+    },
+    {
+      "id": "typeform-problem-report-routing-slack-confirmed",
+      "name": "Confirm the Slack notification",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        180
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function problemSlackConfirmed({ ts, channelId, report, log }) {\n  if (typeof ts !== 'string' || !ts.trim() || typeof channelId !== 'string' || !channelId.trim()) throw new Error('Slack did not return a saved message identity');\n  return { route: 'slack', report, log, notification: { ts, channelId } };\n}\n\nreturn {json:problemSlackConfirmed({ts:$json.ts,channelId:$json.channel,report:$(\"Read the problem report\").first().json,log:{range:\"Problems!A:D\",appended:true}})};"
+      }
+    },
+    {
+      "id": "typeform-problem-report-routing-email-confirmed",
+      "name": "Confirm the email submission",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        440
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function problemEmailConfirmed({ messageId, accepted, rejected, response, report, log }) {\n  if (!Array.isArray(accepted) || !Array.isArray(rejected) || rejected.length || !accepted.length || accepted.some(value => typeof value !== 'string' || !value.trim())) throw new Error('SMTP did not accept every configured recipient');\n  if (messageId != null && typeof messageId !== 'string') throw new Error('SMTP returned an invalid Message-ID');\n  if (typeof response !== 'string') throw new Error('SMTP did not return a submission response');\n  return { route: 'email', report, log, notification: { messageId, accepted, rejected, response } };\n}\n\nreturn {json:problemEmailConfirmed({...$json,report:$(\"Read the problem report\").first().json,log:{range:\"Problems!A:D\",appended:true}})};"
+      }
+    }
+  ],
+  "connections": {
+    "Typeform Trigger": {
+      "main": [
+        [
+          {
+            "node": "Read the problem report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the problem report": {
+      "main": [
+        [
+          {
+            "node": "Log the problem in Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log the problem in Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Route by severity",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by severity": {
+      "main": [
+        [
+          {
+            "node": "Send severe problems to Slack",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Email other problems",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send severe problems to Slack": {
+      "main": [
+        [
+          {
+            "node": "Confirm the Slack notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email other problems": {
+      "main": [
+        [
+          {
+            "node": "Confirm the email submission",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Typeform Problem Report Routing",
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false,
+  "pinData": {}
+}
