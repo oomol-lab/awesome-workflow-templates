@@ -1,0 +1,154 @@
+{
+  "name": "Telegram Message JSON Debugger",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "9f64943e-35a4-4d9f-a77e-ff76cae8bb84",
+      "name": "Receive the Telegram update",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "position": [
+        100,
+        240
+      ],
+      "parameters": {
+        "updates": [
+          "*"
+        ],
+        "additionalFields": {
+          "download": false
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "telegram-message-json-debugger-parts",
+      "name": "Format the full update as JSON",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        320,
+        240
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function telegramJsonParts({ body }) {\n  if (!body || typeof body !== 'object' || Array.isArray(body) || !Number.isSafeInteger(body.update_id)) throw new Error('Expected a complete Telegram update');\n  const senderId = body.message?.from?.id;\n  if (!Number.isSafeInteger(senderId) || senderId <= 0) throw new Error('This debugger requires message.from.id and replies privately to that sender');\n  const json = JSON.stringify(body, null, 2), segments = [];\n  let text = '', html = '';\n  for (const character of json) {\n    const escaped = character === '&' ? '&amp;' : character === '<' ? '&lt;' : character === '>' ? '&gt;' : character;\n    if (html.length + escaped.length > 4000) { segments.push({ text, html }); text = ''; html = ''; }\n    text += character;\n    html += escaped;\n  }\n  if (text) segments.push({ text, html });\n  const parts = segments.map((segment, index) => {\n    const label = segments.length > 1 ? 'Part ' + (index + 1) + '/' + segments.length + '\\n' : '';\n    const html = '<pre>' + label + segment.html + '</pre>';\n    if (html.length > 4096) throw new Error('The JSON part exceeds Telegram’s message limit');\n    return { text: label + segment.text, html };\n  });\n  return { chatId: String(senderId), parts };\n}\n\nconst items=$input.all();if(items.length!==1)throw new Error(\"Expected one Telegram update\");const result=telegramJsonParts({body:items[0].json});return result.parts.map((part,index)=>({json:{chatId:result.chatId,...part,index:index+1},pairedItem:{item:0}}));"
+      }
+    },
+    {
+      "id": "telegram-message-json-debugger-loop",
+      "name": "Send JSON parts one at a time",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        540,
+        240
+      ],
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      }
+    },
+    {
+      "id": "5b890d30-f47e-4cf0-9747-ae9eb14cedff",
+      "name": "Send one private JSON part",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        760,
+        240
+      ],
+      "parameters": {
+        "resource": "message",
+        "operation": "sendMessage",
+        "chatId": "={{ $json.chatId }}",
+        "text": "={{ $json.html }}",
+        "replyMarkup": "none",
+        "additionalFields": {
+          "parse_mode": "HTML",
+          "appendAttribution": false,
+          "disable_web_page_preview": true
+        }
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "telegram-message-json-debugger-receipt",
+      "name": "Confirm the sent JSON part",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        980,
+        240
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const requests=$(\"Format the full update as JSON\").all();if(!Number.isInteger($runIndex)||$runIndex<0||$runIndex>=requests.length)throw new Error(\"Invalid JSON part index\");const request=requests[$runIndex].json;const message=$json.result;if($json.ok!==true||!message||!Number.isSafeInteger(message.message_id)||message.message_id<=0||(message.chat?.type!==\"private\"||String(message.chat?.id)!==request.chatId)||message.text!==request.text)throw new Error(\"Telegram did not confirm the complete JSON part in the original sender’s private chat; sending may already have occurred\");return {json:{part:request.index,message:$json}};"
+      }
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "callerPolicy": "workflowsFromSameOwner",
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "saveDataSuccessExecution": "all"
+  },
+  "connections": {
+    "Receive the Telegram update": {
+      "main": [
+        [
+          {
+            "node": "Format the full update as JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format the full update as JSON": {
+      "main": [
+        [
+          {
+            "node": "Send JSON parts one at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send JSON parts one at a time": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Send one private JSON part",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send one private JSON part": {
+      "main": [
+        [
+          {
+            "node": "Confirm the sent JSON part",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm the sent JSON part": {
+      "main": [
+        [
+          {
+            "node": "Send JSON parts one at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
