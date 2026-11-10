@@ -1,0 +1,240 @@
+{
+  "name": "WooCommerce Customer to Mautic",
+  "nodes": [
+    {
+      "name": "Customer Created or Updated",
+      "type": "n8n-nodes-base.wooCommerceTrigger",
+      "position": [
+        120,
+        260
+      ],
+      "parameters": {
+        "event": "customer.updated"
+      },
+      "typeVersion": 1,
+      "id": "woocommerce-customer-to-mautic-native-0"
+    },
+    {
+      "id": "woocommerce-customer-to-mautic-fields",
+      "name": "Prepare customer fields",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        340,
+        260
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function wooCommerceMauticFields({ customer }) {\n  if (customer == null || typeof customer !== 'object' || Array.isArray(customer)) throw new Error('Expected a WooCommerce customer object');\n  const email = typeof customer.email === 'string' ? customer.email.trim() : '';\n  if (!/^[^\\s@:\"\\\\]+@[^\\s@:\"\\\\]+$/.test(email) || email.length > 254) throw new Error('Customer email is missing or invalid');\n  const text = (value, field) => { if (value == null) return ''; if (typeof value !== 'string') throw new Error('Customer ' + field + ' must be text'); return value; };\n  const firstname = text(customer.first_name, 'first name'), lastname = text(customer.last_name, 'last name'), company = text(customer.billing?.company, 'billing company');\n  return { search: email, email, createFields: { email, firstname, lastname, company, position: '', title: '' }, updateFields: { firstname, lastname } };\n}\n\nreturn $input.all().map((item, index) => ({ json: wooCommerceMauticFields({ customer: item.json }), pairedItem: { item: index } }));"
+      }
+    },
+    {
+      "name": "Check for Existing",
+      "type": "n8n-nodes-base.mautic",
+      "position": [
+        560,
+        260
+      ],
+      "parameters": {
+        "authentication": "credentials",
+        "resource": "contact",
+        "operation": "getAll",
+        "returnAll": false,
+        "limit": 30,
+        "options": {
+          "search": "={{$json.search}}",
+          "rawData": true
+        }
+      },
+      "typeVersion": 1,
+      "alwaysOutputData": true,
+      "id": "woocommerce-customer-to-mautic-native-2"
+    },
+    {
+      "id": "woocommerce-customer-to-mautic-match",
+      "name": "Confirm one exact email match",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        780,
+        260
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function mauticCustomerMatch({ contacts, email }) {\n  if (!Array.isArray(contacts)) throw new Error('Mautic contact search did not return an array');\n  if (contacts.length >= 30) throw new Error('Mautic search filled the 30-contact source window; narrow the data before retrying');\n  const matches = contacts.filter(contact => typeof contact?.fields?.all?.email === 'string' && contact.fields.all.email.trim().toLowerCase() === email.toLowerCase());\n  if (matches.length > 1) throw new Error('More than one Mautic contact has the customer email');\n  if (matches.length === 0 && contacts.length > 0) throw new Error('Mautic search returned contacts without an exact customer email match');\n  const matched = matches[0] ?? null;\n  if (matched != null && (!Number.isSafeInteger(matched.id) || matched.id <= 0)) throw new Error('Matched Mautic contact ID is invalid');\n  return { create: matched == null, matched };\n}\n\nconst prepared = $(\"Prepare customer fields\").first().json;\nconst contacts = $input.all().map(item => item.json).filter(contact => Object.keys(contact).length > 0);\nconst decision = mauticCustomerMatch({ contacts, email: prepared.email });\nreturn [{ json: { ...prepared, ...decision } }];"
+      }
+    },
+    {
+      "id": "woocommerce-customer-to-mautic-gate",
+      "name": "Create or update the contact",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        1000,
+        260
+      ],
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.create}}",
+              "operation": "equal",
+              "value2": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Create Contact",
+      "type": "n8n-nodes-base.mautic",
+      "position": [
+        1220,
+        150
+      ],
+      "parameters": {
+        "authentication": "credentials",
+        "resource": "contact",
+        "operation": "create",
+        "jsonParameters": true,
+        "bodyJson": "={{JSON.stringify($json.createFields)}}",
+        "additionalFields": {},
+        "options": {
+          "rawData": true
+        }
+      },
+      "typeVersion": 1,
+      "id": "woocommerce-customer-to-mautic-native-5"
+    },
+    {
+      "name": "Update Contact",
+      "type": "n8n-nodes-base.mautic",
+      "position": [
+        1220,
+        380
+      ],
+      "parameters": {
+        "authentication": "credentials",
+        "resource": "contact",
+        "operation": "update",
+        "contactId": "={{$json.matched.id}}",
+        "updateFields": {
+          "bodyJson": "={{JSON.stringify($json.updateFields)}}"
+        },
+        "options": {
+          "rawData": true
+        }
+      },
+      "typeVersion": 1,
+      "id": "woocommerce-customer-to-mautic-native-6"
+    },
+    {
+      "id": "woocommerce-customer-to-mautic-saved",
+      "name": "Check the saved contact ID",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1440,
+        260
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function mauticContactSaved({ contact }) {\n  if (!contact || typeof contact !== 'object' || Array.isArray(contact) || !Number.isInteger(contact.id) || contact.id <= 0) {\n    throw new Error('Mautic did not return a saved contact ID');\n  }\n  return { contact };\n}\n\nreturn { json: mauticContactSaved({ contact: $json }).contact };"
+      }
+    }
+  ],
+  "active": false,
+  "settings": {
+    "saveManualExecutions": true,
+    "saveExecutionProgress": true,
+    "saveDataSuccessExecution": "all",
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Customer Created or Updated": {
+      "main": [
+        [
+          {
+            "node": "Prepare customer fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare customer fields": {
+      "main": [
+        [
+          {
+            "node": "Check for Existing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check for Existing": {
+      "main": [
+        [
+          {
+            "node": "Confirm one exact email match",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm one exact email match": {
+      "main": [
+        [
+          {
+            "node": "Create or update the contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create or update the contact": {
+      "main": [
+        [
+          {
+            "node": "Create Contact",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Update Contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Contact": {
+      "main": [
+        [
+          {
+            "node": "Check the saved contact ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Contact": {
+      "main": [
+        [
+          {
+            "node": "Check the saved contact ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {}
+}
