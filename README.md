@@ -196,6 +196,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Rundeck Job Runner](workflows/rundeck-job-runner/) - Request execution of an existing Rundeck job and return its execution record.
 - [Telegram Message JSON Debugger](workflows/telegram-message-json-debugger/) - Echo the complete Telegram update JSON privately to the message sender, using safe formatted parts for long updates.
 - [GitHub Release Slack Notifications](workflows/github-release-slack-notifications/) - Post GitHub release events to Slack with the repository, tag, complete release notes and original release URL.
+- [Send a Telegram Message from a Webhook](workflows/send-telegram-message-from-webhook/) - Send a GET query message to a configured Telegram private chat and return a confirmation using the recipient name from the saved message.
 
 ## Communication
 
