@@ -15,7 +15,7 @@ Select your Twilio account in **Send Twilio SMS**, using its Account SID and Aut
 
 Each run submits one text message. The workflow does not enable WhatsApp, add media or set a delivery callback. Open Flow returns the Action’s message SID, account SID, status, numbers and body; n8n returns Twilio’s full message record. An accepted or queued message is not proof of delivery to the phone.
 
-Twilio messaging charges and account restrictions apply. Failed requests stop without an automatic retry. The workflow has no history or duplicate detection; check Twilio before repeating a request whose result is uncertain.
+Twilio account restrictions apply. Failed requests stop without an automatic retry. The workflow has no history or duplicate detection; check Twilio before repeating a request whose result is uncertain.
 
 ## Changes to the source
 

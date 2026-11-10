@@ -17,7 +17,7 @@ In Open Flow, store your Rundeck API token in a secret Variable and bind **Auth 
 
 Each manual run makes one request with an empty argument string and returns the full execution record. An execution ID confirms that Rundeck accepted the request. The returned status may already reflect a fast job’s outcome; the workflow does not wait for completion, collect logs, cancel jobs or confirm success.
 
-The Open Flow HTTP step has a 30-second execution budget. A rejected request or missing execution ID stops the run. No duplicate check or automatic retry is configured. The job can change remote systems; check Rundeck before repeating a request whose result is uncertain. Rundeck Open Source supports this API use without a service subscription, while hosting and job operations can have their own costs.
+The Open Flow HTTP step has a 30-second execution budget. A rejected request or missing execution ID stops the run. No duplicate check or automatic retry is configured. The job can change remote systems; check Rundeck before repeating a request whose result is uncertain.
 
 ## Changes to the source
 

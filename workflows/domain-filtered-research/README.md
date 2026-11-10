@@ -11,7 +11,7 @@ Ask a research question using Perplexity web search, restrict search to your cho
 
 ## Setup and use
 
-In Open Flow, connect Perplexity in **Research with Perplexity**. The account needs API credits. Use Run and supply:
+In Open Flow, connect Perplexity in **Research with Perplexity**. Use Run and supply:
 
 ```json
 {

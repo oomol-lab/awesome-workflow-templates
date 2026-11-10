@@ -15,7 +15,7 @@ Select a Bannerbear account in **Render Bannerbear image** and allow `bannerbear
 
 In n8n, choose **HTTP Bearer Auth** credentials in **Render Bannerbear image** with the same project API key as the token. Edit the template UID and modifications in its JSON body. Both formats use Bannerbear’s V2 synchronous image endpoint.
 
-Each run creates one image and waits for its result. A completed status, image UID and media URL are required. The full image record is retained, including optional fields and extra properties. The workflow does not download the media, save a local file or send a completion webhook. Rendering consumes Bannerbear credits; repeating the same input creates another render.
+Each run creates one image and waits for its result. A completed status, image UID and media URL are required. The full image record is retained, including optional fields and extra properties. The workflow does not download the media, save a local file or send a completion webhook. Repeating the same input creates another render.
 
 The synchronous API waits up to 10 seconds and returns `408` on timeout. No workflow retry is configured. A timeout or failed request can leave a render on the account, so check Bannerbear before repeating an uncertain request. A queued or failed result is not treated as a completed image.
 

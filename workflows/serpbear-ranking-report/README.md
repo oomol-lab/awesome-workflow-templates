@@ -11,13 +11,13 @@ Read a domain’s SERPBear rankings, ask OpenRouter for an SEO analysis and save
 
 ## Setup
 
-Use a SERPBear instance reachable by HTTPS and a Baserow Cloud table with `Date` (date), `Note` (long text) and `Blog` (text) fields. The instance must expose its canonical `/api/keywords` URL directly; redirects are rejected. Create a SERPBear API key in the instance configuration, an OpenRouter API key with credits and a Baserow database token with permission to create rows in the chosen table.
+Use a SERPBear instance reachable by HTTPS and a Baserow Cloud table with `Date` (date), `Note` (long text) and `Blog` (text) fields. The instance must expose its canonical `/api/keywords` URL directly; redirects are rejected. Create a SERPBear API key in the instance configuration, an OpenRouter API key and a Baserow database token with permission to create rows in the chosen table.
 
 In Open Flow, set your tracked `domain` and `blog` label in **Prepare report scope**. Replace the host in **Read SERPBear rankings** and select a secret Variable for its bearer token. Select the OpenRouter connection in **Analyze keyword rankings**, and set the Baserow connection and `tableId` in **Save ranking report**. The Baserow action uses field names. It connects to Baserow Cloud at `api.baserow.io`.
 
 In n8n, edit **Prepare Report Scope**, set the SERPBear URL in **Read SERPBear Rankings**, and select a Header Auth credential with `Authorization: Bearer YOUR_SERPBEAR_API_KEY`. Set another Header Auth credential with `Authorization: Bearer YOUR_OPENROUTER_API_KEY` in **Analyze Keyword Rankings**. Select **Database Token** credentials in **Save Ranking Report**, use the Baserow Cloud host and select your table. Field metadata is read to map `Date`, `Note` and `Blog` to field IDs before creating the row. Credentials stay in the normal account fields.
 
-Both formats use `meta-llama/llama-3.1-70b-instruct`, a paid OpenRouter route. The source's `:free` route currently lists no available endpoints. Check current [model availability and pricing](https://openrouter.ai/meta-llama/llama-3.1-70b-instruct) before enabling the schedule; the paid route and provider routing can change cost and generated wording. No temperature or output-token budget is added.
+Both formats use `meta-llama/llama-3.1-70b-instruct` through OpenRouter. The source's `:free` route currently lists no available endpoints. Check current [model availability](https://openrouter.ai/meta-llama/llama-3.1-70b-instruct) before enabling the schedule; model and provider routing can change generated wording. No temperature or output-token budget is added.
 
 ## Run and results
 
@@ -35,7 +35,7 @@ Failed reads or analysis, malformed ranking data, and absent report text stop be
 - Require the canonical API URL without redirects and use a 30-second read budget in both formats, matching Open Flow's transport limit. The source used the native HTTP node's longer default timeout.
 - Use the configured domain and blog label, one UTC report date and literal JSON messages, removing the source's URL-encoding of the prompt.
 - Sort history observations by date, handle empty history, and treat position `0` as outside the top 100. Show the average of ranked observations rather than counting an unranked zero as the best position.
-- Select the currently available paid route from the same Llama model family and disclose the change from the unavailable free route.
+- Select the currently available route from the same Llama model family and disclose the change from the source’s unavailable `:free` route.
 - Replace private table IDs and the source's Matomo setup notes with SERPBear and Baserow configuration. Validate report text and the created row ID before reporting success.
 
 

@@ -19,7 +19,7 @@ Run with **Text** and a supported **Target** language code, such as `de`. In n8n
 
 Each run sends one input to one target language. The source language is detected automatically. Google’s HTML input format and NMT model defaults are retained; HTML tags are preserved and translated text may contain escaped entities. This template does not decode or rewrite the returned text, use a custom model, translate files or split long text into batches. Google’s request-size and language-support limits apply.
 
-The full single-translation record is returned, including detected source language and any extra properties. A failed request or malformed result stops the run. No workflow retry is configured. Open Flow’s HTTP step has a 30-second execution budget. Translation consumes character quota; the recurring free allowance can cover ordinary short-text use, with paid usage above that allowance.
+The full single-translation record is returned, including detected source language and any extra properties. A failed request or malformed result stops the run. No workflow retry is configured. Open Flow’s HTTP step has a 30-second execution budget.
 
 ## Changes to the source
 

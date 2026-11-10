@@ -15,7 +15,7 @@ In Open Flow, import the JSON and bind **Search X with Xquik → Authentication 
 
 In n8n, edit **Search Settings**. Create a Header Auth credential with name `X-API-Key` and your Xquik key as its value, then select it on **Search X with Xquik**. Run **Manual Trigger**.
 
-Use a nonempty query of up to 4,096 characters and an integer limit from 1 to 10,000. Xquik recommends keeping queries within 512 characters; larger or expensive searches may fail or return fewer rows because of service limits or available quota. Search requests can incur Xquik charges. See the [official API specification](https://xquik.com/openapi.json) for current search and billing behavior.
+Use a nonempty query of up to 4,096 characters and an integer limit from 1 to 10,000. Xquik recommends keeping queries within 512 characters; larger or expensive searches may fail or return fewer rows because of service limits or available quota. See the [official API specification](https://xquik.com/openapi.json) for current search behavior.
 
 ## Results
 

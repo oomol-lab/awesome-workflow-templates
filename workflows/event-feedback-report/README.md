@@ -22,7 +22,7 @@ For n8n, configure the same spreadsheet, model, and recipient in `Get Google She
 
 Use Run in Open Flow or Execute Workflow in n8n. A run reads all rows in the configured range and sends one HTML email. An empty sheet or a sheet with only headers sends no email. Repeated runs include the same existing responses. Source feedback is sent to your configured AI provider. Large response sets must fit your model's context window.
 
-The default model uses paid token-based API access. OpenAI lists this snapshot for [shutdown on January 14, 2027](https://developers.openai.com/api/docs/deprecations/). Choose an available compatible model in both formats before that date and check the report output. The replacement model can produce different wording and assessments; no model quality or account availability is guaranteed.
+OpenAI lists this snapshot for [shutdown on January 14, 2027](https://developers.openai.com/api/docs/deprecations/). Choose an available compatible model in both formats before that date and check the report output. The replacement model can produce different wording and assessments; no model quality or account availability is guaranteed.
 
 ## Changes to the source
 

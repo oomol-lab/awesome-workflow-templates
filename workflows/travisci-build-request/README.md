@@ -17,7 +17,7 @@ Run with **Repository Slug** in `owner/repository` form and **Branch**. The repo
 
 In n8n, choose an **HTTP Header Auth** credential in **Request Travis CI build**. Set its header name to `Authorization` and its value to `token YOUR_TRAVIS_API_TOKEN`. Replace `YOUR_OWNER%2FYOUR_REPOSITORY` in the URL, keeping the slash between owner and repository encoded as `%2F`, and edit the branch in the JSON body.
 
-Each run makes one build request. The `202` pending result and request ID confirm acceptance, not a completed or successful build. The workflow does not poll for build status, override build configuration, retry jobs or cancel builds. A requested build can consume your Travis CI credits.
+Each run makes one build request. The `202` pending result and request ID confirm acceptance, not a completed or successful build. The workflow does not poll for build status, override build configuration, retry jobs or cancel builds.
 
 The Open Flow HTTP step has a 30-second execution budget. A rejected request, unexpected response or transport failure stops the run. No duplicate check or automatic retry is configured. Check Travis CI before repeating an uncertain request, since it may already have started a build.
 

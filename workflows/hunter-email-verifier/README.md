@@ -11,9 +11,9 @@ Request a deliverability assessment for one email address and return Hunter’s 
 
 ## Setup
 
-Select your Hunter account in **Request Hunter email verification** and allow `hunter.email_verifier`. Run with the **Email** address you want to assess. In n8n, select Hunter credentials and replace the example address in **Hunter**. Your account needs an API key and sufficient verification credits.
+Select your Hunter account in **Request Hunter email verification** and allow `hunter.email_verifier`. Run with the **Email** address you want to assess. In n8n, select Hunter credentials and replace the example address in **Hunter**. Your account needs an API key.
 
-Each run makes one verification request. The result includes Hunter’s status, score, SMTP checks, source information and any other returned assessment fields. A result such as `invalid`, `accept_all` or `unknown` is still an assessment; the workflow does not turn these values into a success-or-failure decision. Verification can use account credits and does not send an email message.
+Each run makes one verification request. The result includes Hunter’s status, score, SMTP checks, source information and any other returned assessment fields. A result such as `invalid`, `accept_all` or `unknown` is still an assessment; the workflow does not turn these values into a success-or-failure decision. Verification does not send an email message.
 
 Hunter can return a previous verification from up to one month ago. Inspect the returned verification date; it can be `null` when no verification was performed. This assessment does not guarantee delivery to an inbox.
 

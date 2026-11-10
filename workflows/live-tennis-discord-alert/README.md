@@ -15,7 +15,7 @@ Select a secret Variable containing your [Live Tennis API](https://livetennisapi
 
 In n8n, select a Header Auth credential whose header name is `X-API-Key` on **Get Live Matches**. Select a Discord Bot credential, server, and channel on **Discord**. The template uses a bot connection in both formats instead of the source’s incoming webhook URL.
 
-The schedule is every five minutes in UTC. This uses **288 API requests per day**, plus any manual tests. The provider’s documented free allowance is 100 requests per day; use an appropriate plan or change the schedule in both formats before enabling it.
+The schedule is every five minutes in UTC. This uses **288 API requests per day**, plus any manual tests. Check your account’s request limits before enabling the schedule; adjust the schedule in both formats if needed.
 
 ## Behavior
 
