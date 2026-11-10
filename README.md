@@ -166,6 +166,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 ## Communication
 
 - [Twilio SMS Sender](workflows/twilio-sms-sender/) - Submit one text message to Twilio with a sender and recipient number.
+- [Mailjet Email Sender](workflows/mailjet-email-sender/) - Send one plain-text email through Mailjet and return its acceptance result.
 
 ## Customer Support
 
