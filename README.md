@@ -199,6 +199,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Send a Telegram Message from a Webhook](workflows/send-telegram-message-from-webhook/) - Send a GET query message to a configured Telegram private chat and return a confirmation using the recipient name from the saved message.
 - [GitHub User Profile to Slack](workflows/github-user-profile-to-slack/) - Look up a GitHub profile and matching author emails from its last 25 pull requests, then post the bounded results and avatar to Slack.
 - [GitHub Repository Alert Light](workflows/github-repository-alert-light/) - Turn a Home Assistant light red whenever GitHub delivers an event from a selected repository.
+- [Google Sheet Table JSON API](workflows/google-sheet-table-json-api/) - Read a configured Google Sheet range and return every data row as a JSON object keyed by the first row.
 
 ## Communication
 
