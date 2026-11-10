@@ -1,0 +1,427 @@
+{
+  "name": "LeadPilot Lite — Manual Lead Email Writer",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "leadpilot-lite",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "trigger-webhook",
+      "name": "Receive Lead Data",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        200,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function prepareLeadPilot({request}) {\n  if (!request || typeof request !== 'object' || Array.isArray(request)) throw new Error('Provide a lead object or an object containing leads.');\n  const source = request.leads === undefined ? [request] : request.leads;\n  if (!Array.isArray(source) || source.length === 0) throw new Error('Provide at least one lead.');\n  const text = (value, name, fallback = '') => {\n    if (value === undefined || value === null || value === '') return fallback;\n    if (typeof value !== 'string') throw new Error(name + ' must be text.');\n    return value;\n  };\n  const senderName=text(request.sender_name,'sender_name','Your Name'),senderCompany=text(request.sender_company,'sender_company','Your Company'),senderValue=text(request.value_prop,'value_prop','We help companies save time with automation.'),calendarLink=text(request.calendar_link,'calendar_link');\n  const leads=source.map((lead,index)=>{\n    if (!lead || typeof lead !== 'object' || Array.isArray(lead) || typeof lead.name !== 'string' || !lead.name.trim()) throw new Error('Lead '+(index+1)+' requires a name.');\n    return {name:lead.name,email:text(lead.email,'email'),title:text(lead.title,'title'),company:text(lead.company,'company'),industry:text(lead.industry,'industry'),companyDescription:text(lead.company_description,'company_description'),linkedinUrl:text(lead.linkedin_url,'linkedin_url'),notes:text(lead.notes,'notes'),senderName,senderCompany,senderValue,calendarLink};\n  });\n  return {leads};\n}\n\nconst body=$input.first().json.body??$input.first().json;return prepareLeadPilot({request:body}).leads.map((lead,index)=>({json:lead,pairedItem:{item:0}}));"
+      },
+      "id": "parse-input",
+      "name": "Parse Lead List",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        420,
+        400
+      ]
+    },
+    {
+      "id": "leadpilot-one-lead",
+      "name": "One Lead at a Time",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      }
+    },
+    {
+      "id": "leadpilot-prompt",
+      "name": "Prepare One Lead Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function validateLeadPilotEmail(value) {\n  if(typeof value==='string') { try { value=JSON.parse(value); } catch { throw new Error('The model response is not JSON.'); } }\n  if(!value || typeof value!=='object' || Array.isArray(value)) throw new Error('The model response must be an email object.');\n  const required=(v,name)=>{if(typeof v!=='string'||!v.trim())throw new Error('Generated '+name+' is empty or missing.');return v;};\n  return {subjectLine:required(value.subjectLine,'subjectLine'),emailBody:required(value.emailBody,'emailBody'),followUp:{subject:required(value.followUp?.subject,'followUp.subject'),body:required(value.followUp?.body,'followUp.body')}};\n}\nfunction leadPilotPrompt(lead) {\n  return 'Write a cold email:\\n\\nRecipient: '+lead.name+'\\nTitle: '+lead.title+'\\nCompany: '+lead.company+'\\nIndustry: '+lead.industry+'\\nAbout Company: '+lead.companyDescription+'\\nNotes: '+lead.notes+'\\n\\nSender: '+lead.senderName+' at '+lead.senderCompany+'\\nValue Prop: '+lead.senderValue+'\\nCalendar: '+lead.calendarLink;\n}\n\nreturn $input.all().map((item,index)=>({json:{...item.json,prompt:leadPilotPrompt(item.json)},pairedItem:{item:index}}));"
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.prompt }}",
+        "messages": {
+          "messageValues": [
+            {
+              "type": "SystemMessagePromptTemplate",
+              "message": "You are an elite cold email copywriter. Write a personalized cold email.\n\nRules:\n- Subject: 3-7 words, personalized, zero spam triggers\n- Opening: Reference their company or role specifically\n- Body: 50-80 words MAX. One pain point + one value prop.\n- CTA: Soft question or calendar link\n- Include 1 follow-up email (3 days later, 30-50 words)\n\nJSON: { \"subjectLine\": \"...\", \"emailBody\": \"full email\", \"followUp\": { \"subject\": \"Re: [subject]\", \"body\": \"follow-up text\" } }"
+            }
+          ]
+        },
+        "batching": {
+          "batchSize": 1,
+          "delayBetweenBatches": 0
+        }
+      },
+      "id": "ai-write-email",
+      "name": "AI: Write Cold Email",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        660,
+        120
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "leadpilot-model",
+      "name": "Cold Email Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        660,
+        300
+      ],
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "id",
+          "value": "gpt-4o-mini"
+        },
+        "options": {
+          "temperature": 0.7,
+          "maxTokens": 800,
+          "responseFormat": "json_object",
+          "maxRetries": 0
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function validateLeadPilotEmail(value) {\n  if(typeof value==='string') { try { value=JSON.parse(value); } catch { throw new Error('The model response is not JSON.'); } }\n  if(!value || typeof value!=='object' || Array.isArray(value)) throw new Error('The model response must be an email object.');\n  const required=(v,name)=>{if(typeof v!=='string'||!v.trim())throw new Error('Generated '+name+' is empty or missing.');return v;};\n  return {subjectLine:required(value.subjectLine,'subjectLine'),emailBody:required(value.emailBody,'emailBody'),followUp:{subject:required(value.followUp?.subject,'followUp.subject'),body:required(value.followUp?.body,'followUp.body')}};\n}\nfunction leadPilotPrompt(lead) {\n  return 'Write a cold email:\\n\\nRecipient: '+lead.name+'\\nTitle: '+lead.title+'\\nCompany: '+lead.company+'\\nIndustry: '+lead.industry+'\\nAbout Company: '+lead.companyDescription+'\\nNotes: '+lead.notes+'\\n\\nSender: '+lead.senderName+' at '+lead.senderCompany+'\\nValue Prop: '+lead.senderValue+'\\nCalendar: '+lead.calendarLink;\n}\n\nconst items=$input.all(),leads=$(\"Prepare One Lead Prompt\").all();if(items.length!==leads.length)throw new Error(\"Lead response count differs.\");return items.map((item,index)=>{const {prompt,...lead}=leads[index].json;return {json:{...lead,...validateLeadPilotEmail(item.json),generatedAt:new Date().toISOString()},pairedItem:{item:index}};});"
+      },
+      "id": "merge-results",
+      "name": "Associate Generated Lead Draft",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        120
+      ]
+    },
+    {
+      "id": "leadpilot-all",
+      "name": "Collect Complete Lead Batch",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        -180
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const items=$input.all(),leads=$(\"Parse Lead List\").all();if(items.length!==leads.length)throw new Error(\"Complete draft batch differs from lead count.\");return items;"
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_SPREADSHEET_ID"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Lite Pipeline"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Name": "={{ $json.name }}",
+            "Email": "={{ $json.email }}",
+            "Title": "={{ $json.title }}",
+            "Company": "={{ $json.company }}",
+            "Subject Line": "={{ $json.subjectLine }}",
+            "Email Body": "={{ $json.emailBody }}",
+            "Follow-up": "={{ $json.followUp.body }}",
+            "Generated At": "={{ $json.generatedAt }}",
+            "Sent": "No"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Title",
+              "displayName": "Title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Company",
+              "displayName": "Company",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Subject Line",
+              "displayName": "Subject Line",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email Body",
+              "displayName": "Email Body",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Follow-up",
+              "displayName": "Follow-up",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Generated At",
+              "displayName": "Generated At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Sent",
+              "displayName": "Sent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ]
+        },
+        "options": {
+          "cellFormat": "RAW",
+          "useAppend": true
+        }
+      },
+      "id": "save-sheets",
+      "name": "Save to Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        880,
+        -180
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {success:true,lead:$(\"Collect Complete Lead Batch\").first().json.name,company:$(\"Collect Complete Lead Batch\").first().json.company,subjectLine:$(\"Collect Complete Lead Batch\").first().json.subjectLine,count:$(\"Collect Complete Lead Batch\").all().length,drafts:$(\"Collect Complete Lead Batch\").all().map(item=>item.json),message:\"Emails generated. Check Google Sheets to review and send.\"} }}"
+      },
+      "id": "respond-success",
+      "name": "Respond: Success",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1100,
+        -180
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## LeadPilot Lite — Manual Lead Email Writer\n\nPOST a lead or leads array with sender_name, sender_company, value_prop and optional calendar_link. Name is required on every lead; other fields are optional text. No Apollo account or automatic sending. Source guidance: small lists of5–20, not a hard cap.\n\nConfigure gpt-4o-mini OpenAI credentials and Lite Pipeline Sheet; see README for nine exact columns. Sequential per-lead generation allows3 total workflow attempts with2-second gaps; all drafts are validated before one RAW append. The follow-up is copy for3 days later; no scheduled follow-up send is added.\n\nSheet writes do not retry. A lost response may already have saved rows; inspect before repeating. Protect the webhook. Set sender defaults explicitly in your request. Full source attribution and changes are in README.",
+        "width": 380,
+        "height": 280,
+        "color": 6
+      },
+      "id": "note-overview",
+      "name": "Sticky Note: Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        120,
+        80
+      ]
+    }
+  ],
+  "connections": {
+    "Receive Lead Data": {
+      "main": [
+        [
+          {
+            "node": "Parse Lead List",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Lead List": {
+      "main": [
+        [
+          {
+            "node": "One Lead at a Time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "One Lead at a Time": {
+      "main": [
+        [
+          {
+            "node": "Collect Complete Lead Batch",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare One Lead Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare One Lead Prompt": {
+      "main": [
+        [
+          {
+            "node": "AI: Write Cold Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI: Write Cold Email": {
+      "main": [
+        [
+          {
+            "node": "Associate Generated Lead Draft",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Associate Generated Lead Draft": {
+      "main": [
+        [
+          {
+            "node": "One Lead at a Time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect Complete Lead Batch": {
+      "main": [
+        [
+          {
+            "node": "Save to Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save to Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Respond: Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cold Email Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI: Write Cold Email",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true
+  },
+  "tags": [
+    {
+      "name": "LeadPilot",
+      "id": "leadpilot"
+    },
+    {
+      "name": "AutoFlow",
+      "id": "autoflow"
+    },
+    {
+      "name": "Lite",
+      "id": "lite"
+    }
+  ],
+  "active": false,
+  "pinData": {}
+}
