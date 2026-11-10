@@ -36,6 +36,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Recruiting](#recruiting)
 - [Content Review](#content-review)
 - [Recruitment](#recruitment)
+- [Data Sync](#data-sync)
 - [Contribute](#contribute)
 - [Licensing](#licensing)
 
@@ -238,6 +239,10 @@ A growing collection of automation workflows for connecting apps and getting rep
 ## Recruitment
 
 - [CV Job Match Report](workflows/cv-job-match-report/) - Extract the complete text of a linked PDF resume and compare it with a job description to produce a structured report for human review.
+
+## Data Sync
+
+- [Airtable Contacts to Google Sheets](workflows/airtable-contacts-to-google-sheets/) - Sync recently updated Airtable records into an existing Google Sheet, matching exact Email keys and using RAW values and the A1:E1000 lookup window.
 
 ## Contribute
 

@@ -1,0 +1,449 @@
+{
+  "name": "Airtable Contacts to Google Sheets",
+  "nodes": [
+    {
+      "id": "start",
+      "name": "Run Recent Contact Sync",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "parameters": {},
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "id": "source",
+      "name": "Read Recently Updated Contacts",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 1,
+      "parameters": {
+        "authentication": "airtableTokenApi",
+        "operation": "list",
+        "application": "YOUR_AIRTABLE_BASE_ID",
+        "table": "TableName",
+        "returnAll": true,
+        "additionalOptions": {
+          "filterByFormula": "{LastUpdated} >= DATEADD(TODAY(), -1, 'days')"
+        }
+      },
+      "position": [
+        240,
+        0
+      ]
+    },
+    {
+      "id": "collect",
+      "name": "Collect Selected Records",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function collectAirtableRows({previousState,records,offset}) {\n const state=previousState?{records:[...previousState.records],cursors:[...previousState.cursors]}:{records:[],cursors:[]};\n if(previousState){if(!Array.isArray(records))throw new Error('Airtable returned no record array.');for(const record of records){if(!record||typeof record.id!=='string'||!record.id||!record.fields||typeof record.fields!=='object'||Array.isArray(record.fields))throw new Error('Invalid Airtable record.');state.records.push(record);}if(offset!==undefined&&offset!==null&&(typeof offset!=='string'||!offset))throw new Error('Invalid Airtable cursor.');if(offset){if(state.cursors.includes(offset))throw new Error('Airtable repeated its pagination cursor.');state.cursors.push(offset);}}\n const more=!previousState||!!offset;return {state,offset:more?(offset??null):null,more,hasRecords:state.records.length>0};\n}\n\nconst state=collectAirtableRows({previousState:{records:[],cursors:[]},records:$input.all().map(i=>i.json),offset:null}).state;return [{json:{records:state.records}}];"
+      },
+      "position": [
+        480,
+        0
+      ]
+    },
+    {
+      "id": "read",
+      "name": "Read Existing Sheet Window",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "https://sheets.googleapis.com/v4/spreadsheets/YOUR_GOOGLE_SHEET_ID/values/A1%3AE1000?majorDimension=ROWS&valueRenderOption=UNFORMATTED_VALUE",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "options": {
+          "timeout": 30000,
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "position": [
+        720,
+        0
+      ]
+    },
+    {
+      "id": "plan",
+      "name": "Match Email and Existing Headers",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function planSheetSync({records,values,range,majorDimension}) {\n if(!Array.isArray(records)||!records.length)throw new Error('At least one selected Airtable record is required.');\n if(majorDimension!=='ROWS'||!Array.isArray(values)||!Array.isArray(values[0]))throw new Error('A sheet header row is required.');\n const headers=values[0];if(!headers.length||headers.length>5||headers.some(h=>typeof h!=='string'||!h)||new Set(headers).size!==headers.length||!headers.includes('Email'))throw new Error('The A1:E1 headers must be unique text field names including Email, with no gaps.');\n if(typeof range!=='string'||range.lastIndexOf('!')<1||range.slice(range.lastIndexOf('!')+1)!=='A1:E1000')throw new Error('The sheet response must identify the requested A1:E1000 lookup window.');\n const prefix=range.slice(0,range.lastIndexOf('!')+1),keyIndex=headers.indexOf('Email'),existing=new Map(),sourceKeys=new Set(),data=[],newRows=[],matched=[],unchanged=[];\n if(values.length>1000)throw new Error('The sheet response exceeds the configured lookup window.');\n for(let i=1;i<values.length;i++){const row=values[i];if(!Array.isArray(row)||row.length>5)throw new Error('Invalid sheet row.');const key=row[keyIndex];if(key!==null&&key!==undefined&&key!==''){if(typeof key!=='string')throw new Error('Existing Email keys must be text.');if(existing.has(key))throw new Error('Duplicate Email keys exist in the target lookup window.');existing.set(key,i+1);}}\n for(const record of records){const fields=record?.fields,key=fields?.Email;if(!record?.id||!fields||typeof fields!=='object'||Array.isArray(fields)||typeof key!=='string'||!key.trim())throw new Error('Every selected record needs a nonempty text Email key.');if(sourceKeys.has(key))throw new Error('Duplicate Email keys exist in the source batch.');sourceKeys.add(key);\n  for(const h of headers){const v=fields[h];if(v!==undefined&&v!==null&&!['string','number','boolean'].includes(typeof v))throw new Error('Mapped Airtable cells must be text,numbers,booleans or null.');if(typeof v==='number'&&!Number.isFinite(v))throw new Error('Mapped numbers must be finite.');}\n  const rowNumber=existing.get(key);if(rowNumber){const before=data.length;headers.forEach((h,j)=>{if(h!=='Email'&&fields[h]!==undefined&&fields[h]!==null)data.push({range:prefix+String.fromCharCode(65+j)+rowNumber,majorDimension:'ROWS',values:[[fields[h]]]});});(data.length>before?matched:unchanged).push({recordId:record.id,email:key,row:rowNumber});}\n  else newRows.push({recordId:record.id,email:key,values:headers.map(h=>fields[h]===undefined||fields[h]===null?'':String(fields[h]))});\n }\n return {data:data.length?data:[{range:prefix+'A1',values:[['UNUSED']],majorDimension:'ROWS'}],newRows,hasUpdates:data.length>0,plan:{matched,unchanged,count:records.length,ranges:data.map(d=>d.range),cells:data.length,newRows,tableRange:range,width:headers.length}};\n}\n\nreturn [{json:planSheetSync({records:$(\"Collect Selected Records\").first().json.records,...$input.first().json})}];"
+      },
+      "position": [
+        960,
+        0
+      ]
+    },
+    {
+      "id": "new",
+      "name": "New Contacts Exist",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "new-yes",
+              "leftValue": "={{ $(\"Match Email and Existing Headers\").first().json.plan.newRows.length > 0 }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "position": [
+        1200,
+        0
+      ]
+    },
+    {
+      "id": "emit",
+      "name": "Prepare New Contact Rows",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return $(\"Match Email and Existing Headers\").first().json.plan.newRows.map((json,index)=>({json,pairedItem:{item:index}}));"
+      },
+      "position": [
+        1440,
+        0
+      ]
+    },
+    {
+      "id": "loop",
+      "name": "Append New Contacts One at a Time",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "position": [
+        0,
+        280
+      ]
+    },
+    {
+      "id": "append",
+      "name": "Append One New Contact as RAW",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "={{ \"https://sheets.googleapis.com/v4/spreadsheets/YOUR_GOOGLE_SHEET_ID/values/\"+encodeURIComponent($(\"Match Email and Existing Headers\").first().json.plan.tableRange)+\":append?valueInputOption=RAW\" }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {range:$(\"Match Email and Existing Headers\").first().json.plan.tableRange,values:[$json.values]} }}",
+        "options": {
+          "timeout": 30000,
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "position": [
+        240,
+        280
+      ]
+    },
+    {
+      "id": "receipt",
+      "name": "Confirm New Contact Append",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function collectContactAppends({plan,previousState,updatedRange,updatedRows,updatedCells}) {\n const state=previousState?{index:previousState.index,inserted:[...previousState.inserted]}:{index:0,inserted:[]};\n if(previousState){const expected=plan.newRows[state.index],prefix=plan.tableRange.slice(0,plan.tableRange.lastIndexOf('!')+1),suffix=typeof updatedRange==='string'&&updatedRange.startsWith(prefix)?updatedRange.slice(prefix.length):'',match=suffix.match(/^A([0-9]+)(?::([A-E])([0-9]+))?$/);if(updatedRows!==1||updatedCells!==plan.width||!match||match[1]!==(match[3]??match[1])||(match[2]??'A')!==String.fromCharCode(64+plan.width))throw new Error('Append receipt does not confirm the new contact row. Inspect the sheet before retrying.');state.inserted.push({recordId:expected.recordId,email:expected.email,range:updatedRange,row:Number(match[1])});state.index++;}\n const next=plan.newRows[state.index];return {state,more:!!next,values:next?[next.values]:[]};\n}\n\nconst plan=$(\"Match Email and Existing Headers\").first().json.plan,previousState=$runIndex===0?{index:0,inserted:[]}:$(\"Confirm New Contact Append\").all(0,$runIndex-1)[0].json.state;return [{json:collectContactAppends({plan,previousState,...$input.first().json.updates})}];"
+      },
+      "position": [
+        480,
+        280
+      ]
+    },
+    {
+      "id": "finish",
+      "name": "Finish New Contact Appends",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const plan=$(\"Match Email and Existing Headers\").first().json.plan;if($input.all().length!==plan.newRows.length)throw Error(\"Append loop did not complete every new contact.\");return [{json:{completedAppends:plan.newRows.length}}];"
+      },
+      "position": [
+        720,
+        280
+      ]
+    },
+    {
+      "id": "updates",
+      "name": "Existing Cells Need Updates",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "updates-yes",
+              "leftValue": "={{ $(\"Match Email and Existing Headers\").first().json.plan.cells > 0 }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "position": [
+        960,
+        280
+      ]
+    },
+    {
+      "id": "write",
+      "name": "Write Existing Cells as RAW",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://sheets.googleapis.com/v4/spreadsheets/YOUR_GOOGLE_SHEET_ID/values:batchUpdate",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {valueInputOption:\"RAW\",data:$(\"Match Email and Existing Headers\").first().json.data} }}",
+        "options": {
+          "timeout": 30000,
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "position": [
+        1200,
+        280
+      ]
+    },
+    {
+      "id": "confirm",
+      "name": "Confirm Complete Contact Sync",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function confirmSheetSync({plan,inserted,totalUpdatedRows,totalUpdatedCells,responses}) {\n if(inserted.length!==plan.newRows.length)throw new Error('All new contact appends must complete before updating existing rows.');\n if(plan.cells){if(totalUpdatedRows!==plan.matched.length||totalUpdatedCells!==plan.cells||!Array.isArray(responses)||responses.length!==plan.cells)throw new Error('The update did not confirm every planned cell. Inspect the sheet before retrying.');\n  const canonical=r=>String(r).replace(/([A-Z]+\\d+):\\1$/,'$1');for(let i=0;i<responses.length;i++){const r=responses[i];if(r.updatedRows!==1||r.updatedCells!==1||canonical(r.updatedRange)!==canonical(plan.ranges[i]))throw new Error('A cell write receipt is incomplete. Inspect the sheet before retrying.');}}\n return {rowsUpdated:plan.matched.length,rowsInserted:inserted.length,rowsUnchanged:plan.unchanged.length,totalRowsProcessed:plan.count,updated:plan.matched,inserted};\n}\n\nconst plan=$(\"Match Email and Existing Headers\").first().json.plan,inserted=plan.newRows.length?$(\"Confirm New Contact Append\").all(0,plan.newRows.length-1)[0].json.state.inserted:[];return [{json:confirmSheetSync({plan,inserted,...(plan.cells?$input.first().json:{})})}];"
+      },
+      "position": [
+        1440,
+        280
+      ]
+    }
+  ],
+  "connections": {
+    "Run Recent Contact Sync": {
+      "main": [
+        [
+          {
+            "node": "Read Recently Updated Contacts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Recently Updated Contacts": {
+      "main": [
+        [
+          {
+            "node": "Collect Selected Records",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect Selected Records": {
+      "main": [
+        [
+          {
+            "node": "Read Existing Sheet Window",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Existing Sheet Window": {
+      "main": [
+        [
+          {
+            "node": "Match Email and Existing Headers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Match Email and Existing Headers": {
+      "main": [
+        [
+          {
+            "node": "New Contacts Exist",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare New Contact Rows": {
+      "main": [
+        [
+          {
+            "node": "Append New Contacts One at a Time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append One New Contact as RAW": {
+      "main": [
+        [
+          {
+            "node": "Confirm New Contact Append",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm New Contact Append": {
+      "main": [
+        [
+          {
+            "node": "Append New Contacts One at a Time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Finish New Contact Appends": {
+      "main": [
+        [
+          {
+            "node": "Existing Cells Need Updates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write Existing Cells as RAW": {
+      "main": [
+        [
+          {
+            "node": "Confirm Complete Contact Sync",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "New Contacts Exist": {
+      "main": [
+        [
+          {
+            "node": "Prepare New Contact Rows",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Existing Cells Need Updates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append New Contacts One at a Time": {
+      "main": [
+        [
+          {
+            "node": "Finish New Contact Appends",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Append One New Contact as RAW",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Existing Cells Need Updates": {
+      "main": [
+        [
+          {
+            "node": "Write Existing Cells as RAW",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Confirm Complete Contact Sync",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false,
+  "pinData": {}
+}
