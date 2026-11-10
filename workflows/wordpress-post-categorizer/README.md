@@ -48,8 +48,11 @@ The result contains the requested `{id, categoryId}` assignments and a count aft
 - Keep read, classification and write phases separate, with explicit empty-collection output and partial-write failure behavior.
 
 
-## Source and license
+<details>
+<summary>Source and license</summary>
 
 Adapted from [Auto-Categorize blog posts in wordpress using A.I.](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/WordPress/Auto-Categorize%20blog%20posts%20in%20wordpress%20using%20A.I..json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates). The export links to this [case study by Keith Rumjahn](https://rumjahn.com/how-to-use-a-i-to-categorize-wordpress-posts-and-streamline-your-content-organization-process/) and its accompanying [video tutorial](https://www.youtube.com/watch?v=IvQioioVqhw); it does not state a separate template license.
 
 Source collection notice: © 2024–2026 Enes Cingoz, [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). See [repository licensing](../../README.md#licensing) for the scope of OOMOL contributions and third-party material.
+
+</details>

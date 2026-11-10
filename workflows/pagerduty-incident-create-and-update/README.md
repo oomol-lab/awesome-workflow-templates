@@ -29,7 +29,8 @@ Open Flow returns the complete incident object; n8n returns the final incident r
 - Use the PagerDuty Provider API for creation, which has no equivalent current Action; retain native Actions for update and get.
 - Confirm completed creation and keep the same returned incident ID through both later requests.
 
-## Source and license
+<details>
+<summary>Source and license</summary>
 
 Adapted from [Create, update, and get an incident on PagerDuty](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/0195_Manual_Pagerduty_Create_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 
@@ -56,3 +57,5 @@ The collection’s [MIT notice](https://github.com/Zie619/n8n-workflows/blob/940
 > LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 > OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 > SOFTWARE.
+
+</details>

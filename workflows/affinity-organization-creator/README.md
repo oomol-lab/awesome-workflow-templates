@@ -25,7 +25,8 @@ Errors and unexpected responses stop the run without retry or rollback. A repeat
 - Use the Affinity Provider API for organization creation, which has no equivalent current Action.
 - Validate the completed organization response and expose its full record.
 
-## Source and license
+<details>
+<summary>Source and license</summary>
 
 Adapted from [Create an organization in Affinity](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/1210_Manual_Affinity_Create_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 
@@ -52,3 +53,5 @@ The collection’s [MIT notice](https://github.com/Zie619/n8n-workflows/blob/940
 > LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 > OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 > SOFTWARE.
+
+</details>

@@ -42,8 +42,11 @@ Submitted feedback is sent to the selected model service. Only its generated dep
 - Normalize category whitespace/case, validate routed message length, and preserve the no-message fallback for unknown categories.
 - Keep original feedback available after model/message responses and use configured Discord Bot connections.
 
-## Source and license
+<details>
+<summary>Source and license</summary>
 
 Adapted from [Discord AI-powered bot](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Discord/Discord%20AI-powered%20bot.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 
 Source collection notice: © 2024–2026 Enes Cingoz, [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). The source export does not identify a separate template author or license. See [repository licensing](../../README.md#licensing) for the scope of OOMOL contributions and third-party material.
+
+</details>

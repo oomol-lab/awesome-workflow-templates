@@ -42,8 +42,11 @@ Common secret-like strings in error messages are redacted, whitespace is normali
 - Reject an array supplied as the execution object.
 - Redact the complete token in an Authorization Bearer message before applying general key/value redaction.
 
-## Source and license
+<details>
+<summary>Source and license</summary>
 
 Adapted from [n8n Failed Execution Doctor](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/devops/n8n-failed-execution-doctor.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 
 Source collection notice: © 2024–2026 Enes Cingoz, [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). The source export does not identify a separate template author or license. This adaptation includes the changes listed above; see [repository licensing](../../README.md#licensing) for the scope of OOMOL contributions and third-party material.
+
+</details>

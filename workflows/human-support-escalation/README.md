@@ -39,8 +39,11 @@ Blank input is rejected. A message destined for Slack must fit the 40,000-charac
 - Validate blank or oversized input and require a Slack acknowledgment before confirming.
 - Replace undeclared response assignments with returned objects and disable the n8n instance-link footer.
 
-## Source and license
+<details>
+<summary>Source and license</summary>
 
 Adapted from the support handoff sub-workflow in [Ask a human for help when the AI doesn't know the answer](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/OpenAI_and_LLMs/Ask%20a%20human%20for%20help%20when%20the%20AI%20doesn_t%20know%20the%20answer.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates). This template publishes that callable component; the source's conversational agent is separate.
 
 Source collection notice: © 2024–2026 Enes Cingoz, [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). The source export does not identify a separate template author or license. This adaptation includes the changes above; see [repository licensing](../../README.md#licensing) for OOMOL contributions and third-party material.
+
+</details>

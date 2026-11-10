@@ -25,7 +25,8 @@ Each run creates another meeting. A failed request stops the run, with no workfl
 - Require the topic as an Open Flow run input.
 - Make the scheduled meeting type explicit and expose the meeting result in Open Flow.
 
-## Source and license
+<details>
+<summary>Source and license</summary>
 
 Adapted from [Creating a meeting with the Zoom node](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/1159_Manual_Zoom_Automation_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 
@@ -52,3 +53,5 @@ The collection’s [MIT notice](https://github.com/Zie619/n8n-workflows/blob/940
 > LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 > OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 > SOFTWARE.
+
+</details>

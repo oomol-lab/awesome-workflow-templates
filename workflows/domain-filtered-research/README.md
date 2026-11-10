@@ -37,8 +37,11 @@ The template uses Perplexity’s legacy Sonar-compatible completion route. Perpl
 - Preserve the answer’s citation list and handle an omitted list.
 - Replace credential identities and outdated model notes with reusable setup instructions.
 
-## Source and license
+<details>
+<summary>Source and license</summary>
 
 Adapted from [Query Perplexity AI from your n8n workflows](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/AI_Research_RAG_and_Data_Analysis/Query%20Perplexity%20AI%20from%20your%20n8n%20workflows.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 
 Source collection notice: © 2024–2026 Enes Cingoz, [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). The source export does not identify a separate template author or license. See [repository licensing](../../README.md#licensing) for the scope of OOMOL contributions and third-party material.
+
+</details>

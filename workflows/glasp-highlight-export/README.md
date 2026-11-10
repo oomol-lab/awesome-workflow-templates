@@ -37,8 +37,11 @@ This template returns export data. It does not save to disk or write to Notion, 
 - Use real line breaks and UTC highlight dates in formatted output.
 - Give query preparation, page collection, formatting, and state saving separate visible steps in Open Flow.
 
-## Source and license
+<details>
+<summary>Source and license</summary>
 
 Adapted from [glasp-highlights-export-workflow](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Other_Integrations_and_Use_Cases/glasp-highlights-export-workflow.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates). Related setup guidance is available in [Glasp's n8n tutorial](https://glasp.co/posts/how-to-autoexport-glasp-highlights-with-n8n).
 
 Source collection notice: © 2024–2026 Enes Cingoz, [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). The source export does not identify a separate template author or license. This adaptation includes the changes listed above; see [repository licensing](../../README.md#licensing) for the scope of OOMOL contributions and third-party material.
+
+</details>

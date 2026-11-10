@@ -28,8 +28,11 @@ This is a report based on observed execution history. It does not establish whet
 - Reject a nonpositive or invalid silence threshold instead of silently substituting a default.
 - Set an explicit UTC schedule; the Open Flow check uses the scheduled timestamp as its observation time.
 
-## Source and license
+<details>
+<summary>Source and license</summary>
 
 Adapted from [n8n Silent Workflow Check](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/devops/n8n%20Silent%20Workflow%20Check.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 
 Source collection notice: © 2024–2026 Enes Cingoz, [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). The source export does not identify a separate template author or license. This adaptation includes the changes listed above; see [repository licensing](../../README.md#licensing) for the scope of OOMOL contributions and third-party material.
+
+</details>

@@ -35,8 +35,11 @@ OpenAI has [announced that `tts-1` will shut down on January 6, 2027](https://de
 - Correct the source input-limit note to 4,096 characters.
 - Preserve binary audio as a downloadable Open Flow artifact or n8n binary output.
 
-## Source and license
+<details>
+<summary>Source and license</summary>
 
 Adapted from [Convert text to speech with OpenAI](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/OpenAI_and_LLMs/Convert%20text%20to%20speech%20with%20OpenAI.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 
 Source collection notice: © 2024–2026 Enes Cingoz, [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). The source export does not identify a separate template author or license. See [repository licensing](../../README.md#licensing) for the scope of OOMOL contributions and third-party material.
+
+</details>

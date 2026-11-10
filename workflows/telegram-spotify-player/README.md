@@ -42,8 +42,11 @@ Your message text goes to the configured model service. Spotify receives its gen
 - Return the same status context after Telegram delivery instead of depending on a write response to echo the input.
 
 
-## Source and license
+<details>
+<summary>Source and license</summary>
 
 Adapted from [Telegram to Spotify with OpenAI](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Telegram/Telegram%20to%20Spotify%20with%20OpenAI.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 
 Source collection notice: © 2024–2026 Enes Cingoz, [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). The source export does not identify a separate template author or license. See [repository licensing](../../README.md#licensing) for the scope of OOMOL contributions and third-party material.
+
+</details>

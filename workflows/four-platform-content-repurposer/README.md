@@ -54,8 +54,11 @@ Submitted content goes to the selected model service. The Sheet receives the gen
 - Preserve the source retry allowances, prompt budgets and existing `crypto` prerequisite, and pin the model snapshot explicitly.
 
 
-## Source and license
+<details>
+<summary>Source and license</summary>
 
 Adapted from [FlowScribe Lite - AI Content Repurposing4Platforms](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Instagram_Twitter_Social_Media/FlowScribe%20Lite%20-%20AI%20Content%20Repurposing%204%20Platforms.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 
 Source collection notice: © 2024–2026 Enes Cingoz, [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). The source export does not identify a separate template author or license. See [repository licensing](../../README.md#licensing) for the scope of OOMOL contributions and third-party material.
+
+</details>

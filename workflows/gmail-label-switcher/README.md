@@ -24,7 +24,8 @@ A service error stops the run without replaying earlier writes. A removal error 
 - Replace mailbox-specific labels with setup placeholders and make the source’s 10-message default explicit.
 - Keep the two label-changing phases separate and expose their modified messages and completed counts in Open Flow.
 
-## Source and license
+<details>
+<summary>Source and license</summary>
 
 Adapted from [Get messages with a certain label, remove the label, and add a new one](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/0240_Manual_Gmail_Create_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 
@@ -51,3 +52,5 @@ The collection’s [MIT notice](https://github.com/Zie619/n8n-workflows/blob/940
 > LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 > OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 > SOFTWARE.
+
+</details>

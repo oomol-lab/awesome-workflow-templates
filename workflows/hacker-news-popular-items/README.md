@@ -26,8 +26,11 @@ There is one read and no pagination, automatic retry or stored history. A non-20
 
 [Open Flow JSON](templates/hacker-news-popular-items.openflow.json) · [n8n JSON](templates/hacker-news-popular-items.n8n.json)
 
-## Source and license
+<details>
+<summary>Source and license</summary>
 
 Adapted from the independent Hacker News data branch of [AI chat with any data source (using the n8n workflow tool)](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/OpenAI_and_LLMs/AI%20chat%20with%20any%20data%20source%20(using%20the%20n8n%20workflow%20tool).json) in [Enes Cingoz's awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates), pinned to `827110332c21cbe000ab13f6d292d5adb1f1f8db`. Source collection notice: © 2024–2026 Enes Cingoz, [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). The export does not identify a separate template author or license. See [repository licensing](../../README.md#licensing).
 
 API references: [Hacker News Search](https://hn.algolia.com/api) and its [indexing/ranking configuration](https://github.com/algolia/hn-search#indexing-configuration).
+
+</details>

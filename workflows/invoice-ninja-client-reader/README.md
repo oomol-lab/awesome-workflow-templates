@@ -23,7 +23,8 @@ Each run reads the first page of up to 50 clients, without search, ordering or r
 - Keep the source’s first-page, 50-client limit.
 - Expose clients and pagination metadata in Open Flow.
 
-## Source and license
+<details>
+<summary>Source and license</summary>
 
 Adapted from [Invoice Ninja client list workflow](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/1003_Manual_Invoiceninja_Automate_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 
@@ -50,3 +51,5 @@ The collection’s [MIT notice](https://github.com/Zie619/n8n-workflows/blob/940
 > LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 > OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 > SOFTWARE.
+
+</details>

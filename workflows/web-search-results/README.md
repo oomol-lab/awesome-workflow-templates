@@ -31,8 +31,11 @@ Open Flow returns a `results` array containing `{title, url, snippet}`. n8n retu
 - Validate queries and result records, preserving empty searches and rejecting failed or malformed responses.
 
 
-## Source and license
+<details>
+<summary>Source and license</summary>
 
 Adapted from [Live Web Research Agent with Superhighway](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/AI_Research_RAG_and_Data_Analysis/Live%20Web%20Research%20Agent%20with%20Superhighway.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 
 Source collection notice: © 2024–2026 Enes Cingoz, [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). The source export does not identify a separate template author or license. See [repository licensing](../../README.md#licensing) for the scope of OOMOL contributions and third-party material.
+
+</details>

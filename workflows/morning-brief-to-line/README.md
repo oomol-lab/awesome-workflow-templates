@@ -31,8 +31,11 @@ Enable the workflow after setup. Test with a LINE recipient your bot is allowed 
 - Set an explicit UTC schedule and display timezone.
 - Stop before sending if the model returns an empty brief or a message longer than LINE allows.
 
-## Source and license
+<details>
+<summary>Source and license</summary>
 
 Adapted from [Claude AI Morning Brief](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/OpenAI_and_LLMs/Claude%20AI%20Morning%20Brief.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 
 Source collection notice: © 2024–2026 Enes Cingoz, [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). The source export does not identify a separate template author or license. This adaptation includes the changes listed above; see [repository licensing](../../README.md#licensing) for the scope of OOMOL contributions and third-party material.
+
+</details>

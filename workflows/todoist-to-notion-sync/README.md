@@ -40,7 +40,8 @@ This sequence is not atomic. A page-creation error leaves earlier rows in Notion
 - Update n8n Todoist to version 2.2 for the current paginated API, retain the default 50-task batch, and make the 30-second interval explicit.
 - Use Notion’s data source API in Open Flow and expose task-to-page associations.
 
-## Source and license
+<details>
+<summary>Source and license</summary>
 
 Adapted from [Sync Todoist tasks to Notion](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Schedule/1607_Schedule_Notion_Sync_Scheduled.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 
@@ -67,3 +68,5 @@ The collection’s [MIT notice](https://github.com/Zie619/n8n-workflows/blob/940
 > LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 > OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 > SOFTWARE.
+
+</details>

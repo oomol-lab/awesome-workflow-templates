@@ -38,8 +38,11 @@ The Live Tennis API receives your query and key. Discord receives the player nam
 - Retain new IDs only after a successful execution, replacing the source’s record-before-send behavior that could permanently skip messages after a failed delivery. Partial delivery can instead cause duplicate messages on a later poll.
 - Use configurable API secrets and Discord Bot connections.
 
-## Source and license
+<details>
+<summary>Source and license</summary>
 
 Adapted from [Post New Live Tennis Matches to Discord on a Schedule](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Discord/Post%20New%20Live%20Tennis%20Matches%20to%20Discord%20on%20a%20Schedule.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates). The source identifies **the team behind Live Tennis API** as its contributor and discloses that affiliation. No separate template license is stated in the export.
 
 Source collection notice: © 2024–2026 Enes Cingoz, [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). See [repository licensing](../../README.md#licensing) for the scope of OOMOL contributions and third-party material.
+
+</details>

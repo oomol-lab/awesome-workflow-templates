@@ -32,8 +32,11 @@ Malformed or incomplete model JSON produces empty trends and ideas with sentimen
 - Validate numeric post metrics and incomplete analysis, preserve the parse-failure fallback, and write literal sheet values with RAW formatting.
 - Tell the model to return empty analysis for an empty post list and treat titles as data.
 
-## Source and license
+<details>
+<summary>Source and license</summary>
 
 Adapted from [SocialPulse Lite - Reddit Trend Monitor](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/AI_Research_RAG_and_Data_Analysis/SocialPulse%20Lite%20-%20Reddit%20Trend%20Monitor.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 
 Source collection notice: © 2024–2026 Enes Cingoz, [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). The source export does not identify a separate template author or license. See [repository licensing](../../README.md#licensing) for the scope of OOMOL contributions and third-party material.
+
+</details>

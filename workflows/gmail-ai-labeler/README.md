@@ -38,8 +38,11 @@ No workflow-level retries are configured. The n8n model adapter allows two addit
 - Skip empty label writes, collapse repeated label names and fail on missing selected labels instead of silently losing them during a merge.
 
 
-## Source and license
+<details>
+<summary>Source and license</summary>
 
 Adapted from [Auto-label incoming Gmail messages with AI nodes](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Gmail_and_Email_Automation/Auto-label%20incoming%20Gmail%20messages%20with%20AI%20nodes.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates). The source credits [workfloows.com](https://workfloows.com/) and [@workfloows](https://www.youtube.com/@workfloows), with a [video guide](https://youtu.be/a8Dhj3Zh9vQ); it states no separate template license.
 
 Source collection notice: © 2024–2026 Enes Cingoz, [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). See [repository licensing](../../README.md#licensing) for the scope of OOMOL contributions and third-party material.
+
+</details>

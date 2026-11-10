@@ -57,8 +57,11 @@ There is a three-second wait between completed invoices. Open Flow allows up to 
 - Use WAHA’s documented `X-Api-Key` authentication and check acceptance instead of marking every successful HTTP response as sent.
 - Remove account identifiers and leave all credentials and endpoints for your configuration.
 
-## Source and license
+<details>
+<summary>Source and license</summary>
 
 Adapted from [Send Escalating WhatsApp Invoice Reminders from Google Sheets (Hebrew)](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/WhatsApp/Send%20Escalating%20WhatsApp%20Invoice%20Reminders%20from%20Google%20Sheets%20(Hebrew).json) in [Enes Cingoz’s awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates), pinned to `827110332c21cbe000ab13f6d292d5adb1f1f8db`, under [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE).
 
 API references: [WAHA text messages](https://waha.devlike.pro/docs/how-to/send-messages/#send-text), [WAHA OpenAPI](https://waha.devlike.pro/swagger/openapi.json), [Google Sheets values](https://developers.google.com/workspace/sheets/api/reference/rest/v4/spreadsheets.values/get) and [batch value updates](https://developers.google.com/workspace/sheets/api/reference/rest/v4/spreadsheets.values/batchUpdate). The WAHA contract was checked against the published `2026.10.1` specification. No live invoice or WhatsApp account was used in verification.
+
+</details>

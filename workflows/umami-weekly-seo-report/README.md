@@ -75,8 +75,11 @@ Use canonical endpoints: redirects are errors. Open Flow allows 30 seconds and 4
 
 API references: [self-hosted authentication](https://docs.umami.is/docs/api/authentication), [website summary statistics](https://docs.umami.is/docs/api-reference/get-website-stats) and [ranked website metrics](https://docs.umami.is/docs/api-reference/get-website-metrics). The implementation was checked against [Umami 3.4.1](https://github.com/umami-software/umami/tree/559e3c607c23d2c72d9bd4f6481bda428255323c). Check compatibility before using a different server version.
 
-## Source and license
+<details>
+<summary>Source and license</summary>
 
 Adapted from [Summarize Umami data with AI (via Openrouter) and save it to Baserow](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/AI_Research_RAG_and_Data_Analysis/Summarize%20Umami%20data%20with%20AI%20(via%20Openrouter)%20and%20save%20it%20to%20Baserow.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates). The source credits [Keith Rumjahn’s case study](https://rumjahn.com/how-to-analyze-umami-data-using-n8n-and-a-i-to-improve-seo-and-uncover-hidden-insights-for-better-content-optimization/) on rumjahn.com. No separate template license is stated in the export.
 
 Source collection notice: © 2024–2026 Enes Cingoz, [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). See [repository licensing](../../README.md#licensing) for the scope of OOMOL contributions and third-party material.
+
+</details>

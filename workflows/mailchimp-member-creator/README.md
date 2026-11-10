@@ -25,7 +25,8 @@ A failed request or unexpected member response stops the run. No automatic retry
 - Use OAuth2 credentials in n8n.
 - Require audience ID, email and first name as Open Flow run inputs and expose the created member.
 
-## Source and license
+<details>
+<summary>Source and license</summary>
 
 Adapted from [Mailchimp add-member workflow](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/0938_Manual_Mailchimp_Automation_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 
@@ -52,3 +53,5 @@ The collection’s [MIT notice](https://github.com/Zie619/n8n-workflows/blob/940
 > LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 > OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 > SOFTWARE.
+
+</details>

@@ -36,8 +36,11 @@ Malformed model output returns the fallback `general` / `medium` with summary `U
 - Parse complete or fenced JSON containing braces inside strings, retain the malformed-output fallback, and normalize unknown labels.
 - Remove the source switch with no configured downstream actions.
 
-## Source and license
+<details>
+<summary>Source and license</summary>
 
 Adapted from [Claude Smart Webhook AI Router](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/OpenAI_and_LLMs/Claude%20Smart%20Webhook%20AI%20Router.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 
 Source collection notice: © 2024–2026 Enes Cingoz, [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). The source export does not identify a separate template author or license. This adaptation includes the changes listed above; see [repository licensing](../../README.md#licensing) for the scope of OOMOL contributions and third-party material.
+
+</details>

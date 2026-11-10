@@ -48,10 +48,13 @@ This checks IDs and counts. It does not establish that upstream work was correct
 - Retain the independent local check, including zero records and n8n's empty-output placeholder.
 - Return the report without the optional external receipt branch or fixed demo-case selector.
 
-## Source and license
+<details>
+<summary>Source and license</summary>
 
 Adapted from the **completed-output validation component** of [Detect Empty Workflow Outputs with an Optional Keptick Receipt](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/devops/Detect%20Empty%20Workflow%20Outputs%20with%20an%20Optional%20Keptick%20Receipt.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 
 Original workflow made by **Keptick, with AI assistance**. No affiliation with n8n.
 
 Source collection notice: © 2024–2026 Enes Cingoz, [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). The adaptation changes are listed above; see [repository licensing](../../README.md#licensing) for the scope of OOMOL contributions and third-party material.
+
+</details>

@@ -36,8 +36,11 @@ No matches return `found: false` with a short message. A failed search or malfor
 - Quote titles and links safely in the response text, and make timeout and redirect handling explicit.
 - Add a manual n8n entry while preserving the callable workflow entry, and document the actual search steps.
 
-## Source and license
+<details>
+<summary>Source and license</summary>
 
 Adapted from [KB Tool - Confluence Knowledge Base](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Other_Integrations_and_Use_Cases/KB%20Tool%20-%20Confluence%20Knowledge%20Base.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 
 Source collection notice: © 2024–2026 Enes Cingoz, [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). The source export does not identify a separate template author or license. This adaptation includes the changes above; see [repository licensing](../../README.md#licensing) for OOMOL contributions and third-party material.
+
+</details>

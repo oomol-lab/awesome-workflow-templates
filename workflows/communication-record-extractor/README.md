@@ -34,8 +34,11 @@ Submitted text and any correction completion are sent to the selected model serv
 - Read actual Basic LLM Chain text output, accept the source’s optional output wrapper, and return known record fields with explicit failure status.
 - Preserve the original record schema and make the current-time context UTC.
 
-## Source and license
+<details>
+<summary>Source and license</summary>
 
 Adapted from [Extract personal data with self-hosted LLM Mistral NeMo](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/OpenAI_and_LLMs/Extract%20personal%20data%20with%20self-hosted%20LLM%20Mistral%20NeMo.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 
 Source collection notice: © 2024–2026 Enes Cingoz, [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). The source export does not identify a separate template author or license. See [repository licensing](../../README.md#licensing) for the scope of OOMOL contributions and third-party material.
+
+</details>

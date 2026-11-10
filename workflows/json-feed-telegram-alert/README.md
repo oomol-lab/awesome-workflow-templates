@@ -54,8 +54,11 @@ Open Flow returns `sent` and `watermark` after the state save. n8n's final outpu
 - Retain numeric zero as a timestamp and reject nonnumeric boolean or object timestamps.
 - Set an explicit UTC schedule and JSON response format.
 
-## Source and license
+<details>
+<summary>Source and license</summary>
 
 Adapted from [RSS Keyword Alert to Telegram](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Telegram/RSS%20Keyword%20Alert%20to%20Telegram.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 
 Source collection notice: © 2024–2026 Enes Cingoz, [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). The source export does not identify a separate template author or license. This adaptation includes the changes listed above; see [repository licensing](../../README.md#licensing) for the scope of OOMOL contributions and third-party material.
+
+</details>

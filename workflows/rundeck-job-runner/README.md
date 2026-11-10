@@ -26,7 +26,8 @@ The Open Flow HTTP step has a 30-second execution budget. A rejected request or 
 - Validate HTTPS certificates instead of the source V1 node’s default certificate-validation bypass.
 - Check the execution ID and retain the full response without waiting for job success.
 
-## Source and license
+<details>
+<summary>Source and license</summary>
 
 Adapted from [Execute a Rundeck job](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/1008_Manual_Rundeck_Automate_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 
@@ -53,3 +54,5 @@ The collection’s [MIT notice](https://github.com/Zie619/n8n-workflows/blob/940
 > LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 > OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 > SOFTWARE.
+
+</details>

@@ -25,7 +25,8 @@ Queued updates are retained when the webhook is created. Open Flow’s optional 
 - Check the incoming chat ID and required weather fields before replying.
 - Update the n8n Telegram trigger to version 1.2 while retaining queued updates.
 
-## Source and license
+<details>
+<summary>Source and license</summary>
 
 Adapted from [Telegram Weather Workflow](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Openweathermap/0751_Openweathermap_Telegram_Automate_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 
@@ -52,3 +53,5 @@ The collection’s [MIT notice](https://github.com/Zie619/n8n-workflows/blob/940
 > LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 > OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 > SOFTWARE.
+
+</details>

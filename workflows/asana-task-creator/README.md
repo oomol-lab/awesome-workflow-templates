@@ -22,7 +22,8 @@ There is no lookup, duplicate detection, update or automatic retry. A failed req
 - Require the name and workspace as Open Flow run inputs.
 - Send the source’s two fields through the Asana create-task Action and expose its result.
 
-## Source and license
+<details>
+<summary>Source and license</summary>
 
 Adapted from [Create a new task in Asana](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/1225_Manual_Asana_Create_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 
@@ -49,3 +50,5 @@ The collection’s [MIT notice](https://github.com/Zie619/n8n-workflows/blob/940
 > LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 > OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 > SOFTWARE.
+
+</details>

@@ -38,8 +38,11 @@ Open Flow uses its public HTTP capability to apply the timeout separately to eac
 - Return fixed failure messages instead of attempting to scrub arbitrary error text with credential patterns.
 - Distinguish response/configuration failures from request failures, and make redirects and retry counts explicit.
 
-## Source and license
+<details>
+<summary>Source and license</summary>
 
 Adapted from [Resilient REST API Sync with Retries, Validation, and Sanitized Errors](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Other_Integrations_and_Use_Cases/Resilient%20REST%20API%20Sync%20with%20Retries%2C%20Validation%2C%20and%20Sanitized%20Errors.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 
 Source collection notice: © 2024–2026 Enes Cingoz, [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). The source export does not identify a separate template author or license. This adaptation includes the changes above; see [repository licensing](../../README.md#licensing) for OOMOL contributions and third-party material.
+
+</details>

@@ -57,8 +57,11 @@ Calculations use integer cents for line totals and round the material margin, la
 - Normalize missing intermediate fields to JSON `null` before validation routing.
 - In Open Flow, return the result and corresponding HTTP status through workflow outputs. Preserve the exact-match checks, synthetic prices, rounding, and three response statuses.
 
-## Source and license
+<details>
+<summary>Source and license</summary>
 
 Adapted from [Deterministic Exact-Match Quote Guard for AI and OCR Inputs](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Other_Integrations_and_Use_Cases/Deterministic%20Exact-Match%20Quote%20Guard%20for%20AI%20and%20OCR%20Inputs.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 
 Source collection notice: © 2024–2026 Enes Cingoz, [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). The source export does not identify a separate template author or license. This adaptation includes the changes listed above; see [repository licensing](../../README.md#licensing) for the scope of OOMOL contributions and third-party material.
+
+</details>

@@ -38,8 +38,11 @@ The workflow sends one Slack message before returning success. A model or Slack 
 - Make Slack delivery and the success response sequential, and bind the returned content to the generation step.
 - Normalize unknown content types to the blog prompt, escape Slack link and mention markup, and reject empty model results.
 
-## Source and license
+<details>
+<summary>Source and license</summary>
 
 Adapted from [Claude AI Content Generator](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/OpenAI_and_LLMs/Claude%20AI%20Content%20Generator.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 
 Source collection notice: © 2024–2026 Enes Cingoz, [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). The source export does not identify a separate template author or license. This adaptation includes the changes listed above; see [repository licensing](../../README.md#licensing) for the scope of OOMOL contributions and third-party material.
+
+</details>

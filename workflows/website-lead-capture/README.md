@@ -55,8 +55,11 @@ If your form sends extra fields, add them to the Open Flow webhook body schema b
 
 Repeated requests create additional rows and messages. Telegram text must fit its 4,096-character message limit.
 
-## Source and license
+<details>
+<summary>Source and license</summary>
 
 Adapted from [Website leads to Google Sheets with Telegram alert and auto-reply (Italian)](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Google_Drive_and_Google_Sheets/Website%20leads%20to%20Google%20Sheets%20with%20Telegram%20alert%20and%20auto-reply%20(Italian).json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 
 Source collection notice: © 2024–2026 Enes Cingoz, [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). The source export does not identify a separate template author or license. This adaptation includes the changes listed above; see [repository licensing](../../README.md#licensing) for the scope of OOMOL contributions and third-party material.
+
+</details>

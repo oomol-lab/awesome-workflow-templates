@@ -35,8 +35,11 @@ An HTTP or extraction failure prevents the model and notification. Empty or over
 - Make response format, timeout, redirect behavior, and Telegram message validation explicit.
 - Keep headline link handling compatible with n8n's Code runtime.
 
-## Source and license
+<details>
+<summary>Source and license</summary>
 
 Adapted from [Hacker News Throwback Machine - See What Was Hot on This Day, Every Year!](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Other_Integrations_and_Use_Cases/Hacker%20News%20Throwback%20Machine%20-%20See%20What%20Was%20Hot%20on%20This%20Day%2C%20Every%20Year!.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 
 Source collection notice: © 2024–2026 Enes Cingoz, [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). The source export does not identify a separate template author or license. This adaptation includes the changes listed above; see [repository licensing](../../README.md#licensing) for the scope of OOMOL contributions and third-party material.
+
+</details>

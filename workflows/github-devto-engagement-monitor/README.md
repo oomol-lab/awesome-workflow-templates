@@ -61,8 +61,11 @@ The three requests run in order. A failed request stops the run. This template p
 - Use the GitHub and Dev.to connectors in Open Flow. The n8n HTTP requests include an explicit User-Agent.
 - Use explicit response references in both formats so all three results reach the summary.
 
-## Source and license
+<details>
+<summary>Source and license</summary>
 
 Adapted from [GitHub Stars and Dev.to Engagement Monitor](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/devops/GitHub%20Stars%20and%20Dev.to%20Engagement%20Monitor.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 
 Source collection notice: © 2024–2026 Enes Cingoz, [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). The source export does not identify a separate template author or license. This adaptation includes the changes listed above; see [repository licensing](../../README.md#licensing) for the scope of OOMOL contributions and third-party material.
+
+</details>

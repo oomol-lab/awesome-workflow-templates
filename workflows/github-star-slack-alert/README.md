@@ -26,7 +26,8 @@ The workflow keeps no notification history. Duplicate event deliveries or two ac
 - Validate the two star actions and required sender/count fields.
 - Add notification fallback text and escape dynamic Slack values while retaining the avatar, profile link, colors, and separate destinations.
 
-## Source and license
+<details>
+<summary>Source and license</summary>
 
 Adapted from [GitHub star notifications](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Github/0973_GitHub_Slack_Create_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 
@@ -53,3 +54,5 @@ The collection’s [MIT notice](https://github.com/Zie619/n8n-workflows/blob/940
 > LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 > OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 > SOFTWARE.
+
+</details>

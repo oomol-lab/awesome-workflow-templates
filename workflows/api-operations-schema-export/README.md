@@ -76,8 +76,11 @@ Each successful run creates a new Drive file. There is no overwrite, duplicate-e
 - Merge groups after resource-name normalization, so `Users` and `Users API` share one endpoint group.
 - Use an explicit UTC timestamp and add a manual n8n entry while accepting the original generate-request shape.
 
-## Source and license
+<details>
+<summary>Source and license</summary>
 
 Adapted from Stage 3's generate sub-workflow in [API Schema Extractor](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Other_Integrations_and_Use_Cases/API%20Schema%20Extractor.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates). This template publishes the operations-export component. The source's research, scraping, embedding and extraction stages are separate.
 
 Source collection notice: © 2024–2026 Enes Cingoz, [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). The source export does not identify a separate template author or license. This adaptation includes the changes above; see [repository licensing](../../README.md#licensing) for OOMOL contributions and third-party material.
+
+</details>

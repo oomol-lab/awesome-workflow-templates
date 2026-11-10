@@ -23,8 +23,11 @@ The alert is evaluated on every poll. While a large 24-hour move continues, anot
 - Send the price message without an added platform signature and use an explicit UTC schedule.
 - Keep invalid data from being formatted as a successful price message.
 
-## Source and license
+<details>
+<summary>Source and license</summary>
 
 Adapted from [Bitcoin price alert to Telegram with CoinPaprika](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Telegram/Bitcoin%20price%20alert%20to%20Telegram%20with%20CoinPaprika.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 
 Source collection notice: © 2024–2026 Enes Cingoz, [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). The source export does not identify a separate template author or license. See [repository licensing](../../README.md#licensing) for the scope of OOMOL contributions and third-party material.
+
+</details>

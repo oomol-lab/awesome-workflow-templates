@@ -40,8 +40,11 @@ Publish and enable the configured workflow. A run reads the complete configured 
 
 [Open Flow JSON](templates/invoice-payment-reminders.openflow.json) · [n8n JSON](templates/invoice-payment-reminders.n8n.json)
 
-## Source and license
+<details>
+<summary>Source and license</summary>
 
 Adapted from [Automatic payment reminders from Google Sheets (Italian)](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Google_Drive_and_Google_Sheets/Automatic%20payment%20reminders%20from%20Google%20Sheets%20(Italian).json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 
 Source collection notice: © 2024–2026 Enes Cingoz, [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). The source export does not identify a separate template author or license. See [repository licensing](../../README.md#licensing) for the scope of OOMOL contributions and third-party material.
+
+</details>

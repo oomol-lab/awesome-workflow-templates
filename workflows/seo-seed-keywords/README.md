@@ -34,8 +34,11 @@ Each successful run has one generation step and returns `keywords`. n8n’s mode
 - Return a validated keyword list instead of relying on a missing object field and a placeholder database node.
 - Use an available model instead of the source node’s retired default, and remove historical per-run price estimates.
 
-## Source and license
+<details>
+<summary>Source and license</summary>
 
 Adapted from [Generate SEO Seed Keywords Using AI](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/AI_Research_RAG_and_Data_Analysis/Generate%20SEO%20Seed%20Keywords%20Using%20AI.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 
 Source collection notice: © 2024–2026 Enes Cingoz, [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). The source export does not identify a separate template author or license. See [repository licensing](../../README.md#licensing) for the scope of OOMOL contributions and third-party material.
+
+</details>

@@ -40,7 +40,8 @@ Both successful calculations and validation errors use HTTP 200 with a JSON body
 - Scale each coordinate before averaging and use compensated summation to handle large values and equal subnormal values.
 - Replace the source’s deployed example URL with a setup placeholder.
 
-## Source and license
+<details>
+<summary>Source and license</summary>
 
 Adapted from [Calculate the Centroid of a Set of Vectors](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Code/1862_Code_Respondtowebhook_Automation_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 
@@ -67,3 +68,5 @@ The collection’s [MIT notice](https://github.com/Zie619/n8n-workflows/blob/940
 > LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 > OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 > SOFTWARE.
+
+</details>

@@ -23,8 +23,11 @@ The workflow normalizes whitespace and sends the first 9,000 characters to the m
 - Validate that the submitted source contains text before calling the model.
 - Replace the source tool-less Agent with a Basic LLM Chain in n8n, keeping its system and user instructions. The single generation request does not need tools or conversation memory.
 
-## Source and license
+<details>
+<summary>Source and license</summary>
 
 Adapted from [Grounded Article to Thread and LinkedIn Post](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Instagram_Twitter_Social_Media/Grounded%20Article%20to%20Thread%20and%20LinkedIn%20Post.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 
 Source collection notice: © 2024–2026 Enes Cingoz, [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). The source export does not identify a separate template author or license. See [repository licensing](../../README.md#licensing) for the scope of OOMOL contributions and third-party material.
+
+</details>

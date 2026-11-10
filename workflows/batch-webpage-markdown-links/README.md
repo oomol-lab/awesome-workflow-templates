@@ -36,8 +36,11 @@ The scrape sends each selected URL to Firecrawl. It requests fresh main content 
 - Return links as an array instead of coercing them to text. Remove the unconfigured database placeholders and document the returned records as the handoff point.
 
 
-## Source and license
+<details>
+<summary>Source and license</summary>
 
 Adapted from [Convert URL HTML to Markdown Format and Get Page Links](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/PDF_and_Document_Processing/Convert%20URL%20HTML%20to%20Markdown%20Format%20and%20Get%20Page%20Links.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates). The export credits **Simon at [automake.io](https://automake.io/)**; it states no separate template license.
 
 Source collection notice: ©2024–2026 Enes Cingoz, [CC BY4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). See [repository licensing](../../README.md#licensing) for the scope of OOMOL contributions and third-party material.
+
+</details>

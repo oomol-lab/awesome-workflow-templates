@@ -25,8 +25,11 @@ Run the workflow manually. One run selects one hashtag and creates one Airtable 
 - Configure Airtable access-token authentication and replace the source base ID with a setup placeholder.
 - Stop without creating a record when the model returns an empty draft.
 
-## Source and license
+<details>
+<summary>Source and license</summary>
 
 Adapted from [OpenAI-powered tweet generator](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Instagram_Twitter_Social_Media/OpenAI-powered%20tweet%20generator.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 
 Source collection notice: © 2024–2026 Enes Cingoz, [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). The source export does not identify a separate template author or license. This adaptation includes the changes listed above; see [repository licensing](../../README.md#licensing) for the scope of OOMOL contributions and third-party material.
+
+</details>

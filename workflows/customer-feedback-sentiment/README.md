@@ -40,8 +40,11 @@ Acknowledgment confirms receipt, before classification and storage finish. Inval
 - Write literal values with RAW formatting and stop on empty model results.
 - Remove the source spreadsheet resource and provide explicit column and configuration placeholders.
 
-## Source and license
+<details>
+<summary>Source and license</summary>
 
 Adapted from [AI Customer feedback sentiment analysis](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/OpenAI_and_LLMs/AI%20Customer%20feedback%20sentiment%20analysis.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 
 Source collection notice: © 2024–2026 Enes Cingoz, [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). The source export does not identify a separate template author or license. See [repository licensing](../../README.md#licensing) for the scope of OOMOL contributions and third-party material.
+
+</details>

@@ -46,8 +46,11 @@ The success body is `{"success":true,"callId":"call-001","caller":"Ada"}`. The s
 
 [Open Flow JSON](templates/phone-call-log.openflow.json) · [n8n JSON](templates/phone-call-log.n8n.json)
 
-## Source and license
+<details>
+<summary>Source and license</summary>
 
 Adapted from [VoiceAgent Lite - Phone Call Logger](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Other_Integrations_and_Use_Cases/VoiceAgent%20Lite%20-%20Phone%20Call%20Logger.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 
 Source collection notice: © 2024–2026 Enes Cingoz, [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). The source export does not identify a separate template author or license. See [repository licensing](../../README.md#licensing) for the scope of OOMOL contributions and third-party material.
+
+</details>

@@ -39,8 +39,11 @@ Failed reads or analysis, malformed ranking data, and absent report text stop be
 - Replace private table IDs and the source's Matomo setup notes with SERPBear and Baserow configuration. Validate report text and the created row ID before reporting success.
 
 
-## Source and license
+<details>
+<summary>Source and license</summary>
 
 Adapted from [Summarize SERPBear data with AI (via Openrouter) and save it to Baserow](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/AI_Research_RAG_and_Data_Analysis/Summarize%20SERPBear%20data%20with%20AI%20(via%20Openrouter)%20and%20save%20it%20to%20Baserow.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates). The source links the [rumjahn.com tutorial](https://rumjahn.com/how-to-create-an-a-i-agent-to-analyze-serpbear-keyword-rankings-using-n8n-for-free-without-any-coding-skills-required/), retained as its author/tutorial attribution. No separate template license is stated in the export.
 
 Source collection notice: © 2024–2026 Enes Cingoz, [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). See [repository licensing](../../README.md#licensing) for the scope of OOMOL contributions and third-party material.
+
+</details>

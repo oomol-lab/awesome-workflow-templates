@@ -38,8 +38,11 @@ OpenAI lists this snapshot for [shutdown on January 14, 2027](https://developers
 
 [Open Flow JSON](templates/event-feedback-report.openflow.json) · [n8n JSON](templates/event-feedback-report.n8n.json)
 
-## Source and license
+<details>
+<summary>Source and license</summary>
 
 Adapted from [Summarize Google Sheets form feedback via OpenAI_s GPT-4](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Google_Drive_and_Google_Sheets/Summarize%20Google%20Sheets%20form%20feedback%20via%20OpenAI_s%20GPT-4.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 
 Source collection notice: © 2024–2026 Enes Cingoz, [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). The source export does not identify a separate template author or license. See [repository licensing](../../README.md#licensing) for the scope of OOMOL contributions and third-party material.
+
+</details>

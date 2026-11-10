@@ -32,7 +32,8 @@ Duplicate submissions or event deliveries can make another registration call. Th
 - Select typed answers by question ID, reference, or title and reject ambiguous matches.
 - Validate the name and email before registering, and expose the complete registration result.
 
-## Source and license
+<details>
+<summary>Source and license</summary>
 
 Adapted from [Typeform to Demio registration](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Typeform/1207_Typeform_Demio_Automate_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 
@@ -59,3 +60,5 @@ The collection’s [MIT notice](https://github.com/Zie619/n8n-workflows/blob/940
 > LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 > OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 > SOFTWARE.
+
+</details>

@@ -47,8 +47,11 @@ OpenAI has announced shutdown of the default [translator snapshot on January 14,
 - Return both recordings and the intermediate texts. Open Flow uses public-read hosted downloads instead of n8n execution binary storage; only use material that can be public, with no verified automatic expiry.
 
 
-## Source and license
+<details>
+<summary>Source and license</summary>
 
 Adapted from [Translate audio using AI](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/OpenAI_and_LLMs/Translate%20audio%20using%20AI.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 
 Source collection notice: © 2024–2026 Enes Cingoz, [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). The source export does not identify a separate template author or license. See [repository licensing](../../README.md#licensing) for the scope of OOMOL contributions and third-party material.
+
+</details>

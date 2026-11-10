@@ -28,7 +28,8 @@ A failed read stops the write. A failed write stops the list. If listing fails a
 - Make the source’s default first-page limit of 40 explicit.
 - Use a manually updated OAuth token Variable in Open Flow and retain managed OAuth2 in n8n.
 
-## Source and license
+<details>
+<summary>Source and license</summary>
 
 Adapted from [Google Books volume and bookshelf workflow](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/0037_Manual_Googlebooks_Create_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 
@@ -55,3 +56,5 @@ The collection’s [MIT notice](https://github.com/Zie619/n8n-workflows/blob/940
 > LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 > OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 > SOFTWARE.
+
+</details>

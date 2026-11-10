@@ -44,8 +44,11 @@ The length requests are prompts, so the result may differ from 5%. Review wordin
 - In Open Flow, select a prompt before one shared model node. n8n retains the five prompt branches. Both use the source prompts and `gpt-4o-mini`.
 - Describe the Shortcut setup directly rather than depending on a third-party Shortcut download.
 
-## Source and license
+<details>
+<summary>Source and license</summary>
 
 Adapted from [Text automations using Apple Shortcuts](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Other_Integrations_and_Use_Cases/Text%20automations%20using%20Apple%20Shortcuts.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 
 Source collection notice: © 2024–2026 Enes Cingoz, [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). The source export does not identify a separate template author or license. This adaptation includes the changes listed above; see [repository licensing](../../README.md#licensing) for the scope of OOMOL contributions and third-party material.
+
+</details>

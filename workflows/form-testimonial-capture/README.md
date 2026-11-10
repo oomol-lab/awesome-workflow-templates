@@ -47,8 +47,11 @@ Feedback is sent to Google. Captured feedback and the submitted author are sent 
 - Use the current Strapi REST create envelope and API-token authentication in both formats.
 - Confirm the returned Strapi entry and provide explicit captured or ignored execution results.
 
-## Source and license
+<details>
+<summary>Source and license</summary>
 
 Adapted from [Automate testimonials in Strapi with n8n](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Other_Integrations_and_Use_Cases/Automate%20testimonials%20in%20Strapi%20with%20n8n.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 
 Source collection notice: © 2024–2026 Enes Cingoz, [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). The source export does not identify a separate template author or license. See [repository licensing](../../README.md#licensing) for the scope of OOMOL contributions and third-party material.
+
+</details>

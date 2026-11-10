@@ -27,7 +27,8 @@ The Open Flow HTTP step has a 30-second execution budget. A rejected request, un
 - Use formal HTTP authentication in both formats and correct the source’s JSON content type.
 - Check the pending acceptance record and preserve the complete response.
 
-## Source and license
+<details>
+<summary>Source and license</summary>
 
 Adapted from [Trigger a build in Travis CI](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/1000_Manual_Travisci_Create_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 
@@ -54,3 +55,5 @@ The collection’s [MIT notice](https://github.com/Zie619/n8n-workflows/blob/940
 > LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 > OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 > SOFTWARE.
+
+</details>

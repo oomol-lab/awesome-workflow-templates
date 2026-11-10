@@ -41,8 +41,11 @@ Each successful run reads one file and has one model generation step. The model 
 - Read GitHub content through the platform connector and keep file decoding in memory.
 - Replace the tool-less Agent with a Basic LLM Chain and map its actual `text` output to `promptResponse`.
 
-## Source and license
+<details>
+<summary>Source and license</summary>
 
 Adapted from [Fetch Dynamic Prompts from GitHub and Auto-Populate n8n Expressions in Prompt](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/OpenAI_and_LLMs/Fetch%20Dynamic%20Prompts%20from%20GitHub%20and%20Auto-Populate%20n8n%20Expressions%20in%20Prompt.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 
 Source collection notice: © 2024–2026 Enes Cingoz, [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). The source export does not identify a separate template author or license. This adaptation includes the changes above; see [repository licensing](../../README.md#licensing) for OOMOL contributions and third-party material.
+
+</details>

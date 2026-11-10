@@ -26,7 +26,8 @@ The message keeps the source’s colored Slack attachment. Dynamic values are es
 - Add an attachment fallback and make the source event and filters explicit.
 - Use the order currency code when the source’s currency symbol field is absent.
 
-## Source and license
+<details>
+<summary>Source and license</summary>
 
 Adapted from [WooCommerce Refunded Order to Slack](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Woocommerce/1155_Woocommerce_Slack_Create_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 
@@ -53,3 +54,5 @@ The collection’s [MIT notice](https://github.com/Zie619/n8n-workflows/blob/940
 > LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 > OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 > SOFTWARE.
+
+</details>

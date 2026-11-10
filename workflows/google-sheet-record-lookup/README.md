@@ -41,8 +41,11 @@ Column names are returned once, including for a header-only tab. Empty tabs, mis
 - Return one column-name list and retain cell types and numeric row numbers, replacing repeated lists and implicit string conversion.
 - Validate requests and headers, add a manual n8n entry, and retain the callable entry.
 
-## Source and license
+<details>
+<summary>Source and license</summary>
 
 Adapted from the sheet-query sub-workflow in [Chat with a Google Sheet using AI](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Google_Drive_and_Google_Sheets/Chat%20with%20a%20Google%20Sheet%20using%20AI.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates). This template publishes that callable query component; the source's conversational agent is separate.
 
 Source collection notice: © 2024–2026 Enes Cingoz, [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). The source export does not identify a separate template author or license. This adaptation includes the changes above; see [repository licensing](../../README.md#licensing) for OOMOL contributions and third-party material.
+
+</details>

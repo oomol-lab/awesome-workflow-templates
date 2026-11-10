@@ -23,8 +23,11 @@ Four model calls run in order. A failure stops later steps. The workflow does no
 - Fix the source requests that omitted POST, and read message output through the model node contract instead of parsing a nonexistent `data` string.
 - Use real paragraph breaks in prompts and stop if editing returns an empty post.
 
-## Source and license
+<details>
+<summary>Source and license</summary>
 
 Adapted from [AI Blog Writer Pipeline with Ollama](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/OpenAI_and_LLMs/AI%20Blog%20Writer%20Pipeline%20with%20Ollama.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 
 Source collection notice: © 2024–2026 Enes Cingoz, [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). The source export does not identify a separate template author or license. See [repository licensing](../../README.md#licensing) for the scope of OOMOL contributions and third-party material.
+
+</details>

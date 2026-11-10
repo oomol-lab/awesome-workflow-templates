@@ -26,8 +26,11 @@ The workflow does not publish posts. Review claims, tone, and platform limits be
 - Validate all five generated fields and keep incomplete review results from overwriting a complete draft.
 - Give the review step the configured brand voice and use real line breaks in both prompts.
 
-## Source and license
+<details>
+<summary>Source and license</summary>
 
 Adapted from [AI Social Media Content Generator with Ollama](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Instagram_Twitter_Social_Media/AI%20Social%20Media%20Content%20Generator%20with%20Ollama.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 
 Source collection notice: © 2024–2026 Enes Cingoz, [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). The source export does not identify a separate template author or license. See [repository licensing](../../README.md#licensing) for the scope of OOMOL contributions and third-party material.
+
+</details>
