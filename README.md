@@ -33,6 +33,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Finance](#finance)
 - [Community](#community)
 - [Content Creation](#content-creation)
+- [Recruiting](#recruiting)
 - [Contribute](#contribute)
 - [Licensing](#licensing)
 
@@ -215,6 +216,10 @@ A growing collection of automation workflows for connecting apps and getting rep
 ## Content Creation
 
 - [Vancine Seedance Video](workflows/vancine-seedance-video/) - Submit one Seedance text-to-video task to Vancine, poll its status with a bounded wait loop and return the completed video URL.
+
+## Recruiting
+
+- [Hacker News Hiring to Airtable](workflows/hacker-news-hiring-to-airtable/) - Find recent Who is hiring threads, read their job comments and extract the first five into structured Airtable recruiting records.
 
 ## Contribute
 
