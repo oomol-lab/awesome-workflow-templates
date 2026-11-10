@@ -2,7 +2,7 @@
 
 [![Awesome](https://awesome.re/badge.svg)](https://github.com/sindresorhus/awesome)
 [![n8n workflows](https://img.shields.io/badge/n8n-workflows-EA4B71?logo=n8n&logoColor=white)](#contents)
-[![Open Flow workflows](https://img.shields.io/badge/Open_Flow-workflows-737373.svg?logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cGF0aCBmaWxsPSIjZTBlMmU2IiBkPSJNMzIgMTZINjhRODQgMTYgODQgMzJWMzZINjhDNDYgMzYgNTQgNTYgMzIgNTZIMTZWMzJRMTYgMTYgMzIgMTZaIi8%2BPHBhdGggZmlsbD0iIzhjOTE5YSIgZD0iTTE2IDY4SDMyQzU0IDY4IDQ2IDQ4IDY4IDQ4SDg0VjY4UTg0IDg0IDY4IDg0SDMyUTE2IDg0IDE2IDY4WiIvPjwvc3ZnPg%3D%3D)](https://openflow.run/templates/)
+[![Open Flow workflows](https://img.shields.io/badge/Open_Flow-workflows-F0F0F0.svg?logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cGF0aCBmaWxsPSIjZTBlMmU2IiBkPSJNMzIgMTZINjhRODQgMTYgODQgMzJWMzZINjhDNDYgMzYgNTQgNTYgMzIgNTZIMTZWMzJRMTYgMTYgMzIgMTZaIi8%2BPHBhdGggZmlsbD0iIzhjOTE5YSIgZD0iTTE2IDY4SDMyQzU0IDY4IDQ2IDQ4IDY4IDQ4SDg0VjY4UTg0IDg0IDY4IDg0SDMyUTE2IDg0IDE2IDY4WiIvPjwvc3ZnPg%3D%3D)](https://openflow.run/templates/)
 [![Star on GitHub](https://img.shields.io/badge/GitHub-Star_this_repo-181717?logo=github)](https://github.com/oomol-lab/awesome-workflow-templates)
 
 **Handpicked workflow templates and AI automations for n8n and Open Flow.**
