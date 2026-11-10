@@ -153,6 +153,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Google Drive New Files to Notion](workflows/google-drive-new-files-to-notion/) - Record newly created Google Drive files in a Notion data source with their names and original viewer links.
 - [Typeform Answers to Airtable](workflows/typeform-answers-to-airtable/) - Save the answers of each completed Typeform submission as one Airtable record using matching question and column names.
 - [Typeform Contacts to Airtable and Slack](workflows/typeform-contacts-airtable-slack/) - Save the name and email from a completed Typeform submission in Airtable, then notify a Slack channel after the record is confirmed.
+- [Typeform Invoice PDF](workflows/typeform-invoice-pdf/) - Build a two-item invoice from a completed Typeform response, generate its PDF with APITemplate.io and retain the complete PDF and generation response.
 
 ## Content
 

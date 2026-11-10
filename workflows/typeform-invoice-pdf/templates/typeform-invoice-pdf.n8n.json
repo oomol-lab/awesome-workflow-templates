@@ -1,0 +1,86 @@
+{
+  "nodes": [
+    {
+      "name": "Receive the invoice form",
+      "type": "n8n-nodes-base.typeformTrigger",
+      "position": [
+        100,
+        240
+      ],
+      "parameters": {
+        "authentication": "accessToken",
+        "formId": "YOUR_TYPEFORM_FORM_ID",
+        "simplifyAnswers": false,
+        "onlyAnswers": false
+      },
+      "typeVersion": 1,
+      "id": "typeform-invoice-pdf-trigger"
+    },
+    {
+      "id": "typeform-invoice-pdf-prepare",
+      "name": "Build the two-item invoice",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        350,
+        240
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function typeformInvoiceData({ response, invoiceDefaults, templateId }) {\n  if (!response || typeof response !== 'object' || !Array.isArray(response.answers) || response.answers.length < 6) throw new Error('Expected the six invoice answers in the configured form order');\n  const answers = response.answers;\n  const text = (index, type) => {\n    const answer = answers[index];\n    if (!answer || answer.type !== type || typeof answer[type] !== 'string' || !answer[type].trim()) throw new Error('Missing or invalid invoice answer at position ' + (index + 1));\n    return answer[type];\n  };\n  const amount = index => {\n    const answer = answers[index];\n    if (!answer || answer.type !== 'number' || typeof answer.number !== 'number' || !Number.isFinite(answer.number)) throw new Error('Missing or invalid invoice amount at position ' + (index + 1));\n    return 'EUR ' + answer.number;\n  };\n  const fields = ['company', 'invoice_no', 'invoice_date', 'invoice_due_date', 'address', 'website', 'document_id'];\n  if (!invoiceDefaults || typeof invoiceDefaults !== 'object' || Array.isArray(invoiceDefaults)) throw new Error('Configure the invoice issuer and document fields');\n  const body = {};\n  for (const field of fields) {\n    if (typeof invoiceDefaults[field] !== 'string' || !invoiceDefaults[field].trim()) throw new Error('Configure invoice field ' + field);\n    body[field] = invoiceDefaults[field];\n  }\n  body.email = text(1, 'email');\n  body.company_bill_to = text(0, 'text');\n  body.items = [{ item_name: text(2, 'text'), price: amount(3) }, { item_name: text(4, 'text'), price: amount(5) }];\n  if (typeof templateId !== 'string' || !templateId.trim()) throw new Error('Configure the PDF template ID');\n  return { body, url: 'https://api.apitemplate.io/v1/create?template_id=' + encodeURIComponent(templateId) };\n}\n\nif($json.event_type!==\"form_response\")throw new Error(\"Expected a completed Typeform response\");return {json:typeformInvoiceData({response:$json.form_response,invoiceDefaults:{\"company\":\"YOUR_COMPANY\",\"invoice_no\":\"CONFIGURE_INVOICE_NUMBER\",\"invoice_date\":\"CONFIGURE_INVOICE_DATE\",\"invoice_due_date\":\"CONFIGURE_DUE_DATE\",\"address\":\"YOUR_COMPANY_ADDRESS\",\"website\":\"https://example.com\",\"document_id\":\"CONFIGURE_DOCUMENT_ID\"},templateId:\"YOUR_PDF_TEMPLATE_ID\"})};"
+      }
+    },
+    {
+      "name": "Generate and download the invoice PDF",
+      "type": "n8n-nodes-base.apiTemplateIo",
+      "position": [
+        600,
+        240
+      ],
+      "parameters": {
+        "resource": "pdf",
+        "operation": "create",
+        "pdfTemplateId": "YOUR_PDF_TEMPLATE_ID",
+        "jsonParameters": true,
+        "propertiesJson": "={{ $json.body }}",
+        "download": true,
+        "binaryProperty": "data",
+        "options": {
+          "fileName": "invoice.pdf"
+        }
+      },
+      "typeVersion": 1,
+      "id": "typeform-invoice-pdf-create"
+    }
+  ],
+  "connections": {
+    "Receive the invoice form": {
+      "main": [
+        [
+          {
+            "node": "Build the two-item invoice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build the two-item invoice": {
+      "main": [
+        [
+          {
+            "node": "Generate and download the invoice PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Typeform Invoice PDF",
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false,
+  "pinData": {}
+}
