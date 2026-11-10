@@ -1,0 +1,131 @@
+{
+  "nodes": [
+    {
+      "id": "40216649-af2c-44df-83c6-75afe75dcdaf",
+      "name": "On new event",
+      "type": "n8n-nodes-base.calendlyTrigger",
+      "position": [
+        400,
+        240
+      ],
+      "parameters": {
+        "authentication": "apiKey",
+        "scope": "user",
+        "events": [
+          "invitee.created"
+        ]
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "calendly-booking-to-mautic-contact-fields",
+      "name": "Prepare invitee contact fields",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        620,
+        240
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function calendlyMauticFields({ invitee }) {\n  if (!invitee || typeof invitee !== 'object' || Array.isArray(invitee) || typeof invitee.email !== 'string' || !invitee.email.trim() || typeof invitee.name !== 'string' || !invitee.name.trim()) {\n    throw new Error('The Calendly booking must contain an invitee email and name');\n  }\n  return { fields: { email: invitee.email, firstname: invitee.name, lastname: '', company: '', position: '', title: '' } };\n}\n\nreturn $input.all().flatMap((item, index) => item.json.event === \"invitee.created\" ? [{ json: calendlyMauticFields({ invitee: item.json.payload }).fields, pairedItem: { item: index } }] : []);"
+      }
+    },
+    {
+      "id": "46914a34-984e-4736-b2a3-6e97555b73c7",
+      "name": "Create/update contact",
+      "type": "n8n-nodes-base.mautic",
+      "position": [
+        840,
+        240
+      ],
+      "parameters": {
+        "authentication": "credentials",
+        "resource": "contact",
+        "operation": "create",
+        "jsonParameters": false,
+        "email": "={{$json.email}}",
+        "firstName": "={{$json.firstname}}",
+        "lastName": "",
+        "company": "",
+        "position": "",
+        "title": "",
+        "additionalFields": {},
+        "options": {
+          "rawData": true
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "calendly-booking-to-mautic-contact-check",
+      "name": "Check the saved contact ID",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1060,
+        240
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function mauticContactSaved({ contact }) {\n  if (!contact || typeof contact !== 'object' || Array.isArray(contact) || !Number.isInteger(contact.id) || contact.id <= 0) {\n    throw new Error('Mautic did not return a saved contact ID');\n  }\n  return { contact };\n}\n\nreturn { json: mauticContactSaved({ contact: $json }).contact };"
+      }
+    },
+    {
+      "id": "df809a8d-7b05-4ecc-a022-7bb12842b4bc",
+      "name": "Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -20,
+        180
+      ],
+      "parameters": {
+        "width": 313,
+        "height": 229,
+        "content": "### Create/update Mautic contact on a new Calendly event\n1. `On new event` triggers on new Calendly events.\n2. `Create/update contact` will create a contact in Mautic or update the contact's first name. If the contact's email is already in Mautic, then the first name will be overwritten to the new first name."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "connections": {
+    "On new event": {
+      "main": [
+        [
+          {
+            "node": "Prepare invitee contact fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare invitee contact fields": {
+      "main": [
+        [
+          {
+            "node": "Create/update contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create/update contact": {
+      "main": [
+        [
+          {
+            "node": "Check the saved contact ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Calendly Booking to Mautic Contact",
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false,
+  "pinData": {}
+}
