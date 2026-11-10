@@ -19,11 +19,13 @@ For Open Flow, import the JSON and configure:
 | Weekday morning | Confirm the schedule timezone; the template starts with UTC. |
 | Read invoices | Connect Google Sheets and replace `YOUR_SPREADSHEET_ID`. The default range is `'Invoices'!A:F`. |
 | Prepare reminders | Set `timezone` to the same timezone as the schedule and edit `signature`. |
-| Send reminders | In Actions, connect Gmail for the selected Send Email action. |
+| Send reminder | Connect Gmail for the Send Email action. |
 
 For n8n, connect Google Sheets and Gmail, configure the spreadsheet in `Leggi fatture`, and edit the company signature in `Trova scadenze imminenti`. Confirm the workflow timezone before enabling it; the template starts with UTC.
 
 Publish and enable the configured workflow. A run reads the complete configured sheet range, filters invoices, and sends reminders in sheet order. Empty results send no messages. A send failure stops later reminders. The workflow does not update invoice statuses or record delivery, so eligible invoices receive another reminder on the next weekday run. Retrying a partially completed run can resend earlier reminders.
+
+Open Flow sends each reminder through a separate Connector execution in the visible feedback loop. There is no 100-reminder total cap. The full sheet range, prepared messages and accumulated send identifiers must fit the platform's Code input and result budgets; the inspected host allows 1 MiB for each. A limit failure stops the run, and reminders already sent can repeat if you rerun it. A sent message identifier confirms Gmail accepted the request; it does not prove recipient delivery. Inspect Sent before retrying an unconfirmed send.
 
 ## Changes to the source
 
