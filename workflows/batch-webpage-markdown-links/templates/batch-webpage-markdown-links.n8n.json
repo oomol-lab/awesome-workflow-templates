@@ -1,0 +1,302 @@
+{
+  "nodes": [
+    {
+      "id": "f4570aad-db25-4dcd-8589-b1c8335935de",
+      "name": "When clicking ‘Test workflow’",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "221a75eb-0bc8-4747-9ec1-1879c46d9163",
+      "name": "Set Page URLs",
+      "type": "n8n-nodes-base.set",
+      "notes": "Define URLs in array",
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "bulk-page-urls-json",
+              "name": "urlsJson",
+              "type": "string",
+              "value": "[\"https://example.com/\", \"https://example.org/\"]"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "notesInFlow": true,
+      "typeVersion": 3.4
+    },
+    {
+      "id": "bulk-page-prepare",
+      "name": "Select First 40 URLs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const prepare = function prepareUrls({ urlsJson }) {\n  let raw;\n  try { raw = JSON.parse(urlsJson); } catch { throw new Error('Page URLs must be a JSON array.'); }\n  if (!Array.isArray(raw)) throw new Error('Page URLs must be a JSON array.');\n  const urls = raw.slice(0, 40).map(url => {\n    if (typeof url !== 'string' || !/^https?:\\/\\/[^\\s/]+(?:\\/[^\\s]*)?$/i.test(url.trim())) throw new Error('Each selected page needs a nonempty HTTP or HTTPS URL.');\n    return url.trim();\n  });\n  return { urls, inputCount: raw.length, skippedCount: Math.max(raw.length - 40, 0) };\n}\n\nconst result=prepare($input.first().json);return result.urls.map((url,index)=>({json:{url,inputCount:result.inputCount,skippedCount:result.skippedCount},pairedItem:{item:0}}));"
+      }
+    },
+    {
+      "id": "43557ab1-4e52-4598-83a9-e39d5afc6de7",
+      "name": "One URL at a time",
+      "type": "n8n-nodes-base.splitInBatches",
+      "position": [
+        660,
+        0
+      ],
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "typeVersion": 3
+    },
+    {
+      "id": "71c5a0d4-540e-4766-ae99-bdc427019dac",
+      "name": "Retrieve Page Markdown and Links",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        880,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.firecrawl.dev/v2/scrape",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {url:$json.url,formats:[\"markdown\",\"links\"],maxAge:0,onlyMainContent:true,timeout:30000} }}",
+        "options": {
+          "timeout": 45000,
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.2,
+      "waitBetweenTries": 5000,
+      "maxTries": 3,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "555d52e7-010b-462b-9382-26804493de1c",
+      "name": "Keep Page Records",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1100,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const readPage = function readPage({ url, result }) {\n  if (!result || result.success !== true || !result.data || typeof result.data !== 'object' || Array.isArray(result.data)) throw new Error('Firecrawl did not return a successful page scrape.');\n  const data = result.data;\n  if (typeof data.markdown !== 'string' || !Array.isArray(data.links) || data.links.some(link => typeof link !== 'string')) throw new Error('Firecrawl omitted the requested Markdown or link array.');\n  const text = value => value == null ? '' : typeof value === 'string' ? value : (() => { throw new Error('Page metadata must be text when present.'); })();\n  const status = data.metadata?.statusCode;\n  return { page: { url, title: text(data.metadata?.title), description: text(data.metadata?.description), content: data.markdown, links: data.links, pageStatus: Number.isInteger(status) && status >= 100 && status <= 599 ? status : null } };\n}\n\nconst urls=$('One URL at a time').all(1).map(item=>item.json.url),items=$input.all();if(items.length!==urls.length)throw new Error('Page response count differs from this URL group.');return items.map((item,index)=>({json:readPage({url:urls[index],result:item.json}).page,pairedItem:{item:index}}));"
+      },
+      "notesInFlow": true,
+      "typeVersion": 2
+    },
+    {
+      "id": "bulk-page-more",
+      "name": "Pause After Ten Pages",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1320,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "bulk-page-has-more",
+              "leftValue": "={{ (($('One URL at a time').context.currentRunIndex + 1) % 10 === 0) && !$('One URL at a time').context.noItemsLeft }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "bd481559-85f2-4865-8d85-e50e72369f26",
+      "name": "Pause One Minute Between Groups",
+      "type": "n8n-nodes-base.wait",
+      "position": [
+        1540,
+        0
+      ],
+      "parameters": {
+        "resume": "timeInterval",
+        "amount": 1,
+        "unit": "minutes"
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "bulk-page-result",
+      "name": "All Page Records",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const pages=$input.all().map(item=>item.json),first=$('Select First 40 URLs').first().json;return [{json:{pages,processedCount:pages.length,inputCount:first.inputCount,skippedCount:first.skippedCount}}];"
+      }
+    },
+    {
+      "id": "a2f12929-262e-4354-baa3-f9e3c05ec2eb",
+      "name": "Sticky Note38",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -840,
+        3340
+      ],
+      "parameters": {
+        "color": 4,
+        "width": 581.9949654101088,
+        "height": 818.5240734585421,
+        "content": "## Batch Webpage Markdown and Links\n\nOriginal by Simon at [automake.io](https://automake.io). Edit Set Page URLs, select Firecrawl Header Auth (Authorization: Bearer <API key>) and run manually. Process only the first40 URLs, ten at a time, pausing one minute between groups. The source omitted Wait.unit, which defaulted to hours; the interval is now explicit. Firecrawl v2 uses markdown+links, main content, maxAge0 and30000ms scrape timeout. Each HTTP node allows3total attempts with5s gaps; retries are additional requests. Failed or malformed page stops the remaining group/list, without automatic whole-run replay. The result is returned only; no database destination is configured. See README for service/target status, allowances, quotas and source changes."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Test workflow’": {
+      "main": [
+        [
+          {
+            "node": "Set Page URLs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Page URLs": {
+      "main": [
+        [
+          {
+            "node": "Select First 40 URLs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select First 40 URLs": {
+      "main": [
+        [
+          {
+            "node": "One URL at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "One URL at a time": {
+      "main": [
+        [
+          {
+            "node": "All Page Records",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Retrieve Page Markdown and Links",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Retrieve Page Markdown and Links": {
+      "main": [
+        [
+          {
+            "node": "Keep Page Records",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Keep Page Records": {
+      "main": [
+        [
+          {
+            "node": "Pause After Ten Pages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pause After Ten Pages": {
+      "main": [
+        [
+          {
+            "node": "Pause One Minute Between Groups",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "One URL at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pause One Minute Between Groups": {
+      "main": [
+        [
+          {
+            "node": "One URL at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false
+}
