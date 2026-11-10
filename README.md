@@ -154,6 +154,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 ## Developer Tools
 
 - [API Operations Schema Export](workflows/api-operations-schema-export/) - Group a service’s API operation rows from Google Sheets into a custom JSON catalog and save the export in Google Drive.
+- [GitHub Repository Profile](workflows/github-repository-profile/) - Read a GitHub repository’s community health score and community file metadata.
 
 ## Communication
 
