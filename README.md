@@ -42,6 +42,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Chargebee Customer Creator](workflows/chargebee-customer-creator/) - Create a Chargebee customer with a configured first and last name.
 - [Salesmate Company Creator](workflows/salesmate-company-creator/) - Create a Salesmate company with a name and an existing owner.
 - [Affinity Organization Creator](workflows/affinity-organization-creator/) - Create an Affinity organization with a name and domain.
+- [Hunter Email Verifier](workflows/hunter-email-verifier/) - Request a Hunter deliverability assessment for one email address.
 
 ## Operations
 
