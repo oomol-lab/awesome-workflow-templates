@@ -11,9 +11,9 @@ Find recent Who is hiring threads and save structured recruiting records from th
 
 ## Setup
 
-Choose an available model on **Extract one structured hiring record**. Configure your Airtable connection, base and table on **Create one Airtable job record**. Create text columns `company`, `title`, `location`, `type`, `salary`, `description`, `apply_url` and `company_url`. Hacker News reads need no login; enable its custom API access for the date-sorted phrase search.
+Choose an available model on **Extract hiring details**. Configure your Airtable connection, base and table on **Create Airtable job**. Create text columns `company`, `title`, `location`, `type`, `salary`, `description`, `apply_url` and `company_url`. Hacker News reads need no login; enable its custom API access for the date-sorted phrase search.
 
-For n8n, configure the OpenAI model and Airtable credential, base and table on their respective nodes.
+The source used `gpt-4o-mini`; choose an available model in each format. For n8n, configure the OpenAI model and Airtable credential, base and table on their respective nodes.
 
 ## Run
 
@@ -23,12 +23,12 @@ Both formats preserve the five-comment limit. The Open Flow result returns creat
 
 The model extracts company, role, location, employment type, work arrangement, compensation, description and application/company URLs when present. Missing fields can remain absent or null. The source does not save `work_location` to Airtable; the same eight source columns are saved here. Model judgments and extracted links need review. Open Flow uses a tool-free native Agent with one model round and service generation settings; n8n uses its native LLM Chain, structured parser and OpenAI adapter with two additional transient retries. Results can differ.
 
-Complete ID collections and selected comment content must fit execution and Code limits, including 1 MiB per Code input/result in the inspected Open Flow host. Oversized batches fail rather than silently truncate. Search results are a 30-hit window, not an exhaustive historical job archive. Text cleaning follows the source's simple HTML/entity/whitespace substitutions; it is not a complete HTML decoder.
+Complete ID collections and selected comment content must fit execution and Code limits, including 1 MiB per Code input/result in the inspected Open Flow host. Oversized batches fail rather than silently truncate. Search results are a 30-hit window, not an exhaustive historical job archive. Deleted, missing or mismatched comment records stop the Open Flow run before any extraction or write; n8n also requires usable comment text. Text cleaning follows the source's simple HTML/entity/whitespace substitutions; it is not a complete HTML decoder.
 
 ## Changes to the source
 
 - Replace the browser-specific Algolia request and shared-index credential with Hacker News's public date-sorted API.
-- Read story IDs from `objectID`, repair nullable JSON Schema types and return proper n8n Code items.
+- Read story IDs from `objectID`, repair nullable JSON Schema types, model selection and the explicit system-message type and return proper n8n Code items.
 - Preserve collection phase boundaries, validate records and expose confirmed Airtable IDs.
 
 <details>
