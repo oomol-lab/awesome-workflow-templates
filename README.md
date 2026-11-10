@@ -37,6 +37,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Content Review](#content-review)
 - [Recruitment](#recruitment)
 - [Data Sync](#data-sync)
+- [Data Enrichment](#data-enrichment)
 - [Contribute](#contribute)
 - [Licensing](#licensing)
 
@@ -251,6 +252,10 @@ A growing collection of automation workflows for connecting apps and getting rep
 ## Data Sync
 
 - [Airtable Contacts to Google Sheets](workflows/airtable-contacts-to-google-sheets/) - Sync recently updated Airtable records into an existing Google Sheet, matching exact Email keys and using RAW values and the A1:E1000 lookup window.
+
+## Data Enrichment
+
+- [EU Company Register to Google Sheets](workflows/eu-company-register-to-google-sheets/) - Look up every company row across seven national registers with the original Apify Actor, wait for complete results, then update or append the selected registration fields in Google Sheets.
 
 ## Contribute
 

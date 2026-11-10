@@ -1,0 +1,946 @@
+{
+  "name": "EU Company Register to Google Sheets",
+  "nodes": [
+    {
+      "id": "start",
+      "name": "Run company enrichment",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "parameters": {},
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "id": "read",
+      "name": "Read all company queries",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "https://sheets.googleapis.com/v4/spreadsheets/YOUR_GOOGLE_SHEET_ID/values/'Companies'",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "options": {
+          "timeout": 60000,
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          }
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "valueRenderOption",
+              "value": "UNFORMATTED_VALUE"
+            },
+            {
+              "name": "dateTimeRenderOption",
+              "value": "FORMATTED_STRING"
+            },
+            {
+              "name": "majorDimension",
+              "value": "ROWS"
+            }
+          ]
+        }
+      },
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "id": "jobs",
+      "name": "Prepare every company query",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function prepareRegistryQueries({values}) {\n if(!Array.isArray(values))throw new Error('Sheet values must be a matrix.');\n if(!values.length)return {jobs:[],hasJobs:false};\n const headers=values[0];if(!Array.isArray(headers)||headers.some(h=>typeof h!=='string'||!h)||new Set(headers).size!==headers.length)throw new Error('Use unique, contiguous text headers.');\n const key=headers.indexOf('company');if(key<0)throw new Error('The sheet needs a company column.');\n const jobs=[];for(let i=1;i<values.length;i++){const row=values[i];if(!Array.isArray(row))throw new Error('Invalid sheet row.');if(row.every(v=>v==null||v===''))continue;const raw=row[key],company=typeof raw==='number'&&Number.isFinite(raw)?String(raw):raw;if(typeof company!=='string'||!company.trim())throw new Error('Each company row needs a name or registration number.');jobs.push({company});}\n return {jobs,hasJobs:jobs.length>0};\n}\n\nreturn [{json:prepareRegistryQueries({values:$input.first().json.body.values??[]})}];"
+      },
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "id": "collect",
+      "name": "Collect complete registry results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function collectRegistryCompanies({jobs,previousState,startedRun,polledRun,items}) {\n const fields={company:'name',registrationNumber:'registrationNumber',vatNumber:'vatNumber',country:'countryName',registry:'registry',status:'status',incorporatedAt:'incorporatedAt',address:'address',city:'city',website:'website',registryUrl:'registryUrl'};\n const state=previousState??{index:0,records:[],stage:'new'};if(!Array.isArray(jobs)||!Array.isArray(state.records)||!Number.isInteger(state.index))throw new Error('Invalid registry collection state.');\n const finishJob=()=>{state.index++;state.stage='new';delete state.runId;delete state.datasetId;delete state.pollStartedAt;delete state.pollLimitMs;delete state.timeoutChecked;delete state.offset;};\n if(state.stage==='start'){\n  if(!startedRun||typeof startedRun.id!=='string'||!startedRun.id)throw new Error('Actor start returned no run ID.');\n  state.runId=startedRun.id;state.pollStartedAt=Date.now();state.pollLimitMs=86400000;state.timeoutChecked=false;state.stage='poll';\n }else if(state.stage==='poll'){\n  if(!polledRun||polledRun.id!==state.runId||typeof polledRun.status!=='string'||!polledRun.status)throw new Error('The polled Actor run does not match the started run.');\n  if(['SUCCEEDED','FAILED','TIMED-OUT','ABORTED'].includes(polledRun.status)){\n   if(polledRun.status!=='SUCCEEDED')throw new Error('Actor did not succeed: '+polledRun.status);\n   if(typeof polledRun.defaultDatasetId!=='string'||!polledRun.defaultDatasetId)throw new Error('Successful Actor returned no dataset ID.');\n   state.datasetId=polledRun.defaultDatasetId;state.offset=0;state.stage='items';\n  }else{\n   if(!state.timeoutChecked){const secs=Number(polledRun.options?.timeoutSecs);if(Number.isFinite(secs)&&secs>0)state.pollLimitMs=secs*1000+300000;state.timeoutChecked=true;}\n   if(Date.now()-state.pollStartedAt>state.pollLimitMs)throw new Error('Timed out waiting for Actor completion.');\n  }\n }else if(state.stage==='items'){\n  if(!Array.isArray(items)||items.length>1000)throw new Error('Invalid dataset page.');\n  for(const item of items){if(!item||typeof item!=='object'||Array.isArray(item)||typeof item.name!=='string'||!item.name)throw new Error('Company result needs a nonempty name.');const record={};for(const[k,source]of Object.entries(fields)){const value=item[source];record[k]=value==null?null:typeof value==='object'?JSON.stringify(value):String(value);}state.records.push(record);}\n  state.offset+=items.length;if(items.length<1000)finishJob();\n }\n let action=state.stage;if(state.stage==='new'){if(state.index>=jobs.length)action='complete';else{state.stage='start';action='start';}}\n return {state,action,input:{queries:state.index<jobs.length?[jobs[state.index].company]:[],countries:['cz','ee','fi','fr','no','pl','sk'],maxResultsPerQuery:1,onlyActive:true},offset:state.offset??0,records:state.records,hasRecords:state.records.length>0,queryCount:jobs.length};\n}\n\nconst packet=$input.first().json;return [{json:{...collectRegistryCompanies(packet),jobs:packet.jobs}}];"
+      },
+      "position": [
+        660,
+        0
+      ]
+    },
+    {
+      "id": "dispatch",
+      "name": "Next registry request",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "start",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "start"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "poll",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "poll"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "items",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "items"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "position": [
+        880,
+        0
+      ]
+    },
+    {
+      "id": "run",
+      "name": "Start one registry Actor",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apify.com/v2/acts/gubidonius~company-registry-lookup/runs",
+        "authentication": "genericCredentialType",
+        "options": {
+          "timeout": 60000,
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          }
+        },
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.input }}",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "timeout",
+              "value": 600
+            },
+            {
+              "name": "memory",
+              "value": 1024
+            }
+          ]
+        }
+      },
+      "position": [
+        1100,
+        0
+      ]
+    },
+    {
+      "id": "poll",
+      "name": "Wait for the same Actor run",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ \"https://api.apify.com/v2/actor-runs/\"+encodeURIComponent($json.state.runId) }}",
+        "authentication": "genericCredentialType",
+        "options": {
+          "timeout": 70000,
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          }
+        },
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "waitForFinish",
+              "value": 10
+            }
+          ]
+        }
+      },
+      "position": [
+        1100,
+        220
+      ]
+    },
+    {
+      "id": "items",
+      "name": "Read every result page",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ \"https://api.apify.com/v2/datasets/\"+encodeURIComponent($json.state.datasetId)+\"/items\" }}",
+        "authentication": "genericCredentialType",
+        "options": {
+          "timeout": 60000,
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          }
+        },
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "limit",
+              "value": 1000
+            },
+            {
+              "name": "offset",
+              "value": "={{ $json.offset }}"
+            },
+            {
+              "name": "clean",
+              "value": false
+            },
+            {
+              "name": "skipHidden",
+              "value": false
+            }
+          ]
+        }
+      },
+      "position": [
+        1100,
+        440
+      ]
+    },
+    {
+      "id": "restore",
+      "name": "Restore registry request context",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const response=$input.first().json.body,previous=$('Collect complete registry results').item.json;return [{json:{jobs:previous.jobs,previousState:previous.state,startedRun:previous.action==='start'?response.data:null,polledRun:previous.action==='poll'?response.data:null,items:previous.action==='items'?response:null}}];"
+      },
+      "position": [
+        1320,
+        300
+      ]
+    },
+    {
+      "id": "has",
+      "name": "Any companies found",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "hasRecords",
+              "leftValue": "={{ $json.hasRecords }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "position": [
+        1100,
+        660
+      ]
+    },
+    {
+      "id": "target",
+      "name": "Read the current matching rows",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "https://sheets.googleapis.com/v4/spreadsheets/YOUR_GOOGLE_SHEET_ID/values/'Companies'",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "options": {
+          "timeout": 60000,
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          }
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "valueRenderOption",
+              "value": "UNFORMATTED_VALUE"
+            },
+            {
+              "name": "dateTimeRenderOption",
+              "value": "FORMATTED_STRING"
+            },
+            {
+              "name": "majorDimension",
+              "value": "ROWS"
+            }
+          ]
+        }
+      },
+      "position": [
+        1320,
+        660
+      ]
+    },
+    {
+      "id": "plan",
+      "name": "Plan matching cells and new companies",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function planRegistryWrites({values,records,sheetName}) {\n if(!Array.isArray(values)||!Array.isArray(records)||typeof sheetName!=='string'||!sheetName)throw new Error('Invalid sheet write inputs.');\n const columns=['company','registrationNumber','vatNumber','country','registry','status','incorporatedAt','address','city','website','registryUrl'];\n const headers=values[0]??[];if(headers.some(h=>typeof h!=='string'||!h)||new Set(headers).size!==headers.length)throw new Error('Use unique, contiguous text headers.');if(!headers.includes('company'))throw new Error('The target sheet needs a company column.');\n const finalHeaders=[...headers,...columns.filter(k=>!headers.includes(k))],key=headers.indexOf('company'),sheet=\"'\"+sheetName.replaceAll(\"'\",\"''\")+\"'\",column=n=>{let s='';for(n++;n;n=Math.floor((n-1)/26))s=String.fromCharCode(65+(n-1)%26)+s;return s;};\n const existing=new Map();for(let i=1;i<values.length;i++){const row=values[i];if(!Array.isArray(row))throw new Error('Invalid target row.');if(row[key]!=null&&!existing.has(String(row[key])))existing.set(String(row[key]),i+1);}\n const headerData=finalHeaders.length===headers.length?[]:[{range:sheet+'!A1:'+column(finalHeaders.length-1)+'1',values:[finalHeaders]}],updateData=[],appendValues=[];let updatedRecords=0;\n for(const record of records){if(!record||typeof record.company!=='string'||!record.company)throw new Error('Company result needs a nonempty name.');const target=existing.get(record.company);if(target!=null){updatedRecords++;for(const k of columns){if(k==='company'||record[k]==null)continue;updateData.push({range:sheet+'!'+column(finalHeaders.indexOf(k))+target,values:[[record[k]]]});}}else appendValues.push(finalHeaders.map(h=>record[h]??''));}\n return {headerCellsExpected:finalHeaders.length,updateCellsExpected:updateData.length,request:{...(headerData.length?{headerData}:{}),...(updateData.length?{updateData}:{}),...(appendValues.length?{appendValues}:{})},hasHeader:headerData.length>0,hasUpdates:updateData.length>0,hasAppends:appendValues.length>0,updatedRecords,appendedRecords:appendValues.length,companyRecords:records.length,appendRange:sheet+'!A1:'+column(finalHeaders.length-1)+'1'};\n}\n\nconst {request,...plan}=planRegistryWrites({values:$input.first().json.body.values??[],records:$('Collect complete registry results').item.json.records,sheetName:'Companies'});return [{json:{...plan,...request}}];"
+      },
+      "position": [
+        1540,
+        660
+      ]
+    },
+    {
+      "id": "hasHeader",
+      "name": "New registry columns needed",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "hasHeader",
+              "leftValue": "={{ $json.hasHeader }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "position": [
+        1760,
+        660
+      ]
+    },
+    {
+      "id": "header",
+      "name": "Add the missing column headers",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://sheets.googleapis.com/v4/spreadsheets/YOUR_GOOGLE_SHEET_ID/values:batchUpdate",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "options": {
+          "timeout": 60000,
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          }
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {valueInputOption:\"USER_ENTERED\",data:$json.headerData} }}"
+      },
+      "position": [
+        1980,
+        550
+      ]
+    },
+    {
+      "id": "headerReceipt",
+      "name": "Keep the header write receipt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const previous=$('New registry columns needed').item.json,cells=$input.first().json.body.totalUpdatedCells;if(cells!==previous.headerCellsExpected)throw new Error('Header write receipt does not match the request.');return [{json:{...previous,headerCells:cells}}];"
+      },
+      "position": [
+        2200,
+        550
+      ]
+    },
+    {
+      "id": "hasUpdates",
+      "name": "Existing company cells need updates",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "hasUpdates",
+              "leftValue": "={{ $json.hasUpdates }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "position": [
+        2420,
+        660
+      ]
+    },
+    {
+      "id": "update",
+      "name": "Update matched registry fields",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://sheets.googleapis.com/v4/spreadsheets/YOUR_GOOGLE_SHEET_ID/values:batchUpdate",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "options": {
+          "timeout": 60000,
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          }
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {valueInputOption:\"USER_ENTERED\",data:$json.updateData} }}"
+      },
+      "position": [
+        2640,
+        550
+      ]
+    },
+    {
+      "id": "updateReceipt",
+      "name": "Keep the cell write receipt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const previous=$('Existing company cells need updates').item.json,cells=$input.first().json.body.totalUpdatedCells;if(cells!==previous.updateCellsExpected)throw new Error('Cell update receipt does not match the request.');return [{json:{...previous,updateCells:cells}}];"
+      },
+      "position": [
+        2860,
+        550
+      ]
+    },
+    {
+      "id": "hasAppends",
+      "name": "Unmatched companies need appending",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "hasAppends",
+              "leftValue": "={{ $json.hasAppends }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "position": [
+        3080,
+        660
+      ]
+    },
+    {
+      "id": "append",
+      "name": "Append all unmatched companies",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "={{ \"https://sheets.googleapis.com/v4/spreadsheets/YOUR_GOOGLE_SHEET_ID/values/\"+encodeURIComponent($json.appendRange)+\":append\" }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "options": {
+          "timeout": 60000,
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          }
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {values:$json.appendValues,majorDimension:\"ROWS\"} }}",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "valueInputOption",
+              "value": "USER_ENTERED"
+            }
+          ]
+        }
+      },
+      "position": [
+        3300,
+        550
+      ]
+    },
+    {
+      "id": "appendReceipt",
+      "name": "Keep the append receipt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const previous=$('Unmatched companies need appending').item.json,rows=$input.first().json.body.updates.updatedRows;if(rows!==previous.appendedRecords)throw new Error('Append receipt does not match the request.');return [{json:{...previous,appendRows:rows}}];"
+      },
+      "position": [
+        3520,
+        550
+      ]
+    },
+    {
+      "id": "receipt",
+      "name": "Company enrichment receipt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function registryReceipt({queryCount,companyRecords,updatedRecords,appendedRecords,hasHeader,hasUpdates,hasAppends,headerCellsExpected,updateCellsExpected,headerCells,updateCells,appendRows}) {\n if(companyRecords==null)return {queries:queryCount,companyRecords:0,rowsUpdated:0,rowsAppended:0};\n if(hasHeader&&headerCells!==headerCellsExpected)throw new Error('Header write receipt does not match the request.');\n if(hasUpdates&&updateCells!==updateCellsExpected)throw new Error('Cell update receipt does not match the request.');\n if(hasAppends&&appendRows!==appendedRecords)throw new Error('Append receipt does not match the request.');\n return {queries:queryCount,companyRecords,rowsUpdated:updatedRecords,rowsAppended:appendedRecords};\n}\n\nconst packet=$input.first().json;return [{json:registryReceipt({...packet,queryCount:$('Prepare every company query').first().json.jobs.length,headerCells:packet.headerCells,updateCells:packet.updateCells,appendRows:packet.appendRows})}];"
+      },
+      "position": [
+        3740,
+        660
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## What this does\n\nYou have a sheet with a column called company, holding names or registration numbers. This fills in the official register data next to each one and writes it back.\n\nEvery country returns the same field names, so one set of columns works for all seven. No mapping per country.\n\nCzechia (ARES), Estonia (Ariregister), Finland (PRH), France (Annuaire des Entreprises), Norway (Bronnoysund), Poland (MF VAT list), Slovakia (RPO).\n\n## Setup\n\n1. Install the Apify node. It is verified by n8n, so it works on Cloud and on self-hosted.\n2. Add your Apify API key in the node credentials. A free Apify account is enough to start.\n3. Point the two Google Sheets nodes at your sheet. Column A holds the company names.\n\nThe Actor is gubidonius/company-registry-lookup. One row comes back per company with the\nsame 28 field names whichever of the seven registers answered.\n\n\n## Adapted template\nThis version uses standard HTTP Request nodes with a header credential for Apify and Google Sheets OAuth2. No community-node installation is required. Actor options, complete waiting/results and the eleven mapped fields are retained. Sheet append uses the append API after matched-cell updates.",
+        "height": 520,
+        "width": 420,
+        "color": 4
+      },
+      "id": "a2000000-0000-4000-8000-000000000006",
+      "name": "Read me",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -700,
+        -160
+      ]
+    }
+  ],
+  "connections": {
+    "Run company enrichment": {
+      "main": [
+        [
+          {
+            "node": "Read all company queries",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read all company queries": {
+      "main": [
+        [
+          {
+            "node": "Prepare every company query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare every company query": {
+      "main": [
+        [
+          {
+            "node": "Collect complete registry results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect complete registry results": {
+      "main": [
+        [
+          {
+            "node": "Next registry request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Next registry request": {
+      "main": [
+        [
+          {
+            "node": "Start one registry Actor",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait for the same Actor run",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Read every result page",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Any companies found",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start one registry Actor": {
+      "main": [
+        [
+          {
+            "node": "Restore registry request context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for the same Actor run": {
+      "main": [
+        [
+          {
+            "node": "Restore registry request context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read every result page": {
+      "main": [
+        [
+          {
+            "node": "Restore registry request context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore registry request context": {
+      "main": [
+        [
+          {
+            "node": "Collect complete registry results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Any companies found": {
+      "main": [
+        [
+          {
+            "node": "Read the current matching rows",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Company enrichment receipt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the current matching rows": {
+      "main": [
+        [
+          {
+            "node": "Plan matching cells and new companies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Plan matching cells and new companies": {
+      "main": [
+        [
+          {
+            "node": "New registry columns needed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "New registry columns needed": {
+      "main": [
+        [
+          {
+            "node": "Add the missing column headers",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Existing company cells need updates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add the missing column headers": {
+      "main": [
+        [
+          {
+            "node": "Keep the header write receipt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Keep the header write receipt": {
+      "main": [
+        [
+          {
+            "node": "Existing company cells need updates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Existing company cells need updates": {
+      "main": [
+        [
+          {
+            "node": "Update matched registry fields",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Unmatched companies need appending",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update matched registry fields": {
+      "main": [
+        [
+          {
+            "node": "Keep the cell write receipt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Keep the cell write receipt": {
+      "main": [
+        [
+          {
+            "node": "Unmatched companies need appending",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Unmatched companies need appending": {
+      "main": [
+        [
+          {
+            "node": "Append all unmatched companies",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Company enrichment receipt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append all unmatched companies": {
+      "main": [
+        [
+          {
+            "node": "Keep the append receipt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Keep the append receipt": {
+      "main": [
+        [
+          {
+            "node": "Company enrichment receipt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false
+}
