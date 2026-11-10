@@ -1,0 +1,212 @@
+{
+  "nodes": [
+    {
+      "name": "Typeform Trigger",
+      "type": "n8n-nodes-base.typeformTrigger",
+      "position": [
+        100,
+        260
+      ],
+      "parameters": {
+        "formId": "YOUR_TYPEFORM_FORM_ID",
+        "simplifyAnswers": false,
+        "onlyAnswers": false
+      },
+      "typeVersion": 1,
+      "id": "negative-event-feedback-to-mattermost-native-0"
+    },
+    {
+      "id": "negative-event-feedback-to-mattermost-feedback",
+      "name": "Read the event feedback answer",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        320,
+        260
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function typeformEventFeedback({ response, questionTitle }) {\n  if (!response || !Array.isArray(response.answers) || !Array.isArray(response.definition?.fields)) throw new Error('Expected a complete Typeform response');\n  if (typeof questionTitle !== 'string' || !questionTitle.trim()) throw new Error('Configure the feedback question title');\n  const fields = response.definition.fields.filter(field => field?.title === questionTitle);\n  if (fields.length !== 1 || typeof fields[0].id !== 'string' || !fields[0].id || response.definition.fields.filter(field => field?.id === fields[0].id).length !== 1) throw new Error('The feedback question title must identify one field');\n  const answers = response.answers.filter(answer => answer?.field?.id === fields[0].id);\n  if (answers.length !== 1 || answers[0].type !== 'text' || typeof answers[0].text !== 'string' || !answers[0].text.trim()) throw new Error('One nonblank text feedback answer is required');\n  return { feedback: answers[0].text };\n}\n\nreturn $input.all().flatMap((item, index) => item.json.event_type === \"form_response\" ? [{ json: typeformEventFeedback({ response: item.json.form_response, questionTitle: \"What did you think about the event?\" }), pairedItem: { item: index } }] : []);"
+      }
+    },
+    {
+      "name": "AWS Comprehend",
+      "type": "n8n-nodes-base.awsComprehend",
+      "position": [
+        540,
+        260
+      ],
+      "parameters": {
+        "authentication": "iam",
+        "resource": "text",
+        "operation": "detectSentiment",
+        "languageCode": "en",
+        "text": "={{$json.feedback}}"
+      },
+      "typeVersion": 1,
+      "id": "negative-event-feedback-to-mattermost-native-2"
+    },
+    {
+      "id": "negative-event-feedback-to-mattermost-decision",
+      "name": "Check the returned sentiment",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        760,
+        260
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function comprehendFeedbackDecision({ assessment, feedback }) {\n  if (!assessment || typeof assessment !== 'object' || Array.isArray(assessment) || !['POSITIVE', 'NEGATIVE', 'NEUTRAL', 'MIXED'].includes(assessment.Sentiment)) throw new Error('Comprehend did not return a valid sentiment');\n  for (const name of ['Positive', 'Negative', 'Neutral', 'Mixed']) {\n    const score = assessment.SentimentScore?.[name];\n    if (typeof score !== 'number' || !Number.isFinite(score) || score < 0 || score > 1) throw new Error('Comprehend did not return a valid ' + name + ' confidence');\n  }\n  if (typeof feedback !== 'string' || !feedback.trim()) throw new Error('Original feedback text is missing');\n  return { assessment, negative: assessment.Sentiment === 'NEGATIVE', message: 'You got new feedback with a score of ' + assessment.SentimentScore.Negative + '. Here is what it says:' + feedback };\n}\n\nreturn { json: comprehendFeedbackDecision({ assessment: $json, feedback: $(\"Read the event feedback answer\").first().json.feedback }) };"
+      }
+    },
+    {
+      "name": "Notify for negative feedback",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        980,
+        260
+      ],
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.negative}}",
+              "operation": "equal",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "typeVersion": 1,
+      "id": "negative-event-feedback-to-mattermost-native-4"
+    },
+    {
+      "name": "Post the negative feedback",
+      "type": "n8n-nodes-base.mattermost",
+      "position": [
+        1200,
+        150
+      ],
+      "parameters": {
+        "resource": "message",
+        "operation": "post",
+        "channelId": "YOUR_MATTERMOST_CHANNEL_ID",
+        "message": "={{$json.message}}",
+        "attachments": [],
+        "otherOptions": {}
+      },
+      "typeVersion": 1,
+      "id": "negative-event-feedback-to-mattermost-native-5"
+    },
+    {
+      "id": "negative-event-feedback-to-mattermost-posted",
+      "name": "Confirm the feedback post",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1420,
+        150
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function mattermostFeedbackPosted({ post, assessment }) {\n  if (!post || typeof post !== 'object' || Array.isArray(post) || typeof post.id !== 'string' || !post.id.trim()) throw new Error('Mattermost did not return a saved post ID');\n  return { posted: true, assessment, post };\n}\n\nreturn { json: mattermostFeedbackPosted({ post: $json, assessment: $(\"Check the returned sentiment\").first().json.assessment }) };"
+      }
+    },
+    {
+      "id": "negative-event-feedback-to-mattermost-skip",
+      "name": "Keep nonnegative feedback silent",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        380
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function negativeFeedbackSkipped({ assessment }) {\n  return { posted: false, assessment, post: null };\n}\n\nreturn { json: negativeFeedbackSkipped({ assessment: $json.assessment }) };"
+      }
+    }
+  ],
+  "connections": {
+    "Typeform Trigger": {
+      "main": [
+        [
+          {
+            "node": "Read the event feedback answer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the event feedback answer": {
+      "main": [
+        [
+          {
+            "node": "AWS Comprehend",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AWS Comprehend": {
+      "main": [
+        [
+          {
+            "node": "Check the returned sentiment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check the returned sentiment": {
+      "main": [
+        [
+          {
+            "node": "Notify for negative feedback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify for negative feedback": {
+      "main": [
+        [
+          {
+            "node": "Post the negative feedback",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Keep nonnegative feedback silent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Post the negative feedback": {
+      "main": [
+        [
+          {
+            "node": "Confirm the feedback post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Negative Event Feedback to Mattermost",
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false,
+  "pinData": {}
+}

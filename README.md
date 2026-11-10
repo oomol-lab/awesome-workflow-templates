@@ -199,6 +199,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 ## Customer Support
 
 - [Freshdesk Ticket Creator](workflows/freshdesk-ticket-creator/) - Create an open, low-priority Freshdesk ticket for a requester email.
+- [Negative Event Feedback to Mattermost](workflows/negative-event-feedback-to-mattermost/) - Analyze Typeform event feedback with Amazon Comprehend and notify Mattermost only for negative sentiment.
 
 ## Finance
 
