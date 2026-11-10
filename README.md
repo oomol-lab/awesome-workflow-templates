@@ -194,6 +194,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Zulip Private Message Sender](workflows/zulip-private-message-sender/) - Send one Zulip private message to one person or a group.
 - [Mailgun Email Sender](workflows/mailgun-email-sender/) - Send a plain-text email through Mailgun and return its queue acceptance result.
 - [Rocket.Chat Message Sender](workflows/rocketchat-message-sender/) - Post one text message to a Rocket.Chat room or user.
+- [Gmail AI Reply Draft](workflows/gmail-ai-reply-draft/) - Assess incoming Gmail messages, generate replies only when needed and save them as drafts in the original conversations.
 
 ## Customer Support
 

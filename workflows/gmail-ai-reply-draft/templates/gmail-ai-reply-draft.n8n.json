@@ -1,0 +1,382 @@
+{
+  "name": "Gmail AI auto-responder: create draft replies to incoming emails",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "2a9ff08f-919a-41a8-980b-8c2bca3059e4",
+      "name": "Gmail Trigger",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "simple": false,
+        "maxResults": 25,
+        "filters": {
+          "q": "-from:me",
+          "readStatus": "both",
+          "includeDrafts": false
+        },
+        "options": {}
+      },
+      "typeVersion": 1.4
+    },
+    {
+      "id": "gmail-reply-prepare",
+      "name": "Prepare Incoming Messages",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        180,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function validateReplyMessage(message) {\n  for (const key of ['messageId', 'threadId', 'from']) if (typeof message?.[key] !== 'string' || message[key].trim() === '') throw new Error('Incoming Gmail message is missing ' + key + '.');\n  if (typeof message.subject !== 'string' || typeof message.body !== 'string' || /[\\r\\n]/.test(message.from + message.subject)) throw new Error('Gmail subject, sender and body fields are invalid.');\n  return { messageId: message.messageId, threadId: message.threadId, from: message.from, subject: message.subject, body: message.body };\n}\n\n\nreturn $input.all().map((item,index)=>{const source=item.json;const message=validateReplyMessage({messageId:source.id,threadId:source.threadId,from:(Array.isArray(source.from?.value)?source.from.value.map(mailbox=>mailbox.address).join(\",\"):source.from?.text)??source.headers?.from?.replace(/^From:\\s*/i,\"\")??source.from,subject:source.subject??source.headers?.subject??\"\",body:typeof source.html===\"string\"&&source.html?source.html:typeof source.textAsHtml===\"string\"&&source.textAsHtml?source.textAsHtml:(source.text??\"\")});return {json:message,pairedItem:{item:index}};});"
+      }
+    },
+    {
+      "id": "86017ff4-9c57-4b2a-9cd9-f62571a05ffd",
+      "name": "Assess if message needs a reply",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "position": [
+        360,
+        0
+      ],
+      "parameters": {
+        "promptType": "define",
+        "text": "=Subject: {{ $json.subject }}\nMessage:\n{{ $json.body }}",
+        "messages": {
+          "messageValues": [
+            {
+              "type": "SystemMessagePromptTemplate",
+              "message": "Your task is to assess if the message requires a response. Return in JSON format true if it does, false otherwise.\nMarketing emails don't require a response.\nReturn exactly {\"needsReply\":true} or {\"needsReply\":false}."
+            }
+          ]
+        },
+        "batching": {
+          "batchSize": 1,
+          "delayBetweenBatches": 0
+        }
+      },
+      "typeVersion": 1.7
+    },
+    {
+      "id": "2a64dce8-e2f0-475e-a366-a02084293aad",
+      "name": "OpenAI Chat",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "position": [
+        540,
+        220
+      ],
+      "parameters": {
+        "model": "YOUR_ASSESSMENT_OPENAI_MODEL_ID",
+        "options": {
+          "temperature": 0,
+          "responseFormat": "json_object",
+          "maxRetries": 2
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "gmail-reply-validate",
+      "name": "Validate All Reply Decisions",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function validateReplyDecision(completion) {\n  if (!completion || typeof completion !== 'object' || Array.isArray(completion) || typeof completion.needsReply !== 'boolean') throw new Error('The assessment must contain a boolean needsReply.');\n  return completion.needsReply;\n}\n\n\nconst messages=$(\"Prepare Incoming Messages\").all().map(item=>item.json),items=$input.all();if(items.length!==messages.length)throw new Error(\"Reply decision count differs from messages.\");return items.map((item,index)=>{let result=item.json;if(typeof result.text===\"string\")result=JSON.parse(result.text);if(result.output&&typeof result.output===\"object\")result=result.output;return {json:{...messages[index],needsReply:validateReplyDecision(result)},pairedItem:{item:index}};});"
+      }
+    },
+    {
+      "id": "3ef14615-0045-404f-a21b-2c65a52f4be8",
+      "name": "If Needs Reply",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        900,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "gmail-reply-needed",
+              "leftValue": "={{ $json.needsReply }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "cab1e7e5-93dc-4850-a471-e285cdbe2058",
+      "name": "Generate email reply",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "position": [
+        1080,
+        0
+      ],
+      "parameters": {
+        "promptType": "define",
+        "text": "=Subject: {{ $json.subject }}\nMessage: {{ $json.body }}",
+        "messages": {
+          "messageValues": [
+            {
+              "type": "SystemMessagePromptTemplate",
+              "message": "You're a helpful personal assistant and your task is to draft replies on my behalf to my incoming emails. Whenever I provide some text from an email, return an appropriate draft reply for it and nothing else.\nEnsure that the reply is suitable for a professional email setting and addresses the topic in a clear, structured, and detailed manner.\nDo not make things up.\n\nDetailed instructions:\n- Be concise and maintain a business casual tone.\n- Start with \"Hello,\", and end with \"Best,\"\n- When replying to yes-no questions, draft 2 responses: one affirmative and one negative separated by \" - - - - - - - OR - - - - - - - \"\n- If you don't know an answer, you can leave placeholders like \"[YOUR_ANSWER_HERE]\".\n- Don't use any special formatting, only plain text.\n- Reply in the same language as the inbound email."
+            }
+          ]
+        },
+        "batching": {
+          "batchSize": 1,
+          "delayBetweenBatches": 0
+        }
+      },
+      "typeVersion": 1.7
+    },
+    {
+      "id": "1a87c416-6b1c-4526-a2b6-20468c95ea0e",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "position": [
+        1260,
+        220
+      ],
+      "parameters": {
+        "model": "YOUR_REPLY_OPENAI_MODEL_ID",
+        "options": {
+          "maxRetries": 2
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "gmail-reply-plans",
+      "name": "Prepare All Reply Drafts",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1440,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function prepareReplyDraft(message, completion) {\n  if (typeof completion !== 'string' || completion.trim() === '') throw new Error('The reply model returned no draft text.');\n  const escape = text => text.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('\"', '&quot;').replaceAll(\"'\", '&#39;');\n  return { sourceMessageId: message.messageId, threadId: message.threadId, to: message.from, subject: 'Re: ' + message.subject, body: escape(completion).replace(/\\r\\n|\\r|\\n/g, '<br />\\n') };\n}\n\n\nconst messages=$(\"Validate All Reply Decisions\").all().map(item=>item.json).filter(message=>message.needsReply),items=$input.all();if(items.length!==messages.length)throw new Error(\"Reply count differs from selected messages.\");return items.map((item,index)=>({json:prepareReplyDraft(messages[index],item.json.text),pairedItem:{item:index}}));"
+      }
+    },
+    {
+      "id": "84b4d516-252e-444e-b998-2d4aa0f89653",
+      "name": "Gmail - Create Draft",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        1620,
+        0
+      ],
+      "parameters": {
+        "resource": "draft",
+        "operation": "create",
+        "subject": "={{ $json.subject }}",
+        "message": "={{ $json.body }}",
+        "emailType": "html",
+        "options": {
+          "sendTo": "={{ $json.to }}",
+          "threadId": "={{ $json.threadId }}"
+        }
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "id": "be892ff8-0981-4b34-9c93-7674ddd90360",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -429.809175564116,
+        461.08454375343996
+      ],
+      "parameters": {
+        "width": 304.10628068244364,
+        "height": 394.42512272977456,
+        "content": "## Gmail AI reply drafts\n\nChoose the same Gmail mailbox on Trigger and draft node. Enable the one-minute -from:me poll after configuring two available OpenAI models. The assessment model needs temperature0 and JSON object support. All bodies and decisions finish before generation; all generated replies finish and validate before drafts are written. No email is sent. Check drafts before repeating an uncertain write. See README for trigger/backlog and model-service differences, setup and source."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "9d92839a-9ff2-436c-8abb-2f43e07c1ace",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -112.809175564116,
+        460.08454375343996
+      ],
+      "parameters": {
+        "width": 556,
+        "height": 397,
+        "content": "## Assess the complete incoming batch"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "3cd77609-684c-44e2-9cdc-9479cfd836bd",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        460,
+        460
+      ],
+      "parameters": {
+        "width": 333.19082443588354,
+        "height": 400.08454375343996,
+        "content": "## Generate only needed replies"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "b123cf31-767d-48bb-a0ba-79a69f6da585",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        807.190824435884,
+        461.08454375343996
+      ],
+      "parameters": {
+        "width": 326,
+        "height": 395,
+        "content": "## Save drafts in their conversations"
+      },
+      "typeVersion": 1
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Prepare Incoming Messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Incoming Messages": {
+      "main": [
+        [
+          {
+            "node": "Assess if message needs a reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assess if message needs a reply": {
+      "main": [
+        [
+          {
+            "node": "Validate All Reply Decisions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate All Reply Decisions": {
+      "main": [
+        [
+          {
+            "node": "If Needs Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Needs Reply": {
+      "main": [
+        [
+          {
+            "node": "Generate email reply",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Generate email reply": {
+      "main": [
+        [
+          {
+            "node": "Prepare All Reply Drafts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare All Reply Drafts": {
+      "main": [
+        [
+          {
+            "node": "Gmail - Create Draft",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Assess if message needs a reply",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Generate email reply",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
