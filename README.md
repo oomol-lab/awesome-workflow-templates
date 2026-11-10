@@ -175,6 +175,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Mailjet Email Sender](workflows/mailjet-email-sender/) - Send one plain-text email through Mailjet and return its acceptance result.
 - [Zulip Private Message Sender](workflows/zulip-private-message-sender/) - Send one Zulip private message to one person or a group.
 - [Mailgun Email Sender](workflows/mailgun-email-sender/) - Send a plain-text email through Mailgun and return its queue acceptance result.
+- [Rocket.Chat Message Sender](workflows/rocketchat-message-sender/) - Post one text message to a Rocket.Chat room or user.
 
 ## Customer Support
 
