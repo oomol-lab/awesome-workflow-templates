@@ -213,6 +213,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Freshdesk Ticket Creator](workflows/freshdesk-ticket-creator/) - Create an open, low-priority Freshdesk ticket for a requester email.
 - [Negative Event Feedback to Mattermost](workflows/negative-event-feedback-to-mattermost/) - Analyze Typeform event feedback with Amazon Comprehend and notify Mattermost only for negative sentiment.
 - [Typeform Problem Report Routing](workflows/typeform-problem-report-routing/) - Log every completed Typeform problem report in Google Sheets, then send severe reports to Slack and other reports by email.
+- [Slack Support Tickets to Linear](workflows/slack-support-tickets-to-linear/) - Find ticket-tagged Slack messages, check existing Linear issue hashes, generate structured support details and create the new tickets in order.
 
 ## Finance
 

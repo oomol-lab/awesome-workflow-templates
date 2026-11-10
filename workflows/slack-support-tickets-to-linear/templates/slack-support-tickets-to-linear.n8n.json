@@ -1,0 +1,583 @@
+{
+  "nodes": [
+    {
+      "id": "eda8851a-1929-4f2f-9149-627c0fe62fbc",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        628,
+        327
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 5
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "2b3112a9-046e-4aae-8fcc-95bddf3bb02e",
+      "name": "Slack",
+      "type": "n8n-nodes-base.slack",
+      "position": [
+        828,
+        327
+      ],
+      "parameters": {
+        "resource": "message",
+        "operation": "search",
+        "query": "in:#YOUR_SUPPORT_CHANNEL has::ticket:",
+        "returnAll": false,
+        "limit": 10,
+        "sort": "desc",
+        "options": {}
+      },
+      "typeVersion": 2.2,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "ticket-plan",
+      "name": "Plan Selected Slack Messages",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function normalizeSlackTickets(matches){\n if(!Array.isArray(matches)||matches.length>10)throw new Error('Slack search must return at most10 source messages.');\n const seen=new Set();\n return matches.map(m=>{const permalink=m.permalink,channel=m.channelName??m.channel?.name,username=m.username??'',userId=m.userId??m.user;\n  if(typeof permalink!=='string'||!/^https:\\/\\/[^/]+\\/archives\\/[^/]+\\/p\\d+$/.test(permalink)||typeof m.text!=='string'||typeof m.ts!=='string'||typeof channel!=='string'||typeof userId!=='string')throw new Error('Slack message metadata is incomplete.');\n  const id='#'+permalink.split('/').pop();if(seen.has(id))throw new Error('Duplicate Slack message hash.');seen.add(id);\n  return {id,type:m.type??'message',channel,user:username+' ('+userId+')',ts:m.ts,permalink,message:m.text};});\n}\nfunction ticketHashes(issues){const hashes=[];for(const issue of issues){if(issue.description==null)continue;if(typeof issue.description!=='string')throw new Error('Linear description is not text.');const match=issue.description.match(/hash\\:\\s([\\w#]+)/i);if(match&&!hashes.includes(match[1]))hashes.push(match[1]);}return hashes;}\nfunction prepareSlackTickets({matches}){return {messages:normalizeSlackTickets(matches)};}\n\nconst items=$input.all().map(i=>i.json),raw=items.length===1&&Object.keys(items[0]).length===0?[]:items;return [{json:prepareSlackTickets({matches:raw}),pairedItem:{item:0}}];"
+      }
+    },
+    {
+      "id": "ticket-any",
+      "name": "Messages Selected",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "any",
+              "leftValue": "={{ $json.messages.length > 0 }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "ticket-split",
+      "name": "Each Selected Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return $input.first().json.messages.map(m=>({json:m,pairedItem:{item:0}}));"
+      }
+    },
+    {
+      "id": "11e423a4-36b6-4ecd-8bf7-58a7d4a1aa9a",
+      "name": "Get Existing Issues",
+      "type": "n8n-nodes-base.linear",
+      "position": [
+        880,
+        0
+      ],
+      "parameters": {
+        "resource": "issue",
+        "operation": "getAll",
+        "returnAll": false,
+        "limit": 50
+      },
+      "typeVersion": 1,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "ticket-select",
+      "name": "Select Unseen Messages",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1100,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function normalizeSlackTickets(matches){\n if(!Array.isArray(matches)||matches.length>10)throw new Error('Slack search must return at most10 source messages.');\n const seen=new Set();\n return matches.map(m=>{const permalink=m.permalink,channel=m.channelName??m.channel?.name,username=m.username??'',userId=m.userId??m.user;\n  if(typeof permalink!=='string'||!/^https:\\/\\/[^/]+\\/archives\\/[^/]+\\/p\\d+$/.test(permalink)||typeof m.text!=='string'||typeof m.ts!=='string'||typeof channel!=='string'||typeof userId!=='string')throw new Error('Slack message metadata is incomplete.');\n  const id='#'+permalink.split('/').pop();if(seen.has(id))throw new Error('Duplicate Slack message hash.');seen.add(id);\n  return {id,type:m.type??'message',channel,user:username+' ('+userId+')',ts:m.ts,permalink,message:m.text};});\n}\nfunction ticketHashes(issues){const hashes=[];for(const issue of issues){if(issue.description==null)continue;if(typeof issue.description!=='string')throw new Error('Linear description is not text.');const match=issue.description.match(/hash\\:\\s([\\w#]+)/i);if(match&&!hashes.includes(match[1]))hashes.push(match[1]);}return hashes;}\nfunction prepareSlackTickets({matches}){return {messages:normalizeSlackTickets(matches)};}\n\nconst messages=$(\"Plan Selected Slack Messages\").first().json.messages,hashes=ticketHashes($input.all().map(i=>i.json));return [{json:{selected:messages.filter(m=>!hashes.includes(m.id))},pairedItem:{item:0}}];"
+      }
+    },
+    {
+      "id": "ticket-unseen",
+      "name": "Unseen Messages Exist",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1320,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "any",
+              "leftValue": "={{ $json.selected.length > 0 }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "ticket-prompts",
+      "name": "Prepare All Ticket Prompts",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1540,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function supportTicketPrompt(message){return 'The \"user issue\" is enclosed by 3 backticks:\\n```\\n'+message+'\\n```\\nYou will complete the following 4 tasks:\\n1. Generate a title intended for a support ticket based on the user issue only. Be descriptive but use no more than 10 words.\\n2. Summarise the user issue only by identifying the key expectations and steps that were taken to reach the conclusion.\\n3. Offer at most 3 suggestions to debug or resolve the user issue only. ignore the previous issues for this task.\\n4. Identify the urgency of the user issue only and denote the priority as one of \"low\", \"medium\", \"high\" or \"urgent\". If you cannot determine the urgency of the issue, then assign the \"low\" priority. Also consider that requests which require action either today or tomorrow should be prioritised as \"high\".';}\nfunction validateSupportTicket(output){if(!output||typeof output!=='object'||Array.isArray(output)||Object.keys(output).some(k=>!['title','summary','ideas','priority'].includes(k)))throw new Error('Invalid support ticket structure.');for(const k of ['title','summary','priority'])if(typeof output[k]!=='string'||!output[k].trim())throw new Error('Support ticket '+k+' is empty.');if(output.title.trim().split(/\\s+/).length>10||!Array.isArray(output.ideas)||output.ideas.length>3||output.ideas.some(i=>typeof i!=='string'||!i.trim())||!['low','medium','high','urgent'].includes(output.priority))throw new Error('Support ticket constraints were not satisfied.');return output;}\nfunction describeSupportTicket(message,output){return '## '+output.summary+'\\n\\n### Suggestions\\n'+output.ideas.map(i=>'* '+i).join('\\n')+'\\n\\n## Original Message\\n'+message.user+' asks:\\n> '+message.message+'\\n\\n### Metadata\\nchannel: '+message.channel+'\\nts: '+message.ts+'\\npermalink: '+message.permalink+'\\nhash: '+message.id+'\\n';}\n\nreturn $input.first().json.selected.map(m=>({json:{message:m,prompt:supportTicketPrompt(m.message)},pairedItem:{item:0}}));"
+      }
+    },
+    {
+      "id": "413fde96-346a-468e-80b7-d465bd8add14",
+      "name": "Generate Ticket Using ChatGPT",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "position": [
+        1760,
+        0
+      ],
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.prompt }}",
+        "hasOutputParser": true,
+        "batching": {
+          "batchSize": 1,
+          "delayBetweenBatches": 0
+        }
+      },
+      "typeVersion": 1.7
+    },
+    {
+      "id": "65fd6821-4d19-436c-81d9-9bdb0f5efddd",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "position": [
+        1760,
+        220
+      ],
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "id",
+          "value": "gpt-5-mini"
+        },
+        "options": {}
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "85125704-7363-40de-af84-f267f8c7e919",
+      "name": "Structured Output Parser",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "position": [
+        1940,
+        220
+      ],
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\"type\":\"object\",\"properties\":{\"title\":{\"type\":\"string\"},\"summary\":{\"type\":\"string\"},\"ideas\":{\"type\":\"array\",\"items\":{\"type\":\"string\"},\"maxItems\":3},\"priority\":{\"type\":\"string\",\"enum\":[\"low\",\"medium\",\"high\",\"urgent\"]}},\"required\":[\"title\",\"summary\",\"ideas\",\"priority\"],\"additionalProperties\":false}"
+      },
+      "typeVersion": 1.3
+    },
+    {
+      "id": "ticket-drafts",
+      "name": "Validate Complete Ticket Draft Batch",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1980,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function supportTicketPrompt(message){return 'The \"user issue\" is enclosed by 3 backticks:\\n```\\n'+message+'\\n```\\nYou will complete the following 4 tasks:\\n1. Generate a title intended for a support ticket based on the user issue only. Be descriptive but use no more than 10 words.\\n2. Summarise the user issue only by identifying the key expectations and steps that were taken to reach the conclusion.\\n3. Offer at most 3 suggestions to debug or resolve the user issue only. ignore the previous issues for this task.\\n4. Identify the urgency of the user issue only and denote the priority as one of \"low\", \"medium\", \"high\" or \"urgent\". If you cannot determine the urgency of the issue, then assign the \"low\" priority. Also consider that requests which require action either today or tomorrow should be prioritised as \"high\".';}\nfunction validateSupportTicket(output){if(!output||typeof output!=='object'||Array.isArray(output)||Object.keys(output).some(k=>!['title','summary','ideas','priority'].includes(k)))throw new Error('Invalid support ticket structure.');for(const k of ['title','summary','priority'])if(typeof output[k]!=='string'||!output[k].trim())throw new Error('Support ticket '+k+' is empty.');if(output.title.trim().split(/\\s+/).length>10||!Array.isArray(output.ideas)||output.ideas.length>3||output.ideas.some(i=>typeof i!=='string'||!i.trim())||!['low','medium','high','urgent'].includes(output.priority))throw new Error('Support ticket constraints were not satisfied.');return output;}\nfunction describeSupportTicket(message,output){return '## '+output.summary+'\\n\\n### Suggestions\\n'+output.ideas.map(i=>'* '+i).join('\\n')+'\\n\\n## Original Message\\n'+message.user+' asks:\\n> '+message.message+'\\n\\n### Metadata\\nchannel: '+message.channel+'\\nts: '+message.ts+'\\npermalink: '+message.permalink+'\\nhash: '+message.id+'\\n';}\n\nconst rows=$input.all(),messages=$(\"Prepare All Ticket Prompts\").all();if(rows.length!==messages.length)throw new Error(\"Ticket model count differs.\");return rows.map((item,index)=>{const output=validateSupportTicket(item.json.output),message=messages[index].json.message;return {json:{title:output.title,description:describeSupportTicket(message,output),priority:{urgent:1,high:2,medium:3,low:4}[output.priority],message},pairedItem:{item:index}};});"
+      }
+    },
+    {
+      "id": "f7898b7b-f60a-4315-a870-8c8ec4ad848f",
+      "name": "Create Ticket",
+      "type": "n8n-nodes-base.linear",
+      "position": [
+        2200,
+        0
+      ],
+      "parameters": {
+        "resource": "issue",
+        "operation": "create",
+        "teamId": "YOUR_LINEAR_TEAM_ID",
+        "title": "={{ $json.title }}",
+        "additionalFields": {
+          "stateId": "YOUR_LINEAR_STATE_ID",
+          "priorityId": "={{ $json.priority }}",
+          "description": "={{ $json.description }}"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "ticket-receipts",
+      "name": "Confirm Created Support Tickets",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2420,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const rows=$input.all(),drafts=$(\"Validate Complete Ticket Draft Batch\").all();if(rows.length!==drafts.length)throw new Error(\"Created ticket count differs.\");const created=rows.map((item,index)=>{if(typeof item.json.id!==\"string\"||!item.json.id)throw new Error(\"Missing created issue ID.\");return {hash:drafts[index].json.message.id,id:item.json.id,identifier:item.json.identifier??null,url:item.json.url??null,title:drafts[index].json.title};});return [{json:{count:created.length,created},pairedItem:{item:0}}];"
+      }
+    },
+    {
+      "id": "ticket-empty",
+      "name": "No New Support Tickets",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1540,
+        400
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return [{json:{count:0,created:[]},pairedItem:{item:0}}];"
+      }
+    },
+    {
+      "id": "ad0d56b5-5caf-4fc0-bdbb-4e6207e4eb03",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        580,
+        112.87898199907983
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 432.4578914269739,
+        "height": 427.09547550768553,
+        "content": "## 1. Query Slack for Messages \n[Read more about the Slack Trigger](https://docs.n8n.io/integrations/builtin/app-nodes/n8n-nodes-base.slack)\n\nSlack API search uses the same search syntax found in the app. Here, we'll use it to filter the latest messages with the ticket emoji within our designated channel called #n8n-tickets. "
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "d4ebe5b3-6d9a-4547-8af8-0985206c4ca4",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1040,
+        180.44851541532478
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 711.6907825442045,
+        "height": 632.7258798316449,
+        "content": "## 2. Decide If We Need to Create a New Ticket \n[Read more about using Linear](https://docs.n8n.io/integrations/builtin/app-nodes/n8n-nodes-base.linear)\n\nFor generated issues, we add the message id to the description of the message so that we can check them at this point in the workflow to avoid duplicates."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "46acb0de-1df1-4116-8aaf-704ec6644d7c",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1780,
+        80
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 530.6864600881105,
+        "height": 578.3950618708791,
+        "content": "## 3. Use AI to Generate Ticket Contents\n[Read more about using Basic LLM Chain](https://docs.n8n.io/integrations/builtin/cluster-nodes/root-nodes/n8n-nodes-langchain.chainllm)\n\nFor this demo, we've instructed the AI to do the following:\n* Generate a descriptive title of the issue\n* Summarise the user message into an actionable request.\n* Determine a prority based on tone and context of the user message. \n* Can offer possible fixes through use of tools or RAG. (not implemented)\n"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "503d4ae7-9d5b-4dab-94a2-da28bc0e49da",
+      "name": "Sticky Note6",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        200,
+        120
+      ],
+      "parameters": {
+        "width": 359.6648027457353,
+        "height": 400.4748439127683,
+        "content": "## Try It Out!\n### This workflow does the following:\n* Monitors a Slack channel for new user messages asking for assistance\n* Only user messages which are tagged with the ticket(🎫) emoji are processed.\n* Linear is first checked to see if a ticket was created for the user message.\n* User messages are sent to ChatGPT to generate title, description and priority.\n* Support ticket is created in Linear.\n\n### Need Help?\nJoin the [Discord](https://discord.com/invite/XPKeKXeB7d) or ask in the [Forum](https://community.n8n.io/)!\n\nHappy Hacking!"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "66aecf53-6e8a-4ee8-88c3-be6b7d8d0527",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2340,
+        206
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 374.7406065828194,
+        "height": 352.3865785298774,
+        "content": "## 4. Create New Ticket in Linear\n[Read more about using Linear](https://docs.n8n.io/integrations/builtin/app-nodes/n8n-nodes-base.linear)\n\nWith our ticket contents generated, we can now create our ticket in Linear for support to handle.\n"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "af34916f-7888-4d41-aee6-752b78e88c0c",
+      "name": "Sticky Note4",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        780,
+        300
+      ],
+      "parameters": {
+        "width": 204.96868508214473,
+        "height": 296.735132421306,
+        "content": "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n🚨**Required**\n* Set the Slack channel to monitor here."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "58ab44f7-5fe5-4804-8bf1-36f351d86528",
+      "name": "Sticky Note5",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2440,
+        360
+      ],
+      "parameters": {
+        "width": 183.49787916474958,
+        "height": 296.735132421306,
+        "content": "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n🚨**Required**\n* Set the Linear Team Name or ID here."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack": {
+      "main": [
+        [
+          {
+            "node": "Plan Selected Slack Messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Plan Selected Slack Messages": {
+      "main": [
+        [
+          {
+            "node": "Messages Selected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Messages Selected": {
+      "main": [
+        [
+          {
+            "node": "Each Selected Message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No New Support Tickets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Each Selected Message": {
+      "main": [
+        [
+          {
+            "node": "Get Existing Issues",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Existing Issues": {
+      "main": [
+        [
+          {
+            "node": "Select Unseen Messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select Unseen Messages": {
+      "main": [
+        [
+          {
+            "node": "Unseen Messages Exist",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Unseen Messages Exist": {
+      "main": [
+        [
+          {
+            "node": "Prepare All Ticket Prompts",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No New Support Tickets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare All Ticket Prompts": {
+      "main": [
+        [
+          {
+            "node": "Generate Ticket Using ChatGPT",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Ticket Using ChatGPT": {
+      "main": [
+        [
+          {
+            "node": "Validate Complete Ticket Draft Batch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Complete Ticket Draft Batch": {
+      "main": [
+        [
+          {
+            "node": "Create Ticket",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Ticket": {
+      "main": [
+        [
+          {
+            "node": "Confirm Created Support Tickets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Generate Ticket Using ChatGPT",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Generate Ticket Using ChatGPT",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Slack Support Tickets to Linear",
+  "settings": {
+    "timezone": "UTC",
+    "executionOrder": "v1"
+  },
+  "active": false
+}
