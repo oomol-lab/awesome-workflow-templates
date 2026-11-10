@@ -35,6 +35,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Content Creation](#content-creation)
 - [Recruiting](#recruiting)
 - [Content Review](#content-review)
+- [Recruitment](#recruitment)
 - [Contribute](#contribute)
 - [Licensing](#licensing)
 
@@ -230,6 +231,10 @@ A growing collection of automation workflows for connecting apps and getting rep
 ## Content Review
 
 - [Grounded Article MiniCheck](workflows/grounded-article-minicheck/) - Check article sentences against supplied reference facts with Bespoke-MiniCheck and summarize unsupported claims for editorial review.
+
+## Recruitment
+
+- [CV Job Match Report](workflows/cv-job-match-report/) - Extract the complete text of a linked PDF resume and compare it with a job description to produce a structured report for human review.
 
 ## Contribute
 
