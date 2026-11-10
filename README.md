@@ -141,6 +141,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 
 - [Vector Centroid API](workflows/vector-centroid-api/) - Accept a GET request containing numeric vectors and return their coordinate-wise mean as JSON.
 - [German Synonym Lookup](workflows/german-synonym-lookup/) - Look up German synonym groups in OpenThesaurus.
+- [Text Hash Generator](workflows/text-hash-generator/) - Generate an MD5 checksum of UTF-8 text as a hexadecimal string.
 
 ## Analytics
 
