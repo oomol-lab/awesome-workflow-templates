@@ -1,0 +1,159 @@
+{
+  "name": "GitHub Release Slack Notifications",
+  "nodes": [
+    {
+      "name": "Receive a GitHub release event",
+      "type": "n8n-nodes-base.githubTrigger",
+      "position": [
+        100,
+        240
+      ],
+      "parameters": {
+        "authentication": "accessToken",
+        "owner": {
+          "__rl": true,
+          "mode": "name",
+          "value": "YOUR_GITHUB_OWNER"
+        },
+        "repository": {
+          "__rl": true,
+          "mode": "name",
+          "value": "YOUR_GITHUB_REPOSITORY"
+        },
+        "events": [
+          "release"
+        ],
+        "options": {
+          "insecureSSL": false
+        }
+      },
+      "typeVersion": 1,
+      "id": "github-release-slack-notifications-trigger"
+    },
+    {
+      "id": "github-release-slack-notifications-parts",
+      "name": "Format the complete release notice",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        340,
+        240
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function githubReleaseParts({ body }) {\n  if (!body || typeof body !== 'object' || Array.isArray(body) || typeof body.action !== 'string' || !body.action || !body.repository || !body.release) throw new Error('Expected a GitHub release event');\n  const repository = body.repository.full_name, tag = body.release.tag_name, notes = body.release.body, link = body.release.html_url;\n  if (typeof repository !== 'string' || !repository.trim() || typeof tag !== 'string' || !tag.trim() || (notes != null && typeof notes !== 'string') || typeof link !== 'string') throw new Error('The release is missing its repository, tag, notes or URL');\n  if (!/^https:\\/\\/[^\\s/?#@<>\"'\\\\]+(?:[/?#][^\\s<>\"'\\\\]*)?$/.test(link)) throw new Error('Expected the release’s real HTTPS URL without credentials');\n  const text = 'New release is available in ' + repository + ' !\\n' + tag + ' Details:\\n' + (notes ?? '') + '\\n\\nLink: ' + link;\n  const chunks = [];\n  let chunk = '';\n  for (const character of text) {\n    if (chunk.length + character.length > 3900) { chunks.push(chunk); chunk = ''; }\n    chunk += character;\n  }\n  if (chunk) chunks.push(chunk);\n  const parts = chunks.map((content, index) => chunks.length > 1 ? 'Part ' + (index + 1) + '/' + chunks.length + '\\n' + content : content);\n  if (parts.some(part => part.length > 4000)) throw new Error('The release part exceeds the message budget');\n  return { parts, action: body.action };\n}\n\nconst items=$input.all();if(items.length!==1)throw new Error(\"Expected one GitHub release event\");const result=githubReleaseParts({body:items[0].json.body});return result.parts.map((text,index)=>({json:{text,index:index+1,action:result.action},pairedItem:{item:0}}));"
+      }
+    },
+    {
+      "id": "github-release-slack-notifications-loop",
+      "name": "Post release parts one at a time",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        580,
+        240
+      ],
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      }
+    },
+    {
+      "name": "Post one release message to Slack",
+      "type": "n8n-nodes-base.slack",
+      "position": [
+        820,
+        240
+      ],
+      "parameters": {
+        "authentication": "accessToken",
+        "resource": "message",
+        "operation": "post",
+        "channel": "YOUR_SLACK_CHANNEL_ID",
+        "text": "={{ $json.text }}",
+        "jsonParameters": false,
+        "attachments": [],
+        "otherOptions": {}
+      },
+      "typeVersion": 1,
+      "id": "github-release-slack-notifications-slack"
+    },
+    {
+      "id": "github-release-slack-notifications-receipt",
+      "name": "Confirm the Slack release message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1060,
+        240
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const requests=$(\"Format the complete release notice\").all();if(!Number.isInteger($runIndex)||$runIndex<0||$runIndex>=requests.length)throw new Error(\"Invalid release message index\");const channel=$(\"Post one release message to Slack\").params.channel;if($json.ok!==true||typeof $json.ts!==\"string\"||!/^\\d+\\.\\d+$/.test($json.ts)||$json.channel!==channel)throw new Error(\"Slack did not confirm the release message in the requested channel; posting may already have occurred\");return {json:{part:requests[$runIndex].json.index,action:requests[$runIndex].json.action,message:$json}};"
+      }
+    }
+  ],
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Receive a GitHub release event": {
+      "main": [
+        [
+          {
+            "node": "Format the complete release notice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format the complete release notice": {
+      "main": [
+        [
+          {
+            "node": "Post release parts one at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Post release parts one at a time": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Post one release message to Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Post one release message to Slack": {
+      "main": [
+        [
+          {
+            "node": "Confirm the Slack release message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm the Slack release message": {
+      "main": [
+        [
+          {
+            "node": "Post release parts one at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {}
+}

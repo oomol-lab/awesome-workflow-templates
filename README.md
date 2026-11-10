@@ -193,6 +193,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Travis CI Build Request](workflows/travisci-build-request/) - Request a Travis CI Cloud build for a repository branch.
 - [Rundeck Job Runner](workflows/rundeck-job-runner/) - Request execution of an existing Rundeck job and return its execution record.
 - [Telegram Message JSON Debugger](workflows/telegram-message-json-debugger/) - Echo the complete Telegram update JSON privately to the message sender, using safe formatted parts for long updates.
+- [GitHub Release Slack Notifications](workflows/github-release-slack-notifications/) - Post GitHub release events to Slack with the repository, tag, complete release notes and original release URL.
 
 ## Communication
 
