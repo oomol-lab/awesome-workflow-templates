@@ -1,0 +1,133 @@
+{
+  "nodes": [
+    {
+      "name": "Calendly Trigger",
+      "type": "n8n-nodes-base.calendlyTrigger",
+      "position": [
+        490,
+        320
+      ],
+      "parameters": {
+        "authentication": "apiKey",
+        "scope": "user",
+        "events": [
+          "invitee.created"
+        ]
+      },
+      "typeVersion": 1,
+      "id": "calendly-booking-to-notion-trigger"
+    },
+    {
+      "id": "calendly-booking-to-notion-request",
+      "name": "Prepare Notion page request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        710,
+        320
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const dataSourceId = 'YOUR_NOTION_DATA_SOURCE_ID';\nconst statusOptionId = 'YOUR_NOTION_STATUS_OPTION_ID';\nfunction configuredNotionId(value, name) {\n  if (typeof value !== 'string' || !/^(?:[0-9a-f]{32}|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i.test(value)) {\n    throw new Error('Configure the destination ' + name + ' as its Notion ID');\n  }\n  return value;\n}\nfunction calendlyNotionRequest({ invitee, dataSourceId, statusOptionId }) {\n  configuredNotionId(dataSourceId, 'data source');\n  if (typeof statusOptionId !== 'string' || !statusOptionId.trim() || statusOptionId === 'YOUR_NOTION_STATUS_OPTION_ID') {\n    throw new Error('Configure an existing destination Status option ID');\n  }\n  if (!invitee || typeof invitee !== 'object' || Array.isArray(invitee) || typeof invitee.name !== 'string' || !invitee.name.trim() || typeof invitee.email !== 'string' || !invitee.email.trim()) {\n    throw new Error('The Calendly booking must contain an invitee name and email');\n  }\n  return {\n    parent: { type: 'data_source_id', data_source_id: dataSourceId },\n    properties: {\n      Name: { title: [{ type: 'text', text: { content: invitee.name } }] },\n      Email: { email: invitee.email },\n      Status: { select: { id: statusOptionId } },\n    },\n  };\n}\n\nreturn $input.all().flatMap((item, index) => item.json.event === \"invitee.created\" ? [{ json: calendlyNotionRequest({ invitee: item.json.payload, dataSourceId, statusOptionId }), pairedItem: { item: index } }] : []);"
+      }
+    },
+    {
+      "id": "calendly-booking-to-notion-create",
+      "name": "Create the booking record",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        930,
+        320
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.notion.com/v1/pages",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Notion-Version",
+              "value": "2026-03-11"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{JSON.stringify($json)}}",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "neverError": false
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "calendly-booking-to-notion-check",
+      "name": "Check the created Notion page",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1150,
+        320
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function notionBookingCreated({ page }) {\n  if (!page || typeof page !== 'object' || Array.isArray(page) || page.object !== 'page' || typeof page.id !== 'string' || !page.id.trim()) {\n    throw new Error('Notion did not return a created page ID');\n  }\n  return { page };\n}\n\nreturn { json: notionBookingCreated({ page: $json }).page };"
+      }
+    }
+  ],
+  "connections": {
+    "Calendly Trigger": {
+      "main": [
+        [
+          {
+            "node": "Prepare Notion page request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Notion page request": {
+      "main": [
+        [
+          {
+            "node": "Create the booking record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create the booking record": {
+      "main": [
+        [
+          {
+            "node": "Check the created Notion page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Calendly Booking to Notion",
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false,
+  "pinData": {}
+}
