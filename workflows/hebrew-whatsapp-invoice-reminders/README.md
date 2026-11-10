@@ -29,7 +29,7 @@ Import `templates/hebrew-whatsapp-invoice-reminders.openflow.json`. The bundle i
 2. In the worker’s **Configure WAHA delivery**, replace the endpoint with your HTTPS `/api/sendText` URL and set the working session name. The WAHA endpoint must be reachable from the Open Flow server within its outbound network rules. The default session is `default`.
 3. Create a secret Variable containing the WAHA API key. In **Send Hebrew WhatsApp reminder**, bind **Authentication Token** (`auth.token`) to that Variable. The request sends it in `X-Api-Key`. The shared file contains no key or Variable binding.
 4. Select the Google Sheets account on the worker’s read and write steps, with permission to edit this spreadsheet.
-5. Publish **Send and Log One Invoice Reminder**, then refresh **Send and log reminders** in the main workflow to select the worker’s published interface. Publish and enable the main schedule.
+5. Publish **Send and Log One Invoice Reminder**, then refresh **Send and log one reminder** in the main workflow to select the worker’s published interface. Publish and enable the main schedule.
 
 If changing timezone, update both the main schedule and the processing-timezone setting. Review the template using a test sheet and a WAHA session you control before enabling the daily schedule.
 
@@ -37,7 +37,7 @@ If changing timezone, update both the main schedule and the processing-timezone 
 
 Import `templates/hebrew-whatsapp-invoice-reminders.n8n.json`. Edit the settings object in **Configure Invoice Sheet and Timezone** and the endpoint/session object in **Configure WAHA Delivery**. Select Google Sheets OAuth2 credentials on the three Sheets HTTP steps. On **Post WhatsApp Reminder**, select Header Auth credentials with name `X-Api-Key` and your WAHA API key as the value. Confirm the workflow timezone and activate the schedule.
 
-The two formats use the same Hebrew messages and selection rules. n8n uses its native loop and Wait node; Open Flow calls the bundled worker in sequence.
+The two formats use the same Hebrew messages and selection rules. n8n uses its native loop and Wait node; Open Flow uses a visible feedback loop, one bundled-worker call per invoice and an automatic Wait node.
 
 ## Sending and logging
 
@@ -45,7 +45,7 @@ An invoice is selected only on its exact 7th, 14th or 30th overdue calendar day.
 
 Each invoice is sent once, then logged before the next invoice starts. WAHA must return HTTP 201, a message ID and an outgoing-message result without a failure acknowledgement. This confirms API acceptance, not delivery or reading by the customer. The workflow then reads the current tab, matches the invoice ID again, and writes only `LastReminder` and `LastReminderDate`. It verifies both returned cell values. Other invoice fields remain intact. Keep the sheet stable during a run; the read and write are separate operations without a row lock.
 
-There is a three-second wait between completed invoices. Open Flow allows up to 30 seconds per HTTP step and two hours for the collection step. No automatic workflow retry is configured. A request error, uncertain send, missing/duplicate current invoice or unconfirmed log stops later invoices. Earlier completed invoices stay logged. A message may already have been sent when logging fails; check WAHA and the sheet before repeating an uncertain run.
+There is a three-second wait between completed invoices, with no leading or trailing wait. Each Open Flow loop iteration calls the worker once. HTTP steps have a 30-second budget; collection and receipt data must fit the platform’s Code input/result budgets (1 MiB each in the inspected host) and run lifetime. A limit failure stops later invoices without rolling back earlier sends or logs. No automatic workflow retry is configured. A request error, uncertain send, missing/duplicate current invoice or unconfirmed log stops later invoices. Earlier completed invoices stay logged. A message may already have been sent when logging fails; check WAHA and the sheet before repeating an uncertain run.
 
 ## Changes to the source
 
