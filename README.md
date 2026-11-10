@@ -198,6 +198,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [GitHub Release Slack Notifications](workflows/github-release-slack-notifications/) - Post GitHub release events to Slack with the repository, tag, complete release notes and original release URL.
 - [Send a Telegram Message from a Webhook](workflows/send-telegram-message-from-webhook/) - Send a GET query message to a configured Telegram private chat and return a confirmation using the recipient name from the saved message.
 - [GitHub User Profile to Slack](workflows/github-user-profile-to-slack/) - Look up a GitHub profile and matching author emails from its last 25 pull requests, then post the bounded results and avatar to Slack.
+- [GitHub Repository Alert Light](workflows/github-repository-alert-light/) - Turn a Home Assistant light red whenever GitHub delivers an event from a selected repository.
 
 ## Communication
 
