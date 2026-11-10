@@ -86,6 +86,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Mailchimp Member Creator](workflows/mailchimp-member-creator/) - Add a subscribed Mailchimp audience member with an email address and first name.
 - [Newsletter Unsubscribe](workflows/newsletter-unsubscribe/) - Mark one newsletter subscriber inactive in Airtable and confirm the update, using a record ID supplied through a form or JSON request.
 - [Four Platform Content Repurposer](workflows/four-platform-content-repurposer/) - Analyze supplied content, write separate X, LinkedIn, Instagram and Facebook drafts, and log one complete set in Google Sheets.
+- [Newsletter Subscriber Enrollment](workflows/newsletter-subscriber-enrollment/) - Create or reactivate an Airtable newsletter subscription by email, then send a plain-text Gmail confirmation.
 
 ## Support
 

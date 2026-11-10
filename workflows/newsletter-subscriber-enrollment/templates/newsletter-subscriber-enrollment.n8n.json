@@ -1,0 +1,284 @@
+{
+  "nodes": [
+    {
+      "id": "ce7d5310-7170-46d3-b8d8-3f97407f9dfd",
+      "name": "Subscribe Form",
+      "type": "n8n-nodes-base.formTrigger",
+      "position": [
+        -600,
+        0
+      ],
+      "parameters": {
+        "options": {
+          "path": "newsletter-subscriber-enrollment",
+          "appendAttribution": false,
+          "respondWithOptions": {
+            "values": {
+              "respondWith": "text",
+              "formSubmittedText": "Your subscription was saved and the confirmation email was accepted by Gmail."
+            }
+          }
+        },
+        "formTitle": "Learn something every day!",
+        "formFields": {
+          "values": [
+            {
+              "fieldType": "textarea",
+              "fieldLabel": "topic",
+              "placeholder": "What topic(s) would you like to learn about?",
+              "requiredField": true
+            },
+            {
+              "fieldType": "email",
+              "fieldLabel": "email",
+              "placeholder": "eg. jim@example.com",
+              "requiredField": true
+            },
+            {
+              "fieldType": "dropdown",
+              "fieldLabel": "frequency",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "daily"
+                  },
+                  {
+                    "option": "weekly"
+                  },
+                  {
+                    "option": "surprise me"
+                  }
+                ]
+              },
+              "requiredField": true
+            }
+          ]
+        },
+        "formDescription": "Get a fact a day (or week) about any subject sent to your inbox.",
+        "responseMode": "lastNode"
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "prepare-newsletter-enrollment",
+      "name": "Prepare Newsletter Subscription",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -320,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function prepareNewsletterEnrollment({ body, baseId, tableIdOrName }) {\n  if (!body || typeof body !== 'object' || Array.isArray(body)) throw new Error('Provide a signup object.');\n  const text = (value, label) => {\n    if (typeof value !== 'string' || !value.trim()) throw new Error('Provide ' + label + '.');\n    return value.trim();\n  };\n  const email = text(body.email, 'one email address'), topic = text(body.topic, 'a topic');\n  // The single-address grammar used by HTML email fields; no display names or recipient lists.\n  if (!/^[a-zA-Z0-9.!#$%&'*+\\-/=?^_`{|}~]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?)*$/.test(email)) throw new Error('Provide one email address.');\n  if (email.includes(\"'\")) throw new Error('This template does not support apostrophes in email addresses.');\n  if (!['daily', 'weekly', 'surprise me'].includes(body.frequency)) throw new Error('Choose daily, weekly or surprise me.');\n  baseId = text(baseId, 'your Airtable base ID'); tableIdOrName = text(tableIdOrName, 'your subscribers table ID');\n  if (!/^app[a-zA-Z0-9]+$/.test(baseId) || !/^tbl[a-zA-Z0-9]+$/.test(tableIdOrName)) throw new Error('Configure your own Airtable base and table IDs.');\n  const fields = { Email: email, Topic: topic, Status: 'active', Interval: body.frequency === 'surprise me' ? 'surprise' : body.frequency, 'Start Day': ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][new Date().getUTCDay()] };\n  return { baseId, tableIdOrName, data: { fields, recipient: email, subject: 'Learn something every day confirmation', message: 'This is to confirm your request to subscribe to \"Learn something every day!\" - a free service to send you facts about your favourite topics.\\n\\nTopic: ' + topic + '\\nSchedule: ' + body.frequency }, endpoint: '/v0/' + baseId + '/' + tableIdOrName, payload: { typecast: false, performUpsert: { fieldsToMergeOn: ['Email'] }, records: [{ fields }] } };\n}\n\nconst settings={\"baseId\":\"YOUR_AIRTABLE_BASE_ID\",\"tableIdOrName\":\"YOUR_SUBSCRIBERS_TABLE_ID\"};\nreturn $input.all().map((item,index)=>({json:prepareNewsletterEnrollment({body:item.json,...settings}),pairedItem:{item:index}}));\n"
+      }
+    },
+    {
+      "id": "3611da19-920b-48e6-84a4-f7be0b3a78fc",
+      "name": "Create Subscriber",
+      "type": "n8n-nodes-base.airtable",
+      "position": [
+        -40,
+        0
+      ],
+      "parameters": {
+        "authentication": "airtableTokenApi",
+        "resource": "record",
+        "operation": "upsert",
+        "base": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.baseId }}"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.tableIdOrName }}"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Email": "={{ $json.data.fields[\"Email\"] }}",
+            "Topic": "={{ $json.data.fields[\"Topic\"] }}",
+            "Status": "={{ $json.data.fields[\"Status\"] }}",
+            "Interval": "={{ $json.data.fields[\"Interval\"] }}",
+            "Start Day": "={{ $json.data.fields[\"Start Day\"] }}"
+          },
+          "matchingColumns": [
+            "Email"
+          ],
+          "schema": [
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Topic",
+              "displayName": "Topic",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Interval",
+              "displayName": "Interval",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Start Day",
+              "displayName": "Start Day",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "typecast": false,
+          "updateAllMatches": false
+        }
+      },
+      "typeVersion": 2.1,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "verify-newsletter-enrollment",
+      "name": "Verify Saved Subscriber",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function verifyNewsletterSubscriber({ records, data, expectedId }) {\n  if (!Array.isArray(records) || records.length !== 1) throw new Error('Airtable did not confirm one saved subscriber.');\n  const record = records[0];\n  if (!record || typeof record.id !== 'string' || !/^rec[a-zA-Z0-9]+$/.test(record.id) || (expectedId && record.id !== expectedId) || !record.fields || Object.entries(data.fields).some(([key, value]) => record.fields[key] !== value)) throw new Error('Airtable did not confirm the saved subscription fields.');\n  return { recipient: data.recipient, subject: data.subject, message: data.message };\n}\n\nconst savedItems=$input.all();\nif(savedItems.length!==$('Prepare Newsletter Subscription').all().length) throw new Error('Airtable did not confirm one saved subscriber per signup.');\nreturn savedItems.map((item,index)=>({json:verifyNewsletterSubscriber({records:[item.json],data:$('Prepare Newsletter Subscription').itemMatching(index).json.data,expectedId:''}),pairedItem:{item:index}}));\n"
+      }
+    },
+    {
+      "id": "1ea47e14-0a28-4780-95c7-31e24eb724d5",
+      "name": "Send Subscription Confirmation",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        520,
+        0
+      ],
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "sendTo": "={{ $json.recipient }}",
+        "subject": "={{ $json.subject }}",
+        "emailType": "text",
+        "message": "={{ $json.message }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "typeVersion": 2.1,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "confirm-newsletter-enrollment",
+      "name": "Confirm Email Acceptance",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        800,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function confirmNewsletterEnrollment({ messageId }) {\n  if (typeof messageId !== 'string' || !messageId.trim()) throw new Error('Gmail did not confirm acceptance of the confirmation email.');\n  return { body: { subscribed: true, confirmationAccepted: true } };\n}\n\nreturn $input.all().map((item,index)=>({json:confirmNewsletterEnrollment({messageId:item.json.id}),pairedItem:{item:index}}));\n"
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Subscribe Form": {
+      "main": [
+        [
+          {
+            "node": "Prepare Newsletter Subscription",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Newsletter Subscription": {
+      "main": [
+        [
+          {
+            "node": "Create Subscriber",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Subscriber": {
+      "main": [
+        [
+          {
+            "node": "Verify Saved Subscriber",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify Saved Subscriber": {
+      "main": [
+        [
+          {
+            "node": "Send Subscription Confirmation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Subscription Confirmation": {
+      "main": [
+        [
+          {
+            "node": "Confirm Email Acceptance",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Newsletter Subscriber Enrollment",
+  "active": false
+}
