@@ -168,6 +168,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [GitHub Repository Profile](workflows/github-repository-profile/) - Read a GitHub repository’s community health score and community file metadata.
 - [Jira Issue Creator](workflows/jira-issue-creator/) - Create a Jira Cloud issue with a project ID, issue type ID and summary.
 - [CircleCI Pipeline Lookup](workflows/circleci-pipeline-lookup/) - Read a CircleCI pipeline by project and pipeline number.
+- [Travis CI Build Request](workflows/travisci-build-request/) - Request a Travis CI Cloud build for a repository branch.
 
 ## Communication
 
