@@ -140,6 +140,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Zoom Meeting Creator](workflows/zoom-meeting-creator/) - Create a Zoom meeting for the connected user with a configurable topic.
 - [Google Text Translator](workflows/google-text-translator/) - Translate one text or HTML input with Google Cloud Translation Basic.
 - [Current City Weather](workflows/current-city-weather/) - Read the current OpenWeather conditions for one configured city in metric units.
+- [Daily Gmail Summary Email](workflows/daily-gmail-summary-email/) - Summarize matching Gmail email snippets and send one HTML email with key points and named action items.
 
 ## Content
 
