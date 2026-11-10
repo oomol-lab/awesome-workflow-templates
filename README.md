@@ -174,6 +174,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Twilio SMS Sender](workflows/twilio-sms-sender/) - Submit one text message to Twilio with a sender and recipient number.
 - [Mailjet Email Sender](workflows/mailjet-email-sender/) - Send one plain-text email through Mailjet and return its acceptance result.
 - [Zulip Private Message Sender](workflows/zulip-private-message-sender/) - Send one Zulip private message to one person or a group.
+- [Mailgun Email Sender](workflows/mailgun-email-sender/) - Send a plain-text email through Mailgun and return its queue acceptance result.
 
 ## Customer Support
 
