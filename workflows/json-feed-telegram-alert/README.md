@@ -11,7 +11,7 @@ Poll a JSON feed every five minutes. Send entries that pass your category filter
 
 ## Setup
 
-In Open Flow, replace the URL in **Read JSON feed** with your direct JSON endpoint. Configure the field names and filter values in **Select new matching entries**, connect your Telegram bot in **Send Telegram alerts → Actions**, and replace the chat ID. Check the UTC schedule before publishing and enabling the workflow.
+In Open Flow, replace the URL in **Read JSON feed** with your direct JSON endpoint. Configure the field names and filter values in **Select new matching entries**, connect your Telegram bot in **Send Telegram alert**, and replace the chat ID. Check the UTC schedule before publishing and enabling the workflow.
 
 In n8n, configure the same URL on **Leggi il feed JSON**, the field names/filter values in **Solo voci nuove e filtrate**, and your bot credential and chat ID on **Manda su Telegram**. Check the workflow timezone before enabling it. n8n saves workflow static data during successful active executions; manual tests do not persist this watermark.
 
@@ -40,6 +40,8 @@ Use timestamps whose string order matches time order, such as fixed-format UTC I
 The first run has an empty watermark and sends every matching entry with a nonempty timestamp. New entries are sent sequentially in ascending timestamp order. Equal timestamps retain feed order within the current run. A later entry at the already saved timestamp is skipped, so the feed must provide timestamps that suit that boundary.
 
 Each message contains its category and the first 300 characters of the JSON entry. HTML characters are escaped for Telegram display. The workflow reads one feed response, without pagination, using a 10-second request/task timeout. Use a direct endpoint that returns JSON successfully; Open Flow does not follow HTTP redirects. HTTP failures, malformed arrays, invalid entries, or a Telegram failure stop the run without a new saved watermark. No workflow retry is configured.
+
+Open Flow sends each alert through a separate Connector execution in the visible feedback loop. There is no 100-alert total cap. The selected feed and notification array must fit the platform's Code input and result budgets; the inspected host allows 1 MiB for each. A collection limit failure stops without advancing the watermark.
 
 The watermark advances only after every selected notification succeeds. If a later send or state save fails, earlier messages can be sent again on the next poll. Overlapping runs can also duplicate messages; delivery is not exactly once. No matches sends nothing and leaves the watermark unchanged. Changing the feed or its timestamp format requires resetting the saved watermark before reuse.
 
