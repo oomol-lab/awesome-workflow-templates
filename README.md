@@ -138,6 +138,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Google Books Add to Shelf](workflows/google-books-add-to-shelf/) - Get a Google Books volume, add it to My Library and list the first bookshelf page.
 - [Zoom Meeting Creator](workflows/zoom-meeting-creator/) - Create a Zoom meeting for the connected user with a configurable topic.
 - [Google Text Translator](workflows/google-text-translator/) - Translate one text or HTML input with Google Cloud Translation Basic.
+- [Current City Weather](workflows/current-city-weather/) - Read the current OpenWeather conditions for one configured city in metric units.
 
 ## Content
 
