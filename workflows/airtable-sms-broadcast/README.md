@@ -13,7 +13,7 @@ Read every record from an Airtable table and send a personalized SMS to each con
 
 Use an Airtable table with **Number** and **Name** fields. Store Number as text in E.164 format, such as `+12025550123`. Name may be empty.
 
-In Open Flow, connect Airtable in the **Actions** settings of **Read all Airtable contacts** and set the base and table IDs. Connect Twilio in **Send SMS in order** and replace `YOUR_TWILIO_NUMBER` with an SMS-capable sender number in E.164 format.
+In Open Flow, connect Airtable in **Read one Airtable contact page** and set the base and table IDs. Connect Twilio in **Send one SMS**. In **Collect SMS submissions**, replace `YOUR_TWILIO_NUMBER` with an SMS-capable sender number in E.164 format. The two visible feedback loops read one page or submit one SMS in each Connector execution.
 
 In n8n, select an Airtable Access Token connection, base, and table in **Airtable**. Keep Return All enabled. Connect Twilio and set From in **Twilio**. The template sends SMS rather than WhatsApp messages.
 
@@ -22,7 +22,9 @@ The default message is:
 > Hello, &lt;Name&gt;!
 > Sending this SMS from n8n!
 
-Edit **Prepare and validate messages** to change the text. Run manually. The workflow finishes reading all Airtable pages, trims and validates every destination number, then submits messages in record order. Invalid destination data stops the batch before any SMS is submitted. An empty table sends nothing; duplicate numbers receive one message per record.
+Edit **Prepare and validate messages** to change the text. Run manually. The workflow finishes reading all Airtable pages, trims and validates every destination number, then submits messages in record order. Invalid destination data stops the batch before any SMS is submitted. An empty table sends nothing; duplicate numbers receive one message per record. There is no fixed 100-contact or 100-page total cap.
+
+Complete contact and submission collections must fit the execution platform’s Code input and result budgets. The inspected Open Flow host allows 1 MiB for each Code input and result. A large collection can exceed that budget and stop the run; the workflow does not truncate it. A failure while collecting contacts prevents all SMS writes. A failure while collecting submission results leaves earlier accepted messages submitted.
 
 Twilio returns submission IDs and statuses. These confirm submission, not delivery to the recipient. A service failure stops later submissions without replaying earlier ones. Check Twilio’s message log before rerunning an uncertain batch; rerunning sends the records again.
 
