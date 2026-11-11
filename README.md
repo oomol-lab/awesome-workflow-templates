@@ -245,6 +245,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Xero Invoice Reader](workflows/xero-invoice-reader/) - Read up to 100 invoice records from a Xero organization.
 - [Invoice Ninja Client Reader](workflows/invoice-ninja-client-reader/) - Read the first 50 clients from an Invoice Ninja v5 instance.
 - [Hebrew WhatsApp Invoice Reminders](workflows/hebrew-whatsapp-invoice-reminders/) - Send Hebrew WAHA reminders for open invoices exactly 7, 14 or 30 calendar days overdue, and record each accepted reminder in Google Sheets.
+- [Clockify Invoice to Notion](workflows/clockify-invoice-to-notion/) - Create a Notion database page when a Clockify invoice webhook arrives.
 
 ## Community
 
