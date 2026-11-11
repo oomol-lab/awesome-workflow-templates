@@ -1,0 +1,114 @@
+{
+  "nodes": [
+    {
+      "id": "binance-usdc-market-summary-to-telegram-0",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        260,
+        600
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "5 * * * *"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "binance-usdc-market-summary-to-telegram-1",
+      "name": "Binance 24h Price Change",
+      "type": "n8n-nodes-base.httpRequest",
+      "maxTries": 5,
+      "position": [
+        600,
+        600
+      ],
+      "parameters": {
+        "url": "https://api.binance.com/api/v3/ticker/24hr?symbols=%5B%22SOLUSDC%22%2C%22BTCUSDC%22%2C%22ETHUSDC%22%5D",
+        "options": {}
+      },
+      "retryOnFail": true,
+      "typeVersion": 1,
+      "waitBetweenTries": 5000
+    },
+    {
+      "id": "binance-usdc-market-summary-to-telegram-2",
+      "name": "Send Telegram Message",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        1560,
+        600
+      ],
+      "parameters": {
+        "text": "={{ $json.data }}",
+        "chatId": "YOUR_TELEGRAM_CHAT_ID",
+        "additionalFields": {
+          "parse_mode": "HTML"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "binance-usdc-market-summary-to-telegram-3",
+      "name": "Analyze & Format Market Data",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        900,
+        600
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function summarize({body}) {\n  const symbols=['SOLUSDC','BTCUSDC','ETHUSDC'];\n  if (!Array.isArray(body) || body.length!==3) throw Error('Expected three Binance ticker records');\n  const fields=['priceChangePercent','lastPrice','weightedAvgPrice','highPrice','lowPrice','volume','quoteVolume','askPrice','bidPrice'];\n  const rows=body.map(c=>{\n    if (!c || !symbols.includes(c.symbol)) throw Error('Unexpected Binance symbol');\n    const n={}; for (const field of fields) {if (typeof c[field]!=='string' || !/^-?\\d+(?:\\.\\d+)?$/.test(c[field])) throw Error('Invalid ticker field: '+field);n[field]=Number(c[field]);if (!Number.isFinite(n[field])) throw Error('Nonfinite ticker field: '+field)}\n    if (n.lowPrice<=0 || n.bidPrice<=0 || n.weightedAvgPrice<=0 || n.lastPrice<0 || n.askPrice<0 || n.highPrice<n.lowPrice || n.volume<0 || n.quoteVolume<0 || !Number.isSafeInteger(c.count) || c.count<0 || !Number.isSafeInteger(c.openTime) || !Number.isSafeInteger(c.closeTime) || c.closeTime<c.openTime) throw Error('Invalid ticker range or denominator');\n    return {...n,symbol:c.symbol,count:c.count,openTime:c.openTime,closeTime:c.closeTime};\n  });\n  if (new Set(rows.map(c=>c.symbol)).size!==3) throw Error('Duplicate or missing Binance symbol');\n  const fixed=(n,d=2)=>n.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});\n  const volume=n=> n>=1e9?(n/1e9).toFixed(2)+'B':n>=1e6?(n/1e6).toFixed(2)+'M':n>=1e3?(n/1e3).toFixed(2)+'K':String(n);\n  const vol=c=>(c.highPrice-c.lowPrice)/c.lowPrice*100,spread=c=>(c.askPrice-c.bidPrice)/c.bidPrice*100;\n  const avg=rows.reduce((s,c)=>s+c.priceChangePercent,0)/rows.length,total=rows.reduce((s,c)=>s+c.quoteVolume,0);\n  if (!Number.isFinite(total)||!Number.isFinite(avg)||rows.some(c=>![vol(c),spread(c),(c.lastPrice-c.weightedAvgPrice)/c.weightedAvgPrice*100].every(Number.isFinite))) throw Error('Nonfinite calculated statistic');\n  const sorted=(fn)=>[...rows].sort(fn), mostVolatile=sorted((a,b)=>vol(b)-vol(a))[0],leastSpread=sorted((a,b)=>spread(a)-spread(b))[0],byVolume=sorted((a,b)=>b.quoteVolume-a.quoteVolume);\n  const lines=[`<b>📊 Crypto Market Summary — ${new Date().toISOString().replace('T',' ').split('.')[0]} UTC</b>`,'', '<b>🌐 Market Overview (BTC, ETH, SOL)</b>',`Average Change: ${avg.toFixed(2)}%`,`24h Volume: ${fixed(total)} USDC`,`Most Volatile: ${mostVolatile.symbol} (${vol(mostVolatile).toFixed(2)}%)`,`Most Liquid: ${leastSpread.symbol} (${spread(leastSpread).toFixed(4)}% spread)`,'','<b>💹 Top by Volume</b>',...byVolume.map(c=>`${c.symbol}: ${fixed(c.quoteVolume)} USDC | ${c.priceChangePercent}%`),''];\n  const format=c=>{const comp=c.priceChangePercent-avg,momentum=(c.lastPrice-c.weightedAvgPrice)/c.weightedAvgPrice*100;return [`<b>${c.symbol}</b>`,`${c.priceChangePercent>0?'🔺':'🔻'} Change: ${c.priceChangePercent.toFixed(2)}% (${((c.closeTime-c.openTime)/3600000).toFixed(0)}h)`,`💰 Current: ${fixed(c.lastPrice)} USDC`,`📊 Range: ${fixed(c.lowPrice)} - ${fixed(c.highPrice)} USDC`,`📈 Volatility: ${vol(c).toFixed(2)}%`,`🔄 Volume: ${volume(c.volume)} | ${fixed(c.quoteVolume)} USDC`,`⚖️ Bid-Ask Spread: ${spread(c).toFixed(4)}%`,`${comp>0?'⭐':'⬇️'} vs Market Avg: ${comp.toFixed(2)}%`,`${momentum>0?'🔼':'🔽'} Momentum: ${momentum.toFixed(2)}%`,`🔢 Trades: ${c.count.toLocaleString('en-US')}`, ''];};\n  const gain=sorted((a,b)=>b.priceChangePercent-a.priceChangePercent).filter(c=>c.priceChangePercent>0),loss=sorted((a,b)=>a.priceChangePercent-b.priceChangePercent).filter(c=>c.priceChangePercent<0);\n  if(gain.length)lines.push('<b>📈 Gainers</b>','',...gain.flatMap(format));if(loss.length)lines.push('<b>📉 Losers</b>','',...loss.flatMap(format));\n  const chunks=[];let current='';for(const line of lines){if(line.length>4000)throw Error('A single report line exceeds Telegram limit');if(current.length+line.length+1>4000){if(current.trim())chunks.push(current.trim());current='';}current+=line+'\\n';}if(current.trim())chunks.push(current.trim());if(!chunks.length)throw Error('Empty report');return {chunks};\n}\n\nreturn summarize({body:$input.first().json}).chunks.map(data=>({json:{data}}));"
+      },
+      "typeVersion": 2
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Binance 24h Price Change",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Binance 24h Price Change": {
+      "main": [
+        [
+          {
+            "node": "Analyze & Format Market Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze & Format Market Data": {
+      "main": [
+        [
+          {
+            "node": "Send Telegram Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Binance USDC Market Summary to Telegram",
+  "settings": {
+    "timezone": "UTC",
+    "executionOrder": "v1"
+  },
+  "active": false
+}
