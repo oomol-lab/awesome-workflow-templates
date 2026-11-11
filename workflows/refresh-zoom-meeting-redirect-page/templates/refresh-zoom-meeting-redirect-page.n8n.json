@@ -1,0 +1,206 @@
+{
+  "nodes": [
+    {
+      "name": "Check daily at 03:00 UTC",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "notes": "Cron trigger to reset zoom meeting on the auto-redirect link",
+      "position": [
+        1120,
+        580
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "daysInterval": 1,
+              "triggerAtHour": 3,
+              "triggerAtMinute": 0
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2,
+      "id": "refresh-zoom-meeting-redirect-page-0"
+    },
+    {
+      "id": "refresh-zoom-meeting-redirect-page-1",
+      "name": "Check the 360-day schedule",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        400,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function scheduled({anchorDate,instant}){if(typeof anchorDate!=='string'||!/^\\d{4}-\\d{2}-\\d{2}$/.test(anchorDate))throw Error('Set the UTC start date as YYYY-MM-DD');const start=Date.parse(anchorDate+'T00:00:00Z');if(!Number.isFinite(start)||new Date(start).toISOString().slice(0,10)!==anchorDate)throw Error('Invalid UTC start date');const now=instant==null?Date.now():Date.parse(instant);if(!Number.isFinite(now))throw Error('Invalid current time');const today=Date.parse(new Date(now).toISOString().slice(0,10)+'T00:00:00Z'),days=(today-start)/86400000;return {run:days>=0&&days%360===0};}\n\nconst anchorDate='YYYY-MM-DD';\nreturn scheduled({anchorDate,instant:null}).run ? $input.all() : [];"
+      }
+    },
+    {
+      "name": "Zoom",
+      "type": "n8n-nodes-base.zoom",
+      "position": [
+        1340,
+        580
+      ],
+      "parameters": {
+        "topic": "New Meeting",
+        "authentication": "oAuth2",
+        "additionalFields": {
+          "type": 3,
+          "settings": {
+            "muteUponEntry": true,
+            "joinBeforeHost": true,
+            "participantVideo": true
+          },
+          "timeZone": "America/New_York"
+        }
+      },
+      "typeVersion": 1,
+      "id": "refresh-zoom-meeting-redirect-page-2"
+    },
+    {
+      "id": "refresh-zoom-meeting-redirect-page-3",
+      "name": "Prepare the redirect",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        800,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function redirect({meeting}){const url=meeting?.joinUrl;if(typeof url!=='string'||!/^https:\\/\\/(?:[a-z0-9-]+\\.)*zoom\\.us\\//i.test(url)||/[\\s\"'<>]/.test(url))throw Error('Zoom returned an invalid join URL');const safe=url.replaceAll('&','&amp;');return {url,content:'<meta http-equiv=\"refresh\" content=\"0;'+safe+'\">\\n<p>Redirecting, please wait a moment. Meeting will begin shortly…</p>'};}\n\nreturn {json:redirect({meeting:{joinUrl:$json.join_url}})};"
+      }
+    },
+    {
+      "name": "Wordpress",
+      "type": "n8n-nodes-base.wordpress",
+      "position": [
+        1560,
+        580
+      ],
+      "parameters": {
+        "pageId": "1",
+        "resource": "page",
+        "operation": "update",
+        "updateFields": {
+          "content": "={{ $(\"Prepare the redirect\").item.json.content }}"
+        }
+      },
+      "typeVersion": 1,
+      "id": "refresh-zoom-meeting-redirect-page-4"
+    },
+    {
+      "id": "refresh-zoom-meeting-redirect-page-5",
+      "name": "Confirm the redirect",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function confirmPage({page,url}){\n const content=page?.content?.rendered;if(typeof content!=='string'||typeof url!=='string')throw Error('WordPress returned no redirect content');\n const tags=content.match(/<meta\\b[^>]*>/gi)??[];\n const found=tags.some(tag=>{if(!/\\bhttp-equiv\\s*=\\s*[\"']refresh[\"']/i.test(tag))return false;const value=tag.match(/\\bcontent\\s*=\\s*([\"'])(.*?)\\1/i)?.[2];if(typeof value!=='string')return false;const decoded=value.replace(/&amp;|&#0*38;|&#x0*26;/gi,'&');return decoded==='0;'+url;});\n if(!found)throw Error('WordPress did not return the expected redirect; check its HTML policy and page');return {message:'Zoom recurring meeting updated!\\n'+url};\n}\n\nreturn {json:confirmPage({page:$json,url:$(\"Prepare the redirect\").item.json.url})};"
+      }
+    },
+    {
+      "name": "Slack",
+      "type": "n8n-nodes-base.slack",
+      "position": [
+        1780,
+        580
+      ],
+      "parameters": {
+        "text": "={{ $json.message }}",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_SLACK_CHANNEL_ID"
+        },
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "typeVersion": 2.2,
+      "id": "refresh-zoom-meeting-redirect-page-6"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Check daily at 03:00 UTC": {
+      "main": [
+        [
+          {
+            "node": "Check the 360-day schedule",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check the 360-day schedule": {
+      "main": [
+        [
+          {
+            "node": "Zoom",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Zoom": {
+      "main": [
+        [
+          {
+            "node": "Prepare the redirect",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare the redirect": {
+      "main": [
+        [
+          {
+            "node": "Wordpress",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wordpress": {
+      "main": [
+        [
+          {
+            "node": "Confirm the redirect",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm the redirect": {
+      "main": [
+        [
+          {
+            "node": "Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Refresh a Zoom Meeting Redirect Page",
+  "active": false,
+  "settings": {
+    "timezone": "UTC"
+  }
+}

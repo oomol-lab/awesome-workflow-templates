@@ -103,6 +103,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Monitor Sheet URLs to Telegram](workflows/monitor-sheet-urls-to-telegram/) - Check URLs in Google Sheets every minute and send failed checks to Telegram.
 - [Notify Upcoming Daylight Saving Changes](workflows/notify-upcoming-daylight-saving-changes/) - Notify Slack and email when daylight saving time changes tomorrow in a selected time zone.
 - [Notify Slack of New ServiceNow Incidents](workflows/notify-slack-of-new-servicenow-incidents/) - Check recent ServiceNow incidents and notify a Slack channel.
+- [Refresh a Zoom Meeting Redirect Page](workflows/refresh-zoom-meeting-redirect-page/) - Create a recurring Zoom meeting, update a WordPress redirect page, and notify Slack every 360 days.
 
 ## Marketing
 
