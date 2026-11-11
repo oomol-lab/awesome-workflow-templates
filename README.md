@@ -143,6 +143,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [PagerDuty Incident Create and Update](workflows/pagerduty-incident-create-and-update/) - Create a PagerDuty incident, change its title and retrieve the same incident.
 - [Sync GitHub Issues to a Notion Database](workflows/sync-github-issues-to-notion-database/) - Keep a Notion database updated when GitHub issues are opened, edited, closed, reopened or deleted.
 - [Acknowledge a PagerDuty Incident from Mattermost](workflows/acknowledge-pagerduty-incident-from-mattermost/) - Acknowledge a PagerDuty incident from a Mattermost action and post a confirmation to the channel.
+- [Notify Workflow Errors by Mattermost and SMS](workflows/notify-workflow-errors-by-mattermost-and-sms/) - When a workflow fails, post its identity and failed node to Mattermost, then send an SMS.
 
 ## Research
 
