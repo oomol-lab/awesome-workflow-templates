@@ -105,6 +105,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Notify Slack of New ServiceNow Incidents](workflows/notify-slack-of-new-servicenow-incidents/) - Check recent ServiceNow incidents and notify a Slack channel.
 - [Refresh a Zoom Meeting Redirect Page](workflows/refresh-zoom-meeting-redirect-page/) - Create a recurring Zoom meeting, update a WordPress redirect page, and notify Slack every 360 days.
 - [Alert on HTTP Status by SMS](workflows/alert-on-http-status-by-sms/) - Check a website every five minutes and send an SMS when its final HTTP status is not 200.
+- [Notify Discord When Stock Text Is Absent](workflows/monitor-stock-text-to-discord/) - Check a webpage every hour and notify Discord when the text “Out Of Stock” is absent.
 
 ## Marketing
 
