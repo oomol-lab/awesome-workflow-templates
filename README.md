@@ -301,6 +301,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Mattermost Webhook Call Invite](workflows/mattermost-webhook-call-invite/) - Post a Whereby room invite to a Mattermost channel from a webhook request.
 - [Google Contacts Birthday Reminders to Slack](workflows/google-contacts-birthday-reminders-to-slack/) - Check Google Contacts each morning and send a Slack reminder for each birthday today.
 - [Suggest Inclusive Language in Mattermost](workflows/suggest-inclusive-language-in-mattermost/) - Suggest inclusive alternatives in a Mattermost channel when a message contains selected terms.
+- [Send a Website Screenshot to Telegram](workflows/send-website-screenshot-to-telegram/) - Capture a full-page screenshot of a website and post the image to Telegram.
 
 ## Customer Support
 
