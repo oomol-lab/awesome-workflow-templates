@@ -1,0 +1,213 @@
+{
+  "name": "Create and Update a Google Contact",
+  "nodes": [
+    {
+      "name": "On clicking 'execute'",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        190,
+        300
+      ],
+      "parameters": {},
+      "typeVersion": 1,
+      "id": "create-update-google-contact-0"
+    },
+    {
+      "name": "Set contact details",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function setup({givenName,familyName,company,title,domain}){for(const [k,v]of Object.entries({givenName,familyName,company,title,domain}))if(typeof v!=='string'||!v.trim())throw Error('Enter '+k);return {givenName:givenName.trim(),familyName:familyName.trim(),company:company.trim(),title:title.trim(),domain:domain.trim(),body:{names:[{givenName:givenName.trim(),familyName:familyName.trim(),middleName:''}]}};}\n\nreturn [{json:setup({givenName:'',familyName:'',company:'',title:'',domain:''})}];"
+      },
+      "id": "create-update-google-contact-1"
+    },
+    {
+      "name": "Google Contacts",
+      "type": "n8n-nodes-base.googleContacts",
+      "position": [
+        390,
+        300
+      ],
+      "parameters": {
+        "givenName": "={{ $(\"Set contact details\").first().json.givenName }}",
+        "familyName": "={{ $(\"Set contact details\").first().json.familyName }}",
+        "additionalFields": {}
+      },
+      "typeVersion": 1,
+      "id": "create-update-google-contact-2"
+    },
+    {
+      "name": "Read contact version",
+      "type": "n8n-nodes-base.googleContacts",
+      "position": [
+        790,
+        300
+      ],
+      "parameters": {
+        "operation": "get",
+        "contactId": "={{ $(\"Google Contacts\").first().json.contactId }}",
+        "fields": [
+          "metadata"
+        ],
+        "rawData": true
+      },
+      "typeVersion": 1,
+      "id": "create-update-google-contact-3"
+    },
+    {
+      "name": "Prepare organization update",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function prepare({body,resourceName,company,title,domain}){if(body?.resourceName!==resourceName||!Array.isArray(body?.metadata?.sources))throw Error('Contact metadata missing');const sources=body.metadata.sources.filter(s=>s?.type==='CONTACT'&&typeof s.etag==='string'&&s.etag);if(sources.length!==1)throw Error('Expected one contact source with etag');return {url:'https://people.googleapis.com/v1/'+resourceName+':updateContact',body:{resourceName,metadata:{sources},organizations:[{name:company,title,domain,current:true}]}};}\n\nconst s=$('Set contact details').first().json,created=$('Google Contacts').first().json;return [{json:prepare({body:$input.first().json,resourceName:created.resourceName,company:s.company,title:s.title,domain:s.domain})}];"
+      },
+      "id": "create-update-google-contact-4"
+    },
+    {
+      "name": "Set the organization",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ $json.url }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleContactsOAuth2Api",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "updatePersonFields",
+              "value": "organizations"
+            },
+            {
+              "name": "personFields",
+              "value": "metadata,organizations"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.body) }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "create-update-google-contact-5"
+    },
+    {
+      "name": "Google Contacts2",
+      "type": "n8n-nodes-base.googleContacts",
+      "position": [
+        790,
+        300
+      ],
+      "parameters": {
+        "operation": "get",
+        "contactId": "={{ $(\"Google Contacts\").first().json.contactId }}",
+        "fields": [
+          "names",
+          "organizations",
+          "metadata"
+        ],
+        "rawData": true
+      },
+      "typeVersion": 1,
+      "id": "create-update-google-contact-6"
+    },
+    {
+      "name": "Verify the contact",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function confirm({body,resourceName,company,title,domain}){if(body?.resourceName!==resourceName||!Array.isArray(body.organizations)||!body.organizations.some(o=>o.name===company&&o.title===title&&o.domain===domain&&o.current===true))throw Error('Updated contact does not match');return {contact:body};}\n\nconst s=$('Set contact details').first().json,created=$('Google Contacts').first().json;return [{json:confirm({body:$input.first().json,resourceName:created.resourceName,company:s.company,title:s.title,domain:s.domain}).contact}];"
+      },
+      "id": "create-update-google-contact-7"
+    }
+  ],
+  "active": false,
+  "settings": {},
+  "connections": {
+    "On clicking 'execute'": {
+      "main": [
+        [
+          {
+            "node": "Set contact details",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set contact details": {
+      "main": [
+        [
+          {
+            "node": "Google Contacts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Contacts": {
+      "main": [
+        [
+          {
+            "node": "Read contact version",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read contact version": {
+      "main": [
+        [
+          {
+            "node": "Prepare organization update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare organization update": {
+      "main": [
+        [
+          {
+            "node": "Set the organization",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set the organization": {
+      "main": [
+        [
+          {
+            "node": "Google Contacts2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Contacts2": {
+      "main": [
+        [
+          {
+            "node": "Verify the contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {}
+}
