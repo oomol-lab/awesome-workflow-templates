@@ -1,0 +1,179 @@
+{
+  "nodes": [
+    {
+      "name": "Receive a new booking",
+      "type": "n8n-nodes-base.calendlyTrigger",
+      "position": [
+        460,
+        400
+      ],
+      "parameters": {
+        "authentication": "apiKey",
+        "scope": "user",
+        "events": [
+          "invitee.created"
+        ]
+      },
+      "typeVersion": 1,
+      "id": "enrich-calendly-bookings-in-notion-0"
+    },
+    {
+      "id": "enrich-calendly-bookings-in-notion-1",
+      "name": "Prepare booking and contact",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function prepare({payload,dataSourceId,personId}){if(typeof dataSourceId!=='string'||!dataSourceId.trim()||dataSourceId.startsWith('YOUR_')||typeof personId!=='string'||!personId.trim()||personId.startsWith('YOUR_'))throw Error('Configure the Notion data source and person');if(!payload||typeof payload.email!=='string'||!payload.email.trim()||typeof payload.name!=='string'||!payload.name.trim())throw Error('Booking is missing the invitee name or email');const e=payload.scheduled_event,start=e?.start_time,end=e?.end_time;if(typeof start!=='string'||typeof end!=='string'||!Number.isFinite(Date.parse(start))||!Number.isFinite(Date.parse(end))||Date.parse(end)<=Date.parse(start))throw Error('Booking has invalid scheduled event times');const contact={email:payload.email,full_name:payload.name};for(const k of['first_name','last_name'])if(typeof payload[k]==='string'&&payload[k].trim())contact[k]=payload[k];return{data:[contact],booking:{start,end},dataSourceId,personId}}\n\nreturn $input.all().flatMap((x,i)=>{if(x.json.event!=='invitee.created')return [];const p=prepare({payload:x.json.payload,dataSourceId:'YOUR_NOTION_DATA_SOURCE_ID',personId:'YOUR_NOTION_PERSON_ID'});return [{json:{...p.data[0],booking:p.booking,dataSourceId:p.dataSourceId,personId:p.personId},pairedItem:{item:i}}]});"
+      }
+    },
+    {
+      "name": "Enrich the contact",
+      "type": "n8n-nodes-base.dropcontact",
+      "position": [
+        650,
+        400
+      ],
+      "parameters": {
+        "resource": "contact",
+        "operation": "enrich",
+        "email": "={{ $json.email }}",
+        "simplify": false,
+        "options": {
+          "siren": true,
+          "language": "fr",
+          "waitTime": 45
+        },
+        "additionalFields": {
+          "full_name": "={{ $json.full_name }}",
+          "first_name": "={{ $json.first_name ?? \"\" }}",
+          "last_name": "={{ $json.last_name ?? \"\" }}"
+        }
+      },
+      "typeVersion": 1,
+      "id": "enrich-calendly-bookings-in-notion-2"
+    },
+    {
+      "id": "enrich-calendly-bookings-in-notion-3",
+      "name": "Prepare the Notion record",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function page({data,error,success,status,booking,dataSourceId,personId}){if(error!==false||success!==true||status!=='succeeded'||!Array.isArray(data)||data.length!==1)throw Error('Dropcontact enrichment is not complete; inspect the request before retrying');if(typeof dataSourceId!=='string'||!dataSourceId.trim()||dataSourceId.startsWith('YOUR_')||typeof personId!=='string'||!personId.trim()||personId.startsWith('YOUR_'))throw Error('Configure the Notion data source and person');const r=data[0],email=r?.email?.[0]?.email;if(typeof r?.full_name!=='string'||!r.full_name.trim()||typeof email!=='string'||!email.trim())throw Error('Enriched contact is missing full name or first email');const properties={Date:{date:{start:booking.start,end:booking.end}},email:{email},Leads:{title:[{text:{content:r.full_name}}]},Person:{people:[{id:personId}]}};for(const [source,target]of[['linkedin','LinkedIn Profile'],['website','Website'],['company_linkedin','LinkedIn Company']]){const v=r[source];if(v===undefined||v===null||v==='')continue;if(typeof v!=='string')throw Error('Invalid enriched URL');properties[target]={url:v}}if(r.civility!==undefined&&r.civility!==null&&r.civility!==''){if(typeof r.civility!=='string')throw Error('Invalid civility');properties.Civility={rich_text:[{text:{content:r.civility}}]}}return{parent:{data_source_id:dataSourceId},properties}}\n\nconst p=$('Prepare booking and contact').first().json;return [{json:page({data:$input.all().map(x=>x.json),error:false,success:true,status:'succeeded',booking:p.booking,dataSourceId:p.dataSourceId,personId:p.personId})}];"
+      }
+    },
+    {
+      "id": "enrich-calendly-bookings-in-notion-4",
+      "name": "Create the Notion record",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.notion.com/v1/pages",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Notion-Version",
+              "value": "2026-03-11"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "neverError": false
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "enrich-calendly-bookings-in-notion-5",
+      "name": "Confirm the Notion record",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function notionBookingCreated({ page }) {\n  if (!page || typeof page !== 'object' || Array.isArray(page) || page.object !== 'page' || typeof page.id !== 'string' || !page.id.trim()) {\n    throw new Error('Notion did not return a created page ID');\n  }\n  return { page };\n}\n\nreturn $input.all().map(x=>({json:notionBookingCreated({page:x.json}).page}));"
+      }
+    }
+  ],
+  "connections": {
+    "Receive a new booking": {
+      "main": [
+        [
+          {
+            "node": "Prepare booking and contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare booking and contact": {
+      "main": [
+        [
+          {
+            "node": "Enrich the contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enrich the contact": {
+      "main": [
+        [
+          {
+            "node": "Prepare the Notion record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare the Notion record": {
+      "main": [
+        [
+          {
+            "node": "Create the Notion record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create the Notion record": {
+      "main": [
+        [
+          {
+            "node": "Confirm the Notion record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Enrich Calendly Bookings in Notion",
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false,
+  "pinData": {}
+}
