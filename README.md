@@ -115,6 +115,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Notify Discord When Stock Text Is Absent](workflows/monitor-stock-text-to-discord/) - Check a webpage every hour and notify Discord when the text “Out Of Stock” is absent.
 - [Email Workflow Failure Details](workflows/email-workflow-failure-details/) - Email diagnostic details when a configured workflow fails.
 - [Ping Configured URLs](workflows/ping-configured-urls/) - Send an HTTP GET to each configured URL every 15 minutes.
+- [Monitor Website Status in Google Sheets](workflows/monitor-website-status-in-google-sheets/) - Check website status, record observations and alert a team when a site is down or recovers.
 
 ## Marketing
 

@@ -1,0 +1,386 @@
+{
+  "nodes": [
+    {
+      "id": "monitor-website-status-in-google-sheets-0",
+      "name": "Every six hours UTC",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        1440,
+        420
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 6
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "name": "Read the site dashboard",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ \"https://sheets.googleapis.com/v4/spreadsheets/\" + encodeURIComponent(\"YOUR_SPREADSHEET_ID\") + \"/values/\" + encodeURIComponent(\"'dashboard'!A:Z\") }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "valueRenderOption",
+              "value": "UNFORMATTED_VALUE"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "monitor-website-status-in-google-sheets-1"
+    },
+    {
+      "name": "Validate the site dashboard",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function nextDashboard({values,previousState}) {\n if(!Array.isArray(values))throw Error('Invalid dashboard');\n const index=previousState?.index??0;if(!Number.isInteger(index)||index<0)throw Error('Invalid index');\n if(!values.length)return{state:{index},more:false,url:'https://unused.invalid',site:{},count:index};\n const head=values[0];if(!Array.isArray(head)||['Property','Status','Log Sheet'].some(x=>head.filter(v=>v===x).length!==1))throw Error('Dashboard requires unique Property, Status and Log Sheet headers');\n const p=head.indexOf('Property'),s=head.indexOf('Status'),l=head.indexOf('Log Sheet');const rows=values.slice(1).map((v,i)=>({v,row:i+2})).filter(x=>Array.isArray(x.v)&&x.v.some(y=>y!==''&&y!=null));const seen=new Set();\n for(const {v} of rows){if(typeof v[p]!=='string'||!/^https?:\\/\\//i.test(v[p])||/[\\r\\n]/.test(v[p])||seen.has(v[p]))throw Error('Invalid or duplicate Property');seen.add(v[p]);if(!['UP','DOWN'].includes(v[s]))throw Error('Invalid Status');if(typeof v[l]!=='string'||!v[l].trim()||/[\\[\\]*?:/\\\\]/.test(v[l]))throw Error('Invalid Log Sheet');}\n if(index>=rows.length)return{state:{index},more:false,url:'https://unused.invalid',site:{},count:index};const x=rows[index];return{state:{index:index+1},more:true,url:x.v[p],site:{property:x.v[p],status:x.v[s],logSheet:x.v[l],row:x.row,statusColumn:s},count:index+1};\n}\n\nconst values=$input.first().json.values??[];let previousState=null,out=[];while(true){const x=nextDashboard({values,previousState});if(!x.more)break;out.push({json:x.site,pairedItem:{item:0}});previousState=x.state;}return out;"
+      },
+      "id": "monitor-website-status-in-google-sheets-2"
+    },
+    {
+      "name": "Check one site at a time",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "monitor-website-status-in-google-sheets-3"
+    },
+    {
+      "id": "monitor-website-status-in-google-sheets-4",
+      "name": "Check the website",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        2207,
+        460
+      ],
+      "parameters": {
+        "url": "={{ $json.property }}",
+        "options": {
+          "timeout": 30000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "name": "Prepare the observation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function dashboardFields({site,up,now}) {\n if(!site||typeof site.property!=='string'||!['UP','DOWN'].includes(site.status)||typeof site.logSheet!=='string'||!Number.isInteger(site.row)||!Number.isInteger(site.statusColumn)||typeof up!=='boolean')throw Error('Invalid site');\n const time=new Date(now);if(Number.isNaN(time.getTime()))throw Error('Invalid time');const stamp=time.toISOString(),status=up?'UP':'DOWN',event=`${status}_FROM_${site.status}`,quote=x=>\"'\"+x.replaceAll(\"'\",\"''\")+\"'\";let col=site.statusColumn+1,label='';while(col){col--;label=String.fromCharCode(65+col%26)+label;col=Math.floor(col/26)}\n const message=`From: n8n uptime\\nDate: ${stamp}\\n\\n${site.property} is ${status}`;return{logRange:quote(site.logSheet)+'!A:G',logValues:[[stamp,stamp.slice(0,7),site.property,event==='UP_FROM_UP',event==='DOWN_FROM_DOWN',event==='UP_FROM_DOWN',event==='DOWN_FROM_UP']],statusRange:`'dashboard'!${label}${site.row}`,statusValues:[[status]],alert:event!=='UP_FROM_UP',subject:`n8n uptime: ${site.property} is ${status}`,message};\n}\n\nconst x=$input.first().json,site=$('Check one site at a time').item.json;if(!Number.isInteger(x.statusCode)||x.statusCode<100||x.statusCode>599)throw Error('Invalid HTTP status');return [{json:dashboardFields({site,up:x.statusCode<400,now:$now.toISO()}),pairedItem:{item:0}}];"
+      },
+      "id": "monitor-website-status-in-google-sheets-5"
+    },
+    {
+      "name": "Send an alert?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "alert",
+              "leftValue": "={{ $json.alert }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "monitor-website-status-in-google-sheets-6"
+    },
+    {
+      "id": "monitor-website-status-in-google-sheets-7",
+      "name": "Email the alert",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        2940,
+        340
+      ],
+      "parameters": {
+        "sendTo": "YOUR_ALERT_EMAIL",
+        "subject": "={{ $json.subject }}",
+        "emailType": "text",
+        "message": "={{ $json.message }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "id": "monitor-website-status-in-google-sheets-8",
+      "name": "Send the Slack alert",
+      "type": "n8n-nodes-base.slack",
+      "position": [
+        3100,
+        340
+      ],
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_SLACK_CHANNEL_ID"
+        },
+        "text": "={{ $(\"Prepare the observation\").item.json.message }}",
+        "otherOptions": {}
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "name": "Log the observation",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "={{ \"https://sheets.googleapis.com/v4/spreadsheets/\" + encodeURIComponent(\"YOUR_SPREADSHEET_ID\") + \"/values/\" + encodeURIComponent($(\"Prepare the observation\").item.json.logRange) + \":append\" }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "valueInputOption",
+              "value": "RAW"
+            },
+            {
+              "name": "insertDataOption",
+              "value": "INSERT_ROWS"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({values:$(\"Prepare the observation\").item.json.logValues}) }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "monitor-website-status-in-google-sheets-9"
+    },
+    {
+      "name": "Update the site status",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ \"https://sheets.googleapis.com/v4/spreadsheets/\" + encodeURIComponent(\"YOUR_SPREADSHEET_ID\") + \"/values/\" + encodeURIComponent($(\"Prepare the observation\").item.json.statusRange) }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "valueInputOption",
+              "value": "RAW"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({values:$(\"Prepare the observation\").item.json.statusValues}) }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "monitor-website-status-in-google-sheets-10"
+    },
+    {
+      "name": "Confirm the status update",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function confirm({updatedCells}){if(updatedCells!==1)throw Error('Status update was not confirmed');return{ok:true};}\n\nreturn [{json:confirm({updatedCells:$input.first().json.updatedCells}),pairedItem:{item:0}}];"
+      },
+      "id": "monitor-website-status-in-google-sheets-11"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Every six hours UTC": {
+      "main": [
+        [
+          {
+            "node": "Read the site dashboard",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the site dashboard": {
+      "main": [
+        [
+          {
+            "node": "Validate the site dashboard",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate the site dashboard": {
+      "main": [
+        [
+          {
+            "node": "Check one site at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check the website": {
+      "main": [
+        [
+          {
+            "node": "Prepare the observation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare the observation": {
+      "main": [
+        [
+          {
+            "node": "Send an alert?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email the alert": {
+      "main": [
+        [
+          {
+            "node": "Send the Slack alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send the Slack alert": {
+      "main": [
+        [
+          {
+            "node": "Log the observation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log the observation": {
+      "main": [
+        [
+          {
+            "node": "Update the site status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update the site status": {
+      "main": [
+        [
+          {
+            "node": "Confirm the status update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm the status update": {
+      "main": [
+        [
+          {
+            "node": "Check one site at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check one site at a time": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Check the website",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send an alert?": {
+      "main": [
+        [
+          {
+            "node": "Email the alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log the observation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Monitor Website Status in Google Sheets",
+  "settings": {
+    "timezone": "UTC",
+    "executionOrder": "v1"
+  },
+  "active": false
+}
