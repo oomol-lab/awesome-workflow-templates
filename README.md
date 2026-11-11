@@ -285,6 +285,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 ## Lifestyle
 
 - [Daily Cocktail Photo in Telegram](workflows/daily-cocktail-telegram/) - Send Telegram one random cocktail photo and its available preparation instructions each evening.
+- [Email Scheduled Recipe Suggestions](workflows/email-scheduled-recipe-suggestions/) - Find random recipes matching dietary and preparation filters and email their links each day.
 
 ## Developer Tools
 
