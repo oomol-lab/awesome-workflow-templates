@@ -159,6 +159,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Notify Workflow Failures on Telegram](workflows/notify-workflow-failures-on-telegram/) - Send workflow failure details to a Telegram chat.
 - [Create or Comment Jira Issues for Splunk Alerts](workflows/create-or-comment-jira-issues-for-splunk-alerts/) - Search Jira for a Splunk host alert, then create an issue or comment on matching issues.
 - [Assign GitHub Issues on Request](workflows/assign-github-issues-on-request/) - Assign an unassigned GitHub issue to its author or commenter when they request it.
+- [Notify Workflow Failures on Slack](workflows/notify-workflow-failures-on-slack/) - Send workflow failure details to a Slack channel.
 
 ## Research
 
