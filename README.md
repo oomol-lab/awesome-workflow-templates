@@ -67,6 +67,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Sync Pipedrive People to HubSpot](workflows/sync-pipedrive-people-to-hubspot/) - Create HubSpot contacts for Pipedrive people whose first email is not already present.
 - [Stripe Checkout Customer and Product](workflows/stripe-checkout-customer-and-product/) - Retrieve customer details and the first line-item description when a Stripe Checkout Session completes.
 - [Add GitHub Pull Requests to Pipedrive Contacts](workflows/github-pull-request-pipedrive-note/) - Add a GitHub pull request link to Pipedrive people whose email matches the event sender.
+- [Create Odoo Opportunities from Sales Emails](workflows/create-odoo-opportunities-from-sales-emails/) - Summarize labeled Gmail sales inquiries and create Odoo opportunities with the sender and subject.
 
 ## Operations
 
