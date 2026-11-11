@@ -1,0 +1,221 @@
+{
+  "nodes": [
+    {
+      "id": "zendesk-ticket-to-jira-issue-0",
+      "name": "IF",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1000,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.existing ? \"yes\" : \"\" }}",
+              "operation": "isNotEmpty"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "zendesk-ticket-to-jira-issue-1",
+      "name": "Create issue",
+      "type": "n8n-nodes-base.jira",
+      "position": [
+        1180,
+        400
+      ],
+      "parameters": {
+        "project": "={{ $(\"Validate the ticket event\").first().json.projectId }}",
+        "summary": "={{ $json.title }}",
+        "issueType": "={{ $(\"Validate the ticket event\").first().json.issueTypeId }}",
+        "additionalFields": {
+          "description": "={{ $json.description }}"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "zendesk-ticket-to-jira-issue-2",
+      "name": "Update ticket",
+      "type": "n8n-nodes-base.zendesk",
+      "notes": "Update the Zendesk ticket by adding the Jira issue key to the \"Jira Issue Key\" field.",
+      "position": [
+        1360,
+        400
+      ],
+      "parameters": {
+        "id": "={{ $(\"Validate the ticket event\").first().json.ticketId }}",
+        "operation": "update",
+        "updateFields": {
+          "customFieldsUi": {
+            "customFieldsValues": [
+              {
+                "id": "={{ $(\"Validate the ticket event\").first().json.fieldId }}",
+                "value": "={{ $json.key }}"
+              }
+            ]
+          }
+        }
+      },
+      "notesInFlow": true,
+      "typeVersion": 1
+    },
+    {
+      "id": "zendesk-ticket-to-jira-issue-3",
+      "name": "Get ticket",
+      "type": "n8n-nodes-base.zendesk",
+      "position": [
+        640,
+        300
+      ],
+      "parameters": {
+        "id": "={{ $(\"Validate the ticket event\").first().json.ticketId }}",
+        "operation": "get"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "zendesk-ticket-to-jira-issue-4",
+      "name": "Determine",
+      "type": "n8n-nodes-base.code",
+      "notes": "if issue was created already in Jira",
+      "position": [
+        820,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function route({ticket,ticketId,fieldId,comment}) {\n if(ticket?.id!==ticketId||!Array.isArray(ticket?.raw?.custom_fields))throw Error('Ticket ID or custom fields invalid');\n const matches=ticket.raw.custom_fields.filter(x=>x?.id===fieldId);if(matches.length!==1)throw Error('Configured Jira issue field is absent or duplicated');\n const value=matches[0].value;if(value==null||value===''){if(typeof ticket.subject!=='string'||!ticket.subject.trim())throw Error('Ticket subject is missing');const url=typeof ticket.raw.url==='string'?ticket.raw.url.match(/^https:\\/\\/([a-z0-9-]+\\.zendesk\\.com)\\/api\\/v2\\/tickets\\/(\\d+)\\.json$/i):null;if(!url||url[2]!==String(ticketId))throw Error('Invalid Zendesk ticket URL');return {existing:false,key:'-',title:ticket.subject.trim(),description:`See Zendesk issue at: https://${url[1]}/agent/tickets/${ticketId}`,comment:'-'};}\n if(typeof value!=='string'||!value.trim()||value!==value.trim())throw Error('Invalid stored Jira issue key');if(!comment.trim())throw Error('A comment is required for an existing issue');return {existing:true,key:value,title:ticket.subject||'-',description:'-',comment};\n}\n\nconst r=$(\"Validate the ticket event\").first().json;return {json:route({ticket:{id:$json.id,subject:$json.subject,raw:$json},ticketId:r.ticketId,fieldId:r.fieldId,comment:r.comment})};"
+      },
+      "notesInFlow": true,
+      "typeVersion": 2
+    },
+    {
+      "id": "zendesk-ticket-to-jira-issue-5",
+      "name": "Create comment to existing issue",
+      "type": "n8n-nodes-base.jira",
+      "position": [
+        1180,
+        200
+      ],
+      "parameters": {
+        "comment": "={{ $json.comment }}",
+        "options": {},
+        "issueKey": "={{ $json.key }}",
+        "resource": "issueComment"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "zendesk-ticket-to-jira-issue-6",
+      "name": "On new Zendesk ticket",
+      "type": "n8n-nodes-base.webhook",
+      "position": [
+        460,
+        300
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "zendesk-ticket-to-jira-issue",
+        "responseMode": "onReceived",
+        "options": {
+          "responseData": "{}",
+          "responseContentType": "application/json"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "zendesk-ticket-to-jira-issue-request",
+      "name": "Validate the ticket event",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function request({body,secret,fieldId,projectId,issueTypeId}) {\n if(typeof secret!=='string'||secret.length<24||body?.secret!==secret)throw Error('Invalid webhook secret');\n const rawId=body?.id;if(!((typeof rawId==='string'&&/^\\d+$/.test(rawId))||typeof rawId==='number'))throw Error('Invalid ticket ID');const ticketId=Number(rawId);if(!Number.isSafeInteger(ticketId)||ticketId<1)throw Error('Invalid ticket ID');\n if(!Number.isSafeInteger(fieldId)||fieldId<1||!projectId||projectId==='YOUR_PROJECT_ID'||!issueTypeId||issueTypeId==='YOUR_ISSUE_TYPE_ID')throw Error('Configure the custom field, Jira project and issue type');\n const comment=body?.comment;if(comment!=null&&typeof comment!=='string')throw Error('Invalid comment');return {ticketId,comment:comment??'',fieldId,projectId,issueTypeId};\n}\n\nreturn {json:request({body:$json.body,secret:$env.ZENDESK_JIRA_SECRET,fieldId:0,projectId:\"YOUR_PROJECT_ID\",issueTypeId:\"YOUR_ISSUE_TYPE_ID\"})};"
+      }
+    }
+  ],
+  "connections": {
+    "IF": {
+      "main": [
+        [
+          {
+            "node": "Create comment to existing issue",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create issue",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Determine": {
+      "main": [
+        [
+          {
+            "node": "IF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get ticket": {
+      "main": [
+        [
+          {
+            "node": "Determine",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create issue": {
+      "main": [
+        [
+          {
+            "node": "Update ticket",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "On new Zendesk ticket": {
+      "main": [
+        [
+          {
+            "node": "Validate the ticket event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate the ticket event": {
+      "main": [
+        [
+          {
+            "node": "Get ticket",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Create or Comment on Jira Issues from Zendesk",
+  "active": false,
+  "pinData": {}
+}

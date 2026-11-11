@@ -139,6 +139,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Human Support Escalation](workflows/human-support-escalation/) - Check a support request for an email address and notify a Slack support channel, or return a prompt asking for contact details.
 - [Help Scout Inbox Reader](workflows/helpscout-inbox-reader/) - Read up to 50 Help Scout inboxes with their complete properties.
 - [Create or Comment on GitHub Issues from Zendesk](workflows/zendesk-ticket-to-github-issue/) - Create a GitHub issue for a Zendesk ticket or add a comment to its linked issue.
+- [Create or Comment on Jira Issues from Zendesk](workflows/zendesk-ticket-to-jira-issue/) - Create a Jira Cloud issue for a Zendesk ticket or add a comment to its linked issue.
 
 ## Development
 
