@@ -1,0 +1,153 @@
+{
+  "name": "WooCommerce New Product to X and Telegram",
+  "nodes": [
+    {
+      "name": "WooCommerce Trigger",
+      "type": "n8n-nodes-base.wooCommerceTrigger",
+      "position": [
+        160,
+        240
+      ],
+      "parameters": {
+        "event": "product.created"
+      },
+      "typeVersion": 1,
+      "id": "woocommerce-product-to-x-and-telegram-trigger"
+    },
+    {
+      "id": "woocommerce-product-to-x-and-telegram-prepare",
+      "name": "Prepare the announcement",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        400,
+        240
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function wooProductAnnounce({product,chatId}) {\n if(!product||typeof product!=='object'||Array.isArray(product)||typeof product.name!=='string'||!product.name||typeof product.permalink!=='string'||!product.permalink)throw new Error('Product name and permalink are required.');\n if(!(typeof chatId==='string'&&chatId.trim()&&!chatId.startsWith('YOUR_'))&&!Number.isSafeInteger(chatId))throw new Error('Set the Telegram chat ID.');\n const text='✨ New Product Announcement ✨\\nWe have just added '+product.name+', Head to '+product.permalink+' to find out more.';\n return {product,chatId,text,html:text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')};\n}\n\nreturn $input.all().map(item=>({json:wooProductAnnounce({product:item.json,chatId:\"YOUR_TELEGRAM_CHAT_ID\"})}));"
+      }
+    },
+    {
+      "name": "Twitter",
+      "type": "n8n-nodes-base.twitter",
+      "position": [
+        640,
+        240
+      ],
+      "parameters": {
+        "text": "={{ $json.text }}",
+        "additionalFields": {}
+      },
+      "typeVersion": 2,
+      "id": "woocommerce-product-to-x-and-telegram-tweet"
+    },
+    {
+      "id": "woocommerce-product-to-x-and-telegram-confirm-x",
+      "name": "Confirm the X post",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        240
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return $input.all().map((item,index)=>{if(typeof item.json.id!==\"string\"||!item.json.id)throw new Error(\"X post was not confirmed; inspect X before replaying.\");return {json:item.json,pairedItem:{item:index}};});"
+      }
+    },
+    {
+      "name": "Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        1120,
+        240
+      ],
+      "parameters": {
+        "text": "={{ $(\"Prepare the announcement\").item.json.html }}",
+        "chatId": "={{ $(\"Prepare the announcement\").item.json.chatId }}",
+        "additionalFields": {
+          "parse_mode": "HTML"
+        }
+      },
+      "typeVersion": 1,
+      "id": "woocommerce-product-to-x-and-telegram-telegram"
+    },
+    {
+      "id": "woocommerce-product-to-x-and-telegram-confirm-telegram",
+      "name": "Confirm the Telegram notice",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1360,
+        240
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return $input.all().map((item,index)=>{if(!Number.isSafeInteger(item.json.result?.message_id)||item.json.result.message_id<=0)throw new Error(\"Telegram post was not confirmed; inspect both destinations before replaying.\");return {json:{product:$(\"Prepare the announcement\").item.json.product,tweet:$(\"Confirm the X post\").item.json,telegram:item.json},pairedItem:{item:index}};});"
+      }
+    }
+  ],
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "WooCommerce Trigger": {
+      "main": [
+        [
+          {
+            "node": "Prepare the announcement",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare the announcement": {
+      "main": [
+        [
+          {
+            "node": "Twitter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Twitter": {
+      "main": [
+        [
+          {
+            "node": "Confirm the X post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm the X post": {
+      "main": [
+        [
+          {
+            "node": "Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram": {
+      "main": [
+        [
+          {
+            "node": "Confirm the Telegram notice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {}
+}
