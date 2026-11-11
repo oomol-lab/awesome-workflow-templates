@@ -124,6 +124,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [New YouTube Video to X](workflows/youtube-new-video-to-x/) - Check a YouTube channel every 30 minutes and generate an X post for a recent video.
 - [Airtable Users to Mailchimp Subscribers](workflows/airtable-users-to-mailchimp-subscribers/) - Add Airtable users to a Mailchimp audience as subscribed contacts.
 - [Yesterday’s HubSpot Contacts to Mailchimp](workflows/yesterday-hubspot-contacts-to-mailchimp/) - Add up to 100 HubSpot contacts created yesterday to a Mailchimp audience.
+- [Move GetResponse Contacts to a List](workflows/move-getresponse-contacts-to-list/) - Move GetResponse contacts from other lists to a selected list.
 
 ## Support
 

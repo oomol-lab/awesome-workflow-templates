@@ -1,0 +1,199 @@
+{
+  "name": "Move GetResponse Contacts to a List",
+  "nodes": [
+    {
+      "name": "On clicking 'execute'",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        250,
+        300
+      ],
+      "parameters": {},
+      "typeVersion": 1,
+      "id": "move-getresponse-contacts-to-list-start"
+    },
+    {
+      "id": "move-getresponse-contacts-to-list-target",
+      "name": "Read destination list",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.getresponse.com/v3/campaigns/YOUR_CAMPAIGN_ID",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "getResponseApi",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "move-getresponse-contacts-to-list-list",
+      "name": "List all contacts",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.getresponse.com/v3/contacts?perPage=100",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "getResponseApi",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          },
+          "pagination": {
+            "pagination": {
+              "paginationMode": "responseContainsNextURL",
+              "nextURL": "={{ 'https://api.getresponse.com/v3/contacts?perPage=100&page=' + ($pageCount + 1) }}",
+              "paginationCompleteWhen": "other",
+              "completeExpression": "={{ (() => { const h=$response.headers; if (!h || h.currentpage == null || h.totalpages == null || h.totalcount == null) throw Error('Missing pagination headers'); return Number(h.currentpage) >= Number(h.totalpages); })() }}",
+              "limitPagesFetched": true,
+              "maxRequests": 1000
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "move-getresponse-contacts-to-list-plan",
+      "name": "Select contacts to move",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function collect({contacts,pagination,previousState}) {const s=previousState??{records:[],page:0,totalPages:null,totalCount:null};if(!Array.isArray(contacts)||!Array.isArray(s.records)||!pagination)throw Error('Invalid contact page');const {currentPage,totalPages,totalCount}=pagination;if(!Number.isInteger(currentPage)||!Number.isInteger(totalPages)||!Number.isInteger(totalCount)||currentPage!==s.page+1||totalPages<0||totalCount<0||(s.totalPages!==null&&(s.totalPages!==totalPages||s.totalCount!==totalCount))||(totalPages===0&&(currentPage!==1||contacts.length!==0||totalCount!==0))||(totalPages>0&&currentPage>totalPages))throw Error('Inconsistent pagination');const records=[...s.records,...contacts];if(records.length>totalCount||(!contacts.length&&currentPage<totalPages))throw Error('Incomplete contact page');const more=currentPage<totalPages;if(!more&&records.length!==totalCount)throw Error('Contact total changed during reading');return{state:{records,page:currentPage,totalPages,totalCount},more,nextPage:currentPage+1};}\n\nfunction plan({state,campaign,targetCampaignId}){if(typeof targetCampaignId!=='string'||!targetCampaignId.trim()||targetCampaignId==='YOUR_CAMPAIGN_ID'||campaign?.campaignId!==targetCampaignId||typeof campaign.name!=='string'||!campaign.name)throw Error('Configure a valid target campaign');if(!Array.isArray(state?.records))throw Error('Invalid contact list');const ids=[],seen=new Set();for(const c of state.records){if(typeof c?.contactId!=='string'||!c.contactId||!c.campaign||typeof c.campaign.name!=='string'||typeof c.campaign.campaignId!=='string')throw Error('Contact lacks campaign identity');if(seen.has(c.contactId))throw Error('Duplicate contact in paginated list');seen.add(c.contactId);if(c.campaign.name!==campaign.name)ids.push(c.contactId);}return{ids,targetCampaignId};}\n\nlet state=null,more=false;for(const x of $input.all()){const h=x.json.headers??{},v=k=>{const t=h[k];if(t==null||String(t).trim()==='')throw Error('Missing pagination header');return Number(t)};const result=collect({contacts:x.json.body,pagination:{currentPage:v('currentpage'),totalPages:v('totalpages'),totalCount:v('totalcount')},previousState:state});state=result.state;more=result.more;}if(more)throw Error('Contact page limit reached');const campaign=$('Read destination list').first().json;const result=plan({state,campaign,targetCampaignId:campaign.campaignId});return result.ids.map(contactId=>({json:{contactId,campaignId:result.targetCampaignId}}));"
+      }
+    },
+    {
+      "id": "move-getresponse-contacts-to-list-loop",
+      "name": "Move contacts one by one",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      }
+    },
+    {
+      "id": "move-getresponse-contacts-to-list-update",
+      "name": "Move contact",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "={{ \"https://api.getresponse.com/v3/contacts/\" + encodeURIComponent($json.contactId) }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "getResponseApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({campaign:{campaignId:$json.campaignId}}) }}",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      }
+    }
+  ],
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "On clicking 'execute'": {
+      "main": [
+        [
+          {
+            "node": "Read destination list",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read destination list": {
+      "main": [
+        [
+          {
+            "node": "List all contacts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List all contacts": {
+      "main": [
+        [
+          {
+            "node": "Select contacts to move",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select contacts to move": {
+      "main": [
+        [
+          {
+            "node": "Move contacts one by one",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Move contacts one by one": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Move contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Move contact": {
+      "main": [
+        [
+          {
+            "node": "Move contacts one by one",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {}
+}
