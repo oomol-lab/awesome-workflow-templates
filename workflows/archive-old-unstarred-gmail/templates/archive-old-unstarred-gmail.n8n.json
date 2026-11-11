@@ -1,0 +1,114 @@
+{
+  "nodes": [
+    {
+      "id": "archive-old-unstarred-gmail-0",
+      "name": "Weekdays at midnight UTC",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        400,
+        340
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 0 * * 1-5"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "archive-old-unstarred-gmail-1",
+      "name": "Read old unstarred messages",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        620,
+        340
+      ],
+      "parameters": {
+        "resource": "message",
+        "operation": "getAll",
+        "returnAll": true,
+        "simple": true,
+        "filters": {
+          "q": "={{ \"in:inbox -is:starred before:\" + Math.floor($now.minus({days:1}).toSeconds()) }}"
+        },
+        "options": {}
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "name": "Validate messages to archive",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const out=[],seen=new Set();for(const [i,x] of $input.all().entries()){const m=x.json;if(!m||typeof m.id!=='string'||!m.id||!Array.isArray(m.labels)||m.labels.some(l=>!l||typeof l.id!=='string'))throw Error('Invalid Gmail message');const ids=m.labels.map(l=>l.id);if(ids.includes('INBOX')&&!ids.includes('STARRED')&&!seen.has(m.id)){seen.add(m.id);out.push({json:{id:m.id},pairedItem:{item:i}})}}return out;"
+      },
+      "id": "archive-old-unstarred-gmail-2"
+    },
+    {
+      "id": "archive-old-unstarred-gmail-3",
+      "name": "Remove the inbox label",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        1700,
+        520
+      ],
+      "parameters": {
+        "resource": "message",
+        "operation": "removeLabels",
+        "messageId": "={{ $json.id }}",
+        "labelIds": [
+          "INBOX"
+        ]
+      },
+      "typeVersion": 2.1
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Weekdays at midnight UTC": {
+      "main": [
+        [
+          {
+            "node": "Read old unstarred messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read old unstarred messages": {
+      "main": [
+        [
+          {
+            "node": "Validate messages to archive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate messages to archive": {
+      "main": [
+        [
+          {
+            "node": "Remove the inbox label",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Archive Old Unstarred Gmail",
+  "settings": {
+    "timezone": "UTC",
+    "executionOrder": "v1"
+  },
+  "active": false
+}
