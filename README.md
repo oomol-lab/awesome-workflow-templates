@@ -284,6 +284,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 ## Design
 
 - [Remove Background from Drive Images](workflows/remove-background-from-drive-images/) - Remove the background of new Drive images and save edited PNGs to a chosen folder.
+- [Generate a FLUX Image to Google Drive](workflows/generate-flux-image-to-google-drive/) - Generate a FLUX.1 dev image with fal and save the completed image to Google Drive.
 
 ## Contribute
 
