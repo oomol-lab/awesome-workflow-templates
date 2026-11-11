@@ -1,0 +1,267 @@
+{
+  "nodes": [
+    {
+      "id": "refresh-daily-todoist-tasks-0",
+      "name": "Every day at 05:10 UTC",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        400,
+        220
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 5,
+              "triggerAtMinute": 10
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "refresh-daily-todoist-tasks-1",
+      "name": "Read template tasks",
+      "type": "n8n-nodes-base.todoist",
+      "position": [
+        860,
+        420
+      ],
+      "parameters": {
+        "authentication": "apiKey",
+        "operation": "getAll",
+        "returnAll": true,
+        "filters": {
+          "projectId": "YOUR_TEMPLATE_PROJECT_ID"
+        }
+      },
+      "executeOnce": true,
+      "typeVersion": 2.2,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "refresh-daily-todoist-tasks-2",
+      "name": "Read Inbox tasks",
+      "type": "n8n-nodes-base.todoist",
+      "position": [
+        620,
+        220
+      ],
+      "parameters": {
+        "authentication": "apiKey",
+        "operation": "getAll",
+        "returnAll": true,
+        "filters": {
+          "projectId": "YOUR_INBOX_PROJECT_ID"
+        }
+      },
+      "executeOnce": false,
+      "typeVersion": 2.2,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "refresh-daily-todoist-tasks-3",
+      "name": "Select old tasks and today’s templates",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function plan({templates,inbox,now,templateProject,inboxProject}){\n if(!templateProject||!inboxProject||templateProject===inboxProject)throw Error('Template and Inbox projects must differ');\n const date=new Date(now);if(!Number.isFinite(date.getTime()))throw Error('Invalid run date');\n const weekday=['sun','mon','tues','wed','thurs','fri','sat'][date.getUTCDay()];\n const remove=[];for(const t of inbox.tasks){if(!t||typeof t.id!=='string'||!t.id||!Array.isArray(t.labels))throw Error('Invalid Inbox task');if(t.labels.includes('daily'))remove.push(t.id)}\n const create=[];for(const t of templates.tasks){if(!t||typeof t.id!=='string'||!t.id||typeof t.content!=='string'||!t.content||typeof t.description!=='string')throw Error('Invalid template task');const fields={};for(const part of t.description.split(';')){const p=part.trim().split(':');if(p.length===2)fields[p[0]]=p[1].trim()}if(!(fields.days||'').includes(weekday))continue;let dueDatetime;if(fields.due){const m=/^(\\d{1,2})(?:\\.(\\d{2}))?([ap]m)$/i.exec(fields.due);if(!m||+m[1]<1||+m[1]>12||+(m[2]||0)>59)throw Error('Invalid template due time');let h=(+m[1]%12)+(m[3].toLowerCase()==='pm'?12:0);const d=new Date(date);d.setUTCHours(h,+(m[2]||0),0,0);dueDatetime=d.toISOString()}create.push({content:t.content,description:t.description,...(dueDatetime?{dueDatetime}:{})})}\n return {remove,create};\n}\n\nconst valid=x=>x.flatMap(y=>{const v=y.json;if(!v||typeof v!=='object'||Array.isArray(v))throw Error('Invalid task');if(!Object.keys(v).length)return [];if(typeof v.id!=='string'||!v.id)throw Error('Task is missing its ID');return [v]});const p=plan({templates:{tasks:valid($('Read template tasks').all())},inbox:{tasks:valid($input.all())},now:new Date().toISOString(),templateProject:$('Read template tasks').params.filters.projectId,inboxProject:$('Read Inbox tasks').params.filters.projectId});return [{json:p}];"
+      }
+    },
+    {
+      "id": "refresh-daily-todoist-tasks-4",
+      "name": "Any old daily tasks?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "has",
+              "leftValue": "={{ $json.remove.length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "refresh-daily-todoist-tasks-5",
+      "name": "Prepare deletions",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return $input.first().json.remove.map(id=>({json:{id}}));"
+      }
+    },
+    {
+      "id": "refresh-daily-todoist-tasks-6",
+      "name": "Delete old daily tasks",
+      "type": "n8n-nodes-base.todoist",
+      "position": [
+        1280,
+        220
+      ],
+      "parameters": {
+        "authentication": "apiKey",
+        "operation": "delete",
+        "taskId": "={{ $json.id }}"
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "refresh-daily-todoist-tasks-7",
+      "name": "Prepare new tasks",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return $('Select old tasks and today’s templates').first().json.create.map(json=>({json}));"
+      }
+    },
+    {
+      "id": "refresh-daily-todoist-tasks-8",
+      "name": "Create daily tasks",
+      "type": "n8n-nodes-base.todoist",
+      "position": [
+        1520,
+        420
+      ],
+      "parameters": {
+        "authentication": "apiKey",
+        "content": "={{ $json.content }}",
+        "project": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Read Inbox tasks').params.filters.projectId }}"
+        },
+        "labels": [
+          "daily"
+        ],
+        "options": {
+          "description": "={{ $json.description }}",
+          "dueDateTime": "={{ $json.dueDatetime || \"\" }}"
+        }
+      },
+      "typeVersion": 2.2,
+      "alwaysOutputData": false
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Every day at 05:10 UTC": {
+      "main": [
+        [
+          {
+            "node": "Read template tasks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read template tasks": {
+      "main": [
+        [
+          {
+            "node": "Read Inbox tasks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Inbox tasks": {
+      "main": [
+        [
+          {
+            "node": "Select old tasks and today’s templates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select old tasks and today’s templates": {
+      "main": [
+        [
+          {
+            "node": "Any old daily tasks?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Any old daily tasks?": {
+      "main": [
+        [
+          {
+            "node": "Prepare deletions",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare new tasks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare deletions": {
+      "main": [
+        [
+          {
+            "node": "Delete old daily tasks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete old daily tasks": {
+      "main": [
+        [
+          {
+            "node": "Prepare new tasks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare new tasks": {
+      "main": [
+        [
+          {
+            "node": "Create daily tasks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Refresh Daily Todoist Tasks",
+  "active": false,
+  "settings": {
+    "timezone": "UTC",
+    "executionOrder": "v1"
+  }
+}
