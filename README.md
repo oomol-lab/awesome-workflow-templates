@@ -170,6 +170,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Save a Browser Bookmark to Notion](workflows/browser-bookmark-to-notion/) - Send the current browser page URL to a webhook and save it as a Notion database page.
 - [New Google Sheet Rows to Mattermost](workflows/new-sheet-rows-to-mattermost/) - Read a sheet every minute and notify a Mattermost channel about new rows, newest first.
 - [Compare PDF Extraction with Claude and Gemini](workflows/compare-pdf-extraction-claude-gemini/) - Send a Google Drive PDF and one prompt to Claude and Gemini and compare their responses.
+- [Random Cocktail to Mattermost](workflows/random-cocktail-to-mattermost/) - Fetch a random cocktail and post its instructions, glass and image to a Mattermost channel.
 
 ## Content
 
