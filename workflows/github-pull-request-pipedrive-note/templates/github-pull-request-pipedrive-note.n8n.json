@@ -1,0 +1,196 @@
+{
+  "nodes": [
+    {
+      "id": "github-pull-request-pipedrive-note-0",
+      "name": "HTTP Request",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        940,
+        440
+      ],
+      "parameters": {
+        "url": "={{ \"https://api.github.com/users/\" + encodeURIComponent(($json.body ?? $json).sender.login) }}",
+        "options": {},
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi"
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "github-pull-request-pipedrive-note-1",
+      "name": "Search PR user in Pipedrive by email",
+      "type": "n8n-nodes-base.pipedrive",
+      "position": [
+        1220,
+        440
+      ],
+      "parameters": {
+        "term": "={{ $json[\"email\"]}}",
+        "resource": "person",
+        "operation": "search",
+        "additionalFields": {
+          "fields": "email",
+          "exactMatch": true
+        },
+        "returnAll": false,
+        "limit": 100
+      },
+      "typeVersion": 1,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "github-pull-request-pipedrive-note-2",
+      "name": "person exists",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1460,
+        440
+      ],
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json[\"name\"]}}",
+              "operation": "isNotEmpty"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "github-pull-request-pipedrive-note-3",
+      "name": "Pipedrive",
+      "type": "n8n-nodes-base.pipedrive",
+      "position": [
+        1780,
+        340
+      ],
+      "parameters": {
+        "content": "={{ \"Created a PR \\n\" + String(($node[\"ON Pull Request\"].json.body ?? $node[\"ON Pull Request\"].json).pull_request.html_url).replaceAll(\"&\",\"&amp;\").replaceAll(\"<\",\"&lt;\").replaceAll(\">\",\"&gt;\").replaceAll(\"\\\"\",\"&quot;\").replaceAll(\"'\",\"&#39;\") }}",
+        "resource": "note",
+        "additionalFields": {
+          "person_id": "={{ $json[\"id\"] }}"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "github-pull-request-pipedrive-note-4",
+      "name": "NoOp",
+      "type": "n8n-nodes-base.noOp",
+      "position": [
+        1780,
+        540
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "github-pull-request-pipedrive-note-5",
+      "name": "ON Pull Request",
+      "type": "n8n-nodes-base.githubTrigger",
+      "position": [
+        640,
+        440
+      ],
+      "parameters": {
+        "authentication": "accessToken",
+        "owner": {
+          "__rl": true,
+          "mode": "name",
+          "value": "your-github-owner"
+        },
+        "repository": {
+          "__rl": true,
+          "mode": "name",
+          "value": "your-github-repo"
+        },
+        "events": [
+          "pull_request"
+        ],
+        "options": {
+          "insecureSSL": false
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "github-pull-request-pipedrive-note-email",
+      "name": "Check public email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if ($json.email == null || $json.email === \"\") return null; if(typeof $json.email !== \"string\" || !$json.email.trim()) throw new Error(\"Invalid public email\"); return {json:{email:$json.email.trim()}};"
+      }
+    }
+  ],
+  "connections": {
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Check public email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "person exists": {
+      "main": [
+        [
+          {
+            "node": "Pipedrive",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "NoOp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ON Pull Request": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search PR user in Pipedrive by email": {
+      "main": [
+        [
+          {
+            "node": "person exists",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check public email": {
+      "main": [
+        [
+          {
+            "node": "Search PR user in Pipedrive by email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Add GitHub Pull Requests to Pipedrive Contacts",
+  "active": false,
+  "pinData": {}
+}
