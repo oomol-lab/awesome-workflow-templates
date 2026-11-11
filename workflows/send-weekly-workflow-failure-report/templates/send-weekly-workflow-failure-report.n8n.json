@@ -1,0 +1,120 @@
+{
+  "nodes": [
+    {
+      "id": "send-weekly-workflow-failure-report-0",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        1080,
+        1020
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "weeksInterval": 1,
+              "triggerAtDay": [
+                0
+              ],
+              "triggerAtHour": 0,
+              "triggerAtMinute": 0
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "send-weekly-workflow-failure-report-1",
+      "name": "Get all previous executions",
+      "type": "n8n-nodes-base.n8n",
+      "position": [
+        1280,
+        1018
+      ],
+      "parameters": {
+        "resource": "execution",
+        "returnAll": true,
+        "filters": {
+          "workflowId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "YOUR_N8N_WORKFLOW_ID"
+          }
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "send-weekly-workflow-failure-report-2",
+      "name": "Prepare the weekly report",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function report({state,workflow,now,chatId}){const items=state.items,workflowName=workflow.name;if(!Array.isArray(items)||typeof workflowName!=='string'||!workflowName.trim()||workflowName.startsWith('YOUR_')||typeof chatId!=='string'||!chatId.trim()||chatId.startsWith('YOUR_'))throw Error('Set the workflow name and Telegram chat');const t=Date.parse(now);if(!Number.isFinite(t))throw Error('Invalid report time');const lines=[];for(const e of items){if(!['canceled','crashed','error','new','running','success','unknown','waiting'].includes(e.status)||typeof e.startedAt!=='string'||!Number.isFinite(Date.parse(e.startedAt))||e.id===undefined||e.id===null)throw Error('Invalid execution');if(['error','crashed'].includes(e.status)&&Date.parse(e.startedAt)>t-604800000&&Date.parse(e.startedAt)<=t)lines.push(`⚠️ Workflow ${workflowName} failed. Execution ${e.id}; started ${e.startedAt}`)}const text=lines.join('\\n');if(text.length>4096)throw Error('Report exceeds the Telegram message limit');return {send:lines.length>0,text:text||'No unfinished executions',chatId,count:lines.length}}\n\nconst x=report({state:{items:$input.all().map(x=>x.json)},workflow:{name:'YOUR_N8N_WORKFLOW_NAME'},now:new Date().toISOString(),chatId:'YOUR_TELEGRAM_CHAT_ID'});return x.send?[{json:x}]:[];"
+      }
+    },
+    {
+      "id": "send-weekly-workflow-failure-report-3",
+      "name": "Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        2100,
+        1020
+      ],
+      "parameters": {
+        "resource": "message",
+        "operation": "sendMessage",
+        "chatId": "={{ $json.chatId }}",
+        "text": "={{ $json.text }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "typeVersion": 1.1
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get all previous executions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get all previous executions": {
+      "main": [
+        [
+          {
+            "node": "Prepare the weekly report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare the weekly report": {
+      "main": [
+        [
+          {
+            "node": "Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Send a Weekly Workflow Failure Report",
+  "settings": {
+    "timezone": "UTC"
+  },
+  "active": false
+}
