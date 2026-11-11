@@ -142,6 +142,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Yesterday’s HubSpot Contacts to Mailchimp](workflows/yesterday-hubspot-contacts-to-mailchimp/) - Add up to 100 HubSpot contacts created yesterday to a Mailchimp audience.
 - [Move GetResponse Contacts to a List](workflows/move-getresponse-contacts-to-list/) - Move GetResponse contacts from other lists to a selected list.
 - [Email a Weekly Search Console Report](workflows/email-weekly-search-console-report/) - Email the top Google Search queries from the previous seven complete Pacific Time dates.
+- [Post Queued Google Sheets Rows to X](workflows/post-queued-sheet-rows-to-x/) - Post queued sheet rows to X every six hours and remove the posted rows.
 
 ## Support
 

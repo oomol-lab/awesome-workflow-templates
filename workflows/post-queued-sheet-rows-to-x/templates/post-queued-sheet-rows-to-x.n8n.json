@@ -1,0 +1,277 @@
+{
+  "nodes": [
+    {
+      "id": "post-queued-sheet-rows-to-x-0",
+      "name": "Every six hours UTC",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        620,
+        160
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 */6 * * *"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "post-queued-sheet-rows-to-x-1",
+      "name": "Choose the queue sheet",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function config({spreadsheetId,sheetName}){if(typeof spreadsheetId!=='string'||!spreadsheetId||spreadsheetId.startsWith('YOUR_')||typeof sheetName!=='string'||!sheetName||sheetName.startsWith('YOUR_'))throw Error('Configure the spreadsheet and sheet name');return{spreadsheetId,sheetName,range:\"'\"+sheetName.replaceAll(\"'\",\"''\")+\"'\"}}\n\nreturn [{json:config({spreadsheetId:'YOUR_SPREADSHEET_ID',sheetName:'Tweets'})}];"
+      }
+    },
+    {
+      "id": "post-queued-sheet-rows-to-x-2",
+      "name": "Read the queued rows",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "url": "={{ 'https://sheets.googleapis.com/v4/spreadsheets/' + encodeURIComponent($('Choose the queue sheet').first().json.spreadsheetId) + '/values/' + encodeURIComponent($('Choose the queue sheet').first().json.range) }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "valueRenderOption",
+              "value": "UNFORMATTED_VALUE"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "post-queued-sheet-rows-to-x-3",
+      "name": "Validate queued posts",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function select({values}){if(!Array.isArray(values)||!Array.isArray(values[0]))throw Error('A header row is required');const header=values[0],indices=header.flatMap((v,i)=>v==='tweet'?[i]:[]);if(indices.length!==1)throw Error('Expected exactly one tweet column');const col=indices[0],items=[];for(let i=1;i<values.length;i++){const row=values[i];if(!Array.isArray(row))throw Error('Invalid sheet row');if(row.length===0)continue;const text=row[col];if(typeof text!=='string'||!text.trim())throw Error('A populated row lacks tweet text');items.push({text,rowIndex:i})}return{snapshot:values,items,hasItems:items.length>0}}\n\nreturn [{json:select({values:$input.first().json.values})}];"
+      }
+    },
+    {
+      "id": "post-queued-sheet-rows-to-x-4",
+      "name": "Prepare queued posts",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return $input.first().json.items.map(json=>({json}));"
+      }
+    },
+    {
+      "id": "post-queued-sheet-rows-to-x-5",
+      "name": "Post to X",
+      "type": "n8n-nodes-base.twitter",
+      "position": [
+        1000,
+        160
+      ],
+      "parameters": {
+        "text": "={{ $json.text }}",
+        "additionalFields": {}
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "post-queued-sheet-rows-to-x-6",
+      "name": "Confirm the X posts",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const posts=$input.all(), expected=$('Validate queued posts').first().json.items;if(posts.length!==expected.length||posts.some(x=>typeof x.json.id!=='string'||!x.json.id))throw Error('X did not confirm the entire batch');return [{json:{confirmed:posts.length}}];"
+      }
+    },
+    {
+      "id": "post-queued-sheet-rows-to-x-7",
+      "name": "Recheck the queue",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "url": "={{ 'https://sheets.googleapis.com/v4/spreadsheets/' + encodeURIComponent($('Choose the queue sheet').first().json.spreadsheetId) + '/values/' + encodeURIComponent($('Choose the queue sheet').first().json.range) }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "valueRenderOption",
+              "value": "UNFORMATTED_VALUE"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "post-queued-sheet-rows-to-x-8",
+      "name": "Check the queue before deletion",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const prior=$('Validate queued posts').first().json,now=$input.first().json.values;if(JSON.stringify(prior.snapshot)!==JSON.stringify(now))throw Error('Sheet changed after posting; no rows deleted');return [...prior.items].reverse().map(json=>({json}));"
+      }
+    },
+    {
+      "id": "post-queued-sheet-rows-to-x-9",
+      "name": "Delete posted rows",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        1180,
+        160
+      ],
+      "parameters": {
+        "authentication": "oAuth2",
+        "operation": "delete",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Choose the queue sheet').first().json.spreadsheetId }}"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "={{ $('Choose the queue sheet').first().json.sheetName }}"
+        },
+        "toDelete": "rows",
+        "startIndex": "={{ $json.rowIndex + 1 }}",
+        "numberToDelete": 1
+      },
+      "typeVersion": 4.3
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Every six hours UTC": {
+      "main": [
+        [
+          {
+            "node": "Choose the queue sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Choose the queue sheet": {
+      "main": [
+        [
+          {
+            "node": "Read the queued rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the queued rows": {
+      "main": [
+        [
+          {
+            "node": "Validate queued posts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate queued posts": {
+      "main": [
+        [
+          {
+            "node": "Prepare queued posts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare queued posts": {
+      "main": [
+        [
+          {
+            "node": "Post to X",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Post to X": {
+      "main": [
+        [
+          {
+            "node": "Confirm the X posts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm the X posts": {
+      "main": [
+        [
+          {
+            "node": "Recheck the queue",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recheck the queue": {
+      "main": [
+        [
+          {
+            "node": "Check the queue before deletion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check the queue before deletion": {
+      "main": [
+        [
+          {
+            "node": "Delete posted rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Post Queued Google Sheets Rows to X",
+  "settings": {
+    "timezone": "UTC",
+    "executionOrder": "v1"
+  },
+  "active": false
+}
