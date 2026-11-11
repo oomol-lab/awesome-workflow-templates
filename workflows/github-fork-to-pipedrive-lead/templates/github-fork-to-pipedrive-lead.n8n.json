@@ -1,0 +1,329 @@
+{
+  "nodes": [
+    {
+      "id": "github-fork-to-pipedrive-lead-0",
+      "name": "person exists",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        920,
+        340
+      ],
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json[\"name\"]}}",
+              "operation": "isNotEmpty"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "github-fork-to-pipedrive-lead-1",
+      "name": "Set person Id",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        1480,
+        320
+      ],
+      "parameters": {
+        "values": {
+          "number": [
+            {
+              "name": "PipedrivePersonId",
+              "value": "={{ Number($json.id) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "github-fork-to-pipedrive-lead-2",
+      "name": "Create lead",
+      "type": "n8n-nodes-base.pipedrive",
+      "position": [
+        1740,
+        320
+      ],
+      "parameters": {
+        "title": "=Repo '{{$node[\"On fork\"].json[\"body\"][\"repository\"][\"full_name\"]}}' forked by {{$json[\"name\"]}}",
+        "resource": "lead",
+        "person_id": "={{$json[\"PipedrivePersonId\"]}}",
+        "associateWith": "person",
+        "additionalFields": {}
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "github-fork-to-pipedrive-lead-3",
+      "name": "On fork",
+      "type": "n8n-nodes-base.githubTrigger",
+      "position": [
+        180,
+        340
+      ],
+      "parameters": {
+        "authentication": "accessToken",
+        "owner": {
+          "__rl": true,
+          "mode": "name",
+          "value": "your-github-owner"
+        },
+        "repository": {
+          "__rl": true,
+          "mode": "name",
+          "value": "your-github-repo"
+        },
+        "events": [
+          "fork"
+        ],
+        "options": {
+          "insecureSSL": false
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "github-fork-to-pipedrive-lead-4",
+      "name": "Create person",
+      "type": "n8n-nodes-base.pipedrive",
+      "position": [
+        1200,
+        440
+      ],
+      "parameters": {
+        "name": "={{ $node[\"On fork\"].json[\"body\"].forkee.owner.login }}",
+        "resource": "person",
+        "additionalFields": {
+          "email": [
+            "={{ $(\"Check public email\").first().json.email }}"
+          ]
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "github-fork-to-pipedrive-lead-5",
+      "name": "Create note with github url",
+      "type": "n8n-nodes-base.pipedrive",
+      "position": [
+        1980,
+        320
+      ],
+      "parameters": {
+        "content": "={{ \"Github user url: \" + String(($node[\"On fork\"].json.body ?? $node[\"On fork\"].json).sender.html_url).replaceAll(\"&\",\"&amp;\").replaceAll(\"<\",\"&lt;\").replaceAll(\">\",\"&gt;\").replaceAll(\"\\\"\",\"&quot;\").replaceAll(\"'\",\"&#39;\") }}",
+        "resource": "note",
+        "additionalFields": {
+          "lead_id": "={{ $json[\"id\"] }}"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "github-fork-to-pipedrive-lead-6",
+      "name": "Get Github user information",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        440,
+        340
+      ],
+      "parameters": {
+        "url": "={{ \"https://api.github.com/users/\" + encodeURIComponent(($json.body ?? $json).sender.login) }}",
+        "options": {},
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi"
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "github-fork-to-pipedrive-lead-7",
+      "name": "Search forkee in Pipedrive by email",
+      "type": "n8n-nodes-base.pipedrive",
+      "position": [
+        680,
+        340
+      ],
+      "parameters": {
+        "term": "={{ $json[\"email\"]}}",
+        "resource": "person",
+        "operation": "search",
+        "additionalFields": {
+          "fields": "email",
+          "exactMatch": true
+        },
+        "returnAll": false,
+        "limit": 100
+      },
+      "typeVersion": 1,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "github-fork-to-pipedrive-lead-email",
+      "name": "Check public email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if ($json.email == null || $json.email === \"\") return null; if(typeof $json.email !== \"string\" || !$json.email.trim()) throw new Error(\"Invalid public email\"); return {json:{email:$json.email.trim()}};"
+      }
+    },
+    {
+      "id": "github-fork-to-pipedrive-lead-verify",
+      "name": "Check matching people",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const rows=$input.all(); for(const {json} of rows) if(Object.keys(json).length && (!Number.isSafeInteger(json.id)||json.id<1||typeof json.name!==\"string\"||!json.name)) throw new Error(\"Invalid matching person\"); return rows;"
+      }
+    },
+    {
+      "id": "github-fork-to-pipedrive-lead-split",
+      "name": "Process one person",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "On fork": {
+      "main": [
+        [
+          {
+            "node": "Get Github user information",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create lead": {
+      "main": [
+        [
+          {
+            "node": "Create note with github url",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create person": {
+      "main": [
+        [
+          {
+            "node": "Set person Id",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set person Id": {
+      "main": [
+        [
+          {
+            "node": "Process one person",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "person exists": {
+      "main": [
+        [
+          {
+            "node": "Set person Id",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create person",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Github user information": {
+      "main": [
+        [
+          {
+            "node": "Check public email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search forkee in Pipedrive by email": {
+      "main": [
+        [
+          {
+            "node": "Check matching people",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process one person": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Create lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create note with github url": {
+      "main": [
+        [
+          {
+            "node": "Process one person",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check public email": {
+      "main": [
+        [
+          {
+            "node": "Search forkee in Pipedrive by email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check matching people": {
+      "main": [
+        [
+          {
+            "node": "person exists",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Create Pipedrive Leads for GitHub Forks",
+  "active": false,
+  "pinData": {}
+}
