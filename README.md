@@ -135,6 +135,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Web Search Results](workflows/web-search-results/) - Run one Tavily web search and return up to five ranked results with a title, URL and snippet.
 - [Hacker News Popular Items](workflows/hacker-news-popular-items/) - Export up to fifty popular Hacker News search items as one JSON snapshot, with titles, points, URLs, timestamps and authors.
 - [Extract Book Listings to Google Sheets](workflows/extract-book-listings-to-google-sheets/) - Read a book catalogue page, extract listings with AI and append them to a Google Sheet.
+- [Reddit n8n Post Digest](workflows/reddit-n8n-post-digest/) - Search Reddit for recent n8n discussions and summarize the relevant posts.
 
 ## Productivity
 
