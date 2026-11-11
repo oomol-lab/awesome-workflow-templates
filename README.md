@@ -116,6 +116,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Create and Update a WordPress Draft](workflows/create-and-update-wordpress-draft/) - Create a WordPress draft with a title, then update that same post with content.
 - [Scheduled AI Influencer Post](workflows/scheduled-ai-influencer-post/) - Generate a profile-based post and publish it on X manually or every six hours.
 - [New YouTube Video to X](workflows/youtube-new-video-to-x/) - Check a YouTube channel every 30 minutes and generate an X post for a recent video.
+- [Airtable Users to Mailchimp Subscribers](workflows/airtable-users-to-mailchimp-subscribers/) - Add Airtable users to a Mailchimp audience as subscribed contacts.
 
 ## Support
 
