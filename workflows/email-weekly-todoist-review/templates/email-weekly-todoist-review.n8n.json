@@ -1,0 +1,172 @@
+{
+  "name": "Email a Weekly Todoist Review",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "email-weekly-todoist-review-0",
+      "name": "When clicking ‘Test workflow’",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        0,
+        180
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "email-weekly-todoist-review-1",
+      "name": "Every Friday afternoon",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtDay": [
+                5
+              ],
+              "triggerAtHour": 15
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "email-weekly-todoist-review-2",
+      "name": "Set the review window",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const until=Date.now(); return [{json:{until,since:new Date(until-604800000).toISOString(),end:new Date(until).toISOString()}}];"
+      }
+    },
+    {
+      "id": "email-weekly-todoist-review-3",
+      "name": "Read Todoist completed tasks",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ 'https://api.todoist.com/api/v1/tasks/completed/by_completion_date?since=' + encodeURIComponent($json.since) + '&until=' + encodeURIComponent($json.end) + '&limit=100' }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "todoistApi",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          },
+          "pagination": {
+            "pagination": {
+              "paginationMode": "responseContainsNextURL",
+              "nextURL": "={{ 'https://api.todoist.com/api/v1/tasks/completed/by_completion_date?since=' + encodeURIComponent($('Set the review window').first().json.since) + '&until=' + encodeURIComponent($('Set the review window').first().json.end) + '&limit=100' + ($pageCount===0 ? '' : '&cursor=' + encodeURIComponent($response.body.next_cursor)) }}",
+              "paginationCompleteWhen": "other",
+              "completeExpression": "={{ (()=>{const b=$response.body;if(!b||!Array.isArray(b.items)||!(b.next_cursor===null||(typeof b.next_cursor==='string' && b.next_cursor)))throw Error('Invalid Todoist page');if($pageCount>=100 && b.next_cursor)throw Error('Too many Todoist pages');return b.next_cursor===null})() }}",
+              "limitPagesFetched": false
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "email-weekly-todoist-review-4",
+      "name": "Prepare the email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function collect({previousState,body,statusCode,bodyEncoding,until}) {\n let s=previousState;\n if(!s){const t=until==null?Date.now():Number(until);if(!Number.isFinite(t))throw Error('Invalid review time');s={since:new Date(t-604800000).toISOString(),until:new Date(t).toISOString(),items:[],cursors:[],pages:0,cursor:null};}\n else {if(statusCode<200||statusCode>=300)throw Error('Todoist request failed');let b=body;if(typeof b==='string'){try{b=JSON.parse(b)}catch{throw Error('Invalid Todoist response')}}if(!b||!Array.isArray(b.items)||!(b.next_cursor===null||typeof b.next_cursor==='string'))throw Error('Invalid Todoist page');if(b.next_cursor!==null&&(!b.next_cursor||s.cursors.includes(b.next_cursor)))throw Error('Invalid or repeated cursor');s={...s,items:[...s.items,...b.items],pages:s.pages+1,cursor:b.next_cursor,cursors:b.next_cursor?[...s.cursors,b.next_cursor]:s.cursors};if(s.pages>=100&&s.cursor)throw Error('Too many Todoist pages');}\n const more=s.pages===0||s.cursor!==null;return {state:s,more,query:{since:s.since,until:s.until,limit:100,...(s.cursor?{cursor:s.cursor}:{})},items:s.items};\n}\n\nfunction summarize({items,ignoredProjects}) {if(!Array.isArray(items)||!Array.isArray(ignoredProjects)||ignoredProjects.some(x=>typeof x!=='string'))throw Error('Invalid review configuration');const groups={};for(const item of items){if(typeof item.project_id!=='string'||typeof item.content!=='string'||typeof item.completed_at!=='string'||!Number.isFinite(Date.parse(item.completed_at)))throw Error('Invalid completed task');if(ignoredProjects.includes(item.project_id))continue;const date=new Date(item.completed_at).toISOString().slice(0,10);(groups[date]??=[]).push(item.content)}const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;').replace(/'/g,'&#39;');let html='<h1>Completed Items</h1>';for(const [date,contents] of Object.entries(groups))html+=`<h2>${date}</h2><ul>`+contents.map(x=>`<li>${esc(x)}</li>`).join('')+'</ul>';return {html,hasItems:Object.keys(groups).length>0};}\n\nconst ignoredProjects=[];let state=collect({previousState:null,until:$('Set the review window').first().json.until}).state,result;for(const item of $input.all()){result=collect({previousState:state,body:item.json.body,statusCode:item.json.statusCode});state=result.state}if(!result||result.more)throw Error('Incomplete Todoist pages');const x=summarize({items:result.items,ignoredProjects});return x.hasItems?[{json:x}]:[];"
+      }
+    },
+    {
+      "id": "email-weekly-todoist-review-5",
+      "name": "Send Email",
+      "type": "n8n-nodes-base.emailSend",
+      "position": [
+        860,
+        0
+      ],
+      "parameters": {
+        "fromEmail": "sender@example.com",
+        "toEmail": "recipient@example.com",
+        "subject": "Todoist Weekly Review",
+        "emailFormat": "html",
+        "html": "={{ $json.html }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "typeVersion": 2.1
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC"
+  },
+  "connections": {
+    "When clicking ‘Test workflow’": {
+      "main": [
+        [
+          {
+            "node": "Set the review window",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Every Friday afternoon": {
+      "main": [
+        [
+          {
+            "node": "Set the review window",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set the review window": {
+      "main": [
+        [
+          {
+            "node": "Read Todoist completed tasks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Todoist completed tasks": {
+      "main": [
+        [
+          {
+            "node": "Prepare the email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare the email": {
+      "main": [
+        [
+          {
+            "node": "Send Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
