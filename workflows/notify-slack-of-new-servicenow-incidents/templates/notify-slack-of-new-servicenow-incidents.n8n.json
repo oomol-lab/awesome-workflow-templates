@@ -1,0 +1,244 @@
+{
+  "nodes": [
+    {
+      "id": "notify-slack-of-new-servicenow-incidents-0",
+      "name": "When clicking ‘Test workflow’",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        -660,
+        160
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "notify-slack-of-new-servicenow-incidents-1",
+      "name": "Run Every 5 Minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        -660,
+        -40
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "notify-slack-of-new-servicenow-incidents-2",
+      "name": "Get Incidents from ServiceNow",
+      "type": "n8n-nodes-base.serviceNow",
+      "onError": "continueErrorOutput",
+      "position": [
+        -100,
+        40
+      ],
+      "parameters": {
+        "options": {
+          "sysparm_query": "={{ 'sys_created_on>=' + $now.toUTC().minus({minutes:5}).toFormat('yyyy-MM-dd HH:mm:ss') }}",
+          "sysparm_display_value": "true"
+        },
+        "resource": "incident",
+        "operation": "getAll",
+        "authentication": "basicAuth"
+      },
+      "typeVersion": 1,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "notify-slack-of-new-servicenow-incidents-3",
+      "name": "Check if New Incidents",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        160,
+        -40
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "09750510-4604-4372-9cdc-d8055adae12a",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.sys_id }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "notify-slack-of-new-servicenow-incidents-4",
+      "name": "Post Error Message if Error with ServiceNow",
+      "type": "n8n-nodes-base.slack",
+      "position": [
+        480,
+        760
+      ],
+      "parameters": {
+        "text": "🚨 Issue connecting to ServiceNow. Please investigate error in n8n. 🚨",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_SLACK_CHANNEL_ID"
+        },
+        "otherOptions": {
+          "mrkdwn": true,
+          "includeLinkToWorkflow": false
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "notify-slack-of-new-servicenow-incidents-5",
+      "name": "Sort Incidents in Ascending Order",
+      "type": "n8n-nodes-base.sort",
+      "position": [
+        511,
+        -271
+      ],
+      "parameters": {
+        "options": {},
+        "sortFieldsUi": {
+          "sortField": [
+            {
+              "fieldName": "number"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "notify-slack-of-new-servicenow-incidents-6",
+      "name": "Post Incident Details to Slack Channel",
+      "type": "n8n-nodes-base.slack",
+      "position": [
+        731,
+        -271
+      ],
+      "parameters": {
+        "select": "channel",
+        "blocksUi": "={{ (() => { const i=$json,esc=v=>String(v ?? 'not available').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'),caller=typeof i.caller_id==='object' ? i.caller_id?.display_value : i.caller_id; if(typeof i.sys_id!=='string'||!/^[a-f0-9]{32}$/i.test(i.sys_id)||!i.number)throw Error('Invalid incident identity'); const fields=[['Incident ID',i.number],['Description',i.short_description],['Severity',i.severity],['Caller',caller],['Priority',i.priority],['State',i.incident_state],['Category',i.category],['Date Opened',i.opened_at]].map(([k,v])=>({type:'mrkdwn',text:'*'+k+':*\\n'+esc(v)}));return JSON.stringify({blocks:[{type:'header',text:{type:'plain_text',text:'ServiceNow Incident Notification',emoji:true}},{type:'section',fields},{type:'actions',elements:[{type:'button',text:{type:'plain_text',text:'View Incident',emoji:true},url:'https://YOUR_INSTANCE.service-now.com/nav_to.do?uri=incident.do%3Fsys_id%3D'+i.sys_id,action_id:'view_incident'}]}]}); })() }}",
+        "channelId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_SLACK_CHANNEL_ID"
+        },
+        "messageType": "block",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "notify-slack-of-new-servicenow-incidents-7",
+      "name": "No Incidents, Do Nothing",
+      "type": "n8n-nodes-base.noOp",
+      "position": [
+        500,
+        200
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Run Every 5 Minutes": {
+      "main": [
+        [
+          {
+            "node": "Get Incidents from ServiceNow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check if New Incidents": {
+      "main": [
+        [
+          {
+            "node": "Sort Incidents in Ascending Order",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Incidents, Do Nothing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Incidents from ServiceNow": {
+      "main": [
+        [
+          {
+            "node": "Check if New Incidents",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Post Error Message if Error with ServiceNow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sort Incidents in Ascending Order": {
+      "main": [
+        [
+          {
+            "node": "Post Incident Details to Slack Channel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Test workflow’": {
+      "main": [
+        [
+          {
+            "node": "Get Incidents from ServiceNow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Notify Slack of New ServiceNow Incidents",
+  "active": false,
+  "settings": {
+    "timezone": "UTC",
+    "executionOrder": "v1"
+  }
+}

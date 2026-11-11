@@ -101,6 +101,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Weather Temperature to SIGNL4 Alert](workflows/weather-temperature-to-signl4-alert/) - Send a SIGNL4 alert when a city’s current temperature is below 25°C.
 - [Monitor Sheet URLs to Telegram](workflows/monitor-sheet-urls-to-telegram/) - Check URLs in Google Sheets every minute and send failed checks to Telegram.
 - [Notify Upcoming Daylight Saving Changes](workflows/notify-upcoming-daylight-saving-changes/) - Notify Slack and email when daylight saving time changes tomorrow in a selected time zone.
+- [Notify Slack of New ServiceNow Incidents](workflows/notify-slack-of-new-servicenow-incidents/) - Check recent ServiceNow incidents and notify a Slack channel.
 
 ## Marketing
 
