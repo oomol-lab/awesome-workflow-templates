@@ -58,6 +58,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [LeadPilot Cold Email Drafts](workflows/leadpilot-cold-email-drafts/) - Write personalized cold-email and follow-up drafts for every supplied lead, then save the complete batch in Google Sheets for review.
 - [Sheet Contacts through Dropcontact to Lemlist](workflows/sheet-contacts-dropcontact-lemlist/) - Read a sheet contact batch, enrich it with French company information, wait 45 seconds and create every returned contact as a Lemlist campaign lead.
 - [Google Sheets Community Lead Rating](workflows/google-sheets-community-lead-rating/) - Rate newly appended community applications using the original responsibility and email-domain criteria, then update only the matching Timestamp row’s Rating.
+- [Customer.io Customer to Manual Segment](workflows/customerio-customer-to-manual-segment/) - Identify a Customer.io customer and add the customer ID to an existing manual segment.
 
 ## Operations
 
