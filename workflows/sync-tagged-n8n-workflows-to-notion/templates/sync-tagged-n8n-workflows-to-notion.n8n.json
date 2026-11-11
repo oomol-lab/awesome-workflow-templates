@@ -1,0 +1,354 @@
+{
+  "nodes": [
+    {
+      "id": "sync-tagged-n8n-workflows-to-notion-0",
+      "name": "Every 15 minutes UTC",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        560,
+        340
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 15
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "sync-tagged-n8n-workflows-to-notion-1",
+      "name": "Read tagged workflows",
+      "type": "n8n-nodes-base.n8n",
+      "position": [
+        780,
+        340
+      ],
+      "parameters": {
+        "resource": "workflow",
+        "operation": "getAll",
+        "returnAll": true,
+        "filters": {
+          "tags": "sync-to-notion"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "name": "Prepare the workflows",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function next({state,previous,instanceUrl,dataSourceId}){if(!Array.isArray(state?.items)||typeof instanceUrl!=='string'||!/^https:\\/\\/[^/?#\\s]+\\/$/i.test(instanceUrl)||instanceUrl.includes('YOUR_')||typeof dataSourceId!=='string'||!dataSourceId||dataSourceId.includes('YOUR_'))throw Error('Configure an HTTPS instance URL and Notion data source ID');const i=previous?.index??0;if(!Number.isInteger(i)||i<0)throw Error('Invalid workflow index');if(i>=state.items.length)return{state:{index:i},more:false,item:{},dataSourceId};const w=state.items[i];if(!w||typeof w.id!=='string'||!w.id||typeof w.name!=='string'||!w.name||typeof w.active!=='boolean'||typeof w.createdAt!=='string'||!Number.isFinite(Date.parse(w.createdAt))||typeof w.updatedAt!=='string'||!Number.isFinite(Date.parse(w.updatedAt))||!w.settings||typeof w.settings!=='object'||Array.isArray(w.settings))throw Error('Invalid workflow data');return{state:{index:i+1},more:true,item:{id:w.id,name:w.name,active:w.active,createdAt:w.createdAt,updatedAt:w.updatedAt,errorWorkflow:!!w.settings.errorWorkflow,url:instanceUrl+'workflow/'+encodeURIComponent(w.id),envId:'internal-'+w.id},dataSourceId};}\n\nconst items=$input.all().map(x=>x.json),out=[];let previous=null;while(true){const x=next({state:{items},previous,instanceUrl:'https://YOUR_N8N_HOST/',dataSourceId:'YOUR_NOTION_DATA_SOURCE_ID'});if(!x.more)break;out.push({json:{item:x.item,dataSourceId:x.dataSourceId},pairedItem:{item:out.length}});previous=x.state;}return out;"
+      },
+      "id": "sync-tagged-n8n-workflows-to-notion-2"
+    },
+    {
+      "name": "Sync one workflow at a time",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "sync-tagged-n8n-workflows-to-notion-3"
+    },
+    {
+      "name": "Find the inventory entry",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "={{ \"https://api.notion.com/v1/data_sources/\" + encodeURIComponent($json.dataSourceId) + \"/query\" }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Notion-Version",
+              "value": "2026-03-11"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({filter:{property:\"env id\",rich_text:{equals:$json.item.envId}},page_size:2}) }}",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "neverError": false
+            }
+          }
+        }
+      },
+      "id": "sync-tagged-n8n-workflows-to-notion-4"
+    },
+    {
+      "name": "Prepare the inventory entry",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function decide({result,item,dataSourceId}){if(!result||!Array.isArray(result.results)||typeof result.has_more!=='boolean'||result.has_more||result.results.length>1)throw Error('Ambiguous Notion workflow match');const existing=result.results[0];if(existing&&(existing.object!=='page'||typeof existing.id!=='string'||!existing.id))throw Error('Invalid Notion match');const text=x=>[{text:{content:String(x)}}],props={Name:{title:text(item.name)},'env id':{rich_text:text(item.envId)},'URL (dev)':{url:item.url},'isActive (dev)':{checkbox:item.active},'Workflow created at':{date:{start:item.createdAt}},'Workflow updated at':{date:{start:item.updatedAt}},'Error workflow setup':{checkbox:item.errorWorkflow}};return{create:!existing,pageId:existing?.id??'unused',parent:{data_source_id:dataSourceId},properties:props};}\n\nconst x=$('Sync one workflow at a time').item.json;return [{json:decide({result:$input.first().json,item:x.item,dataSourceId:x.dataSourceId}),pairedItem:{item:0}}];"
+      },
+      "id": "sync-tagged-n8n-workflows-to-notion-5"
+    },
+    {
+      "name": "Create a new entry?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "create",
+              "leftValue": "={{ $json.create }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "sync-tagged-n8n-workflows-to-notion-6"
+    },
+    {
+      "name": "Create the inventory entry",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.notion.com/v1/pages",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Notion-Version",
+              "value": "2026-03-11"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({parent:$json.parent,properties:$json.properties}) }}",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "neverError": false
+            }
+          }
+        }
+      },
+      "id": "sync-tagged-n8n-workflows-to-notion-7"
+    },
+    {
+      "name": "Update the inventory entry",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ \"https://api.notion.com/v1/pages/\" + encodeURIComponent($json.pageId) }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Notion-Version",
+              "value": "2026-03-11"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({properties:$json.properties}) }}",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "neverError": false
+            }
+          }
+        }
+      },
+      "id": "sync-tagged-n8n-workflows-to-notion-8"
+    },
+    {
+      "name": "Confirm the inventory write",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function confirm({page}){if(!page||page.object!=='page'||typeof page.id!=='string'||!page.id)throw Error('Notion write was not confirmed');return{ok:true};}\n\nreturn [{json:confirm({page:$input.first().json}),pairedItem:{item:0}}];"
+      },
+      "id": "sync-tagged-n8n-workflows-to-notion-9"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Every 15 minutes UTC": {
+      "main": [
+        [
+          {
+            "node": "Read tagged workflows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read tagged workflows": {
+      "main": [
+        [
+          {
+            "node": "Prepare the workflows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare the workflows": {
+      "main": [
+        [
+          {
+            "node": "Sync one workflow at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find the inventory entry": {
+      "main": [
+        [
+          {
+            "node": "Prepare the inventory entry",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare the inventory entry": {
+      "main": [
+        [
+          {
+            "node": "Create a new entry?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create the inventory entry": {
+      "main": [
+        [
+          {
+            "node": "Confirm the inventory write",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update the inventory entry": {
+      "main": [
+        [
+          {
+            "node": "Confirm the inventory write",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm the inventory write": {
+      "main": [
+        [
+          {
+            "node": "Sync one workflow at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sync one workflow at a time": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Find the inventory entry",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a new entry?": {
+      "main": [
+        [
+          {
+            "node": "Create the inventory entry",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Update the inventory entry",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Sync Tagged n8n Workflows to Notion",
+  "settings": {
+    "timezone": "UTC",
+    "executionOrder": "v1"
+  },
+  "active": false
+}
