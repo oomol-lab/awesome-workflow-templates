@@ -1,0 +1,93 @@
+{
+  "name": "Save Company Brand Assets to Airtable",
+  "nodes": [
+    {
+      "name": "On clicking 'execute'",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        250,
+        300
+      ],
+      "parameters": {},
+      "typeVersion": 1,
+      "id": "save-company-brand-assets-to-airtable-trigger"
+    },
+    {
+      "id": "save-company-brand-assets-to-airtable-fetch",
+      "name": "Get the company brand",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.brandfetch.io/v2/brands/domain/n8n.io",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      }
+    },
+    {
+      "id": "save-company-brand-assets-to-airtable-select",
+      "name": "Select the icon and logo URLs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function brandAirtable({name, logos}) {\n  if (typeof name !== 'string' || !name.trim() || !Array.isArray(logos)) throw new Error('Brand name and logo assets are required');\n  function validUrl(value) {\n    if (typeof value !== 'string' || /[\\s\\x00-\\x1f\\x7f\\\\]/.test(value) || /%(?![0-9a-f]{2})/i.test(value)) return false;\n    const match = /^https?:\\/\\/([^/?#]+)(?:[/?#].*)?$/i.exec(value);\n    if (!match || match[1].includes('@')) return false;\n    const authority = match[1];\n    let host, port;\n    if (authority.startsWith('[')) {\n      const parts = /^\\[([0-9a-f:]+)\\](?::(\\d+))?$/i.exec(authority);\n      if (!parts) return false;\n      host = parts[1]; port = parts[2];\n      const halves = host.split('::');\n      if (halves.length > 2) return false;\n      const groups = halves.flatMap(part => part ? part.split(':') : []);\n      if (groups.some(group => !/^[0-9a-f]{1,4}$/i.test(group))) return false;\n      if (halves.length === 1 ? groups.length !== 8 : groups.length >= 8) return false;\n    } else {\n      const parts = /^([^:]+)(?::(\\d+))?$/.exec(authority);\n      if (!parts) return false;\n      host = parts[1]; port = parts[2];\n      if (host.length > 253) return false;\n      const labels = host.replace(/\\.$/, '').split('.');\n      if (!labels.every(label => label.length > 0 && label.length <= 63 && /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/i.test(label))) return false;\n      if (labels.every(label => /^\\d+$/.test(label)) && (labels.length !== 4 || labels.some(label => Number(label) > 255))) return false;\n    }\n    return port === undefined || (port.length <= 5 && Number(port) <= 65535);\n  }\n  function asset(type) {\n    for (const logo of logos) {\n      if (logo?.type !== type || !Array.isArray(logo.formats)) continue;\n      for (const format of logo.formats) {\n        if (validUrl(format?.src)) return format.src;\n      }\n    }\n    throw new Error(`No usable ${type} URL returned by Brandfetch`);\n  }\n  return {records:[{fields:{Name:name,'Icon URL':asset('icon'),'Logo URL':asset('logo')}}]};\n}\n\nreturn {json:brandAirtable({name:$json.name,logos:$json.logos}).records[0].fields};"
+      }
+    },
+    {
+      "id": "save-company-brand-assets-to-airtable-save",
+      "name": "Save one Airtable record",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 1,
+      "parameters": {
+        "authentication": "airtableTokenApi",
+        "application": "YOUR_AIRTABLE_BASE_ID",
+        "table": "YOUR_AIRTABLE_TABLE_ID",
+        "operation": "append",
+        "addAllFields": true,
+        "options": {
+          "typecast": false
+        }
+      }
+    }
+  ],
+  "active": false,
+  "settings": {},
+  "connections": {
+    "On clicking 'execute'": {
+      "main": [
+        [
+          {
+            "node": "Get the company brand",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get the company brand": {
+      "main": [
+        [
+          {
+            "node": "Select the icon and logo URLs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select the icon and logo URLs": {
+      "main": [
+        [
+          {
+            "node": "Save one Airtable record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {}
+}
