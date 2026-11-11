@@ -158,6 +158,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Create and Enroll a Tapfiliate Affiliate](workflows/create-and-enroll-tapfiliate-affiliate/) - Create an affiliate, set a tag and add them to a Tapfiliate program.
 - [Create, Update and Read a Strapi Post](workflows/create-update-and-read-strapi-post/) - Create a Strapi post, update its slug and read the same document.
 - [Subscribe and Send a Sendy Campaign](workflows/subscribe-and-send-sendy-campaign/) - Add a subscriber to a Sendy list, then create and send a campaign to the list.
+- [Share Product Hunt Matches to Slack](workflows/share-product-hunt-matches-to-slack/) - Find Product Hunt launches relevant to a topic and share the results with a Slack channel.
 
 ## Support
 
