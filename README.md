@@ -79,6 +79,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Create and Update a Copper Contact](workflows/create-update-copper-contact/) - Create a Copper person, add their work phone and read the contact.
 - [Create Stripe Customers from Pipedrive Deals](workflows/create-stripe-customers-from-pipedrive-deals/) - When a Pipedrive deal’s won time changes, look up its organization and create a Stripe customer if the name is not found.
 - [Import Sheet Contacts to Salesforce](workflows/import-sheet-contacts-to-salesforce/) - Find or create Salesforce accounts and upsert sheet contacts by email.
+- [Create and Update a Salesforce Lead with a Note](workflows/create-and-update-salesforce-lead-with-note/) - Create a Salesforce lead, update its city and add a note to that lead.
 
 ## Operations
 
