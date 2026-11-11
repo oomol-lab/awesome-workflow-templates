@@ -1,0 +1,175 @@
+{
+  "nodes": [
+    {
+      "name": "Cron",
+      "type": "n8n-nodes-base.cron",
+      "position": [
+        459,
+        371
+      ],
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "mode": "everyHour"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1,
+      "id": "post-ranked-product-hunt-launches-to-discord-cron"
+    },
+    {
+      "id": "post-ranked-product-hunt-launches-to-discord-query",
+      "name": "Prepare the ranking query",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function query(){const before=new Date(),after=new Date(before.getTime()-86400000);return{body:{query:'query RankedPosts($after: DateTime!, $before: DateTime!) { posts(postedAfter: $after, postedBefore: $before, order: RANKING, first: 5) { edges { node { name description votesCount } } } }',variables:{after:after.toISOString(),before:before.toISOString()}}};}\n\nreturn [{json:query()}];"
+      }
+    },
+    {
+      "id": "post-ranked-product-hunt-launches-to-discord-read",
+      "name": "Read ranked launches",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.producthunt.com/v2/api/graphql",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.body }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "post-ranked-product-hunt-launches-to-discord-validate",
+      "name": "Validate ranked launches",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function next({body,previousState}){if(!body||typeof body!=='object'||(Array.isArray(body.errors)&&body.errors.length)||!Array.isArray(body.data?.posts?.edges)||body.data.posts.edges.length>5)throw Error('Invalid Product Hunt response');const posts=body.data.posts.edges.map(e=>{const p=e?.node;if(typeof p?.name!=='string'||!p.name||typeof p.description!=='string'||!Number.isSafeInteger(p.votesCount)||p.votesCount<0)throw Error('Invalid ranked product');const escape=v=>v.replace(/@/g,'@\\u200b');const text=`Here are the top 5 PH projects:\\n**Name:** ${escape(p.name)}\\n**Description:** ${escape(p.description)}\\n**Vote:** ${p.votesCount}\\n-------`;if(text.length>2000)throw Error('Product message exceeds Discord limit');return text});const index=previousState?.index??0;if(!Number.isInteger(index)||index<0||index>posts.length)throw Error('Invalid product position');return{state:{index:index+1},more:index<posts.length,text:posts[index]??'',count:index};}\n\nlet s=null,out=[];for(;;){const x=next({body:$input.first().json,previousState:s});if(!x.more)break;out.push({json:{text:x.text}});s=x.state}return out;"
+      }
+    },
+    {
+      "id": "post-ranked-product-hunt-launches-to-discord-loop",
+      "name": "Process launches one by one",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      }
+    },
+    {
+      "id": "post-ranked-product-hunt-launches-to-discord-send",
+      "name": "Post the launch",
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
+      "parameters": {
+        "authentication": "botToken",
+        "resource": "message",
+        "operation": "send",
+        "guildId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DISCORD_SERVER_ID"
+        },
+        "sendTo": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DISCORD_CHANNEL_ID"
+        },
+        "content": "={{ $json.text }}",
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Cron": {
+      "main": [
+        [
+          {
+            "node": "Prepare the ranking query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare the ranking query": {
+      "main": [
+        [
+          {
+            "node": "Read ranked launches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read ranked launches": {
+      "main": [
+        [
+          {
+            "node": "Validate ranked launches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate ranked launches": {
+      "main": [
+        [
+          {
+            "node": "Process launches one by one",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process launches one by one": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Post the launch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Post the launch": {
+      "main": [
+        [
+          {
+            "node": "Process launches one by one",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Post Ranked Product Hunt Launches to Discord",
+  "active": false,
+  "settings": {
+    "timezone": "UTC",
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}
