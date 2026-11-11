@@ -356,6 +356,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Sync HubSpot Companies to Zendesk](workflows/sync-hubspot-companies-to-zendesk/) - Sync changed HubSpot company names and domains to matching Zendesk organizations.
 - [Route Typeform Feedback to Airtable and Trello](workflows/typeform-feedback-to-airtable-and-trello/) - Save Typeform product feedback in Airtable and create a Trello card for scores below seven.
 - [Turn Support Gmail into Linear Issues](workflows/turn-support-gmail-into-linear-issues/) - Triage the latest matching support email with AI and create a Linear issue.
+- [Triage Outlook Support in Jira](workflows/triage-outlook-support-in-jira/) - Triage recent Outlook support messages with AI and create Jira issues.
 
 ## Finance
 
