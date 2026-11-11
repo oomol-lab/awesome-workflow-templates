@@ -146,6 +146,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Acknowledge a PagerDuty Incident from Mattermost](workflows/acknowledge-pagerduty-incident-from-mattermost/) - Acknowledge a PagerDuty incident from a Mattermost action and post a confirmation to the channel.
 - [Notify Workflow Errors by Mattermost and SMS](workflows/notify-workflow-errors-by-mattermost-and-sms/) - When a workflow fails, post its identity and failed node to Mattermost, then send an SMS.
 - [Resolve PagerDuty and Jira from Mattermost](workflows/resolve-pagerduty-and-jira-from-mattermost/) - Resolve a PagerDuty incident and transition a Jira issue from a Mattermost button, then post two confirmations.
+- [Notify Workflow Failures on Telegram](workflows/notify-workflow-failures-on-telegram/) - Send workflow failure details to a Telegram chat.
 
 ## Research
 
