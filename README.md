@@ -181,6 +181,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Daily Affirmation to Telegram](workflows/daily-affirmation-to-telegram/) - Send one daily affirmation to a Telegram chat.
 - [Save Company Brand Assets to Airtable](workflows/save-company-brand-assets-to-airtable/) - Look up a company by domain and save its name, icon URL and logo URL in Airtable.
 - [Import Airtable Image URLs as Attachments](workflows/import-airtable-image-urls-as-attachments/) - Find Airtable records with image URLs and replace each record’s attachment field with its image.
+- [Typeform Receipts to Airtable](workflows/typeform-receipts-to-airtable/) - Extract receipt details from Typeform uploads and save each expense in Airtable.
 
 ## Content
 

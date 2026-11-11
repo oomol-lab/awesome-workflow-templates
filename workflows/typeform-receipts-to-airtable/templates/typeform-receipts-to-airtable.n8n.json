@@ -1,0 +1,290 @@
+{
+  "name": "Typeform Receipts to Airtable",
+  "nodes": [
+    {
+      "name": "Get Receipt",
+      "type": "n8n-nodes-base.typeformTrigger",
+      "position": [
+        450,
+        300
+      ],
+      "parameters": {
+        "formId": "YOUR_TYPEFORM_FORM_ID",
+        "simplifyAnswers": false,
+        "onlyAnswers": false
+      },
+      "typeVersion": 1,
+      "id": "typeform-receipts-to-airtable-0"
+    },
+    {
+      "name": "Select the uploaded receipt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function receiptForm({response}) {\n  const fields=response?.definition?.fields,answers=response?.answers;\n  if(!Array.isArray(fields)||!Array.isArray(answers))throw Error('Expected a complete Typeform response');\n  const ids=fields.filter(f=>f?.title==='Upload receipt').map(f=>f.id);\n  if(ids.length!==1)throw Error('Expected one Upload receipt question');\n  const matches=answers.filter(a=>a?.field?.id===ids[0]&&a?.type==='file_url');\n  if(matches.length!==1||typeof matches[0].file_url!=='string'||!/^https:\\/\\/[^\\s/?#]+(?:[/?#][^\\s]*)?$/i.test(matches[0].file_url))throw Error('Expected one HTTPS receipt file URL');\n  return {url:matches[0].file_url};\n}\n\nreturn {json:receiptForm({response:$json.form_response})};"
+      },
+      "id": "typeform-receipts-to-airtable-1"
+    },
+    {
+      "name": "Submit the receipt to Mindee",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://api-v2.mindee.net/v2/products/extraction/enqueue",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model_id",
+              "value": "YOUR_MINDEE_MODEL_ID"
+            },
+            {
+              "name": "url",
+              "value": "={{ $json.url }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "typeform-receipts-to-airtable-2"
+    },
+    {
+      "name": "Validate the receipt job",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if(!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test($json.job?.id || \"\"))throw Error(\"Mindee returned an invalid job ID\"); return {json:{jobId:$json.job.id}};"
+      },
+      "id": "typeform-receipts-to-airtable-3"
+    },
+    {
+      "name": "Wait for receipt processing",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "parameters": {
+        "amount": 3,
+        "unit": "seconds"
+      },
+      "id": "typeform-receipts-to-airtable-4"
+    },
+    {
+      "name": "Check the receipt job",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ \"https://api-v2.mindee.net/v2/jobs/\" + $(\"Validate the receipt job\").first().json.jobId + \"?redirect=false\" }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "typeform-receipts-to-airtable-5"
+    },
+    {
+      "name": "Check the job status",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const job=$json.job; const expected=$(\"Validate the receipt job\").first().json.jobId; if(!job || job.id!==expected || job.status===\"Failed\" || (job.status===\"Processing\" && $runIndex>=199)) throw Error(\"Mindee job failed or timed out\"); if(job.status!==\"Processing\" && job.status!==\"Processed\") throw Error(\"Invalid Mindee status\"); if(job.status===\"Processed\" && !/^https:\\/\\/api-v2\\.mindee\\.net\\/v2\\/products\\/extraction\\/results\\/[0-9a-f-]{36}$/i.test(job.result_url||\"\"))throw Error(\"Invalid result URL\"); return {json:{ready:job.status===\"Processed\",resultUrl:job.result_url}};"
+      },
+      "id": "typeform-receipts-to-airtable-6"
+    },
+    {
+      "name": "Is the receipt ready?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "ready",
+              "leftValue": "={{ $json.ready }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "typeform-receipts-to-airtable-7"
+    },
+    {
+      "name": "Read the receipt result",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.resultUrl }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "typeform-receipts-to-airtable-8"
+    },
+    {
+      "name": "Map the expense fields",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function receiptFields({data,jobId,url}) {\n if(data?.inference?.job?.id!==jobId)throw Error('Mindee result job mismatch');const f=data?.inference?.result?.fields;if(!f||typeof f!=='object')throw Error('Missing receipt fields');\n const mapping={Amount:'total_amount',Merchant:'supplier_name',Date:'date',Time:'time',Category:'purchase_category'},fields={'Receipt URL':url};for(const [target,key] of Object.entries(mapping)){if(!Object.hasOwn(f,key)||!Object.hasOwn(f[key]??{},'value'))throw Error('Receipt model is missing '+key);const val=f[key].value;if(val!==null&&typeof val!==(target==='Amount'?'number':'string'))throw Error('Invalid '+key);fields[target]=val;}return{records:[{fields}]};\n}\n\nreturn {json:receiptFields({data:$json,jobId:$(\"Validate the receipt job\").first().json.jobId,url:$(\"Select the uploaded receipt\").first().json.url}).records[0].fields};"
+      },
+      "id": "typeform-receipts-to-airtable-9"
+    },
+    {
+      "name": "Save the expense",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 1,
+      "parameters": {
+        "authentication": "airtableTokenApi",
+        "application": "YOUR_AIRTABLE_BASE_ID",
+        "table": "YOUR_AIRTABLE_TABLE_ID",
+        "operation": "append",
+        "addAllFields": true,
+        "options": {
+          "typecast": false
+        }
+      },
+      "id": "typeform-receipts-to-airtable-10"
+    }
+  ],
+  "active": false,
+  "settings": {},
+  "connections": {
+    "Get Receipt": {
+      "main": [
+        [
+          {
+            "node": "Select the uploaded receipt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select the uploaded receipt": {
+      "main": [
+        [
+          {
+            "node": "Submit the receipt to Mindee",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Submit the receipt to Mindee": {
+      "main": [
+        [
+          {
+            "node": "Validate the receipt job",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate the receipt job": {
+      "main": [
+        [
+          {
+            "node": "Wait for receipt processing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for receipt processing": {
+      "main": [
+        [
+          {
+            "node": "Check the receipt job",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check the receipt job": {
+      "main": [
+        [
+          {
+            "node": "Check the job status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check the job status": {
+      "main": [
+        [
+          {
+            "node": "Is the receipt ready?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the receipt result": {
+      "main": [
+        [
+          {
+            "node": "Map the expense fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Map the expense fields": {
+      "main": [
+        [
+          {
+            "node": "Save the expense",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is the receipt ready?": {
+      "main": [
+        [
+          {
+            "node": "Read the receipt result",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait for receipt processing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {}
+}
