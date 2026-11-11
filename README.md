@@ -111,6 +111,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Classify Software Keywords in Google Sheets](workflows/classify-software-keywords-in-google-sheets/) - Classify every keyword as containing a known IT software or service name, wait five seconds per six-row batch and update only matching Service? cells by Number.
 - [Create and Update a WordPress Draft](workflows/create-and-update-wordpress-draft/) - Create a WordPress draft with a title, then update that same post with content.
 - [Scheduled AI Influencer Post](workflows/scheduled-ai-influencer-post/) - Generate a profile-based post and publish it on X manually or every six hours.
+- [New YouTube Video to X](workflows/youtube-new-video-to-x/) - Check a YouTube channel every 30 minutes and generate an X post for a recent video.
 
 ## Support
 
