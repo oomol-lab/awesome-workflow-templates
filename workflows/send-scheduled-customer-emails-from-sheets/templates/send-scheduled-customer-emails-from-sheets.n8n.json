@@ -1,0 +1,275 @@
+{
+  "nodes": [
+    {
+      "id": "send-scheduled-customer-emails-from-sheets-cron",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        1350,
+        1110
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 1
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "send-scheduled-customer-emails-from-sheets-config",
+      "name": "Choose the customer messages sheet",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function config(){const spreadsheetId='YOUR_SPREADSHEET_ID',sheetName='Sheet1',now=new Date();if(!sheetName.trim())throw Error('Set a worksheet name');return{spreadsheetId,sheetName,range:\"'\"+sheetName.replace(/'/g,\"''\")+\"'\",today:now.toISOString().slice(0,10).replace(/-/g,'/')};}\n\nreturn [{json:config()}];"
+      }
+    },
+    {
+      "id": "send-scheduled-customer-emails-from-sheets-read",
+      "name": "Read customer messages",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ \"https://sheets.googleapis.com/v4/spreadsheets/\" + encodeURIComponent($(\"Choose the customer messages sheet\").first().json.spreadsheetId) + \"/values/\" + encodeURIComponent($(\"Choose the customer messages sheet\").first().json.range) + \"?majorDimension=ROWS&valueRenderOption=FORMATTED_VALUE\" }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "send-scheduled-customer-emails-from-sheets-plan",
+      "name": "Find messages due today",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function plan({values,today}){if(!Array.isArray(values))throw Error('Invalid sheet');if(values.length===0)return{messages:[]};const headers=values[0];if(!Array.isArray(headers))throw Error('Missing sheet headers');const names=['ID','Name','Email','Date','Status','Title','Subject'],columns={};for(const name of names){const matches=headers.flatMap((x,i)=>x===name?[i]:[]);if(matches.length!==1)throw Error('Each required header must occur exactly once');columns[name]=matches[0]}if(typeof today!=='string'||!/^\\d{4}\\/\\d\\d\\/\\d\\d$/.test(today))throw Error('Invalid current date');const ids=new Map();for(const row of values.slice(1)){if(!Array.isArray(row))throw Error('Invalid sheet row');const id=row[columns.ID];if(id!=null&&String(id)!=='')ids.set(String(id),(ids.get(String(id))??0)+1)}const messages=[];for(const row of values.slice(1)){if(row[columns.Status]!=='Waiting for sending'||row[columns.Date]!==today||!['Name','Email','Date','Title','Subject'].every(k=>row[columns[k]]!=null&&String(row[columns[k]])!==''))continue;const id=row[columns.ID];if(id==null||String(id)===''||ids.get(String(id))!==1)throw Error('Missing or duplicate message ID');messages.push(Object.fromEntries(names.map(k=>[k,String(row[columns[k]]??'')])))}return{messages};}\n\nreturn plan({values:$input.first().json.values??[],today:$(\"Choose the customer messages sheet\").first().json.today}).messages.map(x=>({json:x}));"
+      }
+    },
+    {
+      "id": "send-scheduled-customer-emails-from-sheets-loop",
+      "name": "Process messages one by one",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      }
+    },
+    {
+      "id": "send-scheduled-customer-emails-from-sheets-gmail",
+      "name": "Send a message (Gmail)",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        1900,
+        980
+      ],
+      "parameters": {
+        "sendTo": "={{ $json.Email }}",
+        "subject": "={{ $json.Title }}",
+        "message": "={{ $json.Subject }}",
+        "emailType": "text",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "notesInFlow": false,
+      "typeVersion": 2.1,
+      "alwaysOutputData": false
+    },
+    {
+      "id": "send-scheduled-customer-emails-from-sheets-refresh",
+      "name": "Find the current message row",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ \"https://sheets.googleapis.com/v4/spreadsheets/\" + encodeURIComponent($(\"Choose the customer messages sheet\").first().json.spreadsheetId) + \"/values/\" + encodeURIComponent($(\"Choose the customer messages sheet\").first().json.range) + \"?majorDimension=ROWS&valueRenderOption=FORMATTED_VALUE\" }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "send-scheduled-customer-emails-from-sheets-match",
+      "name": "Prepare the status cell",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function match({values,current,sheetName}){if(!Array.isArray(values)||!Array.isArray(values[0])||!current||typeof current.ID!=='string')throw Error('Invalid current message');const h=values[0],fields=['ID','Name','Email','Date','Status','Title','Subject'],c={};for(const k of fields){const p=h.flatMap((x,i)=>x===k?[i]:[]);if(p.length!==1)throw Error('Missing or duplicate required header');c[k]=p[0]}const found=values.slice(1).flatMap((row,i)=>Array.isArray(row)&&String(row[c.ID]??'')===current.ID?[{row,i}]:[]);if(found.length!==1)throw Error('Message ID no longer uniquely identifies a row');const {row,i}=found[0];for(const k of fields)if(String(row[c[k]]??'')!==current[k])throw Error('Message row changed after sending');let col=c.Status+1,letters='';while(col){col--;letters=String.fromCharCode(65+col%26)+letters;col=Math.floor(col/26)}if(typeof sheetName!=='string'||!sheetName.trim())throw Error('Missing worksheet name');return{range:\"'\"+sheetName.replace(/'/g,\"''\")+\"'!\"+letters+(i+2),values:[['Sent successfully']]};}\n\nreturn [{json:match({values:$input.first().json.values??[],current:$(\"Process messages one by one\").item.json,sheetName:$(\"Choose the customer messages sheet\").first().json.sheetName})}];"
+      }
+    },
+    {
+      "id": "send-scheduled-customer-emails-from-sheets-write",
+      "name": "Mark the email sent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ \"https://sheets.googleapis.com/v4/spreadsheets/\" + encodeURIComponent($(\"Choose the customer messages sheet\").first().json.spreadsheetId) + \"/values/\" + encodeURIComponent($json.range) + \"?valueInputOption=RAW\" }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {values:$json.values} }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "send-scheduled-customer-emails-from-sheets-confirm",
+      "name": "Confirm the status update",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function confirm({updatedCells}){if(updatedCells!==1)throw Error('Status update was not confirmed');return{ok:true};}\n\nreturn [{json:confirm({updatedCells:$input.first().json.updatedCells})}];"
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Choose the customer messages sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Choose the customer messages sheet": {
+      "main": [
+        [
+          {
+            "node": "Read customer messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read customer messages": {
+      "main": [
+        [
+          {
+            "node": "Find messages due today",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find messages due today": {
+      "main": [
+        [
+          {
+            "node": "Process messages one by one",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process messages one by one": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Send a message (Gmail)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message (Gmail)": {
+      "main": [
+        [
+          {
+            "node": "Find the current message row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find the current message row": {
+      "main": [
+        [
+          {
+            "node": "Prepare the status cell",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare the status cell": {
+      "main": [
+        [
+          {
+            "node": "Mark the email sent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark the email sent": {
+      "main": [
+        [
+          {
+            "node": "Confirm the status update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm the status update": {
+      "main": [
+        [
+          {
+            "node": "Process messages one by one",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Send Scheduled Customer Emails from Sheets",
+  "active": false,
+  "settings": {
+    "timezone": "UTC",
+    "executionOrder": "v1"
+  }
+}
