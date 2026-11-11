@@ -172,6 +172,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Compare PDF Extraction with Claude and Gemini](workflows/compare-pdf-extraction-claude-gemini/) - Send a Google Drive PDF and one prompt to Claude and Gemini and compare their responses.
 - [Random Cocktail to Mattermost](workflows/random-cocktail-to-mattermost/) - Fetch a random cocktail and post its instructions, glass and image to a Mattermost channel.
 - [Weekly Mattermost Coffee Groups](workflows/mattermost-weekly-coffee-groups/) - Shuffle channel members into coffee groups, announce them and create Google Calendar invitations with Meet.
+- [Session Feedback to Mattermost](workflows/session-feedback-to-mattermost/) - Read session rows and post each feedback form to its Mattermost channel.
 
 ## Content
 
