@@ -1,0 +1,161 @@
+{
+  "name": "Route Typeform Feedback to Airtable and Trello",
+  "nodes": [
+    {
+      "name": "Receive product feedback",
+      "type": "n8n-nodes-base.typeformTrigger",
+      "position": [
+        170,
+        260
+      ],
+      "parameters": {
+        "authentication": "accessToken",
+        "formId": "YOUR_TYPEFORM_FORM_ID",
+        "simplifyAnswers": false,
+        "onlyAnswers": false
+      },
+      "typeVersion": 1,
+      "id": "typeform-feedback-to-airtable-and-trello-0"
+    },
+    {
+      "id": "typeform-feedback-to-airtable-and-trello-1",
+      "name": "Read the feedback answers",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function feedback({response}){if(!Array.isArray(response?.definition?.fields)||!Array.isArray(response?.answers))throw Error('Expected the complete Typeform response');const read=(title,type,required)=>{const matches=response.definition.fields.filter(x=>x?.title===title);if(matches.length!==1||!matches[0].id||response.definition.fields.filter(x=>x.id===matches[0].id).length!==1)throw Error('Expected one question titled '+title);const answers=response.answers.filter(x=>x?.field?.id===matches[0].id);if(!answers.length&&!required)return '';if(answers.length!==1||answers[0].type!==type)throw Error('Invalid answer for '+title);const v=answers[0][type];if(type==='number'?(typeof v!=='number'||!Number.isFinite(v)):(typeof v!=='string'||(required&&!v.trim())))throw Error('Invalid answer for '+title);return v};const fields={Name:read('What is your name?','text',true),Email:read('What is your email address?','email',false),Score:read('What score would you like to give?','number',true),Description:read('Anything else you want to share?','text',false)};return {fields,records:[{fields}]}}\n\nif($json.event_type!==\"form_response\")throw Error(\"Expected a completed Typeform response\");return {json:feedback({response:$json.form_response}).fields};"
+      }
+    },
+    {
+      "id": "typeform-feedback-to-airtable-and-trello-2",
+      "name": "Save feedback in Airtable",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 1,
+      "parameters": {
+        "authentication": "airtableTokenApi",
+        "application": "YOUR_AIRTABLE_BASE_ID",
+        "table": "Feedback",
+        "operation": "append",
+        "addAllFields": true,
+        "options": {
+          "typecast": false
+        }
+      }
+    },
+    {
+      "id": "typeform-feedback-to-airtable-and-trello-3",
+      "name": "Confirm and classify the feedback",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function confirm({records,fields}){if(!Array.isArray(records)||records.length!==1||typeof records[0]?.id!=='string'||!records[0].id)throw Error('Airtable did not confirm one record');const f=records[0].fields;if(!f||f.Score!==fields.Score||f.Name!==fields.Name||(f.Email??'')!==fields.Email||(f.Description??'')!==fields.Description)throw Error('Airtable record differs from submitted feedback');const name=`[${f.Score}] ${f.Name}`,description=`Name: ${f.Name}\\nEmail: ${f.Email??''}\\nScore: ${f.Score}\\nDescription: ${f.Description??''}`;return {low:f.Score<7,name,description}}\n\nconst items=$input.all();return [{json:confirm({records:items.map(x=>x.json),fields:$(\"Read the feedback answers\").first().json})}];"
+      }
+    },
+    {
+      "id": "typeform-feedback-to-airtable-and-trello-4",
+      "name": "Is the score below seven?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "low",
+              "leftValue": "={{ $json.low }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "typeform-feedback-to-airtable-and-trello-5",
+      "name": "Create a Trello card",
+      "type": "n8n-nodes-base.trello",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "card",
+        "operation": "create",
+        "listId": "YOUR_TRELLO_LIST_ID",
+        "name": "={{ $json.name }}",
+        "description": "={{ $json.description }}",
+        "additionalFields": {}
+      }
+    }
+  ],
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Receive product feedback": {
+      "main": [
+        [
+          {
+            "node": "Read the feedback answers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the feedback answers": {
+      "main": [
+        [
+          {
+            "node": "Save feedback in Airtable",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save feedback in Airtable": {
+      "main": [
+        [
+          {
+            "node": "Confirm and classify the feedback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm and classify the feedback": {
+      "main": [
+        [
+          {
+            "node": "Is the score below seven?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is the score below seven?": {
+      "main": [
+        [
+          {
+            "node": "Create a Trello card",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {}
+}

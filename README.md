@@ -314,6 +314,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Unassigned Zendesk Tickets to Slack](workflows/unassigned-zendesk-tickets-to-slack/) - Summarize unassigned new and open Zendesk tickets in one Slack message.
 - [Zammad Ticket Summary to Zulip](workflows/zammad-ticket-summary-to-zulip/) - Count Zammad tickets by state and post a support summary to Zulip.
 - [Sync HubSpot Companies to Zendesk](workflows/sync-hubspot-companies-to-zendesk/) - Sync changed HubSpot company names and domains to matching Zendesk organizations.
+- [Route Typeform Feedback to Airtable and Trello](workflows/typeform-feedback-to-airtable-and-trello/) - Save Typeform product feedback in Airtable and create a Trello card for scores below seven.
 
 ## Finance
 
