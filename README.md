@@ -98,6 +98,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Monitor Sheet Servers and Email Alerts](workflows/monitor-sheet-servers-and-email-alerts/) - Check servers listed in Google Sheets every minute, log their status and email an alert when a check fails.
 - [Uptime Transition Alert to Telegram](workflows/uptime-transition-alert-to-telegram/) - Check a website every five minutes and send a Telegram alert when its HTTP status changes between up and down.
 - [Weather Temperature to SIGNL4 Alert](workflows/weather-temperature-to-signl4-alert/) - Send a SIGNL4 alert when a city’s current temperature is below 25°C.
+- [Monitor Sheet URLs to Telegram](workflows/monitor-sheet-urls-to-telegram/) - Check URLs in Google Sheets every minute and send failed checks to Telegram.
 
 ## Marketing
 
