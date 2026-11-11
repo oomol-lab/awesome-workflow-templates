@@ -208,6 +208,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [GitHub Repository Alert Light](workflows/github-repository-alert-light/) - Turn a Home Assistant light red whenever GitHub delivers an event from a selected repository.
 - [Google Sheet Table JSON API](workflows/google-sheet-table-json-api/) - Read a configured Google Sheet range and return every data row as a JSON object keyed by the first row.
 - [Generate a Current TOTP Code](workflows/generate-current-totp-code/) - Manually generate the current six-digit SHA-1 TOTP code using an existing account secret and a 30-second period.
+- [Capture a Public Page with Latchshot](workflows/capture-public-page-with-latchshot/) - Capture a public web page as a PNG with a configurable viewport and delay.
 
 ## Communication
 
