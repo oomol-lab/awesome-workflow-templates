@@ -39,7 +39,7 @@ You can run **Run analytics report** manually after configuration.
 
 Import the n8n JSON and edit the settings object in **Prepare Report Scope**. Select Header Auth credentials on the three Umami read nodes: header name `Authorization`, value `Bearer <your self-hosted API key>`.
 
-The two analysis HTTP nodes use OpenRouter. Select a separate Header Auth credential with `Authorization: Bearer <your OpenRouter key>` and replace `YOUR_OPENROUTER_MODEL_ID` in each JSON body with an available model. Check that model’s context limit before activation. The original free model route is not assumed available.
+The two analysis HTTP nodes use OpenRouter. Select a separate Header Auth credential with `Authorization: Bearer <your OpenRouter key>` and replace `YOUR_OPENROUTER_MODEL_ID` in each JSON body with an available model. Check that model’s context limit before activation. The original model route is not assumed available.
 
 In **Save Analytics Report**, select Baserow **Database Token** credentials with host `https://api.baserow.io`, then configure the table ID. Confirm the workflow timezone and schedule before activation.
 
