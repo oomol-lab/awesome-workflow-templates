@@ -40,6 +40,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Data Enrichment](#data-enrichment)
 - [Design](#design)
 - [Data and Analytics](#data-and-analytics)
+- [Security](#security)
 - [Contribute](#contribute)
 - [Licensing](#licensing)
 
@@ -308,6 +309,10 @@ A growing collection of automation workflows for connecting apps and getting rep
 ## Data and Analytics
 
 - [Random Cocktail as XML](workflows/random-cocktail-as-xml/) - Fetch a random cocktail from TheCocktailDB and return its recipe as XML.
+
+## Security
+
+- [Report Steam Phishing Domains](workflows/report-steam-phishing-domains/) - Send reports for a reviewed Steam phishing domain after checking its nameservers.
 
 ## Contribute
 

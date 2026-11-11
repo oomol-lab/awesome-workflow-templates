@@ -1,0 +1,227 @@
+{
+  "name": "Report Steam Phishing Domains",
+  "nodes": [
+    {
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "position": [
+        110,
+        200
+      ],
+      "parameters": {
+        "path": "steam-report",
+        "authentication": "basicAuth",
+        "responseMode": "lastNode",
+        "responseData": "allEntries"
+      },
+      "retryOnFail": false,
+      "typeVersion": 1,
+      "id": "report-steam-phishing-domains-hook"
+    },
+    {
+      "id": "report-steam-phishing-domains-validate",
+      "name": "Validate domain",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        300,
+        200
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function authorize({headers,query,expectedAuthorization}) {\n  const expected=typeof expectedAuthorization==='string'?expectedAuthorization.trim():'';\n  const parsed=/^Basic ([A-Za-z0-9+/]+={0,2})$/.exec(expected);\n  const credentials=parsed?Buffer.from(parsed[1],'base64').toString('utf8'):'';\n  if(!parsed || !/^[^:]+:.+$/.test(credentials) || /[\\r\\n]/.test(credentials))throw Error('Configure a Basic authorization secret with a username and password.');\n  const matches=Object.entries(headers||{}).filter(([k])=>k.toLowerCase()==='authorization');\n  const received=matches.length===1 && typeof matches[0][1]==='string'?/^Basic +([A-Za-z0-9+/]+={0,2})$/i.exec(matches[0][1].trim()):null;\n  const actual=received?Buffer.from(received[1],'base64').toString('utf8'):'';\n  let diff=credentials.length^actual.length;\n  for(let i=0;i<Math.max(credentials.length,actual.length);i++)diff|=(credentials.charCodeAt(i)||0)^(actual.charCodeAt(i)||0);\n  if(diff)return {accepted:false,statusCode:401,domain:'-',url:'-',body:{error:'Unauthorized'}};\n  const q=query?.q;\n  if(typeof q!=='string'||q.length>253||q.length<1||q.endsWith('.')||!q.split('.').every(s=>s.length>=1&&s.length<=63&&/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/i.test(s)))return {accepted:false,statusCode:400,domain:'-',url:'-',body:{error:'Provide a valid ASCII domain in q.'}};\n  return {accepted:true,statusCode:200,domain:q.toLowerCase(),url:'https://dns.google/resolve?name='+encodeURIComponent(q)+'&type=NS',body:{}};\n}\n\nconst r=authorize({headers:{authorization:'Basic dTpw'},expectedAuthorization:'Basic dTpw',query:$json.query});if(!r.accepted)throw Error(r.body.error);return {json:r};"
+      }
+    },
+    {
+      "id": "report-steam-phishing-domains-dns",
+      "name": "Resolve nameservers",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        500,
+        200
+      ],
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "report-steam-phishing-domains-inspect",
+      "name": "Inspect nameservers",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        700,
+        200
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function inspectDns({body,domain}) {\n  if(!body||typeof body!=='object'||Array.isArray(body)||!Number.isInteger(body.Status)||body.TC!==false)throw Error('Invalid or truncated DNS response');\n  if(body.Status===3)return {hasNameservers:false,cloudflare:false};\n  if(body.Status!==0)throw Error('DNS lookup failed');\n  if(body.Answer!==undefined&&!Array.isArray(body.Answer))throw Error('Invalid DNS answer');\n  const answers=body.Answer||[];\n  const ns=answers.filter(a=>a&&a.type===2);\n  if(ns.some(a=>typeof a.data!=='string'||!a.data.trim()))throw Error('Invalid nameserver');\n  return {hasNameservers:ns.length>0,cloudflare:ns.some(a=>/(?:^|\\.)cloudflare\\.com\\.?$/i.test(a.data))};\n}\n\nconst r=inspectDns({body:$input.first().json,domain:$('Validate domain').first().json.domain});return r.hasNameservers?[{json:r}]:[];"
+      }
+    },
+    {
+      "id": "report-steam-phishing-domains-format",
+      "name": "Prepare reports",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        200
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function message({domain}) {\n return {steamSubject:domain+' - Steam Phishing Website',steamText:'Hello,\\n\\nI am emailing you to let you know about a Steam phishing website: '+domain+'.\\n\\nThank you,\\nYour Name Here',cfSubject:domain+' - Steam Phishing Website on your network',cfText:'Hello,\\n\\nI am emailing you to let you know about a Steam phishing website on your network: '+domain+'.\\n\\nThank you,\\nYour Name Here'};\n}\n\nreturn {json:{...$json,...message({domain:$('Validate domain').item.json.domain})}};"
+      }
+    },
+    {
+      "id": "report-steam-phishing-domains-if",
+      "name": "Cloudflare nameservers",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1100,
+        200
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "report-steam-phishing-domains-condition",
+              "leftValue": "={{ $(\"Prepare reports\").item.json.cloudflare }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "name": "Mail CloudFlare",
+      "type": "n8n-nodes-base.mailgun",
+      "position": [
+        1830,
+        160
+      ],
+      "parameters": {
+        "text": "={{ $(\"Prepare reports\").item.json.cfText }}",
+        "subject": "={{ $(\"Prepare reports\").item.json.cfSubject }}",
+        "toEmail": "security@cloudflare.com",
+        "fromEmail": "YOUR_VERIFIED_SENDER"
+      },
+      "typeVersion": 1,
+      "id": "report-steam-phishing-domains-cf"
+    },
+    {
+      "name": "Mail Steam",
+      "type": "n8n-nodes-base.mailgun",
+      "position": [
+        1830,
+        340
+      ],
+      "parameters": {
+        "text": "={{ $(\"Prepare reports\").item.json.steamText }}",
+        "subject": "={{ $(\"Prepare reports\").item.json.steamSubject }}",
+        "toEmail": "security@valvesoftware.com",
+        "fromEmail": "YOUR_VERIFIED_SENDER"
+      },
+      "typeVersion": 1,
+      "id": "report-steam-phishing-domains-steam"
+    }
+  ],
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Validate domain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate domain": {
+      "main": [
+        [
+          {
+            "node": "Resolve nameservers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resolve nameservers": {
+      "main": [
+        [
+          {
+            "node": "Inspect nameservers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Inspect nameservers": {
+      "main": [
+        [
+          {
+            "node": "Prepare reports",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare reports": {
+      "main": [
+        [
+          {
+            "node": "Mail Steam",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mail Steam": {
+      "main": [
+        [
+          {
+            "node": "Cloudflare nameservers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cloudflare nameservers": {
+      "main": [
+        [
+          {
+            "node": "Mail CloudFlare",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {}
+}
