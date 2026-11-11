@@ -254,6 +254,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Create Recurring Airtable Tasks from Templates](workflows/create-recurring-airtable-tasks-from-templates/) - Create scheduled task records from Airtable templates.
 - [Add and List Stackby Records](workflows/add-and-list-stackby-records/) - Add an ID and name to a Stackby table and list its records.
 - [Archive Discover Weekly Tracks](workflows/archive-discover-weekly-tracks/) - Add tracks missing from an archive playlist from Spotify Discover Weekly.
+- [Create, Update and List Quickbase Records](workflows/create-update-and-list-quickbase-records/) - Create a Quickbase record, update its age field and list up to 50 records.
 
 ## Content
 
