@@ -38,6 +38,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Recruitment](#recruitment)
 - [Data Sync](#data-sync)
 - [Data Enrichment](#data-enrichment)
+- [Design](#design)
 - [Contribute](#contribute)
 - [Licensing](#licensing)
 
@@ -274,6 +275,10 @@ A growing collection of automation workflows for connecting apps and getting rep
 ## Data Enrichment
 
 - [EU Company Register to Google Sheets](workflows/eu-company-register-to-google-sheets/) - Look up every company row across seven national registers with the original Apify Actor, wait for complete results, then update or append the selected registration fields in Google Sheets.
+
+## Design
+
+- [Remove Background from Drive Images](workflows/remove-background-from-drive-images/) - Remove the background of new Drive images and save edited PNGs to a chosen folder.
 
 ## Contribute
 
