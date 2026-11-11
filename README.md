@@ -134,6 +134,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Domain Filtered Research](workflows/domain-filtered-research/) - Ask Perplexity a research question with domain and one-month publication filters, and return the answer with citation URLs.
 - [Web Search Results](workflows/web-search-results/) - Run one Tavily web search and return up to five ranked results with a title, URL and snippet.
 - [Hacker News Popular Items](workflows/hacker-news-popular-items/) - Export up to fifty popular Hacker News search items as one JSON snapshot, with titles, points, URLs, timestamps and authors.
+- [Extract Book Listings to Google Sheets](workflows/extract-book-listings-to-google-sheets/) - Read a book catalogue page, extract listings with AI and append them to a Google Sheet.
 
 ## Productivity
 
