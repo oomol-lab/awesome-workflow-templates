@@ -1,0 +1,129 @@
+{
+  "nodes": [
+    {
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "position": [
+        450,
+        300
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "acknowledge-pagerduty-incident-from-mattermost",
+        "responseMode": "onReceived",
+        "options": {
+          "responseData": "{}",
+          "responseContentType": "application/json"
+        }
+      },
+      "typeVersion": 1,
+      "id": "acknowledge-pagerduty-incident-from-mattermost-0"
+    },
+    {
+      "id": "acknowledge-pagerduty-incident-from-mattermost-1",
+      "name": "Validate the action",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function planAcknowledgement({body,secret,from}){\n if(typeof secret!=='string'||secret.length<24||secret==='YOUR_ACTION_SECRET')throw Error('Configure a strong action secret');const received=body?.context?.action_secret;if(typeof received!=='string'||received!==secret)throw Error('Invalid action secret');const incident=body?.context?.pagerduty_incident,channel=body?.channel_id;if(typeof incident!=='string'||!incident.trim()||typeof channel!=='string'||!channel.trim())throw Error('Missing incident or channel');if(typeof from!=='string'||!/^\\S+@\\S+\\.\\S+$/.test(from)||from==='YOUR_PAGERDUTY_EMAIL')throw Error('Configure PagerDuty user email');return{incidentId:incident,channelId:channel,from};\n}\n\nreturn {json:planAcknowledgement({body:$json.body,secret:$env.MATTERMOST_ACTION_SECRET,from:\"YOUR_PAGERDUTY_EMAIL\"})};"
+      }
+    },
+    {
+      "name": "PagerDuty",
+      "type": "n8n-nodes-base.pagerDuty",
+      "position": [
+        650,
+        300
+      ],
+      "parameters": {
+        "resource": "incident",
+        "operation": "update",
+        "email": "={{ $(\"Validate the action\").first().json.from }}",
+        "incidentId": "={{ $(\"Validate the action\").first().json.incidentId }}",
+        "updateFields": {
+          "status": "acknowledged"
+        }
+      },
+      "typeVersion": 1,
+      "id": "acknowledge-pagerduty-incident-from-mattermost-2"
+    },
+    {
+      "id": "acknowledge-pagerduty-incident-from-mattermost-3",
+      "name": "Confirm the incident status",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function confirmAcknowledgement({incident,incidentId}){if(!incident||incident.id!==incidentId||incident.status!=='acknowledged')throw Error('PagerDuty did not confirm acknowledgement');return{message:'💪🏼 Incident status has been changed to Acknowledged on PagerDuty.'};}\n\nreturn {json:confirmAcknowledgement({incident:$json,incidentId:$(\"Validate the action\").first().json.incidentId})};"
+      }
+    },
+    {
+      "name": "Mattermost",
+      "type": "n8n-nodes-base.mattermost",
+      "position": [
+        850,
+        300
+      ],
+      "parameters": {
+        "resource": "message",
+        "operation": "post",
+        "channelId": "={{ $(\"Validate the action\").first().json.channelId }}",
+        "message": "={{ $json.message }}",
+        "attachments": [],
+        "otherOptions": {}
+      },
+      "typeVersion": 1,
+      "id": "acknowledge-pagerduty-incident-from-mattermost-4"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Validate the action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate the action": {
+      "main": [
+        [
+          {
+            "node": "PagerDuty",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PagerDuty": {
+      "main": [
+        [
+          {
+            "node": "Confirm the incident status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm the incident status": {
+      "main": [
+        [
+          {
+            "node": "Mattermost",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Acknowledge a PagerDuty Incident from Mattermost",
+  "active": false,
+  "pinData": {}
+}
