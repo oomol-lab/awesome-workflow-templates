@@ -1,0 +1,187 @@
+{
+  "nodes": [
+    {
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "position": [
+        450,
+        300
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "resolve-pagerduty-and-jira-from-mattermost",
+        "responseMode": "onReceived",
+        "options": {
+          "responseData": "{}",
+          "responseContentType": "application/json"
+        }
+      },
+      "typeVersion": 1,
+      "id": "resolve-pagerduty-and-jira-from-mattermost-0"
+    },
+    {
+      "id": "resolve-pagerduty-and-jira-from-mattermost-1",
+      "name": "Validate the action",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function planResolution({body,secret,from,transitionId,announcementChannel}){\n if(typeof secret!=='string'||secret.length<24||secret==='YOUR_ACTION_SECRET')throw Error('Configure a strong action secret');if(typeof body?.context?.action_secret!=='string'||body.context.action_secret!==secret)throw Error('Invalid action secret');const incident=body?.context?.pagerduty_incident,channel=body?.channel_id,key=body?.context?.jira_key;if(typeof incident!=='string'||!incident.trim()||typeof channel!=='string'||!channel.trim()||typeof key!=='string'||!/^[A-Za-z][A-Za-z0-9_]*-[1-9][0-9]*$/.test(key))throw Error('Missing or invalid incident, channel or Jira key');if(typeof from!=='string'||!/^\\S+@\\S+\\.\\S+$/.test(from))throw Error('Configure PagerDuty user email');if(typeof transitionId!=='string'||!/^\\d+$/.test(transitionId))throw Error('Configure Jira transition ID');if(typeof announcementChannel!=='string'||!announcementChannel.trim()||announcementChannel==='YOUR_ANNOUNCEMENT_CHANNEL_ID')throw Error('Configure announcement channel');return{incidentId:incident,channelId:channel,from,announcementChannel,transitionId,endpoint:'/issue/'+encodeURIComponent(key)+'/transitions',jiraBody:{transition:{id:transitionId}}};\n}\n\nreturn {json:planResolution({body:$json.body,secret:$env.MATTERMOST_ACTION_SECRET,from:\"YOUR_PAGERDUTY_EMAIL\",transitionId:\"YOUR_JIRA_TRANSITION_ID\",announcementChannel:\"YOUR_ANNOUNCEMENT_CHANNEL_ID\"})};"
+      }
+    },
+    {
+      "name": "PagerDuty",
+      "type": "n8n-nodes-base.pagerDuty",
+      "position": [
+        650,
+        300
+      ],
+      "parameters": {
+        "resource": "incident",
+        "operation": "update",
+        "email": "={{ $(\"Validate the action\").first().json.from }}",
+        "incidentId": "={{ $(\"Validate the action\").first().json.incidentId }}",
+        "updateFields": {
+          "status": "resolved"
+        }
+      },
+      "typeVersion": 1,
+      "id": "resolve-pagerduty-and-jira-from-mattermost-2"
+    },
+    {
+      "id": "resolve-pagerduty-and-jira-from-mattermost-3",
+      "name": "Confirm incident resolution",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function confirmResolution({incident,incidentId}){if(!incident||incident.id!==incidentId||incident.status!=='resolved')throw Error('PagerDuty did not confirm resolution');const summary=typeof incident.summary==='string'&&incident.summary.trim()?incident.summary:incidentId;return{announcement:'🎉 The incident ('+summary+') was resolved by the lovely folks in the on-call team!'};}\n\nreturn {json:confirmResolution({incident:$json,incidentId:$(\"Validate the action\").first().json.incidentId})};"
+      }
+    },
+    {
+      "name": "Jira",
+      "type": "n8n-nodes-base.jira",
+      "position": [
+        850,
+        300
+      ],
+      "parameters": {
+        "resource": "issue",
+        "operation": "update",
+        "issueKey": "={{ $node[\"Webhook\"].json.body.context.jira_key }}",
+        "updateFields": {
+          "statusId": "={{ $(\"Validate the action\").first().json.transitionId }}"
+        }
+      },
+      "typeVersion": 1,
+      "id": "resolve-pagerduty-and-jira-from-mattermost-4"
+    },
+    {
+      "name": "Mattermost",
+      "type": "n8n-nodes-base.mattermost",
+      "position": [
+        1050,
+        200
+      ],
+      "parameters": {
+        "resource": "message",
+        "operation": "post",
+        "channelId": "={{ $(\"Validate the action\").first().json.channelId }}",
+        "message": "💪 This issue got closed in PagerDuty and Jira.",
+        "attachments": [],
+        "otherOptions": {}
+      },
+      "typeVersion": 1,
+      "id": "resolve-pagerduty-and-jira-from-mattermost-5"
+    },
+    {
+      "name": "Mattermost1",
+      "type": "n8n-nodes-base.mattermost",
+      "position": [
+        1050,
+        400
+      ],
+      "parameters": {
+        "resource": "message",
+        "operation": "post",
+        "channelId": "={{ $(\"Validate the action\").first().json.announcementChannel }}",
+        "message": "={{ $(\"Confirm incident resolution\").first().json.announcement }}",
+        "attachments": [],
+        "otherOptions": {}
+      },
+      "typeVersion": 1,
+      "id": "resolve-pagerduty-and-jira-from-mattermost-6"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Validate the action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate the action": {
+      "main": [
+        [
+          {
+            "node": "PagerDuty",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PagerDuty": {
+      "main": [
+        [
+          {
+            "node": "Confirm incident resolution",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm incident resolution": {
+      "main": [
+        [
+          {
+            "node": "Jira",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Jira": {
+      "main": [
+        [
+          {
+            "node": "Mattermost",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mattermost": {
+      "main": [
+        [
+          {
+            "node": "Mattermost1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Resolve PagerDuty and Jira from Mattermost",
+  "active": false,
+  "pinData": {}
+}
