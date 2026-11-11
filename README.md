@@ -210,6 +210,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Create an Asana Task from a Webhook](workflows/create-asana-task-from-webhook/) - Create an Asana task from a GET query parameter and return the saved task’s real permalink.
 - [Create, Update, and Read a Taiga Issue](workflows/create-update-and-read-taiga-issue/) - Create a Taiga issue, update its description, and retrieve the same issue.
 - [Sync Spotify Liked Songs to a Playlist](workflows/sync-spotify-liked-songs-to-playlist/) - Synchronize liked Spotify tracks to a named playlist and report additions and deletions to Gotify.
+- [Reschedule Overdue and Delete Completed Asana Tasks](workflows/reschedule-and-clean-asana-tasks/) - Reschedule overdue Asana tasks and delete completed tasks returned for an assignee in a workspace.
 
 ## Content
 
