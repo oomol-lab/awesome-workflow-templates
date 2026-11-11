@@ -1,0 +1,399 @@
+{
+  "nodes": [
+    {
+      "id": "create-recurring-airtable-tasks-from-templates-0",
+      "name": "Get Automated Task",
+      "type": "n8n-nodes-base.airtable",
+      "position": [
+        1040,
+        660
+      ],
+      "parameters": {
+        "id": "={{ $('Entered View  \"First Task - Create Task\"').item.json[\"id\"] }}",
+        "base": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Airtable Base ID\\'s').item.json[\"base_id\"] }}"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Airtable Base ID\\'s').item.json[\"table_automate_id\"] }}"
+        },
+        "options": {},
+        "operation": "get",
+        "authentication": "airtableTokenApi"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "create-recurring-airtable-tasks-from-templates-1",
+      "name": "Create Task",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        2140,
+        660
+      ],
+      "parameters": {
+        "url": "=https://api.airtable.com/v0/{{ $('Airtable Base ID\\'s').item.json[\"base_id\"] }}/{{ $('Airtable Base ID\\'s').item.json[\"table_task_id\"] }}",
+        "method": "POST",
+        "options": {},
+        "jsonBody": "={{ {records:$json.create} }}",
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "authentication": "predefinedCredentialType",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "nodeCredentialType": "airtableTokenApi"
+      },
+      "typeVersion": 4.1
+    },
+    {
+      "id": "create-recurring-airtable-tasks-from-templates-2",
+      "name": "Get Task Template",
+      "type": "n8n-nodes-base.airtable",
+      "position": [
+        1240,
+        660
+      ],
+      "parameters": {
+        "id": "={{ $('Get Automated Task').item.json[\"Template\"][\"0\"] }}",
+        "base": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Airtable Base ID\\'s').item.json[\"base_id\"] }}"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Airtable Base ID\\'s').item.json[\"table_template_id\"] }}"
+        },
+        "options": {},
+        "operation": "get",
+        "authentication": "airtableTokenApi"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "create-recurring-airtable-tasks-from-templates-3",
+      "name": "Get Assignee",
+      "type": "n8n-nodes-base.airtable",
+      "position": [
+        1460,
+        660
+      ],
+      "parameters": {
+        "id": "={{ $('Get Automated Task').item.json[\"Assigned Team Member\"][\"0\"] }}",
+        "base": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Airtable Base ID\\'s').item.json[\"base_id\"] }}"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Airtable Base ID\\'s').item.json[\"table_team_id\"] }}"
+        },
+        "options": {},
+        "operation": "get",
+        "authentication": "airtableTokenApi"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "create-recurring-airtable-tasks-from-templates-4",
+      "name": "Get Client",
+      "type": "n8n-nodes-base.airtable",
+      "position": [
+        1660,
+        660
+      ],
+      "parameters": {
+        "id": "={{ $('Get Automated Task').item.json[\"Client\"][\"0\"] }}",
+        "base": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Airtable Base ID\\'s').item.json[\"base_id\"] }}"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Airtable Base ID\\'s').item.json[\"table_clients_id\"] }}"
+        },
+        "options": {},
+        "operation": "get",
+        "authentication": "airtableTokenApi"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "create-recurring-airtable-tasks-from-templates-5",
+      "name": "Calculate Dates",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1880,
+        660
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function prepare({automation,template,assignee,client}) {\n const f=automation?.fields,t=template?.fields;\n for(const r of [automation,template,assignee,client])if(typeof r?.id!=='string'||!r.id||!r.fields)throw Error('Invalid Airtable record');\n for(const [name,record] of [['Template',template],['Assigned Team Member',assignee],['Client',client]])if(f?.[name]?.[0]!==record.id)throw Error('Linked record mismatch');\n if(typeof t?.['Template Name']!=='string'||!t['Template Name'].trim()||typeof t.Description!=='string')throw Error('Missing template name or description');\n const first=f['First Task Created'];if(![true,false,'true','false'].includes(first))throw Error('Invalid first-task flag');\n const base=(first===false||first==='false')?f['Start Date']:f['Last Task Created'];\n if(typeof base!=='string'||!/^\\d{4}-\\d\\d-\\d\\d$/.test(base))throw Error('Invalid kickoff date');\n const num=f['Time Value'],soft=f['Days for Soft Due Date'];if(!Number.isSafeInteger(num)||!Number.isSafeInteger(soft))throw Error('Invalid task day offsets');\n const d=new Date(base+'T00:00:00.000Z');if(!Number.isFinite(d.getTime())||d.toISOString().slice(0,10)!==base)throw Error('Invalid date');\n const add=(date,n)=>new Date(date.getTime()+n*86400000).toISOString().slice(0,10);\n const kickoff=add(d,(first===true||first==='true')?num:0),k=new Date(kickoff+'T00:00:00Z'),hard=add(k,num),today=new Date().toISOString().slice(0,10);\n return {create:[{fields:{Status:'Todo','Task Name':t['Template Name'],'Task Description':t.Description,'Kickoff Date':kickoff,'Soft Due Date':add(k,num-soft),'Hard Due Date':hard,Assignee:[assignee.id],Template:[template.id],Client:[client.id]}}],update:[{id:automation.id,fields:{'First Task Created':'true','Last Task Created':today,'Next Task Creation Date':add(new Date(hard+'T00:00:00Z'),-1)}}],title:t['Template Name']};\n}\n\nconst r=n=>{const x=$(n).item.json;return {id:x.id,fields:x}}; return {json:prepare({automation:r('Get Automated Task'),template:r('Get Task Template'),assignee:r('Get Assignee'),client:r('Get Client')})};"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "create-recurring-airtable-tasks-from-templates-6",
+      "name": "Update Automated Record",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        2420,
+        660
+      ],
+      "parameters": {
+        "url": "=https://api.airtable.com/v0/{{ $('Airtable Base ID\\'s').item.json[\"base_id\"] }}/{{ $('Airtable Base ID\\'s').item.json[\"table_automate_id\"] }}",
+        "method": "PATCH",
+        "options": {},
+        "jsonBody": "={{ {records:$('Calculate Dates').item.json.update} }}",
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "authentication": "predefinedCredentialType",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "nodeCredentialType": "airtableTokenApi"
+      },
+      "typeVersion": 4.1
+    },
+    {
+      "id": "create-recurring-airtable-tasks-from-templates-7",
+      "name": "Entered View  \"First Task - Create Task\"",
+      "type": "n8n-nodes-base.airtableTrigger",
+      "position": [
+        500,
+        660
+      ],
+      "parameters": {
+        "baseId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_AIRTABLE_BASE_ID"
+        },
+        "tableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_TABLE_AUTOMATE_ID"
+        },
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "triggerField": "updated_at",
+        "authentication": "airtableTokenApi",
+        "additionalFields": {
+          "viewId": "YOUR_VIEW_ID"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "create-recurring-airtable-tasks-from-templates-8",
+      "name": "Airtable Base ID's",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        720,
+        660
+      ],
+      "parameters": {
+        "fields": {
+          "values": [
+            {
+              "name": "base_id",
+              "stringValue": "YOUR_BASE_ID"
+            },
+            {
+              "name": "table_task_id",
+              "stringValue": "YOUR_TABLE_TASK_ID"
+            },
+            {
+              "name": "table_template_id",
+              "stringValue": "YOUR_TABLE_TEMPLATE_ID"
+            },
+            {
+              "name": "table_clients_id",
+              "stringValue": "YOUR_TABLE_CLIENTS_ID"
+            },
+            {
+              "name": "table_team_id",
+              "stringValue": "YOUR_TABLE_TEAM_ID"
+            },
+            {
+              "name": "table_automate_id",
+              "stringValue": "YOUR_TABLE_AUTOMATE_ID"
+            }
+          ]
+        },
+        "include": "none",
+        "options": {}
+      },
+      "typeVersion": 3.2
+    },
+    {
+      "name": "Confirm task creation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const r=$json.records;if(!Array.isArray(r)||r.length!==1||typeof r[0]?.id!=='string'||!r[0].id)throw Error('Airtable did not confirm the expected record');return {json:$json};"
+      },
+      "id": "create-recurring-airtable-tasks-from-templates-9"
+    },
+    {
+      "name": "Confirm automation update",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const r=$json.records;if(!Array.isArray(r)||r.length!==1||typeof r[0]?.id!=='string'||!r[0].id||r[0].id!==$('Get Automated Task').item.json.id)throw Error('Airtable did not confirm the expected record');return {json:$json};"
+      },
+      "id": "create-recurring-airtable-tasks-from-templates-10"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Get Client": {
+      "main": [
+        [
+          {
+            "node": "Calculate Dates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Task": {
+      "main": [
+        [
+          {
+            "node": "Confirm task creation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Assignee": {
+      "main": [
+        [
+          {
+            "node": "Get Client",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculate Dates": {
+      "main": [
+        [
+          {
+            "node": "Create Task",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Task Template": {
+      "main": [
+        [
+          {
+            "node": "Get Assignee",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Airtable Base ID's": {
+      "main": [
+        [
+          {
+            "node": "Get Automated Task",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Automated Task": {
+      "main": [
+        [
+          {
+            "node": "Get Task Template",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Automated Record": {
+      "main": [
+        [
+          {
+            "node": "Confirm automation update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Entered View  \"First Task - Create Task\"": {
+      "main": [
+        [
+          {
+            "node": "Airtable Base ID's",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm task creation": {
+      "main": [
+        [
+          {
+            "node": "Update Automated Record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm automation update": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "name": "Create Recurring Airtable Tasks from Templates",
+  "settings": {
+    "timezone": "UTC"
+  },
+  "active": false
+}

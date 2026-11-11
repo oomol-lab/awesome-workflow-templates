@@ -242,6 +242,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Refresh Daily Todoist Tasks](workflows/refresh-daily-todoist-tasks/) - Delete old daily tasks and copy today’s matching task templates to your Todoist Inbox.
 - [Create and Update a Google Contact](workflows/create-update-google-contact/) - Create a Google contact, set their organization and read the updated contact.
 - [Send Daily German Vocabulary](workflows/send-daily-german-vocabulary/) - Translate words from top Hacker News stories into German, save them in Airtable and send five by SMS.
+- [Create Recurring Airtable Tasks from Templates](workflows/create-recurring-airtable-tasks-from-templates/) - Create scheduled task records from Airtable templates.
 
 ## Content
 
