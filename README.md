@@ -159,6 +159,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Typeform Contacts to Airtable and Slack](workflows/typeform-contacts-airtable-slack/) - Save the name and email from a completed Typeform submission in Airtable, then notify a Slack channel after the record is confirmed.
 - [Typeform Invoice PDF](workflows/typeform-invoice-pdf/) - Build a two-item invoice from a completed Typeform response, generate its PDF with APITemplate.io and retain the complete PDF and generation response.
 - [Create a Mattermost Channel and Welcome a Member](workflows/create-mattermost-channel-and-welcome-member/) - Create a new public Mattermost channel, add a specified user and post the welcome message in that same channel.
+- [Gmail Message Snippets to Google Sheets](workflows/gmail-message-snippets-to-google-sheets/) - Append the sender, subject and Gmail snippet of each new message to a spreadsheet.
 
 ## Content
 
