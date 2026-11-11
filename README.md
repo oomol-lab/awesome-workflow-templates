@@ -39,6 +39,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Data Sync](#data-sync)
 - [Data Enrichment](#data-enrichment)
 - [Design](#design)
+- [Data and Analytics](#data-and-analytics)
 - [Contribute](#contribute)
 - [Licensing](#licensing)
 
@@ -303,6 +304,10 @@ A growing collection of automation workflows for connecting apps and getting rep
 
 - [Remove Background from Drive Images](workflows/remove-background-from-drive-images/) - Remove the background of new Drive images and save edited PNGs to a chosen folder.
 - [Generate a FLUX Image to Google Drive](workflows/generate-flux-image-to-google-drive/) - Generate a FLUX.1 dev image with fal and save the completed image to Google Drive.
+
+## Data and Analytics
+
+- [Random Cocktail as XML](workflows/random-cocktail-as-xml/) - Fetch a random cocktail from TheCocktailDB and return its recipe as XML.
 
 ## Contribute
 
