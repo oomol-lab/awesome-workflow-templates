@@ -1,0 +1,247 @@
+{
+  "nodes": [
+    {
+      "name": "On clicking 'execute'",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        250,
+        300
+      ],
+      "parameters": {},
+      "typeVersion": 1,
+      "id": "generate-securityscorecard-report-0"
+    },
+    {
+      "name": "Set scorecard",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function input({identifier}){if(typeof identifier!=='string'||!identifier.trim())throw Error('Enter a scorecard domain or ID');return {identifier:identifier.trim(),body:{scorecard_identifier:identifier.trim()}}}\n\nreturn [{json:input({identifier:''})}];"
+      },
+      "id": "generate-securityscorecard-report-1"
+    },
+    {
+      "name": "Request report",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.securityscorecard.io/reports/full-scorecard-json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.body) }}",
+        "options": {
+          "timeout": 30000,
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "generate-securityscorecard-report-2"
+    },
+    {
+      "name": "Read report ID",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function created({body,statusCode,bodyEncoding}){if(statusCode<200||statusCode>=300||bodyEncoding!==null||typeof body?.id!=='string'||!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(body.id))throw Error('Report request not confirmed');return {id:body.id}}\n\nconst r=$input.first().json;return [{json:created({body:r.body,statusCode:r.statusCode,bodyEncoding:null})}];"
+      },
+      "id": "generate-securityscorecard-report-3"
+    },
+    {
+      "name": "Wait for report",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "parameters": {
+        "amount": 1,
+        "unit": "minutes"
+      },
+      "id": "generate-securityscorecard-report-4"
+    },
+    {
+      "name": "Read recent reports",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.securityscorecard.io/reports/recent",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 30000,
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "generate-securityscorecard-report-5"
+    },
+    {
+      "name": "Find requested report",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function poll({body,statusCode,bodyEncoding,id,previous}){if(statusCode<200||statusCode>=300||bodyEncoding!==null||!body||typeof body!=='object'||Array.isArray(body))throw Error('Invalid recent reports response');const entries=body.entries??[];if(!Array.isArray(entries))throw Error('Invalid recent reports');const matches=entries.filter(x=>x?.id===id);if(matches.length>1)throw Error('Duplicate report ID');const url=matches[0]?.download_url,count=(previous?.count??0)+1;if(url!=null&&url!==''){if(typeof url!=='string'||!/^https:\\/\\/api\\.securityscorecard\\.io\\/reports\\/files\\/[^\\s#\\\\]+$/.test(url)||/%2e|%5c/i.test(url.split('?')[0])||url.split('?')[0].includes('..'))throw Error('Unexpected report URL');return {state:{count},done:true,url}}if(count>=60)throw Error('Report not available after 60 checks');return {state:{count},done:false,url:''}}\n\nconst r=$input.first().json;return [{json:poll({body:r.body,statusCode:r.statusCode,bodyEncoding:null,id:$('Read report ID').first().json.id,previous:{count:$runIndex}})}];"
+      },
+      "id": "generate-securityscorecard-report-6"
+    },
+    {
+      "name": "Report ready?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "ready",
+              "leftValue": "={{ $json.done }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "generate-securityscorecard-report-7"
+    },
+    {
+      "name": "SecurityScorecard2",
+      "type": "n8n-nodes-base.securityScorecard",
+      "position": [
+        850,
+        300
+      ],
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "resource": "report",
+        "operation": "download"
+      },
+      "typeVersion": 1,
+      "id": "generate-securityscorecard-report-8"
+    }
+  ],
+  "connections": {
+    "On clicking 'execute'": {
+      "main": [
+        [
+          {
+            "node": "Set scorecard",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set scorecard": {
+      "main": [
+        [
+          {
+            "node": "Request report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Request report": {
+      "main": [
+        [
+          {
+            "node": "Read report ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read report ID": {
+      "main": [
+        [
+          {
+            "node": "Wait for report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for report": {
+      "main": [
+        [
+          {
+            "node": "Read recent reports",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read recent reports": {
+      "main": [
+        [
+          {
+            "node": "Find requested report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find requested report": {
+      "main": [
+        [
+          {
+            "node": "Report ready?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Report ready?": {
+      "main": [
+        [
+          {
+            "node": "SecurityScorecard2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait for report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Generate a SecurityScorecard Report",
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}
