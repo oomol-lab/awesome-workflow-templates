@@ -1,0 +1,280 @@
+{
+  "nodes": [
+    {
+      "id": "sync-hubspot-companies-to-zendesk-0",
+      "name": "Every 5 minutes",
+      "type": "n8n-nodes-base.cron",
+      "position": [
+        180,
+        300
+      ],
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "mode": "everyX",
+              "unit": "minutes",
+              "value": 5
+            }
+          ]
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sync-hubspot-companies-to-zendesk-1",
+      "name": "Read the last run time",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const state=$getWorkflowStaticData('global'),until=Date.now();if(state.lastCompanyRun==null)state.lastCompanyRun=until;if(!Number.isSafeInteger(state.lastCompanyRun)||state.lastCompanyRun<0||state.lastCompanyRun>until)throw Error('Invalid company watermark');return [{json:{since:state.lastCompanyRun,until,zendeskBase:'https://YOUR_ZENDESK_SUBDOMAIN.zendesk.com'}}];"
+      }
+    },
+    {
+      "id": "sync-hubspot-companies-to-zendesk-2",
+      "name": "List HubSpot companies",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.hubapi.com/crm/v3/objects/companies",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          },
+          "pagination": {
+            "pagination": {
+              "paginationMode": "responseContainsNextURL",
+              "nextURL": "={{ 'https://api.hubapi.com/crm/v3/objects/companies?limit=100&properties=name%2Cdomain' + ($pageCount === 0 ? '' : '&after=' + encodeURIComponent($response.body?.paging?.next?.after ?? '')) }}",
+              "paginationCompleteWhen": "other",
+              "completeExpression": "={{ (() => { const paging=$response.body?.paging;if(paging!=null&&(typeof paging!=='object'||Array.isArray(paging)))throw Error('Invalid HubSpot paging');const p=paging?.next; if(p!=null && (typeof p!=='object'||Array.isArray(p)||typeof p.after !== 'string' || !p.after)) throw Error('Invalid HubSpot cursor'); if($pageCount>=100 && p!=null) throw Error('HubSpot pagination exceeded 100 pages'); return p==null; })() }}",
+              "limitPagesFetched": false
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "sync-hubspot-companies-to-zendesk-3",
+      "name": "Select changed HubSpot companies",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const start=$('Read the last run time').first().json,rows=[];for(const page of $input.all()){if(!page.json.body||!Array.isArray(page.json.body.results))throw Error('Invalid HubSpot list');for(const c of page.json.body.results){const t=Date.parse(c.updatedAt);if(!c||typeof c.id!=='string'||!c.properties||!Number.isFinite(t))throw Error('Invalid HubSpot company');if(t>=start.since&&t<start.until)rows.push(c)}}return rows.length?[{json:{companies:rows}}]:[];"
+      }
+    },
+    {
+      "id": "sync-hubspot-companies-to-zendesk-4",
+      "name": "List Zendesk organizations",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $('Read the last run time').first().json.zendeskBase + '/api/v2/organizations.json' }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "zendeskApi",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          },
+          "pagination": {
+            "pagination": {
+              "paginationMode": "responseContainsNextURL",
+              "nextURL": "={{ $('Read the last run time').first().json.zendeskBase + '/api/v2/organizations.json?page%5Bsize%5D=100' + ($pageCount===0?'':'&page%5Bafter%5D='+encodeURIComponent($response.body?.meta?.after_cursor ?? '')) }}",
+              "paginationCompleteWhen": "other",
+              "completeExpression": "={{ (() => {const m=$response.body?.meta;if(!m||typeof m.has_more!=='boolean')throw Error('Invalid Zendesk page');if(m.has_more&&(typeof m.after_cursor!=='string'||!m.after_cursor))throw Error('Invalid Zendesk cursor');if($pageCount>=100 && m.has_more)throw Error('Zendesk pagination exceeded 100 pages');return !m.has_more})() }}",
+              "limitPagesFetched": false
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "sync-hubspot-companies-to-zendesk-5",
+      "name": "Match organizations by name",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const companies=$('Select changed HubSpot companies').first().json.companies,orgs=[];for(const page of $input.all()){if(!Array.isArray(page.json.body?.organizations))throw Error('Invalid Zendesk organizations');orgs.push(...page.json.body.organizations)}const byName=new Map(),seen=new Set();for(const o of orgs){if(!Number.isSafeInteger(o.id)||typeof o.name!=='string')throw Error('Invalid Zendesk organization');const k=o.name.toLowerCase();byName.set(k,[...(byName.get(k)||[]),o])}return companies.map(c=>{const name=c.properties?.name,domain=c.properties?.domain;if(typeof name!=='string'||!name.trim()||typeof domain!=='string'||!domain.trim())throw Error('Company name or domain missing');const k=name.toLowerCase();if(seen.has(k))throw Error('Duplicate HubSpot company names');seen.add(k);const matches=byName.get(k)||[];if(matches.length>1)throw Error('Duplicate Zendesk organization names');return {json:{id:matches[0]?.id??null,name,domain}}});"
+      }
+    },
+    {
+      "id": "sync-hubspot-companies-to-zendesk-6",
+      "name": "Process companies one by one",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      }
+    },
+    {
+      "id": "sync-hubspot-companies-to-zendesk-7",
+      "name": "Write the Zendesk organization",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "={{ $json.id == null ? 'POST' : 'PUT' }}",
+        "url": "={{ $('Read the last run time').first().json.zendeskBase + '/api/v2/organizations' + ($json.id == null ? '.json' : '/' + $json.id + '.json') }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "zendeskApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {organization:{name:$json.name,domain_names:[$json.domain]}} }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "sync-hubspot-companies-to-zendesk-8",
+      "name": "Confirm the organization",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "if(!Number.isSafeInteger($json.organization?.id)||$json.organization.id<1)throw Error('Zendesk did not confirm organization');const expected=$('Process companies one by one').item.json.id;if(expected!==null&&$json.organization.id!==expected)throw Error('Zendesk confirmed a different organization');return $input.all();"
+      }
+    },
+    {
+      "id": "sync-hubspot-companies-to-zendesk-9",
+      "name": "Save the completed run",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const until=$('Read the last run time').first().json.until;if(!Number.isSafeInteger(until))throw Error('Invalid run time');$getWorkflowStaticData('global').lastCompanyRun=until;return $input.all();"
+      }
+    }
+  ],
+  "connections": {
+    "Every 5 minutes": {
+      "main": [
+        [
+          {
+            "node": "Read the last run time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the last run time": {
+      "main": [
+        [
+          {
+            "node": "List HubSpot companies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List HubSpot companies": {
+      "main": [
+        [
+          {
+            "node": "Select changed HubSpot companies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select changed HubSpot companies": {
+      "main": [
+        [
+          {
+            "node": "List Zendesk organizations",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List Zendesk organizations": {
+      "main": [
+        [
+          {
+            "node": "Match organizations by name",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Match organizations by name": {
+      "main": [
+        [
+          {
+            "node": "Process companies one by one",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process companies one by one": {
+      "main": [
+        [
+          {
+            "node": "Save the completed run",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Write the Zendesk organization",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write the Zendesk organization": {
+      "main": [
+        [
+          {
+            "node": "Confirm the organization",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm the organization": {
+      "main": [
+        [
+          {
+            "node": "Process companies one by one",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Sync HubSpot Companies to Zendesk",
+  "active": false,
+  "settings": {
+    "timezone": "UTC",
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}
