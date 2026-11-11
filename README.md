@@ -217,6 +217,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Rocket.Chat Message Sender](workflows/rocketchat-message-sender/) - Post one text message to a Rocket.Chat room or user.
 - [Gmail AI Reply Draft](workflows/gmail-ai-reply-draft/) - Assess incoming Gmail messages, generate replies only when needed and save them as drafts in the original conversations.
 - [Google Drive New File Email Alert](workflows/google-drive-new-file-email-alert/) - Watch a Google Drive folder for newly created files and send one plain-text email for each file.
+- [Telegram Voice Language Translator](workflows/telegram-voice-language-translator/) - Transcribe a Telegram voice message, translate between two configured languages and reply to the same chat with both text and complete synthesized audio.
 
 ## Customer Support
 
