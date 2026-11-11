@@ -1,0 +1,173 @@
+{
+  "name": "Assign GitHub Issues on Request",
+  "nodes": [
+    {
+      "name": "Github Trigger1",
+      "type": "n8n-nodes-base.githubTrigger",
+      "position": [
+        520,
+        360
+      ],
+      "parameters": {
+        "owner": "your-github-owner",
+        "events": [
+          "issue_comment",
+          "issues"
+        ],
+        "repository": "your-github-repo",
+        "authentication": "oAuth2"
+      },
+      "typeVersion": 1,
+      "id": "assign-github-issues-on-request-trigger"
+    },
+    {
+      "id": "assign-github-issues-on-request-inspect",
+      "name": "Inspect assignment request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function decide({body}) {\n const ignore={action:'ignore',owner:'unused',repo:'unused',issueNumber:1,assignees:['unused'],labels:['assigned'],comment:'unused'};\n if(!body||typeof body!=='object'||Array.isArray(body))throw Error('Invalid GitHub event');\n if(body.action!=='opened'&&body.action!=='created')return ignore;\n const issue=body.issue,repo=body.repository;if(!issue||!repo||typeof repo.name!=='string'||!repo.name||typeof repo.owner?.login!=='string'||!repo.owner.login||!Number.isSafeInteger(issue.number)||issue.number<1||!Array.isArray(issue.assignees))throw Error('Invalid GitHub issue event');\n const isComment=body.action==='created',text=isComment?body.comment?.body:issue.body;\n if(text==null)return ignore;if(typeof text!=='string')throw Error('Invalid issue or comment text');\n if(!/[a,A]ssign[\\w*\\s*]*me/gm.test(text))return ignore;\n const requester=isComment?body.comment?.user?.login:issue.user?.login;\n if(typeof requester!=='string'||!/^[A-Za-z0-9](?:[A-Za-z0-9]|-(?=[A-Za-z0-9])){0,38}$/.test(requester))throw Error('Invalid requester login');\n const base={...ignore,owner:repo.owner.login,repo:repo.name,issueNumber:issue.number};\n if(issue.assignees.length===0)return {...base,action:'assign',assignees:[requester]};\n if(!isComment)return ignore;\n const assigned=issue.assignee?.login;if(typeof assigned!=='string'||!/^[A-Za-z0-9](?:[A-Za-z0-9]|-(?=[A-Za-z0-9])){0,38}$/.test(assigned))throw Error('Missing assigned user');\n return {...base,action:'comment',comment:'Hey @'+requester+',\\n\\nThis issue is already assigned to '+assigned+' 🙂'};\n}\n\nreturn {json:decide({body:$json.body})};"
+      }
+    },
+    {
+      "id": "assign-github-issues-on-request-assign",
+      "name": "Assign the requester",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.action }}",
+              "operation": "equal",
+              "value2": "assign"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Assign the issue",
+      "type": "n8n-nodes-base.github",
+      "position": [
+        1320,
+        120
+      ],
+      "parameters": {
+        "owner": "={{ $json.owner }}",
+        "operation": "edit",
+        "editFields": {
+          "labels": [
+            {
+              "label": "assigned"
+            }
+          ],
+          "assignees": [
+            {
+              "assignee": "={{ $json.assignees[0] }}"
+            }
+          ]
+        },
+        "repository": "={{ $json.repo }}",
+        "issueNumber": "={{ $json.issueNumber }}",
+        "authentication": "oAuth2"
+      },
+      "typeVersion": 1,
+      "id": "assign-github-issues-on-request-update"
+    },
+    {
+      "id": "assign-github-issues-on-request-comment-gate",
+      "name": "Already assigned",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.action }}",
+              "operation": "equal",
+              "value2": "comment"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Reply to commenter",
+      "type": "n8n-nodes-base.github",
+      "position": [
+        1420,
+        660
+      ],
+      "parameters": {
+        "body": "={{ $json.comment }}",
+        "owner": "={{ $json.owner }}",
+        "operation": "createComment",
+        "repository": "={{ $json.repo }}",
+        "issueNumber": "={{ $json.issueNumber }}",
+        "authentication": "oAuth2"
+      },
+      "typeVersion": 1,
+      "id": "assign-github-issues-on-request-comment"
+    }
+  ],
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Github Trigger1": {
+      "main": [
+        [
+          {
+            "node": "Inspect assignment request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Inspect assignment request": {
+      "main": [
+        [
+          {
+            "node": "Assign the requester",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assign the requester": {
+      "main": [
+        [
+          {
+            "node": "Assign the issue",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Already assigned",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Already assigned": {
+      "main": [
+        [
+          {
+            "node": "Reply to commenter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {}
+}
