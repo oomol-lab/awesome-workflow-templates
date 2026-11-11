@@ -198,6 +198,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Typeform Receipts to Airtable](workflows/typeform-receipts-to-airtable/) - Extract receipt details from Typeform uploads and save each expense in Airtable.
 - [Notion Mentioned To-Dos to Slack DM](workflows/notion-mentioned-todos-to-slack-dm/) - Send a daily Slack direct message for each unchecked Notion to-do mentioning a selected user.
 - [Save Gmail Attachments to Google Drive](workflows/save-gmail-attachments-to-google-drive/) - Save each incoming Gmail attachment to Google Drive with the sender address in its filename.
+- [Send Instagram Sheet Metrics to Mattermost](workflows/send-instagram-sheet-metrics-to-mattermost/) - Read daily Instagram metrics from a sheet and send a message for each row.
 
 ## Content
 
