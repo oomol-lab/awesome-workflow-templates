@@ -1,0 +1,208 @@
+{
+  "name": "Create a Mattermost Channel and Welcome a Member",
+  "nodes": [
+    {
+      "name": "Welcome a channel member",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        100,
+        240
+      ],
+      "parameters": {},
+      "typeVersion": 1,
+      "id": "create-mattermost-channel-and-welcome-member-start"
+    },
+    {
+      "id": "create-mattermost-channel-and-welcome-member-mattermost-channel-plan",
+      "name": "Choose team, user and channel",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        340,
+        240
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function mattermostChannelPlan(input) {\n  const text = (value, label) => { if (typeof value !== 'string' || !value.trim() || value.trim().startsWith('YOUR_')) throw new Error('Set ' + label); return value.trim(); };\n  const id = (value, label) => { const result = text(value, label); if (!/^[a-z0-9]{26}$/.test(result)) throw new Error(label + ' must be a 26-character Mattermost ID'); return result; };\n  const teamId = id(input.teamId, 'teamId'), userId = id(input.userId, 'userId'), channelName = text(input.channelName, 'channelName'), displayName = text(input.displayName, 'displayName'), message = text(input.message, 'message');\n  return { createBody: { team_id: teamId, name: channelName, display_name: displayName, type: 'O' }, userId, message };\n}\n\nreturn [{json:mattermostChannelPlan({\"teamId\":\"YOUR_MATTERMOST_TEAM_ID\",\"userId\":\"YOUR_MATTERMOST_USER_ID\",\"channelName\":\"docs\",\"displayName\":\"Docs\",\"message\":\"Hey! Welcome to the channel!\"})}];"
+      }
+    },
+    {
+      "name": "Create the public channel",
+      "type": "n8n-nodes-base.mattermost",
+      "position": [
+        580,
+        240
+      ],
+      "parameters": {
+        "resource": "channel",
+        "operation": "create",
+        "type": "public",
+        "teamId": "={{ $json.createBody.team_id }}",
+        "channel": "={{ $json.createBody.name }}",
+        "displayName": "={{ $json.createBody.display_name }}"
+      },
+      "typeVersion": 1,
+      "id": "create-mattermost-channel-and-welcome-member-create"
+    },
+    {
+      "id": "create-mattermost-channel-and-welcome-member-mattermost-channel-receipt",
+      "name": "Confirm the new channel",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        820,
+        240
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function mattermostChannelReceipt(input) {\n  const succeeded = input.httpSucceeded === true || (Number.isInteger(input.statusCode) && input.statusCode >= 200 && input.statusCode < 300);\n  if (!succeeded || !input.channel || typeof input.channel !== 'object' || Array.isArray(input.channel)) throw new Error('Channel creation was not confirmed. It may already have created a channel; inspect Mattermost before replaying.');\n  const channel = input.channel, expected = input.createBody;\n  if (typeof channel.id !== 'string' || !/^[a-z0-9]{26}$/.test(channel.id) || channel.team_id !== expected.team_id || channel.name !== expected.name || channel.display_name !== expected.display_name || channel.type !== 'O') throw new Error('Unexpected created channel. It may already exist; inspect Mattermost before replaying.');\n  return { channel, channelId: channel.id, memberEndpoint: '/channels/' + encodeURIComponent(channel.id) + '/members', memberBody: { user_id: input.userId }, message: input.message };\n}\n\nconst plan=$(\"Choose team, user and channel\").first().json;return [{json:mattermostChannelReceipt({httpSucceeded:true,channel:$input.first().json,...plan})}];"
+      }
+    },
+    {
+      "name": "Add the chosen member",
+      "type": "n8n-nodes-base.mattermost",
+      "position": [
+        1060,
+        240
+      ],
+      "parameters": {
+        "resource": "channel",
+        "operation": "addUser",
+        "channelId": "={{ $json.channelId }}",
+        "userId": "={{ $json.memberBody.user_id }}"
+      },
+      "typeVersion": 1,
+      "id": "create-mattermost-channel-and-welcome-member-add"
+    },
+    {
+      "id": "create-mattermost-channel-and-welcome-member-mattermost-member-receipt",
+      "name": "Confirm channel membership",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1300,
+        240
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function mattermostMemberReceipt(input) {\n  const membership = input.membership;\n  const succeeded = input.httpSucceeded === true || (Number.isInteger(input.statusCode) && input.statusCode >= 200 && input.statusCode < 300);\n  if (!succeeded || !membership || typeof membership !== 'object' || Array.isArray(membership) || membership.channel_id !== input.channel.id || membership.user_id !== input.userId) throw new Error('Channel membership was not confirmed. The channel/member may already have changed; inspect Mattermost before replaying.');\n  return { channel: input.channel, membership, channelId: input.channel.id, message: input.message };\n}\n\nconst prior=$(\"Confirm the new channel\").first().json;return [{json:mattermostMemberReceipt({httpSucceeded:true,membership:$input.first().json,channel:prior.channel,userId:prior.memberBody.user_id,message:prior.message})}];"
+      }
+    },
+    {
+      "name": "Post the welcome message",
+      "type": "n8n-nodes-base.mattermost",
+      "position": [
+        1540,
+        240
+      ],
+      "parameters": {
+        "resource": "message",
+        "operation": "post",
+        "channelId": "={{ $json.channelId }}",
+        "message": "={{ $json.message }}",
+        "attachments": [],
+        "otherOptions": {}
+      },
+      "typeVersion": 1,
+      "id": "create-mattermost-channel-and-welcome-member-post"
+    },
+    {
+      "id": "create-mattermost-channel-and-welcome-member-mattermost-onboarding-result",
+      "name": "Keep the complete API results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1780,
+        240
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function mattermostOnboardingResult(input) {\n  const post = input.post;\n  if (!post || typeof post !== 'object' || Array.isArray(post) || typeof post.id !== 'string' || !/^[a-z0-9]{26}$/.test(post.id) || post.channel_id !== input.channel.id || post.message !== input.message) throw new Error('Welcome post was not confirmed. The channel, membership and post may already exist; inspect Mattermost before replaying.');\n  return { channel: input.channel, membership: input.membership, post, rawPost: input.rawPost };\n}\n\nconst prior=$(\"Confirm channel membership\").first().json,post=$input.first().json;return [{json:mattermostOnboardingResult({post,rawPost:post,...prior})}];"
+      }
+    }
+  ],
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Welcome a channel member": {
+      "main": [
+        [
+          {
+            "node": "Choose team, user and channel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Choose team, user and channel": {
+      "main": [
+        [
+          {
+            "node": "Create the public channel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create the public channel": {
+      "main": [
+        [
+          {
+            "node": "Confirm the new channel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm the new channel": {
+      "main": [
+        [
+          {
+            "node": "Add the chosen member",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add the chosen member": {
+      "main": [
+        [
+          {
+            "node": "Confirm channel membership",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm channel membership": {
+      "main": [
+        [
+          {
+            "node": "Post the welcome message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Post the welcome message": {
+      "main": [
+        [
+          {
+            "node": "Keep the complete API results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {}
+}
