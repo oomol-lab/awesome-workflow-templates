@@ -74,6 +74,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Send Scheduled Customer Emails from Sheets](workflows/send-scheduled-customer-emails-from-sheets/) - Send today’s queued customer emails and mark each successful send in Google Sheets.
 - [Save Google Maps Business Leads to Sheets](workflows/google-maps-leads-to-sheets/) - Search Google Maps for businesses and append their details to Google Sheets.
 - [Save PhantomBuster Leads to Airtable](workflows/phantombuster-leads-to-airtable/) - Read the latest Phantom output and save lead names, emails and companies to Airtable.
+- [Create and Update a SendGrid Contact](workflows/create-update-sendgrid-contact/) - Add or update a SendGrid contact, then read the saved contact.
 
 ## Operations
 
