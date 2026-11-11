@@ -1,0 +1,423 @@
+{
+  "nodes": [
+    {
+      "id": "back-up-n8n-workflows-to-gitlab-0",
+      "name": "Backup Now - Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        520,
+        320
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "back-up-n8n-workflows-to-gitlab-1",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        520,
+        520
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "30 21 * * 6"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "name": "Configure the backup",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function config({owner,project,path,tag}){for(const [k,v]of Object.entries({owner,project,path,tag}))if(typeof v!=='string'||!v.trim()||v.startsWith('YOUR_'))throw Error('Configure '+k);if(owner.split('/').some(x=>!x||x==='.'||x==='..'||!/^[A-Za-z0-9_.-]+$/.test(x))||project==='.'||project==='..'||!/^[A-Za-z0-9_.-]+$/.test(project)||path.startsWith('/')||path.endsWith('/')||path.split('/').some(x=>!x||x==='.'||x==='..')||tag.split(',').some(x=>!x.trim()))throw Error('Invalid repository configuration');const p='/projects/'+encodeURIComponent(owner+'/'+project);return{owner,project,path,tag:tag.split(',').map(x=>x.trim()).join(','),projectEndpoint:p,branchEndpoint:p+'/repository/branches/main'}}\n\nreturn [{json:config({owner:'YOUR_GITLAB_OWNER',project:'YOUR_GITLAB_PROJECT',path:'YOUR_BACKUP_DIRECTORY',tag:'gitlab_backup_enabled'})}];"
+      },
+      "id": "back-up-n8n-workflows-to-gitlab-2"
+    },
+    {
+      "id": "back-up-n8n-workflows-to-gitlab-3",
+      "name": "List the GitLab directory",
+      "type": "n8n-nodes-base.gitlab",
+      "position": [
+        980,
+        180
+      ],
+      "parameters": {
+        "resource": "file",
+        "operation": "list",
+        "owner": "={{ $(\"Configure the backup\").first().json.owner }}",
+        "repository": "={{ $(\"Configure the backup\").first().json.project }}",
+        "filePath": "={{ $(\"Configure the backup\").first().json.path }}",
+        "returnAll": true,
+        "additionalParameters": {
+          "ref": "main"
+        }
+      },
+      "typeVersion": 1,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "back-up-n8n-workflows-to-gitlab-4",
+      "name": "Read tagged workflows",
+      "type": "n8n-nodes-base.n8n",
+      "position": [
+        980,
+        520
+      ],
+      "parameters": {
+        "resource": "workflow",
+        "operation": "getAll",
+        "returnAll": true,
+        "filters": {
+          "tags": "={{ $(\"Configure the backup\").first().json.tag }}"
+        }
+      },
+      "typeVersion": 1,
+      "alwaysOutputData": true
+    },
+    {
+      "name": "Check backup filenames",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function plan({state,path,projectEndpoint}){if(!Array.isArray(state.items))throw Error('Invalid workflows');const seen=new Set(),items=[];for(const w of state.items){if(!w||typeof w.name!=='string'||!w.name.trim()||typeof w.id!=='string'||!w.id)throw Error('Invalid workflow');const n=w.name.replace(/[^a-zA-Z0-9]/g,'')+'.json';if(n==='.json'||seen.has(n))throw Error('Workflow filenames collide or are empty');seen.add(n);const filePath=path+'/'+n;items.push({workflow:w,filePath,endpoint:projectEndpoint+'/repository/files/'+encodeURIComponent(filePath),content:JSON.stringify(w,null,4)})}return{items}}\n\nconst cfg=$('Configure the backup').first().json,items=$input.all().map(x=>x.json).filter(x=>Object.keys(x).length);return plan({state:{items},path:cfg.path,projectEndpoint:cfg.projectEndpoint}).items.map((json,i)=>({json,pairedItem:{item:i}}));"
+      },
+      "id": "back-up-n8n-workflows-to-gitlab-5"
+    },
+    {
+      "name": "Back up one workflow at a time",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "back-up-n8n-workflows-to-gitlab-6"
+    },
+    {
+      "name": "File already exists?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "exists",
+              "leftValue": "={{ $(\"List the GitLab directory\").all().some(x => x.json.name === $json.filePath.split(\"/\").at(-1)) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "back-up-n8n-workflows-to-gitlab-7"
+    },
+    {
+      "id": "back-up-n8n-workflows-to-gitlab-8",
+      "name": "Read the GitLab file",
+      "type": "n8n-nodes-base.gitlab",
+      "position": [
+        1640,
+        340
+      ],
+      "parameters": {
+        "resource": "file",
+        "owner": "={{ $(\"Configure the backup\").first().json.owner }}",
+        "repository": "={{ $(\"Configure the backup\").first().json.project }}",
+        "filePath": "={{ $(\"Back up one workflow at a time\").item.json.filePath }}",
+        "operation": "get",
+        "asBinaryProperty": false,
+        "additionalParameters": {
+          "reference": "main"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "name": "Compare the backup",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const f=$input.first().json,item=$('Back up one workflow at a time').item.json;if(f.file_path!==item.filePath||f.encoding!=='base64'||typeof f.content!=='string')throw Error('Invalid GitLab file');const bytes=Buffer.from(f.content.replace(/\\s/g,''),'base64');if(!bytes.length||bytes.toString('base64').replace(/=+$/,'')!==f.content.replace(/\\s|=+$/g,''))throw Error('Invalid GitLab file content');const content=bytes.toString('utf8');return [{json:{changed:content!==item.content},pairedItem:{item:0}}];"
+      },
+      "id": "back-up-n8n-workflows-to-gitlab-9"
+    },
+    {
+      "name": "Backup changed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "changed",
+              "leftValue": "={{ $json.changed }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "back-up-n8n-workflows-to-gitlab-10"
+    },
+    {
+      "id": "back-up-n8n-workflows-to-gitlab-11",
+      "name": "Create the backup file",
+      "type": "n8n-nodes-base.gitlab",
+      "position": [
+        2060,
+        540
+      ],
+      "parameters": {
+        "resource": "file",
+        "owner": "={{ $(\"Configure the backup\").first().json.owner }}",
+        "repository": "={{ $(\"Configure the backup\").first().json.project }}",
+        "filePath": "={{ $(\"Back up one workflow at a time\").item.json.filePath }}",
+        "operation": "create",
+        "branch": "main",
+        "fileContent": "={{ $(\"Back up one workflow at a time\").item.json.content }}",
+        "commitMessage": "Back up n8n workflow",
+        "binaryData": false,
+        "additionalParameters": {}
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "back-up-n8n-workflows-to-gitlab-12",
+      "name": "Update the backup file",
+      "type": "n8n-nodes-base.gitlab",
+      "position": [
+        2060,
+        340
+      ],
+      "parameters": {
+        "resource": "file",
+        "owner": "={{ $(\"Configure the backup\").first().json.owner }}",
+        "repository": "={{ $(\"Configure the backup\").first().json.project }}",
+        "filePath": "={{ $(\"Back up one workflow at a time\").item.json.filePath }}",
+        "operation": "edit",
+        "branch": "main",
+        "fileContent": "={{ $(\"Back up one workflow at a time\").item.json.content }}",
+        "commitMessage": "Back up n8n workflow",
+        "binaryData": false,
+        "additionalParameters": {}
+      },
+      "typeVersion": 1
+    },
+    {
+      "name": "Confirm the backup",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const r=$input.first().json,item=$('Back up one workflow at a time').item.json;if(r.file_path!==item.filePath||r.branch!=='main')throw Error('GitLab write not confirmed');return [{json:r}];"
+      },
+      "id": "back-up-n8n-workflows-to-gitlab-13"
+    }
+  ],
+  "connections": {
+    "Backup Now - Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Configure the backup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Configure the backup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configure the backup": {
+      "main": [
+        [
+          {
+            "node": "List the GitLab directory",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List the GitLab directory": {
+      "main": [
+        [
+          {
+            "node": "Read tagged workflows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read tagged workflows": {
+      "main": [
+        [
+          {
+            "node": "Check backup filenames",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check backup filenames": {
+      "main": [
+        [
+          {
+            "node": "Back up one workflow at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the GitLab file": {
+      "main": [
+        [
+          {
+            "node": "Compare the backup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compare the backup": {
+      "main": [
+        [
+          {
+            "node": "Backup changed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create the backup file": {
+      "main": [
+        [
+          {
+            "node": "Confirm the backup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update the backup file": {
+      "main": [
+        [
+          {
+            "node": "Confirm the backup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm the backup": {
+      "main": [
+        [
+          {
+            "node": "Back up one workflow at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Back up one workflow at a time": {
+      "main": [
+        [],
+        [
+          {
+            "node": "File already exists?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "File already exists?": {
+      "main": [
+        [
+          {
+            "node": "Read the GitLab file",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create the backup file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Backup changed?": {
+      "main": [
+        [
+          {
+            "node": "Update the backup file",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Back up one workflow at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Back Up n8n Workflows to GitLab",
+  "settings": {
+    "timezone": "UTC",
+    "executionOrder": "v1"
+  },
+  "active": false,
+  "pinData": {}
+}
