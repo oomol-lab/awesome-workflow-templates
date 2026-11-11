@@ -1,0 +1,259 @@
+{
+  "name": "Share New Drive Files and Log to Airtable",
+  "tags": [
+    {
+      "id": "uScnF9NzR3PLIyvU",
+      "name": "Published",
+      "createdAt": "2025-03-21T07:22:28.491Z",
+      "updatedAt": "2025-03-21T07:22:28.491Z"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "share-new-drive-files-and-log-to-airtable-0",
+      "name": "Google Drive",
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "notes": "Fetch New File",
+      "position": [
+        420,
+        -180
+      ],
+      "parameters": {
+        "event": "fileCreated",
+        "options": {},
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "triggerOn": "specificFolder",
+        "folderToWatch": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_FOLDER_ID"
+        },
+        "authentication": "oAuth2"
+      },
+      "notesInFlow": true,
+      "typeVersion": 1
+    },
+    {
+      "name": "Validate files",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const recipient='YOUR_RECIPIENT_EMAIL',baseId='YOUR_BASE_ID',table='YOUR_TABLE_ID';if(!recipient.trim()||recipient.startsWith('YOUR_')||!baseId.trim()||baseId.startsWith('YOUR_')||!table.trim()||table.startsWith('YOUR_'))throw Error('Configure recipient and Airtable');const items=$input.all();for(const x of items){const f=x.json;if(typeof f.id!=='string'||!f.id||typeof f.name!=='string'||(f.createdTime!=null&&typeof f.createdTime!=='string')||(f.modifiedTime!=null&&typeof f.modifiedTime!=='string'))throw Error('Invalid file event');}return items.map((x,i)=>({json:{...x.json,_recipient:recipient,_baseId:baseId,_table:table},pairedItem:{item:i}}));"
+      },
+      "id": "share-new-drive-files-and-log-to-airtable-1"
+    },
+    {
+      "id": "share-new-drive-files-and-log-to-airtable-2",
+      "name": "Share File with Recipient",
+      "type": "n8n-nodes-base.googleDrive",
+      "notes": "Share File via Email",
+      "position": [
+        660,
+        -20
+      ],
+      "parameters": {
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.id }}"
+        },
+        "options": {},
+        "operation": "share",
+        "permissionsUi": {
+          "permissionsValues": {
+            "role": "writer",
+            "type": "user",
+            "emailAddress": "={{ $('Validate files').first().json._recipient }}"
+          }
+        },
+        "authentication": "oAuth2"
+      },
+      "notesInFlow": true,
+      "typeVersion": 3
+    },
+    {
+      "name": "Confirm permission",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if(typeof $json.id!=='string'||!$json.id)throw Error('Write was not confirmed');return {json:$json,pairedItem:{item:$itemIndex}};"
+      },
+      "id": "share-new-drive-files-and-log-to-airtable-3"
+    },
+    {
+      "id": "share-new-drive-files-and-log-to-airtable-4",
+      "name": " Log File Metadata",
+      "type": "n8n-nodes-base.airtable",
+      "notes": "Store File Metadata",
+      "position": [
+        940,
+        -160
+      ],
+      "parameters": {
+        "base": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Validate files').first().json._baseId }}"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Validate files').first().json._table }}"
+        },
+        "columns": {
+          "value": {
+            "FileId": "={{ $('Google Drive').item.json.id }}",
+            "sentId": "={{ $json.id }}",
+            "FileName": "={{ $('Google Drive').item.json.name }}",
+            "CreatedTime": "={{ $('Google Drive').item.json.createdTime }}",
+            "ModifiedTime": "={{ $('Google Drive').item.json.modifiedTime }}"
+          },
+          "schema": [
+            {
+              "id": "FileName",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "FileName",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "FileId",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "FileId",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "CreatedTime",
+              "type": "dateTime",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "CreatedTime",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ModifiedTime",
+              "type": "dateTime",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "ModifiedTime",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "sentId",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "sentId",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": []
+        },
+        "options": {},
+        "operation": "create",
+        "authentication": "airtableTokenApi"
+      },
+      "notesInFlow": true,
+      "typeVersion": 2.1
+    },
+    {
+      "name": "Confirm record",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if(typeof $json.id!=='string'||!$json.id)throw Error('Write was not confirmed');return {json:$json,pairedItem:{item:$itemIndex}};"
+      },
+      "id": "share-new-drive-files-and-log-to-airtable-5"
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Google Drive": {
+      "main": [
+        [
+          {
+            "node": "Validate files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate files": {
+      "main": [
+        [
+          {
+            "node": "Share File with Recipient",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Share File with Recipient": {
+      "main": [
+        [
+          {
+            "node": "Confirm permission",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm permission": {
+      "main": [
+        [
+          {
+            "node": " Log File Metadata",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    " Log File Metadata": {
+      "main": [
+        [
+          {
+            "node": "Confirm record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
