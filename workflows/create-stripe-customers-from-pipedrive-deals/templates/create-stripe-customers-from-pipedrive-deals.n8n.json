@@ -1,0 +1,261 @@
+{
+  "nodes": [
+    {
+      "name": "Receive Pipedrive deal changes",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "YOUR_PIPEDRIVE_WEBHOOK_PATH",
+        "authentication": "basicAuth",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "create-stripe-customers-from-pipedrive-deals-0"
+    },
+    {
+      "name": "Inspect deal change",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const x=$json.body,m=x?.meta,d=x?.data,p=x?.previous,companyId='YOUR_COMPANY_ID';if(!/^\\d+$/.test(companyId))throw Error('Configure company ID');if(!m||m.version!=='2.0'||m.entity!=='deal'||m.action!=='change'||String(m.company_id)!==companyId||!d||!p||typeof p!=='object')throw Error('Invalid event');if(!Object.prototype.hasOwnProperty.call(p,'won_time')||p.won_time===d.won_time)return {json:{orgId:1,process:false}};if(!Object.prototype.hasOwnProperty.call(d,'won_time'))throw Error('Missing won time');const orgId=Number(d.org_id);if(!Number.isSafeInteger(orgId)||orgId<=0)throw Error('Missing organization');return {json:{orgId,process:true}};"
+      },
+      "id": "create-stripe-customers-from-pipedrive-deals-1"
+    },
+    {
+      "name": "Won time changed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.process }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "create-stripe-customers-from-pipedrive-deals-2"
+    },
+    {
+      "id": "create-stripe-customers-from-pipedrive-deals-3",
+      "name": "Get organisation details",
+      "type": "n8n-nodes-base.pipedrive",
+      "position": [
+        380,
+        240
+      ],
+      "parameters": {
+        "resource": "organization",
+        "operation": "get",
+        "organizationId": "={{ $json.orgId }}",
+        "resolveProperties": true
+      },
+      "typeVersion": 1
+    },
+    {
+      "name": "Prepare customer lookup",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function organization({organization,countryMap}) {\n const name=organization?.name,raw=organization?.address;if(typeof name!=='string'||!name.trim()||name.trim().length>256||/[\\r\\n]/.test(name))throw Error('Organization name is required');if(raw!=null&&typeof raw!=='object')throw Error('Invalid organization address');const v=k=>raw?.[k];let country=v('country');if(country!=null&&country!==''){if(typeof country!=='string'||!country.trim())throw Error('Invalid country');const codes=new Set('AD AE AF AG AI AL AM AO AQ AR AS AT AU AW AX AZ BA BB BD BE BF BG BH BI BJ BL BM BN BO BQ BR BS BT BV BW BY BZ CA CC CD CF CG CH CI CK CL CM CN CO CR CU CV CW CX CY CZ DE DJ DK DM DO DZ EC EE EG EH ER ES ET FI FJ FK FM FO FR GA GB GD GE GF GG GH GI GL GM GN GP GQ GR GS GT GU GW GY HK HM HN HR HT HU ID IE IL IM IN IO IQ IR IS IT JE JM JO JP KE KG KH KI KM KN KP KR KW KY KZ LA LB LC LI LK LR LS LT LU LV LY MA MC MD ME MF MG MH MK ML MM MN MO MP MQ MR MS MT MU MV MW MX MY MZ NA NC NE NF NG NI NL NO NP NR NU NZ OM PA PE PF PG PH PK PL PM PN PR PS PT PW PY QA RE RO RS RU RW SA SB SC SD SE SG SH SI SJ SK SL SM SN SO SR SS ST SV SX SY SZ TC TD TF TG TH TJ TK TL TM TN TO TR TT TV TW TZ UA UG UM US UY UZ VA VC VE VG VI VN VU WF WS YE YT ZA ZM ZW'.split(' ')),key=country.trim().replace(/\\s+/g,' ').toLowerCase(),aliases=countryMap??{};if(typeof aliases!=='object'||Array.isArray(aliases))throw Error('Invalid country mapping');let matches=[];for(const [name,value] of Object.entries(aliases)){if(typeof value!=='string'||!codes.has(value.toUpperCase()))throw Error('Invalid country mapping');if(name.trim().replace(/\\s+/g,' ').toLowerCase()===key)matches.push(value.toUpperCase());}if(matches.length===0){const display=new Intl.DisplayNames(['en'],{type:'region'});for(const c of codes)if(c.toLowerCase()===key||display.of(c).replace(/\\s+/g,' ').toLowerCase()===key)matches.push(c);}matches=[...new Set(matches)];if(matches.length!==1)throw Error('Unknown or ambiguous country; configure a mapping');country=matches[0];}\n const address={};for(const [key,value] of Object.entries({city:v('locality'),line1:[v('route'),v('street_number')].filter(Boolean).join(' '),state:v('admin_area_level_1'),country:country?.toUpperCase(),postal_code:v('postal_code')}))if(value!=null&&value!==''){if(typeof value!=='string')throw Error('Invalid address component');address[key]=value}\n return {name:name.trim(),address,query:\"name:'\"+name.trim().replace(/\\\\/g,'\\\\\\\\').replace(/'/g,\"\\\\'\")+\"'\"};\n}\n\nconst x=$json;return {json:organization({organization:{name:x.Name,address:{locality:x['City/town/village/locality'],route:x['Street/road name'],street_number:x['House number'],admin_area_level_1:x['State/county'],country:x.Country,postal_code:x['ZIP/Postal code']}},countryMap:{}})};"
+      },
+      "id": "create-stripe-customers-from-pipedrive-deals-4"
+    },
+    {
+      "id": "create-stripe-customers-from-pipedrive-deals-5",
+      "name": "Search customer",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        600,
+        100
+      ],
+      "parameters": {
+        "url": "https://api.stripe.com/v1/customers/search",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "stripeApi",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "query",
+              "value": "={{ $json.query }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "name": "Validate Stripe result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function search({customers}) {if(!customers||!Array.isArray(customers.data)||typeof customers.has_more!=='boolean')throw Error('Invalid Stripe search response');if(customers.data.length===0&&customers.has_more)throw Error('Inconsistent Stripe search page');return {create:customers.data.length===0};}\n\nreturn {json:search({customers:$json})};"
+      },
+      "id": "create-stripe-customers-from-pipedrive-deals-6"
+    },
+    {
+      "name": "Check search result",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.create }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "create-stripe-customers-from-pipedrive-deals-7"
+    },
+    {
+      "id": "create-stripe-customers-from-pipedrive-deals-8",
+      "name": "Create customer",
+      "type": "n8n-nodes-base.stripe",
+      "position": [
+        1360,
+        220
+      ],
+      "parameters": {
+        "name": "={{ $('Prepare customer lookup').item.json.name }}",
+        "resource": "customer",
+        "operation": "create",
+        "additionalFields": {
+          "address": {
+            "details": {
+              "city": "={{ $('Prepare customer lookup').item.json.address.city }}",
+              "line1": "={{ $('Prepare customer lookup').item.json.address.line1 }}",
+              "state": "={{ $('Prepare customer lookup').item.json.address.state }}",
+              "country": "={{ $('Prepare customer lookup').item.json.address.country }}",
+              "postal_code": "={{ $('Prepare customer lookup').item.json.address.postal_code }}"
+            }
+          }
+        }
+      },
+      "typeVersion": 1
+    }
+  ],
+  "connections": {
+    "Receive Pipedrive deal changes": {
+      "main": [
+        [
+          {
+            "node": "Inspect deal change",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Inspect deal change": {
+      "main": [
+        [
+          {
+            "node": "Won time changed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Won time changed?": {
+      "main": [
+        [
+          {
+            "node": "Get organisation details",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Get organisation details": {
+      "main": [
+        [
+          {
+            "node": "Prepare customer lookup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare customer lookup": {
+      "main": [
+        [
+          {
+            "node": "Search customer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search customer": {
+      "main": [
+        [
+          {
+            "node": "Validate Stripe result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Stripe result": {
+      "main": [
+        [
+          {
+            "node": "Check search result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check search result": {
+      "main": [
+        [
+          {
+            "node": "Create customer",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    }
+  },
+  "name": "Create Stripe Customers from Pipedrive Deals",
+  "active": false,
+  "pinData": {}
+}
