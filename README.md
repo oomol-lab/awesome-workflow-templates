@@ -73,6 +73,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Create Pipedrive Leads from Typeform](workflows/typeform-submission-to-pipedrive-lead/) - Create a Pipedrive organization, contact, lead and note for a completed Typeform.
 - [Send Scheduled Customer Emails from Sheets](workflows/send-scheduled-customer-emails-from-sheets/) - Send today’s queued customer emails and mark each successful send in Google Sheets.
 - [Save Google Maps Business Leads to Sheets](workflows/google-maps-leads-to-sheets/) - Search Google Maps for businesses and append their details to Google Sheets.
+- [Save PhantomBuster Leads to Airtable](workflows/phantombuster-leads-to-airtable/) - Read the latest Phantom output and save lead names, emails and companies to Airtable.
 
 ## Operations
 
