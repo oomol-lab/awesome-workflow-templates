@@ -87,6 +87,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Telegram Spotify Player](workflows/telegram-spotify-player/) - Turn a Telegram song description into a Spotify search, queue the first match, request next/resume playback and reply with the observed player status.
 - [Resilient API Record Validator](workflows/resilient-api-record-validator/) - Fetch public JSON records with bounded retries, normalize names and emails, and report missing fields or a safe failure record.
 - [Monitor Sheet Servers and Email Alerts](workflows/monitor-sheet-servers-and-email-alerts/) - Check servers listed in Google Sheets every minute, log their status and email an alert when a check fails.
+- [Uptime Transition Alert to Telegram](workflows/uptime-transition-alert-to-telegram/) - Check a website every five minutes and send a Telegram alert when its HTTP status changes between up and down.
 
 ## Marketing
 

@@ -1,0 +1,140 @@
+{
+  "name": "Uptime Transition Alert to Telegram",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 5
+            }
+          ]
+        }
+      },
+      "id": "uptime-transition-alert-to-telegram-0",
+      "name": "Ogni 5 minuti",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://example.com",
+        "options": {
+          "timeout": 10000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true,
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "id": "uptime-transition-alert-to-telegram-1",
+      "name": "Chiama il sito",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Passa in avanti SOLO se lo stato è cambiato rispetto all'ultimo controllo (evita di\n// avvisarti ogni 5 minuti finché il sito resta giù, o su ogni ping quando è su).\nconst state = $getWorkflowStaticData('global');\nconst code = $input.first().json.statusCode || 0;\nconst giu = code === 0 || code >= 500;\nconst eraGiu = state.giu === true;\nif (giu === eraGiu) return [];\n\nreturn [{ json: { giu, code, quando: new Date().toISOString() } }];"
+      },
+      "id": "uptime-transition-alert-to-telegram-2",
+      "name": "Solo se cambia stato",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "YOUR_TELEGRAM_CHAT_ID",
+        "text": "={{ $json.giu ? '🔴 Il sito è DOWN (status ' + $json.code + ') — ' + $json.quando : '🟢 Il sito è tornato SU — ' + $json.quando }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "uptime-transition-alert-to-telegram-3",
+      "name": "Manda su Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        660,
+        0
+      ]
+    },
+    {
+      "id": "uptime-transition-alert-to-telegram-commit",
+      "name": "Save the notified state",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const state = $getWorkflowStaticData(\"global\"); state.giu = $(\"Solo se cambia stato\").item.json.giu; return $input.item;"
+      }
+    }
+  ],
+  "connections": {
+    "Ogni 5 minuti": {
+      "main": [
+        [
+          {
+            "node": "Chiama il sito",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chiama il sito": {
+      "main": [
+        [
+          {
+            "node": "Solo se cambia stato",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Solo se cambia stato": {
+      "main": [
+        [
+          {
+            "node": "Manda su Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manda su Telegram": {
+      "main": [
+        [
+          {
+            "node": "Save the notified state",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC"
+  },
+  "pinData": {}
+}
