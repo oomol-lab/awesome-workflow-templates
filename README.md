@@ -72,6 +72,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Log Stripe Charges in Pipedrive](workflows/log-stripe-charges-in-pipedrive/) - Find recent successful Stripe charges and add their details to matching Pipedrive organizations.
 - [Create Pipedrive Leads from Typeform](workflows/typeform-submission-to-pipedrive-lead/) - Create a Pipedrive organization, contact, lead and note for a completed Typeform.
 - [Send Scheduled Customer Emails from Sheets](workflows/send-scheduled-customer-emails-from-sheets/) - Send today’s queued customer emails and mark each successful send in Google Sheets.
+- [Save Google Maps Business Leads to Sheets](workflows/google-maps-leads-to-sheets/) - Search Google Maps for businesses and append their details to Google Sheets.
 
 ## Operations
 
