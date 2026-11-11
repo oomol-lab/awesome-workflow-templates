@@ -61,6 +61,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Sheet Contacts through Dropcontact to Lemlist](workflows/sheet-contacts-dropcontact-lemlist/) - Read a sheet contact batch, enrich it with French company information, wait 45 seconds and create every returned contact as a Lemlist campaign lead.
 - [Google Sheets Community Lead Rating](workflows/google-sheets-community-lead-rating/) - Rate newly appended community applications using the original responsibility and email-domain criteria, then update only the matching Timestamp row’s Rating.
 - [Customer.io Customer to Manual Segment](workflows/customerio-customer-to-manual-segment/) - Identify a Customer.io customer and add the customer ID to an existing manual segment.
+- [Mark HubSpot Deals Paid from Stripe Invoices](workflows/mark-paid-hubspot-deal-from-stripe-invoice/) - When a Stripe invoice is paid, find HubSpot deals by purchase order, mark them paid and notify Slack.
 
 ## Operations
 

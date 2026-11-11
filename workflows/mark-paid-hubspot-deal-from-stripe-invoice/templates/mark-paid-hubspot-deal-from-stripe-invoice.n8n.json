@@ -1,0 +1,287 @@
+{
+  "name": "Mark HubSpot Deals Paid from Stripe Invoices",
+  "nodes": [
+    {
+      "name": "When Invoice Paid",
+      "type": "n8n-nodes-base.stripeTrigger",
+      "position": [
+        400,
+        460
+      ],
+      "parameters": {
+        "events": [
+          "invoice.payment_succeeded"
+        ]
+      },
+      "typeVersion": 1,
+      "id": "mark-paid-hubspot-deal-from-stripe-invoice-0"
+    },
+    {
+      "id": "mark-paid-hubspot-deal-from-stripe-invoice-1",
+      "name": "Prepare the invoice alert",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function paidInvoice({body,eventId,channelId}) {\n if(!body||body.type!=='invoice.payment_succeeded'||body.id!==eventId||typeof eventId!=='string'||!eventId)throw Error('Invalid Stripe event');const x=body.data?.object;\n if(!x||!Number.isSafeInteger(x.amount_paid)||x.amount_paid<0||typeof x.currency!=='string'||!/^[A-Za-z]{3}$/.test(x.currency))throw Error('Invalid invoice amount or currency');if(typeof channelId!=='string'||!channelId.trim()||channelId==='YOUR_SLACK_CHANNEL_ID')throw Error('Configure Slack channel');\n const po=Array.isArray(x.custom_fields)&&typeof x.custom_fields[0]?.value==='string'?x.custom_fields[0].value.trim():'';const safe=v=>String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/[\\r\\n]+/g,' ');const details='Amount (minor units): '+x.amount_paid+' '+x.currency.toUpperCase()+'\\nCustomer: '+safe(x.customer_name)+'\\nEmail: '+safe(x.customer_email)+'\\nStripe event: '+safe(eventId);return{hasPo:!!po,filterGroups:[{filters:[{propertyName:'po_number',operator:'EQ',value:po}]}],channelId,paidText:':sparkles: An invoice has been paid :sparkles:\\n'+details+'\\nPO Number: '+safe(po),noPoText:':x: Stripe payment with no PO Number :x:\\n'+details,missingText:':x: Unable to find deal for the payment :x:\\n'+details+'\\nPO Number: '+safe(po)};\n}\n\nreturn {json:paidInvoice({body:$json,eventId:$json.id,channelId:\"native-configured-channel\"})};"
+      }
+    },
+    {
+      "name": "If no PO Number",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        600,
+        460
+      ],
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $(\"Prepare the invoice alert\").first().json.hasPo }}",
+              "value2": false
+            }
+          ]
+        }
+      },
+      "typeVersion": 1,
+      "id": "mark-paid-hubspot-deal-from-stripe-invoice-2"
+    },
+    {
+      "name": "Find Deal based on PO Number",
+      "type": "n8n-nodes-base.hubspot",
+      "position": [
+        820,
+        480
+      ],
+      "parameters": {
+        "resource": "deal",
+        "operation": "search",
+        "authentication": "oAuth2",
+        "returnAll": false,
+        "limit": 101,
+        "filterGroupsUi": {
+          "filterGroupsValues": [
+            {
+              "filtersUi": {
+                "filterValues": [
+                  {
+                    "propertyName": "po_number",
+                    "operator": "EQ",
+                    "value": "={{ $(\"Prepare the invoice alert\").first().json.filterGroups[0].filters[0].value }}"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "additionalFields": {}
+      },
+      "typeVersion": 1,
+      "alwaysOutputData": true,
+      "id": "mark-paid-hubspot-deal-from-stripe-invoice-3"
+    },
+    {
+      "id": "mark-paid-hubspot-deal-from-stripe-invoice-4",
+      "name": "Check matching deals",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const items=$input.all(); if(items.length>100)throw new Error(\"More than 100 matching deals; inspect HubSpot before updating\"); if(items.length===1&&!items[0].json.id)return [{json:{found:false}}]; for(const x of items)if(!x.json.id)throw new Error(\"Invalid deal\"); return items.map((item,index)=>({json:{...item.json,found:true},pairedItem:{item:index}}));"
+      }
+    },
+    {
+      "name": "If no deal found for PO",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1020,
+        480
+      ],
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.found }}",
+              "value2": false
+            }
+          ]
+        }
+      },
+      "typeVersion": 1,
+      "id": "mark-paid-hubspot-deal-from-stripe-invoice-5"
+    },
+    {
+      "name": "Update Deal to Paid",
+      "type": "n8n-nodes-base.hubspot",
+      "position": [
+        1240,
+        500
+      ],
+      "parameters": {
+        "resource": "deal",
+        "operation": "update",
+        "authentication": "oAuth2",
+        "dealId": "={{ $json.id }}",
+        "updateFields": {
+          "customPropertiesUi": {
+            "customPropertiesValues": [
+              {
+                "property": "paid",
+                "value": "Yes"
+              }
+            ]
+          }
+        }
+      },
+      "typeVersion": 1,
+      "id": "mark-paid-hubspot-deal-from-stripe-invoice-6"
+    },
+    {
+      "name": "Send invoice paid message",
+      "type": "n8n-nodes-base.slack",
+      "position": [
+        1420,
+        500
+      ],
+      "parameters": {
+        "resource": "message",
+        "operation": "post",
+        "channel": "YOUR_SLACK_CHANNEL_ID",
+        "text": "={{ $(\"Prepare the invoice alert\").first().json.paidText }}",
+        "otherOptions": {}
+      },
+      "typeVersion": 1,
+      "id": "mark-paid-hubspot-deal-from-stripe-invoice-7"
+    },
+    {
+      "name": "Send no PO Message",
+      "type": "n8n-nodes-base.slack",
+      "position": [
+        800,
+        240
+      ],
+      "parameters": {
+        "resource": "message",
+        "operation": "post",
+        "channel": "YOUR_SLACK_CHANNEL_ID",
+        "text": "={{ $(\"Prepare the invoice alert\").first().json.noPoText }}",
+        "otherOptions": {}
+      },
+      "typeVersion": 1,
+      "id": "mark-paid-hubspot-deal-from-stripe-invoice-8"
+    },
+    {
+      "name": "Send Deal not found message",
+      "type": "n8n-nodes-base.slack",
+      "position": [
+        1180,
+        240
+      ],
+      "parameters": {
+        "resource": "message",
+        "operation": "post",
+        "channel": "YOUR_SLACK_CHANNEL_ID",
+        "text": "={{ $(\"Prepare the invoice alert\").first().json.missingText }}",
+        "otherOptions": {}
+      },
+      "typeVersion": 1,
+      "id": "mark-paid-hubspot-deal-from-stripe-invoice-9"
+    }
+  ],
+  "active": false,
+  "settings": {},
+  "connections": {
+    "When Invoice Paid": {
+      "main": [
+        [
+          {
+            "node": "Prepare the invoice alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare the invoice alert": {
+      "main": [
+        [
+          {
+            "node": "If no PO Number",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If no PO Number": {
+      "main": [
+        [
+          {
+            "node": "Send no PO Message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Find Deal based on PO Number",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Deal based on PO Number": {
+      "main": [
+        [
+          {
+            "node": "Check matching deals",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check matching deals": {
+      "main": [
+        [
+          {
+            "node": "If no deal found for PO",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If no deal found for PO": {
+      "main": [
+        [
+          {
+            "node": "Send Deal not found message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Update Deal to Paid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Deal to Paid": {
+      "main": [
+        [
+          {
+            "node": "Send invoice paid message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {}
+}
