@@ -174,6 +174,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [WooCommerce Product to Slack](workflows/woocommerce-product-slack-alert/) - Post new WooCommerce product names, prices, and links to Slack.
 - [WooCommerce Large Order to Slack](workflows/woocommerce-large-order-slack-alert/) - Post a Slack alert when a new WooCommerce order total is at least 100.
 - [WooCommerce Refunded Order to Slack](workflows/woocommerce-refund-slack-alert/) - Notify Slack when an updated WooCommerce order is refunded and its order total is at least 100.
+- [WooCommerce Order to Mattermost](workflows/woocommerce-order-mattermost-alert/) - Notify a Mattermost channel when an order is created, using its billing first name and first line item name.
 
 ## Utilities
 

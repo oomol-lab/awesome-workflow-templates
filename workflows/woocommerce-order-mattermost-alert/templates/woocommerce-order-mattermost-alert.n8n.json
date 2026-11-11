@@ -1,0 +1,104 @@
+{
+  "name": "WooCommerce Order to Mattermost",
+  "nodes": [
+    {
+      "name": "Order created",
+      "type": "n8n-nodes-base.wooCommerceTrigger",
+      "position": [
+        100,
+        240
+      ],
+      "parameters": {
+        "event": "order.created"
+      },
+      "typeVersion": 1,
+      "id": "woocommerce-order-mattermost-alert-trigger"
+    },
+    {
+      "id": "woocommerce-order-mattermost-alert-message",
+      "name": "Build the purchase notice",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        340,
+        240
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function wooCommerceOrderNotice(input) {\n  const order = input.order;\n  if (!order || typeof order !== 'object' || Array.isArray(order) || !order.billing || typeof order.billing !== 'object' || typeof order.billing.first_name !== 'string' || !Array.isArray(order.line_items) || !order.line_items[0] || typeof order.line_items[0].name !== 'string') throw new Error('The order needs billing.first_name and the first line item name before notifying Mattermost');\n  if (typeof input.channelId !== 'string' || !/^[a-z0-9]{26}$/.test(input.channelId)) throw new Error('Set the 26-character Mattermost channel ID');\n  return { order, channelId: input.channelId, message: order.billing.first_name + ' bought ' + order.line_items[0].name + '!' };\n}\n\nreturn $input.all().map(item=>({json:wooCommerceOrderNotice({order:item.json,channelId:\"YOUR_MATTERMOST_CHANNEL_ID\"})}));"
+      }
+    },
+    {
+      "name": "Post the purchase notice",
+      "type": "n8n-nodes-base.mattermost",
+      "position": [
+        580,
+        240
+      ],
+      "parameters": {
+        "resource": "message",
+        "operation": "post",
+        "channelId": "={{ $json.channelId }}",
+        "message": "={{ $json.message }}",
+        "attachments": [],
+        "otherOptions": {}
+      },
+      "typeVersion": 1,
+      "id": "woocommerce-order-mattermost-alert-post"
+    },
+    {
+      "id": "woocommerce-order-mattermost-alert-receipt",
+      "name": "Confirm the purchase notice",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        820,
+        240
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function wooCommerceMattermostReceipt(input) {\n  const post = input.post;\n  if (!post || typeof post !== 'object' || Array.isArray(post) || typeof post.id !== 'string' || !/^[a-z0-9]{26}$/.test(post.id) || post.channel_id !== input.channelId || post.message !== input.message) throw new Error('Mattermost did not confirm the expected post. It may already have accepted it; inspect the channel before replaying.');\n  return { order: input.order, post, rawPost: input.rawPost };\n}\n\nconst prepared=$(\"Build the purchase notice\").all();return $input.all().map((item,index)=>({json:wooCommerceMattermostReceipt({...prepared[index].json,post:item.json,rawPost:item.json})}));"
+      }
+    }
+  ],
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Order created": {
+      "main": [
+        [
+          {
+            "node": "Build the purchase notice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build the purchase notice": {
+      "main": [
+        [
+          {
+            "node": "Post the purchase notice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Post the purchase notice": {
+      "main": [
+        [
+          {
+            "node": "Confirm the purchase notice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {}
+}
