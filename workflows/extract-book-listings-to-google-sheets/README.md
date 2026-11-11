@@ -26,6 +26,8 @@ Open Flow appends all extracted rows in one request using RAW values; n8n proces
 
 Adapted from [AI Powered Web Scraping with Jina, Google Sheets and OpenAI _ the EASY way](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/OpenAI_and_LLMs/AI%20Powered%20Web%20Scraping%20with%20Jina%2C%20Google%20Sheets%20and%20OpenAI%20_%20the%20EASY%20way.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 
-Source collection notice: © 2024–2026 Enes Cingoz, [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). The source export does not identify a separate template author or license. See [repository licensing](../../README.md#licensing) for the scope of OOMOL contributions and third-party material.
+The matching [n8n community listing](https://n8n.io/workflows/2552-ai-powered-web-scraping-with-jina-google-sheets-and-openai-the-easy-way/) credits Derek Cheung.
+
+Source collection notice: © 2024–2026 Enes Cingoz, [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). The source export does not state a separate template license. See [repository licensing](../../README.md#licensing) for the scope of OOMOL contributions and third-party material.
 
 </details>
