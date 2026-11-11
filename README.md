@@ -248,6 +248,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Send Daily German Vocabulary](workflows/send-daily-german-vocabulary/) - Translate words from top Hacker News stories into German, save them in Airtable and send five by SMS.
 - [Create Recurring Airtable Tasks from Templates](workflows/create-recurring-airtable-tasks-from-templates/) - Create scheduled task records from Airtable templates.
 - [Add and List Stackby Records](workflows/add-and-list-stackby-records/) - Add an ID and name to a Stackby table and list its records.
+- [Archive Discover Weekly Tracks](workflows/archive-discover-weekly-tracks/) - Add tracks missing from an archive playlist from Spotify Discover Weekly.
 
 ## Content
 
