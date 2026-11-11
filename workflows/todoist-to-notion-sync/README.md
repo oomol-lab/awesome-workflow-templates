@@ -26,7 +26,7 @@ For Open Flow:
 
 For n8n, configure Todoist OAuth2 in both Todoist nodes and Notion in **Add to Notion database**. Select the source label, destination database, and the **Todoist ID** rich-text property. Set the completed label in the last line of **Prepare task updates** if needed. The n8n Notion node uses the older database API, so use a database containing one data source. Its database ID differs from the data source ID used by Open Flow.
 
-Both formats check every 30 seconds with an explicit UTC schedule. Enable the workflow after setup. Each run reads up to 50 matching active tasks by default, following cursors as needed to fill that batch. It validates all titles, IDs, and label arrays before any page creation. Titles must contain 1–2,000 characters. With no tasks, it does not call Notion or update Todoist.
+Open Flow checks every minute and n8n checks every 30 seconds, both on an explicit UTC schedule. Enable the workflow after setup. Each run reads up to 50 matching active tasks by default, following cursors as needed to fill that batch. It validates all titles, IDs, and label arrays before any page creation. Titles must contain 1–2,000 characters. With no tasks, it does not call Notion or update Todoist.
 
 All Notion rows are created in task order before any Todoist task is updated. Each row contains the task title and full task ID. Each update removes the configured source label, adds `sent`, keeps other labels, and prepends `Notion Link: <page URL>` to the existing description. Open Flow returns the task-to-page associations and updated task records; n8n returns update confirmations.
 
