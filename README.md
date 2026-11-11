@@ -259,6 +259,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Slack Support Tickets to Linear](workflows/slack-support-tickets-to-linear/) - Find ticket-tagged Slack messages, check existing Linear issue hashes, generate structured support details and create the new tickets in order.
 - [Linear Support Sentiment to Slack](workflows/linear-support-sentiment-to-slack/) - Track the sentiment of recently updated Linear issue conversations in Airtable and send aggregated Slack alerts when their sentiment turns negative.
 - [Unassigned Zendesk Tickets to Slack](workflows/unassigned-zendesk-tickets-to-slack/) - Summarize unassigned new and open Zendesk tickets in one Slack message.
+- [Zammad Ticket Summary to Zulip](workflows/zammad-ticket-summary-to-zulip/) - Count Zammad tickets by state and post a support summary to Zulip.
 
 ## Finance
 
