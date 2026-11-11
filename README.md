@@ -324,6 +324,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 
 - [Disqus Forum Reader](workflows/disqus-forum-reader/) - Read public Disqus forum details by forum short name.
 - [Post Ranked Product Hunt Launches to Discord](workflows/post-ranked-product-hunt-launches-to-discord/) - Post the five highest-ranked recent Product Hunt launches to a Discord channel every hour.
+- [Reply with a Random Cocktail Photo](workflows/reply-with-a-random-cocktail-photo/) - Reply to each Telegram message with a random cocktail photo and name.
 
 ## Content Creation
 
