@@ -217,6 +217,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Generate a Current TOTP Code](workflows/generate-current-totp-code/) - Manually generate the current six-digit SHA-1 TOTP code using an existing account secret and a 30-second period.
 - [Capture a Public Page with Latchshot](workflows/capture-public-page-with-latchshot/) - Capture a public web page as a PNG with a configurable viewport and delay.
 - [Create a Sentry Release and List Releases](workflows/create-sentry-release-and-list-releases/) - Create a Sentry release for a project, then retrieve every page of organization releases.
+- [Telegram Command to GitHub Release](workflows/telegram-command-to-github-release/) - Create a GitHub release for a version supplied by an authorized Telegram user.
 
 ## Communication
 

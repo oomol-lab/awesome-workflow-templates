@@ -1,0 +1,152 @@
+{
+  "nodes": [
+    {
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "position": [
+        120,
+        240
+      ],
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "typeVersion": 1.2,
+      "id": "telegram-command-to-github-release-trigger"
+    },
+    {
+      "id": "telegram-command-to-github-release-command",
+      "name": "Check the authorized command",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        360,
+        240
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function telegramReleaseCommand({body,allowedChatId,allowedUserId}) {\n const message=body?.message,text=message?.text;if(typeof text!=='string'||!text.includes('/deploy'))return {run:false,tag:'skipped'};\n for(const [name,value] of Object.entries({allowedChatId,allowedUserId}))if(typeof value!=='string'||!/^\\-?\\d{1,20}$/.test(value))throw new Error('Configure '+name+' as a numeric Telegram ID.');\n if(!Number.isSafeInteger(message?.chat?.id)||!Number.isSafeInteger(message?.from?.id))throw new Error('The command needs its Telegram chat and sender IDs.');\n if(String(message.chat.id)!==allowedChatId||String(message.from.id)!==allowedUserId)return {run:false,tag:'skipped'};\n const tag=text.split(' ')[1];if(typeof tag!=='string'||!tag.trim())throw new Error('The deploy message needs a nonempty second space-separated field.');return {run:true,tag};\n}\n\nreturn $input.all().map((item,index)=>({json:telegramReleaseCommand({body:item.json,allowedChatId:\"YOUR_TELEGRAM_CHAT_ID\",allowedUserId:\"YOUR_TELEGRAM_USER_ID\"}),pairedItem:{item:index}}));"
+      }
+    },
+    {
+      "id": "telegram-command-to-github-release-route",
+      "name": "Create a release",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        600,
+        240
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "run",
+              "leftValue": "={{ $json.run }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "name": "GitHub",
+      "type": "n8n-nodes-base.github",
+      "position": [
+        840,
+        180
+      ],
+      "parameters": {
+        "owner": "YOUR_GITHUB_OWNER",
+        "resource": "release",
+        "releaseTag": "={{ $json.tag }}",
+        "repository": "YOUR_GITHUB_REPOSITORY",
+        "authentication": "oAuth2",
+        "additionalFields": {}
+      },
+      "typeVersion": 1,
+      "id": "telegram-command-to-github-release-github"
+    },
+    {
+      "id": "telegram-command-to-github-release-receipt",
+      "name": "Confirm the published release",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1080,
+        180
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return $input.all().map((item,index)=>{const tag=$(\"Check the authorized command\").item.json.tag;if(!Number.isSafeInteger(item.json.id)||item.json.id<=0||item.json.tag_name!==tag||item.json.draft!==false)throw new Error(\"GitHub did not confirm the published release; inspect GitHub before replaying.\");return {json:{status:\"published\",release:item.json},pairedItem:{item:index}};});"
+      }
+    }
+  ],
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Check the authorized command",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check the authorized command": {
+      "main": [
+        [
+          {
+            "node": "Create a release",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a release": {
+      "main": [
+        [
+          {
+            "node": "GitHub",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "GitHub": {
+      "main": [
+        [
+          {
+            "node": "Confirm the published release",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Telegram Command to GitHub Release",
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false,
+  "pinData": {}
+}
