@@ -243,6 +243,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Create and Update a Google Contact](workflows/create-update-google-contact/) - Create a Google contact, set their organization and read the updated contact.
 - [Send Daily German Vocabulary](workflows/send-daily-german-vocabulary/) - Translate words from top Hacker News stories into German, save them in Airtable and send five by SMS.
 - [Create Recurring Airtable Tasks from Templates](workflows/create-recurring-airtable-tasks-from-templates/) - Create scheduled task records from Airtable templates.
+- [Add and List Stackby Records](workflows/add-and-list-stackby-records/) - Add an ID and name to a Stackby table and list its records.
 
 ## Content
 

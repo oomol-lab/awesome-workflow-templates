@@ -1,0 +1,169 @@
+{
+  "nodes": [
+    {
+      "name": "On clicking 'execute'",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        250,
+        300
+      ],
+      "parameters": {},
+      "typeVersion": 1,
+      "id": "add-and-list-stackby-records-0"
+    },
+    {
+      "name": "Set record details",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const stackId='',table='',id='',name='';if(!/^[A-Za-z0-9_-]+$/.test(stackId)||!/^[A-Za-z0-9_ -]+$/.test(table)||!table.trim()||!/^\\d+$/.test(id)||!Number.isSafeInteger(Number(id))||Number(id)<1||!name.trim())throw Error('Enter stack, table, numeric ID and name');const path=encodeURIComponent(stackId)+'/'+encodeURIComponent(table);return [{json:{stackId,table,ID:Number(id),Name:name.trim(),createUrl:'https://stackby.com/api/betav1/rowcreate/'+path,listUrl:'https://stackby.com/api/betav1/rowlist/'+path}}];"
+      },
+      "id": "add-and-list-stackby-records-1"
+    },
+    {
+      "name": "Add the record",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.createUrl }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({records:[{field:{ID:$json.ID,Name:$json.Name}}]}) }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "add-and-list-stackby-records-2"
+    },
+    {
+      "name": "Confirm inserted record",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const s=$('Set record details').first().json,r=$input.first().json.field;if(!r||r.ID!==s.ID||r.Name!==s.Name)throw Error('Stackby did not confirm the created row');return [{json:{listUrl:s.listUrl}}];"
+      },
+      "id": "add-and-list-stackby-records-3"
+    },
+    {
+      "name": "List table records",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.listUrl }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "maxrecord",
+              "value": "100"
+            },
+            {
+              "name": "offset",
+              "value": "0"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000,
+          "pagination": {
+            "pagination": {
+              "paginationMode": "updateAParameterInEachRequest",
+              "parameters": {
+                "parameters": [
+                  {
+                    "type": "qs",
+                    "name": "offset",
+                    "value": "={{ $pageCount * 100 }}"
+                  }
+                ]
+              },
+              "paginationCompleteWhen": "responseIsEmpty",
+              "limitPagesFetched": false,
+              "requestInterval": 250
+            }
+          }
+        }
+      },
+      "id": "add-and-list-stackby-records-4"
+    },
+    {
+      "name": "Return table records",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return $input.all().map(x=>{if(!x.json.field||typeof x.json.field!=='object'||Array.isArray(x.json.field))throw Error('Stackby returned an invalid row');return {json:x.json.field};});"
+      },
+      "id": "add-and-list-stackby-records-5"
+    }
+  ],
+  "connections": {
+    "On clicking 'execute'": {
+      "main": [
+        [
+          {
+            "node": "Set record details",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set record details": {
+      "main": [
+        [
+          {
+            "node": "Add the record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add the record": {
+      "main": [
+        [
+          {
+            "node": "Confirm inserted record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm inserted record": {
+      "main": [
+        [
+          {
+            "node": "List table records",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List table records": {
+      "main": [
+        [
+          {
+            "node": "Return table records",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Add and List Stackby Records",
+  "active": false,
+  "pinData": {}
+}
