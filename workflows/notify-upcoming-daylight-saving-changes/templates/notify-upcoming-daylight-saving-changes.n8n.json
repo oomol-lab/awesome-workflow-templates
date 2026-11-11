@@ -1,0 +1,185 @@
+{
+  "name": "Notify Upcoming Daylight Saving Changes",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "notify-upcoming-daylight-saving-changes-0",
+      "name": "When clicking ‘Test workflow’",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "notify-upcoming-daylight-saving-changes-1",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        0,
+        -160
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "daysInterval": 1,
+              "triggerAtHour": 0,
+              "triggerAtMinute": 0
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "notify-upcoming-daylight-saving-changes-2",
+      "name": "Check tomorrow in each zone",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        420,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function planDst({zones,instant}){\n if(!Array.isArray(zones)||zones.some(z=>typeof z!=='string'||!z.trim())||new Set(zones).size!==zones.length)throw Error('Configure distinct IANA time zones');\n const now=instant===null||instant===undefined?Date.now():Date.parse(instant);if(!Number.isFinite(now))throw Error('Invalid time');\n const alerts=[];\n for(const zone of zones){\n  let fmt,off;try{fmt=new Intl.DateTimeFormat('en-CA-u-ca-iso8601',{timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit'});off=new Intl.DateTimeFormat('en-US',{timeZone:zone,timeZoneName:'shortOffset'});}catch{throw Error('Invalid time zone: '+zone)}\n  const dateKey=t=>{let p=Object.fromEntries(fmt.formatToParts(new Date(t)).map(x=>[x.type,x.value]));return p.year+'-'+p.month+'-'+p.day};\n  const keyAt=d=>new Date(d).toISOString().slice(0,10), today=dateKey(now),base=Date.parse(today+'T00:00:00Z'),tomorrow=keyAt(base+86400000),after=keyAt(base+172800000);\n  function boundary(key,center){let lo=center-36*3600000,hi=center+36*3600000;while(lo<hi){let mid=Math.floor((lo+hi)/2);if(dateKey(mid)<key)lo=mid+1;else hi=mid;}return lo;}\n  const offset=t=>{let v=off.formatToParts(new Date(t)).find(x=>x.type==='timeZoneName')?.value;if(v==='GMT')return 0;let m=/^GMT([+-])(\\d{1,2})(?::(\\d{2}))?$/.exec(v);if(!m)throw Error('Unsupported time zone offset');return (m[1]==='-'?-1:1)*(Number(m[2])*60+Number(m[3]||0));};\n  function isDst(t){const d=dateKey(t),[y,m,day]=d.split('-').map(Number),jan=Date.UTC(y,0,2),may=Date.UTC(y,4,day+1);return offset(t)>offset(boundary(keyAt(jan),jan)-1000)||offset(t)>offset(boundary(keyAt(may),may)-1000);}\n  const start=boundary(tomorrow,base+86400000),end=boundary(after,base+172800000);if(dateKey(start)!==tomorrow||dateKey(end-1)!==tomorrow)throw Error('Cannot identify tomorrow in '+zone);\n  if(isDst(start-1000)!==isDst(end-1000)){const message='Tomorrow is Daylight Saving Time change in zone '+zone+' - remember to adjust meeting times!';alerts.push({zone,message,subject:'DST change tomorrow in '+zone});}\n }\n return {alerts};\n}\n\nconst zones = ['America/New_York','Europe/Warsaw'];\nreturn planDst({zones,instant:null}).alerts.map((alert,index)=>({json:alert,pairedItem:{item:0}}));"
+      }
+    },
+    {
+      "id": "notify-upcoming-daylight-saving-changes-3",
+      "name": "Process one change at a time",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        620,
+        300
+      ],
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      }
+    },
+    {
+      "id": "notify-upcoming-daylight-saving-changes-4",
+      "name": "Send Notification On Upcoming Change",
+      "type": "n8n-nodes-base.slack",
+      "position": [
+        660,
+        240
+      ],
+      "parameters": {
+        "text": "={{ $json.message }}",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_SLACK_CHANNEL_ID"
+        },
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        },
+        "authentication": "oAuth2"
+      },
+      "typeVersion": 2.3
+    },
+    {
+      "id": "notify-upcoming-daylight-saving-changes-5",
+      "name": "Send Email On Upcoming Change",
+      "type": "n8n-nodes-base.emailSend",
+      "position": [
+        660,
+        420
+      ],
+      "parameters": {
+        "fromEmail": "sender@example.com",
+        "toEmail": "recipient@example.com",
+        "subject": "={{ $(\"Check tomorrow in each zone\").item.json.subject }}",
+        "text": "={{ $(\"Check tomorrow in each zone\").item.json.message }}",
+        "emailFormat": "text",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "typeVersion": 2.1
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC"
+  },
+  "connections": {
+    "When clicking ‘Test workflow’": {
+      "main": [
+        [
+          {
+            "node": "Check tomorrow in each zone",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Check tomorrow in each zone",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check tomorrow in each zone": {
+      "main": [
+        [
+          {
+            "node": "Process one change at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process one change at a time": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Send Notification On Upcoming Change",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Notification On Upcoming Change": {
+      "main": [
+        [
+          {
+            "node": "Send Email On Upcoming Change",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Email On Upcoming Change": {
+      "main": [
+        [
+          {
+            "node": "Process one change at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
