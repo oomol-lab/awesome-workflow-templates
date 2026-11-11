@@ -148,6 +148,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Subscribe to a Kit Form and Tag](workflows/subscribe-to-kit-form-and-tag/) - Add a subscriber to a Kit form, create a tag and apply it to the subscriber.
 - [Create and Update an E-goi Subscriber](workflows/create-update-egoi-subscriber/) - Create an E-goi contact, update their first name and read the saved contact.
 - [Create and Update an Iterable User](workflows/create-update-iterable-user/) - Create or update an Iterable user, set their Name field and read the profile.
+- [Import Squarespace Signups to Mailchimp](workflows/import-squarespace-signups-to-mailchimp/) - Add newsletter signups from a Google Sheet to a Mailchimp audience with their signup times.
 
 ## Support
 
