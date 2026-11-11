@@ -1,0 +1,363 @@
+{
+  "nodes": [
+    {
+      "id": "sync-github-issues-to-notion-database-0",
+      "name": "Trigger on issues",
+      "type": "n8n-nodes-base.githubTrigger",
+      "position": [
+        860,
+        500
+      ],
+      "parameters": {
+        "authentication": "accessToken",
+        "owner": {
+          "__rl": true,
+          "mode": "name",
+          "value": "your-github-owner"
+        },
+        "repository": {
+          "__rl": true,
+          "mode": "name",
+          "value": "your-github-repo"
+        },
+        "events": [
+          "issues"
+        ],
+        "options": {
+          "insecureSSL": false
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sync-github-issues-to-notion-database-1",
+      "name": "Prepare issue change",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function issueNotionPrepare({body,dataSourceId}) {\n const actions=['opened','edited','deleted','closed','reopened'];const action=body?.action;\n if(!actions.includes(action))return {supported:false,opened:false,action:'ignored',dataSourceId:'',filter:{},parent:{},properties:{},trash:false};\n const issue=body.issue;if(!issue||!Number.isSafeInteger(issue.id)||issue.id<=0||typeof issue.title!=='string'||!issue.title.trim()||issue.title.length>2000||typeof issue.html_url!=='string'||!/^https:\\/\\/github\\.com\\//.test(issue.html_url))throw Error('Invalid issue payload');\n if(typeof dataSourceId!=='string'||!dataSourceId.trim()||dataSourceId==='YOUR_NOTION_DATA_SOURCE_ID')throw Error('Configure Notion data source ID');\n const properties=action==='opened'?{'Issue':{title:[{text:{content:issue.title}}]},'Issue ID':{number:issue.id},'Link':{url:issue.html_url},'Closed':{checkbox:false}}:action==='edited'?{'Issue':{title:[{text:{content:issue.title}}]}}:action==='closed'?{'Closed':{checkbox:true}}:action==='reopened'?{'Closed':{checkbox:false}}:{};\n return {supported:true,opened:action==='opened',action,dataSourceId,filter:{property:'Issue ID',number:{equals:issue.id}},parent:{data_source_id:dataSourceId},properties,trash:action==='deleted'};\n}\n\nconst body=$input.first().json; const result=issueNotionPrepare({body:body.body ?? body,dataSourceId:\"configured-n8n-database\"}); return result.supported ? [{json:result}] : [];"
+      }
+    },
+    {
+      "id": "sync-github-issues-to-notion-database-2",
+      "name": "IF",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1040,
+        500
+      ],
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $(\"Prepare issue change\").first().json.action }}",
+              "value2": "opened"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sync-github-issues-to-notion-database-3",
+      "name": "Create database page",
+      "type": "n8n-nodes-base.notion",
+      "position": [
+        1220,
+        400
+      ],
+      "parameters": {
+        "title": "={{ ($(\"Trigger on issues\").first().json.body ?? $(\"Trigger on issues\").first().json).issue.title }}",
+        "resource": "databasePage",
+        "databaseId": "YOUR_NOTION_DATABASE_ID",
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Issue ID|number",
+              "numberValue": "={{ ($(\"Trigger on issues\").first().json.body ?? $(\"Trigger on issues\").first().json).issue.id }}"
+            },
+            {
+              "key": "Link|url",
+              "urlValue": "={{ ($(\"Trigger on issues\").first().json.body ?? $(\"Trigger on issues\").first().json).issue.html_url }}"
+            },
+            {
+              "key": "Closed|checkbox",
+              "checkboxValue": false
+            }
+          ]
+        },
+        "simple": false
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "sync-github-issues-to-notion-database-4",
+      "name": "Find database page",
+      "type": "n8n-nodes-base.notion",
+      "position": [
+        1400,
+        600
+      ],
+      "parameters": {
+        "options": {},
+        "resource": "databasePage",
+        "operation": "getAll",
+        "returnAll": true,
+        "databaseId": "YOUR_NOTION_DATABASE_ID",
+        "filterJson": "={{ JSON.stringify($(\"Prepare issue change\").first().json.filter) }}",
+        "filterType": "json",
+        "simple": false
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "sync-github-issues-to-notion-database-5",
+      "name": "Check the matching page",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const rows=$input.all(); if(rows.length>1) throw new Error(\"More than one Notion page matches this issue\"); return rows;"
+      }
+    },
+    {
+      "id": "sync-github-issues-to-notion-database-6",
+      "name": "Switch",
+      "type": "n8n-nodes-base.switch",
+      "position": [
+        1580,
+        600
+      ],
+      "parameters": {
+        "rules": {
+          "rules": [
+            {
+              "value2": "edited"
+            },
+            {
+              "output": 1,
+              "value2": "deleted"
+            },
+            {
+              "output": 2,
+              "value2": "closed"
+            },
+            {
+              "output": 3,
+              "value2": "reopened"
+            }
+          ]
+        },
+        "value1": "={{ $(\"Prepare issue change\").first().json.action }}",
+        "dataType": "string"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sync-github-issues-to-notion-database-7",
+      "name": "Edit issue",
+      "type": "n8n-nodes-base.notion",
+      "position": [
+        1760,
+        360
+      ],
+      "parameters": {
+        "pageId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.id }}"
+        },
+        "resource": "databasePage",
+        "operation": "update",
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Issue|title",
+              "title": "={{ ($(\"Trigger on issues\").first().json.body ?? $(\"Trigger on issues\").first().json).issue.title }}"
+            }
+          ]
+        },
+        "simple": false
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "sync-github-issues-to-notion-database-8",
+      "name": "Delete issue",
+      "type": "n8n-nodes-base.notion",
+      "position": [
+        1760,
+        520
+      ],
+      "parameters": {
+        "pageId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.id }}"
+        },
+        "operation": "archive",
+        "simple": false
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "sync-github-issues-to-notion-database-9",
+      "name": "Close issue",
+      "type": "n8n-nodes-base.notion",
+      "position": [
+        1760,
+        680
+      ],
+      "parameters": {
+        "pageId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.id }}"
+        },
+        "resource": "databasePage",
+        "operation": "update",
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Closed|checkbox",
+              "checkboxValue": true
+            }
+          ]
+        },
+        "simple": false
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "sync-github-issues-to-notion-database-10",
+      "name": "Reopen issue",
+      "type": "n8n-nodes-base.notion",
+      "position": [
+        1760,
+        840
+      ],
+      "parameters": {
+        "pageId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.id }}"
+        },
+        "resource": "databasePage",
+        "operation": "update",
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Closed|checkbox",
+              "checkboxValue": false
+            }
+          ]
+        },
+        "simple": false
+      },
+      "typeVersion": 2
+    }
+  ],
+  "connections": {
+    "Trigger on issues": {
+      "main": [
+        [
+          {
+            "node": "Prepare issue change",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare issue change": {
+      "main": [
+        [
+          {
+            "node": "IF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF": {
+      "main": [
+        [
+          {
+            "node": "Create database page",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Find database page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find database page": {
+      "main": [
+        [
+          {
+            "node": "Check the matching page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check the matching page": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Edit issue",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Delete issue",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Close issue",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reopen issue",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Sync GitHub Issues to a Notion Database",
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false,
+  "pinData": {}
+}

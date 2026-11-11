@@ -135,6 +135,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Output Completion Check](workflows/output-completion-check/) - Check a completed-record batch for distinct nonempty IDs, invalid records, duplicates, and a configured minimum count.
 - [GitHub Star Alerts in Slack](workflows/github-star-slack-alert/) - Post Slack alerts when a repository gains or loses a GitHub star.
 - [PagerDuty Incident Create and Update](workflows/pagerduty-incident-create-and-update/) - Create a PagerDuty incident, change its title and retrieve the same incident.
+- [Sync GitHub Issues to a Notion Database](workflows/sync-github-issues-to-notion-database/) - Keep a Notion database updated when GitHub issues are opened, edited, closed, reopened or deleted.
 
 ## Research
 
