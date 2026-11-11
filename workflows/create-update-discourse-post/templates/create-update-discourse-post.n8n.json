@@ -1,0 +1,187 @@
+{
+  "nodes": [
+    {
+      "name": "On clicking 'execute'",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        270,
+        300
+      ],
+      "parameters": {},
+      "typeVersion": 1,
+      "id": "create-update-discourse-post-0"
+    },
+    {
+      "name": "Set topic details",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const forumUrl='',categoryId='',title='',initial='',updated='';if(!/^https:\\/\\/[^\\s?#]+$/i.test(forumUrl)||!/^\\d+$/.test(categoryId)||+categoryId<1||![title,initial,updated].every(x=>x.trim()))throw Error('Enter forum URL, category, title and both post bodies');return [{json:{forumUrl:forumUrl.replace(/\\/+$/,''),categoryId:+categoryId,title,initial,updated}}];"
+      },
+      "id": "create-update-discourse-post-1"
+    },
+    {
+      "name": "Discourse",
+      "type": "n8n-nodes-base.discourse",
+      "position": [
+        470,
+        300
+      ],
+      "parameters": {
+        "title": "={{ $(\"Set topic details\").first().json.title }}",
+        "content": "={{ $(\"Set topic details\").first().json.initial }}",
+        "additionalFields": {
+          "category": "={{ $(\"Set topic details\").first().json.categoryId }}"
+        }
+      },
+      "typeVersion": 1,
+      "id": "create-update-discourse-post-2"
+    },
+    {
+      "name": "Prepare post update",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const id=$input.first().json.id,s=$('Set topic details').first().json;if(!Number.isSafeInteger(id)||id<1)throw Error('Missing post ID');return [{json:{id,url:s.forumUrl+'/posts/'+id+'.json',body:{post:{raw:s.updated}}}}];"
+      },
+      "id": "create-update-discourse-post-3"
+    },
+    {
+      "name": "Update the post",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ $json.url }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "discourseApi",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.body) }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "create-update-discourse-post-4"
+    },
+    {
+      "name": "Confirm post update",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const id=$('Prepare post update').first().json.id;if($input.first().json.post?.id!==id)throw Error('Discourse did not confirm the updated post');return [{json:{id}}];"
+      },
+      "id": "create-update-discourse-post-5"
+    },
+    {
+      "name": "Discourse2",
+      "type": "n8n-nodes-base.discourse",
+      "position": [
+        870,
+        300
+      ],
+      "parameters": {
+        "postId": "={{ $(\"Prepare post update\").first().json.id }}",
+        "operation": "get"
+      },
+      "typeVersion": 1,
+      "id": "create-update-discourse-post-6"
+    },
+    {
+      "name": "Verify the post",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const post=$input.first().json;if(post.id!==$('Prepare post update').first().json.id)throw Error('Discourse did not return the same post');return [{json:post}];"
+      },
+      "id": "create-update-discourse-post-7"
+    }
+  ],
+  "connections": {
+    "On clicking 'execute'": {
+      "main": [
+        [
+          {
+            "node": "Set topic details",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set topic details": {
+      "main": [
+        [
+          {
+            "node": "Discourse",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Discourse": {
+      "main": [
+        [
+          {
+            "node": "Prepare post update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare post update": {
+      "main": [
+        [
+          {
+            "node": "Update the post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update the post": {
+      "main": [
+        [
+          {
+            "node": "Confirm post update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm post update": {
+      "main": [
+        [
+          {
+            "node": "Discourse2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Discourse2": {
+      "main": [
+        [
+          {
+            "node": "Verify the post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Create and Update a Discourse Post",
+  "active": false,
+  "pinData": {}
+}
