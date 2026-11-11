@@ -1,0 +1,302 @@
+{
+  "name": "Send Daily German Vocabulary",
+  "nodes": [
+    {
+      "name": "Daily trigger",
+      "type": "n8n-nodes-base.cron",
+      "position": [
+        620,
+        750
+      ],
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "hour": 8
+            }
+          ]
+        }
+      },
+      "typeVersion": 1,
+      "id": "send-daily-german-vocabulary-0"
+    },
+    {
+      "name": "Configure the destinations",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function config({baseId,table,from,to}){for(const [k,v]of Object.entries({baseId,table,from,to}))if(typeof v!=='string'||!v.trim()||v.startsWith('YOUR_'))throw Error('Configure '+k);if(!/^[0-9]{7,15}$/.test(to))throw Error('Set destination as international digits without +');return{baseId,table,from,to}}\n\nreturn [{json:config({baseId:'YOUR_AIRTABLE_BASE_ID',table:'YOUR_AIRTABLE_TABLE',from:'YOUR_SMS_SENDER',to:'YOUR_SMS_DESTINATION'})}];"
+      },
+      "id": "send-daily-german-vocabulary-1"
+    },
+    {
+      "name": "Get top 3 articles",
+      "type": "n8n-nodes-base.hackerNews",
+      "position": [
+        820,
+        750
+      ],
+      "parameters": {
+        "limit": 3,
+        "resource": "all",
+        "additionalFields": {
+          "tags": [
+            "front_page"
+          ]
+        }
+      },
+      "typeVersion": 1,
+      "id": "send-daily-german-vocabulary-2"
+    },
+    {
+      "name": "Extract unique title words",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const rows=$input.all();if(rows.length<3)throw Error('Fewer than three stories');let words=[];for(const x of rows.slice(0,3)){if(typeof x.json.title!=='string'||!x.json.title.trim())throw Error('Invalid story');for(const w of x.json.title.split(' '))if(w&&!/\\d/.test(w)&&!words.includes(w))words.push(w)}if(words.length<5)throw Error('Fewer than five words');return words.map((word,i)=>({json:{word},pairedItem:{item:0}}));"
+      },
+      "id": "send-daily-german-vocabulary-3"
+    },
+    {
+      "name": "Translate each word",
+      "type": "n8n-nodes-base.lingvaNex",
+      "position": [
+        1220,
+        750
+      ],
+      "parameters": {
+        "operation": "translate",
+        "text": "={{ $json.word }}",
+        "translateTo": "de_DE",
+        "options": {}
+      },
+      "typeVersion": 1,
+      "id": "send-daily-german-vocabulary-4"
+    },
+    {
+      "name": "Prepare translated pairs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const a=$input.all(),w=$('Extract unique title words').all();if(a.length!==w.length||a.length<5)throw Error('Translation count mismatch');return a.map((x,i)=>{if(typeof x.json.result!=='string'||!x.json.result.trim()||x.json.source!==w[i].json.word)throw Error('Invalid translation mapping');return {json:{'English word':w[i].json.word,'Translated word':x.json.result},pairedItem:{item:i}}});"
+      },
+      "id": "send-daily-german-vocabulary-5"
+    },
+    {
+      "name": "Save one word at a time",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "send-daily-german-vocabulary-6"
+    },
+    {
+      "name": "Save vocabulary to Airtable",
+      "type": "n8n-nodes-base.airtable",
+      "position": [
+        1620,
+        850
+      ],
+      "parameters": {
+        "authentication": "airtableTokenApi",
+        "operation": "append",
+        "application": "={{ $(\"Configure the destinations\").first().json.baseId }}",
+        "table": "={{ $(\"Configure the destinations\").first().json.table }}",
+        "addAllFields": true,
+        "options": {}
+      },
+      "typeVersion": 1,
+      "id": "send-daily-german-vocabulary-7"
+    },
+    {
+      "name": "Confirm saved record",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const r=$input.first().json;if(!r||typeof r.id!=='string'||!r.id)throw Error('Airtable create was not confirmed');return [{json:r}];"
+      },
+      "id": "send-daily-german-vocabulary-8"
+    },
+    {
+      "name": "Prepare five words for SMS",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const p=$('Prepare translated pairs').all();if(p.length<5)throw Error('Fewer than five words');return [{json:{text:'Good morning, here are your words for today\\n'+p.slice(0,5).map(x=>x.json['English word']+' : '+x.json['Translated word']).join(', ')}}];"
+      },
+      "id": "send-daily-german-vocabulary-9"
+    },
+    {
+      "name": "Send the vocabulary SMS",
+      "type": "n8n-nodes-base.vonage",
+      "position": [
+        1820,
+        650
+      ],
+      "parameters": {
+        "resource": "sms",
+        "operation": "send",
+        "from": "={{ $(\"Configure the destinations\").first().json.from }}",
+        "to": "={{ $(\"Configure the destinations\").first().json.to }}",
+        "type": "unicode",
+        "message": "={{ $json.text }}",
+        "additionalFields": {}
+      },
+      "typeVersion": 1,
+      "id": "send-daily-german-vocabulary-10"
+    },
+    {
+      "name": "Confirm SMS submission",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const a=$input.all();if(!a.length||a.some(x=>x.json.status!=='0'||!x.json['message-id']))throw Error('SMS submission not confirmed');return a;"
+      },
+      "id": "send-daily-german-vocabulary-11"
+    }
+  ],
+  "active": false,
+  "settings": {
+    "timezone": "UTC",
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Daily trigger": {
+      "main": [
+        [
+          {
+            "node": "Configure the destinations",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configure the destinations": {
+      "main": [
+        [
+          {
+            "node": "Get top 3 articles",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get top 3 articles": {
+      "main": [
+        [
+          {
+            "node": "Extract unique title words",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract unique title words": {
+      "main": [
+        [
+          {
+            "node": "Translate each word",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Translate each word": {
+      "main": [
+        [
+          {
+            "node": "Prepare translated pairs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare translated pairs": {
+      "main": [
+        [
+          {
+            "node": "Save one word at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save one word at a time": {
+      "main": [
+        [
+          {
+            "node": "Prepare five words for SMS",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Save vocabulary to Airtable",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save vocabulary to Airtable": {
+      "main": [
+        [
+          {
+            "node": "Confirm saved record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm saved record": {
+      "main": [
+        [
+          {
+            "node": "Save one word at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare five words for SMS": {
+      "main": [
+        [
+          {
+            "node": "Send the vocabulary SMS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send the vocabulary SMS": {
+      "main": [
+        [
+          {
+            "node": "Confirm SMS submission",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {}
+}
