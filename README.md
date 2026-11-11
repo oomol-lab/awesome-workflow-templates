@@ -289,6 +289,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Create a Sentry Release and List Releases](workflows/create-sentry-release-and-list-releases/) - Create a Sentry release for a project, then retrieve every page of organization releases.
 - [Telegram Command to GitHub Release](workflows/telegram-command-to-github-release/) - Create a GitHub release for a version supplied by an authorized Telegram user.
 - [Email the Latest GitHub Release Notes](workflows/email-latest-github-release-notes/) - Email the latest published GitHub release notes as HTML each day.
+- [Back Up n8n Workflows to GitHub](workflows/back-up-n8n-workflows-to-github/) - Save new or changed n8n workflow JSON files to a GitHub repository.
 
 ## Communication
 
