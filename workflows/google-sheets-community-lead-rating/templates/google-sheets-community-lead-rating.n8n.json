@@ -1,0 +1,425 @@
+{
+  "name": "Google Sheets Community Lead Rating",
+  "tags": [
+    {
+      "id": "y9tvM3hISJKT2jeo",
+      "name": "Ted's Tech Talks",
+      "createdAt": "2023-08-15T22:12:34.260Z",
+      "updatedAt": "2023-08-15T22:12:34.260Z"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "22fdec69-a4a9-430d-9950-79195799ae7a",
+      "name": "Check for new entries",
+      "type": "n8n-nodes-base.googleSheetsTrigger",
+      "position": [
+        520,
+        340
+      ],
+      "parameters": {
+        "event": "rowAdded",
+        "options": {},
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "id",
+          "value": "0"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_GOOGLE_SHEET_ID"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "0a0608fe-894f-4eb5-b690-233c6dfc0428",
+      "name": "Qualify leads with GPT",
+      "type": "n8n-nodes-base.openAi",
+      "position": [
+        900,
+        580
+      ],
+      "parameters": {
+        "prompt": {
+          "messages": [
+            {
+              "role": "system",
+              "content": "Your task is to qualify incoming leads. Leads are form submissions to a closed community group. Use the following criteria for a quality lead:\n\n1. We are looking for decision makers who run companies or who have some teams. The bigger the team - the better. Basically, everyone with some level of responsibility should be accepted. This is the main criterion.\n2. Email from a non-standard domain. Ideally this should be a corporate domain, but this is a secondary criterion.\n\nPlease thing step by step whether a lead is quality or not?\n\nIf at least one of the criteria satisfy, reply with \"qualified\" in response. Otherwise reply \"not qualified\". Reply with a JSON of the following structure: {\"rating\":\"string\",\"explanation\":\"string\"}. Reply only with with the JSON and nothing more!"
+            },
+            {
+              "content": "=Here's a lead info:\nName: {{ $json['Your name'] }}\nEmail: {{ $json['Email Address'] }}\nBusiness area: {{ $json['Your business area'] }}\nSize of the team: {{ $json['Your team size'] }}"
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.3
+        },
+        "resource": "chat",
+        "chatModel": "gpt-4.1"
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "fea0acee-13b6-441a-8cf9-c8fedbc4617d",
+      "name": "Extract JSON reply",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1120,
+        580
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return $input.all().map((item,index)=>{const reply=JSON.parse(item.json.message.content);if(!reply||!['qualified','not qualified'].includes(reply.rating)||typeof reply.explanation!=='string')throw new Error('Invalid lead rating or explanation.');return {json:{reply},pairedItem:{item:index}};});"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "1f179325-0bec-4e5c-8ebd-0a2bb3ebefaa",
+      "name": "Merge",
+      "type": "n8n-nodes-base.merge",
+      "position": [
+        1440,
+        340
+      ],
+      "parameters": {
+        "mode": "combine",
+        "options": {},
+        "combinationMode": "mergeByPosition"
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "id": "lead-all",
+      "name": "Keep complete lead ratings",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1650,
+        340
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return [{json:{results:$input.all().map((item,index)=>{const row=item.json;if(!row.Timestamp)throw new Error('A lead needs a Timestamp.');return {index,timestamp:String(row.Timestamp),row,rating:row.reply.rating,explanation:row.reply.explanation};})}}];"
+      }
+    },
+    {
+      "id": "lead-read",
+      "name": "Read current Timestamp matches",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1860,
+        340
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "https://sheets.googleapis.com/v4/spreadsheets/YOUR_GOOGLE_SHEET_ID/values/'Form%20Responses%201'!A%3AZ",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "valueRenderOption",
+              "value": "FORMATTED_VALUE"
+            },
+            {
+              "name": "dateTimeRenderOption",
+              "value": "FORMATTED_STRING"
+            },
+            {
+              "name": "majorDimension",
+              "value": "ROWS"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "lead-plan",
+      "name": "Plan only Rating cells",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2080,
+        340
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function planLeadRatingWrites({values,results,sheetName}) {\n if(!Array.isArray(values)||!Array.isArray(results)||typeof sheetName!=='string'||!sheetName)throw new Error('Invalid lead rating write inputs.');const headers=values[0];if(!Array.isArray(headers))throw new Error('Missing sheet header.');const timestamp=headers.indexOf('Timestamp'),rating=headers.indexOf('Rating');if(timestamp<0||rating<0||headers.lastIndexOf('Timestamp')!==timestamp||headers.lastIndexOf('Rating')!==rating)throw new Error('Use exactly one Timestamp and one Rating header.');\n const rows=new Map();for(let i=1;i<values.length;i++){if(!Array.isArray(values[i]))throw new Error('Invalid sheet row.');const key=values[i][timestamp];if(key!=null&&!rows.has(String(key)))rows.set(String(key),i+1);}\n const sheet=\"'\"+sheetName.replaceAll(\"'\",\"''\")+\"'\",column=n=>{let text='';for(n++;n;n=Math.floor((n-1)/26))text=String.fromCharCode(65+(n-1)%26)+text;return text;},data=[],unmatched=[];\n for(const result of results){if(!result||typeof result.timestamp!=='string'||!['qualified','not qualified'].includes(result.rating)||typeof result.explanation!=='string')throw new Error('Invalid completed rating.');const row=rows.get(result.timestamp);if(row==null){unmatched.push(result.index);continue;}data.push({range:sheet+'!'+column(rating)+row,values:[[result.rating]]});}\n return {data,hasUpdates:data.length>0,expectedCells:data.length,matched:data.length,unmatched,results};\n}\n\nreturn [{json:planLeadRatingWrites({values:$input.first().json.body.values??[],results:$('Keep complete lead ratings').first().json.results,sheetName:'Form Responses 1'})}];"
+      }
+    },
+    {
+      "id": "lead-has",
+      "name": "Any matching Rating cells",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2300,
+        340
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.hasUpdates }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "lead-write",
+      "name": "Update matching Rating cells",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2520,
+        340
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://sheets.googleapis.com/v4/spreadsheets/YOUR_GOOGLE_SHEET_ID/values:batchUpdate",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {valueInputOption:\"USER_ENTERED\",data:$json.data} }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "lead-receipt",
+      "name": "Confirm the rating update",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2740,
+        340
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function leadRatingReceipt({results,matched,unmatched,expectedCells,actualCells}) {\n if(!Array.isArray(results)||!Array.isArray(unmatched)||!Number.isInteger(matched)||!Number.isInteger(expectedCells))throw new Error('Invalid rating receipt.');if(expectedCells>0&&actualCells!==expectedCells)throw new Error('Rating update receipt does not match the requested cells.');return {rated:results.length,updated:matched,unmatched,results};\n}\n\nconst plan=$('Plan only Rating cells').first().json;return [{json:leadRatingReceipt({...plan,actualCells:plan.hasUpdates?$input.first().json.body.totalUpdatedCells:null})}];"
+      }
+    },
+    {
+      "id": "7b548661-2b32-451f-ba52-91ca86728f1e",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        358,
+        136.3642172523962
+      ],
+      "parameters": {
+        "width": 442,
+        "height": 360.6357827476038,
+        "content": "### 1. Create a Google Sheet document\n* This template uses Google Sheet document connected to Google Forms, but a standalone Sheet document will work too\n* Adapt initial trigger to your needs: check for new entries periodically or add a manual trigger\n\n[Link to the Google Sheet template](https://docs.google.com/spreadsheets/d/1jk8ZbfOMObvHGGImc0sBJTZB_hracO4jRqfbryMgzEs)"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "308b4dce-4656-47bd-b217-69565b1c34f6",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        820,
+        420
+      ],
+      "parameters": {
+        "width": 471,
+        "height": 322,
+        "content": "### 2. Provide lead qualification instructions\n* Create a __system message__ with overall instructions\n* Add a __user message__ with the JSON variables\n* Set node parses the resulting JSON object, but you can also request a plain string response in the system message"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "c00442ca-98cf-4296-b084-f0881ce4fd39",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1320,
+        222.18785942492013
+      ],
+      "parameters": {
+        "width": 355,
+        "height": 269.81214057507987,
+        "content": "### 3. Combine the initial data with GPT response\n* This Merge node puts together original records from the google sheet and responses from the OpenAI"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "62643a4c-a69c-4351-9960-20413285ff33",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1700,
+        220
+      ],
+      "parameters": {
+        "width": 398,
+        "height": 265,
+        "content": "### 4. Update the Google Sheet document\n* Provide __Column to Match On__ (usually a timestamp in case of Google Forms)\n* Enter the result from GPT into a separate column"
+      },
+      "typeVersion": 1
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "callerPolicy": "workflowsFromSameOwner",
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "saveExecutionProgress": true,
+    "saveDataSuccessExecution": "all"
+  },
+  "connections": {
+    "Check for new entries": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Qualify leads with GPT",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Qualify leads with GPT": {
+      "main": [
+        [
+          {
+            "node": "Extract JSON reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract JSON reply": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Keep complete lead ratings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Keep complete lead ratings": {
+      "main": [
+        [
+          {
+            "node": "Read current Timestamp matches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read current Timestamp matches": {
+      "main": [
+        [
+          {
+            "node": "Plan only Rating cells",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Plan only Rating cells": {
+      "main": [
+        [
+          {
+            "node": "Any matching Rating cells",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Any matching Rating cells": {
+      "main": [
+        [
+          {
+            "node": "Update matching Rating cells",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Confirm the rating update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update matching Rating cells": {
+      "main": [
+        [
+          {
+            "node": "Confirm the rating update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
