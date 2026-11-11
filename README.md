@@ -110,6 +110,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Umami Weekly SEO Report](workflows/umami-weekly-seo-report/) - Summarize self-hosted Umami traffic, compare two rolling weeks of page visitors, and save both analyses in one Baserow row.
 - [Classify Software Keywords in Google Sheets](workflows/classify-software-keywords-in-google-sheets/) - Classify every keyword as containing a known IT software or service name, wait five seconds per six-row batch and update only matching Service? cells by Number.
 - [Create and Update a WordPress Draft](workflows/create-and-update-wordpress-draft/) - Create a WordPress draft with a title, then update that same post with content.
+- [Scheduled AI Influencer Post](workflows/scheduled-ai-influencer-post/) - Generate a profile-based post and publish it on X manually or every six hours.
 
 ## Support
 
