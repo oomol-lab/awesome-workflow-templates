@@ -164,6 +164,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Urgent Gmail Subjects to Telegram](workflows/urgent-gmail-subject-to-telegram/) - Send a Telegram alert for incoming Gmail subjects containing Urgent or exactly matching Server Down.
 - [Gmail To-Do Label to Google Tasks](workflows/gmail-todo-label-to-google-tasks/) - Create a Google Task for each new Gmail message matching label:To-Do, using its subject and snippet.
 - [Telegram Documents to Google Drive](workflows/telegram-documents-to-google-drive/) - Save each document received by a Telegram bot to a Google Drive folder.
+- [Telegram Journal Replies to Google Sheets](workflows/telegram-journal-replies-to-google-sheets/) - Save a specified user’s reply to a bot’s dated journal prompt as an entry in Google Sheets.
 
 ## Content
 

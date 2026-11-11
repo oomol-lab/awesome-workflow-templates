@@ -1,0 +1,87 @@
+{
+  "name": "Telegram Journal Replies to Google Sheets",
+  "nodes": [
+    {
+      "name": "Receive the Telegram message",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "position": [
+        100,
+        240
+      ],
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {
+          "download": false
+        }
+      },
+      "typeVersion": 1.2,
+      "id": "telegram-journal-replies-to-google-sheets-trigger"
+    },
+    {
+      "id": "telegram-journal-replies-to-google-sheets-parse",
+      "name": "Check the dated journal reply",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        350,
+        240
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function telegramJournalReply({ body, botUsername, userUsername }) {\n  if (typeof botUsername !== 'string' || !botUsername.trim() || botUsername === 'YOUR_BOT_USERNAME' || typeof userUsername !== 'string' || !userUsername.trim() || userUsername === 'YOUR_USERNAME') throw new Error('Set the bot and user usernames without @');\n  const message = body?.message;\n  const reply = message?.reply_to_message;\n  if (!message || !reply || message.from?.username !== userUsername || reply.from?.username !== botUsername || typeof message.text !== 'string') return { accepted: false, entry: '', date: '', values: [] };\n  if (typeof reply.text !== 'string' || !reply.text.includes(':')) throw new Error('The bot prompt must contain a colon followed by the journal date');\n  const date = reply.text.split(':')[1].replace(/\\s/g, '');\n  const entry = message.text;\n  return { accepted: true, entry, date, values: [[entry, date]] };\n}\n\nconst result=telegramJournalReply({body:$input.first().json,botUsername:\"YOUR_BOT_USERNAME\",userUsername:\"YOUR_USERNAME\"});if(!result.accepted)return [];return [{json:{entry:result.entry,date:result.date}}];"
+      }
+    },
+    {
+      "name": "Add entry to sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        600,
+        240
+      ],
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "sheet",
+        "operation": "append",
+        "sheetId": "YOUR_SPREADSHEET_ID",
+        "range": "Sheet1!A:B",
+        "keyRow": 0,
+        "options": {
+          "valueInputMode": "RAW"
+        }
+      },
+      "typeVersion": 1,
+      "id": "telegram-journal-replies-to-google-sheets-sheet"
+    }
+  ],
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Receive the Telegram message": {
+      "main": [
+        [
+          {
+            "node": "Check the dated journal reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check the dated journal reply": {
+      "main": [
+        [
+          {
+            "node": "Add entry to sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {}
+}
