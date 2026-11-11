@@ -108,6 +108,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Alert on HTTP Status by SMS](workflows/alert-on-http-status-by-sms/) - Check a website every five minutes and send an SMS when its final HTTP status is not 200.
 - [Notify Discord When Stock Text Is Absent](workflows/monitor-stock-text-to-discord/) - Check a webpage every hour and notify Discord when the text “Out Of Stock” is absent.
 - [Email Workflow Failure Details](workflows/email-workflow-failure-details/) - Email diagnostic details when a configured workflow fails.
+- [Ping Configured URLs](workflows/ping-configured-urls/) - Send an HTTP GET to each configured URL every 15 minutes.
 
 ## Marketing
 
