@@ -30,6 +30,6 @@ The source leaves its OpenAI model unspecified. The pinned current n8n model nod
 
 Adapted from [Customer Support Channel and Ticketing System with Slack and Linear](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Slack/Customer%20Support%20Channel%20and%20Ticketing%20System%20with%20Slack%20and%20Linear.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 
-Source collection notice: © 2024–2026 Enes Cingoz, [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). The source export does not identify a separate template author or license. See [repository licensing](../../README.md#licensing) for the scope of OOMOL contributions and third-party material.
+Source collection notice: © 2024–2026 Enes Cingoz, [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). The matching [n8n community listing](https://n8n.io/workflows/2323-customer-support-channel-and-ticketing-system-with-slack-and-linear/) credits Jimleuk. The source export does not state a separate template license. See [repository licensing](../../README.md#licensing) for the scope of OOMOL contributions and third-party material.
 
 </details>
