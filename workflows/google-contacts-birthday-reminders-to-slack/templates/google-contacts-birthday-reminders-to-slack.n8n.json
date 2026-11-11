@@ -1,0 +1,136 @@
+{
+  "name": "Google Contacts Birthday Reminders to Slack",
+  "tags": [
+    {
+      "id": "uScnF9NzR3PLIyvU",
+      "name": "Published",
+      "createdAt": "2025-03-21T07:22:28.491Z",
+      "updatedAt": "2025-03-21T07:22:28.491Z"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "google-contacts-birthday-reminders-to-slack-0",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        80,
+        140
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 8
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "google-contacts-birthday-reminders-to-slack-1",
+      "name": "Google Contacts",
+      "type": "n8n-nodes-base.googleContacts",
+      "notes": "Get the contact details\n",
+      "position": [
+        300,
+        140
+      ],
+      "parameters": {
+        "fields": [
+          "emailAddresses",
+          "birthdays",
+          "names",
+          "nicknames"
+        ],
+        "options": {},
+        "operation": "getAll",
+        "returnAll": true,
+        "rawData": true
+      },
+      "notesInFlow": true,
+      "typeVersion": 1
+    },
+    {
+      "id": "google-contacts-birthday-reminders-to-slack-2",
+      "name": "Find today’s birthdays",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function findBirthdays({state,scheduledAt}){\n const people=state.people;\n const now=new Date(scheduledAt);if(!Number.isFinite(now.getTime()))throw Error('Invalid schedule time');const month=now.getUTCMonth()+1,day=now.getUTCDate(),matches=[];\n for(const person of people){if(!person||typeof person!=='object')throw Error('Invalid contact');const birthdays=person.birthdays??[];if(!Array.isArray(birthdays))throw Error('Invalid contact birthdays');if(!birthdays.some(b=>b?.date?.month===month&&b?.date?.day===day))continue;const names=Array.isArray(person.names)?person.names:[],primary=names.find(n=>n?.metadata?.primary)||names[0],nickname=Array.isArray(person.nicknames)?person.nicknames[0]?.value:undefined;const name=primary?.displayName||[primary?.givenName,primary?.familyName].filter(Boolean).join(' ')||nickname||'your friend';matches.push({name:String(name)});}\n return{matches};\n}\n\nreturn findBirthdays({state:{people:$input.all().map(x=>x.json)},scheduledAt:new Date().toISOString()}).matches.map(json=>({json}));"
+      }
+    },
+    {
+      "id": "google-contacts-birthday-reminders-to-slack-3",
+      "name": "Slack",
+      "type": "n8n-nodes-base.slack",
+      "notes": "Reminds to the birthday message",
+      "position": [
+        1020,
+        60
+      ],
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "message",
+        "operation": "post",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_SLACK_CHANNEL_ID"
+        },
+        "messageType": "block",
+        "text": "Todays Birthday of your friend",
+        "blocksUi": "={{ JSON.stringify({blocks:[{type:\"section\",text:{type:\"plain_text\",text:\"Today is \"+$json.name+\"\\u0027s birthday! 🎉\"}}]}) }}",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "notesInFlow": true,
+      "typeVersion": 2.3
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC"
+  },
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Google Contacts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Contacts": {
+      "main": [
+        [
+          {
+            "node": "Find today’s birthdays",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find today’s birthdays": {
+      "main": [
+        [
+          {
+            "node": "Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

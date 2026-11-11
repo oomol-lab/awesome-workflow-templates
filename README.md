@@ -247,6 +247,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Send an SMS with Mocean](workflows/send-mocean-sms/) - Send one SMS message to a configured recipient through Mocean.
 - [Upload a Public Image to Slack](workflows/upload-a-public-image-to-slack/) - Download a public image and upload its bytes to a Slack channel with a comment.
 - [Mattermost Webhook Call Invite](workflows/mattermost-webhook-call-invite/) - Post a Whereby room invite to a Mattermost channel from a webhook request.
+- [Google Contacts Birthday Reminders to Slack](workflows/google-contacts-birthday-reminders-to-slack/) - Check Google Contacts each morning and send a Slack reminder for each birthday today.
 
 ## Customer Support
 
