@@ -1,0 +1,78 @@
+{
+  "name": "Typeform Lead to Twilio SMS",
+  "nodes": [
+    {
+      "name": "Receive the completed lead form",
+      "type": "n8n-nodes-base.typeformTrigger",
+      "position": [
+        460,
+        300
+      ],
+      "parameters": {
+        "authentication": "accessToken",
+        "formId": "YOUR_TYPEFORM_FORM_ID",
+        "simplifyAnswers": false,
+        "onlyAnswers": false
+      },
+      "typeVersion": 1,
+      "id": "typeform-lead-to-twilio-sms-trigger"
+    },
+    {
+      "id": "typeform-lead-to-twilio-sms-prepare",
+      "name": "Prepare the lead SMS",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function leadMessage({response}){\n  if(!response||!Array.isArray(response.definition?.fields)||!Array.isArray(response.answers))throw Error('Expected the complete Typeform response');\n  const questions=[['Last name','And your *last name*?'],['First name',\"Let's start with your* first name.*\"],['Number of children','How many child do you have ?'],['Country','Lastly, [field:d566770d2197a78b], what country do you live in?'],['Email','What *email address* can we reach you at? This is only to get in touch, not to send spam.'],['Birth date','What is your birth date ?']];\n  const map=new Map();for(const f of response.definition.fields){if(typeof f?.id!=='string'||typeof f.title!=='string'||map.has(f.id))throw Error('Invalid form definition');map.set(f.id,f.title.replace(/\\{\\{/g,'[').replace(/\\}\\}/g,']'));}\n  const answers=new Map();for(const a of response.answers){const title=map.get(a?.field?.id);if(!title)throw Error('Answer has no matching question');if(answers.has(title))throw Error('Repeated answer title');let v=a[a.type];if(v&&typeof v==='object'&&!Array.isArray(v)&&Object.hasOwn(v,'label'))v=v.label;answers.set(title,v);}\n  const lines=questions.map(([label,title])=>{const v=answers.get(title);if((typeof v!=='string'&&typeof v!=='number')||!String(v).trim())throw Error('Missing or invalid '+label+' answer');return label+': '+String(v)});const body='New lead submission:\\n\\n'+lines.join('\\n');if(body.length>1600)throw Error('SMS body exceeds 1600 characters');return {body};\n}\n\nif($json.event_type!==\"form_response\")throw Error(\"Expected a completed Typeform response\");return {json:leadMessage({response:$json.form_response})};"
+      }
+    },
+    {
+      "name": "Send lead SMS",
+      "type": "n8n-nodes-base.twilio",
+      "position": [
+        900,
+        300
+      ],
+      "parameters": {
+        "resource": "sms",
+        "operation": "send",
+        "from": "YOUR_TWILIO_SENDER_NUMBER",
+        "to": "YOUR_RECIPIENT_NUMBER",
+        "toWhatsapp": false,
+        "message": "={{ $json.body }}"
+      },
+      "typeVersion": 1,
+      "id": "typeform-lead-to-twilio-sms-send"
+    }
+  ],
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Receive the completed lead form": {
+      "main": [
+        [
+          {
+            "node": "Prepare the lead SMS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare the lead SMS": {
+      "main": [
+        [
+          {
+            "node": "Send lead SMS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {}
+}

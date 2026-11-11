@@ -63,6 +63,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Customer.io Customer to Manual Segment](workflows/customerio-customer-to-manual-segment/) - Identify a Customer.io customer and add the customer ID to an existing manual segment.
 - [Mark HubSpot Deals Paid from Stripe Invoices](workflows/mark-paid-hubspot-deal-from-stripe-invoice/) - When a Stripe invoice is paid, find HubSpot deals by purchase order, mark them paid and notify Slack.
 - [High-Revenue HubSpot Companies to Slack](workflows/high-revenue-hubspot-companies-to-slack/) - Notify a Slack user about recently modified HubSpot companies with annual revenue whose integer value exceeds 5 million.
+- [Typeform Lead to Twilio SMS](workflows/typeform-lead-to-twilio-sms/) - Send a sales contact an SMS with the answers from a completed Typeform lead form.
 
 ## Operations
 
