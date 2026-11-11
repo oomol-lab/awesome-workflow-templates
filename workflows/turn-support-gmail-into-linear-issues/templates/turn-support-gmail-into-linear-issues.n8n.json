@@ -1,0 +1,271 @@
+{
+  "nodes": [
+    {
+      "id": "turn-support-gmail-into-linear-issues-0",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        -640,
+        -140
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "turn-support-gmail-into-linear-issues-1",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "position": [
+        280,
+        40
+      ],
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "turn-support-gmail-into-linear-issues-2",
+      "name": "Structured Output Parser",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "position": [
+        480,
+        40
+      ],
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\"type\":\"object\",\"properties\":{\"labels\":{\"type\":\"array\",\"items\":{\"type\":\"string\",\"enum\":[\"Technical\",\"Account\",\"Access\",\"Billing\",\"Product\",\"Training\",\"Feedback\",\"Complaints\",\"Security\",\"Privacy\"]},\"minItems\":1},\"priority\":{\"type\":\"integer\",\"minimum\":1,\"maximum\":5},\"summary\":{\"type\":\"string\",\"minLength\":1},\"description\":{\"type\":\"string\",\"minLength\":1}},\"required\":[\"labels\",\"priority\",\"summary\",\"description\"],\"additionalProperties\":false}"
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "turn-support-gmail-into-linear-issues-3",
+      "name": "Markdown",
+      "type": "n8n-nodes-base.markdown",
+      "position": [
+        100,
+        -140
+      ],
+      "parameters": {
+        "html": "={{ $json.html }}",
+        "options": {}
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "turn-support-gmail-into-linear-issues-4",
+      "name": "Check message state",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -220,
+        -140
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const m=$input.item.json;if(typeof m.id!==\"string\"||!m.id)throw Error(\"Invalid Gmail message ID\");const state=$getWorkflowStaticData(\"global\"),seen=state.supportMessageIds??[];if(!Array.isArray(seen)||seen.some(x=>typeof x!==\"string\"))throw Error(\"Invalid saved message IDs\");if(seen.includes(m.id))return null;return $input.item;"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "turn-support-gmail-into-linear-issues-5",
+      "name": "Generate Issue From Support Request",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "position": [
+        300,
+        -140
+      ],
+      "parameters": {
+        "text": "=Reported by {{ $json.from.value[0].name }} <{{ $json.from.value[0].address }}>\nReported at: {{ $now.toISO() }}\nSummary: {{ $json.subject }}\nDescription:\n{{ $json.data.replaceAll('\\n', ' ') }}",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=Your are Issues triage assistant who's task is to\n1) classify and label the given issue.\n2) Prioritise the given issue.\n3) Rewrite the issue summary and description.\n\n## Labels\nUse one or more labels.\n* Technical\n* Account\n* Access\n* Billing\n* Product\n* Training\n* Feedback\n* Complaints\n* Security\n* Privacy\n\n## Priority\n* 1 - highest\n* 2 - high\n* 3 - medium\n* 4 - low\n* 5 - lowest\n\n## Write Summary and Description\n* Remove emotional and anedotal phrases or information\n* Keep to the facts of the matter\n* Highlight what was attempted and is/was failing"
+            }
+          ]
+        },
+        "promptType": "define",
+        "hasOutputParser": true
+      },
+      "typeVersion": 1.6
+    },
+    {
+      "id": "turn-support-gmail-into-linear-issues-6",
+      "name": "Get Recent Messages",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        -440,
+        -140
+      ],
+      "parameters": {
+        "limit": 1,
+        "simple": false,
+        "filters": {
+          "q": "to:YOUR_SUPPORT_EMAIL"
+        },
+        "options": {},
+        "operation": "getAll"
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "id": "turn-support-gmail-into-linear-issues-7",
+      "name": "Create Issue in Linear.App",
+      "type": "n8n-nodes-base.linear",
+      "position": [
+        900,
+        -140
+      ],
+      "parameters": {
+        "title": "={{ $json.title }}",
+        "teamId": "YOUR_LINEAR_TEAM_ID",
+        "additionalFields": {
+          "stateId": "YOUR_LINEAR_STATE_ID",
+          "priorityId": "={{ $json.priority }}",
+          "description": "={{ $json.description }}"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "name": "Prepare the Linear issue",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function fields({result}){const allowed=['Technical','Account','Access','Billing','Product','Training','Feedback','Complaints','Security','Privacy'];if(!result||typeof result.summary!=='string'||!result.summary.trim()||typeof result.description!=='string'||!result.description.trim()||!Array.isArray(result.labels)||result.labels.length===0||result.labels.some(x=>!allowed.includes(x))||!Number.isInteger(result.priority)||result.priority<1||result.priority>5)throw Error('Invalid triage result');return{title:result.summary,description:result.description+'\\n\\n'+result.labels.map(x=>'#'+x).join(' '),priority:Math.min(result.priority,4)};}\n\nreturn $input.all().map((x,i)=>({json:fields({result:x.json.output}),pairedItem:{item:i}}));"
+      },
+      "id": "turn-support-gmail-into-linear-issues-8"
+    },
+    {
+      "name": "Remember the processed email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const issue=$input.item.json,id=$(\"Get Recent Messages\").item.json.id;if(typeof issue.id!==\"string\"||!issue.id||typeof id!==\"string\"||!id)throw Error(\"Issue was not confirmed\");const state=$getWorkflowStaticData(\"global\"),seen=state.supportMessageIds??[];if(!Array.isArray(seen)||seen.some(x=>typeof x!==\"string\"))throw Error(\"Invalid saved message IDs\");if(!seen.includes(id))state.supportMessageIds=[...seen,id];return $input.item;"
+      },
+      "id": "turn-support-gmail-into-linear-issues-9"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Markdown": {
+      "main": [
+        [
+          {
+            "node": "Generate Issue From Support Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get Recent Messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Generate Issue From Support Request",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Recent Messages": {
+      "main": [
+        [
+          {
+            "node": "Check message state",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Generate Issue From Support Request",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Issue From Support Request": {
+      "main": [
+        [
+          {
+            "node": "Prepare the Linear issue",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check message state": {
+      "main": [
+        [
+          {
+            "node": "Markdown",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare the Linear issue": {
+      "main": [
+        [
+          {
+            "node": "Create Issue in Linear.App",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Issue in Linear.App": {
+      "main": [
+        [
+          {
+            "node": "Remember the processed email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Turn Support Gmail into Linear Issues",
+  "settings": {
+    "timezone": "UTC",
+    "executionOrder": "v1"
+  },
+  "active": false
+}
