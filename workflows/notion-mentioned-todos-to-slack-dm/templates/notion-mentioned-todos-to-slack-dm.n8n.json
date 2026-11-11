@@ -1,0 +1,149 @@
+{
+  "name": "Notion Mentioned To-Dos to Slack DM",
+  "nodes": [
+    {
+      "name": "Cron",
+      "type": "n8n-nodes-base.cron",
+      "position": [
+        470,
+        320
+      ],
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "hour": 8
+            }
+          ]
+        }
+      },
+      "typeVersion": 1,
+      "id": "notion-mentioned-todos-to-slack-dm-cron"
+    },
+    {
+      "name": "Get To Dos",
+      "type": "n8n-nodes-base.notion",
+      "position": [
+        670,
+        320
+      ],
+      "parameters": {
+        "blockId": "YOUR_PARENT_BLOCK_ID",
+        "resource": "block",
+        "operation": "getAll",
+        "returnAll": true,
+        "fetchNestedBlocks": false
+      },
+      "typeVersion": 2,
+      "id": "notion-mentioned-todos-to-slack-dm-read"
+    },
+    {
+      "id": "notion-mentioned-todos-to-slack-dm-filter",
+      "name": "Filter to-dos",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        870,
+        320
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function collect({previousState,page,targetUserId}) {\n if(typeof targetUserId!=='string'||!targetUserId.trim()||targetUserId==='YOUR_NOTION_USER_ID')throw Error('Set the Notion user ID.');\n const normalize=s=>s.replace(/-/g,'').toLowerCase(),target=normalize(targetUserId);\n const state=previousState??{items:[],seen:[],cursor:null,started:false};\n if(!state.started){if(page!=null)throw Error('Unexpected first page');return {state:{...state,started:true},cursor:null,more:true,items:[]};}\n if(!page||page.object!=='list'||!Array.isArray(page.results)||typeof page.has_more!=='boolean'||!Object.hasOwn(page,'next_cursor'))throw Error('Invalid Notion response');\n if(page.request_status?.type==='incomplete')throw Error('Notion returned an incomplete page');\n if(page.has_more&&(typeof page.next_cursor!=='string'||!page.next_cursor||state.seen.includes(page.next_cursor)))throw Error('Invalid or repeated Notion cursor');\n if(!page.has_more&&page.next_cursor!=null)throw Error('Unexpected Notion cursor');\n const items=[...state.items];for(const block of page.results){if(!block||typeof block!=='object'||typeof block.type!=='string')throw Error('Invalid block');if(block.type!=='to_do')continue;const todo=block.to_do;if(!todo||typeof todo.checked!=='boolean'||!Array.isArray(todo.rich_text))throw Error('Invalid to-do');if(todo.checked)continue;const mention=todo.rich_text[1];if(mention?.type!=='mention'||mention.mention?.type!=='user')continue;const user=mention.mention.user;if(!user||typeof user.id!=='string')throw Error('Missing mentioned user ID');if(normalize(user.id)!==target)continue;const first=todo.rich_text[0];if(first?.type!=='text'||typeof first.text?.content!=='string'||!first.text.content.trim())throw Error('Missing to-do title');const title=first.text.content;if(title.length>2900)throw Error('To-do title is too long');items.push({id:block.id,title});}\n const seen=page.has_more?[...state.seen,page.next_cursor]:state.seen;return {state:{items,seen,cursor:page.next_cursor,started:true},cursor:page.next_cursor,more:page.has_more,items};\n}\n\nconst targetUserId='YOUR_NOTION_USER_ID';const input=$input.all();const start=collect({previousState:null,page:null,targetUserId}).state;const result=collect({previousState:start,page:{object:'list',results:input.map(i=>i.json),has_more:false,next_cursor:null},targetUserId});const used=new Set();return result.items.map(item=>{const index=input.findIndex((i,n)=>!used.has(n)&&i.json.id===item.id);if(index<0)throw Error('Missing source block');used.add(index);return {json:item,pairedItem:{item:index}}});"
+      }
+    },
+    {
+      "name": "Create a Direct Message",
+      "type": "n8n-nodes-base.slack",
+      "position": [
+        1120,
+        220
+      ],
+      "parameters": {
+        "options": {
+          "users": [
+            "YOUR_SLACK_USER_ID"
+          ]
+        },
+        "resource": "channel",
+        "operation": "open"
+      },
+      "executeOnce": false,
+      "typeVersion": 1,
+      "id": "notion-mentioned-todos-to-slack-dm-open"
+    },
+    {
+      "name": "Send a Direct Message",
+      "type": "n8n-nodes-base.slack",
+      "position": [
+        1320,
+        220
+      ],
+      "parameters": {
+        "text": "# TO DO",
+        "channel": "={{$json[\"id\"]}}",
+        "attachments": [
+          {
+            "title": "={{ \"☑️ \" + $(\"Filter to-dos\").item.json.title }}"
+          }
+        ],
+        "otherOptions": {
+          "mrkdwn": true
+        }
+      },
+      "typeVersion": 1,
+      "id": "notion-mentioned-todos-to-slack-dm-send"
+    }
+  ],
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC"
+  },
+  "connections": {
+    "Cron": {
+      "main": [
+        [
+          {
+            "node": "Get To Dos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get To Dos": {
+      "main": [
+        [
+          {
+            "node": "Filter to-dos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter to-dos": {
+      "main": [
+        [
+          {
+            "node": "Create a Direct Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a Direct Message": {
+      "main": [
+        [
+          {
+            "node": "Send a Direct Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {}
+}
