@@ -1,0 +1,137 @@
+{
+  "name": "WooCommerce Processing Orders to Telegram",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "woocommerce-processing-order-to-telegram-trigger",
+      "name": "Order updated",
+      "type": "n8n-nodes-base.wooCommerceTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        240
+      ],
+      "parameters": {
+        "event": "order.updated"
+      }
+    },
+    {
+      "id": "woocommerce-processing-order-to-telegram-status",
+      "name": "Check order status",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        240
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function status({order}) {if(!order||typeof order!=='object'||Array.isArray(order)||typeof order.status!=='string')throw Error('Invalid order status');return {processing:order.status==='processing'};}\n\nreturn {json:status({order:$json})};"
+      }
+    },
+    {
+      "id": "woocommerce-processing-order-to-telegram-gate",
+      "name": "Order is processing",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        480,
+        240
+      ],
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.processing }}",
+              "operation": "equal",
+              "value2": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "woocommerce-processing-order-to-telegram-format",
+      "name": "Format the order notice",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        240
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function format({order}) {\n const str=(v,name)=>{if(typeof v!=='string')throw Error('Missing '+name);return v},escape=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');\n if(!order||typeof order!=='object'||Array.isArray(order)||!Number.isSafeInteger(order.id)||order.id<=0)throw Error('Invalid order ID');\n const total=str(order.total,'total'),currency=str(order.currency,'currency');if(!/^-?\\d+(?:\\.\\d+)?$/.test(total)||!/^[A-Z]{3}$/.test(currency))throw Error('Invalid total or currency');\n const raw=str(order.date_created_gmt,'creation date'),match=/^(\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d)Z?$/.exec(raw);if(!match)throw Error('Invalid GMT creation date');const dt=new Date(match[1]+'Z');if(!Number.isFinite(dt.getTime())||dt.toISOString().slice(0,19)!==match[1])throw Error('Invalid GMT creation date');\n if(!order.billing||typeof order.billing!=='object'||Array.isArray(order.billing)||!Array.isArray(order.line_items))throw Error('Missing billing or line items');const b=order.billing,name=str(b.first_name,'first name')+' '+str(b.last_name,'last name'),city=str(b.city,'city'),phone=str(b.phone,'phone'),note=str(order.customer_note,'customer note');\n const products=order.line_items.map(item=>{if(!item||typeof item.name!=='string'||!Number.isSafeInteger(item.quantity)||item.quantity<0)throw Error('Invalid line item');return '🔹 '+escape(item.name)+'<b> ('+item.quantity+' items)</b>';}).join('\\n');\n const text='🆔 <b>Order ID:</b> '+order.id+'\\n\\n👦🏻 <b>Customer Name:</b> '+escape(name)+'\\n\\n💵 <b>Amount:</b> '+escape(total)+' '+escape(currency)+'\\n\\n📅 <b>Order Date:</b>\\n➖ '+match[1].replace('T',' ')+' UTC\\n\\n🏙 <b>City:</b> '+escape(city)+'\\n\\n📞 <b>Phone:</b> '+escape(phone)+'\\n\\n✍🏻 <b>Order Note:</b>\\n'+escape(note||'No notes')+'\\n\\n📦 <b>Ordered Products:</b>\\n\\n'+products;\n if(text.length>4096)throw Error('Order notice exceeds the Telegram message limit');return {text};\n}\n\nreturn {json:format({order:$(\"Order updated\").item.json})};"
+      }
+    },
+    {
+      "id": "woocommerce-processing-order-to-telegram-send",
+      "name": "Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        720,
+        740
+      ],
+      "parameters": {
+        "text": "={{ $json.text }}",
+        "chatId": "YOUR_TELEGRAM_CHAT_ID",
+        "additionalFields": {
+          "parse_mode": "HTML",
+          "appendAttribution": false
+        }
+      },
+      "typeVersion": 1.2
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Order updated": {
+      "main": [
+        [
+          {
+            "node": "Check order status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check order status": {
+      "main": [
+        [
+          {
+            "node": "Order is processing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Order is processing": {
+      "main": [
+        [
+          {
+            "node": "Format the order notice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format the order notice": {
+      "main": [
+        [
+          {
+            "node": "Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

@@ -205,6 +205,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [WooCommerce Order to Mattermost](workflows/woocommerce-order-mattermost-alert/) - Notify a Mattermost channel when an order is created, using its billing first name and first line item name.
 - [WooCommerce New Product to X and Telegram](workflows/woocommerce-product-to-x-and-telegram/) - Announce newly created WooCommerce products on X and Telegram using the product name and permalink.
 - [Create a WooCommerce Product and Set Stock](workflows/create-woocommerce-product-and-set-stock/) - Create a product, set its stock quantity to 100, and retrieve it from WooCommerce.
+- [WooCommerce Processing Orders to Telegram](workflows/woocommerce-processing-order-to-telegram/) - Send order details to Telegram when an updated WooCommerce order is processing.
 
 ## Utilities
 
