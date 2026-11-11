@@ -305,6 +305,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Send a Weekly Workflow Failure Report](workflows/send-weekly-workflow-failure-report/) - Send a weekly Telegram report of failed executions for one n8n workflow.
 - [Restore n8n Workflows from GitHub](workflows/restore-n8n-workflows-from-github/) - Restore missing n8n workflows from JSON backups in a GitHub directory.
 - [Back Up n8n Workflows to GitLab](workflows/back-up-n8n-workflows-to-gitlab/) - Back up tagged n8n workflows to GitLab on demand or weekly, writing only new or changed files.
+- [Schedule n8n Workflow Activity](workflows/schedule-n8n-workflow-activity/) - Activate an n8n workflow each morning and deactivate it each evening.
 
 ## Communication
 
