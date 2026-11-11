@@ -371,6 +371,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 ## Security
 
 - [Report Steam Phishing Domains](workflows/report-steam-phishing-domains/) - Send reports for a reviewed Steam phishing domain after checking its nameservers.
+- [Create and Update a TheHive Case](workflows/create-and-update-thehive-case/) - Create a TheHive 4 case, change its severity and read it back.
 
 ## Contribute
 
