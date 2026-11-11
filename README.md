@@ -151,6 +151,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Create and Update an Iterable User](workflows/create-update-iterable-user/) - Create or update an Iterable user, set their Name field and read the profile.
 - [Import Squarespace Signups to Mailchimp](workflows/import-squarespace-signups-to-mailchimp/) - Add newsletter signups from a Google Sheet to a Mailchimp audience with their signup times.
 - [Create and Update a MailerLite Subscriber](workflows/create-update-mailerlite-subscriber/) - Create or update a MailerLite subscriber, set their city and read their profile.
+- [Create and Enroll a Tapfiliate Affiliate](workflows/create-and-enroll-tapfiliate-affiliate/) - Create an affiliate, set a tag and add them to a Tapfiliate program.
 
 ## Support
 
