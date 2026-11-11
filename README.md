@@ -246,6 +246,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 
 - [Segment Event Tracker](workflows/segment-event-tracker/) - Send one Segment Track event with an optional user ID or a fresh anonymous identity.
 - [Matomo Repeat Visits SEO Report](workflows/matomo-repeat-visits-seo-report/) - Analyze recent repeat-visitor paths with an OpenRouter model and save the report to Baserow.
+- [Send Monthly ProfitWell Metrics to Mattermost](workflows/send-monthly-profitwell-metrics-to-mattermost/) - Post monthly ProfitWell customer and recurring revenue metrics to a Mattermost channel.
 
 ## Lifestyle
 
