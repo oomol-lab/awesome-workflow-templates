@@ -146,6 +146,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Email a Weekly Search Console Report](workflows/email-weekly-search-console-report/) - Email the top Google Search queries from the previous seven complete Pacific Time dates.
 - [Post Queued Google Sheets Rows to X](workflows/post-queued-sheet-rows-to-x/) - Post queued sheet rows to X every six hours and remove the posted rows.
 - [Subscribe to a Kit Form and Tag](workflows/subscribe-to-kit-form-and-tag/) - Add a subscriber to a Kit form, create a tag and apply it to the subscriber.
+- [Create and Update an E-goi Subscriber](workflows/create-update-egoi-subscriber/) - Create an E-goi contact, update their first name and read the saved contact.
 
 ## Support
 
