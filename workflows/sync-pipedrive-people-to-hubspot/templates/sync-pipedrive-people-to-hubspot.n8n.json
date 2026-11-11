@@ -1,0 +1,240 @@
+{
+  "nodes": [
+    {
+      "name": "Cron",
+      "type": "n8n-nodes-base.cron",
+      "position": [
+        550,
+        800
+      ],
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1,
+      "id": "sync-pipedrive-people-to-hubspot-cron"
+    },
+    {
+      "id": "sync-pipedrive-people-to-hubspot-list",
+      "name": "List Pipedrive people",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.pipedrive.com/api/v2/persons?limit=500",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          },
+          "pagination": {
+            "pagination": {
+              "paginationMode": "responseContainsNextURL",
+              "nextURL": "={{ 'https://api.pipedrive.com/api/v2/persons?limit=500' + ($pageCount === 0 ? '' : '&cursor=' + encodeURIComponent($response.body.additional_data.next_cursor)) }}",
+              "paginationCompleteWhen": "other",
+              "completeExpression": "={{ !$response.body?.additional_data?.next_cursor }}",
+              "limitPagesFetched": true,
+              "maxRequests": 100
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "sync-pipedrive-people-to-hubspot-people",
+      "name": "Collect Pipedrive people",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const pages=$input.all(),all=[];for(const p of pages){const b=p.json.body;if(b?.success!==true||!(Array.isArray(b.data)||b.data===null))throw Error('Invalid Pipedrive page');all.push(...(b.data??[]));}if(pages.at(-1)?.json.body?.additional_data?.next_cursor)throw Error('Pipedrive page limit reached');return [{json:{records:all}}];"
+      }
+    },
+    {
+      "id": "sync-pipedrive-people-to-hubspot-get",
+      "name": "List HubSpot contacts",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.hubapi.com/crm/v3/objects/contacts?limit=100&properties=email",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "hubspotOAuth2Api",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          },
+          "pagination": {
+            "pagination": {
+              "paginationMode": "responseContainsNextURL",
+              "nextURL": "={{ 'https://api.hubapi.com/crm/v3/objects/contacts?limit=100&properties=email' + ($pageCount === 0 ? '' : '&after=' + encodeURIComponent($response.body.paging.next.after)) }}",
+              "paginationCompleteWhen": "other",
+              "completeExpression": "={{ !$response.body?.paging?.next?.after }}",
+              "limitPagesFetched": true,
+              "maxRequests": 100
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "sync-pipedrive-people-to-hubspot-plan",
+      "name": "Match and validate emails",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function planContacts({people,contacts}) {\n if(!Array.isArray(people?.records)||!Array.isArray(contacts?.records))throw Error('Invalid contact lists');const present=new Set();for(const c of contacts.records){const email=c?.properties?.email;if(email!=null&&typeof email!=='string')throw Error('Invalid HubSpot email');if(email)present.add(email.toLowerCase());}const proposed=[];for(const p of people.records){const email=p?.emails?.[0]?.value;if(typeof email!=='string'||!email.trim()||email!==email.trim())throw Error('Pipedrive person has no usable first email');if(p.first_name!=null&&typeof p.first_name!=='string')throw Error('Invalid Pipedrive first name');const key=email.toLowerCase();if(!present.has(key)){proposed.push({email,...(p.first_name?{firstname:p.first_name}:{})});present.add(key);}}return{contacts:proposed,hasContacts:proposed.length>0};\n}\n\nconst records=[];for(const p of $input.all()){const b=p.json.body;if(!Array.isArray(b?.results))throw Error('Invalid HubSpot page');records.push(...b.results);}if(records.length>=10000||$input.all().at(-1)?.json.body?.paging?.next?.after)throw Error('HubSpot page limit reached; no contacts created');const r=planContacts({people:$('Collect Pipedrive people').first().json,contacts:{records}});return r.contacts.map(properties=>({json:{properties}}));"
+      }
+    },
+    {
+      "id": "sync-pipedrive-people-to-hubspot-loop",
+      "name": "Process contacts one by one",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      }
+    },
+    {
+      "id": "sync-pipedrive-people-to-hubspot-create",
+      "name": "Create HubSpot contact",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.hubapi.com/crm/v3/objects/contacts",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "hubspotOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({properties:$json.properties}) }}",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Cron": {
+      "main": [
+        [
+          {
+            "node": "List Pipedrive people",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List Pipedrive people": {
+      "main": [
+        [
+          {
+            "node": "Collect Pipedrive people",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect Pipedrive people": {
+      "main": [
+        [
+          {
+            "node": "List HubSpot contacts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List HubSpot contacts": {
+      "main": [
+        [
+          {
+            "node": "Match and validate emails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Match and validate emails": {
+      "main": [
+        [
+          {
+            "node": "Process contacts one by one",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process contacts one by one": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Create HubSpot contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create HubSpot contact": {
+      "main": [
+        [
+          {
+            "node": "Process contacts one by one",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Sync Pipedrive People to HubSpot",
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC"
+  },
+  "pinData": {}
+}
