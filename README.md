@@ -69,6 +69,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Add GitHub Pull Requests to Pipedrive Contacts](workflows/github-pull-request-pipedrive-note/) - Add a GitHub pull request link to Pipedrive people whose email matches the event sender.
 - [Create Odoo Opportunities from Sales Emails](workflows/create-odoo-opportunities-from-sales-emails/) - Summarize labeled Gmail sales inquiries and create Odoo opportunities with the sender and subject.
 - [Create Pipedrive Leads for GitHub Forks](workflows/github-fork-to-pipedrive-lead/) - Create a Pipedrive lead and GitHub profile note when a repository is forked.
+- [Log Stripe Charges in Pipedrive](workflows/log-stripe-charges-in-pipedrive/) - Find recent successful Stripe charges and add their details to matching Pipedrive organizations.
 
 ## Operations
 

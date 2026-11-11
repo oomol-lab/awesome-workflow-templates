@@ -1,0 +1,335 @@
+{
+  "nodes": [
+    {
+      "id": "log-stripe-charges-in-pipedrive-0",
+      "name": "Every day at 8 am",
+      "type": "n8n-nodes-base.cron",
+      "position": [
+        4920,
+        900
+      ],
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "mode": "everyDay",
+              "hour": 8,
+              "minute": 0
+            }
+          ]
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "log-stripe-charges-in-pipedrive-1",
+      "name": "Read the last run time",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const s=$getWorkflowStaticData('global'),now=Math.floor(Date.now()/1000);if(s.lastChargeRun==null)s.lastChargeRun=now;if(!Number.isSafeInteger(s.lastChargeRun)||s.lastChargeRun<0||s.lastChargeRun>now)throw Error('Invalid saved charge watermark');return [{json:{since:s.lastChargeRun,until:now}}];"
+      }
+    },
+    {
+      "id": "log-stripe-charges-in-pipedrive-2",
+      "name": "List recent charges",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.stripe.com/v1/charges",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "stripeApi",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "created[gte]",
+              "value": "={{ $json.since }}"
+            },
+            {
+              "name": "created[lt]",
+              "value": "={{ $json.until }}"
+            },
+            {
+              "name": "limit",
+              "value": "100"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          },
+          "pagination": {
+            "pagination": {
+              "paginationMode": "responseContainsNextURL",
+              "nextURL": "={{ 'https://api.stripe.com/v1/charges?created%5Bgte%5D=' + encodeURIComponent($('Read the last run time').first().json.since) + '&created%5Blt%5D=' + encodeURIComponent($('Read the last run time').first().json.until) + '&limit=100' + ($pageCount === 0 ? '' : '&starting_after=' + encodeURIComponent($response.body?.data?.at(-1)?.id ?? '')) }}",
+              "paginationCompleteWhen": "other",
+              "completeExpression": "={{ (() => { if (typeof $response.body.has_more !== 'boolean') throw Error('Invalid Stripe page'); if ($response.body.has_more && (!Array.isArray($response.body.data) || !$response.body.data.length || (typeof $response.body.data.at(-1).id !== 'string' || !$response.body.data.at(-1).id))) throw Error('Missing Stripe cursor'); if ($pageCount >= 100 && $response.body.has_more) throw Error('Stripe pagination exceeded 100 pages'); return !$response.body.has_more; })() }}",
+              "limitPagesFetched": false
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "log-stripe-charges-in-pipedrive-3",
+      "name": "Collect successful charges",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const out=[];for(const p of $input.all()){const body=p.json.body;if(!body||!Array.isArray(body.data))throw Error('Invalid Stripe page');for(const c of body.data){if(!c||!['succeeded','pending','failed'].includes(c.status)||typeof c.id!=='string')throw Error('Invalid Stripe charge');if(c.status!=='succeeded')continue;if(typeof c.customer!=='string'||!c.customer||!Number.isSafeInteger(c.amount)||typeof c.currency!=='string'||!(c.description===null||typeof c.description==='string'))throw Error('Invalid charge or missing customer');out.push({json:c})}}return out;"
+      }
+    },
+    {
+      "id": "log-stripe-charges-in-pipedrive-4",
+      "name": "Process charges one by one",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      }
+    },
+    {
+      "id": "log-stripe-charges-in-pipedrive-5",
+      "name": "Get the Stripe customer",
+      "type": "n8n-nodes-base.stripe",
+      "position": [
+        5360,
+        1100
+      ],
+      "parameters": {
+        "resource": "customer",
+        "operation": "get",
+        "customerId": "={{ $json.customer }}"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "log-stripe-charges-in-pipedrive-6",
+      "name": "Validate the Stripe customer",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const c=$('Process charges one by one').item.json;if($json.id!==c.customer||$json.deleted===true||typeof $json.name!=='string'||!$json.name.trim())throw Error('Charge customer has no usable name or mismatched ID');return [{json:{name:$json.name}}];"
+      }
+    },
+    {
+      "id": "log-stripe-charges-in-pipedrive-7",
+      "name": "Find the Pipedrive organization",
+      "type": "n8n-nodes-base.pipedrive",
+      "position": [
+        6140,
+        1060
+      ],
+      "parameters": {
+        "resource": "organization",
+        "operation": "search",
+        "term": "={{ $json.name }}",
+        "returnAll": false,
+        "limit": 2,
+        "additionalFields": {
+          "fields": [
+            "name"
+          ],
+          "exactMatch": true
+        }
+      },
+      "typeVersion": 1,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "log-stripe-charges-in-pipedrive-8",
+      "name": "Prepare the charge note",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function chargeAmount(amount,currency){\n const supported='usd aed afn all amd ang aoa ars aud awg azn bam bbd bdt bif bhd bmd bnd bob brl bsd bwp byn bzd cad cdf chf clp cny cop crc cve czk djf dkk dop dzd egp etb eur fjd fkp gbp gel gip gmd gnf gtq gyd hkd hnl htg huf idr ils inr isk jmd jod jpy kes kgs khr kmf krw kwd kyd kzt lak lbp lkr lrd lsl mad mdl mga mkd mmk mnt mop mur mvr mwk mxn myr mzn nad ngn nio nok npr nzd omr pab pen pgk php pkr pln pyg qar ron rsd rub rwf sar sbd scr sek sgd shp sle sos srd std szl thb tjs tnd top try ttd twd tzs uah ugx uyu uzs vnd vuv wst xaf xcd xcg xof xpf yer zar zmw'.split(' '),zero='bif clp djf gnf jpy kmf krw mga pyg rwf vnd vuv xaf xof xpf'.split(' ');\n if(!Number.isSafeInteger(amount)||amount<0||typeof currency!=='string'||!supported.includes(currency))throw Error('Unsupported or invalid Stripe charge currency or amount');\n if((currency==='isk'||currency==='ugx')&&amount%100!==0)throw Error('Invalid Stripe special-currency amount');\n if(zero.includes(currency))return String(amount);\n const places=['bhd','jod','kwd','omr','tnd'].includes(currency)?3:2,digits=String(amount).padStart(places+1,'0');return digits.slice(0,-places)+'.'+digits.slice(-places);\n}\n\nconst a=$input.all();if(a.length!==1||!Number.isSafeInteger(a[0].json.id)||a[0].json.id<1)throw Error('Expected one exact organization match');const c=$('Process charges one by one').item.json,esc=x=>String(x??'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('\"','&quot;').replaceAll(\"'\",'&#39;');return [{json:{orgId:a[0].json.id,content:esc(c.description)+': '+chargeAmount(c.amount,c.currency)+' '+esc(c.currency)}}];"
+      }
+    },
+    {
+      "id": "log-stripe-charges-in-pipedrive-9",
+      "name": "Create the Pipedrive note",
+      "type": "n8n-nodes-base.pipedrive",
+      "position": [
+        6620,
+        940
+      ],
+      "parameters": {
+        "resource": "note",
+        "operation": "create",
+        "content": "={{ $json.content }}",
+        "additionalFields": {
+          "org_id": "={{ $json.orgId }}"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "log-stripe-charges-in-pipedrive-10",
+      "name": "Confirm the note",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "if($input.all().length!==1||!Number.isSafeInteger($json.id)||$json.id<1)throw Error('Pipedrive did not confirm note');return $input.all();"
+      }
+    },
+    {
+      "id": "log-stripe-charges-in-pipedrive-11",
+      "name": "Save the completed run",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const s=$getWorkflowStaticData('global'),until=$('Read the last run time').first().json.until;if(!Number.isSafeInteger(until))throw Error('Invalid run time');s.lastChargeRun=until;return $input.all();"
+      }
+    }
+  ],
+  "connections": {
+    "Every day at 8 am": {
+      "main": [
+        [
+          {
+            "node": "Read the last run time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the last run time": {
+      "main": [
+        [
+          {
+            "node": "List recent charges",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List recent charges": {
+      "main": [
+        [
+          {
+            "node": "Collect successful charges",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect successful charges": {
+      "main": [
+        [
+          {
+            "node": "Process charges one by one",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process charges one by one": {
+      "main": [
+        [
+          {
+            "node": "Save the completed run",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get the Stripe customer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get the Stripe customer": {
+      "main": [
+        [
+          {
+            "node": "Validate the Stripe customer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate the Stripe customer": {
+      "main": [
+        [
+          {
+            "node": "Find the Pipedrive organization",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find the Pipedrive organization": {
+      "main": [
+        [
+          {
+            "node": "Prepare the charge note",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare the charge note": {
+      "main": [
+        [
+          {
+            "node": "Create the Pipedrive note",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create the Pipedrive note": {
+      "main": [
+        [
+          {
+            "node": "Confirm the note",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm the note": {
+      "main": [
+        [
+          {
+            "node": "Process charges one by one",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Log Stripe Charges in Pipedrive",
+  "active": false,
+  "settings": {
+    "timezone": "UTC",
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}
