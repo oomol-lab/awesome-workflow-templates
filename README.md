@@ -176,6 +176,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Random Cocktail to Mattermost](workflows/random-cocktail-to-mattermost/) - Fetch a random cocktail and post its instructions, glass and image to a Mattermost channel.
 - [Weekly Mattermost Coffee Groups](workflows/mattermost-weekly-coffee-groups/) - Shuffle channel members into coffee groups, announce them and create Google Calendar invitations with Meet.
 - [Session Feedback to Mattermost](workflows/session-feedback-to-mattermost/) - Read session rows and post each feedback form to its Mattermost channel.
+- [Create, Update, and Read a Strava Activity](workflows/create-update-and-read-strava-activity/) - Create a manual running activity, update its description, and read it from Strava.
 
 ## Content
 
