@@ -289,6 +289,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Hebrew WhatsApp Invoice Reminders](workflows/hebrew-whatsapp-invoice-reminders/) - Send Hebrew WAHA reminders for open invoices exactly 7, 14 or 30 calendar days overdue, and record each accepted reminder in Google Sheets.
 - [Clockify Invoice to Notion](workflows/clockify-invoice-to-notion/) - Create a Notion database page when a Clockify invoice webhook arrives.
 - [Binance USDC Market Summary to Telegram](workflows/binance-usdc-market-summary-to-telegram/) - Send an hourly summary of BTC, ETH and SOL against USDC to a Telegram chat.
+- [Alert on Bitcoin Euro Price by SMS](workflows/alert-on-bitcoin-euro-price-by-sms/) - Check the Bitcoin price in euros every minute and send an SMS whenever it reaches a configured threshold.
 
 ## Community
 
