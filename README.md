@@ -76,6 +76,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Save PhantomBuster Leads to Airtable](workflows/phantombuster-leads-to-airtable/) - Read the latest Phantom output and save lead names, emails and companies to Airtable.
 - [Create and Update a SendGrid Contact](workflows/create-update-sendgrid-contact/) - Add or update a SendGrid contact, then read the saved contact.
 - [Enrich Calendly Bookings in Notion](workflows/enrich-calendly-bookings-in-notion/) - Enrich each new Calendly invitee and save the booking and contact details in Notion.
+- [Create and Update a Copper Contact](workflows/create-update-copper-contact/) - Create a Copper person, add their work phone and read the contact.
 
 ## Operations
 
