@@ -1,0 +1,169 @@
+{
+  "nodes": [
+    {
+      "id": "high-revenue-hubspot-companies-to-slack-0",
+      "name": "Get leads created last 5 minutes",
+      "type": "n8n-nodes-base.hubspot",
+      "position": [
+        160,
+        500
+      ],
+      "parameters": {
+        "resource": "company",
+        "operation": "getRecentlyCreatedUpdated",
+        "returnAll": true,
+        "authentication": "oAuth2",
+        "additionalFields": {
+          "since": "={{ $now.minus({ \"minutes\": 5 }) }}",
+          "propertiesCollection": {
+            "propertiesValues": {
+              "properties": [
+                "name",
+                "website",
+                "annualrevenue",
+                "numberofemployees"
+              ],
+              "propertyMode": "valueAndHistory"
+            }
+          }
+        }
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "high-revenue-hubspot-companies-to-slack-1",
+      "name": "Notify sales rep",
+      "type": "n8n-nodes-base.slack",
+      "position": [
+        700,
+        500
+      ],
+      "parameters": {
+        "text": "={{ $json.text }}",
+        "user": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_SLACK_USER_ID"
+        },
+        "select": "user",
+        "otherOptions": {},
+        "authentication": "oAuth2"
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "id": "high-revenue-hubspot-companies-to-slack-2",
+      "name": "Trigger every 5 minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        -100,
+        500
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "high-revenue-hubspot-companies-to-slack-3",
+      "name": "Keep the ones that make more than $5M in revenue",
+      "type": "n8n-nodes-base.filter",
+      "position": [
+        440,
+        500
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "1b31b826-e87d-425f-a65d-370b4b20f7e1",
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              },
+              "leftValue": "={{ $json.properties.annualrevenue.value.toInt() }}",
+              "rightValue": 5000000
+            }
+          ]
+        }
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "high-revenue-hubspot-companies-to-slack-prepare",
+      "name": "Prepare Slack alert",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const p=$json.properties,esc=x=>String(x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');for(const k of ['name','website','annualrevenue','numberofemployees'])if(p?.[k]?.value==null||String(p[k].value).trim()==='')throw Error('Qualifying company has missing details');const text=`New high-quality lead 🤑\\n*Company Name*: ${esc(p.name.value)} \\n*Website*: ${esc(p.website.value)}\\n*Revenue*: ${esc(p.annualrevenue.value)}\\n*Number of employees*: ${esc(p.numberofemployees.value)}`;if(text.length>4000)throw Error('Slack message too long');return {json:{...$json,text}};"
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Trigger every 5 minutes": {
+      "main": [
+        [
+          {
+            "node": "Get leads created last 5 minutes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get leads created last 5 minutes": {
+      "main": [
+        [
+          {
+            "node": "Keep the ones that make more than $5M in revenue",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Keep the ones that make more than $5M in revenue": {
+      "main": [
+        [
+          {
+            "node": "Prepare Slack alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Slack alert": {
+      "main": [
+        [
+          {
+            "node": "Notify sales rep",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "High-Revenue HubSpot Companies to Slack",
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC"
+  }
+}
