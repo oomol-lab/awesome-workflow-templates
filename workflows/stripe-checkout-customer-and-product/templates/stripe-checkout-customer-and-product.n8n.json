@@ -1,0 +1,122 @@
+{
+  "name": "Stripe Checkout Customer and Product",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "stripe-checkout-customer-and-product-0",
+      "name": "Stripe Trigger on Payment Event",
+      "type": "n8n-nodes-base.stripeTrigger",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "events": [
+          "checkout.session.completed"
+        ]
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "stripe-checkout-customer-and-product-1",
+      "name": "Extract Session Information",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        300,
+        0
+      ],
+      "parameters": {
+        "url": "={{ \"https://api.stripe.com/v1/checkout/sessions/\" + encodeURIComponent($json.sessionId) }}",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        },
+        "sendQuery": true,
+        "authentication": "predefinedCredentialType",
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "expand[]",
+              "value": "line_items"
+            }
+          ]
+        },
+        "nodeCredentialType": "stripeApi"
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "stripe-checkout-customer-and-product-2",
+      "name": "Extract customer and product",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        560,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function checkoutResult({body,statusCode,bodyEncoding,sessionId}) {if(statusCode<200||statusCode>=300||bodyEncoding!=null||!body||typeof body!=='object'||Array.isArray(body)||body.id!==sessionId)throw Error('Stripe did not return the requested Checkout Session');const details=body.customer_details;if(details!=null&&(typeof details!=='object'||Array.isArray(details)))throw Error('Invalid customer details');const rows=body.line_items?.data;if(!Array.isArray(rows))throw Error('Expanded line items are missing');const text=(v)=>{if(v==null)return null;if(typeof v!=='string')throw Error('Invalid Checkout Session field');return v};return {customerName:text(details?.name),customerEmail:text(details?.email),productDescription:text(rows[0]?.description)};}\n\nreturn {json:checkoutResult({body:$json,statusCode:200,bodyEncoding:null,sessionId:$('Select Checkout Session').first().json.sessionId})};"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "stripe-checkout-customer-and-product-input",
+      "name": "Select Checkout Session",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function checkoutRequest({body,eventId}) {if(body?.type!=='checkout.session.completed'||body.id!==eventId||typeof eventId!=='string'||!eventId)throw Error('Invalid Stripe event');const sessionId=body.data?.object?.id;if(typeof sessionId!=='string'||!/^cs_(?:test|live)_[A-Za-z0-9]+$/.test(sessionId))throw Error('Invalid Checkout Session ID');return {sessionId,endpoint:'/v1/checkout/sessions/'+encodeURIComponent(sessionId)};}\n\nreturn {json:checkoutRequest({body:$json,eventId:$json.id})};"
+      }
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Stripe Trigger on Payment Event": {
+      "main": [
+        [
+          {
+            "node": "Select Checkout Session",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select Checkout Session": {
+      "main": [
+        [
+          {
+            "node": "Extract Session Information",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Session Information": {
+      "main": [
+        [
+          {
+            "node": "Extract customer and product",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

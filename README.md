@@ -65,6 +65,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [High-Revenue HubSpot Companies to Slack](workflows/high-revenue-hubspot-companies-to-slack/) - Notify a Slack user about recently modified HubSpot companies with annual revenue whose integer value exceeds 5 million.
 - [Typeform Lead to Twilio SMS](workflows/typeform-lead-to-twilio-sms/) - Send a sales contact an SMS with the answers from a completed Typeform lead form.
 - [Sync Pipedrive People to HubSpot](workflows/sync-pipedrive-people-to-hubspot/) - Create HubSpot contacts for Pipedrive people whose first email is not already present.
+- [Stripe Checkout Customer and Product](workflows/stripe-checkout-customer-and-product/) - Retrieve customer details and the first line-item description when a Stripe Checkout Session completes.
 
 ## Operations
 
