@@ -106,6 +106,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [SERPBear Ranking Report](workflows/serpbear-ranking-report/) - Analyze one domain’s tracked SERPBear keyword rankings and save a dated SEO report in Baserow.
 - [Bannerbear Template Image](workflows/bannerbear-template-image/) - Render a Bannerbear template with layer changes and return the completed image.
 - [Umami Weekly SEO Report](workflows/umami-weekly-seo-report/) - Summarize self-hosted Umami traffic, compare two rolling weeks of page visitors, and save both analyses in one Baserow row.
+- [Classify Software Keywords in Google Sheets](workflows/classify-software-keywords-in-google-sheets/) - Classify every keyword as containing a known IT software or service name, wait five seconds per six-row batch and update only matching Service? cells by Number.
 
 ## Support
 

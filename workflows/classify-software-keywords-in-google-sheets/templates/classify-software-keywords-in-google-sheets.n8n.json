@@ -1,0 +1,512 @@
+{
+  "nodes": [
+    {
+      "id": "classify-software-keywords-in-google-sheets-start",
+      "name": "Classify the keyword worksheet",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        0,
+        240
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "classify-software-keywords-in-google-sheets-config",
+      "name": "Choose the keyword worksheet",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        200,
+        240
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const spreadsheetId=\"YOUR_SPREADSHEET_ID\",sheetName=\"Sheet1\";return [{json:{spreadsheetId,sheetName,range:\"'\"+sheetName.replace(/'/g,\"''\")+\"'\"}}];"
+      }
+    },
+    {
+      "id": "classify-software-keywords-in-google-sheets-read",
+      "name": "Read every keyword row",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        400,
+        240
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ \"https://sheets.googleapis.com/v4/spreadsheets/\" + encodeURIComponent($(\"Choose the keyword worksheet\").first().json.spreadsheetId) + \"/values/\" + encodeURIComponent($(\"Choose the keyword worksheet\").first().json.range) + \"\" }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "majorDimension",
+              "value": "ROWS"
+            },
+            {
+              "name": "valueRenderOption",
+              "value": "UNFORMATTED_VALUE"
+            },
+            {
+              "name": "dateTimeRenderOption",
+              "value": "FORMATTED_STRING"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "classify-software-keywords-in-google-sheets-input",
+      "name": "Validate the complete keyword table",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        600,
+        240
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function keywordSheetInput({ values }) {\n  if (!Array.isArray(values)) throw new Error('Expected the complete keyword worksheet values');\n  if (values.length === 0) return { rows: [], count: 0 };\n  if (!Array.isArray(values[0])) throw new Error('The keyword worksheet needs a header row');\n  const headers = values[0];\n  for (const name of ['Number', 'Keyword', 'Service?']) if (headers.filter(value => value === name).length !== 1) throw new Error('The first worksheet row must contain exactly one ' + name + ' header');\n  const rows = [];\n  for (let rowIndex = 1; rowIndex < values.length; rowIndex++) {\n    const cells = values[rowIndex];\n    if (!Array.isArray(cells)) throw new Error('Invalid keyword worksheet row ' + (rowIndex + 1));\n    if (!cells.some(value => value !== null && value !== undefined && value !== '')) continue;\n    const row = Object.create(null);\n    for (let column = 0; column < cells.length; column++) {\n      const header = headers[column] || 'col_' + column;\n      if (!['string', 'number', 'boolean'].includes(typeof header)) throw new Error('Invalid keyword worksheet header');\n      row[String(header)] = cells[column] ?? '';\n    }\n    const number = row.Number, keyword = row.Keyword;\n    if (!['string', 'number', 'boolean'].includes(typeof number) || (typeof number === 'string' && !number.trim()) || (typeof number === 'number' && !Number.isFinite(number))) throw new Error('Keyword row ' + (rowIndex + 1) + ' needs a Number match key');\n    if (!['string', 'number', 'boolean'].includes(typeof keyword) || (typeof keyword === 'string' && !keyword.trim()) || (typeof keyword === 'number' && !Number.isFinite(keyword))) throw new Error('Keyword row ' + (rowIndex + 1) + ' needs a nonblank scalar Keyword');\n    rows.push({ index: rows.length, number, keyword: String(keyword), row });\n  }\n  return { rows, count: rows.length };\n}\n\nconst result=keywordSheetInput({values:$input.first().json.body.values??[]});return result.rows.map((row,index)=>({json:row,pairedItem:{item:0}}));"
+      }
+    },
+    {
+      "id": "classify-software-keywords-in-google-sheets-batches",
+      "name": "Process Keywords in Batches",
+      "type": "n8n-nodes-base.splitInBatches",
+      "position": [
+        800,
+        240
+      ],
+      "parameters": {
+        "batchSize": 6,
+        "options": {}
+      },
+      "typeVersion": 3
+    },
+    {
+      "id": "classify-software-keywords-in-google-sheets-wait",
+      "name": "Wait five seconds for this batch",
+      "type": "n8n-nodes-base.wait",
+      "position": [
+        1000,
+        240
+      ],
+      "parameters": {
+        "resume": "timeInterval",
+        "amount": 5,
+        "unit": "seconds"
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "classify-software-keywords-in-google-sheets-model",
+      "name": "Identify known software names",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        1200,
+        240
+      ],
+      "parameters": {
+        "agent": "toolsAgent",
+        "promptType": "define",
+        "text": "=keyword: {{ $json.keyword }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "Check the keyword I provided and define if this keyword has a name of the known IT software, service, tool or app as a part of it (for example, ServiceNow or Salesforce) and return yes or no.",
+          "maxIterations": 10,
+          "returnIntermediateSteps": false,
+          "passthroughBinaryImages": false,
+          "passthroughBinaryPdfs": false
+        }
+      },
+      "typeVersion": 1.7
+    },
+    {
+      "id": "classify-software-keywords-in-google-sheets-lm",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "position": [
+        1160,
+        480
+      ],
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "id",
+          "value": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "classify-software-keywords-in-google-sheets-parser",
+      "name": "Structured Output Parser",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "position": [
+        1360,
+        480
+      ],
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\"type\":\"object\",\"properties\":{\"Isservice\":{\"type\":\"string\",\"enum\":[\"yes\",\"no\"]}},\"required\":[\"Isservice\"],\"additionalProperties\":false}",
+        "autoFix": false
+      },
+      "typeVersion": 1.3
+    },
+    {
+      "id": "classify-software-keywords-in-google-sheets-all",
+      "name": "Keep complete batch classifications",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1440,
+        240
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const batch=$(\"Process Keywords in Batches\").all(1,$runIndex).map(item=>item.json),items=$input.all();if(items.length!==batch.length)throw new Error(\"Missing keyword batch classifications\");const results=items.map((item,index)=>{const classification=item.json.output?.Isservice;if(![\"yes\",\"no\"].includes(classification))throw new Error(\"Classifier must return Isservice as yes or no; this batch has not been written\");return {...batch[index],classification}});return [{json:{results,start:batch[0].index,count:results.length}}];"
+      }
+    },
+    {
+      "id": "classify-software-keywords-in-google-sheets-refresh",
+      "name": "Read current Number matches",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1660,
+        240
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ \"https://sheets.googleapis.com/v4/spreadsheets/\" + encodeURIComponent($(\"Choose the keyword worksheet\").first().json.spreadsheetId) + \"/values/\" + encodeURIComponent($(\"Choose the keyword worksheet\").first().json.range) + \"\" }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "majorDimension",
+              "value": "ROWS"
+            },
+            {
+              "name": "valueRenderOption",
+              "value": "FORMATTED_VALUE"
+            },
+            {
+              "name": "dateTimeRenderOption",
+              "value": "FORMATTED_STRING"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "classify-software-keywords-in-google-sheets-plan",
+      "name": "Plan only matching Service cells",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1880,
+        240
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function keywordWritePlan({ values, results, sheetName, start }) {\n  if (!Array.isArray(values) || !Array.isArray(values[0])) throw new Error('The current keyword worksheet has no header row');\n  if (!Array.isArray(results) || results.length < 1 || results.length > 6) throw new Error('Expected a complete classified batch');\n  if (typeof sheetName !== 'string' || !sheetName.trim()) throw new Error('Configure the keyword worksheet name');\n  const headers = values[0], key = headers.indexOf('Number'), target = headers.indexOf('Service?');\n  if (key < 0 || target < 0) throw new Error('The worksheet needs Number and Service? headers');\n  const column = index => { let label = ''; for (let n = index + 1; n; n = Math.floor((n - 1) / 26)) label = String.fromCharCode(65 + (n - 1) % 26) + label; return label; };\n  const tab = \"'\" + sheetName.replace(/'/g, \"''\") + \"'\", data = [], unmatched = [];\n  for (const result of results) {\n    if (!result || !Number.isInteger(result.index) || !['string', 'number', 'boolean'].includes(typeof result.number) || !['yes', 'no'].includes(result.classification)) throw new Error('Invalid keyword classification or match key');\n    const row = values.findIndex((cells, index) => index > 0 && Array.isArray(cells) && cells[key] !== null && cells[key] !== undefined && String(cells[key]) === String(result.number));\n    if (row < 0) unmatched.push(result.index);\n    else data.push({ range: tab + '!' + column(target) + (row + 1), values: [[result.classification]] });\n  }\n  return { data, hasUpdates: data.length > 0, expectedCells: data.length, unmatched, results, start, count: results.length };\n}\n\nconst batch=$(\"Keep complete batch classifications\").first(0,$runIndex).json;return [{json:keywordWritePlan({values:$input.first().json.body.values??[],results:batch.results,start:batch.start,sheetName:$(\"Choose the keyword worksheet\").first().json.sheetName})}];"
+      }
+    },
+    {
+      "id": "classify-software-keywords-in-google-sheets-has",
+      "name": "Any matching cells to update",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2100,
+        240
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.hasUpdates }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "classify-software-keywords-in-google-sheets-write",
+      "name": "Update this batch of Service cells",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2320,
+        240
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ \"https://sheets.googleapis.com/v4/spreadsheets/\" + encodeURIComponent($(\"Choose the keyword worksheet\").first().json.spreadsheetId) + \"/values:batchUpdate\" }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {valueInputOption:\"USER_ENTERED\",data:$json.data,includeValuesInResponse:false} }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "classify-software-keywords-in-google-sheets-receipt",
+      "name": "Confirm the keyword batch",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2540,
+        240
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function keywordWriteReceipt({ results, start, count, expectedCells, unmatched, actualCells }) {\n  if (!Array.isArray(results) || results.length !== count || !Number.isInteger(start) || !Number.isInteger(count) || count < 1 || count > 6 || !Array.isArray(unmatched) || !Number.isInteger(expectedCells) || expectedCells !== count - unmatched.length) throw new Error('Invalid keyword batch write plan');\n  if (expectedCells > 0 && actualCells !== expectedCells) throw new Error('Google Sheets did not confirm every planned Service? cell; check the worksheet before replaying this batch');\n  return { results, start, count, updated: expectedCells, unmatched };\n}\n\nconst plan=$(\"Plan only matching Service cells\").first(0,$runIndex).json;return [{json:keywordWriteReceipt({...plan,actualCells:plan.hasUpdates?$input.first().json.body.totalUpdatedCells:null})}];"
+      }
+    },
+    {
+      "id": "classify-software-keywords-in-google-sheets-done",
+      "name": "All classified keyword results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1000,
+        240
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const batches=$input.all().map(item=>item.json);return [{json:{results:batches.flatMap(batch=>batch.results),batches:batches.map(({start,count,updated,unmatched})=>({start,count,updated,unmatched})),count:batches.reduce((sum,batch)=>sum+batch.count,0)}}];"
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Classify the keyword worksheet": {
+      "main": [
+        [
+          {
+            "node": "Choose the keyword worksheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Choose the keyword worksheet": {
+      "main": [
+        [
+          {
+            "node": "Read every keyword row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read every keyword row": {
+      "main": [
+        [
+          {
+            "node": "Validate the complete keyword table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate the complete keyword table": {
+      "main": [
+        [
+          {
+            "node": "Process Keywords in Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait five seconds for this batch": {
+      "main": [
+        [
+          {
+            "node": "Identify known software names",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Identify known software names": {
+      "main": [
+        [
+          {
+            "node": "Keep complete batch classifications",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Keep complete batch classifications": {
+      "main": [
+        [
+          {
+            "node": "Read current Number matches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read current Number matches": {
+      "main": [
+        [
+          {
+            "node": "Plan only matching Service cells",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Plan only matching Service cells": {
+      "main": [
+        [
+          {
+            "node": "Any matching cells to update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Any matching cells to update": {
+      "main": [
+        [
+          {
+            "node": "Update this batch of Service cells",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Confirm the keyword batch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update this batch of Service cells": {
+      "main": [
+        [
+          {
+            "node": "Confirm the keyword batch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm the keyword batch": {
+      "main": [
+        [
+          {
+            "node": "Process Keywords in Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Keywords in Batches": {
+      "main": [
+        [
+          {
+            "node": "All classified keyword results",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait five seconds for this batch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Identify known software names",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Identify known software names",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Classify Software Keywords in Google Sheets",
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false
+}
