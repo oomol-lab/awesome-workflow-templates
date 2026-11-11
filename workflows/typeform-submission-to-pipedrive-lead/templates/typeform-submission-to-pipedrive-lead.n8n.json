@@ -1,0 +1,172 @@
+{
+  "nodes": [
+    {
+      "id": "typeform-submission-to-pipedrive-lead-0",
+      "name": "On form completion",
+      "type": "n8n-nodes-base.typeformTrigger",
+      "position": [
+        380,
+        560
+      ],
+      "parameters": {
+        "formId": "YOUR_TYPEFORM_FORM_ID",
+        "simplifyAnswers": false,
+        "onlyAnswers": false
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "typeform-submission-to-pipedrive-lead-1",
+      "name": "Read answers and map company size",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        580,
+        560
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function readLead({response,fieldKey,optionIds}) {\n if(!response||!Array.isArray(response.answers)||!Array.isArray(response.definition?.fields))throw Error('Expected complete Typeform response');\n if(!/^[a-f0-9]{40}$/i.test(fieldKey))throw Error('Configure the Pipedrive organization custom field key');\n const sizes=['< 20','20 - 100','101 - 500','501 - 1000','1000+'];\n if(!optionIds||sizes.some(k=>!Number.isSafeInteger(optionIds[k])||optionIds[k]<1)||new Set(sizes.map(k=>optionIds[k])).size!==5)throw Error('Configure five distinct Pipedrive option IDs');\n function read(title,kind){const fields=response.definition.fields.filter(x=>x?.title===title);if(fields.length!==1||typeof fields[0].id!=='string'||response.definition.fields.filter(x=>x?.id===fields[0].id).length!==1)throw Error('Expected one field: '+title);const a=response.answers.filter(x=>x?.field?.id===fields[0].id);if(a.length!==1||a[0].type!==kind)throw Error('Expected one '+kind+' answer: '+title);return kind==='choice'?a[0].choice?.label:a[0][kind]}\n const company=read('What *company* are you contacting us from?','text'),name=read(\"Let's start with your *first and last name.*\",'text'),email=read('What *email address* can we reach you at?','email'),questions=read('Do you have any *specific questions* about embedding n8n at this stage?','text'),size=read('How many employees?','choice');\n for(const x of [company,name,email,questions,size])if(typeof x!=='string'||!x.trim())throw Error('Expected nonempty form answers');\n if(!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email))throw Error('Invalid email');if(!sizes.includes(size))throw Error('Unrecognized company size');\n const escape=x=>x.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('\"','&quot;').replaceAll(\"'\",'&#39;');\n return {company,name,email,customFields:{[fieldKey]:optionIds[size]},note:'Website form submitted\\n\\nQuestion:\\n'+escape(questions)+'\\n\\nCompany Size:\\n'+escape(size)};\n}\n\nconst fieldKey = 'YOUR_PIPEDRIVE_ORGANIZATION_FIELD_KEY';\nconst optionIds = {'< 20':0,'20 - 100':0,'101 - 500':0,'501 - 1000':0,'1000+':0};\nreturn $input.all().flatMap((item,index)=>item.json.event_type === 'form_response' ? [{json:readLead({response:item.json.form_response,fieldKey,optionIds}),pairedItem:{item:index}}] : []);"
+      }
+    },
+    {
+      "id": "typeform-submission-to-pipedrive-lead-2",
+      "name": "Create Organization",
+      "type": "n8n-nodes-base.pipedrive",
+      "position": [
+        1060,
+        560
+      ],
+      "parameters": {
+        "name": "={{ $(\"Read answers and map company size\").item.json.company }}",
+        "resource": "organization",
+        "additionalFields": {
+          "customProperties": {
+            "property": [
+              {
+                "name": "YOUR_PIPEDRIVE_ORGANIZATION_FIELD_KEY",
+                "value": "={{ Object.values($(\"Read answers and map company size\").item.json.customFields)[0] }}"
+              }
+            ]
+          }
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "typeform-submission-to-pipedrive-lead-3",
+      "name": "Create Person",
+      "type": "n8n-nodes-base.pipedrive",
+      "position": [
+        1400,
+        560
+      ],
+      "parameters": {
+        "name": "={{ $(\"Read answers and map company size\").item.json.name }}",
+        "resource": "person",
+        "additionalFields": {
+          "email": [
+            "={{ $(\"Read answers and map company size\").item.json.email }}"
+          ],
+          "org_id": "={{$json.id}}"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "typeform-submission-to-pipedrive-lead-4",
+      "name": "Create Lead",
+      "type": "n8n-nodes-base.pipedrive",
+      "position": [
+        1600,
+        560
+      ],
+      "parameters": {
+        "title": "={{ $(\"Read answers and map company size\").item.json.company + \" lead\" }}",
+        "resource": "lead",
+        "organization_id": "={{$node[\"Create Organization\"].json.id}}",
+        "additionalFields": {
+          "person_id": "={{$json.id}}"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "typeform-submission-to-pipedrive-lead-5",
+      "name": "Create Note",
+      "type": "n8n-nodes-base.pipedrive",
+      "position": [
+        1800,
+        560
+      ],
+      "parameters": {
+        "content": "={{ $(\"Read answers and map company size\").item.json.note }}",
+        "resource": "note",
+        "additionalFields": {
+          "lead_id": "={{$json.id}}"
+        }
+      },
+      "typeVersion": 1
+    }
+  ],
+  "connections": {
+    "On form completion": {
+      "main": [
+        [
+          {
+            "node": "Read answers and map company size",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read answers and map company size": {
+      "main": [
+        [
+          {
+            "node": "Create Organization",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Organization": {
+      "main": [
+        [
+          {
+            "node": "Create Person",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Person": {
+      "main": [
+        [
+          {
+            "node": "Create Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Lead": {
+      "main": [
+        [
+          {
+            "node": "Create Note",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Create Pipedrive Leads from Typeform",
+  "active": false,
+  "pinData": {}
+}
