@@ -244,6 +244,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Google Drive New File Email Alert](workflows/google-drive-new-file-email-alert/) - Watch a Google Drive folder for newly created files and send one plain-text email for each file.
 - [Telegram Voice Language Translator](workflows/telegram-voice-language-translator/) - Transcribe a Telegram voice message, translate between two configured languages and reply to the same chat with both text and complete synthesized audio.
 - [Send an SMS with Mocean](workflows/send-mocean-sms/) - Send one SMS message to a configured recipient through Mocean.
+- [Upload a Public Image to Slack](workflows/upload-a-public-image-to-slack/) - Download a public image and upload its bytes to a Slack channel with a comment.
 
 ## Customer Support
 
