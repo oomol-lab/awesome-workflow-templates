@@ -245,6 +245,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Telegram Voice Language Translator](workflows/telegram-voice-language-translator/) - Transcribe a Telegram voice message, translate between two configured languages and reply to the same chat with both text and complete synthesized audio.
 - [Send an SMS with Mocean](workflows/send-mocean-sms/) - Send one SMS message to a configured recipient through Mocean.
 - [Upload a Public Image to Slack](workflows/upload-a-public-image-to-slack/) - Download a public image and upload its bytes to a Slack channel with a comment.
+- [Mattermost Webhook Call Invite](workflows/mattermost-webhook-call-invite/) - Post a Whereby room invite to a Mattermost channel from a webhook request.
 
 ## Customer Support
 
