@@ -168,6 +168,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Telegram Documents to Google Drive](workflows/telegram-documents-to-google-drive/) - Save each document received by a Telegram bot to a Google Drive folder.
 - [Telegram Journal Replies to Google Sheets](workflows/telegram-journal-replies-to-google-sheets/) - Save a specified user’s reply to a bot’s dated journal prompt as an entry in Google Sheets.
 - [Save a Browser Bookmark to Notion](workflows/browser-bookmark-to-notion/) - Send the current browser page URL to a webhook and save it as a Notion database page.
+- [New Google Sheet Rows to Mattermost](workflows/new-sheet-rows-to-mattermost/) - Read a sheet every minute and notify a Mattermost channel about new rows, newest first.
 
 ## Content
 
