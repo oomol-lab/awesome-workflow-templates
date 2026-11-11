@@ -1,0 +1,116 @@
+{
+  "nodes": [
+    {
+      "name": "Receive a task name by GET",
+      "type": "n8n-nodes-base.webhook",
+      "position": [
+        250,
+        500
+      ],
+      "parameters": {
+        "authentication": "none",
+        "httpMethod": "GET",
+        "path": "create-asana-task-from-webhook",
+        "responseMode": "lastNode",
+        "responseData": "firstEntryJson",
+        "options": {
+          "responsePropertyName": "response",
+          "responseContentType": "text/plain; charset=utf-8"
+        }
+      },
+      "typeVersion": 1,
+      "id": "create-asana-task-from-webhook-0"
+    },
+    {
+      "id": "create-asana-task-from-webhook-name",
+      "name": "Read the task name",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function asanaTaskQuery({ query }) {\n  const value = query?.parameter;\n  if (typeof value !== 'string' || !value.trim()) throw new Error('Provide one nonblank parameter query value for the task name');\n  return { name: value.trim() };\n}\n\nreturn {json:asanaTaskQuery({query:$json.query})};"
+      }
+    },
+    {
+      "id": "create-asana-task-from-webhook-create",
+      "name": "Create the task in Asana",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://app.asana.com/api/1.0/tasks?opt_fields=gid,name,permalink_url",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "asanaApi",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ {data:{name:$json.name,workspace:\"YOUR_ASANA_WORKSPACE_ID\",projects:[\"YOUR_ASANA_PROJECT_ID\"]}} }}",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "neverError": false
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "create-asana-task-from-webhook-confirmed",
+      "name": "Confirm the saved task link",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function asanaTaskResponse({ task }) {\n  if (!task || typeof task !== 'object' || Array.isArray(task) || typeof task.gid !== 'string' || !task.gid.trim()) throw new Error('Asana did not return a saved task ID; check the project before retrying');\n  if (typeof task.permalink_url !== 'string' || !/^https:\\/\\/app\\.asana\\.com\\/\\S+$/.test(task.permalink_url)) throw new Error('Asana did not return a valid task permalink; the task may already exist');\n  return { task, response: 'Created Asana Task:  ' + task.permalink_url };\n}\n\nreturn {json:asanaTaskResponse({task:$json.data})};"
+      }
+    }
+  ],
+  "connections": {
+    "Receive a task name by GET": {
+      "main": [
+        [
+          {
+            "node": "Read the task name",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the task name": {
+      "main": [
+        [
+          {
+            "node": "Create the task in Asana",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create the task in Asana": {
+      "main": [
+        [
+          {
+            "node": "Confirm the saved task link",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Create an Asana Task from a Webhook",
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false,
+  "pinData": {}
+}
