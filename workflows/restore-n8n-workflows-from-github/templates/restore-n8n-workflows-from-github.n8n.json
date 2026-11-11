@@ -1,0 +1,269 @@
+{
+  "name": "Restore n8n Workflows from GitHub",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "restore-n8n-workflows-from-github-0",
+      "name": "On clicking 'execute'",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        -700,
+        780
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "name": "Configure the backup directory",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function config({owner,repo,path}){for(const [k,v] of Object.entries({owner,repo,path}))if(typeof v!=='string'||!v.trim()||v.startsWith('YOUR_'))throw Error('Configure GitHub '+k);if(path.startsWith('/')||path.endsWith('/')||path.split('/').some(x=>!x||x==='.'||x==='..'))throw Error('Invalid existing directory');return{owner,repo,path}}\n\nreturn [{json:config({owner:'YOUR_GITHUB_OWNER',repo:'YOUR_GITHUB_REPOSITORY',path:'YOUR_BACKUP_DIRECTORY'})}];"
+      },
+      "id": "restore-n8n-workflows-from-github-1"
+    },
+    {
+      "id": "restore-n8n-workflows-from-github-2",
+      "name": "Read existing workflows",
+      "type": "n8n-nodes-base.n8n",
+      "position": [
+        -500,
+        880
+      ],
+      "parameters": {
+        "resource": "workflow",
+        "operation": "getAll",
+        "returnAll": true,
+        "filters": {}
+      },
+      "typeVersion": 1,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "restore-n8n-workflows-from-github-3",
+      "name": "List the backup directory",
+      "type": "n8n-nodes-base.github",
+      "position": [
+        -280,
+        540
+      ],
+      "parameters": {
+        "resource": "file",
+        "operation": "list",
+        "owner": {
+          "__rl": true,
+          "mode": "name",
+          "value": "={{ $(\"Configure the backup directory\").first().json.owner }}"
+        },
+        "repository": {
+          "__rl": true,
+          "mode": "name",
+          "value": "={{ $(\"Configure the backup directory\").first().json.repo }}"
+        },
+        "filePath": "={{ $(\"Configure the backup directory\").first().json.path }}"
+      },
+      "typeVersion": 1
+    },
+    {
+      "name": "Validate directory entries",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const a=$input.all();if(a.length>=1000)throw Error('Directory may exceed GitHub listing limit');for(const x of a)if(x.json.type!=='file'||typeof x.json.name!=='string'||!x.json.name.endsWith('.json'))throw Error('Directory must contain workflow JSON files only');return a;"
+      },
+      "id": "restore-n8n-workflows-from-github-4"
+    },
+    {
+      "id": "restore-n8n-workflows-from-github-5",
+      "name": "Read backup files",
+      "type": "n8n-nodes-base.github",
+      "position": [
+        140,
+        660
+      ],
+      "parameters": {
+        "resource": "file",
+        "operation": "get",
+        "owner": {
+          "__rl": true,
+          "mode": "name",
+          "value": "={{ $(\"Configure the backup directory\").first().json.owner }}"
+        },
+        "repository": {
+          "__rl": true,
+          "mode": "name",
+          "value": "={{ $(\"Configure the backup directory\").first().json.repo }}"
+        },
+        "filePath": "={{ $json.path }}",
+        "asBinaryProperty": false,
+        "additionalParameters": {}
+      },
+      "typeVersion": 1
+    },
+    {
+      "name": "Validate backups and skip existing",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const existing=new Set($('Read existing workflows').all().map(x=>x.json.name).filter(Boolean)),seen=new Set(),result=[];for(const [i,x] of $input.all().entries()){let w;try{w=JSON.parse(Buffer.from(x.json.content,'base64').toString('utf8'))}catch{throw Error('Invalid workflow JSON')}if(!w||typeof w.name!=='string'||!w.name.trim()||!Array.isArray(w.nodes)||!w.connections||typeof w.connections!=='object'||!w.settings||typeof w.settings!=='object')throw Error('Invalid workflow backup');if(seen.has(w.name))throw Error('Duplicate backup workflow name');seen.add(w.name);if(!existing.has(w.name))result.push({json:{name:w.name,nodes:w.nodes,connections:w.connections,settings:w.settings,...(Object.hasOwn(w,'staticData')?{staticData:w.staticData}:{})},pairedItem:{item:i}})}return result;"
+      },
+      "id": "restore-n8n-workflows-from-github-6"
+    },
+    {
+      "name": "Restore one workflow at a time",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "restore-n8n-workflows-from-github-7"
+    },
+    {
+      "id": "restore-n8n-workflows-from-github-8",
+      "name": "Create the workflow",
+      "type": "n8n-nodes-base.n8n",
+      "position": [
+        1180,
+        660
+      ],
+      "parameters": {
+        "resource": "workflow",
+        "operation": "create",
+        "workflowObject": "={{ JSON.stringify($json) }}"
+      },
+      "typeVersion": 1
+    },
+    {
+      "name": "Confirm the created workflow",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const x=$input.first().json,expected=$('Restore one workflow at a time').item.json;if(!x||typeof x.id!=='string'||!x.id||x.name!==expected.name)throw Error('Workflow creation was not confirmed');return [{json:x}];"
+      },
+      "id": "restore-n8n-workflows-from-github-9"
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "On clicking 'execute'": {
+      "main": [
+        [
+          {
+            "node": "Configure the backup directory",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configure the backup directory": {
+      "main": [
+        [
+          {
+            "node": "Read existing workflows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read existing workflows": {
+      "main": [
+        [
+          {
+            "node": "List the backup directory",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List the backup directory": {
+      "main": [
+        [
+          {
+            "node": "Validate directory entries",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate directory entries": {
+      "main": [
+        [
+          {
+            "node": "Read backup files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read backup files": {
+      "main": [
+        [
+          {
+            "node": "Validate backups and skip existing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate backups and skip existing": {
+      "main": [
+        [
+          {
+            "node": "Restore one workflow at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore one workflow at a time": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Create the workflow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create the workflow": {
+      "main": [
+        [
+          {
+            "node": "Confirm the created workflow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm the created workflow": {
+      "main": [
+        [
+          {
+            "node": "Restore one workflow at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
