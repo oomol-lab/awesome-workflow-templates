@@ -1,0 +1,276 @@
+{
+  "name": "Matomo Repeat Visits SEO Report",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "matomo-repeat-visits-seo-report-0",
+      "name": "When clicking ‘Test workflow’",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        120,
+        360
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "matomo-repeat-visits-seo-report-1",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        120,
+        160
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "weeksInterval": 1,
+              "triggerAtDay": [
+                0
+              ],
+              "triggerAtHour": 0,
+              "triggerAtMinute": 0
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "matomo-repeat-visits-seo-report-2",
+      "name": "Get data from Matomo",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        380,
+        260
+      ],
+      "parameters": {
+        "url": "https://YOUR_MATOMO_HOST/index.php",
+        "method": "POST",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        },
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "module",
+              "value": "API"
+            },
+            {
+              "name": "method",
+              "value": "Live.getLastVisitsDetails"
+            },
+            {
+              "name": "idSite",
+              "value": "YOUR_SITE_ID"
+            },
+            {
+              "name": "period",
+              "value": "range"
+            },
+            {
+              "name": "date",
+              "value": "last30"
+            },
+            {
+              "name": "format",
+              "value": "JSON"
+            },
+            {
+              "name": "segment",
+              "value": "visitCount>3"
+            },
+            {
+              "name": "filter_limit",
+              "value": "100"
+            },
+            {
+              "name": "showColumns",
+              "value": "actionDetails,visitIp,visitorId,visitCount"
+            }
+          ]
+        },
+        "typeVersion": 4.2,
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth"
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "matomo-repeat-visits-seo-report-3",
+      "name": "Parse data from Matomo",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        580,
+        260
+      ],
+      "parameters": {
+        "jsCode": "function matomoPrompt({body}){\n  if(!Array.isArray(body))throw Error('Matomo did not return a visit list');if(body.length>100)throw Error('Matomo exceeded the 100-visit limit');if(!body.length)return {hasVisits:false,messages:[]};\n  const lines=body.map(v=>{if(typeof v?.visitorId!=='string'||!v.visitorId||!Number.isFinite(Number(v.visitCount))||!Array.isArray(v.actionDetails))throw Error('Invalid Matomo visit');const actions=v.actionDetails.map(a=>{if(!a||typeof a!=='object'||Array.isArray(a))throw Error('Invalid Matomo action');return `  - Page ${a.pageviewPosition??'not provided'}: ${a.pageTitle??'not provided'}\\n    URL: ${a.url??'not provided'}\\n    Time Spent: ${a.timeSpentPretty??'not provided'}`}).join('\\n');return `- Visitor (ID: ${v.visitorId}):\\n  Visit Count: ${v.visitCount}\\n${actions}`}).join('\\n\\n');\n  const content=`You are an SEO expert. Please analyze this visitor data:\\n\\n${lines}\\n\\nPlease provide insights on:\\n1. Common visitor paths\\n2. Popular pages\\n3. User engagement patterns\\n4. Recommendations for improvement`;return {hasVisits:true,messages:[{role:'user',content}]};\n}\n\nconst result=matomoPrompt({body:$input.all().map(i=>i.json)});return result.hasVisits?[{json:result}]:[];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "matomo-repeat-visits-seo-report-4",
+      "name": "Send data to A.I. for analysis",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        760,
+        260
+      ],
+      "parameters": {
+        "url": "https://openrouter.ai/api/v1/chat/completions",
+        "method": "POST",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        },
+        "jsonBody": "={{ JSON.stringify({model:\"YOUR_OPENROUTER_MODEL_ID\",messages:$json.messages}) }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "typeVersion": 4.2,
+      "alwaysOutputData": false
+    },
+    {
+      "id": "matomo-repeat-visits-seo-report-5",
+      "name": "Store results in Baserow",
+      "type": "n8n-nodes-base.baserow",
+      "position": [
+        1060,
+        260
+      ],
+      "parameters": {
+        "tableId": 0,
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": 0,
+              "fieldValue": "={{ $json.row.Date }}"
+            },
+            {
+              "fieldId": 0,
+              "fieldValue": "={{ $json.row.Note }}"
+            },
+            {
+              "fieldId": 0,
+              "fieldValue": "={{ $json.row.Blog }}"
+            }
+          ]
+        },
+        "operation": "create",
+        "databaseId": 0,
+        "authentication": "databaseToken"
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "matomo-repeat-visits-seo-report-row",
+      "name": "Prepare report row",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function reportRow({completion,blog}){if(typeof blog!=='string'||!blog.trim()||blog==='YOUR_BLOG_NAME')throw Error('Configure the blog name');const text=completion?.choices?.[0]?.message?.content;if(typeof text!=='string'||!text.trim())throw Error('OpenRouter returned no report text');if(completion.choices[0].finish_reason==='length')throw Error('OpenRouter report was truncated');return {row:{Date:new Date().toISOString().slice(0,10),Note:text,Blog:blog}};}\n\nreturn {json:reportRow({completion:$json,blog:\"YOUR_BLOG_NAME\"})};"
+      }
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC"
+  },
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get data from Matomo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get data from Matomo": {
+      "main": [
+        [
+          {
+            "node": "Parse data from Matomo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse data from Matomo": {
+      "main": [
+        [
+          {
+            "node": "Send data to A.I. for analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send data to A.I. for analysis": {
+      "main": [
+        [
+          {
+            "node": "Prepare report row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Test workflow’": {
+      "main": [
+        [
+          {
+            "node": "Get data from Matomo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare report row": {
+      "main": [
+        [
+          {
+            "node": "Store results in Baserow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
