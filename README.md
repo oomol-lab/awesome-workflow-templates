@@ -197,6 +197,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Promote New YouTube Videos on X](workflows/promote-new-youtube-videos-on-x/) - Find the latest recent video from a YouTube channel and write a short X post.
 - [Email a Blog Post from a YouTube Video](workflows/email-blog-post-from-youtube-video/) - Turn a YouTube transcript into a blog draft and generated image, then email both.
 - [Fill Airtable SEO Metadata from Webpages](workflows/fill-airtable-seo-metadata-from-webpages/) - Read missing page titles and descriptions from public webpages and update their Airtable records.
+- [Post AI News to X with Perplexity](workflows/post-ai-news-to-x-with-perplexity/) - Search recent AI news with Perplexity and post one headline and link to X.
 
 ## Support
 

@@ -1,0 +1,134 @@
+{
+  "name": "Post AI News to X with Perplexity",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "post-ai-news-to-x-with-perplexity-0",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        -560,
+        0
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 21,
+              "triggerAtMinute": 0
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "name": "Prepare the news search",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return [{json:{request:{\"model\":\"sonar\",\"messages\":[{\"role\":\"system\",\"content\":\"You are a social media assistant summarizing tech news for Twitter/X. Only return one article. Your output must follow this exact format: a short, engaging headline (max 140 characters), followed by a single space, then the direct article link. Do not use markdown, hashtags, emojis, or line breaks. Keep the total output under 200 characters. Be precise, objective, and newsworthy.\"},{\"role\":\"user\",\"content\":\"What's the latest news in artificial intelligence?\"}],\"temperature\":0.3,\"top_p\":0.9,\"return_citations\":true,\"search_domain_filter\":[\"perplexity.ai\"],\"search_recency_filter\":\"day\",\"return_images\":true,\"return_related_questions\":false,\"max_tokens\":80,\"stream\":false,\"presence_penalty\":0,\"frequency_penalty\":1}}}];"
+      },
+      "id": "post-ai-news-to-x-with-perplexity-1"
+    },
+    {
+      "id": "post-ai-news-to-x-with-perplexity-2",
+      "name": "Perplexity",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        100,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.perplexity.ai/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.request }}",
+        "options": {}
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "name": "Check the headline and link",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function message({response}){const text=response?.choices?.[0]?.message?.content;if(typeof text!=='string'||!text.trim()||[...text].length>200||!/^\\S[\\s\\S]*https?:\\/\\/\\S+/i.test(text.trim()))throw Error('Expected a short headline and article link');return{text:text.trim()}}\n\nreturn {json:message({response:$json})};"
+      },
+      "id": "post-ai-news-to-x-with-perplexity-3"
+    },
+    {
+      "id": "post-ai-news-to-x-with-perplexity-4",
+      "name": "Post to X",
+      "type": "n8n-nodes-base.twitter",
+      "position": [
+        320,
+        0
+      ],
+      "parameters": {
+        "text": "={{ $json.text }}",
+        "additionalFields": {}
+      },
+      "typeVersion": 2
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "callerPolicy": "workflowsFromSameOwner",
+    "executionOrder": "v1",
+    "timezone": "UTC"
+  },
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Prepare the news search",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare the news search": {
+      "main": [
+        [
+          {
+            "node": "Perplexity",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Perplexity": {
+      "main": [
+        [
+          {
+            "node": "Check the headline and link",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check the headline and link": {
+      "main": [
+        [
+          {
+            "node": "Post to X",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
