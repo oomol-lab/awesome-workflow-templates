@@ -392,6 +392,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Sync Tagged n8n Workflows to Notion](workflows/sync-tagged-n8n-workflows-to-notion/) - Keep a Notion inventory of tagged n8n workflows and their status up to date.
 - [Back Up n8n Workflows Daily to GitHub](workflows/back-up-n8n-workflows-daily-to-github/) - Save new or changed n8n workflow JSON files to a GitHub repository.
 - [Publish New GitLab Releases to Outline](workflows/publish-gitlab-releases-to-outline/) - Publish an Outline document when a GitLab release is created.
+- [Back Up n8n Workflows to Google Drive](workflows/back-up-n8n-workflows-to-google-drive/) - Save n8n workflows as JSON in a fresh Drive folder and clean up older items in a dedicated parent folder.
 
 ## Communication
 
