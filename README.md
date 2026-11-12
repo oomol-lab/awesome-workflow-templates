@@ -82,6 +82,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Import Sheet Contacts to Salesforce](workflows/import-sheet-contacts-to-salesforce/) - Find or create Salesforce accounts and upsert sheet contacts by email.
 - [Create and Update a Salesforce Lead with a Note](workflows/create-and-update-salesforce-lead-with-note/) - Create a Salesforce lead, update its city and add a note to that lead.
 - [Follow Up HubSpot Contacts with Gmail](workflows/follow-up-hubspot-contacts-with-gmail/) - Follow up older HubSpot contacts with one engagement and log each sent email.
+- [Import Airtable Contacts into a Lemlist Campaign](workflows/airtable-contacts-to-lemlist-campaign/) - Add Airtable contacts to a Lemlist campaign and look up their lead records.
 
 ## Operations
 
