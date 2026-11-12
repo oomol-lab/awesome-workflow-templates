@@ -1,0 +1,280 @@
+{
+  "name": "Log and Route Twenty CRM Events",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "log-and-route-twenty-crm-events-0",
+      "name": "Receive Twenty CRM events",
+      "type": "n8n-nodes-base.webhook",
+      "position": [
+        600,
+        380
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "log-and-route-twenty-crm-events",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "typeVersion": 2
+    },
+    {
+      "name": "Prepare signature input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const body=$json.body,headers=$json.headers;if(!body||typeof body!=='object'||Array.isArray(body)||!headers)throw Error('Invalid Twenty request');const h=Object.fromEntries(Object.entries(headers).map(([k,v])=>[k.toLowerCase(),v])),timestamp=h['x-twenty-webhook-timestamp'],signature=h['x-twenty-webhook-signature'];if(typeof timestamp!=='string'||!/^\\d{13}$/.test(timestamp)||Math.abs(Date.now()-Number(timestamp))>900000||typeof signature!=='string'||!/^[0-9a-f]{64}$/.test(signature))throw Error('Invalid Twenty signature or timestamp');return {json:{body,signature,signed:timestamp+':'+JSON.stringify(body)}};"
+      },
+      "id": "log-and-route-twenty-crm-events-1"
+    },
+    {
+      "name": "Calculate the webhook signature",
+      "type": "n8n-nodes-base.crypto",
+      "typeVersion": 1,
+      "parameters": {
+        "action": "hmac",
+        "type": "SHA256",
+        "binaryData": false,
+        "value": "={{ $json.signed }}",
+        "secret": "={{ (() => { const s=$vars.TWENTY_WEBHOOK_SECRET; if(typeof s!=='string'||!s) throw Error('Configure Twenty webhook secret'); return s; })() }}",
+        "encoding": "hex",
+        "dataPropertyName": "expected"
+      },
+      "id": "log-and-route-twenty-crm-events-2"
+    },
+    {
+      "name": "Verify and read the event",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const {body,signature,expected}=$json;if(typeof expected!=='string'||expected.length!==64)throw Error('Invalid signature result');let diff=0;for(let i=0;i<64;i++)diff|=expected.charCodeAt(i)^signature.charCodeAt(i);if(diff)throw Error('Invalid Twenty signature');const event=body.eventName,meta=body.objectMetadata,record=body.record;if(typeof event!=='string'||!/^.+\\.[^.]+$/.test(event)||!meta||typeof meta.id!=='string'||!meta.id||!record||typeof record.id!=='string'||!record.id)throw Error('Invalid Twenty record event');return {json:{deleted:['delete','deleted'].includes(event.split('.')[1]),event,metadataId:meta.id,metadataName:typeof meta.nameSingular==='string'?meta.nameSingular:'',recordId:record.id,recordType:typeof record.__typename==='string'?record.__typename:''}};"
+      },
+      "id": "log-and-route-twenty-crm-events-3"
+    },
+    {
+      "name": "Append the event log",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_SPREADSHEET_ID"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Events"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "eventName": "={{ $('Verify and read the event').item.json.event }}",
+            "objectMetadata.id": "={{ $('Verify and read the event').item.json.metadataId }}",
+            "objectMetadata.nameSingular": "={{ $('Verify and read the event').item.json.metadataName }}",
+            "record.id": "={{ $('Verify and read the event').item.json.recordId }}",
+            "record.__typename": "={{ $('Verify and read the event').item.json.recordType }}"
+          },
+          "schema": [
+            {
+              "id": "eventName",
+              "displayName": "eventName",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "objectMetadata.id",
+              "displayName": "objectMetadata.id",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "objectMetadata.nameSingular",
+              "displayName": "objectMetadata.nameSingular",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "record.id",
+              "displayName": "record.id",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "record.__typename",
+              "displayName": "record.__typename",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "matchingColumns": []
+        },
+        "options": {
+          "cellFormat": "RAW",
+          "useAppend": true
+        }
+      },
+      "id": "log-and-route-twenty-crm-events-4"
+    },
+    {
+      "name": "Was the record deleted?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "deleted",
+              "leftValue": "={{ $('Verify and read the event').item.json.deleted }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "log-and-route-twenty-crm-events-5"
+    },
+    {
+      "name": "Email deletion details",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "parameters": {
+        "sendTo": "YOUR_ALERT_EMAIL",
+        "subject": "Record Deleted in TwentyCRM",
+        "emailType": "text",
+        "message": "={{ 'Object metadata ID: '+ $('Verify and read the event').item.json.metadataId + '\\nRecord ID: '+ $('Verify and read the event').item.json.recordId }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "log-and-route-twenty-crm-events-6"
+    },
+    {
+      "name": "Send the event to Slack",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_SLACK_CHANNEL_ID"
+        },
+        "text": "={{ (() => { const x=$('Verify and read the event').item.json, esc=v=>v.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); return 'event: '+esc(x.event)+'\\nevent_id: '+esc(x.metadataId)+'\\nrecord_id: '+esc(x.recordId); })() }}",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "id": "log-and-route-twenty-crm-events-7"
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Receive Twenty CRM events": {
+      "main": [
+        [
+          {
+            "node": "Prepare signature input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare signature input": {
+      "main": [
+        [
+          {
+            "node": "Calculate the webhook signature",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculate the webhook signature": {
+      "main": [
+        [
+          {
+            "node": "Verify and read the event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify and read the event": {
+      "main": [
+        [
+          {
+            "node": "Append the event log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append the event log": {
+      "main": [
+        [
+          {
+            "node": "Was the record deleted?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Was the record deleted?": {
+      "main": [
+        [
+          {
+            "node": "Email deletion details",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send the event to Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
