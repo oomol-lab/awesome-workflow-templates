@@ -232,6 +232,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Notify Workflow Failures on Slack](workflows/notify-workflow-failures-on-slack/) - Send workflow failure details to a Slack channel.
 - [Assign GitHub Issues from Requests](workflows/assign-github-issues-from-requests/) - Assign an unassigned GitHub issue to its author or commenter when they request it.
 - [Send Workflow Failure SMS with Twilio](workflows/send-workflow-failure-sms-with-twilio/) - Send a Twilio SMS identifying a workflow that failed.
+- [Notify Slack When a Workflow Fails](workflows/notify-slack-when-a-workflow-fails/) - Send a Slack alert when a configured workflow fails.
 
 ## Research
 
