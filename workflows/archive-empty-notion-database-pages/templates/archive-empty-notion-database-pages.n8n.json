@@ -1,0 +1,297 @@
+{
+  "name": "Archive Empty Notion Database Pages",
+  "nodes": [
+    {
+      "name": "Get All Databases",
+      "type": "n8n-nodes-base.notion",
+      "position": [
+        240,
+        300
+      ],
+      "parameters": {
+        "resource": "database",
+        "operation": "getAll",
+        "returnAll": true
+      },
+      "typeVersion": 2,
+      "id": "archive-empty-notion-database-pages-0"
+    },
+    {
+      "name": "Get All Database Pages",
+      "type": "n8n-nodes-base.notion",
+      "position": [
+        420,
+        300
+      ],
+      "parameters": {
+        "simple": false,
+        "options": {},
+        "resource": "databasePage",
+        "operation": "getAll",
+        "returnAll": true,
+        "databaseId": "={{$json[\"id\"]}}"
+      },
+      "typeVersion": 2,
+      "id": "archive-empty-notion-database-pages-1"
+    },
+    {
+      "name": "Get Page Blocks",
+      "type": "n8n-nodes-base.notion",
+      "position": [
+        1180,
+        280
+      ],
+      "parameters": {
+        "blockId": "={{$json[\"id\"]}}",
+        "resource": "block",
+        "operation": "getAll",
+        "returnAll": true
+      },
+      "typeVersion": 2,
+      "alwaysOutputData": true,
+      "id": "archive-empty-notion-database-pages-2"
+    },
+    {
+      "name": "Process Blocks",
+      "type": "n8n-nodes-base.function",
+      "position": [
+        1360,
+        280
+      ],
+      "parameters": {
+        "functionCode": "function emptyBlock(b){if(!b||typeof b.type!=='string'||typeof b.has_children!=='boolean')throw Error('Malformed block');if(b.has_children)return false;if(b.type!=='paragraph')return false;const p=b.paragraph;const text=p?.rich_text??p?.text;if(!Array.isArray(text))throw Error('Malformed paragraph');return text.length===0}\n\nconst id=$node['SplitInBatches'].json.id;if(typeof id!=='string'||!id)throw Error('Missing page');if(items.length===1&&Object.keys(items[0].json).length===0)return [{json:{toDelete:true,pageID:id}}];if(items.some(x=>!x.json.id))throw Error('Invalid block');return [{json:{toDelete:items.every(x=>emptyBlock(x.json)),pageID:id}}];"
+      },
+      "typeVersion": 1,
+      "id": "archive-empty-notion-database-pages-3"
+    },
+    {
+      "name": "SplitInBatches",
+      "type": "n8n-nodes-base.splitInBatches",
+      "position": [
+        1000,
+        280
+      ],
+      "parameters": {
+        "options": {},
+        "batchSize": 1
+      },
+      "typeVersion": 1,
+      "id": "archive-empty-notion-database-pages-4"
+    },
+    {
+      "name": "Check for empty properties",
+      "type": "n8n-nodes-base.function",
+      "position": [
+        600,
+        300
+      ],
+      "parameters": {
+        "functionCode": "function emptyProperties(properties){if(!properties||typeof properties!=='object'||Array.isArray(properties))throw Error('Malformed properties');const values=Object.values(properties);if(!values.length)return false;const arrays=['title','rich_text','multi_select','people','files','relation'],nullable=['number','url','email','phone_number','select','status','date'];for(const p of values){if(!p||typeof p.type!=='string'||!(p.type in p))throw Error('Malformed property');const v=p[p.type];if(arrays.includes(p.type)){if(!Array.isArray(v))throw Error('Malformed property value');if(v.length)return false;continue}if(nullable.includes(p.type)){if(v!==null)return false;continue}return false}return true}\n\nfor(const item of items){item.json.toDelete=emptyProperties(item.json.properties)}return items;"
+      },
+      "typeVersion": 1,
+      "id": "archive-empty-notion-database-pages-5"
+    },
+    {
+      "name": "Archive Page",
+      "type": "n8n-nodes-base.notion",
+      "position": [
+        1760,
+        260
+      ],
+      "parameters": {
+        "pageId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.pageID }}"
+        },
+        "operation": "archive"
+      },
+      "typeVersion": 2,
+      "id": "archive-empty-notion-database-pages-6"
+    },
+    {
+      "name": "If toDelete",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1560,
+        280
+      ],
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json[\"toDelete\"]}}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "typeVersion": 1,
+      "id": "archive-empty-notion-database-pages-7"
+    },
+    {
+      "name": "If Empty Properties",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        760,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json[\"toDelete\"]}}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "typeVersion": 1,
+      "id": "archive-empty-notion-database-pages-8"
+    },
+    {
+      "name": "Every day @ 2am",
+      "type": "n8n-nodes-base.cron",
+      "position": [
+        80,
+        300
+      ],
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "hour": 2
+            }
+          ]
+        }
+      },
+      "typeVersion": 1,
+      "id": "archive-empty-notion-database-pages-9"
+    }
+  ],
+  "active": false,
+  "settings": {
+    "timezone": "UTC",
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "If toDelete": {
+      "main": [
+        [
+          {
+            "node": "Archive Page",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "SplitInBatches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Blocks": {
+      "main": [
+        [
+          {
+            "node": "If toDelete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SplitInBatches": {
+      "main": [
+        [
+          {
+            "node": "Get Page Blocks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Every day @ 2am": {
+      "main": [
+        [
+          {
+            "node": "Get All Databases",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Page Blocks": {
+      "main": [
+        [
+          {
+            "node": "Process Blocks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get All Databases": {
+      "main": [
+        [
+          {
+            "node": "Get All Database Pages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Empty Properties": {
+      "main": [
+        [
+          {
+            "node": "SplitInBatches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get All Database Pages": {
+      "main": [
+        [
+          {
+            "node": "Check for empty properties",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check for empty properties": {
+      "main": [
+        [
+          {
+            "node": "If Empty Properties",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Archive Page": {
+      "main": [
+        [
+          {
+            "node": "SplitInBatches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {}
+}
