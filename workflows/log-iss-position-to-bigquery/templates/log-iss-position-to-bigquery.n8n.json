@@ -1,0 +1,148 @@
+{
+  "nodes": [
+    {
+      "name": "Cron",
+      "type": "n8n-nodes-base.cron",
+      "position": [
+        410,
+        240
+      ],
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1,
+      "id": "log-iss-position-to-bigquery-0"
+    },
+    {
+      "name": "Prepare the current timestamp",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function query() {const timestamp=Math.floor(Date.now()/1000);return {timestamp,url:'https://api.wheretheiss.at/v1/satellites/25544/positions?timestamps='+timestamp};}\n\nreturn [{json:query()}];"
+      },
+      "id": "log-iss-position-to-bigquery-1"
+    },
+    {
+      "name": "HTTP Request",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        610,
+        240
+      ],
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {}
+      },
+      "typeVersion": 1,
+      "id": "log-iss-position-to-bigquery-2"
+    },
+    {
+      "name": "Validate the position",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function row({body,timestamp}) {\n if(!Array.isArray(body)||body.length!==1)throw Error('Expected one ISS position');const p=body[0];\n if(!p||p.id!==25544||typeof p.name!=='string'||!p.name||!Number.isFinite(p.latitude)||p.latitude < -90||p.latitude>90||!Number.isFinite(p.longitude)||p.longitude < -180||p.longitude>180||p.timestamp!==timestamp)throw Error('ISS position does not match the request');\n const position={name:p.name,latitude:p.latitude,longitude:p.longitude,timestamp:p.timestamp};return {position,rows:[{json:position}]};\n}\n\nreturn [{json:row({body:$input.first().json,timestamp:$('Prepare the current timestamp').first().json.timestamp}).position}];"
+      },
+      "id": "log-iss-position-to-bigquery-3"
+    },
+    {
+      "name": "Google BigQuery",
+      "type": "n8n-nodes-base.googleBigQuery",
+      "position": [
+        1010,
+        240
+      ],
+      "parameters": {
+        "columns": "name, latitude, longitude, timestamp",
+        "options": {},
+        "tableId": "YOUR_TABLE_ID",
+        "datasetId": "YOUR_DATASET_ID",
+        "projectId": "YOUR_PROJECT_ID",
+        "authentication": "oAuth2"
+      },
+      "typeVersion": 1,
+      "id": "log-iss-position-to-bigquery-4"
+    },
+    {
+      "name": "Confirm the insert",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const x=$input.first().json;if(x.insertErrors!==undefined&&(!Array.isArray(x.insertErrors)||x.insertErrors.length))throw Error('BigQuery did not accept the position');return [{json:{inserted:true}}];"
+      },
+      "id": "log-iss-position-to-bigquery-5"
+    }
+  ],
+  "connections": {
+    "Cron": {
+      "main": [
+        [
+          {
+            "node": "Prepare the current timestamp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare the current timestamp": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Validate the position",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate the position": {
+      "main": [
+        [
+          {
+            "node": "Google BigQuery",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google BigQuery": {
+      "main": [
+        [
+          {
+            "node": "Confirm the insert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Log ISS Position to BigQuery",
+  "active": false,
+  "settings": {
+    "timezone": "UTC"
+  },
+  "pinData": {}
+}
