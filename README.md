@@ -446,6 +446,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Forward X Search Results to Mattermost](workflows/forward-x-search-to-mattermost/) - Monitor a recent X search and post new results to a Mattermost channel.
 - [Send an Approved SMS with MSG91](workflows/send-an-approved-sms-with-msg91/) - Send a configured MSG91 Flow SMS to one recipient.
 - [Send a Text-to-Speech Call with ClickSend](workflows/send-a-text-to-speech-call-with-clicksend/) - Submit a text-to-speech voice call with a chosen language and voice.
+- [Send Pushcut Action Input by SMS](workflows/send-pushcut-action-input-by-sms/) - Send the input of a Pushcut online action as an SMS through Twilio.
 
 ## Customer Support
 
