@@ -1,0 +1,545 @@
+{
+  "name": "Watch Competitor Hiring in Slack",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "triggerAtHour": 8,
+              "triggerAtMinute": 0
+            }
+          ]
+        }
+      },
+      "id": "watch-competitor-hiring-in-slack-every-morning-at-eight",
+      "name": "Every morning at eight",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -220,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "g1",
+              "name": "companies",
+              "value": "={{ [\"https://boards.greenhouse.io/stripe\", \"lever:leverdemo\", \"ramp\"] }}",
+              "type": "array"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "watch-competitor-hiring-in-slack-companies-to-watch",
+      "name": "Companies to watch",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "id": "watch-competitor-hiring-in-slack-start",
+      "name": "Start job board search",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apify.com/v2/acts/gubidonius~company-jobs-scraper/runs?timeout=900&memory=1024",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 30000,
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          }
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {companies:$json.companies,includeDescription:false,onlyRemote:false,maxJobsPerCompany:1000} }}"
+      }
+    },
+    {
+      "id": "watch-competitor-hiring-in-slack-initial",
+      "name": "Read started run",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return [{json:{run:$input.first().json.body.data}}];"
+      }
+    },
+    {
+      "id": "watch-competitor-hiring-in-slack-check",
+      "name": "Check search status",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const p=$input.first().json,r=p.run;if(!r?.id||!r.status)throw Error('Invalid run');if(p.previous&&p.previous.id!==r.id)throw Error('Run changed');if(['FAILED','ABORTED','TIMED-OUT'].includes(r.status))throw Error('Search failed');const done=r.status==='SUCCEEDED',count=(p.previous?.count??0)+1;if(!done&&count>120)throw Error('Search timed out');if(done&&!r.defaultDatasetId)throw Error('Missing dataset');return [{json:{state:{id:r.id,count},done,runId:r.id,datasetId:r.defaultDatasetId}}];"
+      }
+    },
+    {
+      "id": "watch-competitor-hiring-in-slack-ready",
+      "name": "Search complete?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.done }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "watch-competitor-hiring-in-slack-poll",
+      "name": "Read search status",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ \"https://api.apify.com/v2/actor-runs/\"+encodeURIComponent($json.runId)+\"?waitForFinish=10\" }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 30000,
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "watch-competitor-hiring-in-slack-restore",
+      "name": "Restore run state",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return [{json:{run:$input.first().json.body.data,previous:$('Search complete?').item.json.state}}];"
+      }
+    },
+    {
+      "id": "watch-competitor-hiring-in-slack-begin",
+      "name": "Prepare dataset pages",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const j=$input.first().json;return [{json:{datasetId:j.datasetId,offset:j.offset??0,records:j.records??[]}}];"
+      }
+    },
+    {
+      "id": "watch-competitor-hiring-in-slack-read",
+      "name": "Read a job page",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ \"https://api.apify.com/v2/datasets/\"+encodeURIComponent($json.datasetId)+\"/items?limit=1000&offset=\"+$json.offset }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 30000,
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "watch-competitor-hiring-in-slack-collect",
+      "name": "Collect job pages",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const prev=$('Prepare dataset pages').item.json,items=$input.first().json.body;if(!Array.isArray(items)||items.length>1000)throw Error('Invalid page');return [{json:{datasetId:prev.datasetId,offset:prev.offset+items.length,records:[...prev.records,...items],more:items.length===1000}}];"
+      }
+    },
+    {
+      "id": "watch-competitor-hiring-in-slack-more",
+      "name": "More job pages?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.more }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "watch-competitor-hiring-in-slack-next",
+      "name": "Continue dataset pages",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return [{json:$input.first().json}];"
+      }
+    },
+    {
+      "id": "watch-competitor-hiring-in-slack-split",
+      "name": "Split job records",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return $input.first().json.records.map((json,index)=>({json,pairedItem:{item:0}}));"
+      }
+    },
+    {
+      "parameters": {
+        "operation": "removeItemsSeenInPreviousExecutions",
+        "logic": "removeItemsWithAlreadySeenKeyValues",
+        "dedupeValue": "={{ $json.platform }}:{{ $json.companySlug }}:{{ $json.jobId }}",
+        "options": {
+          "scope": "node",
+          "historySize": 20000
+        }
+      },
+      "id": "watch-competitor-hiring-in-slack-only-the-ones-i-have-not-seen",
+      "name": "Only the ones I have not seen",
+      "type": "n8n-nodes-base.removeDuplicates",
+      "typeVersion": 2,
+      "position": [
+        460,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "h1",
+              "name": "company",
+              "value": "={{ $json.company || $json.companySlug }}",
+              "type": "string"
+            },
+            {
+              "id": "h2",
+              "name": "title",
+              "value": "={{ $json.title }}",
+              "type": "string"
+            },
+            {
+              "id": "h3",
+              "name": "location",
+              "value": "={{ $json.location }}",
+              "type": "string"
+            },
+            {
+              "id": "h4",
+              "name": "department",
+              "value": "={{ $json.department }}",
+              "type": "string"
+            },
+            {
+              "id": "h5",
+              "name": "remote",
+              "value": "={{ $json.isRemote }}",
+              "type": "boolean"
+            },
+            {
+              "id": "h6",
+              "name": "postedAt",
+              "value": "={{ $json.postedAt }}",
+              "type": "string"
+            },
+            {
+              "id": "h7",
+              "name": "applyUrl",
+              "value": "={{ $json.applyUrl }}",
+              "type": "string"
+            },
+            {
+              "id": "h8",
+              "name": "board",
+              "value": "={{ $json.platform }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "watch-competitor-hiring-in-slack-keep-what-is-worth-reading",
+      "name": "Keep what is worth reading",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        700,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_SLACK_CHANNEL_ID"
+        },
+        "text": "={{ $json.company }} is hiring: {{ $json.title }} ({{ $json.location }}) {{ $json.applyUrl }}",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "id": "watch-competitor-hiring-in-slack-tell-the-channel",
+      "name": "Tell the channel",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.3,
+      "position": [
+        940,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Every morning at eight": {
+      "main": [
+        [
+          {
+            "node": "Companies to watch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Companies to watch": {
+      "main": [
+        [
+          {
+            "node": "Start job board search",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start job board search": {
+      "main": [
+        [
+          {
+            "node": "Read started run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read started run": {
+      "main": [
+        [
+          {
+            "node": "Check search status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check search status": {
+      "main": [
+        [
+          {
+            "node": "Search complete?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search complete?": {
+      "main": [
+        [
+          {
+            "node": "Prepare dataset pages",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Read search status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read search status": {
+      "main": [
+        [
+          {
+            "node": "Restore run state",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore run state": {
+      "main": [
+        [
+          {
+            "node": "Check search status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare dataset pages": {
+      "main": [
+        [
+          {
+            "node": "Read a job page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read a job page": {
+      "main": [
+        [
+          {
+            "node": "Collect job pages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect job pages": {
+      "main": [
+        [
+          {
+            "node": "More job pages?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "More job pages?": {
+      "main": [
+        [
+          {
+            "node": "Continue dataset pages",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Split job records",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Continue dataset pages": {
+      "main": [
+        [
+          {
+            "node": "Prepare dataset pages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split job records": {
+      "main": [
+        [
+          {
+            "node": "Only the ones I have not seen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Only the ones I have not seen": {
+      "main": [
+        [
+          {
+            "node": "Keep what is worth reading",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Keep what is worth reading": {
+      "main": [
+        [
+          {
+            "node": "Tell the channel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC"
+  },
+  "active": false
+}
