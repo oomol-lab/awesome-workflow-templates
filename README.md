@@ -363,6 +363,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Reply with a Telegram Sticker ID](workflows/reply-with-telegram-sticker-id/) - Reply to Telegram messages with the sticker file ID and set name.
 - [Email a Calendar Invitation](workflows/email-a-calendar-invitation/) - Generate an iCalendar event file and email it as an attachment.
 - [Save Starred Tiny Tiny RSS Articles to Wallabag](workflows/save-starred-ttrss-articles-to-wallabag/) - Save newly starred Tiny Tiny RSS articles to Wallabag every ten minutes.
+- [Download a Google Sheet as an HTML Table](workflows/download-sheet-as-html-table/) - Download a Google Sheets range as an HTML table through a webhook.
 
 ## Content
 
