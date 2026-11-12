@@ -374,6 +374,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Create, Update and Read a Webflow CMS Item](workflows/create-update-and-read-webflow-item/) - Create a Webflow CMS item, add an image and read the updated item.
 - [Read Bubble Users Through the Data API](workflows/read-bubble-users-through-data-api/) - Read the first page of Bubble user records with the Data API.
 - [Fetch Bible Passages by Reference](workflows/fetch-bible-passages-by-reference/) - Fetch Bible passages for one or more references using the GetBible API.
+- [Get Monday Board Details](workflows/get-monday-board-details/) - Read metadata and owner IDs for a Monday board.
 
 ## Content
 
