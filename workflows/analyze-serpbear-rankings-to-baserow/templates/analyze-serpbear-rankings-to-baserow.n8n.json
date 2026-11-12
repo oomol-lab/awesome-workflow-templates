@@ -1,0 +1,265 @@
+{
+  "name": "Analyze SerpBear Rankings to Baserow",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "analyze-serpbear-rankings-to-baserow-0",
+      "name": "When clicking ‘Test workflow’",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        260,
+        380
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "analyze-serpbear-rankings-to-baserow-1",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        260,
+        160
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "weeksInterval": 1,
+              "triggerAtDay": [
+                0
+              ],
+              "triggerAtHour": 0,
+              "triggerAtMinute": 0
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "analyze-serpbear-rankings-to-baserow-2",
+      "name": "Get data from SerpBear",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        580,
+        260
+      ],
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        },
+        "sendQuery": true,
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "domain",
+              "value": "={{ $json.domain }}"
+            }
+          ]
+        },
+        "method": "GET"
+      },
+      "executeOnce": false,
+      "typeVersion": 4.2,
+      "alwaysOutputData": false
+    },
+    {
+      "id": "analyze-serpbear-rankings-to-baserow-3",
+      "name": "Parse data from SerpBear",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        820,
+        260
+      ],
+      "parameters": {
+        "jsCode": "function serpbearPrompt({body,domain}){if(typeof domain!=='string'||!domain.trim()||domain==='YOUR_DOMAIN')throw Error('Configure domain');if(!body||typeof body!=='object'||!Array.isArray(body.keywords))throw Error('SerpBear did not return keywords');if(!body.keywords.length)return{hasKeywords:false,messages:[]};const rows=body.keywords.map(k=>{if(!k||typeof k.keyword!=='string'||!k.keyword.trim()||(k.position!=null&&(!Number.isFinite(k.position)||k.position<0))||(k.history!=null&&(typeof k.history!=='object'||Array.isArray(k.history)))||typeof k.domain!=='string'||k.domain!==domain||(k.url!=null&&typeof k.url!=='string'))throw Error('Invalid keyword data');const position=k.position??0,entries=Object.entries(k.history??{});if(entries.some(([date,v])=>!/^\\d{4}-\\d{2}-\\d{2}$/.test(date)||!Number.isFinite(v)||v<0))throw Error('Invalid keyword history');const positions=entries.sort(([a],[b])=>a.localeCompare(b)).slice(-7).map(x=>x[1]).filter(x=>x>0),avg=positions.length?Math.round(positions.reduce((a,b)=>a+b,0)/positions.length*10)/10:null,trend=avg===null||position===0?'not enough ranking data':position<avg?'improving':position>avg?'declining':'stable';return{keyword:k.keyword,currentPosition:position,averagePosition:avg,trend,url:k.url||'not ranking'}});const content=`You are an SEO expert. Analyze this keyword ranking data for ${domain}:\\n${JSON.stringify(rows)}\\nSummarize rankings in a table, identify improvements and issues, and suggest actions.`;return{hasKeywords:true,messages:[{role:'user',content}]}}\n\nconst result=serpbearPrompt({body:$input.first().json,domain:$('Configure SerpBear').first().json.domain});return result.hasKeywords?[{json:result}]:[];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "analyze-serpbear-rankings-to-baserow-4",
+      "name": "Send data to A.I. for analysis",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        1060,
+        260
+      ],
+      "parameters": {
+        "url": "https://openrouter.ai/api/v1/chat/completions",
+        "method": "POST",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        },
+        "jsonBody": "={{ JSON.stringify({model:\"YOUR_OPENROUTER_MODEL_ID\",messages:$json.messages}) }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "typeVersion": 4.2,
+      "alwaysOutputData": false
+    },
+    {
+      "id": "analyze-serpbear-rankings-to-baserow-5",
+      "name": "Save data to Baserow",
+      "type": "n8n-nodes-base.baserow",
+      "position": [
+        1340,
+        260
+      ],
+      "parameters": {
+        "tableId": 0,
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": 0,
+              "fieldValue": "={{ $json.row.Date }}"
+            },
+            {
+              "fieldId": 0,
+              "fieldValue": "={{ $json.row.Note }}"
+            },
+            {
+              "fieldId": 0,
+              "fieldValue": "={{ $json.row.Blog }}"
+            }
+          ]
+        },
+        "operation": "create",
+        "databaseId": 0,
+        "authentication": "databaseToken"
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "analyze-serpbear-rankings-to-baserow-row",
+      "name": "Prepare report row",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function reportRow({completion,blog}){if(typeof blog!=='string'||!blog.trim()||blog==='YOUR_BLOG_NAME')throw Error('Configure the blog name');const text=completion?.choices?.[0]?.message?.content;if(typeof text!=='string'||!text.trim())throw Error('OpenRouter returned no report text');if(completion.choices[0].finish_reason==='length')throw Error('OpenRouter report was truncated');return {row:{Date:new Date().toISOString().slice(0,10),Note:text,Blog:blog}};}\n\nreturn {json:reportRow({completion:$json,blog:\"YOUR_BLOG_NAME\"})};"
+      }
+    },
+    {
+      "id": "analyze-serpbear-rankings-to-baserow-config",
+      "name": "Configure SerpBear",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function config({instance,domain}){if(typeof instance!=='string'||instance.includes('YOUR_SERPBEAR_HOST')||typeof domain!=='string'||domain==='YOUR_DOMAIN'||!domain.trim())throw Error('Configure SerpBear instance and domain');if(!/^https:\\/\\/[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?(?::[0-9]{1,5})?\\/api\\/keywords$/i.test(instance))throw Error('Use an HTTPS SerpBear /api/keywords URL');return{url:instance,domain}}\n\nreturn [{json:config({instance:'https://YOUR_SERPBEAR_HOST/api/keywords',domain:'YOUR_DOMAIN'})}];"
+      }
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC"
+  },
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Configure SerpBear",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get data from SerpBear": {
+      "main": [
+        [
+          {
+            "node": "Parse data from SerpBear",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse data from SerpBear": {
+      "main": [
+        [
+          {
+            "node": "Send data to A.I. for analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send data to A.I. for analysis": {
+      "main": [
+        [
+          {
+            "node": "Prepare report row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Test workflow’": {
+      "main": [
+        [
+          {
+            "node": "Configure SerpBear",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configure SerpBear": {
+      "main": [
+        [
+          {
+            "node": "Get data from SerpBear",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare report row": {
+      "main": [
+        [
+          {
+            "node": "Save data to Baserow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
