@@ -301,6 +301,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Summarize YouTube Transcripts](workflows/summarize-youtube-transcripts/) - Fetch a YouTube transcript and generate a concise summary.
 - [Summarize New Google Docs to Sheets](workflows/summarize-new-drive-documents-to-sheets/) - Summarize new Google Docs in a Drive folder and append each summary with its last editor to Sheets.
 - [Categorize Todoist Inbox Task Priorities](workflows/categorize-todoist-inbox-task-priorities/) - Classify top-level Inbox tasks and set their Todoist priorities from a configurable category map.
+- [Assign Inbox Task Priorities with AI](workflows/assign-inbox-task-priorities-with-ai/) - Classify top-level Inbox tasks and set their Todoist priorities from a configurable category map.
 
 ## Content
 
