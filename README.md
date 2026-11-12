@@ -335,6 +335,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Log Unread Gmail Classifications to Sheets](workflows/log-unread-gmail-classifications-to-sheets/) - Classify new unread Gmail messages and log the results in a spreadsheet.
 - [Start Transcription Jobs for S3 Objects](workflows/start-transcription-jobs-for-s3-objects/) - Start an automatic-language Amazon Transcribe job for each nonempty object in an S3 bucket.
 - [Save User Registration to Airtable](workflows/save-user-registration-to-airtable/) - Record a user registration with contact details and subscription choice in Airtable.
+- [Send Daily Weather to Gotify](workflows/send-daily-weather-to-gotify/) - Send the current temperature for a chosen city to a Gotify application each morning.
 
 ## Content
 
