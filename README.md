@@ -348,6 +348,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Send Daily Weather to Gotify](workflows/send-daily-weather-to-gotify/) - Send the current temperature for a chosen city to a Gotify application each morning.
 - [Notify Invoice Emails in Slack](workflows/notify-invoice-emails-in-slack/) - Extract invoice totals from incoming email attachments and notify finance and Slack.
 - [Create Nextcloud Deck Cards from Email](workflows/create-nextcloud-deck-cards-from-email/) - Create a Nextcloud Deck card from the subject and body of each new email.
+- [Send Scheduled Congratulations from Sheets](workflows/send-scheduled-congratulations-from-sheets/) - Send personalized SMS greetings for events listed in Google Sheets.
 
 ## Content
 
