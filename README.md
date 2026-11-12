@@ -86,6 +86,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Follow Up HubSpot Contacts with Gmail](workflows/follow-up-hubspot-contacts-with-gmail/) - Follow up older HubSpot contacts with one engagement and log each sent email.
 - [Import Airtable Contacts into a Lemlist Campaign](workflows/airtable-contacts-to-lemlist-campaign/) - Add Airtable contacts to a Lemlist campaign and look up their lead records.
 - [Log and Route Twenty CRM Events](workflows/log-and-route-twenty-crm-events/) - Log signed Twenty CRM record events and notify email for deletions or Slack for other changes.
+- [Enrich Sheet Companies with ProspectLens](workflows/enrich-sheet-companies-with-prospectlens/) - Enrich unprocessed company domains in Google Sheets with ProspectLens data.
 
 ## Operations
 

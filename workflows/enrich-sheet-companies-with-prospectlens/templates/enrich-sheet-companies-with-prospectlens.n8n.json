@@ -1,0 +1,266 @@
+{
+  "name": "Enrich Sheet Companies with ProspectLens",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "enrich-sheet-companies-with-prospectlens-0",
+      "name": "When clicking ‘Test workflow’",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        720,
+        400
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "name": "Choose the sheet",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const spreadsheetId='YOUR_SPREADSHEET_ID',sheetName='Sheet1';if(!spreadsheetId||spreadsheetId.startsWith('YOUR_')||!sheetName.trim())throw Error('Configure spreadsheet and sheet');return [{json:{spreadsheetId,sheetName,range:\"'\"+sheetName.replace(/'/g,\"''\")+\"'!A:Z\"}}];"
+      },
+      "id": "enrich-sheet-companies-with-prospectlens-1"
+    },
+    {
+      "id": "enrich-sheet-companies-with-prospectlens-2",
+      "name": "Read sheet rows",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        940,
+        400
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ 'https://sheets.googleapis.com/v4/spreadsheets/' + encodeURIComponent($json.spreadsheetId) + '/values/' + encodeURIComponent($json.range) }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "majorDimension",
+              "value": "ROWS"
+            },
+            {
+              "name": "valueRenderOption",
+              "value": "UNFORMATTED_VALUE"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "name": "Select unprocessed companies",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function prepare({values}){if(!Array.isArray(values)||!Array.isArray(values[0]))throw Error('Sheet must have a header row');const names=['domain','name','description','processed_at','data','domain_name','traffic','location','funds','year_founded','funding_round','last_funding_at'],header=values[0],columns={};for(const name of names){let indices=header.flatMap((v,i)=>v===name?[i]:[]);if(indices.length!==1)throw Error('Expected one '+name+' column');columns[name]=indices[0]}const rows=[];for(let i=1;i<values.length;i++){const row=values[i];if(!Array.isArray(row))throw Error('Invalid sheet row');const processed=row[columns.processed_at];if(processed!==undefined&&processed!==null&&processed!=='')continue;const domain=row[columns.domain];if(typeof domain!=='string'||!domain.trim())continue;rows.push({row:i+1,domain:domain.trim()})}return{rows,columns}}\n\nconst x=prepare({values:$input.first().json.values??[]});return x.rows.map((row,i)=>({json:{row,columns:x.columns},pairedItem:{item:0}}));"
+      },
+      "id": "enrich-sheet-companies-with-prospectlens-3"
+    },
+    {
+      "id": "enrich-sheet-companies-with-prospectlens-4",
+      "name": "Loop Over Items",
+      "type": "n8n-nodes-base.splitInBatches",
+      "notes": "Used to keep low concurrency (1 thread)",
+      "position": [
+        1400,
+        380
+      ],
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "notesInFlow": true,
+      "typeVersion": 3
+    },
+    {
+      "id": "enrich-sheet-companies-with-prospectlens-5",
+      "name": "ProspectLens API call",
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "ProspectLens API",
+      "onError": "continueErrorOutput",
+      "maxTries": 2,
+      "position": [
+        1680,
+        380
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ 'https://prospectlens.apiroad.net/lookup?domain=' + encodeURIComponent($json.row.domain) }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "notesInFlow": true,
+      "retryOnFail": true,
+      "typeVersion": 4.2,
+      "waitBetweenTries": 1000
+    },
+    {
+      "name": "Prepare company fields",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function map({row,columns,response,sheetName}){if(!response||typeof response!=='object'||!response.data||typeof response.data!=='object')throw Error('ProspectLens response missing data');const d=response.data,need=(path)=>{let v=d;for(const k of path){if(v===null||v===undefined||typeof v!=='object'||!Object.prototype.hasOwnProperty.call(v,k))throw Error('ProspectLens response missing '+path.join('.'));v=v[k]}if(!['string','number','boolean'].includes(typeof v))throw Error('Invalid '+path.join('.'));return v};const vals={domain:row.domain,name:need(['properties','title']),description:need(['properties','short_description']),processed_at:new Date().toISOString(),data:JSON.stringify(d).substr(0,2000),domain_name:need(['info','company_about_fields','website','hostname']),traffic:need(['info','semrush_summary','semrush_visits_latest_month']),location:need(['info','semrush_location_list','0','location_identifiers','0','value']),funds:need(['info','funding_rounds_summary','funding_total','value']),year_founded:need(['info','overview_fields_extended','founded_on','value']),funding_round:need(['info','funding_rounds_summary','last_funding_type']),last_funding_at:need(['info','funding_rounds_summary','last_funding_at'])};if(typeof sheetName!=='string'||!sheetName.trim()||!Number.isInteger(row.row)||row.row<2)throw Error('Invalid sheet location');const name=\"'\"+sheetName.replace(/'/g,\"''\")+\"'\",col=i=>{if(!Number.isInteger(i)||i<0||i>=26)throw Error('Column outside A:Z');return String.fromCharCode(65+i)};const data=Object.entries(vals).map(([key,value])=>({range:`${name}!${col(columns[key])}${row.row}`,majorDimension:'ROWS',values:[[value]]}));return{data}}\n\nconst prev=$('Loop Over Items').item.json,cfg=$('Choose the sheet').first().json;return [{json:map({row:prev.row,columns:prev.columns,response:$input.first().json,sheetName:cfg.sheetName})}];"
+      },
+      "id": "enrich-sheet-companies-with-prospectlens-6"
+    },
+    {
+      "id": "enrich-sheet-companies-with-prospectlens-7",
+      "name": "Update the company row",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        2000,
+        380
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'https://sheets.googleapis.com/v4/spreadsheets/' + encodeURIComponent($('Choose the sheet').first().json.spreadsheetId) + '/values:batchUpdate' }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({valueInputOption:'RAW',data:$json.data}) }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "name": "Confirm the row update",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const x=$input.first().json,c=$('Choose the sheet').first().json;if(x.spreadsheetId!==c.spreadsheetId||x.totalUpdatedCells!==12)throw Error('Sheet update not confirmed');return [{json:{ok:true}}];"
+      },
+      "id": "enrich-sheet-companies-with-prospectlens-8"
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "When clicking ‘Test workflow’": {
+      "main": [
+        [
+          {
+            "node": "Choose the sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Choose the sheet": {
+      "main": [
+        [
+          {
+            "node": "Read sheet rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read sheet rows": {
+      "main": [
+        [
+          {
+            "node": "Select unprocessed companies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select unprocessed companies": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "ProspectLens API call",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ProspectLens API call": {
+      "main": [
+        [
+          {
+            "node": "Prepare company fields",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare company fields": {
+      "main": [
+        [
+          {
+            "node": "Update the company row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update the company row": {
+      "main": [
+        [
+          {
+            "node": "Confirm the row update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm the row update": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
