@@ -1,0 +1,484 @@
+{
+  "nodes": [
+    {
+      "id": "a2005e70-6774-45ce-b9c6-742786f49964",
+      "name": "Gmail trigger",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "simple": false,
+        "maxResults": 25,
+        "filters": {
+          "readStatus": "both",
+          "includeDrafts": false
+        },
+        "options": {}
+      },
+      "typeVersion": 1.4
+    },
+    {
+      "id": "4b6f7d21-6155-42b7-93ff-2f530df3692f",
+      "name": "Get message content",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "resource": "message",
+        "operation": "get",
+        "messageId": "={{ $json.id }}",
+        "simple": false,
+        "options": {}
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "id": "gmail-label-bodies",
+      "name": "Prepare Message Bodies",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function normalizeBodies(messageIds, responses) {\n  if (!Array.isArray(messageIds) || !Array.isArray(responses) || messageIds.length !== responses.length) throw new Error('Gmail body count differs from the incoming message count.');\n  const messages = messageIds.map((messageId, index) => {\n    const response = responses[index];\n    if (response?.messageId !== messageId || typeof response.body !== 'string') throw new Error('Gmail returned a different message ID or invalid body.');\n    return { messageId, body: response.body };\n  });\n  return { messages };\n}\n\nconst incoming=$('Gmail trigger').all().map(item=>({messageId:item.json.id}));\nconst prepareEvents = function prepareMessages({ events }) {\n  if (!Array.isArray(events) || events.length > 25) throw new Error('Expected at most 25 incoming Gmail events.');\n  const messageIds = [], seen = new Set();\n  for (const event of events) {\n    const id = event?.messageId;\n    if (typeof id !== 'string' || !id.trim() || seen.has(id)) throw new Error('Incoming Gmail message IDs must be nonempty and unique.');\n    seen.add(id); messageIds.push(id);\n  }\n  return { messageIds, count: messageIds.length };\n}\n\nconst {messageIds}=prepareEvents({events:incoming});const responses=$input.all().map(item=>({messageId:item.json.id,body:typeof item.json.html==='string'&&item.json.html?item.json.html:(item.json.text??'')}));const {messages}=normalizeBodies(messageIds,responses);return messages.map((json,index)=>({json,pairedItem:{item:index}}));\n"
+      }
+    },
+    {
+      "id": "ad577660-d9f4-4031-ad16-7021a02bb18e",
+      "name": "Assign labels for message",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "position": [
+        660,
+        0
+      ],
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.body }}\n\nReturn a JSON object with a required \"labels\" array. Every array item must be exactly \"Inquiry\", \"Partnership\", or \"Notification\". An empty array is allowed. Return only the JSON object.",
+        "messages": {
+          "messageValues": [
+            {
+              "type": "SystemMessagePromptTemplate",
+              "message": "Your task is to categorize the message according to the following labels.\n\nPartnership - email about sponsored content, cooperation etc.\nInquiry - email about products, services.\nNotification - email that doesn't require response. \n\nOne email can have more than one label. Return only label names in JSON format, nothing else. Do not make things up. "
+            }
+          ]
+        },
+        "batching": {
+          "batchSize": 1,
+          "delayBetweenBatches": 0
+        }
+      },
+      "typeVersion": 1.7
+    },
+    {
+      "id": "1e11d30f-4c73-4fd0-a365-aeb43bee4252",
+      "name": "OpenAI Chat",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "position": [
+        660,
+        220
+      ],
+      "parameters": {
+        "model": "gpt-4o-mini-2024-07-18",
+        "options": {
+          "temperature": 0,
+          "responseFormat": "json_object",
+          "maxRetries": 2
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "gmail-label-classifications",
+      "name": "Validate All Classifications",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const validate = function validateLabels({ messageId, completion }) {\n  const allowed = ['Inquiry', 'Partnership', 'Notification'];\n  if (typeof messageId !== 'string' || !messageId.trim() || !completion || typeof completion !== 'object' || Array.isArray(completion) || !Array.isArray(completion.labels)) throw new Error('Classification must be an object containing a labels array.');\n  const labels = [];\n  for (const label of completion.labels) {\n    if (typeof label !== 'string' || !allowed.includes(label)) throw new Error('Classification contains an unknown Gmail label.');\n    if (!labels.includes(label)) labels.push(label);\n  }\n  return { messageId, labels };\n}\n\nconst messages=$('Prepare Message Bodies').all(),items=$input.all();if(items.length!==messages.length)throw new Error('Classification count differs from the Gmail message count.');const classifications=items.map((item,index)=>validate({messageId:messages[index].json.messageId,completion:item.json}));return [{json:{classifications}}];\n"
+      }
+    },
+    {
+      "id": "e368e343-728e-4e2f-a37f-5e203000d090",
+      "name": "Get all labels",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        1100,
+        0
+      ],
+      "parameters": {
+        "resource": "label",
+        "operation": "getAll",
+        "returnAll": true
+      },
+      "typeVersion": 2.1,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "gmail-label-plans",
+      "name": "Prepare Label Writes",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1320,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const prepare = function prepareLabelWrites({ classifications, labels }) {\n  if (!Array.isArray(classifications) || classifications.length > 25 || !Array.isArray(labels)) throw new Error('Invalid Gmail label plan.');\n  const catalog = new Map(), allowed = ['Inquiry', 'Partnership', 'Notification'];\n  for (const label of labels) {\n    if (!allowed.includes(label?.name)) continue;\n    if (typeof label.id !== 'string' || !label.id.trim() || catalog.has(label.name)) throw new Error('Configured Gmail label names must have one valid ID each.');\n    catalog.set(label.name, label.id);\n  }\n  const seen = new Set(), plans = classifications.map(classification => {\n    if (typeof classification?.messageId !== 'string' || !classification.messageId.trim() || seen.has(classification.messageId) || !Array.isArray(classification.labels)) throw new Error('Classifications must keep unique incoming Gmail message IDs.');\n    seen.add(classification.messageId);\n    const names = [], ids = [];\n    for (const name of classification.labels) {\n      if (!allowed.includes(name) || !catalog.has(name)) throw new Error('A selected label is unknown or missing from the connected Gmail account.');\n      if (!names.includes(name)) { names.push(name); ids.push(catalog.get(name)); }\n    }\n    return { messageId: classification.messageId, labels: names, labelIds: ids };\n  });\n  return { plans };\n}\n\nconst raw=$input.all().map(item=>item.json),labels=raw.length===1&&Object.keys(raw[0]).length===0?[]:raw;const {plans}=prepare({classifications:$('Validate All Classifications').first().json.classifications,labels});return [{json:{plans,hasWrites:plans.some(plan=>plan.labelIds.length>0)}}];\n"
+      }
+    },
+    {
+      "id": "gmail-label-any-writes",
+      "name": "Labels To Add",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1540,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "gmail-label-has-writes",
+              "leftValue": "={{ $json.hasWrites }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "gmail-label-split",
+      "name": "One Label Plan Per Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1760,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return $input.first().json.plans.filter(plan=>plan.labelIds.length).map(json=>({json,pairedItem:{item:0}}));"
+      }
+    },
+    {
+      "id": "7befd422-7243-43af-9b34-21c05a069013",
+      "name": "Add labels to message",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        1980,
+        0
+      ],
+      "parameters": {
+        "resource": "message",
+        "operation": "addLabels",
+        "messageId": "={{ $json.messageId }}",
+        "labelIds": "={{ $json.labelIds }}"
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "id": "gmail-label-result",
+      "name": "Labeling Decisions",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2200,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const decisions=$('Prepare Label Writes').first().json.plans;return [{json:{decisions,updatedCount:decisions.filter(plan=>plan.labelIds.length).length}}];"
+      }
+    },
+    {
+      "id": "814e3849-1ae1-4124-bdfc-b72017e9d7c2",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "color": 4,
+        "width": 420.4803040774015,
+        "height": 240.57943708322733,
+        "content": "## Gmail AI Labeler\n\nSelect the same Gmail mailbox for the trigger, body read, label catalog and label update. Create Inquiry, Partnership and Notification labels first. Every minute, native Gmail Trigger1.4 emits at most25 messages and keeps a bounded pending queue. Drafts, outgoing-only, scheduled, spam and trash messages are excluded. See README for differences from Open Flow history polling, backlog/failed-fetch limits and recovery. All bodies and classifications are read and checked before any label write. Labels are additive; empty classifications do not write. Configure OpenAI Chat. gpt-4o-mini-2024-07-18 shuts down January14,2027: switch and recheck an available model in both formats. No workflow-level retries or automatic failed-execution replay. Message bodies are sent to the model service."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "e83fa311-b5ba-427e-a98e-573394b882dd",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        0,
+        260
+      ],
+      "parameters": {
+        "width": 421.0932411886662,
+        "height": 257.42916378714597,
+        "content": "## Source\n\nOriginal workflow by [workfloows.com](https://workfloows.com/) / [@workfloows](https://www.youtube.com/@workfloows). [Video guide](https://youtu.be/a8Dhj3Zh9vQ)."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "4c20d029-750f-476b-9348-6e250ea64d52",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "width": 238.4602598584674,
+        "height": 348.5873725349161,
+        "content": "## Gmail AI Labeler\n\nSelect the same Gmail mailbox for the trigger, body read, label catalog and label update. Create Inquiry, Partnership and Notification labels first. Every minute, native Gmail Trigger1.4 emits at most25 messages and keeps a bounded pending queue. Drafts, outgoing-only, scheduled, spam and trash messages are excluded. See README for differences from Open Flow history polling, backlog/failed-fetch limits and recovery. All bodies and classifications are read and checked before any label write. Labels are additive; empty classifications do not write. Configure OpenAI Chat. gpt-4o-mini-2024-07-18 shuts down January14,2027: switch and recheck an available model in both formats. No workflow-level retries or automatic failed-execution replay. Message bodies are sent to the model service."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "22923079-80ce-4495-b0f0-da7122195c56",
+      "name": "Sticky Note4",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1160,
+        380
+      ],
+      "parameters": {
+        "width": 241.53974014153226,
+        "height": 319.3323098457962,
+        "content": "## Gmail AI Labeler\n\nSelect the same Gmail mailbox for the trigger, body read, label catalog and label update. Create Inquiry, Partnership and Notification labels first. Every minute, native Gmail Trigger1.4 emits at most25 messages and keeps a bounded pending queue. Drafts, outgoing-only, scheduled, spam and trash messages are excluded. See README for differences from Open Flow history polling, backlog/failed-fetch limits and recovery. All bodies and classifications are read and checked before any label write. Labels are additive; empty classifications do not write. Configure OpenAI Chat. gpt-4o-mini-2024-07-18 shuts down January14,2027: switch and recheck an available model in both formats. No workflow-level retries or automatic failed-execution replay. Message bodies are sent to the model service."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "40735a58-daaa-43ac-9658-706c3cf0cbba",
+      "name": "Sticky Note5",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1900,
+        20
+      ],
+      "parameters": {
+        "width": 226.14233872620645,
+        "height": 347.0476323933831,
+        "content": "## Gmail AI Labeler\n\nSelect the same Gmail mailbox for the trigger, body read, label catalog and label update. Create Inquiry, Partnership and Notification labels first. Every minute, native Gmail Trigger1.4 emits at most25 messages and keeps a bounded pending queue. Drafts, outgoing-only, scheduled, spam and trash messages are excluded. See README for differences from Open Flow history polling, backlog/failed-fetch limits and recovery. All bodies and classifications are read and checked before any label write. Labels are additive; empty classifications do not write. Configure OpenAI Chat. gpt-4o-mini-2024-07-18 shuts down January14,2027: switch and recheck an available model in both formats. No workflow-level retries or automatic failed-execution replay. Message bodies are sent to the model service."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "87e0f9e2-a2ff-46cf-896a-138b1bde2d0e",
+      "name": "Sticky Note6",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2160,
+        20
+      ],
+      "parameters": {
+        "width": 452.48413953150185,
+        "height": 347.0476323933831,
+        "content": "## Gmail AI Labeler\n\nSelect the same Gmail mailbox for the trigger, body read, label catalog and label update. Create Inquiry, Partnership and Notification labels first. Every minute, native Gmail Trigger1.4 emits at most25 messages and keeps a bounded pending queue. Drafts, outgoing-only, scheduled, spam and trash messages are excluded. See README for differences from Open Flow history polling, backlog/failed-fetch limits and recovery. All bodies and classifications are read and checked before any label write. Labels are additive; empty classifications do not write. Configure OpenAI Chat. gpt-4o-mini-2024-07-18 shuts down January14,2027: switch and recheck an available model in both formats. No workflow-level retries or automatic failed-execution replay. Message bodies are sent to the model service."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "1d533664-e5e8-4dc8-afac-bfc5996e4bf9",
+      "name": "Sticky Note7",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        700,
+        0
+      ],
+      "parameters": {
+        "width": 238.4602598584674,
+        "height": 348.5873725349161,
+        "content": "## Gmail AI Labeler\n\nSelect the same Gmail mailbox for the trigger, body read, label catalog and label update. Create Inquiry, Partnership and Notification labels first. Every minute, native Gmail Trigger1.4 emits at most25 messages and keeps a bounded pending queue. Drafts, outgoing-only, scheduled, spam and trash messages are excluded. See README for differences from Open Flow history polling, backlog/failed-fetch limits and recovery. All bodies and classifications are read and checked before any label write. Labels are additive; empty classifications do not write. Configure OpenAI Chat. gpt-4o-mini-2024-07-18 shuts down January14,2027: switch and recheck an available model in both formats. No workflow-level retries or automatic failed-execution replay. Message bodies are sent to the model service."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "e613ca64-50ae-4d7c-b0fc-15812dadcd68",
+      "name": "Sticky Note8",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        960,
+        0
+      ],
+      "parameters": {
+        "width": 378.57661273793565,
+        "height": 348.5873725349161,
+        "content": "## Gmail AI Labeler\n\nSelect the same Gmail mailbox for the trigger, body read, label catalog and label update. Create Inquiry, Partnership and Notification labels first. Every minute, native Gmail Trigger1.4 emits at most25 messages and keeps a bounded pending queue. Drafts, outgoing-only, scheduled, spam and trash messages are excluded. See README for differences from Open Flow history polling, backlog/failed-fetch limits and recovery. All bodies and classifications are read and checked before any label write. Labels are additive; empty classifications do not write. Configure OpenAI Chat. gpt-4o-mini-2024-07-18 shuts down January14,2027: switch and recheck an available model in both formats. No workflow-level retries or automatic failed-execution replay. Message bodies are sent to the model service."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Gmail trigger": {
+      "main": [
+        [
+          {
+            "node": "Get message content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get message content": {
+      "main": [
+        [
+          {
+            "node": "Prepare Message Bodies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Message Bodies": {
+      "main": [
+        [
+          {
+            "node": "Assign labels for message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assign labels for message": {
+      "main": [
+        [
+          {
+            "node": "Validate All Classifications",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate All Classifications": {
+      "main": [
+        [
+          {
+            "node": "Get all labels",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get all labels": {
+      "main": [
+        [
+          {
+            "node": "Prepare Label Writes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Label Writes": {
+      "main": [
+        [
+          {
+            "node": "Labels To Add",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "One Label Plan Per Message": {
+      "main": [
+        [
+          {
+            "node": "Add labels to message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add labels to message": {
+      "main": [
+        [
+          {
+            "node": "Labeling Decisions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Labels To Add": {
+      "main": [
+        [
+          {
+            "node": "One Label Plan Per Message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Labeling Decisions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Assign labels for message",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "name": "Classify Gmail Messages with AI",
+  "active": false
+}
