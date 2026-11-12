@@ -41,6 +41,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Design](#design)
 - [Data and Analytics](#data-and-analytics)
 - [Security](#security)
+- [Social Media](#social-media)
 - [Contribute](#contribute)
 - [Licensing](#licensing)
 
@@ -415,6 +416,10 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Create and Update a TheHive Case](workflows/create-and-update-thehive-case/) - Create a TheHive 4 case, change its severity and read it back.
 - [Analyze a URL with Cortex](workflows/analyze-url-with-cortex/) - Submit a URL to a Cortex analyzer and read the resulting job details.
 - [Generate a SecurityScorecard Report](workflows/generate-securityscorecard-report/) - Request a full SecurityScorecard report and retrieve the matching completed report.
+
+## Social Media
+
+- [Publish a Reddit Post and Comment](workflows/publish-reddit-post-and-comment/) - Publish a text post to a subreddit, verify it and add a comment to the same post.
 
 ## Contribute
 
