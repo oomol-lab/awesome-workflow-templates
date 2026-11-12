@@ -1,0 +1,144 @@
+{
+  "name": "Save Taiwan Sheep Prices to Google Sheets",
+  "tags": [
+    {
+      "id": "YaVjRtdJOQvaEnU3",
+      "name": "testing",
+      "createdAt": "2024-12-29T07:47:44.069Z",
+      "updatedAt": "2024-12-29T07:47:44.069Z"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "save-taiwan-sheep-prices-to-sheets-0",
+      "name": "When clicking ‘Test workflow’",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "name": "Choose the dates and market",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function query({startDate,endDate,market}){const d=/^\\d{4}\\/\\d{2}\\/\\d{2}$/;if(!d.test(startDate)||!d.test(endDate)||startDate>endDate)throw Error('Enter dates as YYYY/MM/DD, start no later than end');if(typeof market!=='string')throw Error('Invalid market');return{url:'https://data.moa.gov.tw/api/v1/SheepQuotation/?Start_time='+encodeURIComponent(startDate)+'&End_time='+encodeURIComponent(endDate),market}}\n\nconst x=query({startDate:'2024/12/01',endDate:'2024/12/31',market:''});return [{json:{...x,spreadsheetId:'YOUR_SPREADSHEET_ID',sheetName:'Sheet1'}}];"
+      },
+      "id": "save-taiwan-sheep-prices-to-sheets-1"
+    },
+    {
+      "id": "save-taiwan-sheep-prices-to-sheets-2",
+      "name": "Read sheep quotations",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "name": "Prepare quotation rows",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function rows({body,market}){if(!body||body.RS!=='OK'||!Array.isArray(body.Data)||body.Next!==false)throw Error('Sheep quotation response incomplete or invalid');const fields=['transDate','marketID','shortName','name','productID','productName','productTypeName','quantity','avgWeight','avgPrice','highestPrice','Record_ID'];const values=body.Data.filter(x=>!market||x.shortName===market).map(x=>{if(!x||typeof x!=='object')throw Error('Invalid quotation');return fields.map(f=>{if(typeof x[f]!=='string'&&typeof x[f]!=='number')throw Error('Missing quotation field: '+f);return x[f]})});return {values,hasRows:values.length>0}}\n\nconst x=rows({body:$input.first().json,market:$('Choose the dates and market').first().json.market});return x.values.map(v=>({json:Object.fromEntries(['transDate','marketID','shortName','name','productID','productName','productTypeName','quantity','avgWeight','avgPrice','highestPrice','Record_ID'].map((k,i)=>[k,v[i]]))}));"
+      },
+      "id": "save-taiwan-sheep-prices-to-sheets-3"
+    },
+    {
+      "id": "save-taiwan-sheep-prices-to-sheets-4",
+      "name": "Append the quotations",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        660,
+        0
+      ],
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Choose the dates and market').first().json.spreadsheetId }}"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "={{ $('Choose the dates and market').first().json.sheetName }}"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {
+          "cellFormat": "RAW",
+          "useAppend": true
+        }
+      },
+      "typeVersion": 4.5
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "When clicking ‘Test workflow’": {
+      "main": [
+        [
+          {
+            "node": "Choose the dates and market",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Choose the dates and market": {
+      "main": [
+        [
+          {
+            "node": "Read sheep quotations",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read sheep quotations": {
+      "main": [
+        [
+          {
+            "node": "Prepare quotation rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare quotation rows": {
+      "main": [
+        [
+          {
+            "node": "Append the quotations",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
