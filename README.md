@@ -612,6 +612,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 ## Social
 
 - [Check Whether a Twitch Stream Is Live](workflows/check-twitch-stream-live/) - Check the live stream returned for a Twitch login and inspect its details.
+- [Get a Facebook Profile First and Last Name](workflows/get-facebook-profile-first-and-last-name/) - Read the first and last name available to a Facebook user access token.
 
 ## IT Operations
 
