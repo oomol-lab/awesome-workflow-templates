@@ -443,6 +443,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Send an Outlook Draft with an Attachment](workflows/send-outlook-draft-with-attachment/) - Create an Outlook draft, add a downloaded image and send the message.
 - [Forward X Search Results to Mattermost](workflows/forward-x-search-to-mattermost/) - Monitor a recent X search and post new results to a Mattermost channel.
 - [Send an Approved SMS with MSG91](workflows/send-an-approved-sms-with-msg91/) - Send a configured MSG91 Flow SMS to one recipient.
+- [Send a Text-to-Speech Call with ClickSend](workflows/send-a-text-to-speech-call-with-clicksend/) - Submit a text-to-speech voice call with a chosen language and voice.
 
 ## Customer Support
 
