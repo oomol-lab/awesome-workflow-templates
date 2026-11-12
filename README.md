@@ -384,6 +384,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Route Typeform Feedback to Airtable and Trello](workflows/typeform-feedback-to-airtable-and-trello/) - Save Typeform product feedback in Airtable and create a Trello card for scores below seven.
 - [Turn Support Gmail into Linear Issues](workflows/turn-support-gmail-into-linear-issues/) - Triage the latest matching support email with AI and create a Linear issue.
 - [Triage Outlook Support in Jira](workflows/triage-outlook-support-in-jira/) - Triage recent Outlook support messages with AI and create Jira issues.
+- [Classify WordPress Inquiries and Draft Replies](workflows/classify-wordpress-inquiries-and-draft-replies/) - Classify incoming WordPress contact inquiries, prepare Gmail drafts for review and log the inquiries in Google Sheets.
 
 ## Finance
 
