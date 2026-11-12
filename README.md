@@ -121,6 +121,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Ping Configured URLs](workflows/ping-configured-urls/) - Send an HTTP GET to each configured URL every 15 minutes.
 - [Monitor Website Status in Google Sheets](workflows/monitor-website-status-in-google-sheets/) - Check website status, record observations and alert a team when a site is down or recovers.
 - [Extract Inbound Orders to Google Sheets](workflows/extract-inbound-orders-to-google-sheets/) - Extract purchase order lines from matching Gmail messages and append them to Google Sheets.
+- [Scheduled Scrappey Page Fetch](workflows/scheduled-scrappey-page-fetch/) - Fetch a configured page through Scrappey each day and return its response.
 
 ## Marketing
 
