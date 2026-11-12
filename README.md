@@ -268,6 +268,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Bookmark New YouTube Playlist Videos](workflows/bookmark-new-youtube-playlist-videos/) - Check the first 25 items of a YouTube playlist every 30 minutes and bookmark newly seen videos in Raindrop.
 - [Share a Cocktail Banner in Rocket.Chat](workflows/share-cocktail-banner-in-rocket-chat/) - Each Friday, render a random cocktail recipe as a Bannerbear image and share it in Rocket.Chat.
 - [Extract Receipt Data from an Image URL](workflows/extract-receipt-from-image-url/) - Extract structured receipt data from a directly accessible image URL.
+- [Weekly Matrix Coffee Groups](workflows/matrix-weekly-coffee-groups/) - Shuffle Matrix room members into small groups and announce them for weekly virtual coffee.
 
 ## Content
 

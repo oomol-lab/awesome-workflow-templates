@@ -1,0 +1,239 @@
+{
+  "name": "Weekly Matrix Coffee Groups",
+  "nodes": [
+    {
+      "name": "Weekly trigger on monday1",
+      "type": "n8n-nodes-base.cron",
+      "position": [
+        480,
+        240
+      ],
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "mode": "everyWeek",
+              "weekday": "1",
+              "hour": 10
+            }
+          ]
+        }
+      },
+      "typeVersion": 1,
+      "id": "matrix-weekly-coffee-groups-0"
+    },
+    {
+      "name": "Configure the Matrix rooms",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function config({homeserver,memberRoom,announcementRoom}){if(typeof homeserver!=='string'||homeserver.includes('YOUR_')||!/^https:\\/\\/[^/?#@\\s]+(?:\\/[^?#\\s]*)?$/i.test(homeserver))throw Error('Configure an HTTPS Matrix homeserver without credentials');for(const room of [memberRoom,announcementRoom])if(typeof room!=='string'||room.includes('YOUR_')||!/^![^\\s/:]+:[^\\s/]+$/.test(room))throw Error('Configure both Matrix room IDs');const base=homeserver.replace(/\\/+$/,''),prefix=base+'/_matrix/client/v3/rooms/',txn=Date.now().toString(36)+'-'+Math.random().toString(36).slice(2)+'-'+Math.random().toString(36).slice(2);return{base,memberRoom,announcementRoom,greetingUrl:prefix+encodeURIComponent(memberRoom)+'/send/m.room.message/'+txn,membersUrl:prefix+encodeURIComponent(memberRoom)+'/members',greeting:{msgtype:'m.text',body:\"👋 Happy Monday Groups for this week's virtual coffee are:\"}}}\n\nreturn [{json:config({homeserver:'https://YOUR_MATRIX_HOMESERVER',memberRoom:'!YOUR_MEMBER_ROOM:example.org',announcementRoom:'!YOUR_ANNOUNCEMENT_ROOM:example.org'})}];"
+      },
+      "id": "matrix-weekly-coffee-groups-1"
+    },
+    {
+      "name": "Greetings",
+      "type": "n8n-nodes-base.matrix",
+      "position": [
+        670,
+        240
+      ],
+      "parameters": {
+        "resource": "message",
+        "operation": "create",
+        "roomId": "={{ $json.memberRoom }}",
+        "text": "👋 Happy Monday Groups for this week's virtual coffee are:",
+        "messageType": "m.text",
+        "messageFormat": "plain"
+      },
+      "typeVersion": 1,
+      "id": "matrix-weekly-coffee-groups-2"
+    },
+    {
+      "name": "Confirm the greeting",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const body=$input.first().json;if(typeof body?.event_id!=='string'||!body.event_id)throw Error('Matrix did not confirm the greeting');return [{json:body}];"
+      },
+      "id": "matrix-weekly-coffee-groups-3"
+    },
+    {
+      "name": "Read room membership events",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $(\"Configure the Matrix rooms\").first().json.membersUrl }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          }
+        }
+      },
+      "id": "matrix-weekly-coffee-groups-4"
+    },
+    {
+      "name": "Shuffle and form coffee groups",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function groups({body}){if(!Array.isArray(body?.chunk))throw Error('Matrix returned no member list');const users=body.chunk.map(e=>{if(e?.type!=='m.room.member'||typeof e.state_key!=='string'||!/^@[^\\s:]+:[^\\s]+$/.test(e.state_key))throw Error('Invalid Matrix member event');return e.state_key});if(new Set(users).size!==users.length)throw Error('Duplicate Matrix member');if(users.length<2)return{groups:[]};for(let n=users.length;n>0;n--){const j=Math.floor(Math.random()*n);[users[n-1],users[j]]=[users[j],users[n-1]]}const groups=[];for(let i=0;i<users.length;i+=3)groups.push(users.slice(i,i+3));if(groups.at(-1).length===1)groups.at(-1).push(groups.at(-2).shift());return{groups}}\n\nconst r=groups({body:$input.first().json});return r.groups.map(group=>({json:{text:'☀️ '+group.join(', ')}}));"
+      },
+      "id": "matrix-weekly-coffee-groups-5"
+    },
+    {
+      "name": "Post groups one at a time",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "matrix-weekly-coffee-groups-6"
+    },
+    {
+      "name": "Announce groups",
+      "type": "n8n-nodes-base.matrix",
+      "position": [
+        1290,
+        240
+      ],
+      "parameters": {
+        "resource": "message",
+        "operation": "create",
+        "roomId": "={{ $(\"Configure the Matrix rooms\").first().json.announcementRoom }}",
+        "text": "={{ $json.text }}",
+        "messageType": "m.text",
+        "messageFormat": "plain"
+      },
+      "typeVersion": 1,
+      "id": "matrix-weekly-coffee-groups-7"
+    },
+    {
+      "name": "Confirm the group messages",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const items=$input.all();for(const item of items)if(typeof item.json.event_id!=='string'||!item.json.event_id)throw Error('Matrix did not confirm a group message');return items;"
+      },
+      "id": "matrix-weekly-coffee-groups-8"
+    }
+  ],
+  "active": false,
+  "settings": {
+    "timezone": "UTC",
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Weekly trigger on monday1": {
+      "main": [
+        [
+          {
+            "node": "Configure the Matrix rooms",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configure the Matrix rooms": {
+      "main": [
+        [
+          {
+            "node": "Greetings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Greetings": {
+      "main": [
+        [
+          {
+            "node": "Confirm the greeting",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm the greeting": {
+      "main": [
+        [
+          {
+            "node": "Read room membership events",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read room membership events": {
+      "main": [
+        [
+          {
+            "node": "Shuffle and form coffee groups",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shuffle and form coffee groups": {
+      "main": [
+        [
+          {
+            "node": "Post groups one at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Announce groups": {
+      "main": [
+        [
+          {
+            "node": "Confirm the group messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm the group messages": {
+      "main": [
+        [
+          {
+            "node": "Post groups one at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Post groups one at a time": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Announce groups",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {}
+}
