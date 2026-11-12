@@ -328,6 +328,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Batch Webpage Markdown and Links](workflows/batch-webpage-markdown-links/) - Convert up to 40 page URLs into Markdown, metadata and link arrays, pausing one minute between groups of ten.
 - [Recent WordPress Posts](workflows/wordpress-recent-posts/) - Read the five most recent published posts from a WordPress site.
 - [French to English Audio](workflows/french-to-english-audio/) - Generate French speech from text, transcribe it, translate the transcript into English and generate English speech in the same voice.
+- [Publish Recent WordPress Posts to Medium](workflows/publish-recent-wordpress-posts-to-medium/) - Publish up to five recent WordPress posts to Medium.
 
 ## Commerce
 
