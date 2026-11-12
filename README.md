@@ -260,6 +260,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Archive Old Unstarred Gmail](workflows/archive-old-unstarred-gmail/) - Archive older unstarred inbox messages on workdays while keeping starred messages in the inbox.
 - [Create Trello Cards for Selected Talks](workflows/create-trello-cards-for-selected-talks/) - Create illustrated Trello cards for talk proposals scoring above 15.
 - [Share New Drive Files and Log to Airtable](workflows/share-new-drive-files-and-log-to-airtable/) - Grant a recipient edit access to new files in a Drive folder and log each permission in Airtable.
+- [Translate Random Cocktail Instructions](workflows/translate-random-cocktail-instructions/) - Translate the instructions for a random CocktailDB drink into Italian.
 
 ## Content
 
