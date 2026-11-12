@@ -49,6 +49,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Personal](#personal)
 - [Sales and Marketing](#sales-and-marketing)
 - [Databases](#databases)
+- [Social](#social)
 - [Contribute](#contribute)
 - [Licensing](#licensing)
 
@@ -598,6 +599,10 @@ A growing collection of automation workflows for connecting apps and getting rep
 ## Databases
 
 - [Create, Update, and Read a Firestore Document](workflows/create-update-read-firestore-document/) - Create an example Firestore document, update its name, and read it back.
+
+## Social
+
+- [Check Whether a Twitch Stream Is Live](workflows/check-twitch-stream-live/) - Check the live stream returned for a Twitch login and inspect its details.
 
 ## Contribute
 
