@@ -1,0 +1,419 @@
+{
+  "nodes": [
+    {
+      "id": "back-up-n8n-workflows-daily-to-github-0",
+      "name": "Every day at 23:59 UTC",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "mode": "everyDay",
+              "hour": 23,
+              "minute": 59
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "back-up-n8n-workflows-daily-to-github-1",
+      "name": "Choose the backup repository",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function config({owner,repo,path}){for(const [k,v] of Object.entries({owner,repo,path}))if(typeof v!=='string'||!v.trim()||v.startsWith('YOUR_'))throw Error('Configure GitHub '+k);if(path.startsWith('/')||path.endsWith('/')||path.split('/').some(x=>!x||x==='.'||x==='..'))throw Error('Invalid existing directory');return {owner,repo,path}}\n\nreturn [{json:config({owner:'YOUR_GITHUB_OWNER',repo:'YOUR_GITHUB_REPO',path:'YOUR_EXISTING_BACKUP_DIRECTORY'})}];"
+      }
+    },
+    {
+      "id": "back-up-n8n-workflows-daily-to-github-2",
+      "name": "List n8n workflows",
+      "type": "n8n-nodes-base.n8n",
+      "typeVersion": 1,
+      "alwaysOutputData": true,
+      "parameters": {
+        "resource": "workflow",
+        "operation": "getAll",
+        "returnAll": true,
+        "filters": {}
+      }
+    },
+    {
+      "id": "back-up-n8n-workflows-daily-to-github-3",
+      "name": "Collect workflow list",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const items=$input.all().flatMap(x=>{const v=x.json;if(!Object.keys(v).length)return [];if(typeof v.id!=='string'||!v.id)throw Error('Invalid workflow');return [v]});return [{json:{items}}];"
+      }
+    },
+    {
+      "id": "back-up-n8n-workflows-daily-to-github-4",
+      "name": "List the backup directory",
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 1,
+      "alwaysOutputData": true,
+      "parameters": {
+        "resource": "file",
+        "operation": "list",
+        "owner": "={{ $('Choose the backup repository').first().json.owner }}",
+        "repository": "={{ $('Choose the backup repository').first().json.repo }}",
+        "filePath": "={{ $('Choose the backup repository').first().json.path }}"
+      }
+    },
+    {
+      "id": "back-up-n8n-workflows-daily-to-github-5",
+      "name": "Check backup paths",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function plan({state,entries,owner,repo,path}){for(const [k,v] of Object.entries({owner,repo,path}))if(typeof v!=='string'||!v.trim()||v.startsWith('YOUR_'))throw Error('Configure GitHub '+k);if(!Array.isArray(state?.items)||!Array.isArray(entries))throw Error('Invalid workflow or directory list');if(entries.length>=1000)throw Error('Directory may exceed the GitHub listing limit');if(path.startsWith('/')||path.endsWith('/')||path.split('/').some(x=>!x||x==='.'||x==='..'))throw Error('Invalid existing directory');const seen=new Set(),items=[];for(const w of state.items){if(typeof w?.id!=='string'||!w.id||typeof w.name!=='string'||!w.name||/[\\/\\\\\\u0000-\\u001f]/.test(w.name)||w.name==='.'||w.name==='..')throw Error('Workflow name cannot be used as a file name');const name=w.name+'.json';if(seen.has(name))throw Error('Workflow names would collide');seen.add(name);const matches=entries.filter(e=>e.name===name);if(matches.length>1||matches.some(e=>e.type!=='file'||typeof e.sha!=='string'||!e.sha))throw Error('Invalid GitHub directory entry');items.push({workflowId:w.id,name,path:path+'/'+name,exists:matches.length===1})}return {items}}\n\nconst c=$('Choose the backup repository').first().json;const entries=$input.all().flatMap(x=>Object.keys(x.json).length?[x.json]:[]);return plan({state:$('Collect workflow list').first().json,entries,...c}).items.map(json=>({json}));"
+      }
+    },
+    {
+      "id": "back-up-n8n-workflows-daily-to-github-6",
+      "name": "Back up one workflow at a time",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      }
+    },
+    {
+      "id": "back-up-n8n-workflows-daily-to-github-7",
+      "name": "Read the n8n workflow",
+      "type": "n8n-nodes-base.n8n",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "workflow",
+        "operation": "get",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.workflowId }}"
+        }
+      }
+    },
+    {
+      "id": "back-up-n8n-workflows-daily-to-github-8",
+      "name": "Validate current workflow",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const w=$input.first().json,item=$('Back up one workflow at a time').item.json;if(w.id!==item.workflowId||w.name+'.json'!==item.name||!Array.isArray(w.nodes)||!w.connections||typeof w.connections!=='object')throw Error('Workflow changed during backup');return [{json:w,pairedItem:{item:0}}];"
+      }
+    },
+    {
+      "id": "back-up-n8n-workflows-daily-to-github-9",
+      "name": "Does the backup exist?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "exists",
+              "leftValue": "={{ $('Back up one workflow at a time').item.json.exists }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "back-up-n8n-workflows-daily-to-github-10",
+      "name": "Read the existing backup",
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "file",
+        "operation": "get",
+        "owner": "={{ $('Choose the backup repository').first().json.owner }}",
+        "repository": "={{ $('Choose the backup repository').first().json.repo }}",
+        "filePath": "={{ $('Back up one workflow at a time').item.json.path }}",
+        "asBinaryProperty": false,
+        "additionalParameters": {}
+      }
+    },
+    {
+      "id": "back-up-n8n-workflows-daily-to-github-11",
+      "name": "Compare the existing backup",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const item=$('Back up one workflow at a time').item.json,w=$('Read the n8n workflow').item.json,file=$input.first().json;if(w.id!==item.workflowId||w.name+'.json'!==item.name||file.type!=='file'||file.path!==item.path||typeof file.sha!=='string'||!file.sha||typeof file.content!=='string')throw Error('Invalid backup or workflow');let old;try{old=JSON.parse(Buffer.from(file.content,'base64').toString('utf8'))}catch{throw Error('Existing backup is not JSON')}if(!old||typeof old!=='object'||Array.isArray(old))throw Error('Existing backup is not a workflow');const order=x=>Object.fromEntries(Object.keys(x).sort().map(k=>[k,x[k]]));return [{json:{changed:JSON.stringify(order(old))!==JSON.stringify(order(w))},pairedItem:{item:0}}];"
+      }
+    },
+    {
+      "id": "back-up-n8n-workflows-daily-to-github-12",
+      "name": "Has the workflow changed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "changed",
+              "leftValue": "={{ $json.changed }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "back-up-n8n-workflows-daily-to-github-13",
+      "name": "Create the backup",
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "file",
+        "operation": "create",
+        "owner": "={{ $('Choose the backup repository').first().json.owner }}",
+        "repository": "={{ $('Choose the backup repository').first().json.repo }}",
+        "filePath": "={{ $('Back up one workflow at a time').item.json.path }}",
+        "asBinaryProperty": false,
+        "additionalParameters": {},
+        "binaryData": false,
+        "fileContent": "={{ JSON.stringify($('Read the n8n workflow').item.json, null, 2) }}",
+        "commitMessage": "={{ '[n8n backup] ' + $('Back up one workflow at a time').item.json.path }}"
+      }
+    },
+    {
+      "id": "back-up-n8n-workflows-daily-to-github-14",
+      "name": "Update the backup",
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "file",
+        "operation": "edit",
+        "owner": "={{ $('Choose the backup repository').first().json.owner }}",
+        "repository": "={{ $('Choose the backup repository').first().json.repo }}",
+        "filePath": "={{ $('Back up one workflow at a time').item.json.path }}",
+        "asBinaryProperty": false,
+        "additionalParameters": {},
+        "binaryData": false,
+        "fileContent": "={{ JSON.stringify($('Read the n8n workflow').item.json, null, 2) }}",
+        "commitMessage": "={{ '[n8n backup] ' + $('Back up one workflow at a time').item.json.path }}"
+      }
+    }
+  ],
+  "connections": {
+    "Every day at 23:59 UTC": {
+      "main": [
+        [
+          {
+            "node": "Choose the backup repository",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Choose the backup repository": {
+      "main": [
+        [
+          {
+            "node": "List n8n workflows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List n8n workflows": {
+      "main": [
+        [
+          {
+            "node": "Collect workflow list",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect workflow list": {
+      "main": [
+        [
+          {
+            "node": "List the backup directory",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List the backup directory": {
+      "main": [
+        [
+          {
+            "node": "Check backup paths",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check backup paths": {
+      "main": [
+        [
+          {
+            "node": "Back up one workflow at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Back up one workflow at a time": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Read the n8n workflow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the n8n workflow": {
+      "main": [
+        [
+          {
+            "node": "Validate current workflow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate current workflow": {
+      "main": [
+        [
+          {
+            "node": "Does the backup exist?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Does the backup exist?": {
+      "main": [
+        [
+          {
+            "node": "Read the existing backup",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create the backup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the existing backup": {
+      "main": [
+        [
+          {
+            "node": "Compare the existing backup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compare the existing backup": {
+      "main": [
+        [
+          {
+            "node": "Has the workflow changed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has the workflow changed?": {
+      "main": [
+        [
+          {
+            "node": "Update the backup",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Back up one workflow at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create the backup": {
+      "main": [
+        [
+          {
+            "node": "Back up one workflow at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update the backup": {
+      "main": [
+        [
+          {
+            "node": "Back up one workflow at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Back Up n8n Workflows Daily to GitHub",
+  "settings": {
+    "timezone": "UTC",
+    "executionOrder": "v1"
+  },
+  "active": false,
+  "pinData": {}
+}

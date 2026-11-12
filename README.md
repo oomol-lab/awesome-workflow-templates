@@ -376,6 +376,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Back Up n8n Workflows to GitLab](workflows/back-up-n8n-workflows-to-gitlab/) - Back up tagged n8n workflows to GitLab on demand or weekly, writing only new or changed files.
 - [Schedule n8n Workflow Activity](workflows/schedule-n8n-workflow-activity/) - Activate an n8n workflow each morning and deactivate it each evening.
 - [Sync Tagged n8n Workflows to Notion](workflows/sync-tagged-n8n-workflows-to-notion/) - Keep a Notion inventory of tagged n8n workflows and their status up to date.
+- [Back Up n8n Workflows Daily to GitHub](workflows/back-up-n8n-workflows-daily-to-github/) - Save new or changed n8n workflow JSON files to a GitHub repository.
 
 ## Communication
 
