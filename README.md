@@ -396,6 +396,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Alert on Bitcoin Euro Price by SMS](workflows/alert-on-bitcoin-euro-price-by-sms/) - Check the Bitcoin price in euros every minute and send an SMS whenever it reaches a configured threshold.
 - [Monitor USDT Balance on Telegram](workflows/monitor-usdt-balance-on-telegram/) - Check an Ethereum USDT balance every five minutes and report whether it changed.
 - [Binance Price Moves to Telegram](workflows/binance-price-moves-to-telegram/) - Send Telegram updates for Binance spot pairs whose 24-hour price change reaches 15%.
+- [Check TRON USDT Blacklist in Telegram](workflows/check-tron-usdt-blacklist-in-telegram/) - Reply to a Telegram message with the current TRON USDT contract blacklist status for an address.
 
 ## Community
 

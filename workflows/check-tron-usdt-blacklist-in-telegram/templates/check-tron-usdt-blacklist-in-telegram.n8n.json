@@ -1,0 +1,271 @@
+{
+  "name": "Check TRON USDT Blacklist in Telegram",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "check-tron-usdt-blacklist-in-telegram-0",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "position": [
+        -240,
+        -40
+      ],
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "typeVersion": 1
+    },
+    {
+      "name": "Read the TRON address",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function input({body}){const m=body?.message,id=m?.chat?.id,reply=m?.message_id;if(!Number.isSafeInteger(id)||id===0||!Number.isSafeInteger(reply)||reply<=0)throw Error('Invalid Telegram message');const address=typeof m.text==='string'?m.text:'';return{chatId:String(id),replyToMessageId:reply,address,looksValid:/^T[1-9A-HJ-NP-Za-km-z]{33}$/.test(address),request:{address,visible:true},text:'Please enter a complete valid TRON address.'}}\n\nreturn [{json:input({body:{message:$input.first().json.message}})}];"
+      },
+      "id": "check-tron-usdt-blacklist-in-telegram-1"
+    },
+    {
+      "name": "Address format valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "Address format valid?",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.looksValid }}",
+              "rightValue": ""
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "check-tron-usdt-blacklist-in-telegram-2"
+    },
+    {
+      "name": "Validate the address checksum",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.trongrid.io/wallet/validateaddress",
+        "authentication": "none",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.request) }}",
+        "options": {}
+      },
+      "id": "check-tron-usdt-blacklist-in-telegram-3"
+    },
+    {
+      "name": "Prepare the USDT contract query",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function validate({body,address}){if(!body||typeof body!=='object'||typeof body.result!=='boolean')throw Error('TRON address validation unavailable');if(!body.result)return{valid:false,request:{},text:'Please enter a complete valid TRON address.'};const alphabet='123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';let n=0n;for(const c of address){const v=alphabet.indexOf(c);if(v<0)throw Error('Invalid address');n=n*58n+BigInt(v)}const hex=n.toString(16).padStart(50,'0');if(hex.length!==50||!hex.startsWith('41'))throw Error('Invalid TRON address bytes');const parameter=hex.slice(2,42).padStart(64,'0'),contract='TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t';return{valid:true,request:{owner_address:contract,contract_address:contract,function_selector:'getBlackListStatus(address)',parameter,visible:true},text:'Please enter a complete valid TRON address.'}}\n\nconst original=$('Read the TRON address').first().json;return [{json:{...validate({body:$input.first().json,address:original.address}),chatId:original.chatId,replyToMessageId:original.replyToMessageId}}];"
+      },
+      "id": "check-tron-usdt-blacklist-in-telegram-4"
+    },
+    {
+      "name": "Checksum valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "Checksum valid?",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.valid }}",
+              "rightValue": ""
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "check-tron-usdt-blacklist-in-telegram-5"
+    },
+    {
+      "name": "Read the USDT contract",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.trongrid.io/wallet/triggerconstantcontract",
+        "authentication": "none",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.request) }}",
+        "options": {}
+      },
+      "id": "check-tron-usdt-blacklist-in-telegram-6"
+    },
+    {
+      "name": "Interpret the contract result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function result({body,address}){if(!body||body.result?.result!==true||!Array.isArray(body.constant_result)||body.constant_result.length!==1||typeof body.constant_result[0]!=='string'||!/^0{63}[01]$/.test(body.constant_result[0]))throw Error('USDT contract result unavailable');const blacklisted=body.constant_result[0].endsWith('1');return{text:blacklisted?`TRON USDT contract reports ${address} is blacklisted.`:`TRON USDT contract reports ${address} is not blacklisted.`}}\n\nconst original=$('Read the TRON address').first().json;return [{json:{...result({body:$input.first().json,address:original.address}),chatId:original.chatId,replyToMessageId:original.replyToMessageId}}];"
+      },
+      "id": "check-tron-usdt-blacklist-in-telegram-7"
+    },
+    {
+      "id": "check-tron-usdt-blacklist-in-telegram-8",
+      "name": "Telegram Send Message",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        1160,
+        -60
+      ],
+      "parameters": {
+        "text": "={{ $json.text }}",
+        "chatId": "={{ $json.chatId }}",
+        "additionalFields": {
+          "reply_to_message_id": "={{ $json.replyToMessageId }}"
+        }
+      },
+      "typeVersion": 1
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Read the TRON address",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the TRON address": {
+      "main": [
+        [
+          {
+            "node": "Address format valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate the address checksum": {
+      "main": [
+        [
+          {
+            "node": "Prepare the USDT contract query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare the USDT contract query": {
+      "main": [
+        [
+          {
+            "node": "Checksum valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the USDT contract": {
+      "main": [
+        [
+          {
+            "node": "Interpret the contract result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Interpret the contract result": {
+      "main": [
+        [
+          {
+            "node": "Telegram Send Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Address format valid?": {
+      "main": [
+        [
+          {
+            "node": "Validate the address checksum",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Telegram Send Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Checksum valid?": {
+      "main": [
+        [
+          {
+            "node": "Read the USDT contract",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Telegram Send Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "description": "This n8n workflow template allows users to check if a Tron wallet address is blacklisted on the USDT contract via a Telegram bot. When a user sends the command {walletAddress} through the Telegram bot, the workflow queries the Tronscan API to determine if the provided wallet address is blacklisted. The result is then sent back to the user via the Telegram bot."
+}
