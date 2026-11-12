@@ -183,6 +183,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Animate a Product Photo with Magic Hour](workflows/animate-a-product-photo-with-magic-hour/) - Animate a product photo, wait for the video and retrieve the file.
 - [Recover a Magic Hour Video](workflows/recover-a-magic-hour-video/) - Retrieve a completed Magic Hour video using its project ID.
 - [Promote New YouTube Videos on X](workflows/promote-new-youtube-videos-on-x/) - Find the latest recent video from a YouTube channel and write a short X post.
+- [Email a Blog Post from a YouTube Video](workflows/email-blog-post-from-youtube-video/) - Turn a YouTube transcript into a blog draft and generated image, then email both.
 
 ## Support
 
