@@ -369,6 +369,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Send a Website Screenshot to Telegram](workflows/send-website-screenshot-to-telegram/) - Capture a full-page screenshot of a website and post the image to Telegram.
 - [Create and Update a Discourse Post](workflows/create-update-discourse-post/) - Create a Discourse topic, update its first post and read it back.
 - [Send a ClickSend SMS](workflows/send-clicksend-sms/) - Send one SMS to a phone number through ClickSend.
+- [New YouTube Channel Videos to Telegram](workflows/new-youtube-channel-videos-to-telegram/) - Check a YouTube channel every 30 minutes and send newly found videos to Telegram.
 
 ## Customer Support
 
