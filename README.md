@@ -321,6 +321,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Describe a Website Screenshot](workflows/describe-a-website-screenshot/) - Capture a public webpage and describe the screenshot in one sentence.
 - [Create Todoist Tasks from Telegram Messages](workflows/create-todoist-tasks-from-telegram-messages/) - Turn a Telegram text or voice project description into Todoist tasks and send confirmations.
 - [Classify New Gmail with Labels](workflows/classify-new-gmail-with-labels/) - Classify new Gmail messages using existing labels and create a sublabel when needed.
+- [Log Unread Gmail Classifications to Sheets](workflows/log-unread-gmail-classifications-to-sheets/) - Classify new unread Gmail messages and log the results in a spreadsheet.
 
 ## Content
 
