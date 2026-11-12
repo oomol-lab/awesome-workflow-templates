@@ -320,6 +320,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Email a Google Analytics Comparison Report](workflows/email-a-google-analytics-comparison-report/) - Compare page engagement, search performance and country views across two seven-day periods in an emailed report.
 - [Send Weekly Analytics Comparison to Email and Telegram](workflows/send-weekly-analytics-comparison-to-email-and-telegram/) - Compare weekly Google Analytics metrics with the same dates in the previous year and send an AI-written report by email and Telegram.
 - [Analyze SerpBear Rankings to Baserow](workflows/analyze-serpbear-rankings-to-baserow/) - Analyze a domain’s SerpBear keyword rankings and save a report to Baserow.
+- [Save Weekly Analytics Insights to Baserow](workflows/save-weekly-analytics-insights-to-baserow/) - Compare weekly page engagement, search performance and country views with AI and save the insights to Baserow.
 
 ## Lifestyle
 
