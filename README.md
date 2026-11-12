@@ -365,6 +365,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Suggest Inclusive Language in Mattermost](workflows/suggest-inclusive-language-in-mattermost/) - Suggest inclusive alternatives in a Mattermost channel when a message contains selected terms.
 - [Send a Website Screenshot to Telegram](workflows/send-website-screenshot-to-telegram/) - Capture a full-page screenshot of a website and post the image to Telegram.
 - [Create and Update a Discourse Post](workflows/create-update-discourse-post/) - Create a Discourse topic, update its first post and read it back.
+- [Send a ClickSend SMS](workflows/send-clicksend-sms/) - Send one SMS to a phone number through ClickSend.
 
 ## Customer Support
 
