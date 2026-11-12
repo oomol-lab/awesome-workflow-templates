@@ -1,0 +1,206 @@
+{
+  "name": "Share a Cocktail Banner in Rocket.Chat",
+  "nodes": [
+    {
+      "name": "Cron",
+      "type": "n8n-nodes-base.cron",
+      "position": [
+        250,
+        300
+      ],
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "mode": "everyWeek",
+              "weekday": "5",
+              "hour": 18
+            }
+          ]
+        }
+      },
+      "typeVersion": 1,
+      "id": "share-cocktail-banner-in-rocket-chat-0"
+    },
+    {
+      "name": "HTTP Request",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        450,
+        300
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "https://www.thecocktaildb.com/api/json/v1/1/random.php",
+        "options": {
+          "timeout": 30000,
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "typeVersion": 4.2,
+      "id": "share-cocktail-banner-in-rocket-chat-1"
+    },
+    {
+      "name": "Prepare the template layers",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const d=$input.first().json.drinks?.[0];if(typeof d?.strDrink!=='string'||!d.strDrink.trim()||typeof d?.strInstructions!=='string'||!d.strInstructions.trim()||typeof d?.strDrinkThumb!=='string')throw Error('Cocktail response lacks name, instructions or image');if(!/^https?:\\/\\/[^/?#@\\s]+(?:[/?#][^\\s]*)?$/i.test(d.strDrinkThumb))throw Error('Invalid cocktail image URL');return [{json:{name:d.strDrink,recipe:d.strInstructions,image:d.strDrinkThumb}}];"
+      },
+      "id": "share-cocktail-banner-in-rocket-chat-2"
+    },
+    {
+      "name": "Bannerbear",
+      "type": "n8n-nodes-base.bannerbear",
+      "position": [
+        650,
+        300
+      ],
+      "parameters": {
+        "templateId": "YOUR_BANNERBEAR_TEMPLATE_ID",
+        "modificationsUi": {
+          "modificationsValues": [
+            {
+              "name": "cocktail-image",
+              "imageUrl": "={{ $json.image }}"
+            },
+            {
+              "name": "title",
+              "text": "={{ $json.name }}"
+            },
+            {
+              "name": "recipe",
+              "text": "={{ $json.recipe }}"
+            }
+          ]
+        },
+        "additionalFields": {
+          "waitForImage": true
+        }
+      },
+      "typeVersion": 1,
+      "id": "share-cocktail-banner-in-rocket-chat-3"
+    },
+    {
+      "name": "Check the rendered image",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const image=$input.first().json;if(image.status!=='completed'||typeof image.uid!=='string'||!image.uid||typeof image.image_url!=='string')throw Error('Bannerbear did not return a completed image');if(!/^https?:\\/\\/[^/?#@\\s]+(?:[/?#][^\\s]*)?$/i.test(image.image_url))throw Error('Invalid rendered image URL');return [{json:{imageUrl:image.image_url}}];"
+      },
+      "id": "share-cocktail-banner-in-rocket-chat-4"
+    },
+    {
+      "name": "Rocketchat",
+      "type": "n8n-nodes-base.rocketchat",
+      "position": [
+        850,
+        300
+      ],
+      "parameters": {
+        "resource": "chat",
+        "operation": "postMessage",
+        "channel": "YOUR_ROCKET_CHAT_ROOM",
+        "text": "",
+        "options": {},
+        "attachments": [
+          {
+            "imageUrl": "={{ $json.imageUrl }}"
+          }
+        ]
+      },
+      "typeVersion": 1,
+      "id": "share-cocktail-banner-in-rocket-chat-5"
+    },
+    {
+      "name": "Confirm the Rocket.Chat post",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const r=$input.first().json;if(r.success!==true||!r.message||typeof r.message._id!=='string'||!r.message._id||typeof r.message.rid!=='string'||!r.message.rid||typeof r.message.msg!=='string')throw Error('Rocket.Chat did not confirm a sent message');return [{json:r}];"
+      },
+      "id": "share-cocktail-banner-in-rocket-chat-6"
+    }
+  ],
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC"
+  },
+  "connections": {
+    "Cron": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Prepare the template layers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare the template layers": {
+      "main": [
+        [
+          {
+            "node": "Bannerbear",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Bannerbear": {
+      "main": [
+        [
+          {
+            "node": "Check the rendered image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check the rendered image": {
+      "main": [
+        [
+          {
+            "node": "Rocketchat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rocketchat": {
+      "main": [
+        [
+          {
+            "node": "Confirm the Rocket.Chat post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {}
+}

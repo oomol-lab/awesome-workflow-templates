@@ -265,6 +265,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Translate Random Cocktail Instructions](workflows/translate-random-cocktail-instructions/) - Translate the instructions for a random CocktailDB drink into Italian.
 - [Daily Translated Chinese Poem to Telegram](workflows/daily-translated-chinese-poem-to-telegram/) - Translate a random Chinese classical poem into English and send it to Telegram each day.
 - [Bookmark New YouTube Playlist Videos](workflows/bookmark-new-youtube-playlist-videos/) - Check the first 25 items of a YouTube playlist every 30 minutes and bookmark newly seen videos in Raindrop.
+- [Share a Cocktail Banner in Rocket.Chat](workflows/share-cocktail-banner-in-rocket-chat/) - Each Friday, render a random cocktail recipe as a Bannerbear image and share it in Rocket.Chat.
 
 ## Content
 
