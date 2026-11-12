@@ -322,6 +322,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Create Todoist Tasks from Telegram Messages](workflows/create-todoist-tasks-from-telegram-messages/) - Turn a Telegram text or voice project description into Todoist tasks and send confirmations.
 - [Classify New Gmail with Labels](workflows/classify-new-gmail-with-labels/) - Classify new Gmail messages using existing labels and create a sublabel when needed.
 - [Log Unread Gmail Classifications to Sheets](workflows/log-unread-gmail-classifications-to-sheets/) - Classify new unread Gmail messages and log the results in a spreadsheet.
+- [Start Transcription Jobs for S3 Objects](workflows/start-transcription-jobs-for-s3-objects/) - Start an automatic-language Amazon Transcribe job for each nonempty object in an S3 bucket.
 
 ## Content
 

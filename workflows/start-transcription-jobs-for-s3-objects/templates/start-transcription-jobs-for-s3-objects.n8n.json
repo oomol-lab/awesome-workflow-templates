@@ -1,0 +1,122 @@
+{
+  "nodes": [
+    {
+      "name": "On clicking 'execute'",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        190,
+        160
+      ],
+      "parameters": {},
+      "typeVersion": 1,
+      "id": "start-transcription-jobs-for-s3-objects-0"
+    },
+    {
+      "name": "AWS S3",
+      "type": "n8n-nodes-base.awsS3",
+      "position": [
+        390,
+        160
+      ],
+      "parameters": {
+        "resource": "bucket",
+        "operation": "search",
+        "bucketName": "YOUR_S3_BUCKET",
+        "returnAll": true,
+        "additionalFields": {
+          "encodingType": "url"
+        }
+      },
+      "typeVersion": 2,
+      "id": "start-transcription-jobs-for-s3-objects-1"
+    },
+    {
+      "name": "Keep nonempty media objects",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return $input.all().map((x,i)=>{if(typeof x.json.Key!=='string'||!x.json.Key||!Number.isFinite(Number(x.json.Size))||Number(x.json.Size)<0)throw Error('Invalid S3 object');let key;try{key=decodeURIComponent(x.json.Key)}catch{throw Error('Invalid encoded S3 key')}return {json:{...x.json,Key:key},pairedItem:{item:i}}}).filter(x=>Number(x.json.Size)>0&&!x.json.Key.endsWith('/'));"
+      },
+      "id": "start-transcription-jobs-for-s3-objects-2"
+    },
+    {
+      "name": "Make a stable job name",
+      "type": "n8n-nodes-base.crypto",
+      "typeVersion": 2,
+      "parameters": {
+        "action": "hash",
+        "type": "SHA256",
+        "value": "={{ JSON.stringify([$node[\"AWS S3\"].parameter[\"bucketName\"], $json.Key]) }}",
+        "dataPropertyName": "jobHash",
+        "encoding": "hex"
+      },
+      "id": "start-transcription-jobs-for-s3-objects-3"
+    },
+    {
+      "name": "AWS Transcribe",
+      "type": "n8n-nodes-base.awsTranscribe",
+      "position": [
+        590,
+        160
+      ],
+      "parameters": {
+        "options": {},
+        "mediaFileUri": "=s3://{{$node[\"AWS S3\"].parameter[\"bucketName\"]}}/{{$json[\"Key\"]}}",
+        "detectLanguage": true,
+        "transcriptionJobName": "={{ 's3-' + $json.jobHash }}"
+      },
+      "typeVersion": 1,
+      "id": "start-transcription-jobs-for-s3-objects-4"
+    }
+  ],
+  "connections": {
+    "On clicking 'execute'": {
+      "main": [
+        [
+          {
+            "node": "AWS S3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AWS S3": {
+      "main": [
+        [
+          {
+            "node": "Keep nonempty media objects",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Keep nonempty media objects": {
+      "main": [
+        [
+          {
+            "node": "Make a stable job name",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Make a stable job name": {
+      "main": [
+        [
+          {
+            "node": "AWS Transcribe",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Start Transcription Jobs for S3 Objects",
+  "active": false,
+  "pinData": {}
+}
