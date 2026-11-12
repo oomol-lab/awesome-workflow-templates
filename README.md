@@ -309,6 +309,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Copy Sheet Data to Two Destinations](workflows/copy-sheet-data-to-two-destinations/) - Copy a Google Sheets data range to two destination spreadsheets every two minutes.
 - [Classify Gmail Messages with AI](workflows/classify-gmail-messages-with-ai/) - Classify incoming Gmail messages and add the matching existing labels.
 - [Summarize Drive Documents](workflows/summarize-drive-documents/) - Summarize a supported document stored in Google Drive.
+- [Classify Incoming Gmail Messages with AI](workflows/classify-incoming-gmail-messages-with-ai/) - Classify new Gmail messages and apply a priority, work or promotion label.
 
 ## Content
 
