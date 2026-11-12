@@ -1,0 +1,104 @@
+{
+  "nodes": [
+    {
+      "name": "Gitlab Trigger",
+      "type": "n8n-nodes-base.gitlabTrigger",
+      "position": [
+        240,
+        140
+      ],
+      "parameters": {
+        "authentication": "accessToken",
+        "owner": "YOUR_GROUP",
+        "repository": "YOUR_PROJECT",
+        "events": [
+          "releases"
+        ]
+      },
+      "typeVersion": 1,
+      "id": "publish-gitlab-releases-to-outline-0"
+    },
+    {
+      "name": "Prepare the release document",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function prepare({event,collectionId,parentDocumentId}){if(!event||event.object_kind!=='release'||!['create','update','delete'].includes(event.action))throw Error('Invalid GitLab release event');if(event.action!=='create')return{publish:false,body:{}};if(typeof event.name!=='string'||!event.name.trim()||typeof event.url!=='string'||!/^https?:\\/\\/\\S+$/i.test(event.url))throw Error('Invalid GitLab release');if(typeof collectionId!=='string'||!collectionId.trim()||collectionId.startsWith('YOUR_'))throw Error('Configure the Outline collection ID');if(typeof parentDocumentId!=='string'||parentDocumentId.startsWith('YOUR_'))throw Error('Configure or clear the parent document ID');const description=event.description==null?'':event.description;if(typeof description!=='string')throw Error('Invalid release description');return{publish:true,body:{collectionId,...(parentDocumentId.trim()?{parentDocumentId:parentDocumentId.trim()}:{}),publish:true,title:'Release '+event.name,text:description+'\\n\\n\\\\\\n[More info]('+event.url+')'}}}\n\nreturn $input.all().flatMap((x,i)=>{const p=prepare({event:x.json.body,collectionId:'YOUR_COLLECTION_ID',parentDocumentId:''});return p.publish?[{json:p,pairedItem:{item:i}}]:[]});"
+      },
+      "id": "publish-gitlab-releases-to-outline-1"
+    },
+    {
+      "name": "Publish the Outline document",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://app.getoutline.com/api/documents.create",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.body) }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "publish-gitlab-releases-to-outline-2"
+    },
+    {
+      "name": "Confirm the document",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function confirm({body,statusCode}){if(statusCode<200||statusCode>=300||!body||body.ok===false||typeof body.data?.id!=='string'||!body.data.id)throw Error('Outline document was not confirmed; inspect before retry');return{document:body.data}}\n\nreturn $input.all().map((x,i)=>({json:confirm({body:x.json.body,statusCode:x.json.statusCode}),pairedItem:{item:i}}));"
+      },
+      "id": "publish-gitlab-releases-to-outline-3"
+    }
+  ],
+  "connections": {
+    "Gitlab Trigger": {
+      "main": [
+        [
+          {
+            "node": "Prepare the release document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare the release document": {
+      "main": [
+        [
+          {
+            "node": "Publish the Outline document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Publish the Outline document": {
+      "main": [
+        [
+          {
+            "node": "Confirm the document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Publish New GitLab Releases to Outline",
+  "active": false,
+  "pinData": {}
+}
