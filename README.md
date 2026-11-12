@@ -398,6 +398,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Rename JSON Key](workflows/rename-json-key/) - Rename the top-level JSON field key to newkey while keeping its value and other fields.
 - [Create a Short URL and Read Its Statistics](workflows/create-short-url-and-read-stats/) - Create a YOURLS short URL and read its link statistics.
 - [Assign Typed Values](workflows/assign-typed-values/) - A tutorial for assigning a number, a string and a boolean to named fields.
+- [Extract a Domain from an Email Address](workflows/extract-domain-from-email/) - A tutorial for extracting the text after the last @ in an email address.
 
 ## Analytics
 
