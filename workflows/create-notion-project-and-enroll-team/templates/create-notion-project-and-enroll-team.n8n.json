@@ -1,0 +1,164 @@
+{
+  "nodes": [
+    {
+      "name": "Team Creation",
+      "type": "n8n-nodes-base.webhook",
+      "notes": "Example Input Data:\n{\"projectIdea\":\"A hub for all things Oasis\",\"projectName\":\"Oasis Hub\",\"teamMembers\":[{\"name\":\"Will Stenzel\",\"email\":\"stenzel.w@northeastern.edu\"},{\"name\":\"Jane Doe\",\"email\":\"doe.j@northeastern.edu\"}]}",
+      "position": [
+        460,
+        150
+      ],
+      "parameters": {
+        "path": "team-create",
+        "httpMethod": "POST",
+        "authentication": "basicAuth",
+        "options": {}
+      },
+      "notesInFlow": true,
+      "typeVersion": 1,
+      "id": "create-notion-project-and-enroll-team-0"
+    },
+    {
+      "name": "Prepare team",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const request=$input.first().json.body;return [{json:{initial:true,request,userSourceId:'YOUR_USER_DATA_SOURCE_ID',semesterSourceId:'YOUR_SEMESTER_DATA_SOURCE_ID',projectSourceId:'YOUR_PROJECT_DATA_SOURCE_ID'},pairedItem:{item:0}}];"
+      },
+      "id": "create-notion-project-and-enroll-team-1"
+    },
+    {
+      "name": "Prepare next operation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "async function process({request,previous,userSourceId,semesterSourceId,projectSourceId},context){\n const call=(a,p)=>context.actions.call('notion.'+a,p), valid=s=>typeof s==='string'&&s.trim()&&!s.startsWith('YOUR_');\n let s=previous;\n if(!s){if(![userSourceId,semesterSourceId,projectSourceId].every(valid))throw Error('Configure all Notion data source IDs');if(!Array.isArray(request.teamMembers)||!request.teamMembers.length||typeof request.projectName!=='string'||typeof request.projectIdea!=='string')throw Error('Provide projectName, projectIdea and teamMembers');const seen=new Set();for(const m of request.teamMembers){if(!valid(m?.name)||!valid(m?.email)||seen.has(m.email.toLowerCase()))throw Error('Provide distinct member names and emails');seen.add(m.email.toLowerCase())}s={phase:'semester',members:request.teamMembers,index:0,name:request.projectName,idea:request.projectIdea};}\n const list=r=>{if(!Array.isArray(r?.results)||typeof r.has_more!=='boolean')throw Error('Invalid Notion list');return r};\n const advance=(phase,extra={})=>({state:{...s,...extra,phase},more:true});\n if(s.phase==='semester'){const r=list(await call('query_data_source',{dataSourceId:semesterSourceId,filter:{property:'Is Current?',checkbox:{equals:true}},pageSize:2}));if(r.has_more||r.results.length!==1||!valid(r.results[0]?.id))throw Error('Exactly one current semester is required');const p=r.results[0].properties?.Projects?.id;if(!valid(p))throw Error('Semester Projects relation missing');return advance('projects',{semesterId:r.results[0].id,propertyId:p,ids:[],cursor:null,seen:[]})}\n if(['projects','semesters','memberProjects'].includes(s.phase)){const r=list(await call('retrieve_page_property',{pageId:s.phase==='projects'?s.semesterId:s.userId,propertyId:s.propertyId,pageSize:100,...(s.cursor?{startCursor:s.cursor}:{})}));const ids=r.results.map(x=>{if(!valid(x?.relation?.id))throw Error('Invalid relation');return x.relation.id}),next=r.has_more?r.next_cursor:null;if(r.has_more&&(!valid(next)||s.seen.includes(next)))throw Error('Invalid cursor');const all=[...s.ids,...ids];if(next)return advance(s.phase,{ids:all,cursor:next,seen:[...s.seen,next]});if(s.phase==='projects')return advance('createProject',{projectCount:all.length});const target=s.phase==='semesters'?s.semesterId:s.projectId,combined=[target,...all.filter(x=>x!==target)];if(combined.length>100)throw Error('Notion relation exceeds 100');return advance(s.phase==='semesters'?'updateSemester':'updateProject',{relations:combined})}\n if(s.phase==='createProject'){const title=s.name.trim()||`Project Group ${s.projectCount+1}`;const r=await call('create_page',{parent:{data_source_id:projectSourceId},properties:{Name:{title:[{text:{content:title}}]},Semesters:{relation:[{id:s.semesterId}]},'Project Idea':{rich_text:[{text:{content:s.idea}}]}}});if(!valid(r?.id))throw Error('Project creation unconfirmed');return advance('lookup',{projectId:r.id})}\n if(s.phase==='lookup'){const m=s.members[s.index],r=list(await call('query_data_source',{dataSourceId:userSourceId,filter:{property:'Email',email:{equals:m.email}},pageSize:2}));if(r.has_more||r.results.length>1)throw Error('Ambiguous member email');if(!r.results.length)return advance('createUser');const p=r.results[0];if(!valid(p.id)||!valid(p.properties?.Semesters?.id)||!valid(p.properties?.Project?.id))throw Error('Missing member relations');return advance('semesters',{userId:p.id,semesterPropertyId:p.properties.Semesters.id,projectPropertyId:p.properties.Project.id,propertyId:p.properties.Semesters.id,ids:[],cursor:null,seen:[]})}\n if(s.phase==='createUser'){const m=s.members[s.index],p=await call('create_page',{parent:{data_source_id:userSourceId},properties:{Name:{title:[{text:{content:m.name}}]},Email:{email:m.email}}});if(!valid(p?.id)||!valid(p.properties?.Semesters?.id)||!valid(p.properties?.Project?.id))throw Error('User creation unconfirmed');return advance('semesters',{userId:p.id,semesterPropertyId:p.properties.Semesters.id,projectPropertyId:p.properties.Project.id,propertyId:p.properties.Semesters.id,ids:[],cursor:null,seen:[]})}\n if(s.phase==='updateSemester'){const r=await call('update_page',{pageId:s.userId,properties:{Semesters:{relation:s.relations.map(id=>({id}))}}});if(r?.id!==s.userId)throw Error('Semester update unconfirmed');return advance('memberProjects',{propertyId:s.projectPropertyId,ids:[],cursor:null,seen:[]})}\n if(s.phase==='updateProject'){const r=await call('update_page',{pageId:s.userId,properties:{Project:{relation:s.relations.map(id=>({id}))}}});if(r?.id!==s.userId)throw Error('Project update unconfirmed');if(s.index+1===s.members.length)return{state:{...s,phase:'done'},more:false};return advance('lookup',{index:s.index+1})}\n throw Error('Invalid project progress');\n}\n\nconst cfg=$('Prepare team').first().json,input=$input.first().json;let previous=null;if(!input.initial){const prior=$('Prepare next operation').item.json;if(!prior?.pending)throw Error('Missing operation state');const r=await process({...cfg,previous:prior.state},{actions:{call:async()=>input}});if(!r.more)return [{json:{done:true,projectId:r.state.projectId},pairedItem:{item:0}}];previous=r.state;}\nlet op;try{await process({...cfg,previous},{actions:{call:async(action,parameters)=>{op={action,parameters};throw Error('__NEXT_OPERATION__')}}})}catch(e){if(e.message!=='__NEXT_OPERATION__')throw e}if(!op)throw Error('No operation prepared');const p=op.parameters;let method,url,body;if(op.action==='notion.query_data_source'){method='POST';url='https://api.notion.com/v1/data_sources/'+p.dataSourceId+'/query';body={filter:p.filter,page_size:p.pageSize,...(p.startCursor?{start_cursor:p.startCursor}:{})}}else if(op.action==='notion.retrieve_page_property'){method='GET';url='https://api.notion.com/v1/pages/'+p.pageId+'/properties/'+encodeURIComponent(p.propertyId)+'?page_size='+p.pageSize+(p.startCursor?'&start_cursor='+encodeURIComponent(p.startCursor):'')}else if(op.action==='notion.create_page'){method='POST';url='https://api.notion.com/v1/pages';body={parent:p.parent,properties:p.properties}}else if(op.action==='notion.update_page'){method='PATCH';url='https://api.notion.com/v1/pages/'+p.pageId;body={properties:p.properties}}else throw Error('Unknown operation');return [{json:{done:false,pending:true,state:previous,method,url,body:body||{}},pairedItem:{item:0}}];"
+      },
+      "id": "create-notion-project-and-enroll-team-2"
+    },
+    {
+      "name": "Finished?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "finished",
+              "leftValue": "={{ $json.done }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "create-notion-project-and-enroll-team-3"
+    },
+    {
+      "name": "Call Notion",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "={{ $json.method }}",
+        "url": "={{ $json.url }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Notion-Version",
+              "value": "2026-03-11"
+            }
+          ]
+        },
+        "sendBody": "={{ $json.method !== \"GET\" }}",
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.body) }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "create-notion-project-and-enroll-team-4"
+    }
+  ],
+  "connections": {
+    "Team Creation": {
+      "main": [
+        [
+          {
+            "node": "Prepare team",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare team": {
+      "main": [
+        [
+          {
+            "node": "Prepare next operation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare next operation": {
+      "main": [
+        [
+          {
+            "node": "Finished?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Finished?": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Call Notion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call Notion": {
+      "main": [
+        [
+          {
+            "node": "Prepare next operation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Create a Notion Project and Enroll a Team",
+  "active": false,
+  "pinData": {}
+}
