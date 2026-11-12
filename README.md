@@ -377,6 +377,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Read Bubble Users Through the Data API](workflows/read-bubble-users-through-data-api/) - Read the first page of Bubble user records with the Data API.
 - [Fetch Bible Passages by Reference](workflows/fetch-bible-passages-by-reference/) - Fetch Bible passages for one or more references using the GetBible API.
 - [Get Monday Board Details](workflows/get-monday-board-details/) - Read metadata and owner IDs for a Monday board.
+- [Search OneDrive for Excel Workbooks](workflows/search-onedrive-for-excel-workbooks/) - Search the current user’s OneDrive for the text .xlsx and return the first page of results.
 
 ## Content
 
