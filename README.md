@@ -179,6 +179,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Sync Trustpilot Reviews to Sheets](workflows/sync-trustpilot-reviews-to-sheets/) - Collect public Trustpilot reviews into general and HelpfulCrowd-format sheets.
 - [Generate a Product Image with Magic Hour](workflows/generate-a-product-image-with-magic-hour/) - Generate a product image, wait for it to finish and retrieve the file.
 - [Animate a Product Photo with Magic Hour](workflows/animate-a-product-photo-with-magic-hour/) - Animate a product photo, wait for the video and retrieve the file.
+- [Recover a Magic Hour Video](workflows/recover-a-magic-hour-video/) - Retrieve a completed Magic Hour video using its project ID.
 
 ## Support
 
