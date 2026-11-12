@@ -104,6 +104,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Notify Qualified Form Leads in Slack](workflows/notify-qualified-form-leads-in-slack/) - Verify form email addresses, check customer fit and notify a Slack channel about qualified leads.
 - [Check Airtable Email MX Records](workflows/check-airtable-email-mx-records/) - Check whether Airtable email domains have MX records and update each record.
 - [Create a Drift Contact](workflows/create-drift-contact/) - Create a contact in Drift using an email address.
+- [Create an Intercom User by Email](workflows/create-intercom-user-by-email/) - Create an Intercom user contact from an email address.
 
 ## Operations
 
