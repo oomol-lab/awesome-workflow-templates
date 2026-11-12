@@ -1,0 +1,292 @@
+{
+  "nodes": [
+    {
+      "id": "send-new-upwork-jobs-to-slack-0",
+      "name": "Assign parameters",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        300,
+        80
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b836ba12-262a-4fed-a31d-9e2f6514137a",
+              "name": "startUrls",
+              "type": "array",
+              "value": "=[\n    {\n      \"url\": \"https://www.upwork.com/nx/search/jobs/?nbs=1&q=python\",\n      \"method\": \"GET\"\n    },\n{\n            \"url\": \"https://www.upwork.com/nx/search/jobs/?nbs=1&q=java\",\n            \"method\": \"GET\"\n        }\n  ]"
+            },
+            {
+              "id": "5f7ba5cc-a8fc-4f67-9feb-6243d08462f9",
+              "name": "proxyCountryCode",
+              "type": "string",
+              "value": "FR"
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "send-new-upwork-jobs-to-slack-1",
+      "name": "Query For Upwork Job Posts",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        520,
+        80
+      ],
+      "parameters": {
+        "url": "=https://api.apify.com/v2/acts/arlusm~upwork-scraper-with-fresh-job-posts/run-sync-get-dataset-items",
+        "method": "POST",
+        "options": {},
+        "sendBody": true,
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({startUrls:$json.startUrls,proxyCountryCode:$json.proxyCountryCode}) }}"
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "send-new-upwork-jobs-to-slack-2",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        -100,
+        80
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 10
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "send-new-upwork-jobs-to-slack-3",
+      "name": "If Working Hours",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        80,
+        80
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "795a6d51-0ea0-4493-bc1e-a1807a2cbd77",
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              },
+              "leftValue": "={{ $json.Hour }}",
+              "rightValue": 2
+            },
+            {
+              "id": "f9ba101d-226d-4d6a-aab8-62229762a046",
+              "operator": {
+                "type": "number",
+                "operation": "lt"
+              },
+              "leftValue": "={{ $json.Hour }}",
+              "rightValue": 15
+            }
+          ]
+        },
+        "looseTypeValidation": true
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "send-new-upwork-jobs-to-slack-4",
+      "name": "Find Existing Entries",
+      "type": "n8n-nodes-base.mongoDb",
+      "position": [
+        720,
+        -40
+      ],
+      "parameters": {
+        "query": "={{ JSON.stringify({title: $json.title, budget: $json.budget}) }}",
+        "options": {},
+        "collection": "n8n"
+      },
+      "typeVersion": 1.1,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "send-new-upwork-jobs-to-slack-5",
+      "name": "Output New Entries",
+      "type": "n8n-nodes-base.merge",
+      "position": [
+        940,
+        80
+      ],
+      "parameters": {
+        "mode": "combine",
+        "options": {},
+        "joinMode": "keepNonMatches",
+        "fieldsToMatchString": "title, budget",
+        "outputDataFrom": "input2"
+      },
+      "typeVersion": 3
+    },
+    {
+      "id": "send-new-upwork-jobs-to-slack-6",
+      "name": "Add New Entries To MongoDB",
+      "type": "n8n-nodes-base.mongoDb",
+      "position": [
+        1160,
+        -40
+      ],
+      "parameters": {
+        "fields": "title,link,paymentType,budget,projectLength,shortBio,skills,publishedDate,normalizedDate,searchUrl",
+        "options": {},
+        "operation": "insert",
+        "collection": "n8n"
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "send-new-upwork-jobs-to-slack-7",
+      "name": "Send message in #general",
+      "type": "n8n-nodes-base.slack",
+      "position": [
+        1160,
+        200
+      ],
+      "parameters": {
+        "text": "=Job Title : {{ $json.title }}\nPublished : {{ $json.publishedDate }}\nLink : {{ $json.link }}\nPayment Type: {{ $json.paymentType }}\nBudget: {{ $json.budget }}\nSkills: {{ $json.skills }}\nBio: {{ $json.shortBio }}",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_SLACK_CHANNEL_ID"
+        },
+        "otherOptions": {}
+      },
+      "typeVersion": 2.3
+    },
+    {
+      "id": "send-new-upwork-jobs-to-slack-normal",
+      "name": "Normalize missing budgets",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return $input.all().map((item,i)=>({json:{...item.json,budget:item.json.budget??''},pairedItem:{item:i}}));"
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "If Working Hours": {
+      "main": [
+        [
+          {
+            "node": "Assign parameters",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "If Working Hours",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assign parameters": {
+      "main": [
+        [
+          {
+            "node": "Query For Upwork Job Posts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Output New Entries": {
+      "main": [
+        [
+          {
+            "node": "Add New Entries To MongoDB",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send message in #general",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Existing Entries": {
+      "main": [
+        [
+          {
+            "node": "Output New Entries",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Query For Upwork Job Posts": {
+      "main": [
+        [
+          {
+            "node": "Normalize missing budgets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize missing budgets": {
+      "main": [
+        [
+          {
+            "node": "Find Existing Entries",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Output New Entries",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Send New Upwork Jobs to Slack",
+  "active": false,
+  "settings": {
+    "timezone": "UTC",
+    "executionOrder": "v1"
+  }
+}

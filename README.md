@@ -88,6 +88,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Log and Route Twenty CRM Events](workflows/log-and-route-twenty-crm-events/) - Log signed Twenty CRM record events and notify email for deletions or Slack for other changes.
 - [Enrich Sheet Companies with ProspectLens](workflows/enrich-sheet-companies-with-prospectlens/) - Enrich unprocessed company domains in Google Sheets with ProspectLens data.
 - [Validate Sheet Email Deliverability](workflows/validate-sheet-email-deliverability/) - Validate changed email addresses and write deliverability results to their Google Sheets rows.
+- [Send New Upwork Jobs to Slack](workflows/send-new-upwork-jobs-to-slack/) - Check configured Upwork searches during working hours and post newly observed jobs to Slack.
 
 ## Operations
 
