@@ -320,6 +320,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Save Sheet Website Screenshots to Drive](workflows/save-sheet-website-screenshots-to-drive/) - Capture websites listed in newly added spreadsheet rows and save PNG files to Google Drive.
 - [Describe a Website Screenshot](workflows/describe-a-website-screenshot/) - Capture a public webpage and describe the screenshot in one sentence.
 - [Create Todoist Tasks from Telegram Messages](workflows/create-todoist-tasks-from-telegram-messages/) - Turn a Telegram text or voice project description into Todoist tasks and send confirmations.
+- [Classify New Gmail with Labels](workflows/classify-new-gmail-with-labels/) - Classify new Gmail messages using existing labels and create a sublabel when needed.
 
 ## Content
 
