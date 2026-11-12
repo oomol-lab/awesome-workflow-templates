@@ -280,6 +280,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Plan Random Mealie Dinners](workflows/plan-random-mealie-dinners/) - Choose random recipes from a Mealie category and create dinner plans for consecutive days.
 - [Remind Notion Assignees in Slack](workflows/remind-notion-assignees-in-slack/) - Send weekday Slack reminders for incomplete Notion database tasks assigned to two configured people.
 - [Save First Gmail Attachments to Drive](workflows/save-first-gmail-attachments-to-drive/) - Save the first attachment from each of up to ten Gmail messages in a chosen label to Google Drive.
+- [Send Sheet Investment Updates to Discord](workflows/send-sheet-investment-updates-to-discord/) - Watch investment security codes and send the complete sheet table to Discord when rows are added or codes change.
 
 ## Content
 

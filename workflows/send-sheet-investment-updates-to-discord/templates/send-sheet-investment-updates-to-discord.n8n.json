@@ -1,0 +1,154 @@
+{
+  "nodes": [
+    {
+      "name": "Every minute",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        }
+      },
+      "id": "send-sheet-investment-updates-to-discord-0"
+    },
+    {
+      "name": "Read the full sheet",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ 'https://sheets.googleapis.com/v4/spreadsheets/' + encodeURIComponent('YOUR_SPREADSHEET_ID') + '/values/' + encodeURIComponent(\"'Investments'!A:Z\") }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "valueRenderOption",
+              "value": "UNFORMATTED_VALUE"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "send-sheet-investment-updates-to-discord-1"
+    },
+    {
+      "name": "Detect changes and format the table",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function plan({values,previous}){\n if(!Array.isArray(values))throw Error('Expected full sheet values');\n if(!values.length)return{snapshot:[],changed:false,text:'unused'};\n const headers=values[0];if(!Array.isArray(headers))throw Error('Missing header row');const names=['Security Code','Price','Quantity'],indexes=names.map(n=>headers.indexOf(n));if(indexes.some((v,i)=>v<0||headers.lastIndexOf(names[i])!==v))throw Error('Sheet needs unique Security Code, Price and Quantity headers');\n const rows=values.slice(1).map(row=>{if(!Array.isArray(row))throw Error('Malformed sheet row');return names.map((_,i)=>String(row[indexes[i]]??''))});\n const current=rows.map(r=>r[0]);if(previous!==null&&(!Array.isArray(previous)||previous.some(x=>typeof x!=='string')))throw Error('Invalid saved sheet state');\n const changed=previous!==null&&current.some((v,i)=>i>=previous.length||v!==previous[i]);\n if(!changed)return{snapshot:current,changed:false,text:'unused'};\n const printable=rows.filter(r=>r.some(Boolean));const safe=s=>s.replace(/[\\r\\n\\t]/g,' ').replace(/`/g,'ˋ').replace(/@/g,'@\\u200b');const all=[names,...printable].map(row=>row.map(safe)),width=names.map((_,i)=>Math.max(...all.map(r=>r[i].length)));\n const text='```\\n'+all.map(row=>row.map((s,i)=>s.padEnd(width[i])).join('  ')).join('\\n')+'\\n```';if(text.length>2000)throw Error('Table exceeds Discord message limit');return{snapshot:current,changed:true,text};\n}\n\nconst s=$getWorkflowStaticData('node');const x=plan({values:$input.first().json.values??[],previous:s.codes??null});s.codes=x.snapshot;return [{json:x}];"
+      },
+      "id": "send-sheet-investment-updates-to-discord-2"
+    },
+    {
+      "name": "Any watched change?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "changed",
+              "leftValue": "={{ $json.changed }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "send-sheet-investment-updates-to-discord-3"
+    },
+    {
+      "name": "Send the table to Discord",
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
+      "parameters": {
+        "authentication": "webhook",
+        "operation": "sendLegacy",
+        "content": "={{ $json.text }}",
+        "options": {
+          "wait": true
+        }
+      },
+      "id": "send-sheet-investment-updates-to-discord-4"
+    }
+  ],
+  "connections": {
+    "Every minute": {
+      "main": [
+        [
+          {
+            "node": "Read the full sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the full sheet": {
+      "main": [
+        [
+          {
+            "node": "Detect changes and format the table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Detect changes and format the table": {
+      "main": [
+        [
+          {
+            "node": "Any watched change?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Any watched change?": {
+      "main": [
+        [
+          {
+            "node": "Send the table to Discord",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    }
+  },
+  "name": "Send Sheet Investment Updates to Discord",
+  "active": false,
+  "settings": {
+    "timezone": "UTC",
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}
