@@ -408,6 +408,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Default a Close Date to Three Weeks](workflows/default-close-date-to-three-weeks/) - A tutorial that keeps a date-like close date or defaults it to 21 calendar days from now.
 - [Explore Date and Time Calculations](workflows/date-and-time-calculation-examples/) - Explore date arithmetic and formatting with two date and time examples.
 - [Merge Ingredient and Band Lists](workflows/merge-ingredient-and-band-lists/) - Learn matching, enrichment, and append operations with ingredient and musician examples.
+- [Sum Example Dollar Amounts](workflows/sum-example-dollar-amounts/) - Learn how to sum three example USD amounts in a workflow.
 
 ## Analytics
 
