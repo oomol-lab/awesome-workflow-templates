@@ -1,0 +1,104 @@
+{
+  "nodes": [
+    {
+      "id": "list-zotero-collection-items-0",
+      "name": "When clicking ‘Test workflow’",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        -360,
+        260
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "name": "Collection settings",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const userId='YOUR_USER_ID',collectionKey='YOUR_COLLECTION_KEY';if(!/^\\d+$/.test(userId)||!/^[A-Z0-9]{8}$/.test(collectionKey))throw Error('Set user ID and collection key');return [{json:{userId,collectionKey}}];"
+      },
+      "id": "list-zotero-collection-items-1"
+    },
+    {
+      "name": "Read collection items",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "url": "={{ 'https://api.zotero.org/users/' + $json.userId + '/collections/' + $json.collectionKey + '/items?v=3&limit=100' }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          },
+          "pagination": {
+            "pagination": {
+              "paginationMode": "responseContainsNextURL",
+              "nextURL": "={{ (()=>{if(!$response?.headers)return 'https://api.zotero.org/users/' + $('Collection settings').first().json.userId + '/collections/' + $('Collection settings').first().json.collectionKey + '/items?v=3&limit=100';const h=$response.headers.link||'';const m=h.match(/<([^>]+)>;\\s*rel=\"next\"/);if(!m)return 'https://api.zotero.org/';if(!m[1].startsWith('https://api.zotero.org/'))throw Error('Invalid next link');return m[1]})() }}",
+              "paginationCompleteWhen": "other",
+              "completeExpression": "={{ (()=>{if(!$response?.headers)return false;if(!Array.isArray($response.body))throw Error('Invalid Zotero page');const h=$response.headers.link||'';if($pageCount>=100&&/rel=\"next\"/.test(h))throw Error('Too many Zotero pages');return !/rel=\"next\"/.test(h)})() }}",
+              "limitPagesFetched": false
+            }
+          }
+        }
+      },
+      "id": "list-zotero-collection-items-2"
+    },
+    {
+      "name": "Format collection items",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const rows=$input.all().flatMap(i=>i.json.body);if(rows.length>10000)throw Error('Too many items');return [{json:{items:rows.map(x=>{if(!x||!x.key)throw Error('Missing key');return {key:x.key,title:typeof x.data?.title==='string'?x.data.title:'',creatorSummary:typeof x.meta?.creatorSummary==='string'?x.meta.creatorSummary:''}})}}];"
+      },
+      "id": "list-zotero-collection-items-3"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Test workflow’": {
+      "main": [
+        [
+          {
+            "node": "Collection settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collection settings": {
+      "main": [
+        [
+          {
+            "node": "Read collection items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read collection items": {
+      "main": [
+        [
+          {
+            "node": "Format collection items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "List Zotero Collection Items",
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
