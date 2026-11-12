@@ -1,0 +1,213 @@
+{
+  "nodes": [
+    {
+      "id": "verify-highlevel-contact-mailing-address-0",
+      "name": "CRM Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "position": [
+        620,
+        280
+      ],
+      "parameters": {
+        "path": "YOUR_WEBHOOK_PATH",
+        "options": {},
+        "httpMethod": "POST"
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "name": "Prepare address and contact",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function prepare({body,locationId}){const b=body??{},email=typeof b.email==='string'?b.email.trim():'',phone=typeof b.phone==='string'?b.phone.trim():'';if(!email&&!phone)throw Error('Contact email or phone is required');if(typeof b.address!=='string'||!b.address.trim())throw Error('A primary address is required');if(typeof locationId!=='string'||!locationId.trim()||locationId==='YOUR_LOCATION_ID')throw Error('Configure the HighLevel location ID');const city=typeof b.city==='string'&&b.city.trim()?b.city.trim():null,state=typeof b.state==='string'&&b.state.trim()?b.state.trim():null,zip=typeof b.zip_code==='string'&&b.zip_code.trim()?b.zip_code.trim():null;if(!zip&&!(city&&state))throw Error('Provide ZIP or both city and state');const secondary=typeof b.address2==='string'&&b.address2.trim()?b.address2.trim():null;return{primary:b.address.trim(),secondary,city,state,zip,contact:{locationId:locationId.trim(),...(email?{email}:{}),...(phone?{phone}:{})}}}\n\nreturn {json:prepare({body:$json.body,locationId:'YOUR_LOCATION_ID'})};"
+      },
+      "id": "verify-highlevel-contact-mailing-address-1"
+    },
+    {
+      "name": "Verify the US address",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.lob.com/v1/us_verifications",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ {primary_line:$json.primary,...($json.secondary?{secondary_line:$json.secondary}:{}),...($json.city?{city:$json.city}:{}),...($json.state?{state:$json.state}:{}),...($json.zip?{zip_code:$json.zip}:{})} }}",
+        "options": {}
+      },
+      "id": "verify-highlevel-contact-mailing-address-2"
+    },
+    {
+      "name": "Choose the deliverability tag",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function plan({verification,contact}){const d=verification?.deliverability,allowed=['deliverable','deliverable_unnecessary_unit','deliverable_incorrect_unit','deliverable_missing_unit','undeliverable'];if(!allowed.includes(d))throw Error('Lob did not return a recognized deliverability status');const tag=d==='deliverable'?'Mailing Address Deliverable':'Mailing Address NOT Deliverable';return{body:contact,tag,deliverability:d}}\n\nreturn {json:plan({verification:$json,contact:$('Prepare address and contact').item.json.contact})};"
+      },
+      "id": "verify-highlevel-contact-mailing-address-3"
+    },
+    {
+      "name": "Find or create the contact",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://services.leadconnectorhq.com/contacts/upsert",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Version",
+              "value": "2021-07-28"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.body }}",
+        "options": {}
+      },
+      "id": "verify-highlevel-contact-mailing-address-4"
+    },
+    {
+      "name": "Confirm the contact",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function contact({response,statusCode,tag,deliverability}){if(statusCode<200||statusCode>=300||typeof response?.contact?.id!=='string'||!response.contact.id)throw Error('HighLevel contact upsert was not confirmed; inspect before retrying');return{endpoint:'/contacts/'+encodeURIComponent(response.contact.id)+'/tags',body:{tags:[tag]},tag,deliverability,contactId:response.contact.id}}\n\nreturn {json:contact({response:$json,statusCode:200,tag:$('Choose the deliverability tag').item.json.tag,deliverability:$('Choose the deliverability tag').item.json.deliverability})};"
+      },
+      "id": "verify-highlevel-contact-mailing-address-5"
+    },
+    {
+      "name": "Add the tag",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'https://services.leadconnectorhq.com' + $json.endpoint }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Version",
+              "value": "2021-07-28"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.body }}",
+        "options": {}
+      },
+      "id": "verify-highlevel-contact-mailing-address-6"
+    },
+    {
+      "name": "Confirm the tag",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function confirm({response,statusCode,tag,deliverability,contactId}){if(statusCode<200||statusCode>=300||!Array.isArray(response?.tags)||!response.tags.includes(tag))throw Error('HighLevel tag was not confirmed; inspect the contact before retrying');return{result:{contactId,deliverability,tag}}}\n\nreturn {json:confirm({response:$json,statusCode:200,tag:$('Confirm the contact').item.json.tag,deliverability:$('Confirm the contact').item.json.deliverability,contactId:$('Confirm the contact').item.json.contactId})};"
+      },
+      "id": "verify-highlevel-contact-mailing-address-7"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "CRM Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Prepare address and contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare address and contact": {
+      "main": [
+        [
+          {
+            "node": "Verify the US address",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify the US address": {
+      "main": [
+        [
+          {
+            "node": "Choose the deliverability tag",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Choose the deliverability tag": {
+      "main": [
+        [
+          {
+            "node": "Find or create the contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find or create the contact": {
+      "main": [
+        [
+          {
+            "node": "Confirm the contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm the contact": {
+      "main": [
+        [
+          {
+            "node": "Add the tag",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add the tag": {
+      "main": [
+        [
+          {
+            "node": "Confirm the tag",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Verify HighLevel Contact Mailing Address",
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

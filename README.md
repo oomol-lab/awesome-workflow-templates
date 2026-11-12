@@ -95,6 +95,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Find LinkedIn Profiles for Sheet Rows](workflows/find-linkedin-profiles-for-sheet-rows/) - Search for LinkedIn profiles using person descriptions in a Google Sheet and update the corresponding rows.
 - [Qualify Campaign Replies in Pipedrive](workflows/qualify-campaign-replies-in-pipedrive/) - Classify campaign email replies and create a Pipedrive deal for interested contacts.
 - [Qualify Sales Replies and Create Pipedrive Deals](workflows/qualify-sales-replies-and-create-pipedrive-deals/) - Identify campaign contacts interested in a meeting and create a Pipedrive deal from their Gmail reply.
+- [Verify HighLevel Contact Mailing Address](workflows/verify-highlevel-contact-mailing-address/) - Verify a US mailing address and add a deliverability tag to its HighLevel contact.
 
 ## Operations
 
