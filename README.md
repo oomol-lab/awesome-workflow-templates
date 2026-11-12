@@ -500,6 +500,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Create a Twist Channel and Send a Message](workflows/create-twist-channel-and-send-message/) - Create a Twist channel, update its description and send a message in an existing conversation.
 - [Send a Sample Email to Two Recipients](workflows/send-sample-email-to-two-recipients/) - Send one sample email to two recipients using Amazon SES.
 - [Publish a Message to an SNS Topic](workflows/publish-a-message-to-an-sns-topic/) - Publish a message with a subject to an Amazon SNS topic.
+- [Send a Mandrill Template Email](workflows/send-a-mandrill-template-email/) - Send a transactional email using a Mandrill template.
 
 ## Customer Support
 
