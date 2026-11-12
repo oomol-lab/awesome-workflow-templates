@@ -272,6 +272,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Extract Receipt Data from an Image URL](workflows/extract-receipt-from-image-url/) - Extract structured receipt data from a directly accessible image URL.
 - [Weekly Matrix Coffee Groups](workflows/matrix-weekly-coffee-groups/) - Shuffle Matrix room members into small groups and announce them for weekly virtual coffee.
 - [Archive Whitelisted Email Attachments to Drive](workflows/archive-whitelisted-email-attachments-to-drive/) - Save attachments from whitelisted senders into company and month folders in Google Drive.
+- [Plan Random Mealie Dinners](workflows/plan-random-mealie-dinners/) - Choose random recipes from a Mealie category and create dinner plans for consecutive days.
 
 ## Content
 

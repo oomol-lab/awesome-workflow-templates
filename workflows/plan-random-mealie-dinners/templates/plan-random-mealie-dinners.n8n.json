@@ -1,0 +1,217 @@
+{
+  "nodes": [
+    {
+      "id": "plan-random-mealie-dinners-0",
+      "name": "Friday 8pm",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        100,
+        120
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtDay": [
+                5
+              ],
+              "triggerAtHour": 20
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "plan-random-mealie-dinners-1",
+      "name": "When clicking \"Test workflow\"",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        100,
+        320
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "name": "Configure Mealie",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function config({baseUrl,categoryId}) {\n  if(typeof baseUrl!=='string'||!/^https?:\\/\\/[^\\/?#@\\s]+(?:\\/[^?#\\s]*)?$/i.test(baseUrl)||baseUrl.includes('YOUR_'))throw Error('Configure a Mealie base URL without credentials');\n  if(typeof categoryId!=='string'||categoryId.includes('YOUR_'))throw Error('Configure a Mealie category ID or leave it empty');\n  const base=baseUrl.replace(/\\/+$/,'');return {base,readUrl:base+'/api/recipes?perPage=100'+(categoryId.trim()?'&categories='+encodeURIComponent(categoryId.trim()):''),postUrl:base+'/api/households/mealplans'};\n}\n\nreturn [{json:{...config({baseUrl:'https://YOUR_MEALIE_SERVER',categoryId:'YOUR_CATEGORY_ID'}),count:5,offset:3}}];"
+      },
+      "id": "plan-random-mealie-dinners-2"
+    },
+    {
+      "name": "Read recipes",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.readUrl }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          }
+        }
+      },
+      "id": "plan-random-mealie-dinners-3"
+    },
+    {
+      "name": "Choose dinner plans",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function plan({body,count,offset}) {\n  if(!body||!Array.isArray(body.items))throw Error('Mealie did not return a recipe list');\n  const items=body.items;\n  if(!Number.isInteger(count)||count<1||count>100||!Number.isInteger(offset)||offset<0||offset>365)throw Error('Configure a recipe count from 1 to 100 and a day offset from 0 to 365');\n  if(items.length<count)throw Error('Not enough recipes for the requested meal count');\n  if(items.some(x=>!x||typeof x.id!=='string'||!x.id||typeof x.name!=='string'))throw Error('A recipe is missing its ID or name');\n  const ids=items.map(x=>x.id);if(new Set(ids).size!==ids.length)throw Error('Recipe IDs must be unique');\n  const shuffled=[...items];for(let i=shuffled.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]]}\n  const today=new Date();today.setUTCHours(0,0,0,0);return {plans:shuffled.slice(0,count).map((r,i)=>{const d=new Date(today);d.setUTCDate(d.getUTCDate()+offset+i);return {date:d.toISOString().slice(0,10),entryType:'dinner',recipeId:r.id,name:r.name}})};\n}\n\nconst cfg=$('Configure Mealie').first().json;return plan({body:$input.first().json,count:cfg.count,offset:cfg.offset}).plans.map(x=>({json:x}));"
+      },
+      "id": "plan-random-mealie-dinners-4"
+    },
+    {
+      "name": "Create dinners one at a time",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "plan-random-mealie-dinners-5"
+    },
+    {
+      "name": "Create a dinner plan",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $(\"Configure Mealie\").first().json.postUrl }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          }
+        }
+      },
+      "id": "plan-random-mealie-dinners-6"
+    },
+    {
+      "name": "Confirm dinner plan",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const p=$('Create dinners one at a time').first().json, b=$input.first().json;if(!Number.isSafeInteger(b.id)||b.recipeId!==p.recipeId||b.date!==p.date)throw Error('Mealie did not confirm the dinner');return $input.all();"
+      },
+      "id": "plan-random-mealie-dinners-7"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Friday 8pm": {
+      "main": [
+        [
+          {
+            "node": "Configure Mealie",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking \"Test workflow\"": {
+      "main": [
+        [
+          {
+            "node": "Configure Mealie",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configure Mealie": {
+      "main": [
+        [
+          {
+            "node": "Read recipes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read recipes": {
+      "main": [
+        [
+          {
+            "node": "Choose dinner plans",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Choose dinner plans": {
+      "main": [
+        [
+          {
+            "node": "Create dinners one at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a dinner plan": {
+      "main": [
+        [
+          {
+            "node": "Confirm dinner plan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm dinner plan": {
+      "main": [
+        [
+          {
+            "node": "Create dinners one at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create dinners one at a time": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Create a dinner plan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Plan Random Mealie Dinners",
+  "active": false,
+  "settings": {
+    "timezone": "UTC",
+    "executionOrder": "v1"
+  }
+}
