@@ -46,6 +46,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Data](#data)
 - [Communications](#communications)
 - [Creativity](#creativity)
+- [Personal](#personal)
 - [Contribute](#contribute)
 - [Licensing](#licensing)
 
@@ -533,6 +534,10 @@ A growing collection of automation workflows for connecting apps and getting rep
 ## Creativity
 
 - [Generate Telegram Images with Magic Hour](workflows/generate-telegram-images-with-magic-hour/) - Generate an image from a Telegram text message and send it back to the same chat.
+
+## Personal
+
+- [Send a Daily Gratitude Reminder on LINE](workflows/daily-gratitude-reminder-on-line/) - Generate a daily reflection prompt and send it to a LINE conversation.
 
 ## Contribute
 
