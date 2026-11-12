@@ -1,0 +1,141 @@
+{
+  "name": "Forward X Search Results to Mattermost",
+  "nodes": [
+    {
+      "name": "Cron",
+      "type": "n8n-nodes-base.cron",
+      "position": [
+        410,
+        260
+      ],
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1,
+      "id": "forward-x-search-to-mattermost-0"
+    },
+    {
+      "name": "Search recent X posts",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.x.com/2/tweets/search/recent",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "twitterOAuth2Api",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "query",
+              "value": "n8n_io"
+            },
+            {
+              "name": "max_results",
+              "value": "50"
+            },
+            {
+              "name": "sort_order",
+              "value": "recency"
+            },
+            {
+              "name": "tweet.fields",
+              "value": "author_id"
+            },
+            {
+              "name": "expansions",
+              "value": "author_id"
+            },
+            {
+              "name": "user.fields",
+              "value": "profile_image_url"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "forward-x-search-to-mattermost-1"
+    },
+    {
+      "name": "Find new posts",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "async function plan({posts,includes},context){if(!Array.isArray(posts))throw Error('Missing X results');if(posts.length&&(!includes||!Array.isArray(includes.users)))throw Error('Missing expanded authors');const prev=await context.state.get('x-search-ids');if(prev!==null&&!Array.isArray(prev))throw Error('Invalid previous IDs');const ids=[],queue=[];for(const p of posts){const raw=p.raw??p,id=p.id,text=p.text,authorId=p.authorId??raw.author_id;if(typeof id!=='string'||!id||typeof text!=='string'||typeof authorId!=='string')throw Error('Incomplete X post');ids.push(id);const u=includes.users.find(x=>x.id===authorId);if(!u||typeof u.username!=='string'||!u.username||typeof u.name!=='string')throw Error('Missing X author');queue.push({id,text,username:u.username,name:u.name,photo:u.profile_image_url??''})}let pending=[];for(const x of queue){if(prev?.includes(x.id))break;pending.push(x)}return{pending,ids,hasResults:ids.length>0}}\n\nconst input=$input.first().json,store=$getWorkflowStaticData('global');const p=await plan({posts:input.data??[],includes:input.includes??{users:[]}},{state:{get:async()=>store.ids??null}});if(p.hasResults)store.ids=p.ids;return p.pending.map((x,i)=>({json:x,pairedItem:{item:0}}));"
+      },
+      "id": "forward-x-search-to-mattermost-2"
+    },
+    {
+      "name": "Post to Mattermost",
+      "type": "n8n-nodes-base.mattermost",
+      "position": [
+        1110,
+        260
+      ],
+      "parameters": {
+        "message": "={{ 'https://x.com/'+$json.username+'/status/'+$json.id }}",
+        "channelId": "YOUR_CHANNEL_ID",
+        "attachments": [
+          {
+            "text": "={{ $json.text }}",
+            "author_icon": "={{ $json.photo }}",
+            "author_link": "={{ 'https://x.com/'+$json.username }}",
+            "author_name": "={{ $json.name+' ('+$json.username+')' }}"
+          }
+        ],
+        "otherOptions": {},
+        "resource": "message",
+        "operation": "post"
+      },
+      "typeVersion": 1,
+      "id": "forward-x-search-to-mattermost-3"
+    }
+  ],
+  "settings": {
+    "timezone": "UTC"
+  },
+  "connections": {
+    "Cron": {
+      "main": [
+        [
+          {
+            "node": "Search recent X posts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search recent X posts": {
+      "main": [
+        [
+          {
+            "node": "Find new posts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find new posts": {
+      "main": [
+        [
+          {
+            "node": "Post to Mattermost",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "pinData": {}
+}

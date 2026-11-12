@@ -440,6 +440,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Send a ClickSend SMS](workflows/send-clicksend-sms/) - Send one SMS to a phone number through ClickSend.
 - [New YouTube Channel Videos to Telegram](workflows/new-youtube-channel-videos-to-telegram/) - Check a YouTube channel every 30 minutes and send newly found videos to Telegram.
 - [Send an Outlook Draft with an Attachment](workflows/send-outlook-draft-with-attachment/) - Create an Outlook draft, add a downloaded image and send the message.
+- [Forward X Search Results to Mattermost](workflows/forward-x-search-to-mattermost/) - Monitor a recent X search and post new results to a Mattermost channel.
 
 ## Customer Support
 
