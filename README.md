@@ -477,6 +477,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Send an SMS with seven](workflows/send-sms-with-seven/) - Send an SMS to numbers, contacts or groups using seven.
 - [Send a Twake Channel Message](workflows/send-a-twake-channel-message/) - Send a formatted message to a Twake channel.
 - [Send a Localized Welcome Email by IP](workflows/send-localized-welcome-email-by-ip/) - Look up an IP address and send a Spanish or English welcome email through Amazon SES.
+- [Create a Twist Channel and Send a Message](workflows/create-twist-channel-and-send-message/) - Create a Twist channel, update its description and send a message in an existing conversation.
 
 ## Customer Support
 
