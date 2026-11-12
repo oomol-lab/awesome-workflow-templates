@@ -1,0 +1,335 @@
+{
+  "name": "Save Orlen Invoices to Drive",
+  "nodes": [
+    {
+      "name": "On clicking 'execute'",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        240,
+        300
+      ],
+      "parameters": {},
+      "typeVersion": 1,
+      "id": "save-orlen-invoices-to-drive-0"
+    },
+    {
+      "name": "Every 23:45",
+      "type": "n8n-nodes-base.cron",
+      "position": [
+        960,
+        960
+      ],
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "hour": 23,
+              "minute": 45
+            }
+          ]
+        }
+      },
+      "typeVersion": 1,
+      "id": "save-orlen-invoices-to-drive-1"
+    },
+    {
+      "name": "Current date",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const d=new Date(),root='YOUR_DRIVE_FOLDER_ID';if(!root||root.startsWith('YOUR_'))throw Error('Configure the parent Drive folder');return [{json:{year:String(d.getUTCFullYear()),month:String(d.getUTCMonth()+1).padStart(2,'0'),root}}];"
+      },
+      "id": "save-orlen-invoices-to-drive-2"
+    },
+    {
+      "name": "Get Year folder",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        1360,
+        960
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "https://www.googleapis.com/drive/v3/files",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "={{ \"mimeType = 'application/vnd.google-apps.folder' and trashed = false and '\" + $('Current date').first().json.root.replace(/\\\\/g,'\\\\\\\\').replace(/'/g,\"\\\\'\") + \"' in parents and name = '\" + $('Current date').first().json.year + \"'\" }}"
+            },
+            {
+              "name": "pageSize",
+              "value": "1000"
+            },
+            {
+              "name": "fields",
+              "value": "nextPageToken,files(id,name,mimeType)"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "typeVersion": 4.2,
+      "id": "save-orlen-invoices-to-drive-3"
+    },
+    {
+      "name": "Confirm year folder",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const p=$input.first().json;if(p.nextPageToken||!Array.isArray(p.files)||p.files.length!==1||typeof p.files[0].id!=='string'||!p.files[0].id)throw Error('Expected one complete Drive folder result');return [{json:p.files[0]}];"
+      },
+      "id": "save-orlen-invoices-to-drive-4"
+    },
+    {
+      "name": "Get Month folder",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        1560,
+        960
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "https://www.googleapis.com/drive/v3/files",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "={{ \"mimeType = 'application/vnd.google-apps.folder' and trashed = false and '\" + $('Confirm year folder').first().json.id.replace(/\\\\/g,'\\\\\\\\').replace(/'/g,\"\\\\'\") + \"' in parents and name = '\" + $('Current date').first().json.month + \"'\" }}"
+            },
+            {
+              "name": "pageSize",
+              "value": "1000"
+            },
+            {
+              "name": "fields",
+              "value": "nextPageToken,files(id,name,mimeType)"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "typeVersion": 4.2,
+      "id": "save-orlen-invoices-to-drive-5"
+    },
+    {
+      "name": "Confirm month folder",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const p=$input.first().json;if(p.nextPageToken||!Array.isArray(p.files)||p.files.length!==1||typeof p.files[0].id!=='string'||!p.files[0].id)throw Error('Expected one complete Drive folder result');return [{json:p.files[0]}];"
+      },
+      "id": "save-orlen-invoices-to-drive-6"
+    },
+    {
+      "name": "Orlen Invoice",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        1760,
+        960
+      ],
+      "parameters": {
+        "resource": "message",
+        "operation": "getAll",
+        "returnAll": true,
+        "simple": false,
+        "filters": {
+          "q": "from:(orlenpay@orlen.pl) has:attachment is:unread"
+        },
+        "options": {
+          "downloadAttachments": true
+        }
+      },
+      "typeVersion": 2,
+      "id": "save-orlen-invoices-to-drive-7"
+    },
+    {
+      "name": "Upload Invoice to Google Drive",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [
+        1960,
+        960
+      ],
+      "parameters": {
+        "name": "={{ 'Orlen ' + ($binary.attachment_0.fileName || 'attachment') }}",
+        "options": {},
+        "parents": [
+          "={{ $('Confirm month folder').first().json.id }}"
+        ],
+        "binaryData": true,
+        "resolveData": true,
+        "authentication": "oAuth2",
+        "binaryPropertyName": "attachment_0"
+      },
+      "typeVersion": 1,
+      "id": "save-orlen-invoices-to-drive-8"
+    },
+    {
+      "name": "Mark as Read",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        2160,
+        960
+      ],
+      "parameters": {
+        "resource": "message",
+        "operation": "removeLabels",
+        "messageId": "={{ $('Orlen Invoice').item.json.id }}",
+        "labelIds": [
+          "UNREAD"
+        ]
+      },
+      "typeVersion": 2,
+      "id": "save-orlen-invoices-to-drive-9"
+    },
+    {
+      "name": "Slack",
+      "type": "n8n-nodes-base.slack",
+      "position": [
+        860,
+        540
+      ],
+      "parameters": {
+        "text": "={{ 'Saved Orlen invoice: ' + $('Orlen Invoice').item.binary.attachment_0.fileName }}",
+        "channel": "YOUR_SLACK_CHANNEL_ID",
+        "attachments": [],
+        "otherOptions": {},
+        "authentication": "oAuth2"
+      },
+      "typeVersion": 1,
+      "id": "save-orlen-invoices-to-drive-10"
+    }
+  ],
+  "active": false,
+  "settings": {
+    "timezone": "UTC",
+    "saveExecutionProgress": "DEFAULT",
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "On clicking 'execute'": {
+      "main": [
+        [
+          {
+            "node": "Current date",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Every 23:45": {
+      "main": [
+        [
+          {
+            "node": "Current date",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Current date": {
+      "main": [
+        [
+          {
+            "node": "Get Year folder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Year folder": {
+      "main": [
+        [
+          {
+            "node": "Confirm year folder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm year folder": {
+      "main": [
+        [
+          {
+            "node": "Get Month folder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Month folder": {
+      "main": [
+        [
+          {
+            "node": "Confirm month folder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm month folder": {
+      "main": [
+        [
+          {
+            "node": "Orlen Invoice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Orlen Invoice": {
+      "main": [
+        [
+          {
+            "node": "Upload Invoice to Google Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload Invoice to Google Drive": {
+      "main": [
+        [
+          {
+            "node": "Mark as Read",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark as Read": {
+      "main": [
+        [
+          {
+            "node": "Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {}
+}

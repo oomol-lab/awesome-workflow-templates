@@ -283,6 +283,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Save First Gmail Attachments to Drive](workflows/save-first-gmail-attachments-to-drive/) - Save the first attachment from each of up to ten Gmail messages in a chosen label to Google Drive.
 - [Send Sheet Investment Updates to Discord](workflows/send-sheet-investment-updates-to-discord/) - Watch investment security codes and send the complete sheet table to Discord when rows are added or codes change.
 - [Email a Daily Gmail Summary](workflows/email-daily-gmail-summary/) - Summarize the previous day’s matching Gmail messages and email the summary and actions.
+- [Save Orlen Invoices to Drive](workflows/save-orlen-invoices-to-drive/) - Archive unread Orlen invoice attachments in dated Google Drive folders and notify Slack.
 
 ## Content
 
