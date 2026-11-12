@@ -1,0 +1,204 @@
+{
+  "name": "Append and Adjust Berlin Rent in Google Sheets",
+  "nodes": [
+    {
+      "name": "On clicking 'execute'",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        450,
+        450
+      ],
+      "parameters": {},
+      "typeVersion": 1,
+      "id": "append-and-adjust-berlin-rent-in-sheets-0"
+    },
+    {
+      "name": "Set",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        650,
+        450
+      ],
+      "parameters": {
+        "values": {
+          "number": [
+            {
+              "name": "ID",
+              "value": "={{Math.floor(Math.random()*1000)}}"
+            },
+            {
+              "name": "Rent",
+              "value": 1000
+            }
+          ],
+          "string": [
+            {
+              "name": "Name",
+              "value": "John's Place"
+            },
+            {
+              "name": "City",
+              "value": "Berlin"
+            }
+          ]
+        },
+        "options": {},
+        "keepOnlySet": true
+      },
+      "typeVersion": 1,
+      "id": "append-and-adjust-berlin-rent-in-sheets-1"
+    },
+    {
+      "name": "Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        850,
+        450
+      ],
+      "parameters": {
+        "range": "A:D",
+        "options": {
+          "valueInputMode": "USER_ENTERED"
+        },
+        "sheetId": "YOUR_SPREADSHEET_ID",
+        "operation": "append",
+        "authentication": "oAuth2"
+      },
+      "typeVersion": 1,
+      "id": "append-and-adjust-berlin-rent-in-sheets-2"
+    },
+    {
+      "name": "Read properties",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ 'https://sheets.googleapis.com/v4/spreadsheets/' + encodeURIComponent($('Google Sheets').params.sheetId) + '/values/A%3AD?valueRenderOption=UNFORMATTED_VALUE' }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "append-and-adjust-berlin-rent-in-sheets-3"
+    },
+    {
+      "name": "Prepare Berlin rent cells",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function plan({values}){const h=values?.[0];if(!Array.isArray(h)||h.length!==4||new Set(h).size!==4||!['ID','Name','Rent','City'].every(x=>h.includes(x)))throw Error('First row must have unique ID, Name, Rent, City headers in A:D');const ids=new Map(),items=[];for(let i=1;i<values.length;i++){const r=values[i];if(!Array.isArray(r)||!r.length)continue;const id=r[h.indexOf('ID')];if(id===undefined||id===null||id==='')throw Error('Each row must have an ID');const k=String(id);ids.set(k,(ids.get(k)||0)+1);if(r[h.indexOf('City')]==='Berlin'){const rent=r[h.indexOf('Rent')];if(typeof rent!=='number'||!Number.isFinite(rent))throw Error('Berlin rent must be numeric');items.push({id,range:String.fromCharCode(65+h.indexOf('Rent'))+(i+1),values:[[rent+100]]})}}for(const item of items)if(ids.get(String(item.id))!==1)throw Error('Matching row ID is not unique');return{more:items.length>0,data:items.length?items.map(({range,values})=>({range,values})):[{range:'A1',values:[[null]]}]}}\n\nconst result=plan({values:$input.first().json.values??[]});if(!result.more)return [];return [{json:{data:result.data}}];"
+      },
+      "id": "append-and-adjust-berlin-rent-in-sheets-4"
+    },
+    {
+      "name": "Update rent cells",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'https://sheets.googleapis.com/v4/spreadsheets/' + encodeURIComponent($('Google Sheets').params.sheetId) + '/values:batchUpdate' }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({data:$json.data,valueInputOption:\"USER_ENTERED\"}) }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "append-and-adjust-berlin-rent-in-sheets-5"
+    },
+    {
+      "name": "Google Sheets3",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        1650,
+        450
+      ],
+      "parameters": {
+        "range": "A:D",
+        "options": {
+          "valueRenderMode": "FORMATTED_VALUE"
+        },
+        "sheetId": "={{ $node[\"Google Sheets\"].parameter[\"sheetId\"] }}",
+        "authentication": "oAuth2"
+      },
+      "typeVersion": 1,
+      "id": "append-and-adjust-berlin-rent-in-sheets-6"
+    }
+  ],
+  "active": false,
+  "settings": {},
+  "connections": {
+    "On clicking 'execute'": {
+      "main": [
+        [
+          {
+            "node": "Set",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Read properties",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read properties": {
+      "main": [
+        [
+          {
+            "node": "Prepare Berlin rent cells",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Berlin rent cells": {
+      "main": [
+        [
+          {
+            "node": "Update rent cells",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update rent cells": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {}
+}

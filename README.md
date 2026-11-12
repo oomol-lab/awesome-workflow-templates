@@ -380,6 +380,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Fetch Bible Passages by Reference](workflows/fetch-bible-passages-by-reference/) - Fetch Bible passages for one or more references using the GetBible API.
 - [Get Monday Board Details](workflows/get-monday-board-details/) - Read metadata and owner IDs for a Monday board.
 - [Search OneDrive for Excel Workbooks](workflows/search-onedrive-for-excel-workbooks/) - Search the current user’s OneDrive for the text .xlsx and return the first page of results.
+- [Append and Adjust Berlin Rent in Google Sheets](workflows/append-and-adjust-berlin-rent-in-sheets/) - Append an example property and increase rent for matching Berlin rows.
 
 ## Content
 
