@@ -173,6 +173,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Log Shopify Order Campaigns in Baserow](workflows/log-shopify-order-campaigns-in-baserow/) - Record Shopify orders with a first-visit campaign in Baserow each day.
 - [Draft Hashtag Posts to Airtable](workflows/draft-hashtag-posts-to-airtable/) - Generate a short post about a randomly selected hashtag and save it to Airtable for review.
 - [Sync a Squarespace Collection to Sheets](workflows/sync-squarespace-collection-to-sheets/) - Keep a Google Sheets inventory of a public Squarespace blog collection up to date.
+- [Sync Trustpilot Reviews to Sheets](workflows/sync-trustpilot-reviews-to-sheets/) - Collect public Trustpilot reviews into general and HelpfulCrowd-format sheets.
 
 ## Support
 

@@ -1,0 +1,407 @@
+{
+  "name": "Sync Trustpilot Reviews to Sheets",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "sync-trustpilot-reviews-to-sheets-0",
+      "name": "Daily at midnight UTC",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        -1300,
+        120
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 0 * * *"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "sync-trustpilot-reviews-to-sheets-1",
+      "name": "When clicking ‘Test workflow’",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        -1300,
+        340
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "name": "Configure the review export",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function config({businessUnitId,spreadsheetId,generalSheet,helpfulSheet,maxPages}){if(!Number.isInteger(maxPages)||maxPages<1||maxPages>1000)throw Error('Set maxPages between 1 and 1000');if(typeof businessUnitId!=='string'||!/^[0-9a-f]{24}$/i.test(businessUnitId))throw Error('Configure a Trustpilot business unit ID');for(const [key,value] of Object.entries({spreadsheetId,generalSheet,helpfulSheet}))if(typeof value!=='string'||!value.trim()||value.startsWith('YOUR_'))throw Error('Configure '+key);if(generalSheet===helpfulSheet||/[!\\r\\n]/.test(generalSheet+helpfulSheet))throw Error('Choose distinct sheet names');const q=x=>\"'\"+x.replace(/'/g,\"''\")+\"'\";return{businessUnitId,spreadsheetId,generalSheet,helpfulSheet,maxPages,generalRange:q(generalSheet)+'!A:ZZZ',helpfulRange:q(helpfulSheet)+'!A:ZZZ'}}\n\nreturn [{json:config({businessUnitId:'YOUR_BUSINESS_UNIT_ID',spreadsheetId:'YOUR_SPREADSHEET_ID',generalSheet:'Reviews',helpfulSheet:'HelpfulCrowd',maxPages:100})}];"
+      },
+      "id": "sync-trustpilot-reviews-to-sheets-2"
+    },
+    {
+      "name": "Read Trustpilot review pages",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "url": "={{ 'https://api.trustpilot.com/v1/business-units/'+$('Configure the review export').first().json.businessUnitId+'/all-reviews' }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "pagination": {
+            "pagination": {
+              "paginationMode": "updateAParameterInEachRequest",
+              "parameters": {
+                "parameters": [
+                  {
+                    "type": "qs",
+                    "name": "pageToken",
+                    "value": "={{ $pageCount === 0 ? undefined : $response.body.nextPageToken }}"
+                  }
+                ]
+              },
+              "paginationCompleteWhen": "other",
+              "completeExpression": "={{ $response.body.nextPageToken == null }}",
+              "requestInterval": 5000,
+              "limitPagesFetched": true,
+              "maxRequests": 100
+            }
+          }
+        }
+      },
+      "id": "sync-trustpilot-reviews-to-sheets-3"
+    },
+    {
+      "name": "Read the general sheet",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ 'https://sheets.googleapis.com/v4/spreadsheets/'+encodeURIComponent($('Configure the review export').first().json.spreadsheetId)+'/values/'+encodeURIComponent($('Configure the review export').first().json.generalRange) }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "valueRenderOption",
+              "value": "UNFORMATTED_VALUE"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "executeOnce": true,
+      "id": "sync-trustpilot-reviews-to-sheets-4"
+    },
+    {
+      "name": "Read the HelpfulCrowd sheet",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ 'https://sheets.googleapis.com/v4/spreadsheets/'+encodeURIComponent($('Configure the review export').first().json.spreadsheetId)+'/values/'+encodeURIComponent($('Configure the review export').first().json.helpfulRange) }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "valueRenderOption",
+              "value": "UNFORMATTED_VALUE"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "executeOnce": true,
+      "id": "sync-trustpilot-reviews-to-sheets-5"
+    },
+    {
+      "name": "Match reviews to sheet rows",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function plan({reviews,generalValues,helpfulValues,generalSheet,helpfulSheet}){if(!Array.isArray(reviews))throw Error('Invalid reviews');const gf=['Date','Author','Body','Heading','Rating','Location','review_id'],hf=['title','comment','rating*','status*','verified','feedback*','review_id','product_id*','review_date*','customer_email','customer_name*'];function sheet(values,fields){if(!Array.isArray(values)||!values.length||!Array.isArray(values[0]))throw Error('Sheet needs headers');const header=values[0];if(fields.some(x=>header.indexOf(x)<0||header.indexOf(x)!==header.lastIndexOf(x)))throw Error('Sheet needs unique required headers');const indexes=Object.fromEntries(fields.map(x=>[x,header.indexOf(x)])),map=new Map();for(let i=1;i<values.length;i++){let row=values[i];if(!Array.isArray(row))throw Error('Invalid sheet row');let id=row[indexes.review_id];if(id==null||id==='')continue;if(typeof id!=='string'||map.has(id))throw Error('Invalid or duplicate sheet review ID');map.set(id,{index:i+1,raw:row})}return{indexes,map,next:values.length+1}}const g=sheet(generalValues,gf),h=sheet(helpfulValues,hf),seen=new Set(),tasks=[];for(const r of reviews){if(!r||typeof r.id!=='string'||!r.id||seen.has(r.id))throw Error('Invalid or duplicate review ID');seen.add(r.id);if(!Number.isInteger(r.stars)||r.stars<0||r.stars>5||typeof r.isVerified!=='boolean'||typeof r.createdAt!=='string'||!/^\\d{4}-\\d{2}-\\d{2}T/.test(r.createdAt)||!Number.isFinite(Date.parse(r.createdAt)))throw Error('Invalid review fields');if(!r.consumer||typeof r.consumer.displayName!=='string'||!r.consumer.displayName.trim())throw Error('Missing reviewer name');for(const k of ['title','text'])if(r[k]!=null&&typeof r[k]!=='string')throw Error('Invalid review text');if(r.consumer.displayLocation!=null&&typeof r.consumer.displayLocation!=='string')throw Error('Invalid reviewer location');const get=(x)=>x.map.get(r.id)??{index:x.next++,raw:[]},gt=get(g),ht=get(h),title=r.title??'',text=r.text??'',name=r.consumer.displayName;tasks.push({id:r.id,general:{...gt,indexes:g.indexes,fields:{Date:r.createdAt,Author:name,Body:text,Heading:title,Rating:r.stars,Location:r.consumer.displayLocation??'',review_id:r.id}},helpful:{...ht,indexes:h.indexes,fields:{title,comment:'','rating*':r.stars,'status*':'published',verified:r.isVerified?'yes':'no','feedback*':text,review_id:r.id,'product_id*':'','review_date*':r.createdAt.slice(0,10).replace(/-/g,'/'),customer_email:'','customer_name*':name}}})}return{tasks,generalSheet,helpfulSheet}}\n\nconst c=$('Configure the review export').first().json,pages=$('Read Trustpilot review pages').all().map(x=>x.json),seen=new Set();if(pages.length>c.maxPages)throw Error('Match the request page limit to the configured page limit');for(let i=0;i<pages.length;i++){const p=pages[i],t=p?.nextPageToken;if(!Array.isArray(p?.reviews))throw Error('Invalid review page');if(i<pages.length-1&&(typeof t!=='string'||!t))throw Error('Invalid page token');if(t!=null){if(typeof t!=='string'||!t||seen.has(t))throw Error('Invalid or repeated page token');seen.add(t)}if(i===pages.length-1&&t!=null&&pages.length<c.maxPages)throw Error('Incomplete review pagination')}const p=plan({reviews:pages.flatMap(x=>x.reviews),generalValues:$('Read the general sheet').first().json.values??[],helpfulValues:$input.first().json.values??[],generalSheet:c.generalSheet,helpfulSheet:c.helpfulSheet});return p.tasks.map(json=>({json}));"
+      },
+      "id": "sync-trustpilot-reviews-to-sheets-6"
+    },
+    {
+      "name": "Process reviews one at a time",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "sync-trustpilot-reviews-to-sheets-7"
+    },
+    {
+      "name": "Recheck the general row",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ (()=>{const c=$('Configure the review export').first().json,i=$('Process reviews one at a time').item.json.general.index,q=\"'\"+c.generalSheet.replace(/'/g,\"''\")+\"'\";return 'https://sheets.googleapis.com/v4/spreadsheets/'+encodeURIComponent(c.spreadsheetId)+'/values/'+encodeURIComponent(q+'!A'+i+':ZZZ'+i)})() }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "valueRenderOption",
+              "value": "UNFORMATTED_VALUE"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "sync-trustpilot-reviews-to-sheets-8"
+    },
+    {
+      "name": "Recheck the HelpfulCrowd row",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ (()=>{const c=$('Configure the review export').first().json,i=$('Process reviews one at a time').item.json.helpful.index,q=\"'\"+c.helpfulSheet.replace(/'/g,\"''\")+\"'\";return 'https://sheets.googleapis.com/v4/spreadsheets/'+encodeURIComponent(c.spreadsheetId)+'/values/'+encodeURIComponent(q+'!A'+i+':ZZZ'+i)})() }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "valueRenderOption",
+              "value": "UNFORMATTED_VALUE"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "sync-trustpilot-reviews-to-sheets-9"
+    },
+    {
+      "name": "Prepare the review cells",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function update({item,generalChecked,helpfulChecked,generalSheet,helpfulSheet}){const checked=(value,raw)=>Array.isArray(value)&&value.length<=1&&JSON.stringify(value[0]??[])===JSON.stringify(raw);if(!checked(generalChecked,item.general.raw)||!checked(helpfulChecked,item.helpful.raw))throw Error('Review sheet row changed');const col=n=>{let x=n+1,s='';while(x){x--;s=String.fromCharCode(65+x%26)+s;x=Math.floor(x/26)}return s},data=[];for(const [sheet,part]of [[generalSheet,item.general],[helpfulSheet,item.helpful]]){let q=\"'\"+sheet.replace(/'/g,\"''\")+\"'\";for(const [key,value]of Object.entries(part.fields))data.push({range:q+'!'+col(part.indexes[key])+part.index,values:[[value]]})}return{data}}\n\nconst c=$('Configure the review export').first().json;return [{json:update({item:$('Process reviews one at a time').item.json,generalChecked:$('Recheck the general row').item.json.values??[],helpfulChecked:$input.first().json.values??[],generalSheet:c.generalSheet,helpfulSheet:c.helpfulSheet})}];"
+      },
+      "id": "sync-trustpilot-reviews-to-sheets-10"
+    },
+    {
+      "name": "Write both review rows",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'https://sheets.googleapis.com/v4/spreadsheets/'+encodeURIComponent($('Configure the review export').first().json.spreadsheetId)+'/values:batchUpdate' }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {valueInputOption:'RAW',data:$json.data} }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "sync-trustpilot-reviews-to-sheets-11"
+    },
+    {
+      "name": "Confirm both sheet updates",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "if($input.first().json.totalUpdatedCells!==18)throw Error('Both sheet updates were not confirmed');return [{json:{ok:true}}];"
+      },
+      "id": "sync-trustpilot-reviews-to-sheets-12"
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC"
+  },
+  "connections": {
+    "Daily at midnight UTC": {
+      "main": [
+        [
+          {
+            "node": "Configure the review export",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Test workflow’": {
+      "main": [
+        [
+          {
+            "node": "Configure the review export",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configure the review export": {
+      "main": [
+        [
+          {
+            "node": "Read Trustpilot review pages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Trustpilot review pages": {
+      "main": [
+        [
+          {
+            "node": "Read the general sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the general sheet": {
+      "main": [
+        [
+          {
+            "node": "Read the HelpfulCrowd sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the HelpfulCrowd sheet": {
+      "main": [
+        [
+          {
+            "node": "Match reviews to sheet rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Match reviews to sheet rows": {
+      "main": [
+        [
+          {
+            "node": "Process reviews one at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recheck the general row": {
+      "main": [
+        [
+          {
+            "node": "Recheck the HelpfulCrowd row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recheck the HelpfulCrowd row": {
+      "main": [
+        [
+          {
+            "node": "Prepare the review cells",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare the review cells": {
+      "main": [
+        [
+          {
+            "node": "Write both review rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write both review rows": {
+      "main": [
+        [
+          {
+            "node": "Confirm both sheet updates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm both sheet updates": {
+      "main": [
+        [
+          {
+            "node": "Process reviews one at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process reviews one at a time": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Recheck the general row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
