@@ -93,6 +93,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [List HubSpot Contacts with Pagination](workflows/list-all-hubspot-contacts-with-pagination/) - Read every page of HubSpot contacts and return the collected records.
 - [Enrich Typeform Leads in Airtable and Notify Slack](workflows/enrich-typeform-leads-in-airtable-and-notify-slack/) - Enrich a Typeform lead, create or update its Airtable contact and notify Slack.
 - [Find LinkedIn Profiles for Sheet Rows](workflows/find-linkedin-profiles-for-sheet-rows/) - Search for LinkedIn profiles using person descriptions in a Google Sheet and update the corresponding rows.
+- [Qualify Campaign Replies in Pipedrive](workflows/qualify-campaign-replies-in-pipedrive/) - Classify campaign email replies and create a Pipedrive deal for interested contacts.
 
 ## Operations
 

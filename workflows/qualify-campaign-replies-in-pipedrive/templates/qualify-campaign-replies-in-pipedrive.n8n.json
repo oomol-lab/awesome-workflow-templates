@@ -1,0 +1,322 @@
+{
+  "nodes": [
+    {
+      "id": "qualify-campaign-replies-in-pipedrive-0",
+      "name": "Search Person in CRM",
+      "type": "n8n-nodes-base.pipedrive",
+      "position": [
+        -880,
+        400
+      ],
+      "parameters": {
+        "term": "={{ $json.from.value[0].address }}",
+        "limit": 1,
+        "resource": "person",
+        "operation": "search",
+        "additionalFields": {
+          "fields": "email",
+          "exactMatch": true
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "qualify-campaign-replies-in-pipedrive-1",
+      "name": "In campaign?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        -420,
+        400
+      ],
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.in_campaign }}",
+              "value2": "True"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "qualify-campaign-replies-in-pipedrive-2",
+      "name": "Get person from CRM",
+      "type": "n8n-nodes-base.pipedrive",
+      "position": [
+        -640,
+        400
+      ],
+      "parameters": {
+        "personId": "={{ $json.id }}",
+        "resource": "person",
+        "operation": "get",
+        "resolveProperties": true
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "qualify-campaign-replies-in-pipedrive-3",
+      "name": "Is interested?",
+      "type": "n8n-nodes-base.openAi",
+      "position": [
+        -180,
+        380
+      ],
+      "parameters": {
+        "model": "gpt-4o-mini",
+        "prompt": {
+          "messages": [
+            {
+              "content": "=You are the best sales development representative in the world. You send cold email messages daily to CEOs and founders of companies. You do this to persuade them to make contact. This could be a phone call or a video meeting. \n\nYour task is to assess whether someone is interested in meeting up or calling sometime. You do this by attentively evaluating their response.\n\nThis is the email:\n{{ $('Get email').item.json.text }}\n\nThe response format should be:\n{\"interested\": [yes/no],\n\"reason\": reason\n}\n\nJSON:"
+            }
+          ]
+        },
+        "options": {},
+        "resource": "chat"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "qualify-campaign-replies-in-pipedrive-4",
+      "name": "Get email",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        -1100,
+        400
+      ],
+      "parameters": {
+        "fields": {
+          "values": [
+            {
+              "name": "email",
+              "stringValue": "={{ $json.text }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "typeVersion": 3.2
+    },
+    {
+      "id": "qualify-campaign-replies-in-pipedrive-5",
+      "name": "Create deal in CRM",
+      "type": "n8n-nodes-base.pipedrive",
+      "position": [
+        460,
+        360
+      ],
+      "parameters": {
+        "title": "={{ $('Get person from CRM').item.json.name + ' Deal' }}",
+        "additionalFields": {},
+        "associateWith": "person",
+        "person_id": "={{ $('Get person from CRM').item.json.id }}"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "qualify-campaign-replies-in-pipedrive-6",
+      "name": "IF interested",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        240,
+        380
+      ],
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.interested }}",
+              "value2": "yes"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "qualify-campaign-replies-in-pipedrive-7",
+      "name": "Get response",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        20,
+        380
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const x=JSON.parse($json.message.content);if(!['yes','no'].includes(x.interested)||typeof x.reason!=='string')throw Error('Invalid classification');return {json:{interested:x.interested,reason:x.reason},pairedItem:{item:$itemIndex}};"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "qualify-campaign-replies-in-pipedrive-8",
+      "name": "Email box 1",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "position": [
+        -1300,
+        400
+      ],
+      "parameters": {
+        "simple": false,
+        "filters": {
+          "labelIds": [],
+          "includeDrafts": false
+        },
+        "options": {},
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "qualify-campaign-replies-in-pipedrive-9",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1880,
+        360
+      ],
+      "parameters": {
+        "width": 452.37174177689576,
+        "height": 462.1804790107177,
+        "content": "## About the workflow\nThe workflow reads every reply that is received from a cold email campaign and qualifies if the lead is interested in a meeting. If the lead is interested, a deal is made in pipedrive. You can add as many email inboxes as you need!\n\n## Setup:\n- Add credentials to the Gmail, OpenAI and Pipedrive Nodes.\n- Add a in_campaign field in Pipedrive for persons. In Pipedrive click on your credentials at the top right, go to company settings > Data fields > Person and click on add custom field. Single option [TRUE/FALSE].\n- If you have only one email inbox, you can delete one of the Gmail nodes.\n- If you have more than two email inboxes, you can duplicate a Gmail node as many times as you like. Just connect it to the Get email node, and you are good to go!\n- In the Gmail inbox nodes, select Inbox under label names and uncheck Simplify."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "qualify-campaign-replies-in-pipedrive-10",
+      "name": "Email box 2",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "position": [
+        -1300,
+        600
+      ],
+      "parameters": {
+        "simple": false,
+        "filters": {
+          "labelIds": [],
+          "includeDrafts": false
+        },
+        "options": {},
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Get email": {
+      "main": [
+        [
+          {
+            "node": "Search Person in CRM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email box 1": {
+      "main": [
+        [
+          {
+            "node": "Get email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email box 2": {
+      "main": [
+        [
+          {
+            "node": "Get email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get response": {
+      "main": [
+        [
+          {
+            "node": "IF interested",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "In campaign?": {
+      "main": [
+        [
+          {
+            "node": "Is interested?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF interested": {
+      "main": [
+        [
+          {
+            "node": "Create deal in CRM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is interested?": {
+      "main": [
+        [
+          {
+            "node": "Get response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get person from CRM": {
+      "main": [
+        [
+          {
+            "node": "In campaign?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Person in CRM": {
+      "main": [
+        [
+          {
+            "node": "Get person from CRM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Qualify Campaign Replies in Pipedrive",
+  "active": false
+}
