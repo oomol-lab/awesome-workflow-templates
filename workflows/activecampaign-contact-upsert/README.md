@@ -17,14 +17,14 @@ Each run makes one contact sync request. An existing email updates that contact;
 
 Open Flow returns the normalized contact and its complete raw record. n8n returns the saved contact from the API response. A failed request stops the run; no workflow retry or rollback is configured. Check the contact before repeating a request with an uncertain result.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace blank email and name fields with user configuration.
 - Require email, first name and last name as Open Flow run inputs.
 - Expose the saved contact as an Open Flow output.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [ActiveCampaign contact sync workflow](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/0951_Manual_Activecampaign_Automation_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

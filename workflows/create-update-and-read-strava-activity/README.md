@@ -19,12 +19,12 @@ In n8n, connect Strava to the three nodes and enter the actual start time in **S
 
 Run manually to create a one-hour, 1,000-metre run, update its description, and read the same activity by its returned ID. The final activity is returned. Check Strava before retrying an uncertain request: the run may already exist and earlier writes are not rolled back.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the fixed 2020 start time with user configuration. Open Flow validates the date and converts it to UTC before creating an activity and uses the current sport type alongside the source type.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Create, update and get activity in Strava](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/1206_Manual_Strava_Create_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

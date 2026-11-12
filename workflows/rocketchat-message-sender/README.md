@@ -19,14 +19,14 @@ Each run posts one message as the connected user. It adds no attachment, alias, 
 
 A rejected post, missing message ID or request failure stops the run. Each run can post another message; no duplicate check or automatic retry is configured. Check the room before repeating an uncertain request.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace example room and text values with user configuration.
 - Check the API’s success flag and message identifiers in both formats.
 - Expose the created message record in Open Flow.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Rocket.Chat message workflow](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/1189_Manual_Rocketchat_Send_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

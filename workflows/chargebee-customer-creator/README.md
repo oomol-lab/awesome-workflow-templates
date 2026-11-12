@@ -19,14 +19,14 @@ Each run makes one customer creation request. Chargebee generates the customer I
 
 There is no search, upsert, duplicate detection or automatic retry. If creation fails, the workflow stops. If a request times out, check Chargebee before running it again.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the empty name fields with setup placeholders.
 - In n8n, send the customer fields as a documented URL-encoded POST body using managed Basic Auth.
 - Expose the created customer result.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Create a new customer in Chargebee](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/0018_Manual_Chargebee_Create_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

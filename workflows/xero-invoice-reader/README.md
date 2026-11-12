@@ -17,14 +17,14 @@ Each run makes one invoice-list request without pagination or filters, and retur
 
 The Open Flow template uses the Xero Provider API to retain these original invoice records. It does not substitute the normalized invoice summaries returned by the invoice search Action. An organization with no invoices returns an empty array. A failed request or invalid response stops the run. The workflow makes no accounting changes and has no automatic retry.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the example organization with user configuration.
 - Make the source’s invoice resource and 100-record limit explicit.
 - Expose the original invoice records as an Open Flow output.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Xero invoice read workflow](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/1011_Manual_Xero_Automate_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

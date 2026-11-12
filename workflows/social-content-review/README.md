@@ -19,15 +19,15 @@ The first model must return all five content fields as nonempty strings. An inva
 
 The workflow does not publish posts. Review claims, tone, and platform limits before posting; requested character counts and hashtag counts are prompt guidance.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Use configured model accounts, correct the omitted POST behavior, and remove assumptions about a string-valued HTTP `data` field.
 - Preserve the source fallback to original content when the review cannot be parsed.
 - Validate all five generated fields and keep incomplete review results from overwriting a complete draft.
 - Give the review step the configured brand voice and use real line breaks in both prompts.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [AI Social Media Content Generator with Ollama](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Instagram_Twitter_Social_Media/AI%20Social%20Media%20Content%20Generator%20with%20Ollama.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 

@@ -21,13 +21,13 @@ Run manually or daily at 00:00 UTC. The workflow validates the entire sheet befo
 
 The operation creates members only; an existing member causes an error and is not updated or resubscribed. Since rows remain in the sheet, later runs can stop at an existing member before reaching later rows. Select or maintain a sheet containing only new signups. Earlier creates remain after a later failure, and a lost response may still mean a member was created. Inspect Mailchimp before rerunning. No automatic write retry is added.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Remove private sheet and audience values and repair the email expression that appended the row number. Validate signup times and preserve their time zone. Set 00:00 UTC as the starting schedule; the source inherited its instance time zone.
 - n8n reads raw sheet values using Google Sheets OAuth2 so duplicate headers can be detected, and uses an authenticated Mailchimp HTTP request because the original node formats the signup timestamp with incorrect minute/second tokens. Open Flow uses the Mailchimp Provider API Request for add-only creation.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Create Mailchimp contact based on Squarespace newsletter](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Schedule/0795_Schedule_Mailchimp_Create_Scheduled.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n community listing](https://n8n.io/workflows/3251-sync-squarespace-newsletter-signups-to-mailchimp-via-google-sheets/) credits bangank36. The original template does not state a separate license.
 

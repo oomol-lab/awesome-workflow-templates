@@ -17,13 +17,13 @@ Use a Quickbase table with a text name field, numeric age field and the standard
 
 Each run creates one record, updates that same Record ID# with the new age, then returns up to 50 table records. The source uses the Quickbase node's default limit of 50. This is not a full-table export. The workflow checks write results and stops on errors. Earlier writes are not rolled back; inspect Quickbase before retrying an unknown outcome. Avoid concurrent deletion or modification of the new record. Quickbase's update endpoint is an upsert, so a missing merge key can create a record; the workflow checks the returned ID and rejects an unexpected creation, but cannot undo it.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace example values and the missing table with inputs. Use field IDs in both formats.
 - Fix the source's record-ID mapping and update request so the update includes Record ID# 3, and check write metadata before listing.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Create, update and get records in Quick Base](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/0189_Manual_Quickbase_Create_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n community listing](https://n8n.io/workflows/805-create-update-and-get-records-in-quick-base/) credits Harshil Agrawal. The original template does not state a separate license.
 

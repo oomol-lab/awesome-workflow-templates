@@ -21,12 +21,12 @@ At 05:10 UTC daily, the workflow reads all pages of both projects, selects templ
 
 An invalid page or template stops before deletions. Neither format automatically retries failed reads or writes. A failed deletion or creation stops later writes; earlier changes remain. Check Todoist before retrying an uncertain write. Changes during a run can affect results. Avoid overlapping runs: one run can delete daily tasks created by another. Open Flow collects both projects in run state, which must fit the host execution limits.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace private IDs and credentials, use UTC and current Todoist API pagination. The source export schedules both branches at 05:10 despite their different node names; deletion now completes before creation to avoid a race. The source inherited its n8n instance timezone and configured Todoist node retries; the templates disable those retries.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Automatically create daily list of todos in Todoist](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Code/0446_Code_Todoist_Create_Scheduled.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n listing](https://n8n.io/workflows/2149-automatically-create-daily-list-of-todos-in-todoist/) credits Mutasem. No separate original template license was found.
 

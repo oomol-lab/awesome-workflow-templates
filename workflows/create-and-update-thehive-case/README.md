@@ -19,13 +19,13 @@ Each run creates a case with severity 1, current start time, TLP 2, flag false a
 
 A failure stops later steps. A case can already exist when creation or update returns an uncertain result, and an update can succeed before its response is lost. Inspect TheHive before retrying. The workflow does not retry or roll back writes.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the example owner and case text with configurable inputs, use the current time and a security tag.
 - Require TheHive 4 in both formats and verify the saved ID and severity. Open Flow uses the TheHive Provider API for the partial severity update.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Create, update and get a case in TheHive](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/0198_Manual_Thehive_Create_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n community listing](https://n8n.io/workflows/808-create-update-and-get-a-case-in-thehive/) credits Harshil Agrawal. The original template does not state a separate license.
 

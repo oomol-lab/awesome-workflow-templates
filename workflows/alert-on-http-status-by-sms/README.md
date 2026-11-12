@@ -19,13 +19,13 @@ Every five minutes, the workflow makes an HTTP GET, follows up to 21 redirects, 
 
 A network or DNS failure, invalid redirect, redirect limit or request timeout stops the run without an SMS. Open Flow stops without an SMS if the response exceeds 4 MiB. Each request has a 30-second timeout in Open Flow; n8n uses a 30-second request timeout. Repeated non-200 responses send repeated messages. A failed or uncertain SMS may already have been sent; check Twilio before retrying.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Configure the URL and phone numbers. Allow non-2xx HTTP responses through to the status check so that 4xx and 5xx responses can trigger the source's intended alert; the original n8n HTTP node stopped before the check on those responses. Network failures still stop the run.
 - Open Flow follows redirects explicitly to evaluate the final status, and both formats use UTC and a 30-second request timeout.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Website status SMS alert](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Http/1959_HTTP_Schedule_Automate_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

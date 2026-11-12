@@ -42,6 +42,9 @@ Success is returned after the append completes. The result includes the first le
 
 The source suggests small lists of 5–20 leads without enforcing a fixed cap. Choose a batch that completes within your deployment's webhook window. Open Flow waits up to **60 seconds** for the final response; a timeout is not proof that processing or writing stopped. Do not automatically resubmit. Complete collections must fit model context and platform limits, including 1 MiB per Code input/result in the inspected Open Flow host. Oversized input fails without a partial output. Your lead details and sender brief are sent to your selected model service and Google Sheets.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the incompatible OpenAI node type/version with a native Chain/Chat Model, configure its supported model/JSON/token-budget fields and parse JSON within the generation attempt.
@@ -49,10 +52,6 @@ The source suggests small lists of 5–20 leads without enforcing a fixed cap. C
 - Validate the complete generated batch, save before responding, and return every draft rather than only the first item.
 - Retry only the current lead's generation and remove automatic Sheet-write replay after an unknown outcome.
 - Store literal text with `RAW` and make sender/spreadsheet configuration explicit.
-
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [LeadPilot Lite - AI Cold Email Writer](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Gmail_and_Email_Automation/LeadPilot%20Lite%20-%20AI%20Cold%20Email%20Writer.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 

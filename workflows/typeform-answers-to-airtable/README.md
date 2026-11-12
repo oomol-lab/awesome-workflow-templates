@@ -29,14 +29,14 @@ Airtable receives one record with type conversion disabled and returns the saved
 
 Full answers and record receipts must fit the inspected Open Flow host’s 1 MiB per-Code input/result budget; oversized data fails without truncation. Open Flow identifies trigger deliveries by the Typeform response token. The n8n trigger adds no submission history. Manual replays or uncertain writes can create duplicate records in either format.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace empty form/base/table settings and legacy Airtable authentication with explicit configuration and PAT credentials.
 - Make the original simplified-answer, all-fields and no-typecast defaults explicit.
 - Reject ambiguous or incomplete answer mappings before creating a record and verify the returned record.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Typeform answers appended to Airtable](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Typeform/1018_Typeform_Airtable_Automation_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

@@ -36,6 +36,9 @@ Each valid request makes one model call. A successful response is HTTP 200 with 
 
 The length requests are prompts, so the result may differ from 5%. Review wording before replacing your original text. Open Flow waits up to 60 seconds for the response; an HTTP timeout does not cancel an already running model call. Submitted text is sent to your configured model provider.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Validate requests before routing so unknown operations do not disappear into an unconnected switch branch.
@@ -43,9 +46,6 @@ The length requests are prompts, so the result may differ from 5%. Review wordin
 - Return plain text and retain its line breaks without inserting HTML.
 - In Open Flow, select a prompt before one shared model node. n8n retains the five prompt branches. Both use the source prompts and `gpt-4o-mini`.
 - Describe the Shortcut setup directly rather than depending on a third-party Shortcut download.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Text automations using Apple Shortcuts](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Other_Integrations_and_Use_Cases/Text%20automations%20using%20Apple%20Shortcuts.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 

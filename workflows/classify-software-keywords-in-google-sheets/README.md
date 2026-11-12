@@ -23,14 +23,14 @@ The result retains every classified keyword, its original row and per-batch upda
 
 Set the same spreadsheet ID and worksheet name in its **Choose the keyword worksheet** Code node. Select Google Sheets OAuth2 credentials in the three HTTP nodes and OpenAI credentials in **OpenAI Chat Model**. Keep `gpt-4o-mini`, the six-item loop, five-second wait and structured parser connected. The original Agent uses its formatter tool internally; no external lookup/tool or Memory is added. The native model client can retry a server or connection failure up to twice; its 401, 403 and 429 paths stop after one attempt. Uncertain sheet writes are never automatically replayed. Open Flow uses one classification round with a typed yes/no result and no retry of a failed model transport call; role/formatting instructions differ from the native formatter-tool protocol. The native Agent retains its ten-iteration cap; Open Flow allows one classification round. The native parser is strengthened to a required yes/no schema; both formats reject malformed or non-yes/no classifications before writing that batch. Native empty sheets finish with no result items; Open Flow returns an empty result with Count zero.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Restore the complete keyword classification and Number-matched update loop.
 - Keep batches of six, five-second waits and the source model/question.
 - Validate yes/no results and continue later batches after an empty update.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Software keyword classification in Google Sheets](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/0728_Manual_GoogleSheets_Update_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

@@ -19,13 +19,13 @@ Every five minutes, the workflow GETs the website, following up to 21 redirects 
 
 Both formats save a changed state after Telegram confirms the alert. A failed or uncertain send leaves the old state, so the next check tries the transition again. An uncertain send may have arrived and the retry can duplicate it; inspect the chat before manually retrying. Persistent state is scoped to the workflow, so use a separate workflow for each website. In Open Flow an unlisted redirect hostname or an HTTP response larger than 1 MiB stops the run without changing state.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the example URL and environment-variable chat ID with workflow configuration. Open Flow requires the HTTP host allowlist.
 - Configure the n8n HTTP node to return the final status for non-2xx responses; the original flat option did not apply and the response did not include statusCode. Disable n8n’s automatic Telegram footer and save the changed state after a successful alert, so failed sends can be retried on the next check.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Uptime Ping Alert — sai che un sito è giù prima dei tuoi utenti](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/devops/uptime-ping-alert.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 

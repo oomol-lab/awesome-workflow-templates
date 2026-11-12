@@ -25,15 +25,15 @@ Use a nonempty query of up to 4,096 characters and an integer limit from 1 to 10
 
 Each run makes one search request, with a 120-second task/request timeout and no workflow retry. HTTP failures or malformed responses stop the run. A repeated run performs another search; there is no saved watermark, deduplication, posting, or model call.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Store the API key in the platform's secret configuration instead of an environment expression.
 - Validate the query and limit before searching, and reject malformed responses instead of reporting them as no matches.
 - Read the current Xquik `has_next_page`, `createdAt`, and metric fields while retaining the source's older field aliases.
 - Use real line breaks in the digest.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Monitor X Search with Xquik](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Instagram_Twitter_Social_Media/Monitor%20X%20Search%20with%20Xquik.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 

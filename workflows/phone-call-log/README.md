@@ -32,6 +32,9 @@ If `call_id` is missing, the workflow generates a UUID. `from` is accepted as a 
 
 The success body is `{"success":true,"callId":"call-001","caller":"Ada"}`. The sheet write retains the source's two-attempt limit with a one-second retry interval. Open Flow retries only failures the platform identifies as safe to retry and stops when a write's result is unknown; n8n retries any node error. Requests append rows without deduplication, even when the same call ID is supplied. Retrying after a write failure or timeout may add a duplicate row. The webhook waits up to 30 seconds in Open Flow; a timeout does not cancel work already running.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Normalize text fields and validate duration before writing the row.
@@ -45,9 +48,6 @@ The success body is `{"success":true,"callId":"call-001","caller":"Ada"}`. The s
 </picture>
 
 [Open Flow JSON](templates/phone-call-log.openflow.json) · [n8n JSON](templates/phone-call-log.n8n.json)
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [VoiceAgent Lite - Phone Call Logger](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Other_Integrations_and_Use_Cases/VoiceAgent%20Lite%20-%20Phone%20Call%20Logger.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 

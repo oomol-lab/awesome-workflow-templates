@@ -51,14 +51,14 @@ The request ID must match `quote-` followed by 3–40 letters, digits, or hyphen
 
 Calculations use integer cents for line totals and round the material margin, labor, and VAT to the nearest cent using JavaScript's `Math.round`. No records are saved and no external calls or automatic retries are made. Reusing a request ID recomputes the assessment; it does not deduplicate requests. Open Flow waits up to 30 seconds for a response. Malformed JSON or requests rejected by the hosting platform's HTTP contract use that platform's error response.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Make n8n's Code execution mode and webhook body access explicit.
 - Normalize missing intermediate fields to JSON `null` before validation routing.
 - In Open Flow, return the result and corresponding HTTP status through workflow outputs. Preserve the exact-match checks, synthetic prices, rounding, and three response statuses.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Deterministic Exact-Match Quote Guard for AI and OCR Inputs](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Other_Integrations_and_Use_Cases/Deterministic%20Exact-Match%20Quote%20Guard%20for%20AI%20and%20OCR%20Inputs.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 

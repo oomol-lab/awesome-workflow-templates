@@ -17,13 +17,13 @@ Connect a Discourse account allowed to create topics in the chosen category and 
 
 The workflow creates a topic, changes the first post and retrieves that same post. Both writes can notify forum members and trigger other integrations. An error stops later steps. There is no automatic retry or rollback; if a response is lost, inspect the forum before retrying to avoid duplicate topics or edits.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the example category and text with inputs and verify post identity after updating.
 - Use the Discourse create-topic Action and Provider API in Open Flow. Both formats use the current nested post update payload; the source n8n node sends the text at the top level.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Create, update and get a post via Discourse](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/1201_Manual_Discourse_Automate_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n community listing](https://n8n.io/workflows/930-create-update-and-get-a-post-via-discourse/) credits Harshil Agrawal. The original template does not state a separate license.
 

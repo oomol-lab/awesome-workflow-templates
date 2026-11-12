@@ -29,14 +29,14 @@ The current Open Flow endpoint returns HTTP 400 to WooCommerce’s unsigned form
 
 Select WooCommerce API credentials in **Order created**, set the same channel ID in **Build the purchase notice**, and select Mattermost API credentials in **Post the purchase notice**. Activate one format for this notification to avoid duplicate subscriptions. Both formats use signed callbacks for fresh subscriptions. The native Mattermost authentication helper can send a request once more after HTTP 401; Open Flow rejects 401 after one request. Other inspected errors and unknown writes are not automatically repeated by these message transports.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace private credentials, webhook identity and destination channel with setup.
 - Preserve order.created and the billing-name/first-product message.
 - Validate required order fields and confirm the full post response without retrying uncertain writes.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Send a message on Mattermost when an order is created in WooCommerce](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Mattermost/0294_Mattermost_Woocommerce_Create_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

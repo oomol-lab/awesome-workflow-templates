@@ -28,15 +28,15 @@ Each run has one synthesis step, with no workflow-level retries configured. The 
 
 OpenAI has [announced that `tts-1` will shut down on January 6, 2027](https://developers.openai.com/api/docs/guides/text-to-speech). This template retains the source model while that endpoint remains available. Plan a migration before that date; the replacement Realtime API requires a different workflow.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Remove the redundant literal Authorization header and keep authentication in the account credential.
 - Validate text and voice before synthesis, and make MP3 output explicit.
 - Correct the source input-limit note to 4,096 characters.
 - Preserve binary audio as a downloadable Open Flow artifact or n8n binary output.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Convert text to speech with OpenAI](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/OpenAI_and_LLMs/Convert%20text%20to%20speech%20with%20OpenAI.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 

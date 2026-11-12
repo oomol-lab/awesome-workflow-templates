@@ -19,14 +19,14 @@ The report uses Binance’s rolling 24-hour BTCUSDC, ETHUSDC and SOLUSDC tickers
 
 The workflow requests the three pairs in one public call, retries the read up to four times after failure at five-second intervals, and sends HTML report chunks in order. Missing, malformed or unavailable ticker data stops before Telegram. A Telegram failure stops later chunks; an uncertain send may already have arrived, so check the chat before rerunning. The prices are Binance spot snapshots quoted in USDC.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Request the three selected symbols directly, validate all fields and make the schedule timezone explicit.
 - Replace the private chat ID and label quote amounts in USDC.
 - Preserve ordered report chunks and stop on invalid denominators instead of publishing invalid percentages.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Daily Crypto Market Summary Bot](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Http/0870_HTTP_Schedule_Update_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

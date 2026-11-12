@@ -15,14 +15,14 @@ In Open Flow, run with **Value**, such as `14/02/2020`. In n8n, edit the `value`
 
 Use two digits for the day and month and four digits for the year. The workflow checks month lengths and Gregorian leap years. Invalid dates, extra text and other input formats stop the run. It does not guess the date convention, convert timezones or create a timestamp.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Make the source’s default MM/DD/YYYY output format explicit.
 - Require the stated input format and a valid calendar date instead of accepting lenient parsing or returning an invalid-date string.
 - Use the same calendar calculation in both formats without depending on the execution machine’s timezone.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Date and Time calendar formatting workflow](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/1039_Manual_Datetime_Automate_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

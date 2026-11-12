@@ -19,15 +19,15 @@ Each run makes one GET request for forum details, checks the API success code an
 
 Disqus application permissions, trusted-domain checks and API rate limits apply. A rejected request, nonzero API code or missing forum record stops the run. No workflow retry is configured. Open Flow’s HTTP step has a 30-second execution budget.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the example forum with user configuration.
 - Clarify that the existing `api_key` request uses an application Public API Key. The source credential’s access-token label and instructions are ambiguous for that request.
 - Use formal query authentication, a configured trusted-site Referer and encoded query values in both formats.
 - Check API success before returning the full public forum record.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Disqus forum details workflow](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/0080_Manual_Disqus_Import_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

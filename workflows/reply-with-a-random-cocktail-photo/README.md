@@ -21,13 +21,13 @@ Each received message fetches one random cocktail and replies to that message wi
 
 The API request follows up to 21 redirects with a 30-second request timeout. Open Flow limits each HTTP response to 4 MiB. Use the bot in a trusted chat; any message received by the configured bot triggers a reply. Open Flow's Telegram trigger uses delivery IDs to help deduplicate webhook admission; n8n does not add the same key. Neither format promises exactly-once replies.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Validate the incoming chat and message IDs, photo URL and caption before posting. Use configured Telegram connections and preserve the reply-to-message ID.
 - Open Flow follows API redirects explicitly and checks the first cocktail; n8n uses its current HTTP request and photo nodes with a 30-second timeout.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Receive updates from Telegram and send an image of a cocktail](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Http/1052_HTTP_Telegram_Update_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

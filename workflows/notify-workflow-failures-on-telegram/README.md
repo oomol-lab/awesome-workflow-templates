@@ -19,13 +19,13 @@ An automatic workflow failure sends the workflow name, time, execution reference
 
 Error messages can contain sensitive data. Restrict access to the destination chat and workflow history. Telegram limits messages to 4096 characters; Open Flow stops if the alert is too long. A failed or uncertain send may already have been delivered; check the chat before retrying. Avoid assigning the error workflow to itself.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Configure the Telegram destination and bind source workflows using each platform’s error trigger. Open Flow exposes the run ID and node ID rather than n8n’s execution URL and node name.
 - Open Flow sends plain text; n8n escapes error details for Telegram HTML so they are displayed literally.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Error Handler send Telegram](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Error/1948_Error_Telegram_Send_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

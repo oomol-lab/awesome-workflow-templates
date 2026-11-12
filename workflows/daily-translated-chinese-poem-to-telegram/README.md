@@ -23,14 +23,14 @@ A request failure, missing poem fields, translation failure, empty translation o
 
 Open Flow uses Lingvanex `api-gl.lingvanex.com`, with the API key in the request URL; protect URL logs. n8n uses the legacy `api-b2b.backenster.com` endpoint with a Bearer credential. Translation quality depends on the service.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the Poemist endpoint, which currently returns 404, with Shiquan's Chinese classical quatrain collection and disclose its narrower range.
 - Send the English translation as the original author's workflow description specifies. The source Telegram expression instead referenced the untranslated poem.
 - Add response and length checks and configurable chat. The original timezone came from the n8n instance; both formats start at UTC. n8n Cron V1 chooses a fixed randomized second within the minute while Open Flow runs at the minute boundary.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Daily poems in Telegram](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Http/0936_HTTP_Lingvanex_Automation_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n community listing](https://n8n.io/workflows/975-get-daily-poems-in-telegram/) credits Lorena. The original template does not state a separate license.
 

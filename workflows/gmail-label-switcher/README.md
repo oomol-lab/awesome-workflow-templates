@@ -19,13 +19,13 @@ Run manually. The workflow reads the selected batch before changing labels. It r
 
 A service error stops the run without replaying earlier writes. A removal error prevents the addition phase. An addition error can leave earlier messages with the destination label and later messages with neither configured label. Check the mailbox before rerunning; messages whose source label was already removed will no longer match the reader.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace mailbox-specific labels with setup placeholders and make the source’s 10-message default explicit.
 - Keep the two label-changing phases separate and expose their modified messages and completed counts in Open Flow.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Get messages with a certain label, remove the label, and add a new one](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/0240_Manual_Gmail_Create_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

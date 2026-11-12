@@ -39,15 +39,15 @@ The endpoint waits up to 60 seconds for the workflow result. Telegram errors, in
 
 The workflow result also retains the complete message returned by its platform: Open Flow keeps the Action’s normalized message fields, while n8n keeps the Telegram API envelope. Only the confirmation text is returned by HTTP. Message text and returned data must fit the inspected Open Flow host’s 1 MiB per-Code input/result budget; oversized data fails without truncation.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Restore the GET → Telegram → confirmation sequence and replace the fixed chat ID with explicit setup.
 - Validate one query value and a configured private recipient before sending.
 - Keep the source’s Markdown behavior and original input in the confirmation, and verify the actual returned recipient/name.
 - Make the GET method, selected last-node response and plain-text content type explicit.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Telegram message API with a plain-text webhook confirmation](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Telegram/1065_Telegram_Webhook_Automation_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

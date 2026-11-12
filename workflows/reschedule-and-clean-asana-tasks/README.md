@@ -21,13 +21,13 @@ The workflow lists tasks for the selected workspace and assignee, reads each tas
 
 Open Flow stops before writes if the task list or a detail read fails. It reads at most 100 pages of 100 tasks and fails if another page remains or a cursor repeats. The n8n format follows the source's all-results pagination. If an update or deletion fails, earlier writes remain and later ones are not attempted. An uncertain write is not automatically retried; check Asana before rerunning.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace account-specific IDs and credentials with user configuration and set the minute to zero; the source leaves the minute to n8n’s stable default. Skip incomplete tasks without a due date instead of failing on the source expression.
 - Preserve the Paris midnight completion filter and Paris calendar date for due dates; keep the source's deletion branch.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Reschedule overdue Asana tasks and clean up completed tasks](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Schedule/1629_Schedule_Stickynote_Automation_Scheduled.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n listing](https://n8n.io/workflows/2701-reschedule-overdue-asana-tasks-and-clean-up-completed-tasks/) credits Bastien Laval. No separate original template license was found.
 

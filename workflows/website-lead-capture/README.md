@@ -44,6 +44,9 @@ The webhook acknowledges receipt immediately with `{"message":"Workflow was star
 
 If your form sends extra fields, add them to the Open Flow webhook body schema before use.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Improvements to the source
 
 - Validate the email address before any sheet write or notification.
@@ -54,9 +57,6 @@ If your form sends extra fields, add them to the Open Flow webhook body schema b
 - Provide a column schema, clear setup placeholders, and an explicit UTC timezone.
 
 Repeated requests create additional rows and messages. Telegram text must fit its 4,096-character message limit.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Website leads to Google Sheets with Telegram alert and auto-reply (Italian)](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Google_Drive_and_Google_Sheets/Website%20leads%20to%20Google%20Sheets%20with%20Telegram%20alert%20and%20auto-reply%20(Italian).json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 

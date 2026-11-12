@@ -19,13 +19,13 @@ The workflow submits one SMS and returns its ClickSend message ID after the serv
 
 A failed or uncertain request may already have queued the message. Check ClickSend before retrying; there is no automatic retry or deduplication. The destination and message are sent to ClickSend.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the sample recipient and text with configurable values and validate them before sending.
 - Check the individual message status and ID instead of treating a successful HTTP response as proof that the message was queued.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [The Easiest Way to Send SMS Worldwide](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/1616_Manual_Stickynote_Send_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n listing](https://n8n.io/workflows/3084-send-sms-via-clicksend-api-worldwide-without-a-phone-number/) credits Davide Boizza. The original template does not state a separate license.
 

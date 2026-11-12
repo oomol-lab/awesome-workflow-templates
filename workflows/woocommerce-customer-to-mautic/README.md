@@ -25,6 +25,9 @@ The subscription receives future `customer.updated` events. It does not import e
 
 Both formats verify fresh subscriptions using WooCommerce’s body signature. Open Flow uses the delivery ID as its trigger deduplication key when present; the native n8n trigger does not add that key. This is not an exactly-once CRM-write guarantee. Webhook acknowledgment confirms receipt, not completion of the later sync.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Repair the create branch’s reference to the nonexistent **Customer Created** node.
@@ -32,9 +35,6 @@ Both formats verify fresh subscriptions using WooCommerce’s body signature. Op
 - Validate the customer before reading Mautic and require an unambiguous exact email match before updating.
 - Preserve company mapping for new contacts and name-only updates for existing contacts; check the saved ID in both branches.
 - Use the same Mautic Basic authentication configuration in both formats; reconnect the source’s OAuth account accordingly.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [New WooCommerce Customer to Mautic](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Mautic/1160_Mautic_Woocommerce_Create_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

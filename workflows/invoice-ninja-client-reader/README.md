@@ -17,14 +17,14 @@ In n8n, select Invoice Ninja credentials in **Invoice Ninja**. Keep **API Versio
 
 Each run reads the first page of up to 50 clients, without search, ordering or related-resource filters. It retains the complete v5 client objects returned by the server. Open Flow also returns pagination metadata. An empty account returns an empty clients array. The workflow does not collect every page, create invoices or modify clients. A failed request stops the run without an automatic retry.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Update the source’s v4 default to an explicit v5 configuration in both formats. v5 uses its current client response structure and hashed IDs; these records differ from v4 responses.
 - Keep the source’s first-page, 50-client limit.
 - Expose clients and pagination metadata in Open Flow.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Invoice Ninja client list workflow](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/1003_Manual_Invoiceninja_Automate_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

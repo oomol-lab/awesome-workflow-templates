@@ -17,13 +17,13 @@ Each run makes one task creation request with only the name and workspace. It do
 
 There is no lookup, duplicate detection, update or automatic retry. A failed request stops the run. If a write times out, check Asana before running it again. Repeating a successful run can create another task.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Require the name and workspace as Open Flow run inputs.
 - Send the source’s two fields through the Asana create-task Action and expose its result.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Create a new task in Asana](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/1225_Manual_Asana_Create_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

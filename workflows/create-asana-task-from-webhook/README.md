@@ -37,15 +37,15 @@ Open Flow waits up to 60 seconds for the workflow response. The n8n Asana HTTP r
 
 The workflow result also keeps the task object returned by the API. The HTTP response contains only the confirmation text.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace empty workspace/project configuration with explicit setup placeholders and use PAT credentials in both formats.
 - Validate and trim a single task-name query value before creating a task.
 - Explicitly request the saved task’s real permalink and verify the task ID/link before responding.
 - Make the GET endpoint and plain-text completion response explicit.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Asana task creation from a webhook](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Asana/1223_Asana_Webhook_Automate_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

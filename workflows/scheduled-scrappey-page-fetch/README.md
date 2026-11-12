@@ -19,13 +19,13 @@ At midnight each day, Scrappey loads the configured page in a browser session an
 
 Both schedules start in UTC; the source used the n8n instance timezone. n8n Schedule Trigger chooses a stable second within the minute, while Open Flow starts on the minute boundary. Non-2xx HTTP responses stop the run; Scrappey may report a page or service error inside a successful HTTP response, so inspect its response. Open Flow applies a 30-second request timeout and 4 MiB response limit. A timeout may occur after the service started the request; check its result before retrying. The target URL must be HTTP or HTTPS without embedded credentials.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the example page with a configurable URL, use a secret query credential, and make the timezone explicit.
 - Configure the documented JSON request body explicitly.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Scrape every URL on the web with Scrappey](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Http/0510_HTTP_Schedule_Automation_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n community listing](https://n8n.io/workflows/2299-scrape-every-url-on-the-web-without-getting-blocked-by-anti-bot-technologies-with-scrappey/) credits Bela. The original template does not state a separate license.
 

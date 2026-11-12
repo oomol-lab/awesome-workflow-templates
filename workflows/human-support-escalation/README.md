@@ -31,6 +31,9 @@ With an email-like substring, the workflow submits one [Slack message request](h
 
 Blank input is rejected. A message destined for Slack must fit the 40,000-character budget including the prefix. Slack failures or missing acknowledgment fields stop the run without a successful confirmation. There are no workflow-level retries, duplicate-request checks or persistent state. Repeating an email-bearing request can post it again.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Extract the independently callable support handoff branch and retain both response texts and the email pattern.
@@ -38,9 +41,6 @@ Blank input is rejected. A message destined for Slack must fit the 40,000-charac
 - Replace the source Slack destination and credentials with configuration placeholders.
 - Validate blank or oversized input and require a Slack acknowledgment before confirming.
 - Replace undeclared response assignments with returned objects and disable the n8n instance-link footer.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from the support handoff sub-workflow in [Ask a human for help when the AI doesn't know the answer](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/OpenAI_and_LLMs/Ask%20a%20human%20for%20help%20when%20the%20AI%20doesn_t%20know%20the%20answer.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates). This template publishes that callable component; the source's conversational agent is separate.
 

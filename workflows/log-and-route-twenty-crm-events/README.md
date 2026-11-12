@@ -21,13 +21,13 @@ A signed record event is logged once before a notification. Deletion events endi
 
 A failed or uncertain log append may already have succeeded. A failed notification can leave the log row saved; an uncertain notification may already be delivered. Check Sheets and the destination before replaying. The workflow keeps no event deduplication history and adds no automatic write retry.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace private endpoints and destinations with setup and verify the Twenty signature before side effects.
 - Fix the source's duplicate direct notification path so each accepted event is logged before one notification. Route current deleted event names as well as delete.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Get event triggered notifications / updates on preferred messaging channels with TwentyCRM](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Webhook/1477_Webhook_Slack_Update_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

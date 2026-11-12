@@ -19,13 +19,13 @@ Each run reads one page of up to 30 contacts, starting at row zero, with no sear
 
 This workflow does not collect every page, flatten contact fields, create contacts or change campaigns or segments. A failed request stops the run without an automatic retry.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Make the source’s 30-contact limit explicit.
 - Expose contact records and the API’s total count in Open Flow.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Mautic contact list workflow](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/1017_Manual_Mautic_Automate_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

@@ -27,15 +27,15 @@ Airtable failure, an uncertain creation or an invalid record receipt prevents Sl
 
 The result keeps the complete Airtable record and all Slack receipts. Open Flow’s Slack Action exposes `ts` and `channelId`; n8n keeps the API response envelopes. A Slack receipt confirms the post identifier and channel rather than independently verifying its rendering. Full input, notification parts and accumulated receipts must fit the inspected Open Flow host’s 1 MiB per-Code input/result budget; oversized data fails without truncation.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Restore the Typeform → selected contact fields → Airtable → Slack sequence and replace private form/channel settings with configuration placeholders.
 - Preserve only the two contact fields and reject missing or ambiguous answers before creating a record.
 - Replace deprecated Airtable API-key authentication with its supported PAT credential.
 - Confirm the saved record before Slack, then verify each notification receipt and split long text sequentially.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Typeform contact submissions saved in Airtable and announced in Slack](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Slack/1191_Slack_Typeform_Automate_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

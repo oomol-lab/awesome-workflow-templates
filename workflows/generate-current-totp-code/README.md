@@ -25,14 +25,14 @@ Open Flow returns **Code**, its UTC **Expires At** timestamp, **Remaining Second
 
 An output confirms generation, not acceptance by the account’s service. Do not publish or share run outputs containing a usable code. Restrict access to the workflow and its run history. Invalid credentials or generation failure stop the run; no replacement secret or guessed code is returned. No workflow retry is added.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Restore the complete manual trigger → TOTP generation and remove private credential/instance identifiers.
 - Make the source’s SHA-1, six-digit and 30-second defaults explicit in n8n.
 - Use Open Flow’s formal TOTP Authenticator Action and retain its full current-code/validity/account output.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Manual TOTP code generation](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/0002_Manual_Totp_Automation_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

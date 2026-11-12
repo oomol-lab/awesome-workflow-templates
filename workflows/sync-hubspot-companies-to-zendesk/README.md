@@ -17,13 +17,13 @@ Create a HubSpot app token with company read access, store it as the secret Vari
 
 Every five minutes, read HubSpot companies modified in the half-open interval from the saved time through the start of this run, match each by case-insensitive organization name, and create or update the Zendesk organization name and domain. The first run establishes the current-time baseline before reading. The workflow only considers changes after that baseline. Missing names or domains and duplicate matches stop before any organization write. Updating a matched organization replaces its existing domain list with the HubSpot domain. The saved time advances only after every write is confirmed; an empty batch keeps the previous time and is read again next run. A failed or uncertain write may already have succeeded, and earlier writes can remain; inspect Zendesk before rerunning. Full listings are not a transactional snapshot: concurrent changes while pages are read can affect which records are observed. For Open Flow, the Zendesk Action uses offset pagination and stops before writing if more than 100 pages are needed. In n8n, each listing stops before writing if more than 100 pages are needed. Large accounts can hit these limits; a long empty period can increase repeated reading. The workflow does not remove organizations when HubSpot companies are deleted.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace private configuration and read all HubSpot companies without relying on an indexed search; filter by their last modification time.
 - Reject duplicate organization and company names, validate the batch before writing, and use the Zendesk Provider API for creation and updates.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Sync HubSpot companies to Zendesk organizations](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Zendesk/0285_Zendesk_HubSpot_Create_Scheduled.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n listing](https://n8n.io/workflows/1840-sync-zendesk-tickets-to-your-hubspot-contacts/) credits n8n Team. No separate original template license was found.
 

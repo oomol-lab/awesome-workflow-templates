@@ -27,6 +27,9 @@ Publish and enable the configured workflow. A run reads the complete configured 
 
 Open Flow sends each reminder through a separate Connector execution in the visible feedback loop. There is no 100-reminder total cap. The full sheet range, prepared messages and accumulated send identifiers must fit the platform's Code input and result budgets; the inspected host allows 1 MiB for each. A limit failure stops the run, and reminders already sent can repeat if you rerun it. A sent message identifier confirms Gmail accepted the request; it does not prove recipient delivery. Inspect Sent before retrying an unconfirmed send.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Reject impossible dates such as 31 February instead of rolling them into another month. Missing and malformed dates are skipped.
@@ -41,9 +44,6 @@ Open Flow sends each reminder through a separate Connector execution in the visi
 </picture>
 
 [Open Flow JSON](templates/invoice-payment-reminders.openflow.json) · [n8n JSON](templates/invoice-payment-reminders.n8n.json)
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Automatic payment reminders from Google Sheets (Italian)](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Google_Drive_and_Google_Sheets/Automatic%20payment%20reminders%20from%20Google%20Sheets%20(Italian).json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 

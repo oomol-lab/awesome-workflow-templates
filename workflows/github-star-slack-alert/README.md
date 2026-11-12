@@ -19,15 +19,15 @@ Each `created` event sends one green attachment; each `deleted` event sends one 
 
 The workflow keeps no notification history. Duplicate event deliveries or two active formats can produce repeated alerts. A malformed payload fails before Slack; a Slack error fails the run without an automatic retry.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the original repository and Slack channels with setup placeholders.
 - Read the GitHub payload through the current node output instead of legacy `.data` expressions.
 - Validate the two star actions and required sender/count fields.
 - Add notification fallback text and escape dynamic Slack values while retaining the avatar, profile link, colors, and separate destinations.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [GitHub star notifications](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Github/0973_GitHub_Slack_Create_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

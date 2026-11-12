@@ -17,13 +17,13 @@ Connect Google Sheets and Mattermost. Set the spreadsheet ID and an entire range
 
 At 08:00 UTC every day, read the sheet and send one French message per data row, in sheet order, with account, followers, posts and the current date and weekday. Header-only or empty sheets send nothing. A failed post stops later messages; an uncertain post may already have been delivered. Check the channel before retrying. Sheet contents and messages must fit execution limits.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the sample sheet and channel with configuration. Use UTC explicitly in both formats; the source depended on the instance timezone.
 - Open Flow checks unique headers before posting; n8n follows its sheet-node mapping.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [StatsInstagram](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Mattermost/0941_Mattermost_GoogleSheets_Automation_Scheduled.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

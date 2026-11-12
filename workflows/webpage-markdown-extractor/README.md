@@ -23,6 +23,9 @@ Each run has one scrape step. It requests main content in Markdown, with a 30-se
 
 A successful Firecrawl request can contain a target error page such as HTTP 404. This template preserves that content and exposes `pageStatus` so callers can decide how to use it. Firecrawl request failures, unsuccessful service responses and missing or blank Markdown stop the run. There are no workflow-level retries configured; provider request retries remain service controlled.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Declare the input as `url`, matching the source’s documented call shape instead of its undeclared `query.url` binding.
@@ -30,10 +33,6 @@ A successful Firecrawl request can contain a target error page such as HTTP 404.
 - Preserve the source v1 freshness setting explicitly with `maxAge: 0`; v2 otherwise defaults to a two-day cache allowance.
 - Build the n8n JSON body as an object, remove the empty header entry and keep the API key in its credential.
 - Reject unsuccessful or empty scrape results and include the reported page status alongside the Markdown.
-
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Using External Workflows as Tools in n8n](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Other_Integrations_and_Use_Cases/Using%20External%20Workflows%20as%20Tools%20in%20n8n.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 

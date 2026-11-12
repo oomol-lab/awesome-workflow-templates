@@ -19,13 +19,13 @@ In n8n, set the same user-name-to-room mapping in **Set**, configure the Matterm
 
 A matching request posts “Join me in a video call:” to the supplied Mattermost channel and attaches a link to the configured Whereby room. Both formats stop before posting when the username is missing or does not match the configured mapping. The source only defines one user-to-room mapping. This workflow does not create a Whereby room or verify that the room is active. An uncertain post may already have arrived, so check Mattermost before retrying.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the personal username, channel ID, and hard-coded room with setup values.
 - Validate the request username against the configured mapping before posting.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Mattermost webhook call invite](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Mattermost/1077_Mattermost_Webhook_Automate_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

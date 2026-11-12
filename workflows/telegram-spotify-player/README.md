@@ -31,6 +31,9 @@ Nontext or blank Telegram messages, a blank model query, malformed search/state 
 
 Your message text goes to the configured model service. Spotify receives its generated query and the playback commands. Telegram receives the observed item or a short failure status. The model can misidentify a song; this template uses the first search result without an approval step.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Use n8n Telegram Trigger 1.2 so its allowed-user/chat filters take effect while preserving pending updates.
@@ -40,10 +43,6 @@ Your message text goes to the configured model service. Spotify receives its gen
 - Handle empty current-state responses and distinguish observed play/pause state from command acceptance.
 - Use safe JSON/data bindings and escaped HTML replies, with generic failure messages in place of raw service errors.
 - Return the same status context after Telegram delivery instead of depending on a write response to echo the input.
-
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Telegram to Spotify with OpenAI](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Telegram/Telegram%20to%20Spotify%20with%20OpenAI.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 

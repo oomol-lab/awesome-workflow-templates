@@ -21,13 +21,13 @@ Each run reads the latest container result and creates one Airtable record per l
 
 A read or validation failure stops before writes. Open Flow creates records sequentially and stops if a create fails or cannot be confirmed; earlier records can already exist. An uncertain write in either format may have succeeded. Inspect Airtable before retrying. Large results may exceed the Provider API Request response size limit.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the empty Phantom and Airtable identifiers with configuration, and validate lead fields before writing.
 - Use the PhantomBuster Provider API Request for the latest output and container result in Open Flow. Null results produce no records.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Store the output of a phantom in Airtable](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/0369_Manual_Airtable_Automation_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n community listing](https://n8n.io/workflows/882-store-the-output-of-a-phantom-in-airtable/) credits Harshil Agrawal. The original template does not state a separate license.
 

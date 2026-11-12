@@ -19,13 +19,13 @@ Run manually or daily at midnight Europe/Berlin. The workflow reads liked tracks
 
 Open Flow reads every page before writing. It stops if the playlist name is missing or ambiguous, a page is invalid, or a track is missing its URI or added date. An empty liked collection causes no changes. It adds to an empty playlist, repairing a source path that did not reach the comparison on an empty input. Data must fit the workflow execution limits. As in the source, only the first occurrence of each matching URI is paired. Removing an extra duplicate by URI can remove every copy of that URI; a later run may add it again. Other clients modifying the playlist while this workflow runs can invalidate the comparison. A failed or uncertain write may have succeeded; inspect Spotify and Gotify before retrying.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Configure the playlist name and use its ID from the uniquely matching playlist. Both platforms require the legacy Spotify endpoint contract available to Extended Quota Mode apps.
 - Open Flow reads all pages before changes, fails closed on ambiguous or malformed input, and processes additions before deletions. The original n8n graph remains in the n8n file.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Spotify Sync Liked Songs to Playlist](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Schedule/1867_Schedule_Filter_Sync_Scheduled.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

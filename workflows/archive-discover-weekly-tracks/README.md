@@ -19,13 +19,13 @@ Every Monday at 08:30 UTC, read all playlists and both track lists, compare trac
 
 Open Flow checks for unique playlist names and valid track URIs before writes, reads all pages, and can add to an empty archive. The original n8n path may stop on an empty input before comparing. Duplicate new track URIs are each appended; an already archived URI is skipped. Playlist data must fit workflow execution limits. Concurrent playlist edits can change the comparison. Earlier additions remain if a later request fails, and an uncertain response may mean a track was added. Check Spotify before retrying; no automatic retry or rollback is configured.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Use an explicit UTC schedule and require the legacy Spotify endpoint contract available to Extended Quota Mode apps.
 - Open Flow validates playlist names and track URIs and supports an empty archive; the n8n graph retains the source flow.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Archive Discover Weekly tracks](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Schedule/0382_Schedule_Spotify_Create_Scheduled.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n community listing](https://n8n.io/workflows/2044-spotify-discover-weekly-archive/) credits JYLN and acknowledges Trey’s earlier workflow. The original template does not state a separate license.
 

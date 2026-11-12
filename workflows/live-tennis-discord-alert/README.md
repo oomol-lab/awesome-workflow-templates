@@ -29,6 +29,9 @@ Open Flow uses persistent node-scoped deduplication storage, separated between d
 
 The Live Tennis API receives your query and key. Discord receives the player names and match status. No scores or betting information are sent.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Make the source’s default first-page limit explicit and expose whether more pages exist.
@@ -37,9 +40,6 @@ The Live Tennis API receives your query and key. Discord receives the player nam
 - Collapse duplicate IDs within a response.
 - Retain new IDs only after a successful execution, replacing the source’s record-before-send behavior that could permanently skip messages after a failed delivery. Partial delivery can instead cause duplicate messages on a later poll.
 - Use configurable API secrets and Discord Bot connections.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Post New Live Tennis Matches to Discord on a Schedule](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Discord/Post%20New%20Live%20Tennis%20Matches%20to%20Discord%20on%20a%20Schedule.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates). The source identifies **the team behind Live Tennis API** as its contributor and discloses that affiliation. No separate template license is stated in the export.
 

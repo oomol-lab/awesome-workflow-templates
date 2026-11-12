@@ -17,13 +17,13 @@ For reuse, provide one object to the Open Flow Start input. In n8n, connect your
 
 At the rename step, the value, including null, an array or a nested object, is kept without conversion. Other fields remain. When `key` is absent, the object is unchanged. When `newkey` already exists, the source value replaces it. This template performs one fixed top-level rename; it does not recursively rename matching nested fields.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Accept a JSON object through Open Flow’s Start input in place of the editable n8n Set example.
 - Keep the source rename, overwrite and missing-field behavior. The n8n Set and Rename Keys nodes retain their native versions and configuration.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Rename Keys workflow](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/1045_Manual_Renamekeys_Automate_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

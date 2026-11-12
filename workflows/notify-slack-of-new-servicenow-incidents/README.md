@@ -19,13 +19,13 @@ Every five minutes or on a manual run, the workflow requests incidents created s
 
 The query is a rolling five-minute window, not a durable checkpoint. Delayed runs, inaccessible records or overlapping runs can miss or duplicate incidents. In Open Flow, a response larger than 4 MiB stops the run without a connection alert. Slack delivery failures stop the run; a lost response can hide a delivered message, so inspect the channel before retrying. Open Flow uses UTC for its timestamp. n8n also uses UTC; confirm the ServiceNow account interprets query times as intended.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the private ServiceNow instance and Slack channel with configuration. Handle the ServiceNow caller display value when it is returned as text and escape Slack control characters.
 - Open Flow sends incident details as a text message with a link; n8n retains the source Slack blocks. Both retain the source's 50-item read limit.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [ServiceNow Incident Notifications](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Datetime/0682_Datetime_Schedule_Create_Scheduled.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n listing](https://n8n.io/workflows/2704-servicenow-incident-notifications-to-slack-workflow/) credits Angel Menendez. No separate original template license was found.
 

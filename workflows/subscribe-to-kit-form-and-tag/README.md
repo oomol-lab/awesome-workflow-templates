@@ -21,13 +21,13 @@ Each run submits the email to the form, creates the named tag and applies the re
 
 A failure stops later steps. Earlier writes can already have succeeded, and an uncertain response may mean a write succeeded. Inspect the subscriber, form and tags before retrying. The V3 secret is sent in the request URL, as in the original n8n credential; URLs may appear in service or proxy logs.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the personal form and tag IDs and blank values with configuration. Apply the newly created tag instead of a fixed unrelated tag ID.
 - Use the configured email rather than assuming it appears in the form response; verify returned subscription and tag IDs.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Add subscriber to form, create tag and subscriber to the tag](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/0653_Manual_Convertkit_Create_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n community listing](https://n8n.io/workflows/642-manage-subscribers-in-convertkit/) credits Harshil Agrawal. The original template does not state a separate license.
 

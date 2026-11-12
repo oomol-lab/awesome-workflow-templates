@@ -19,13 +19,13 @@ Every six hours in UTC, each website is checked and its observation logged. A re
 
 Failed or uncertain alerts and writes may have completed; inspect the destinations before retrying. Earlier side effects are not rolled back. A later check can repeat an alert if its status update did not complete. Open Flow requires each response to fit its host limits.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace private identifiers, repair response-to-site association and add per-site Log Sheet configuration: URLs cannot be Google Sheets worksheet names. Record all observation fields and use UTC timestamps rather than relying on a response Date header. Open Flow uses the scheduled time; n8n records the check time.
 - Use the same ordered alert, log and status update path, write only the status cell and follow redirects within a bounded limit. Both formats use UTC rather than the source instance timezone.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Host your own uptime monitoring with scheduled triggers](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Schedule/0529_Schedule_Slack_Update_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n listing](https://n8n.io/workflows/2327-host-your-own-uptime-monitoring-with-scheduled-triggers/) credits Jimleuk. No separate original template license was found.
 

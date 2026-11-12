@@ -17,13 +17,13 @@ Connect n8n and Telegram. Set the n8n workflow ID in **Get the selected workflow
 
 The workflow reads the selected n8n workflow's execution history and sends one Telegram message listing executions that started in the past seven days and have status `error` or `crashed`. Waiting, running and successful executions are excluded. No matches send nothing. Execution history depends on the n8n instance's retention and API access. Open Flow uses the scheduled occurrence as the end of the seven-day window; n8n uses its actual execution time, so delayed runs can differ. Open Flow keeps the read pages in the run and is subject to its execution limits. A report longer than 4,096 characters stops rather than silently truncating. A lost Telegram response may still mean a message was delivered; inspect the chat before replaying.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Use an explicit Sunday UTC schedule and filter for error and crashed execution status to match the source’s failure-report goal. The source inherited the instance time zone and used an every-seven-days interval.
 - Replace the unconfigured chat and workflow selection; include the execution ID and timestamp as plain text rather than links with incomplete URLs.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Weekly failures report](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Telegram/0465_Telegram_Filter_Send_Scheduled.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

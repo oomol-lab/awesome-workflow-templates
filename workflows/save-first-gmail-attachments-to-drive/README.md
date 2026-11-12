@@ -21,14 +21,14 @@ The workflow reads up to the first 10 messages in the label, including read and 
 
 Open Flow uses Gmail's normalized attachment order and stages complete attachment contents before upload; all staged data must fit its 1 MiB Code limits. Downloaded bytes and metadata are checked. n8n uses its own binary storage limits and MIME parser. Restrict access to execution history, transit links and files. A run can create duplicate Drive files when repeated. A failed or uncertain upload may already have created a file; check Drive before retrying. The n8n Drive node uploads content before applying the filename and destination folder, so a later failure can leave a file outside the intended folder.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace private label and folder IDs and add a manual start.
 - Upgrade n8n Gmail to V2 and enable attachment download. The source Gmail V1 does not populate the attachment binary required by the Drive node under its default settings.
 - Use Gmail attachment transit in Open Flow and verify bytes before uploading.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Gmail attachment to Google Drive](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Gmail/0036_Gmail_GoogleDrive_Import.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

@@ -19,13 +19,13 @@ At 23:45 UTC or on manual start, find existing year and two-digit month folders 
 
 An upload or label change may succeed even if the response is lost. Check Drive and Gmail before retrying; earlier files and label changes are not rolled back, and an unread message can be uploaded twice. Open Flow reads the message batch and stages available attachment bytes before uploading, then uploads, marks and notifies one message at a time. A missing attachment is reported when its message is processed, so earlier messages may already have been uploaded and marked read. n8n completes each node for its batch before running the next, so a later upload failure can leave earlier files while the messages remain unread. Its Drive node uploads file content before assigning the destination and filename, so a later failure can leave a file outside the intended folder. A Slack failure occurs after the message is marked read; review the execution to send a missing notification. Avoid overlapping runs and restrict access to execution data and attachment transit URLs.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Connect the previously disconnected date/folder branch, scope folder searches to the configured parent, reject ambiguous matches and set UTC explicitly. n8n uses a fixed second within the minute; Open Flow starts at the minute boundary.
 - Enable Gmail attachment download in n8n V2; the source Gmail V1 did not populate the binary consumed by Drive. Use the attachment filename for the saved file and preserve each message's association through the upload and mark-read steps.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Orlen invoice archive](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Slack/0940_Slack_Manual_Automation_Scheduled.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

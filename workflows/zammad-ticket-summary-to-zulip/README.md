@@ -23,13 +23,13 @@ The workflow reads every page of tickets visible to the Zammad account and count
 
 A Zulip failure stops the run. An uncertain post may already have arrived, so check the channel before retrying.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Fix the source’s execute-once setting so all returned tickets are counted.
 - Make the state IDs, Zulip destination and timezone explicit; check the Zulip response.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Zammad Open Tickets](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/0975_Manual_Zulip_Automation_Scheduled.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

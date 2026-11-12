@@ -23,13 +23,13 @@ The source requested membership **Any**. This workflow also sends no membership 
 
 The greeting is sent before the member lookup. If lookup or grouping fails, it remains posted. If a group post fails or its outcome is unknown, earlier posts remain and the current message may have arrived. Check the rooms before rerunning; no automatic retry or rollback is configured. Matrix transaction IDs are generated for individual posts, and rerunning creates new IDs. Large membership lists must fit runtime response and Code limits.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Configure both room IDs and the homeserver without personal credentials. Read the Matrix event's `state_key` user ID; the original grouping code expected a `user_id` field absent from standard membership events.
 - Omit empty membership query values while preserving the source's Any scope, handle a single member without an index error and validate each post result.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Coffee Bot (Matrix)](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Matrix/1236_Matrix_Cron_Automate_Scheduled.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n tutorial](https://blog.n8n.io/how-to-host-virtual-coffee-breaks-with-n8n/) credits Jason McFeetors. The original template does not state a separate license.
 

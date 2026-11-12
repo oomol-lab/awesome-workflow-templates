@@ -19,14 +19,14 @@ Enable one format with this bot at a time: Telegram supports one active webhook 
 
 Queued updates are retained when the webhook is created. Open Flow’s optional chat/user filters are initially empty, matching the source’s unrestricted message trigger. A malformed update, incomplete weather response, or service error stops the run without a reply or retry. Replaying an event can send another reply.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Make metric units explicit and escape the weather description for Telegram HTML.
 - Check the incoming chat ID and required weather fields before replying.
 - Update the n8n Telegram trigger to version 1.2 while retaining queued updates.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Telegram Weather Workflow](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Openweathermap/0751_Openweathermap_Telegram_Automate_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

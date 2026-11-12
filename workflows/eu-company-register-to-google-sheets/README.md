@@ -27,6 +27,9 @@ Matching uses the Actor's returned company name, with exact case and text. It do
 
 No-match queries leave their input rows unchanged. A failed read produces no successful data or sheet writes. Each completed header or cell-update receipt must match before a later write can start. A header/update/append failure stops later writes; earlier confirmed writes can remain. Unknown Actor starts and sheet writes are not automatically replayed. Check the Actor run and sheet before restarting after an uncertain result. There is no transaction or concurrency guarantee across services.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Use visible Actor start, completion polling and complete dataset reads; a background run is never treated as company data.
@@ -35,9 +38,6 @@ No-match queries leave their input rows unchanged. A failed read produces no suc
 - Preserve the source read defaults, unformatted values and formatted date strings. Normalize numeric company queries to text for the Actor. Keep the full seven-country query, runtime, memory and eleven mapped fields. Use explicit setup placeholders and validate write receipts.
 
 Review actual register records before using the enrichment. The workflow does not establish legal identity, current registration accuracy or the quality of a name match. Configure accounts and run a small sheet test before use.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Enrich a Google Sheet of companies with EU business register data](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Google_Drive_and_Google_Sheets/Enrich%20a%20Google%20Sheet%20of%20companies%20with%20EU%20business%20register%20data.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 

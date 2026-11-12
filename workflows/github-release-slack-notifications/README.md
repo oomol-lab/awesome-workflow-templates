@@ -27,15 +27,15 @@ Open Flow returns all normalized Slack receipts (`ts` and `channelId`), the coun
 
 Open Flow identifies deliveries by GitHub’s delivery ID when supplied. n8n adds no workflow-level delivery history. Manual replay, redelivery or an uncertain post can produce duplicates. The complete event, parts and accumulated receipts must fit the inspected Open Flow host’s 1 MiB per-Code input/result budget; oversized data fails without truncation.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Restore the original GitHub-to-Slack connection and replace private repository/channel values with configuration placeholders.
 - Keep all delivered release actions and the complete repository/tag/notes/URL message.
 - Use current secret-checked webhook registration and explicit native authentication.
 - Split long notices sequentially and check each Slack receipt before posting the next part.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [GitHub release notifications to Slack](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Github/1068_GitHub_Slack_Automation_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

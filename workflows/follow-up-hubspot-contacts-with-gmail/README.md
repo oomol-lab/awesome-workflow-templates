@@ -19,14 +19,14 @@ At 09:00 UTC each day, search up to the first 100 contacts with a known last-con
 
 The original n8n schedule used the instance timezone; adjust UTC if needed. This checks only the first 100 search results each run and search indexing can delay changes. Concurrent contact updates can change eligibility after the check. Missing contact details or invalid API responses stop processing. A send or engagement write can succeed even when its response is lost. If a send succeeded but logging failed or was uncertain, a later run can send again; inspect Gmail and HubSpot before retrying. Earlier contacts may already have been processed when a later one fails.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace private sender and message text with editable settings, and carry the original contact through the association response.
 - Send first and log the confirmed email second. The source branched both actions from the same input without that guarantee. Require a complete single-association response before sending.
 - Use HubSpot's current email engagement endpoint and UTC instead of the source instance timezone.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Follow up with HubSpot contacts](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Schedule/0422_Schedule_HTTP_Send_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n listing](https://n8n.io/workflows/2118-send-follow-ups-using-gmail-to-hubspot-contacts/) credits Mutasem. No separate original template license was found.
 

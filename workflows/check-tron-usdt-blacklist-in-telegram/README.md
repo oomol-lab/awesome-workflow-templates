@@ -19,13 +19,13 @@ Send a TRON Base58Check address as the complete message. The workflow validates 
 
 The public TronGrid endpoint applies rate limits and may require an API key depending on traffic. If needed, configure the `TRON-PRO-API-KEY` header as a secret on both HTTP nodes in the chosen format. Requests disclose the address to the node service. Each valid request makes two API calls. A failed or uncertain Telegram reply may already have been delivered; inspect the chat before retrying.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Query the current USDT contract state instead of treating TronScan's historical blacklist transactions across stablecoins as current USDT status. Reject malformed responses instead of reporting them as clear.
 - Validate the complete address and checksum, and reply in the source chat so replies also work in groups.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [TRON USDT Blacklist Checker](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Http/1632_HTTP_Telegram_Monitor_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n listing](https://n8n.io/workflows/3797-check-tron-wallet-usdt-blacklist-status-via-telegram/) credits FORK SOFTWARE TECHNOLOGIES INC. The original template does not state a separate license.
 

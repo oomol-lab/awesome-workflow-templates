@@ -21,12 +21,12 @@ For each outgoing webhook message, the workflow validates the token and looks fo
 
 A failed or uncertain post may still have taken effect. Check the channel before rerunning; repeated deliveries are not deduplicated.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Require and validate the Mattermost outgoing webhook token before posting, and return an empty JSON receipt.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Gender inclusive language bot for Mattermost](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Mattermost/0301_Mattermost_Noop_Automation_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n listing](https://n8n.io/workflows/982-gender-inclusive-language-bot-for-mattermost/) credits Lorena. No separate original template license was found.
 

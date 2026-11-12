@@ -19,14 +19,14 @@ Every order update with status `processing` sends one HTML message with the orde
 
 Malformed required fields or an escaped HTML notice longer than 4096 characters stop before Telegram. The Open Flow integration accepts order payloads up to 64 KiB. A failed or uncertain Telegram send is not automatically repeated; check the chat before retrying. The webhook acknowledgment does not confirm that the Telegram message was delivered.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Use a signed WooCommerce subscription in place of the manually configured unsigned webhook.
 - Preserve the total's decimal string and show currency, interpret the GMT creation date as UTC, and escape order text for Telegram HTML. Invalid required data stops instead of substituting the current time.
 - Remove the n8n-specific attribution footer and require a configured chat ID.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Send Telegram Alerts for New WooCommerce Orders](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Webhook/1525_Webhook_Telegram_Create_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n community listing](https://n8n.io/workflows/2575-notify-on-telegram-when-a-new-order-is-created-in-woocommerce/) credits AmirHossein MnasouriZade. The original template does not state a separate license.
 

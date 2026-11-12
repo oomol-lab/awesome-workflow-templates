@@ -17,14 +17,14 @@ In Open Flow, use Run and supply `topic`, `tone`, and integer `word_count`. For 
 
 Four model calls run in order. A failure stops later steps. The workflow does not browse sources, verify citations, or publish the post. Treat research notes as model output and check facts before publication. Word count is a prompt target, not an enforced count.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Use configured model accounts instead of a machine-local Ollama URL.
 - Fix the source requests that omitted POST, and read message output through the model node contract instead of parsing a nonexistent `data` string.
 - Use real paragraph breaks in prompts and stop if editing returns an empty post.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [AI Blog Writer Pipeline with Ollama](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/OpenAI_and_LLMs/AI%20Blog%20Writer%20Pipeline%20with%20Ollama.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 

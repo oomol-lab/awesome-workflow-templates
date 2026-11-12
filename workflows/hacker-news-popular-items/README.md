@@ -12,6 +12,9 @@ The read uses Algolia `/api/v1/search`, an empty query, no tag or date filter an
 
 There is one read and no pagination, automatic retry or stored history. A non-200, malformed response or invalid selected field stops without a snapshot. Open Flow's Provider Proxy limits the response to 4 MiB and the request to 30 seconds. The n8n HTTP step also uses a 30-second timeout and the HTTPS endpoint without redirects.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Extract the independent Execute Workflow Trigger → Hacker News → field selection → JSON branch from the source. The parent chat interface and its tool are outside this template.
@@ -25,9 +28,6 @@ There is one read and no pagination, automatic retry or stored history. A non-20
 </picture>
 
 [Open Flow JSON](templates/hacker-news-popular-items.openflow.json) · [n8n JSON](templates/hacker-news-popular-items.n8n.json)
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from the independent Hacker News data branch of [AI chat with any data source (using the n8n workflow tool)](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/OpenAI_and_LLMs/AI%20chat%20with%20any%20data%20source%20(using%20the%20n8n%20workflow%20tool).json) in [Enes Cingoz's awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates), pinned to `827110332c21cbe000ab13f6d292d5adb1f1f8db`. Source collection notice: © 2024–2026 Enes Cingoz, [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). The export does not identify a separate template author or license. See [repository licensing](../../README.md#licensing).
 

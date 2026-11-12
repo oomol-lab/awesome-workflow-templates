@@ -19,13 +19,13 @@ The workflow activates the selected n8n workflow daily at 08:00 UTC and deactiva
 
 A failed or lost response may still mean the requested status change occurred. Check the target in n8n before retrying. This schedule controls activation; it does not stop executions already running or guarantee that scheduled jobs were processed while the target was inactive.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the private target ID, use UTC as the starting time zone and verify the returned target and status. The source inherited the instance time zone.
 - n8n checks that the target is not the scheduler itself.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Schedule workflow activity time](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Schedule/1820_Schedule_N8N_Automate_Scheduled.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n community listing](https://n8n.io/workflows/3229-activate-and-deactivate-workflows-on-schedule-using-native-n8n-api/) credits Olek. The original template does not state a separate license.
 

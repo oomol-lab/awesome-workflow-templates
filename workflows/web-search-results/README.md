@@ -23,16 +23,15 @@ Each run has one search step. It requests up to five results using Tavily’s `b
 
 Open Flow returns a `results` array containing `{title, url, snippet}`. n8n returns one item per result with the same fields. No matches is a successful empty list. Missing results or malformed entries stop the run; request failures are not converted to empty search results. There are no workflow-level retries or duplicate suppression. The provider manages its own request behavior. This template does not summarize results, call an LLM or crawl the linked pages.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace Superhighway with Tavily in both formats. [The original service endpoint](https://superhighway.walls.sh/) now reports that Superhighway shut down on October 26, 2026. The replacement changes the search backend, ranking and snippets.
 - Preserve the five-result limit and `{title, url, snippet}` output, mapping Tavily’s `content` field to `snippet`.
 - Keep API keys in normal account credentials and build n8n’s JSON body as an object.
 - Validate queries and result records, preserving empty searches and rejecting failed or malformed responses.
-
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Live Web Research Agent with Superhighway](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/AI_Research_RAG_and_Data_Analysis/Live%20Web%20Research%20Agent%20with%20Superhighway.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 

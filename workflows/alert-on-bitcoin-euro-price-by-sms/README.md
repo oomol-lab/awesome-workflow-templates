@@ -17,13 +17,13 @@ Connect CoinGecko and Twilio. In Open Flow, set the EUR threshold and sender and
 
 Every minute the workflow requests the Bitcoin/EUR price. If the price is greater than or equal to the threshold, it sends an SMS with the quoted price. Every qualifying run sends another SMS; there is no crossing detection or deduplication. CoinGecko quotes can be delayed and are not trading prices. A failed or uncertain SMS may already have been sent; check before retrying.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the legacy unauthenticated CoinGecko node with the current authenticated simple-price HTTP request in n8n, and replace placeholder phone numbers with configuration. The threshold starts at the source’s EUR 9000 and can be changed. Open Flow validates the quote, threshold and phone numbers before sending; n8n’s IF node treats a missing quote as zero, so use a positive threshold and inspect failed or empty price responses.
 - Open Flow runs on UTC minute boundaries; n8n uses its interval schedule.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Get the price of BTC in EUR and send an SMS when the price is larger than EUR 9000](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Noop/1130_Noop_Twilio_Send_Scheduled.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

@@ -19,14 +19,14 @@ Each run searches the channel for up to four videos ordered by date. The first n
 
 Open Flow saves the IDs before sending. n8n saves changed static data at execution end even if a send fails. Consequently an unsuccessful or unknown Telegram send can be skipped on the next run; inspect the chat before retrying. Overlapping runs and hard crashes can behave differently. Open Flow checks at UTC half-hour boundaries; the source and n8n interval start from activation, so their phase may differ.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the original channel and chat IDs, and generalize the personal message.
 - Upgrade the n8n Function node to Code V2, escape video titles for Telegram HTML and reject malformed results or oversized messages before saving IDs and sending.
 - Open Flow uses the YouTube Connection Proxy for the channel-wide search because the current Search Action requires a search term. Both formats retain the channel, video type, date order and four-result limit.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Send YouTube videos to Telegram](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Youtube/0197_Youtube_Telegram_Send_Scheduled.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n listing](https://n8n.io/workflows/1599-send-new-youtube-channel-videos-to-telegram/) credits Alessio. The original template does not state a separate license.
 

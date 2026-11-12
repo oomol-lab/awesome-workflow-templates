@@ -21,14 +21,14 @@ At 10:00 UTC each Monday, the workflow greets the channel, reads all member page
 
 Errors stop the remaining steps. Earlier messages or invitations may already exist; inspect Mattermost and Calendar before retrying. Invites and groups are not deduplicated. Member data and groups must fit the execution limits; Open Flow stops if channel listing reaches 100 pages rather than silently truncating. Restrict access to member emails and workflow history.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the fixed 2020 event date with a future session relative to each weekly trigger, and request invitation emails. The schedule timezone is explicitly UTC.
 - Fix the source single-member grouping error by skipping grouping with fewer than two people.
 - Open Flow uses the formal Mattermost and Google Calendar Provider APIs for complete membership pagination and invitation fields. n8n connects announcements before invitations and uses an authenticated Calendar HTTP request to supply the documented Google Meet conference key.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Mattermost Coffee Bot](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Mattermost/1137_Mattermost_Cron_Automate_Scheduled.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

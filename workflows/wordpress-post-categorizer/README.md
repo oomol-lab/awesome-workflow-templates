@@ -38,6 +38,9 @@ Updates run one at a time in collection order. A failed update stops later updat
 
 The result contains the requested `{id, categoryId}` assignments and a count after all update calls succeed. These are the selected assignments, not an independent read-back audit. Post titles and the configured category names are sent to the model service. Choosing a category is a model judgment; review the taxonomy and test on a suitable WordPress site before running across the collection.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the tool-less Agent with an ordinary LLM Chain in n8n and a visible single-post classifier workflow in Open Flow.
@@ -46,10 +49,6 @@ The result contains the requested `{id, categoryId}` assignments and a count aft
 - Read all reported pages, preserve collection order, and validate the complete batch before updates.
 - Reject out-of-taxonomy model responses and send category IDs as numeric arrays.
 - Keep read, classification and write phases separate, with explicit empty-collection output and partial-write failure behavior.
-
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Auto-Categorize blog posts in wordpress using A.I.](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/WordPress/Auto-Categorize%20blog%20posts%20in%20wordpress%20using%20A.I..json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates). The export links to this [case study by Keith Rumjahn](https://rumjahn.com/how-to-use-a-i-to-categorize-wordpress-posts-and-streamline-your-content-organization-process/) and its accompanying [video tutorial](https://www.youtube.com/watch?v=IvQioioVqhw); it does not state a separate template license.
 

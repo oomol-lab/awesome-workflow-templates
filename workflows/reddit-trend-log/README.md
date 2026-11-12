@@ -24,6 +24,9 @@ The workflow uses the first 20 hot posts, keeps scores strictly greater than 3, 
 
 Malformed or incomplete model JSON produces empty trends and ideas with sentiment `unknown`. A failed Reddit or model request stops without writing. The configured limits are two Reddit attempts, three model attempts, and two sheet-write attempts, with intervals of five, two, and one second. Open Flow retries only failures the platform marks safe to retry; n8n retries node errors. A repeated write or request can create another log row.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Use account-backed Reddit reads instead of an unauthenticated public endpoint.
@@ -31,9 +34,6 @@ Malformed or incomplete model JSON produces empty trends and ideas with sentimen
 - Use the current n8n model node and real line breaks in its post list.
 - Validate numeric post metrics and incomplete analysis, preserve the parse-failure fallback, and write literal sheet values with RAW formatting.
 - Tell the model to return empty analysis for an empty post list and treat titles as data.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [SocialPulse Lite - Reddit Trend Monitor](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/AI_Research_RAG_and_Data_Analysis/SocialPulse%20Lite%20-%20Reddit%20Trend%20Monitor.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 

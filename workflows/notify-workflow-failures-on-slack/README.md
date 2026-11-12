@@ -19,13 +19,13 @@ An automatic workflow failure sends its workflow name, execution reference, fail
 
 Error messages can contain sensitive information. Restrict access to the channel and workflow history. Open Flow stops before sending if the alert exceeds 40,000 characters; Slack may reject oversized messages in either format. A failed or uncertain send may already have been delivered; inspect the channel before retrying.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Configure the Slack channel and bind the relevant source workflows through each platform's error trigger. Open Flow reports its run ID and node ID instead of n8n's execution URL and node name.
 - Escape Slack control characters in error details to prevent them from becoming channel or user mentions.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Slack Workflow](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Error/0447_Error_Slack_Send_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

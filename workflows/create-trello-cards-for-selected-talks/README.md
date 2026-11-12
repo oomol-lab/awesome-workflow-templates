@@ -19,12 +19,12 @@ A manual run retrieves all Airtable records matching `{Total Score} > 15`, inclu
 
 Both formats require the seven proposal fields as text and a completed Bannerbear image. Empty values are omitted from the corresponding Bannerbear layer modification, retaining the template default. Open Flow uses Bannerbear's synchronous endpoint, which waits up to 10 seconds. n8n uses asynchronous creation followed by up to three status checks, two seconds apart. A timeout or failed write can leave an image or card behind. Earlier successful writes are not rolled back and no automatic retry is configured. Inspect the services before repeating a run with an uncertain outcome.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace empty identifiers with user configuration. Both formats check proposal fields and completed images. Open Flow uses the synchronous Bannerbear endpoint; n8n keeps the source asynchronous creation and polling.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [CFP Selection 2](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/1028_Manual_Trello_Automation_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n community listing](https://n8n.io/workflows/385-send-airtable-data-as-tasks-to-trello/) credits Tanay Pant. The original template does not state a separate license.
 

@@ -19,14 +19,14 @@ Each run sends one add-member request and returns the complete member response. 
 
 A failed request or unexpected member response stops the run. No automatic retry or rollback is configured. Check the audience before repeating a request with an uncertain result.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the source’s audience, email and first-name examples with user configuration.
 - Use OAuth2 credentials in n8n.
 - Require audience ID, email and first name as Open Flow run inputs and expose the created member.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Mailchimp add-member workflow](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/0938_Manual_Mailchimp_Automation_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

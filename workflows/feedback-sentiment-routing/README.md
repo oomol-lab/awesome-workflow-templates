@@ -27,15 +27,15 @@ Each completed form runs one sentiment analysis step against Google Cloud Natura
 
 Feedback text is sent to Google for sentiment analysis. The name and feedback are sent to the chosen Notion and Slack destinations or to Trello, according to the score.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the original private form and destination identifiers with configuration placeholders.
 - Match full Typeform answers to question definitions by field ID and reject missing or ambiguous required text answers. Leading or trailing whitespace in question titles is ignored.
 - Make the original numeric threshold explicit and validate the service’s score before choosing a branch.
 - Use a secret Google API key in Open Flow; the n8n version keeps its native Google OAuth2 credential. Both call the same v1 sentiment endpoint.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Add positive feedback messages to a table in Notion](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Notion/Add%20positive%20feedback%20messages%20to%20a%20table%20in%20Notion.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 

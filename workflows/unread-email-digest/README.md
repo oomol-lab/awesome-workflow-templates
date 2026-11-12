@@ -37,15 +37,15 @@ The workflow sends the model each message's sender, subject, and first 200 chara
 
 The prompt groups messages into urgent, important, and remaining items. Model output is delivered as plain text. It must fit within Telegram's 4,096-character message limit.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Improvements to the source
 
 - Set an explicit UTC schedule instead of depending on an unspecified instance timezone. The schedule and heading timezone are configurable.
 - Deliver Telegram notifications as plain text so underscores, brackets, or other model-generated markup cannot cause Markdown parsing errors.
 
 The source's weekday schedule, search query, 25-message limit, preview length, Italian priorities, and empty-result branch are retained.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Daily AI digest of unread emails to Telegram (Italian)](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Gmail_and_Email_Automation/Daily%20AI%20digest%20of%20unread%20emails%20to%20Telegram%20(Italian).json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 

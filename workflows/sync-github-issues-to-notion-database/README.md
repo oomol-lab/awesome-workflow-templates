@@ -21,13 +21,13 @@ An opened issue creates a page with its title, numeric GitHub ID, link and unche
 
 Notion or GitHub errors stop the run. There is no automatic retry or transactional guarantee; inspect Notion before replaying an uncertain write. Repeated opened deliveries can create duplicate pages. Avoid overlapping runs and restrict access to issue details and workflow history.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace repository and database identifiers with configuration and validate the issue payload.
 - Stop when more than one page matches an issue instead of updating multiple pages. Open Flow uses the current Notion data source API.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Sync Github Issues to Notion](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Github/0264_GitHub_Stickynote_Create_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

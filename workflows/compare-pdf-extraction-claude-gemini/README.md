@@ -22,7 +22,7 @@ Open Flow downloads the PDF into connector transit, checks the byte count when s
 Complete PDF bytes and encoded requests must fit Open Flow's HTTP and Code budgets. This does not compare model accuracy or guarantee extraction. Verify authorization to send the document to both services.
 
 <details>
-<summary>Source and license</summary>
+<summary>Inspiration &amp; credits</summary>
 
 Adapted from [Extract and process information directly from PDF using Claude and Gemini](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/PDF_and_Document_Processing/Extract%20and%20process%20information%20directly%20from%20PDF%20using%20Claude%20and%20Gemini.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 

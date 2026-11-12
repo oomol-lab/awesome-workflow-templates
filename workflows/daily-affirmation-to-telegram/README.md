@@ -19,14 +19,14 @@ In n8n, select Telegram credentials, set the chat ID, and activate the workflow.
 
 Once each day, the workflow requests one affirmation and sends it with a short introduction. If the response has no non-empty `affirmation` string or the request fails, no Telegram message is sent. Messages use Telegram legacy Markdown, so formatting characters in an affirmation can affect rendering or cause a send error. A Telegram send failure stops the run; an uncertain send may already have arrived, so check the chat before retrying.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Remove the personal name from the message and add a configurable Telegram destination.
 - Set the schedule timezone to UTC explicitly.
 - Check that the service returned a non-empty affirmation before sending.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Daily Text Affirmations](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Http/0745_HTTP_Telegram_Automation_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

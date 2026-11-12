@@ -29,15 +29,15 @@ Each returned message is checked for its ID, private recipient and complete rend
 
 Open Flow identifies webhook deliveries by the Telegram update ID. The n8n trigger adds no workflow-level delivery history. Manual replays or uncertain sends can produce duplicate messages. Complete updates, encoded parts and accumulated receipts must fit the inspected Open Flow host’s 1 MiB per-Code input/result budget; oversized data fails without truncation. The Open Flow result keeps all normalized message receipts (`messageId`, `chat`, `text` and other returned fields) plus a count. n8n keeps the Telegram API response envelopes.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Keep private replies to the original sender and make unsupported update handling explicit.
 - Use the n8n trigger’s supported secret-checking version while preserving pending updates.
 - Replace unescaped Markdown fences with escaped HTML code blocks, disable generated n8n message attribution and split oversized JSON into sequential parts.
 - Confirm each sent part without fetching media files.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Telegram update JSON echo debugger](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Telegram/1941_Telegram_Stickynote_Automate_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

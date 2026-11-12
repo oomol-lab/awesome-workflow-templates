@@ -35,9 +35,8 @@ A model, read or confirmed write failure stops that run. Unknown write outcomes 
 
 The source carries the tag **Ted’s Tech Talks**. Its four setup notes are retained in the n8n template, including the original public demonstration-sheet link. Replace the template’s placeholder ID with a sheet you control.
 
-
 <details>
-<summary>Source and license</summary>
+<summary>Inspiration &amp; credits</summary>
 
 Adapted from [Qualify new leads in Google Sheets via OpenAI's GPT-4](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Google_Drive_and_Google_Sheets/Qualify%20new%20leads%20in%20Google%20Sheets%20via%20OpenAI_s%20GPT-4.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 

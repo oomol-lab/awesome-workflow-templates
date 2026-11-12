@@ -23,13 +23,13 @@ Open Flow processes at most 50 messages per poll page and checks the byte count 
 
 An error stops the run; earlier Drive files remain. A failed or uncertain upload may already have created a file. Inspect Drive before retrying. There is no exactly-once guarantee or automatic retry after a write.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the original Drive destination with configuration and preserve the complete filename when adding the sender address, including filenames with multiple dots.
 - Update n8n Gmail Trigger to 1.4 and preserve the sender association when splitting attachments from a batch of messages. Open Flow uses Gmail attachment transit for separately stored bytes.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Save Gmail attachments to Google Drive](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Gmail/0544_Gmail_GoogleDrive_Create_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

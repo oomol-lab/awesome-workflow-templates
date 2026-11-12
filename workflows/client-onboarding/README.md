@@ -36,6 +36,9 @@ The aliases `client_name`, `client_email`, and `company_name` take precedence ov
 
 The success body is `{"success":true,"clientId":"CF-…","name":"Ada"}`. The welcome email runs before the sheet write. An email failure prevents the sheet write; a sheet failure does not undo a sent email. Both write steps retain the source's two-attempt limit with a one-second retry interval. Open Flow retries only failures the platform identifies as safe to retry and stops when a write's result is unknown; n8n retries any node error. Retrying a request can create another email and row. The webhook waits up to 30 seconds in Open Flow; a timeout does not cancel work already running.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Validate the recipient before sending email or writing a row.
@@ -50,9 +53,6 @@ The success body is `{"success":true,"clientId":"CF-…","name":"Ada"}`. The wel
 </picture>
 
 [Open Flow JSON](templates/client-onboarding.openflow.json) · [n8n JSON](templates/client-onboarding.n8n.json)
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [ClientFlow Lite - Client Onboarding Automation](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Other_Integrations_and_Use_Cases/ClientFlow%20Lite%20-%20Client%20Onboarding%20Automation.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 

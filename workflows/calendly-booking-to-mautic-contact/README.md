@@ -27,14 +27,14 @@ Open Flow returns **Contact**; n8n returns that contact as one item. Email/name 
 
 Both newly registered subscriptions verify Calendly signatures. Open Flow accepts signature timestamps within three minutes; the native n8n trigger uses a five-minute window. Keep the execution server’s clock accurate. A successful webhook acknowledgment does not prove that the later CRM write succeeded.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Make the source’s Personal Access Token, user scope, booking-created event, Basic authentication and raw-contact output explicit.
 - Reject missing invitee name/email before contacting Mautic, and confirm a saved ID afterward.
 - Preserve the email/name mapping, single contact request and server-side matching behavior without adding searches or notifications.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Create or update Mautic contact on a new Calendly event](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Calendly/0277_Calendly_Mautic_Create_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

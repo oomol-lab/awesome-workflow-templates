@@ -21,13 +21,13 @@ Run manually. The first request creates a draft with the title. The second reque
 
 If creation or update fails or its result is uncertain, inspect WordPress before retrying. A draft may already exist or its content may already have changed. Earlier changes are not rolled back and the workflow does not search for or deduplicate posts. The hosted Connector accepts public HTTPS sites and may reject private network addresses; both requests use the same WordPress Connection.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Explicitly set draft status and replace credentials with setup.
 - Keep the separate create and content update requests, using the returned post ID. Open Flow also checks the update response ID.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Create a post and update the post in WordPress](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/1075_Manual_Wordpress_Create_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

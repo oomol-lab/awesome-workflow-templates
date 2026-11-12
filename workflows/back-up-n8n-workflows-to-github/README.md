@@ -21,13 +21,13 @@ Every day at 20:11 UTC, or on manual execution, the workflow lists n8n workflows
 
 The directory must exist and contain fewer than 1,000 entries, the GitHub directory API limit. Unsafe or duplicate workflow names stop before writes. Open Flow stops on a repeated n8n pagination cursor; n8n follows its native paginator. A workflow or directory error, existing non-JSON backup, or uncertain write stops the run; earlier commits remain. Check GitHub before retrying. Open Flow updates using the compared file SHA, so a concurrent edit causes a conflict. n8n fetches the SHA again immediately before editing; a concurrent edit after comparison can be overwritten. The selected n8n account controls which workflows are visible. Open Flow requires a publicly reachable HTTPS n8n instance and collected data must fit its run limits.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Use the supported n8n public API instead of the source's localhost internal endpoint and configure the GitHub target. Replace source evaluation of GitHub content with JSON parsing.
 - Check a directory listing before deciding a file is new, and fail on path collisions or an incomplete listing. Make the schedule timezone explicit; the source inherited its instance timezone.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Back up n8n workflows to GitHub](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Github/1149_GitHub_Manual_Create_Scheduled.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

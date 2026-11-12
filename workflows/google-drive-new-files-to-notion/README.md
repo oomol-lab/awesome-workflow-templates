@@ -31,14 +31,14 @@ Open Flow reads up to 50 file candidates per page and preserves the continuation
 
 The result contains each file ID with its full Notion page receipt and a count.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Remove the source folder, database and credential identities.
 - Use the current Notion data source API while preserving dynamic title discovery and the original File external-link property.
 - Validate complete file batches and page receipts without changing file permissions or fetching file bytes.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Google Drive new files recorded in Notion](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Notion/0272_Notion_GoogleDrive_Create_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

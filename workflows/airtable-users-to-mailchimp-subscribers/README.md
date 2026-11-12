@@ -23,13 +23,13 @@ The source schedule used the n8n instance timezone. Both templates start at 14:0
 
 A read error or a record without text Name and Email stops before writes. A later error stops the run; earlier subscribers remain added. Check Mailchimp before rerunning after a failed or uncertain request. No automatic retries or rollback are configured. Results must fit execution state limits.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Remove the private base, audience and credentials; use Airtable personal access token and Mailchimp OAuth2 credentials, and validate all subscribers before writing.
 - Open Flow explicitly follows all Airtable pages and writes one member at a time. Use UTC as the starting timezone.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Create entry in Mailchimp from Airtable](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Mailchimp/0345_Mailchimp_Cron_Create_Scheduled.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

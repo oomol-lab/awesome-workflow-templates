@@ -27,14 +27,14 @@ Invalid configuration or missing invitee data stops before the write. Notion per
 
 New subscriptions verify signatures. Open Flow uses a three-minute signature timestamp window; native n8n uses five minutes. Keep the server clock accurate. Webhook acknowledgment does not confirm the later Notion write.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Read name and email from the current Calendly v2 invitee payload instead of obsolete nested `payload.invitee` paths.
 - Replace the source’s private database and Status option IDs with destination configuration, using a data-source parent for Notion’s current API.
 - Validate required values before creating a page and verify the returned page ID while preserving the complete response.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Calendly booking to Notion database workflow](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Calendly/0039_Calendly_Notion_Automate_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

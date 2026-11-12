@@ -19,13 +19,13 @@ At 09:00 UTC on weekdays the workflow reads the task data and Slack users, match
 
 A failed or uncertain Slack write may have succeeded; inspect Slack before repeating the run. Earlier messages remain if a later send fails. No automatic write retries or cross-run deduplication are added. Large data sets must fit the execution platform limits. Open Flow runs on the minute boundary; n8n uses a fixed second within the minute.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace private email and name values with two Notion user IDs and Slack full names. Use stable Notion IDs for assignment matching and stop on ambiguous Slack names.
 - Read complete pages and validate associations before sending. Put the task title and due date in the message text instead of the source attachment. Set UTC explicitly instead of relying on the n8n instance timezone.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Automated Notion Task Reminders via Slack](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Filter/0612_Filter_Slack_Send_Scheduled.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source credits [Optimus Agency](https://optimus01.co.za/) for the original workflow. No separate original template license is stated.
 

@@ -19,13 +19,13 @@ The workflow reads the current n8n workflows and JSON files in the specified Git
 
 Earlier creates remain if a later create fails. A lost response may mean a workflow was created; inspect n8n before rerunning. Other users creating workflows concurrently may still cause duplicate names. No writes are automatically retried.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Compare the workflow name inside each backup with existing names, rather than assuming the filename is the workflow name; reject duplicate backup names.
 - Replace repository defaults, validate backups and keep only fields accepted by the n8n create API. Open Flow uses the n8n Provider API Request because the catalog has no create-workflow Action.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Restore Backups](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Github/1988_GitHub_Manual_Automate_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n community listing](https://n8n.io/workflows/2289-restore-backed-up-workflows-from-github-to-n8n/) credits Agent Studio. The original template does not state a separate license.
 

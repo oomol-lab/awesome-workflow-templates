@@ -21,14 +21,14 @@ The Open Flow output reports the Action’s HTTP acceptance flag, status and raw
 
 Each manual run sends another event. The workflow keeps no event history and supplies no explicit message ID for retry deduplication. Errors stop the run without an automatic retry. Check Segment before retrying an uncertain request.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Require an event name as an Open Flow run input and replace n8n’s empty event with a setup placeholder.
 - Preserve the source’s fresh anonymous UUID when User ID is empty.
 - Expose the HTTP acceptance result in Open Flow.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Track an event in Segment](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/0098_Manual_Segment_Monitor_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

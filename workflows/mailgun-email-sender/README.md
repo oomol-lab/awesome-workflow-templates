@@ -19,13 +19,13 @@ Each run makes one send request with the configured recipients and plain text. I
 
 This template sends real email and leaves tracking and delivery settings at Mailgun’s account defaults. No duplicate check or automatic retry is configured. A rejected request, missing message ID or request failure stops the run; check Mailgun before repeating an uncertain send.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace example email content and account details with user configuration.
 - Check the queued message ID in both formats and expose the full result in Open Flow.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Mailgun email send workflow](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/0995_Manual_Mailgun_Automate_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

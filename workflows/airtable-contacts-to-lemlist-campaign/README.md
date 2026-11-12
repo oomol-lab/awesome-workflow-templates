@@ -21,13 +21,13 @@ Run manually. The workflow reads all Airtable pages and validates every Email an
 
 A read or validation error stops before creation. A failed or uncertain creation stops subsequent requests; earlier leads may already exist. A lookup failure can occur after all creations succeeded. Check the campaign before rerunning, as the workflow has no rollback, automatic retry or import history. Pages are not a snapshot and large result sets must fit runtime limits.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Add a manual entry to the source's untriggered graph and replace private campaign and credential details with setup.
 - Validate contacts before creation, encode path segments, preserve all pages and expose lookup results. Use the Lemlist Provider API Request for the two operations.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Airtable contacts to Lemlist campaign](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Airtable/1220_Airtable_Lemlist_Automate.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n community listing](https://n8n.io/workflows/983-add-new-leads-in-lemlist-from-airtable/) credits Harshil Agrawal. The original template does not state a separate license.
 

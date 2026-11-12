@@ -64,7 +64,7 @@ Open Flow waits up to 60 seconds for the final response. Each HTTP node has a 15
 The two downloads were checked against the public Open Flow SDK and fixed native n8n implementations using offline API fixtures. They have not been tested with a live Pennylane account or an activated webhook.
 
 <details>
-<summary>Source and license</summary>
+<summary>Inspiration &amp; credits</summary>
 
 Adapted from [Create and send Pennylane invoices from webhook data](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Other_Integrations_and_Use_Cases/Create%20and%20send%20Pennylane%20invoices%20from%20webhook%20data.json) at revision `827110332c21cbe000ab13f6d292d5adb1f1f8db` in [awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates), whose collection is [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). This adaptation extracts the creation-without-email path, adds explicit validation and confirmation, and removes account identities and sample private data. It does not represent the email path as migrated.
 

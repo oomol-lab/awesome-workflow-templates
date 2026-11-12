@@ -17,13 +17,13 @@ The workflow reads inboxes, called mailboxes in the API. It retains complete inb
 
 This workflow does not read conversations or customers, create inboxes or change their settings. A failed request stops the run without an automatic retry.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Make the source’s 50-inbox limit explicit.
 - Expose complete inbox records as an Open Flow output.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Help Scout mailbox list workflow](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/1034_Manual_Helpscout_Automate_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

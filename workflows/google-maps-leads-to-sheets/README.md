@@ -19,13 +19,13 @@ One run searches one page in English and appends each returned place as a new ro
 
 A search failure stops before writes. Open Flow appends one place at a time; n8n submits the prepared rows as one append. An Open Flow append failure stops the run, but earlier rows may already exist. An uncertain append in either format may have succeeded. Inspect the sheet before retrying.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the example query and private spreadsheet, and configure the output columns explicitly.
 - Validate returned places before writing, use RAW cell input, and confirm each Open Flow append.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Extract Business Leads from Google Maps with Dumpling AI to Google Sheets](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Splitout/1774_Splitout_Manual_Automation_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n community listing](https://n8n.io/workflows/3593-extract-business-leads-from-google-maps-with-dumpling-ai-to-google-sheets/) credits Yang. The original template does not state a separate license.
 

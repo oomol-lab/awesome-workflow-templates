@@ -35,15 +35,15 @@ This checks support in the supplied facts, rather than establishing independent 
 
 The specialized checker is attempted once per claim in both formats. n8n's legacy summary adapter can retry startup failures up to six additional times; Open Flow's summary Agent does not retry its model round. A failed or unknown model request stops the run.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Protect date/list boundaries in sentence splitting and preserve multi-document claim association.
 - Keep the specialized checker protocol and validate its complete `Yes`/`No` result.
 - Serialize all unsupported claims as JSON, include the instructions in the completion-model summary prompt and make the no-findings path explicit.
 - Replace the embedded third-party article with a short synthetic manual example.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Detect hallucinations using specialised Ollama model bespoke-minicheck](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/OpenAI_and_LLMs/Detect%20hallucinations%20using%20specialised%20Ollama%20model%20bespoke-minicheck.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 

@@ -17,14 +17,14 @@ The exact text is hashed without trimming whitespace, changing line endings or n
 
 The text is hashed in the workflow engine. It makes no network requests and reads no files.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Require configurable text as the Open Flow run input.
 - Make the source’s MD5, text-input and hexadecimal defaults explicit.
 - Expose the checksum as a workflow output in Open Flow.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Crypto text hash workflow](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/1038_Manual_Crypto_Automate_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

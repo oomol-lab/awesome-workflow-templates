@@ -29,15 +29,15 @@ No additional draft deduplication or workflow-level retry is added. A lost draft
 
 The Open Flow result lists each decision and created draft ID with its selected conversation. It is an acceptance record, not an independent read-back audit. n8n produces no further items if none need a reply.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Correct the assessment input, structured decision field and current Gmail body/header references.
 - Require available model choices and retain two separate assessment/writing steps.
 - Preserve batch phase boundaries and validate every reply before writing.
 - Escape plain-text replies before HTML formatting and check draft confirmations.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Gmail AI Auto-Responder: Create Draft Replies to incoming emails](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Gmail_and_Email_Automation/Gmail%20AI%20Auto-Responder_%20Create%20Draft%20Replies%20to%20incoming%20emails.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 

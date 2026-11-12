@@ -47,6 +47,9 @@ Each invoice is sent once, then logged before the next invoice starts. WAHA must
 
 There is a three-second wait between completed invoices, with no leading or trailing wait. Each Open Flow loop iteration calls the worker once. HTTP steps have a 30-second budget; collection and receipt data must fit the platform’s Code input/result budgets (1 MiB each in the inspected host) and run lifetime. A limit failure stops later invoices without rolling back earlier sends or logs. No automatic workflow retry is configured. A request error, uncertain send, missing/duplicate current invoice or unconfirmed log stops later invoices. Earlier completed invoices stay logged. A message may already have been sent when logging fails; check WAHA and the sheet before repeating an uncertain run.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Make Israel time explicit for the daily schedule, date comparison and log date. Capture the processing date once per run and use calendar-day arithmetic across daylight-saving changes.
@@ -56,9 +59,6 @@ There is a three-second wait between completed invoices, with no leading or trai
 - Read and update the sheet through the existing Google Sheets Actions in Open Flow and equivalent Google Sheets OAuth2 HTTP requests in n8n. This keeps complete header/row handling and verifies the two updated log cells.
 - Use WAHA’s documented `X-Api-Key` authentication and check acceptance instead of marking every successful HTTP response as sent.
 - Remove account identifiers and leave all credentials and endpoints for your configuration.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Send Escalating WhatsApp Invoice Reminders from Google Sheets (Hebrew)](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/WhatsApp/Send%20Escalating%20WhatsApp%20Invoice%20Reminders%20from%20Google%20Sheets%20(Hebrew).json) in [Enes Cingoz’s awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates), pinned to `827110332c21cbe000ab13f6d292d5adb1f1f8db`, under [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE).
 

@@ -21,13 +21,13 @@ Send an authenticated GET request with the ASCII domain in query parameter `q`. 
 
 The workflow does not investigate a site, verify abuse, or deduplicate submissions. Mailgun acceptance is not proof of delivery. Check prior reports before resending after an uncertain write; duplicate requests can create duplicate emails.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace shell and package installation with one public DNS-over-HTTPS lookup, validate the domain, and stop on DNS errors.
 - Make webhook authorization and sender configuration explicit; remove the placeholder CC address.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Steam + CF Report](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Executecommand/0097_Executecommand_Mailgun_Automation_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n community listing](https://n8n.io/workflows/122-report-phishing-websites-to-steam-and-cloudflare/) credits chaufnet. The original template does not state a separate license.
 

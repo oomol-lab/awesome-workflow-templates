@@ -17,15 +17,15 @@ The ticket uses Open status `2`, Low priority `1` and Portal source `2`, matchin
 
 Each run makes one creation request and returns the complete ticket record. There is no search, duplicate detection or update. Errors stop without retry or rollback. Check Freshdesk before rerunning a request whose write result is uncertain.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the source requester address with user configuration.
 - Require a subject and description instead of sending the literal text `null`.
 - Use the managed Freshdesk Provider API in Open Flow. In n8n, use the HTTP Request node with Freshdesk credentials to send the required HTTP Basic authentication.
 - Expose and check the completed ticket record in Open Flow.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Freshdesk ticket workflow](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/0960_Manual_Freshdesk_Automate_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

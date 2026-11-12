@@ -27,15 +27,15 @@ Missing or ambiguous answers stop before writing a row. A failed append stops be
 
 Open Flow returns the selected **Route**, original **Report**, confirmed **Log**, and **Notification** receipt. Open Flow uses the Typeform response token as its trigger deduplication identity; native n8n does not add the same key. Neither format guarantees exactly-once writes or notifications.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Resolve answers using their field IDs and question titles, with missing and duplicate checks.
 - Preserve the original report for routing and message text instead of reading fields from a write receipt.
 - Make the four sheet columns, RAW value mode and SMTP sender configuration explicit.
 - Confirm the notification receipt and surface rejected email recipients.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Typeform problem report routing](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Googlesheets/0927_GoogleSheets_Slack_Send_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

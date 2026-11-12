@@ -38,6 +38,9 @@ Execution output has `status: captured` with the created entry or `status: ignor
 
 Feedback is sent to Google. Captured feedback and the submitted author are sent to Strapi. Use the score as a sorting signal and review testimonials before reuse.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Adapt the independent form-submission component. The source’s separate scheduled X search is not part of this template.
@@ -46,9 +49,6 @@ Feedback is sent to Google. Captured feedback and the submitted author are sent 
 - Use supported API-key authentication for Google in Open Flow and the native Google OAuth2 credential in n8n.
 - Use the current Strapi REST create envelope and API-token authentication in both formats.
 - Confirm the returned Strapi entry and provide explicit captured or ignored execution results.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Automate testimonials in Strapi with n8n](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Other_Integrations_and_Use_Cases/Automate%20testimonials%20in%20Strapi%20with%20n8n.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 

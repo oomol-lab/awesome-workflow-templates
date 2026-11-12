@@ -25,16 +25,15 @@ Both formats permit browser requests from any origin for this bookmarklet. Any r
 
 Click the bookmarklet while viewing a page. The workflow creates a Notion page whose title is the submitted URL. Duplicate clicks or deliveries create duplicate pages. Inspect Notion before retrying an uncertain write. Open Flow rejects a missing or blank URL before creating a page; n8n uses the submitted field directly.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the webhook path and database with setup; use the current Notion data source parent in Open Flow.
 - Permit cross-origin browser requests in both formats; Open Flow also validates the URL field.
 
 Original n8n community template: [Bookmarking urls in your browser and save them to Notion](https://n8n.io/workflows/2038-bookmarking-urls-in-your-browser-and-save-them-to-notion/), by Zacharia Kimotho.
-
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Bookmarking urls in your browser and save them to Notion](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Stickynote/0378_Stickynote_Notion_Automate_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

@@ -29,15 +29,15 @@ The result has `found` and `response`. A match returns a text block with `Title`
 
 No matches return `found: false` with a short message. A failed search or malformed first result stops the run. The workflow uses a 30-second request limit and has no workflow-level retry or persistent state. Repeating a run performs another search.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the source tenant with configuration placeholders and use the platform's Confluence connector in Open Flow.
 - Escape the query's CQL string and return an explicit empty result instead of indexing a missing first hit.
 - Quote titles and links safely in the response text, and make timeout and redirect handling explicit.
 - Add a manual n8n entry while preserving the callable workflow entry, and document the actual search steps.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [KB Tool - Confluence Knowledge Base](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Other_Integrations_and_Use_Cases/KB%20Tool%20-%20Confluence%20Knowledge%20Base.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 

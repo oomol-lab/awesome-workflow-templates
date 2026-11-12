@@ -39,9 +39,8 @@ No workflow retry or rollback is added. An uncertain text or audio send is attem
 
 The current native source defaults are retained while they remain available: `gpt-5-mini` is scheduled to shut down on December 11, 2026, `tts-1` on January 6, 2027, and `whisper-1` on February 26, 2027. Update both formats and verify the replacement API, voice/format settings and resulting audio before those dates. The source title’s “55 supported languages” describes the original template; consult the current speech API documentation for language support. [OpenAI deprecations](https://developers.openai.com/api/docs/deprecations), [speech to text](https://developers.openai.com/api/docs/guides/speech-to-text), [text to speech](https://developers.openai.com/api/docs/guides/text-to-speech).
 
-
 <details>
-<summary>Source and license</summary>
+<summary>Inspiration &amp; credits</summary>
 
 Adapted from [Translate Telegram audio messages with AI (55 supported languages)](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Telegram/Translate%20Telegram%20audio%20messages%20with%20AI%20(55%20supported%20languages).json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 

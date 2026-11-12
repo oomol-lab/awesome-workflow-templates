@@ -21,13 +21,13 @@ Three Agents independently compare each pair, each requested to produce a Markdo
 
 An uncertain Baserow write may already have succeeded; inspect the table before retrying. No workflow-level write retry or cross-run deduplication is added. n8n schedules at a fixed second within the minute; Open Flow starts at the minute boundary.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Use two non-overlapping seven-day UTC date labels, fill the missing totalUsers metric and replace private IDs and blog name. The original mixes relative dates and a fixed past end date.
 - Use configured AI Agents in place of the source OpenRouter requests; the example uses GPT-4.1. Pass readable JSON to the Agents instead of URL-encoded strings. n8n sends GA pagination in the request body.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Send Google Analytics data to A.I. to analyze then save results in Baserow](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Googleanalytics/1480_Googleanalytics_Code_Automation_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n listing](https://n8n.io/workflows/2517-send-google-analytics-data-to-ai-to-analyze-then-save-results-in-baserow/) credits Keith Rumjahn. No separate original template license is stated.
 

@@ -21,15 +21,15 @@ The poll starts from the current mailbox position and processes new messages, no
 
 A failed read stops the page before the append. A failed or uncertain batch append may already have written rows; earlier poll pages may also have completed. Inspect the sheet before replaying. Spreadsheet cells use USER_ENTERED interpretation, so values beginning with a formula marker may be interpreted by Sheets. The fetched full Gmail response and Code inputs must fit the current execution limits; oversized messages can fail before the append. Restrict mailbox, sheet and run-history access to the people who should see these messages.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the original spreadsheet identifier with setup and make the three destination columns explicit.
 - Fetch the original Gmail snippet and append one row per delivered message in a batch.
 - Enable the native append option instead of adding a row and writing to a calculated position, reducing the risk of concurrent runs overwriting one another.
 - Update the n8n trigger to version 1.4 to exclude outgoing-only messages and process a bounded backlog.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Add new incoming emails to a Google Sheets spreadsheet as a new row.](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Googlesheets/1833_GoogleSheets_Gmail_Create_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

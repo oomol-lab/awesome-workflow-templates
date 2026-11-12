@@ -17,13 +17,13 @@ The workflow asks for one post and regenerates when its JavaScript string length
 
 Open Flow checks the returned post ID and has no automatic post retry. The n8n X credential helper may refresh and resend after an authentication failure. Inspect X before replaying an uncertain post; neither format guarantees exactly-once delivery.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the source preview model with a current configurable model and explicitly request the JSON tweet field used by the source length check.
 - Retain the n8n X v2 node; Open Flow confirms the returned post ID.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Twitter Virtual AI Influencer](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Instagram_Twitter_Social_Media/Twitter%20Virtual%20AI%20Influencer.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 

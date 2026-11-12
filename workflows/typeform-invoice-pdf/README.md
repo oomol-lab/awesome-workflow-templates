@@ -29,15 +29,15 @@ The inspected Open Flow Code fetch host accepts at most 1 MiB per download. The 
 
 No workflow retry or rollback is added. A generation timeout, missing download URL or later download/storage failure may occur after a PDF was created. Check APITemplate.io before replaying. Both inspected create paths make one attempt for HTTP401 and surface the failure. Open Flow uses the Typeform response token as delivery identity; n8n adds no equivalent workflow history. Neither format guarantees exactly-once generation. A webhook acknowledgment confirms receipt, not completed generation.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Restore the complete form → two-item invoice → generated PDF download and replace private form/template settings with configuration.
 - Construct JSON safely while retaining all original invoice fields and the two EUR-prefixed amounts.
 - Make raw Typeform/PAT authentication explicit and retain both the full generation response and PDF bytes.
 - Bound and validate the Open Flow PDF download, with its vendor link preserved separately from the Run-owned file reference.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Typeform invoice generation and PDF download](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Apitemplateio/1224_Apitemplateio_Typeform_Automation_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

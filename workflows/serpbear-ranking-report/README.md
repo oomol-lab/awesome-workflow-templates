@@ -29,6 +29,9 @@ The UTC report date is captured before reading rankings and is reused in the pro
 
 Failed reads or analysis, malformed ranking data, and absent report text stop before creating a row. No workflow-level retries or deduplication are configured. A manual rerun creates another report row; a write with an unknown result may already have created one. A successful response means Baserow accepted the row.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Read `/api/keywords?domain=…`, whose response contains the keyword list expected by the source, instead of the single-keyword endpoint.
@@ -37,10 +40,6 @@ Failed reads or analysis, malformed ranking data, and absent report text stop be
 - Sort history observations by date, handle empty history, and treat position `0` as outside the top 100. Show the average of ranked observations rather than counting an unranked zero as the best position.
 - Select the currently available route from the same Llama model family and disclose the change from the source’s unavailable `:free` route.
 - Replace private table IDs and the source's Matomo setup notes with SERPBear and Baserow configuration. Validate report text and the created row ID before reporting success.
-
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Summarize SERPBear data with AI (via Openrouter) and save it to Baserow](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/AI_Research_RAG_and_Data_Analysis/Summarize%20SERPBear%20data%20with%20AI%20(via%20Openrouter)%20and%20save%20it%20to%20Baserow.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates). The source links the [rumjahn.com tutorial](https://rumjahn.com/how-to-create-an-a-i-agent-to-analyze-serpbear-keyword-rankings-using-n8n-for-free-without-any-coding-skills-required/), retained as its author/tutorial attribution. No separate template license is stated in the export.
 

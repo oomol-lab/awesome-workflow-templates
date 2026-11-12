@@ -44,6 +44,9 @@ This confirms Gmail’s acceptance for processing. It does not confirm inbox del
 
 A request failure, unexpected saved record, failed lookup or email error stops the run. There is no workflow retry or rollback. Airtable may already contain the subscription when sending fails, and a repeated signup can send another confirmation. The Open Flow webhook waits up to 60 seconds; processing can outlast the caller’s response window. Check Airtable and Gmail before repeating an uncertain request.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Extract the signup and confirmation component. The source’s scheduled AI fact/image generation and newsletter delivery are separate work.
@@ -54,9 +57,6 @@ A request failure, unexpected saved record, failed lookup or email error stops t
 - Send plain text in both formats so topic text and line breaks remain literal; the source omitted email type and used the native HTML default.
 - Verify Airtable’s saved fields and Gmail acceptance, and acknowledge after completion. The source form acknowledged immediately and said that a factoid was on its way.
 - Use the Airtable Provider API for the missing atomic upsert operation in Open Flow, with the existing Actions for paginated duplicate lookup and update.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Email Subscription Service with n8n Forms, Airtable and AI](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Forms_and_Surveys/Email%20Subscription%20Service%20with%20n8n%20Forms%2C%20Airtable%20and%20AI.json) in [Enes Cingoz’s awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates), pinned to `827110332c21cbe000ab13f6d292d5adb1f1f8db`. The source collection is licensed under [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). This adaptation retains attribution and identifies the changes above.
 

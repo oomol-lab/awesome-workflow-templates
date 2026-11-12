@@ -17,13 +17,13 @@ Each run searches videos from the channel created in the preceding 30 minutes, w
 
 The model is asked to include the video URL and write at most 140 characters. This is a prompt, not a programmatic check; review generated posts and confirm your account settings before enabling the schedule. Open Flow stops on malformed video fields; the source n8n path uses its own node and expression behavior. X may reject a post. Open Flow checks the returned post ID and does not retry posting. The n8n credential helper may refresh and resend on an authentication failure. Inspect X before replaying an uncertain post.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the original channel ID with a placeholder and use a configurable current model.
 - Open Flow calls the YouTube Connection through its official Proxy because the catalog Search Action requires a query term; the source query has none. Both formats use the same channel, window, type and limit.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Post New YouTube Videos to X](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Instagram_Twitter_Social_Media/Post%20New%20YouTube%20Videos%20to%20X.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 

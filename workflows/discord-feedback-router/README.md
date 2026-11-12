@@ -34,6 +34,9 @@ The result contains the normalized category, generated instruction, original fee
 
 Submitted feedback is sent to the selected model service. Only its generated department instruction is sent to Discord. The category and urgency assessment are model judgments; check the instructions with examples appropriate for your support process.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the retired GPT-4 default with the documented model snapshot above.
@@ -41,9 +44,6 @@ Submitted feedback is sent to the selected model service. Only its generated dep
 - Parse the classifier into an object, retain the source repair for literal newlines inside JSON strings, and accept fenced JSON.
 - Normalize category whitespace/case, validate routed message length, and preserve the no-message fallback for unknown categories.
 - Keep original feedback available after model/message responses and use configured Discord Bot connections.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Discord AI-powered bot](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Discord/Discord%20AI-powered%20bot.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 

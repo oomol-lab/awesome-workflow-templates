@@ -19,13 +19,13 @@ Run once to submit a row. No key columns are configured, so subsequent runs add 
 
 Coda accepts writes asynchronously. Open Flow returns the request ID and any row IDs Coda supplies; these do not confirm that the row has finished appearing in the document. n8n returns the submitted field values after Coda accepts the request. Check the destination table before retrying an uncertain write.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Add clear document and table placeholders.
 - Keep the source’s three-column row and expose Coda’s acceptance identifiers in Open Flow.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Insert data into a new row for a table in Coda](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/0014_Manual_Coda_Create_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

@@ -67,6 +67,9 @@ No matching operations return `exported: false` with null `id` and `filename`, w
 
 Each successful run creates a new Drive file. There is no overwrite, duplicate-export check or workflow-level retry. Native n8n Create from Text performs the upload and a metadata update; failure after upload can leave a file behind. Check Drive before repeating an interrupted run.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Extract the independently callable `generate` branch and remove source spreadsheet/folder identities and credentials.
@@ -75,9 +78,6 @@ Each successful run creates a new Drive file. There is no overwrite, duplicate-e
 - Keep `API` removal to complete words, support blank descriptions and sanitize the full filename prefix.
 - Merge groups after resource-name normalization, so `Users` and `Users API` share one endpoint group.
 - Use an explicit UTC timestamp and add a manual n8n entry while accepting the original generate-request shape.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from Stage 3's generate sub-workflow in [API Schema Extractor](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Other_Integrations_and_Use_Cases/API%20Schema%20Extractor.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates). This template publishes the operations-export component. The source's research, scraping, embedding and extraction stages are separate.
 

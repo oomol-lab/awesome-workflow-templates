@@ -33,6 +33,9 @@ The workflow reads the complete configured tab with [Values Get](https://develop
 
 Column names are returned once, including for a header-only tab. Empty tabs, missing rows and column reads with no data records return `[]` as JSON text. When data records exist, an empty column still returns those records with empty cell strings and row numbers. A column name absent from an existing header causes an error. Google API failures stop the run. There are no writes, persistent state or workflow-level retries. Each run reads the tab again.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Extract the independently callable sheet-query branch from the source's chat workflow and keep its three operations.
@@ -40,9 +43,6 @@ Column names are returned once, including for a header-only tab. Empty tabs, mis
 - Read raw cell values in both formats and apply the same table rules. This preserves an explicit empty response when the sheet has no records.
 - Return one column-name list and retain cell types and numeric row numbers, replacing repeated lists and implicit string conversion.
 - Validate requests and headers, add a manual n8n entry, and retain the callable entry.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from the sheet-query sub-workflow in [Chat with a Google Sheet using AI](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Google_Drive_and_Google_Sheets/Chat%20with%20a%20Google%20Sheet%20using%20AI.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates). This template publishes that callable query component; the source's conversational agent is separate.
 

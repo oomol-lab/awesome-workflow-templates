@@ -21,14 +21,14 @@ Each hour the workflow reads the complete product sheet and processes rows in or
 
 Each product row is checked again before its update, but the check and write are not atomic. Avoid overlapping runs or editing those rows during a run. A later failure can leave the product update without history or an email, or an earlier product fully processed. An uncertain write or email may have succeeded; inspect the sheet and mailbox before retrying. n8n OAuth may refresh credentials and retry once after HTTP 401. No workflow-level write retry or cross-run deduplication is added.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace private configuration and use managed credentials. Use Gmail for alert mail in Open Flow and n8n instead of SMTP.
 - Update only the eight intended product cells after checking the row, preserving unrelated columns and formulas. Compare the unrounded price ratio rather than the source's rounded ratio, and reject ambiguous price strings instead of turning them into zero.
 - Use ScrapeOps Amazon Auto Extract in place of the source's Product API endpoint to preserve the documented name, price and rating response; use UTC timestamps and an explicit US marketplace. The configured range must cover the complete product sheet.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Amazon Product Price Tracker](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Schedule/1697_Schedule_HTTP_Monitor_Scheduled.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n listing](https://n8n.io/workflows/3806-track-amazon-product-prices-with-scrapeops-api-and-google-sheets-alerts/) credits ScrapeOps. No separate original template license is stated.
 

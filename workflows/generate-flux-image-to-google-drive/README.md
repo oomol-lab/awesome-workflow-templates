@@ -20,7 +20,7 @@ In n8n configure the fal Authorization header credential and Google Drive creden
 The job is submitted once. The workflow waits three seconds and checks status until completion, then downloads the complete image and uploads it to Drive. Open Flow derives the output filename from the image URL; n8n uses its downloaded binary filename, which can depend on the response headers. Open Flow stops on an unexpected status, rejects incomplete image bytes when a size is supplied and checks the Drive receipt. The source n8n loop continues while status is not COMPLETED, including terminal statuses. A failed or uncertain submission or upload may already have succeeded; inspect fal and Drive before repeating. No automatic cancellation or exactly-once guarantee is added. The file must fit Open Flow's HTTP and Code budgets.
 
 <details>
-<summary>Source and license</summary>
+<summary>Inspiration &amp; credits</summary>
 
 Adapted from [Flux Dev Image Generation (Fal.ai) to Google Drive](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Google_Drive_and_Google_Sheets/Flux%20Dev%20Image%20Generation%20(Fal.ai)%20to%20Google%20Drive.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 

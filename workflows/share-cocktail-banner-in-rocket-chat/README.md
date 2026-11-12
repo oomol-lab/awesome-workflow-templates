@@ -21,13 +21,13 @@ At 18:00 each Friday, the workflow requests one random cocktail, fills its image
 
 Missing recipe fields, an invalid image URL, request failure or incomplete image stops the run before posting. Open Flow uses Bannerbear's synchronous endpoint, which can time out after 10 seconds; n8n creates asynchronously and checks up to three times. A timed-out or uncertain image request may already have created an image. A failed or uncertain Rocket.Chat post may already have arrived. Check the services before replaying; no automatic retry or rollback is configured. The HTTP step follows up to 21 redirects with a 30-second timeout per request; Open Flow limits each response to 4 MiB.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Configure the template and room without private credentials; validate cocktail fields and the completed image before posting, then check the post result.
 - Use a UTC starting schedule and Bannerbear's synchronous Action in Open Flow.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Cocktail Recipe Sharing](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Http/0964_HTTP_Bannerbear_Automation_Scheduled.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n community listing](https://n8n.io/workflows/365-render-custom-text-over-images/) credits tanaypant. The original template does not state a separate license.
 

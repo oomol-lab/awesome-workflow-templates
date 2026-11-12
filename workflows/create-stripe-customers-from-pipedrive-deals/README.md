@@ -21,14 +21,13 @@ A Pipedrive deal-change event whose `won_time` changes reads the associated orga
 
 Open Flow responds after processing, with a 60-second response timeout; Pipedrive may redeliver after a failed or timed-out response. n8n acknowledges the webhook on receipt, so a later failure is visible in its execution history rather than in the webhook response. A failed or unknown create may already have succeeded. The workflow adds no deduplication or write retry. Verify the customer before replaying an event.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Use authenticated Pipedrive v2 webhook events and explicitly configure the subscription. The available managed trigger emits only status/stage changes and cannot capture an edit of won time alone.
 - Validate the event and address and escape the organization name in the Stripe search query.
-
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Automatically add customers from Pipedrive to Stripe](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Http/0245_HTTP_Stripe_Create_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n community listing](https://n8n.io/workflows/1775-automatically-add-customers-from-pipedrive-to-stripe/) credits n8n Team. The original template does not state a separate license. Country-code values are based on [Debian iso-codes 4.18.0](https://salsa.debian.org/iso-codes-team/iso-codes/-/tree/v4.18.0), distributed under the [GNU LGPL 2.1 or later](https://salsa.debian.org/iso-codes-team/iso-codes/-/blob/v4.18.0/COPYING).
 

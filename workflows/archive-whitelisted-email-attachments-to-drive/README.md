@@ -21,13 +21,13 @@ Every 15 minutes labeled emails are matched against the whitelist by sender addr
 
 Both formats reject duplicate whitelist headers or sender entries. Open Flow handles up to 50 messages per poll, validates unique folder matches, and stops on ambiguous data. Folder searches are paginated. Its file transit and Code limits apply; large files can fail. A folder or file may already have been created when a write fails or its result is uncertain. Check Drive before retrying; previously uploaded files remain. There is no exactly-once guarantee.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace private Gmail label, whitelist sheet and parent folder with configuration. Search company folders within the configured parent and validate duplicates rather than using an unrelated matching folder.
 - Preserve each attachment's message association when splitting batches; Open Flow uses Gmail attachment transit for stored bytes.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Organize email attachments into Google Drive folders by company with Gmail & Sheets](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Googlesheets/0837_GoogleSheets_Gmail_Create_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n community listing](https://n8n.io/workflows/3464-organize-email-attachments-into-google-drive-folders-by-company-with-gmail-and-sheets/) credits Ventsislav Minev. The original template does not state a separate license.
 

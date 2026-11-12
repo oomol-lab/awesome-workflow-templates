@@ -19,14 +19,14 @@ On Friday at 15:00 UTC, or when run manually, the workflow requests completed ta
 
 The source inherited the n8n instance timezone; both templates use UTC. Check the time before activation. An email with an uncertain outcome may have been accepted; check the recipient before retrying.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the personal ignored project ID, and configure a sender and recipient.
 - Use Todoist's current completed-by-completion-date API and follow cursor pages; the source requested only its default page.
 - Correct the source email node to send the generated HTML, escape task content and omit the automatic n8n attribution link. Make the schedule timezone explicit.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Todoist Weekly Review Template](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Code/1724_Code_Schedule_Automation_Scheduled.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n community listing](https://n8n.io/workflows/2805-todoist-weekly-email-of-completed-tasks/) credits Martijn Smit. The original template does not state a separate license.
 

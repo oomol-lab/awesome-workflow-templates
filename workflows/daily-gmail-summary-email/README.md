@@ -25,15 +25,15 @@ The model receives only message ID, From, To, CC and snippet. It produces one st
 
 No matching messages means no model call and no email. Open Flow returns `no_matching_email`; n8n produces no further items. A successful run requires Gmail to return a sent message ID. It does not prove recipient delivery. The workflow does not mark, label or delete source messages, deduplicate reports, or retry sends. If the send response is lost, inspect Sent before running again.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Make search scope, recipients and CC configurable, and retain the source author in attribution instead of outgoing branding.
 - Align the query and email subject to the source’s previous-midnight-to-morning window and declared timezone; replace ambiguous calendar-date search with explicit Unix seconds and a captured upper bound.
 - Preserve complete pagination and correct case-insensitive CC header handling.
 - Validate structured model output, escape HTML text and require a confirmed sent message ID.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Email Summary Agent](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Gmail_and_Email_Automation/Email%20Summary%20Agent.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates). The source email identifies **Quantana ESAgent / Quantana AI Labs**, retained here as attribution. The export does not state a separate template license.
 

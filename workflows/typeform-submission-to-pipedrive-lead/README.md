@@ -27,13 +27,13 @@ Each completed response creates an organization with the mapped company size, th
 
 A failed step stops subsequent steps; earlier creations remain. Repeated submissions or webhook deliveries create new records. An unknown write result may already have created a record, so inspect Pipedrive before replaying.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace account-specific form and custom-field IDs with configuration; require complete answers and valid option IDs before writing.
 - Use the complete Typeform response to associate answers with their questions and escape note text.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Upload leads with custom fields from Typeform to Pipedrive](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Code/0239_Code_Typeform_Create_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n listing](https://n8n.io/workflows/1758-upload-leads-with-custom-fields-from-typeform-to-pipedrive/) credits n8n Team. No separate original template license was found.
 

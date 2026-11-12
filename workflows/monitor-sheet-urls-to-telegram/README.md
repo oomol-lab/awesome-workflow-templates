@@ -21,14 +21,14 @@ Every minute the workflow checks each URL with HTTP GET and alerts the chat for 
 
 Open Flow checks rows sequentially; n8n follows its item execution order. A Telegram failure stops the run; an uncertain send may already have arrived, so check the chat before retrying. Messages use Telegram legacy Markdown, so formatting characters in a URL can affect rendering or cause a send error. Runs are not deduplicated. In Open Flow responses larger than 4 MiB stop the run without an alert and the sheet must fit execution limits. Both schedules start in UTC; the original inherited the n8n instance timezone.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the personal spreadsheet and chat IDs and use the original sheet row for the alert URL.
 - Use a consistent failure message rather than relying on the request error code, and validate URLs before requests.
 - Use a 30-second n8n timeout and an explicit UTC timezone.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [MAIA - Health Check](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Telegram/2005_Telegram_Schedule_Monitor_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

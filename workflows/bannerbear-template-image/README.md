@@ -19,14 +19,14 @@ Each run creates one image and waits for its result. A completed status, image U
 
 The synchronous API waits up to 10 seconds and returns `408` on timeout. No workflow retry is configured. A timeout or failed request can leave a render on the account, so check Bannerbear before repeating an uncertain request. A queued or failed result is not treated as a completed image.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the example template with user configuration.
 - Use synchronous generation in both formats. The source used an asynchronous creation request followed by at most three status checks, two seconds apart. The adapted workflow waits within the creation request for up to 10 seconds.
 - Check the completed image UID and media URL before returning the complete record.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Bannerbear template image workflow](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/1012_Manual_Bannerbear_Automate_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

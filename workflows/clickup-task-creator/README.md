@@ -17,13 +17,13 @@ The workflow creates one task in the selected list and returns its complete reco
 
 Each manual run creates another task. There is no search, upsert or duplicate detection. A service error stops the workflow without an automatic retry. If a creation request times out, check the service before running it again.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the empty list and task-name fields with setup placeholders.
 - Keep the source task/create operation explicit and expose its returned record.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Create a task in ClickUp](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/0030_Manual_Clickup_Create_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

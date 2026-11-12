@@ -21,13 +21,13 @@ Each run validates the rows, resolves each company to one Salesforce Account wit
 
 The workflow processes contacts in order. Earlier writes remain if a later request fails; there is no rollback or automatic retry. A lost response may mean a write succeeded, so check Salesforce before retrying. Concurrent account creation or duplicate names can change the outcome.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the private spreadsheet with configuration. The source uses the default A:F range; the templates start with Sheet1 A:Z. Validate rows and account matches. Both formats process rows sequentially and reuse resolved accounts, fixing the source's no-results branch and keeping each contact associated with its company.
 - Upsert by Contact Email as in the source. The source Salesforce field spelling `acconuntId` maps to `AccountId` in its native node.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Import sheet contacts to Salesforce](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/0257_Manual_GoogleSheets_Create_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n community listing](https://n8n.io/workflows/1792-create-salesforce-accounts-based-on-google-sheets-data/) credits Tom. The original template does not state a separate license.
 

@@ -37,9 +37,8 @@ Select transitions with previous sentiment other than Negative and current senti
 Open Flow page runs are independent. A later-page read failure cannot withdraw or prevent messages from an earlier admitted run, and one failed notification run does not cancel other page runs. Transient read failures retain the page checkpoint for retry; previously admitted event identities are suppressed when paging resumes. Inspect the polling state and failed runs when recovering. There is no cross-page validation barrier, transaction or shared message count.
 To preserve all content within Slack's limits, split long section text into complete chunks of at most3,000 characters and group at most50 blocks per message, with header/divider included. The native n8n workflow footer is disabled so it cannot add a fifty-first block. Send the grouped messages sequentially. A failure or uncertain send stops later messages without automatic replay; earlier messages remain sent. Open Flow records page admission, checkpoint and deduplication before Slack finishes. A Slack failure is not automatically replayed by polling; an uncertain or failed alert needs human inspection, and delivery is not guaranteed exactly once. Polling/formatting tests use deterministic fixtures, not live Airtable/Slack accounts.
 
-
 <details>
-<summary>Source and license</summary>
+<summary>Inspiration &amp; credits</summary>
 
 Adapted from [Sentiment Analysis Tracking on Support Issues with Linear and Slack](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Slack/Sentiment%20Analysis%20Tracking%20on%20Support%20Issues%20with%20Linear%20and%20Slack.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 

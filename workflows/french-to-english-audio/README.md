@@ -38,6 +38,9 @@ Two speech generations, one transcription and one translation step consume the s
 
 OpenAI has announced shutdown of the default [translator snapshot on January 14, 2027](https://developers.openai.com/api/docs/deprecations/) and [`whisper-1` on February 26, 2027](https://developers.openai.com/api/docs/guides/speech-to-text). Configure compatible replacements in both formats before those dates and verify their request and response formats. This template retains the source transcription endpoint; it uses a separate text translation step.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Make French text and voice ID reusable inputs, with a neutral example in n8n.
@@ -45,10 +48,6 @@ OpenAI has announced shutdown of the default [translator snapshot on January 14,
 - Replace the source's omitted translator choice with the explicit snapshot above, which supports its configured temperature. The source currently imports with n8n's `gpt-5-mini` default; this model change can change translation wording.
 - Validate empty transcripts and translations before later generation, and make MP3 output explicit.
 - Return both recordings and the intermediate texts. Open Flow uses public-read hosted downloads instead of n8n execution binary storage; only use material that can be public, with no verified automatic expiry.
-
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Translate audio using AI](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/OpenAI_and_LLMs/Translate%20audio%20using%20AI.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 

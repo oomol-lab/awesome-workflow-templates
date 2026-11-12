@@ -23,14 +23,14 @@ Each incoming Telegram message with a document downloads the complete file and c
 
 Open Flow checks that the separately configured download token belongs to the connected bot. File content must fit the host’s 1 MiB fetch and Code input/result limits, including Base64 expansion. Larger files fail instead of being truncated. For an empty file, the Drive request creates an empty file using metadata. A failed or uncertain upload may already have created the file; inspect Drive before replaying. The native Drive node also updates metadata after creating the file, so that later step can fail after creation. No workflow retry or rollback is added. The n8n Google OAuth2 helper can refresh credentials and resend a request once after HTTP 401. Telegram's delivery ID is used for trigger deduplication when available; this is not an exactly-once guarantee. Callback acknowledgment confirms receipt, not completion of the upload.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace private account and folder identities with setup and make the document-only branch explicit.
 - Use the managed getFile request, validate the download token and path, and send complete bytes to Drive.
 - Check the Drive receipt before returning an uploaded result.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Save new Files received on Telegram to Google Drive](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Telegram/1797_Telegram_GoogleDrive_Create_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

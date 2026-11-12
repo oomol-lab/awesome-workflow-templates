@@ -19,13 +19,13 @@ For each configured zone, the workflow checks whether its daylight saving status
 
 If a notification fails, subsequent notifications stop and earlier messages are not undone. A lost response may hide a completed send, so inspect the destination before retrying. Runs are not deduplicated.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Compare the start and end of the next local calendar day rather than adding one day in the n8n instance timezone; this keeps “tomorrow” aligned with each monitored zone.
 - Set the schedule to UTC as an explicit starting point instead of inheriting the n8n instance timezone and add the missing Slack and email destinations. Send Slack and email in a defined order without automatic n8n attribution.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Daylight saving time notification for different timezones](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Datetime/1523_Datetime_Code_Automation_Scheduled.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n listing](https://n8n.io/workflows/3276-daylight-saving-time-notification-for-different-timezones/) credits Łukasz (lukaszpp). No separate original template license was found.
 

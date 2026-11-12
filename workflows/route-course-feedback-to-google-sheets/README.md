@@ -19,12 +19,12 @@ Each submitted form with usefulness at least 3 is appended to the positive sheet
 
 A failed or uncertain append may already have succeeded. Inspect the destination sheet before retrying; webhook delivery and manual replay do not guarantee exactly-once rows. Open Flow uses the response token for webhook admission deduplication; n8n does not keep the same submission history.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace placeholder form and spreadsheet IDs with configuration, validate question identity and use RAW cell values. Both formats read the full Typeform answer payload instead of relying on simplified field-name keys.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [typeform feedback workflow](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Googlesheets/0004_GoogleSheets_Typeform_Automate_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

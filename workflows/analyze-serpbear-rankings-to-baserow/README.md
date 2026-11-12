@@ -21,14 +21,14 @@ A manual run or weekly schedule reads all keywords returned for the configured d
 
 Read, model or write failure stops the run. A failed or uncertain row creation may already have succeeded; check Baserow before retrying. SerpBear must be reachable over HTTPS. Keep API keys and ranking data private. Open Flow uses UTC Sunday midnight; the source depended on the n8n instance timezone. n8n chooses a fixed second within the scheduled minute; Open Flow uses the minute boundary.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Query the documented /api/keywords endpoint by domain. The source queried one keyword but attempted to read a keyword list.
 - Sort dated history before choosing the latest seven recorded entries, handle absent history and zero positions, and escape the prompt as JSON instead of URL-encoding it.
 - Replace personal domain and table IDs, choose an available model, validate the response and set UTC explicitly.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Analyze SerpBear keyword rankings](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Code/1965_Code_Schedule_Automation_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n listing](https://n8n.io/workflows/2565-summarize-serpbear-data-with-ai-via-openrouter-and-save-it-to-baserow/) credits Keith Rumjahn. The original template does not state a separate license.
 

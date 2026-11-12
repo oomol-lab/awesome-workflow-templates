@@ -21,12 +21,12 @@ Every completed response creates one Airtable record. When the numeric score is 
 
 Airtable must confirm a record with the submitted values before the Trello branch. If an Airtable write fails or has an uncertain outcome, no card is attempted. If the Trello write fails, the Airtable record remains; inspect both services before retrying. Repeated webhook deliveries can create duplicates.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the source's unconfigured form and base and its personal Trello list with configuration. Resolve answers by question identity from the full response, and validate the returned Airtable record before creating a card.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Get product feedback and create ticket on Trello](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Noop/1091_Noop_Trello_Import_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n listing](https://n8n.io/workflows/791-get-product-feedback-and-create-ticket-on-trello/) credits Harshil Agrawal. The original template does not state a separate license.
 

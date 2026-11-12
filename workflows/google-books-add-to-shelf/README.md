@@ -21,15 +21,15 @@ Each run gets one volume, adds the returned volume ID to the selected shelf, the
 
 A failed read stops the write. A failed write stops the list. If listing fails after addition, the shelf change remains. There is no rollback or duplicate check. No workflow retry is configured. Check My Library before rerunning an uncertain write.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Require configurable volume and shelf IDs.
 - Send the add request with the documented volumeId query parameter and no body, accepting its empty successful response. In n8n this step uses HTTP Request with managed Google Books credentials.
 - Make the source’s default first-page limit of 40 explicit.
 - Use a manually updated OAuth token Variable in Open Flow and retain managed OAuth2 in n8n.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Google Books volume and bookshelf workflow](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/0037_Manual_Googlebooks_Create_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

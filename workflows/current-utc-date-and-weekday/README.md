@@ -15,13 +15,13 @@ Run either format manually. No inputs, accounts or external services are require
 
 Both values use one system-clock reading and UTC. They do not use the browser, city or n8n instance’s local timezone. Check the execution machine’s clock when using the result in another process. As a reusable data step, it takes no input and produces a timestamp and weekday at execution time; it does not format an input date, schedule a job or read a calendar service.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Read the clock once so the values cannot cross a midnight boundary between separate readings.
 - Use UTC for the weekday as well as the ISO timestamp. The source combined a UTC timestamp with a weekday from the execution machine’s local timezone.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Current date and weekday Function workflow](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/0157_Manual_Import_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

@@ -17,12 +17,12 @@ Connect a Reddit account with permission to submit posts, read the chosen subred
 
 A manual run publishes one text post, reads that post back and adds one comment to it. Both the post and comment are public in accordance with the subreddit’s visibility and rules. Open Flow requests at most one comment while reading the post; the comment tree itself is not used. A missing or mismatched post stops before commenting. A failure or lost response can leave a post or comment on Reddit; inspect the subreddit before repeating an uncertain run. There is no automatic retry or rollback.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace example content and subreddit with user input, and verify the post and comment IDs before reporting success.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Create, get and comment on a Reddit post](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/1197_Manual_Reddit_Automate_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n community listing](https://n8n.io/workflows/928-create-a-post-with-comments-in-reddit-automatically/) credits Harshil Agrawal. The original template does not state a separate license.
 

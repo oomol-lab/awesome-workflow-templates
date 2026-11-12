@@ -19,14 +19,14 @@ Every Monday at 07:00 UTC the workflow asks Search Console for up to ten search 
 
 A failed query stops before sending. A failed or uncertain Gmail send may have been accepted; inspect Sent mail before retrying. The workflow does not store a checkpoint, so reruns can send duplicate reports.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Configure a Monday schedule; the source Cron had no trigger time configured despite its name. Set UTC explicitly.
 - Replace the source GET/basic-auth request with Google's authenticated Search Analytics POST, request the query dimension and ten rows, and provide a seven-day date range.
 - Set the email recipient and include the generated report in its body without the automatic n8n attribution.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Weekly Search Console Report](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Http/1893_HTTP_Gmail_Automate_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

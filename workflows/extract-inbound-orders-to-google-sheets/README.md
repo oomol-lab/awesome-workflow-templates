@@ -19,13 +19,13 @@ Every minute new emails whose subject contains the case-sensitive phrase Inbound
 
 Open Flow checks up to 25 messages per poll and processes each email in the poll page in sequence and validates extracted values before one append per email. If an append fails, earlier emails may already have been written. An uncertain append may have succeeded; inspect the sheet before retrying. Polling does not guarantee exactly-once delivery.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the private spreadsheet with configuration, use RAW cell values and validate order lines before writing. n8n processes every input order rather than only the first item of a batch.
 - Open Flow uses a single-round Agent and excludes drafts, spam and trash; n8n retains its source trigger filters.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [AI agent for logistics order processing with GPT-4o, Gmail and Google Sheet](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Googlesheets/0814_GoogleSheets_Gmail_Send_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n community listing](https://n8n.io/workflows/3344-ai-agent-for-logistics-order-processing-with-gpt-4o-gmail-and-google-sheet/) credits Samir Saci. The original template does not state a separate license.
 

@@ -23,14 +23,14 @@ The task is scheduled for the next UTC calendar date at the time it is processed
 
 Both formats exclude drafts, spam, trash and outgoing-only messages. n8n also excludes scheduled messages; Open Flow does not add that filter. Open Flow uses Gmail history checkpoints and n8n uses a time cursor with a bounded backlog queue. Each page has up to 50 messages. A failed or uncertain create stops later items; earlier tasks may already exist. Inspect the list before replaying. No exactly-once or automatic failed-run replay is promised. Full fetched messages and Code inputs must fit execution limits.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace private credentials and configure the destination task list.
 - Read the actual Subject field and repair the invalid date expression to use the next UTC date.
 - Upgrade the native Gmail trigger to 1.4 with a 50-message budget and incoming-only filtering.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [New Email → Create Google Task](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Googletasks/2031_Googletasks_Gmail_Create_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

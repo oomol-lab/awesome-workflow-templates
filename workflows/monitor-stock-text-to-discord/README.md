@@ -19,13 +19,13 @@ Every hour the workflow fetches the page as text and searches for the exact, cas
 
 Redirects are followed up to 21 hops. Open Flow accepts HTTP or HTTPS redirect targets without embedded credentials. A failed request or non-2xx final response stops without a Discord message. Open Flow applies a 30-second timeout per hop; n8n uses its HTTP node default timeout. Open Flow stops without a message if the response exceeds 4 MiB. The schedule uses America/Los_Angeles, matching the source. n8n chooses a fixed second within each hour’s first minute; Open Flow starts at the minute boundary. A Discord failure stops the run; an unknown send may already have succeeded, so inspect the channel before retrying.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Add a page URL and Discord bot destination. Both formats use a bot connection instead of the source Discord webhook.
 - Preserve the source’s connected branch: only absence sends a message. The unused “value found” node is removed.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Website check](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Http/0358_HTTP_Discord_Monitor_Scheduled.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

@@ -19,13 +19,13 @@ Every six hours at 00:00, 06:00, 12:00 and 18:00 UTC, the workflow reads all pop
 
 An X failure leaves every row in place, although earlier posts may already exist. A deletion failure leaves earlier deletions in place. If a write outcome is uncertain, inspect X and the sheet before restarting; reruns may duplicate posts. Open Flow requires the collected sheet to fit its run limits. The n8n schedule uses a fixed second within the selected minute; Open Flow starts at the minute boundary. n8n OAuth2 may refresh credentials and retry a request once after an HTTP 401.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Configure the private spreadsheet and credentials, and use UTC. The source's no-filter read returns all populated rows despite its first-match option.
 - Check the full sheet after posting and delete the corresponding rows bottom-up; the source repeatedly deletes row 2 and can remove the wrong rows when the queue has gaps.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Post queued Google Sheets rows to X](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Schedule/0474_Schedule_GoogleSheets_Automation_Scheduled.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source credits n8n.ninja. No separate original template license was found.
 

@@ -19,13 +19,13 @@ Each day the workflow collects unique nonnumeric words from three Hacker News ti
 
 Airtable saves occur before SMS. A later failure does not undo earlier records, and a lost Airtable or SMS response may still mean a write or message succeeded. Inspect the destination before replaying; no automatic write retry is added. The collected data must fit the host execution limits.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Open Flow uses Hacker News top-story IDs and item reads, because the search Action requires a nonempty query. The n8n format retains the source's Algolia front-page search. Ranking can differ between the two sources.
 - Remove personal destinations, avoid the source's stateful digit-regex error, verify five words and translated results before writes, and use Unicode SMS. Both formats save before sending.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Daily Language Learning](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Airtable/1138_Airtable_Vonage_Automation_Scheduled.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n community listing](https://n8n.io/workflows/888-get-data-from-hacker-news-and-send-to-airtable-or-via-sms/) credits isa024787bel. The original template does not state a separate license.
 

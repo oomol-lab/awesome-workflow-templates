@@ -23,13 +23,13 @@ Each completed form submits its receipt URL to the Mindee model, waits for proce
 
 If Mindee cannot fetch the file, check the URL’s access and redirect behavior. An uncertain Mindee submission may already have created a job. An uncertain Airtable write may already have created a record; inspect both services before retrying. The workflow adds no automatic write retries or deduplication.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the legacy Mindee receipt node with the current asynchronous V2 Receipt model and configure a model ID. Mindee fetches the uploaded URL directly instead of passing downloaded bytes between nodes.
 - Replace empty form/base credentials with setup instructions and Airtable PAT authentication.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Expense Tracker App](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Http/1030_HTTP_Typeform_Monitor_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

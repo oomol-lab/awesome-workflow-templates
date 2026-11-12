@@ -19,13 +19,13 @@ Each run upserts the first name for the email, waits for that import job to comp
 
 The writes are asynchronous and may already have succeeded when a response is lost or a wait times out. Inspect SendGrid and the job status before retrying. The workflow does not roll back or retry writes. The email-only upsert is appropriate when email is the contact's only identifier; SendGrid requires all existing identifiers when updating a contact with additional identifiers.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace blank email and names with user configuration and validate them.
 - Wait for each asynchronous job before continuing, bound the checks, and verify the final contact. Open Flow uses the SendGrid Provider API Request for the contact operations; n8n uses HTTP Request with the SendGrid credential.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Create, update and get a contact using the SendGrid node](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/0408_Manual_Sendgrid_Create_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n community listing](https://n8n.io/workflows/901-add-contacts-to-sendgrid-automatically/) credits Harshil Agrawal. The original template does not state a separate license.
 

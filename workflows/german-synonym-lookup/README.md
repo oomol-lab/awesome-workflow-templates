@@ -19,13 +19,13 @@ Keep a visible [OpenThesaurus](https://www.openthesaurus.de/) link wherever you 
 
 A service error or malformed response stops the run. There is no cache, history or automatic retry.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Use an explicit JSON HTTP request in Open Flow, with the required contact header.
 - Expose the unchanged synonym groups and count in Open Flow.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [OpenThesaurus synonym workflow](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/0192_Manual_Openthesaurus_Import_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

@@ -24,9 +24,8 @@ Deduplication covers only hashes in these bounded issue scans. Older issues outs
 
 The source leaves its OpenAI model unspecified. The pinned current n8n model node defaults to `gpt-5-mini`, now made explicit in both files. Open Flow uses one native Agent round with structured output and no tools, memory or code. It uses the deployment's Agent generation settings. The n8n ChatOpenAI adapter permits two transient transport retries; the Open Flow Agent executor does not retry that transport failure. Neither format adds a workflow retry. Check the [model documentation](https://developers.openai.com/api/docs/models/gpt-5-mini) and your configured route before enabling the schedule. The source's optional RAG/tools suggestion is not implemented in its graph. Model quality, account permissions and live API access require your own testing.
 
-
 <details>
-<summary>Source and license</summary>
+<summary>Inspiration &amp; credits</summary>
 
 Adapted from [Customer Support Channel and Ticketing System with Slack and Linear](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Slack/Customer%20Support%20Channel%20and%20Ticketing%20System%20with%20Slack%20and%20Linear.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 

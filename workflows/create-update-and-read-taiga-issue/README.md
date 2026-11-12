@@ -19,13 +19,13 @@ In n8n, connect the same Taiga credentials to the three nodes, enter your projec
 
 Run manually to create an issue, update its description, then read the issue by the ID returned by creation. Both formats read the current version before updating. Open Flow returns the final issue; n8n returns the final node result. If a write fails or its outcome is uncertain, inspect Taiga before retrying: the issue may already exist or have changed, and earlier writes are not rolled back.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the source project ID with a configuration value. Open Flow checks the project ID and response IDs.
 - Open Flow uses the Taiga Actions for creation and update, sending only the source fields.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Create, update and get an issue on Taiga](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/1100_Manual_Taiga_Create_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

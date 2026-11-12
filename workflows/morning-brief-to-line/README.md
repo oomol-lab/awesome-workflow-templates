@@ -24,15 +24,15 @@ For n8n, configure the task list in **Build Context** and select an Anthropic cr
 
 Enable the workflow after setup. Test with a LINE recipient your bot is allowed to message. Each run sends one new message, even when the task list has not changed. No calendar or task service is read.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Use real line breaks in the task prompt and JSON-safe request bodies for quotes and multiline text.
 - Put Anthropic and LINE credentials in account settings rather than environment expressions.
 - Set an explicit UTC schedule and display timezone.
 - Stop before sending if the model returns an empty brief or a message longer than LINE allows.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Claude AI Morning Brief](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/OpenAI_and_LLMs/Claude%20AI%20Morning%20Brief.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 

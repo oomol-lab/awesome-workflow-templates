@@ -25,14 +25,14 @@ A failed or uncertain X post stops before Telegram; a failed Telegram post can l
 
 Open Flow requires signed JSON events of at most 64 KiB and checks the topic. Its endpoint rejects WooCommerce's unsigned setup ping with HTTP 400. Configure and verify subscription delivery for your deployment. The native n8n trigger validates the signature but trusts the subscription topic without an additional topic check.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the source account identities and chat ID with setup.
 - Keep both notices in source order and check returned post IDs; update the native X node to API v2.
 - Send literal product text to Telegram; the native version escapes its HTML mode so special characters do not become formatting.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [New WooCommerce Product to Twitter and Telegram](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Twitter/1165_Twitter_Telegram_Create_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

@@ -27,14 +27,14 @@ The complete supplied batch is validated before email submission starts. Emails 
 
 The Open Flow result contains each file ID with its SMTP receipt and a count. Complete batches and accumulated receipts must fit the inspected host’s 1 MiB per-Code input/result budget; oversized data fails rather than being truncated.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Remove the source’s personal addresses and folder/credential identities.
 - Make the one-minute schedule and created-file filter explicit.
 - Validate complete event batches and confirm SMTP acceptance without adding file operations or attachments.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Google Drive new-file email notification](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Emailsend/0113_Emailsend_GoogleDrive_Send_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

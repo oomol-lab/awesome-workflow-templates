@@ -27,15 +27,15 @@ A valid first result uses one extraction step with `repaired: false`. Invalid JS
 
 Submitted text and any correction completion are sent to the selected model service. The workflow returns the record and does not save it to a contact system. Check extracted values against the original text; the instruction to include contacts only when provided is model guidance.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the hosted chat input with ordinary single-text input in both formats.
 - Keep schema validation and at most one correction visible as separate steps.
 - Read actual Basic LLM Chain text output, accept the source’s optional output wrapper, and return known record fields with explicit failure status.
 - Preserve the original record schema and make the current-time context UTC.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Extract personal data with self-hosted LLM Mistral NeMo](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/OpenAI_and_LLMs/Extract%20personal%20data%20with%20self-hosted%20LLM%20Mistral%20NeMo.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 

@@ -23,13 +23,13 @@ As in the source, the workflow saves all selected IDs before creating bookmarks.
 
 The schedule starts in UTC. n8n Cron V1 chooses a fixed randomized second within each scheduled minute while Open Flow uses minute boundaries. Invalid video IDs, missing titles or channel names, or titles over 1000 characters stop before State changes.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Configure a real playlist and Raindrop collection; use Unsorted instead of the source's `0` collection placeholder.
 - Make the original first-25 limit and pre-write ID history explicit, and validate the complete returned batch before saving history.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [YouTube to Raindrop](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Functionitem/1140_Functionitem_Raindrop_Automation_Scheduled.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

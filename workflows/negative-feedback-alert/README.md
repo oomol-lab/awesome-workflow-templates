@@ -25,15 +25,15 @@ Each completed form runs one sentiment analysis step against Google Cloud Natura
 
 Feedback text is sent to Google for sentiment analysis. Negative feedback is sent to the chosen Mattermost channel.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the original private form and destination identifiers with configuration placeholders.
 - Match full Typeform answers to question definitions by field ID and reject missing or ambiguous required text answers. Leading or trailing whitespace in question titles is ignored.
 - Make the original numeric threshold explicit and validate the service’s score before choosing a branch.
 - Use a secret Google API key in Open Flow; the n8n version keeps its native Google OAuth2 credential. Both call the same v1 sentiment endpoint.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Analyze feedback and send a message on Mattermost](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Other_Integrations_and_Use_Cases/Analyze%20feedback%20and%20send%20a%20message%20on%20Mattermost.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 

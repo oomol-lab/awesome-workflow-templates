@@ -21,13 +21,13 @@ Run manually to request one screenshot. Latchshot accepts public HTTP or HTTPS t
 
 A failed render or transit upload stops the workflow. A render can succeed before an upload fails; inspect the service before retrying. The workflow adds no automatic replay.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Use the Connector action and its file-transit result in Open Flow; n8n retains its binary output.
 - Send the configured delay using the service's delay field in both formats.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Latchshot — capture a public webpage](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Other_Integrations_and_Use_Cases/Latchshot%20%E2%80%94%20capture%20a%20public%20webpage.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 

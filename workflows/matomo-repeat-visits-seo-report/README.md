@@ -21,14 +21,14 @@ A manual run or a weekly Sunday run reads at most 100 visits from the last 30 ca
 
 Visitor IDs, page titles, URLs and time spent are sent to OpenRouter; Matomo also returns visitor IP addresses to the workflow. Ensure your analytics and model provider settings permit that transfer and restrict access to run history. The model’s conclusions can be inaccurate; review them before acting. A read error, invalid visit data, empty or truncated model response or failed save stops the run. A Baserow request with an uncertain outcome may already have created a row; inspect the table before replaying. No automatic retry or duplicate check is configured.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Remove private host, site, table, field and credential values. Bind the Matomo token from a secret Variable in the Open Flow POST body; n8n uses a Query Auth credential and sends the token in the URL.
 - Require an available model instead of the source’s fixed model, and construct the prompt without URL-encoding its contents.
 - Validate visits and model output before saving; make UTC and the empty-list behavior explicit.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Matomo Analytics Report](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Code/1594_Code_Schedule_Automation_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n community listing](https://n8n.io/workflows/2561-send-matomo-analytics-data-to-ai-to-analyze-then-save-results-in-baserow/) credits Keith Rumjahn. The original template does not state a separate license.
 

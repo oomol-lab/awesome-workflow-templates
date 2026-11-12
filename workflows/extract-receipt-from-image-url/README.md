@@ -21,13 +21,13 @@ The image must be available at a direct HTTPS URL that Mindee can fetch without 
 
 A manual run submits one image URL to the configured Receipt model, waits three seconds between job checks, and returns the complete V2 extraction response when its job finishes. The model determines the returned fields and recognition quality. Open Flow limits each HTTP response to 4 MiB and Code inputs and outputs to 1 MiB; an oversized response stops the run. A missing or invalid job, failed processing, mismatched result or 200 pending checks stops the run. The workflow does not resubmit a failed or uncertain request; an unknown submission may already have created a job, so inspect Mindee before retrying.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the legacy Mindee receipt node with its current asynchronous V2 Receipt model. Mindee fetches a user-supplied URL directly instead of the workflow downloading binary bytes. Results use the V2 response shape and may differ from the original model.
 - Require a model ID and check the returned job and result belong together.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Extract information from an image of a receipt](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/1128_Manual_HTTP_Automation_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n community listing](https://n8n.io/workflows/702-extract-information-from-an-image-of-a-receipt/) credits Harshil Agrawal. The original template does not state a separate license.
 

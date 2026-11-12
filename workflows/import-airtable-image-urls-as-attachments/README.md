@@ -21,13 +21,13 @@ A manual run searches all records whose `Image source URL` is nonempty, then upd
 
 Airtable fetches each image after accepting the update. An accepted request does not guarantee that Airtable could download the image. Check the attachment field when URLs may be inaccessible or expired. A failed or uncertain update stops the run; earlier updates remain and an uncertain update may have succeeded. Check the table before retrying. The workflow does not add retries or deduplication. Collected records must fit the host execution limits.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Remove the personal base and table. Replace the source attachment object with Airtable’s array of URL objects so it can populate the attachment field.
 - Open Flow explicitly follows all search pages and updates one record per request. n8n keeps its search and update nodes.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Upload image URLs as attachments in Airtable](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/0377_Manual_Stickynote_Update_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

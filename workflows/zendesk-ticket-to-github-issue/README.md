@@ -21,13 +21,13 @@ The endpoint immediately acknowledges receipt. The workflow validates the secret
 
 An acknowledgement does not mean the issue or ticket was updated. If issue creation succeeds but ticket update fails, the issue remains unlinked. An uncertain write is not retried automatically; check both systems before rerunning. Concurrent events can create duplicate issues or comments because there is no locking or deduplication.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace account-specific repository and field values with configuration and require a shared webhook secret.
 - Validate the ticket, custom field and issue number before writing.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Sync Zendesk tickets with subsequent comments to GitHub issues](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Zendesk/0279_Zendesk_GitHub_Create_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n listing](https://n8n.io/workflows/1832-sync-zendesk-tickets-with-subsequent-comments-to-github-issues/) credits n8n Team. No separate original template license was found.
 

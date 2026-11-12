@@ -31,15 +31,15 @@ Both formats make at most three GET attempts, with three seconds between failed 
 
 Open Flow uses its public HTTP capability to apply the timeout separately to each attempt; a node timeout alone would include the entire retry sequence. Cancelling the Open Flow run stops requests or waiting without creating a successful failure report. A handled failure completes the workflow and returns a failure record for inspection. `retryable` is true for exhausted request attempts and false for response/configuration failures. No later rerun, notification, checkpoint, or synchronization write is configured.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Preserve empty arrays as a full HTTP response so validation can report them instead of receiving no items.
 - Check only fields actually present on each record and reject an empty required-field configuration.
 - Return fixed failure messages instead of attempting to scrub arbitrary error text with credential patterns.
 - Distinguish response/configuration failures from request failures, and make redirects and retry counts explicit.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Resilient REST API Sync with Retries, Validation, and Sanitized Errors](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Other_Integrations_and_Use_Cases/Resilient%20REST%20API%20Sync%20with%20Retries%2C%20Validation%2C%20and%20Sanitized%20Errors.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 

@@ -21,13 +21,13 @@ On an automatic run failure from a configured workflow, the workflow posts the w
 
 Mattermost errors stop the SMS step. A failed or uncertain message may already have been delivered; inspect the channel and phone before retrying. Avoid binding the error workflow to itself. Restrict access to workflow names and execution history.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Configure the previously empty Mattermost and Twilio destinations. Open Flow validates phone numbers before posting.
 - Use the respective platform’s error trigger and explicitly bind source workflows. Open Flow’s error event provides a failed node ID rather than n8n’s last executed node name.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Send workflow error notifications to Mattermost and Twilio](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Mattermost/0865_Mattermost_Twilio_Automate_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

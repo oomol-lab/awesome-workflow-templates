@@ -15,13 +15,13 @@ For Open Flow, import the JSON, connect Trello in **Create Trello card**, and re
 
 Run the workflow manually. It returns the created card record, including the card URL when Trello supplies one. Each run creates another card. Labels, members, due dates, and attachments are not configured.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Add a clear destination-list placeholder.
 - Expose the created card record in Open Flow.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Create a new card in Trello](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/1175_Manual_Trello_Create_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

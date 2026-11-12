@@ -27,15 +27,15 @@ For n8n, edit those fields in **Set Ideal Customer Profile (ICP)** and connect t
 
 Each successful run has one generation step and returns `keywords`. n8n’s model adapter can retry transient request failures with backoff; it does not repeat the whole workflow. Invalid JSON, a list outside 15–20 items, or empty keywords stops the run. The workflow trims and lowercases each keyword. It does not browse, fetch search volume or competition data, write to a database, or publish content. Keyword intent and relevance are model judgments; review them and use your SEO data before prioritizing.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Give the model all five customer-profile fields; the source prompt included only the product.
 - Replace the tool-less Agent with a Basic LLM Chain and parse its actual text output before reading keyword items.
 - Return a validated keyword list instead of relying on a missing object field and a placeholder database node.
 - Use an available model instead of the source node’s retired default, and remove historical per-run price estimates.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Generate SEO Seed Keywords Using AI](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/AI_Research_RAG_and_Data_Analysis/Generate%20SEO%20Seed%20Keywords%20Using%20AI.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 

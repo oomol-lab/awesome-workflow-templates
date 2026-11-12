@@ -19,13 +19,13 @@ Run manually or every day at 06:15 UTC. The source schedule used the n8n instanc
 
 An invalid temperature, missing coordinates for an alert, weather request failure or failed alert request stops the run. A successful SIGNL4 response confirms event acceptance, not that a person was notified. An uncertain alert request may have succeeded; check SIGNL4 before retrying. Each triggering run can produce another alert. No automatic retry or resolution is configured. The HTTP request carries the secret in its URL, so restrict access to execution logs.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Make UTC explicit and validate weather data before an alert.
 - Use the OpenWeather Action and SIGNL4’s inbound webhook with a secret URL Variable in Open Flow; n8n retains its native nodes and credentials.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Send weather alerts to your mobile phone with OpenWeatherMap and SIGNL4](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/1216_Manual_Schedule_Automate_Scheduled.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n community listing](https://n8n.io/workflows/966-send-weather-alerts-to-your-mobile-phone-with-openweathermap-and-signl4/) credits Ron. The original template does not state a separate license.
 

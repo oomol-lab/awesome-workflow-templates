@@ -21,15 +21,14 @@ Each day at 10:00 UTC the workflow asks Edamam for a random selection matching t
 
 A failed or uncertain email may already have been sent; check your mail before retrying. No automatic send retry or deduplication is configured. Email acceptance does not prove delivery.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the retired Edamam v1 endpoint and random offset with v2's random selection. The health filter is now sent in the request; the source mentioned it in the subject without filtering by it.
 - Use Basic credentials, escape recipe text, validate links, and use UTC as the starting time zone. The source inherited its instance time zone.
 - Open Flow uses Gmail; n8n retains SMTP.
-
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [What To Eat](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Http/0084_HTTP_Cron_Automation_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n community listing](https://n8n.io/workflows/856-send-daily-recipe-emails-automatically/) credits jason. The original template does not state a separate license.
 

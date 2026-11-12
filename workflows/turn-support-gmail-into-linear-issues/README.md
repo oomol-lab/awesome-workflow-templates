@@ -19,13 +19,13 @@ Every hour in UTC the workflow reads the single newest matching Gmail message. I
 
 Only the latest message is checked each hour, so intermediate messages may be missed. Message IDs are remembered after a confirmed issue; State must fit host limits. A failed or uncertain Linear write may have created an issue. Check Linear before retrying; after an uncertain write the next run may create a duplicate. Keep email content, model access and execution history restricted. Review AI-generated issues for accuracy.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace private mailbox and Linear IDs, validate the model output and map priority 5 to Linear Low.
 - Remember an email only after a confirmed issue instead of marking it before the model and write. Open Flow passes plain text or HTML body to the Agent; n8n retains its HTML-to-Markdown node. Both use UTC instead of the source instance timezone.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Automatically create Linear issues from Gmail support request messages](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Schedule/0912_Schedule_Removeduplicates_Create_Scheduled.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n listing](https://n8n.io/workflows/3899-automatically-create-linear-issues-from-gmail-support-request-messages/) credits Jimleuk. No separate original template license was found.
 

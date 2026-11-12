@@ -17,14 +17,14 @@ Each run submits one text message. The workflow does not enable WhatsApp, add me
 
 Twilio account restrictions apply. Failed requests stop without an automatic retry. The workflow has no history or duplicate detection; check Twilio before repeating a request whose result is uncertain.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Make the source’s default SMS/send operation explicit.
 - Require the sender, recipient and message as Open Flow run inputs.
 - Expose the submitted message details.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [A workflow with the Twilio node](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/0949_Manual_Twilio_Automate_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

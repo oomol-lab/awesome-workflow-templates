@@ -21,15 +21,15 @@ The check reads one page of at most 250 workflows and one page of at most 250 ex
 
 This is a report based on observed execution history. It does not establish whether a quiet workflow should have run, and it does not restart anything. If the n8n version runs inside the instance it monitors, an instance outage prevents this schedule from running too.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Use native n8n Connector Actions in Open Flow, with authentication managed by the connection.
 - Return a consistent report for both empty and nonempty findings, and expose whether each response contains another cursor.
 - Reject a nonpositive or invalid silence threshold instead of silently substituting a default.
 - Set an explicit UTC schedule; the Open Flow check uses the scheduled timestamp as its observation time.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [n8n Silent Workflow Check](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/devops/n8n%20Silent%20Workflow%20Check.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 

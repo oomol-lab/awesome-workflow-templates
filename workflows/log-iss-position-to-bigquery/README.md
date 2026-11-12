@@ -19,13 +19,13 @@ Each minute the workflow requests the ISS position for the current Unix second a
 
 A failed or uncertain insert may have reached BigQuery. Check the table before retrying; the workflow does not assign a deduplication ID or automatically retry. Repeated runs can create duplicate rows. Open Flow does not follow HTTP redirects and applies a 30-second timeout and 4 MiB response limit; n8n uses its HTTP node defaults. The position API is rate limited.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace private BigQuery identifiers with configuration, and send the current Unix time in seconds instead of milliseconds.
 - Validate the returned position and inspect BigQuery row-level errors. Set UTC explicitly.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [ISS position to BigQuery](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Http/0023_HTTP_Googlebigquery_Automation_Scheduled.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n listing](https://n8n.io/workflows/1049-send-location-updates-of-the-iss-every-minute-to-a-table-in-google-bigquery/) credits Harshil Agrawal. The original template does not state a separate license.
 

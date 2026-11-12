@@ -19,13 +19,13 @@ At 02:00 UTC each day, inspect database pages and move a page to the Notion tras
 
 Open Flow rereads each page before checking its blocks. The read and trash operations are not atomic; avoid concurrent edits or runs. A failed or uncertain archive may have succeeded; inspect Notion before retrying. Earlier archived pages remain if a later operation fails. No workflow-level write retry is added. Open Flow runs at the minute boundary; n8n uses a fixed second within the minute.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Treat unsupported property and block types as non-empty to avoid archiving content; the source assumes every block has a text array. Preserve pages with no properties.
 - Use the current Notion data-source API in Open Flow, and UTC rather than the original instance timezone. Open Flow verifies each archive response before continuing.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Archive empty pages in Notion Database](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Splitinbatches/0070_Splitinbatches_Notion_Export_Scheduled.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n listing](https://n8n.io/workflows/1478-archive-empty-pages-in-notion-database/) credits Jonathan. No separate original template license is stated.
 

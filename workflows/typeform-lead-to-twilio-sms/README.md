@@ -21,14 +21,14 @@ Each completed form produces one SMS containing those six answers. The source ti
 
 Names, family information, email and birth date are sent to Twilio and the configured recipient. Use a form and recipient authorized to receive these details, and limit access to run history. A successful Twilio response means the message was accepted for processing, not necessarily delivered. The source enabled automatic retries; this template disables them to avoid repeating a send with an unknown outcome. Check Twilio before manually replaying an uncertain send. Typeform can redeliver events; Open Flow uses the response token for trigger deduplication, while n8n adds no separate submission history.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Remove private form, phone numbers and organization-specific wording; use user configuration.
 - Use raw completed responses and validate the six answer mappings before sending.
 - Disable the source’s node retries in both formats and retain SMS as configured in the original Twilio node.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Send Typeforms leads via Whatsapp (Twilio)](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Twilio/0354_Twilio_Typeform_Send_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

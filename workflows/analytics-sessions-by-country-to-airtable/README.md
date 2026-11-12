@@ -21,13 +21,13 @@ Each run requests GA4 `sessions` grouped by `country` for the chosen dates and c
 
 Open Flow creates records sequentially; a failure can leave earlier records in Airtable. An uncertain write may already have succeeded, so inspect the table before retrying. Google Analytics reporting can apply privacy thresholds or sampling; review the report in Analytics when accuracy matters.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the retired Universal Analytics report with GA4 and replace its fixed 2019–2020 dates with configurable example dates. GA4 session counts can differ from Universal Analytics and historical UA data is not carried over.
 - Fix the source's `total` field reference to use the returned sessions metric, and validate report completeness before writing.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Get analytics of a website and store it Airtable](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/0389_Manual_Googleanalytics_Import_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n community listing](https://n8n.io/workflows/892-transfer-google-analytics-data-to-airtable-database/) credits Harshil Agrawal. The original template does not state a separate license.
 

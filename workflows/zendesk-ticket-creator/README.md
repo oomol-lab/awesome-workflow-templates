@@ -17,14 +17,14 @@ The workflow creates one ticket and returns the result. Open Flow returns the cu
 
 Each manual run creates another ticket. There is no search, upsert or duplicate detection. A service error stops the workflow without an automatic retry. If a creation request times out, check the service before running it again.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the empty description with a setup placeholder.
 - Add an explicit subject in both formats, as required by the current Open Flow Action. The source left the subject unset.
 - Use n8n’s current Zendesk OAuth2 setup and expose the created ticket.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Create a ticket in Zendesk](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/0100_Manual_Zendesk_Create_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

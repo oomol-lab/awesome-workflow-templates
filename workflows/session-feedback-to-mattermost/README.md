@@ -21,13 +21,13 @@ The workflow runs each September 28 at 17:00 UTC. It reads all rows and sends ea
 
 A failure stops the remaining sends; earlier notices may already exist. Inspect Mattermost before replaying, which can send duplicates. The complete table and messages must fit execution limits. Only people who may receive the form should have access to the configured channels.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the personal spreadsheet with setup and set the schedule timezone to UTC.
 - Open Flow checks required headers and values before posting; preserve every row, channel and linked attachment.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Session feedback notifications](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Mattermost/1117_Mattermost_GoogleSheets_Automate_Scheduled.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

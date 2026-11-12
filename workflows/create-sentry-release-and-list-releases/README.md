@@ -21,14 +21,14 @@ Run manually. The workflow creates the release, then follows Sentry’s next-pag
 
 An existing version may be returned by Sentry as an already-existing release rather than a new one. Neither format adds a workflow-level retry or rollback after an unknown create result or a failed list. The release may already exist; inspect Sentry before replaying. Open Flow rejects repeated or malformed cursors instead of looping. Full pages and accumulated results must fit current execution limits. Sentry API access and OAuth permissions must be configured for the selected organization and project.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace empty organization/project and account values with setup; supply a release URL. Use Sentry OAuth2 in n8n as well as Open Flow instead of the source’s token credential.
 - Preserve create followed by Return All. Open Flow uses the managed Sentry Provider API for creation and pagination because the current release-list Action does not expose its cursor.
 - Open Flow validates the create response and rejects repeated or malformed pagination cursors.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Create a release and get all releases](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/0703_Manual_Sentryio_Create_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

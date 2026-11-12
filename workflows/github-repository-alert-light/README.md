@@ -27,14 +27,14 @@ Open Flow returns the Action’s complete normalized `changedStates` and `servic
 
 Webhook signatures are checked using the registered secret. Open Flow uses a delivery ID for deduplication when GitHub supplies one; n8n adds no workflow-level delivery history. Redelivery or manual replay can call the light service again. An API error or uncertain outcome fails the run without a workflow retry; the light may already have changed.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Restore the repository-event → light-service connection and replace private repository/entity values with setup placeholders.
 - Keep the wildcard event subscription and one `light.turn_on` call with RGB red.
 - Use current secret-checked GitHub registration and expose the Home Assistant Action result in Open Flow.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Turn on a light to a specific color on any update in GitHub repository](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Github/0289_GitHub_Stickynote_Update_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

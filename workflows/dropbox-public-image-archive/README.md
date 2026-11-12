@@ -19,15 +19,15 @@ Run manually. The defaults create `/n8n` and save `https://n8n.io/n8n-logo.png` 
 
 Open Flow asks Dropbox to fetch the public URL directly. If Dropbox starts a background job, **Confirm image saved** checks it once per second for up to 60 seconds. Only a completed file proceeds to the listing. A failed save, request error, unknown status, or timeout stops the run without submitting the save again. After a timeout, the job may still finish in Dropbox; inspect the job ID in **Save public image** and the destination before retrying. n8n downloads the bytes and uploads them before listing.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Make the Dropbox OAuth2 connection and binary-field settings explicit in n8n.
 - Derive upload and listing paths from the folder configuration.
 - Use Dropbox’s public-URL save action in Open Flow, with completion checks for asynchronous jobs.
 - Expose completed file metadata and folder-list pagination information in Open Flow.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Dropbox image download, upload, and folder listing](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/1078_Manual_Dropbox_Automation_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

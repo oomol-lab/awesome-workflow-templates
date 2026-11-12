@@ -19,13 +19,13 @@ Hunter can return a previous verification from up to one month ago. Inspect the 
 
 If Hunter is still verifying after its request window, it returns a pending response. This workflow stops without claiming a completed assessment. It has no automatic polling or retry; check the result before running again. A rejected request or malformed response also stops the run.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the example email with user configuration.
 - Check that a completed assessment is present and expose it as an Open Flow output.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Hunter email verification workflow](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/0991_Manual_Hunter_Automate_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

@@ -19,13 +19,13 @@ Every minute the workflow reads all available Pipedrive people and HubSpot conta
 
 The Open Flow HubSpot search follows pages and stops without creating contacts if it reaches the 10,000-result search limit. n8n stops before creation if either list still has a next page after 100 requests, or if it reads 10,000 HubSpot contacts, even when the last page has no next cursor. Search indexing can lag, so a very recent HubSpot contact might not yet appear. Concurrent runs and uncertain create outcomes can also cause conflicts; inspect HubSpot before retrying. Earlier creates are not rolled back if a later create fails. The source used its n8n instance timezone and a stable second in each minute; Open Flow runs at minute boundaries in UTC.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Use current Pipedrive V2 and HubSpot contact formats; the old Pipedrive V1 endpoint is deprecated. Compare normalized emails instead of the first legacy identity entry and fail before writes if a person lacks an email.
 - Follow pages, deduplicate the planned creates and make partial failures explicit.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Hubspot Workflow](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Hubspot/0130_HubSpot_Cron_Automate_Scheduled.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

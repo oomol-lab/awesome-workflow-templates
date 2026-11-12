@@ -21,13 +21,13 @@ Run manually. The workflow identifies or updates the customer, then submits the 
 
 A failed or uncertain identify or segment request may already have changed Customer.io. Check the profile and segment before repeating. Neither format rolls back an earlier request.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the missing segment ID with setup and preserve the original example `data.Name` attribute.
 - Open Flow uses the Customer.io Track Provider API for the manual-segment operation, sending the documented `ids` payload.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Create a customer and add them to a segment in Customer.io](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/0803_Manual_Customerio_Create_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

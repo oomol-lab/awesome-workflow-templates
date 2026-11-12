@@ -54,15 +54,15 @@ Open Flow exposes these fields as workflow outputs. In n8n, they are the result 
 
 The three requests run in order. A failed request stops the run. This template produces a snapshot; it does not store historical results or send notifications.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Improvements to the source
 
 - Validate every metric and name missing or invalid fields in the error. Zero remains a valid count.
 - Make the twice-daily schedule and UTC timezone explicit.
 - Use the GitHub and Dev.to connectors in Open Flow. The n8n HTTP requests include an explicit User-Agent.
 - Use explicit response references in both formats so all three results reach the summary.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [GitHub Stars and Dev.to Engagement Monitor](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/devops/GitHub%20Stars%20and%20Dev.to%20Engagement%20Monitor.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 

@@ -21,13 +21,13 @@ Dates use UTC. The source schedule inherited its n8n instance timezone and its d
 
 Entries are created one at a time. If a request fails or its outcome is unknown, earlier entries remain and the current entry may have been created. Check Mealie before rerunning. No automatic retry or rollback is configured. HTTP timeouts and response-size limits can stop a run; the first 100 recipes do not necessarily include every matching recipe.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace personal server and category details with configuration and credentials; make timezone and date handling UTC.
 - Stop when too few recipes are available instead of failing or looping indefinitely, and confirm each creation before sending the next.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Random Mealie meal planner](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Code/0651_Code_Schedule_Create_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n listing](https://n8n.io/workflows/2586-weekly-dinner-meal-plan-using-recipes-from-mealie/) credits Damian Karzon. The original template does not state a separate license.
 

@@ -21,13 +21,13 @@ Open Flow uses optional Perigon Wikipedia search and JavaScript computation; n8n
 
 Open Flow handles up to 50 candidate files per page with a continuation checkpoint; n8n collects native polling pages. Open Flow starts from the current time on first activation. An n8n manual test requests one matching existing file, while scheduled polls use their creation-time checkpoint. The formats use different checkpoints and do not guarantee exactly-once delivery. A failed run may not replay automatically, and an uncertain append may already have added a row. Inspect the sheet before retrying.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Filter for Google Docs instead of trying to read every file as a document; read body text from all tabs and tables rather than only top-level paragraphs.
 - Replace private configuration, validate document identity and nonempty text, and append raw cells to avoid spreadsheet formula interpretation.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Fetch the Most Recent Document from Google Drive](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Googledrive/1806_GoogleDrive_GoogleSheets_Import_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The original [WeblineIndia workflow](https://github.com/weblineindia/n8n-Summarize-New-Documents-from-Google-Drive-and-Save-Summary-in-Google-Sheet/blob/c0ea4dc318e77d9e9404db4b026d1b3d752fafdd/Fetch_the_Most_Recent_Document_from_Google_Drive.json) is licensed under MIT; its notice is reproduced below.
 

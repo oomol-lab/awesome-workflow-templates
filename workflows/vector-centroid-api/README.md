@@ -33,15 +33,15 @@ Missing or malformed input returns an `error` object, for example:
 
 Both successful calculations and validation errors use HTTP 200 with a JSON body, matching the source’s response pattern. Inspect the body for `error`. The workflow makes no external service calls and stores no vector history.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Parse the JSON query parameter explicitly and make GET/JSON response settings explicit.
 - Validate vector rows and finite numeric coordinates before computing.
 - Scale each coordinate before averaging and use compensated summation to handle large values and equal subnormal values.
 - Replace the source’s deployed example URL with a setup placeholder.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Calculate the Centroid of a Set of Vectors](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Code/1862_Code_Respondtowebhook_Automation_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

@@ -23,14 +23,14 @@ Telegram fetches the public photo URL; this workflow does not download or store 
 
 Open Flow returns the sent message ID, chat and caption; n8n returns Telegram’s response.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the original chat with a setup placeholder and make the UTC schedule explicit.
 - Use an explicit JSON HTTP request and validate the selected image and optional caption.
 - Preserve the photo and available instructions without adding an ingredient list or extra posts.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Send a cocktail recipe every day via a Telegram](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Http/1043_HTTP_Telegram_Send_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

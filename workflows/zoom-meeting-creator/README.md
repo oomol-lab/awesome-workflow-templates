@@ -19,14 +19,14 @@ Open Flow returns the normalized meeting and its complete raw record; n8n return
 
 Each run creates another meeting. A failed request stops the run, with no workflow retry or duplicate check. Check Zoom before repeating a request with an uncertain result.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the blank authentication option with OAuth2 in n8n.
 - Require the topic as an Open Flow run input.
 - Make the scheduled meeting type explicit and expose the meeting result in Open Flow.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Creating a meeting with the Zoom node](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/1159_Manual_Zoom_Automation_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

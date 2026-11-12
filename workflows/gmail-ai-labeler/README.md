@@ -29,6 +29,9 @@ Open Flow preserves Gmail history page tokens and in-page offsets between bounde
 
 No workflow-level retries are configured. The n8n model adapter allows two additional transient transport retries for each classification step. Open Flow’s model service may apply its own transport policy. A later Gmail write failure stops remaining writes and leaves earlier updates in place. Poll delivery and workflow success have separate checkpoints: a failed run does not guarantee automatic redelivery. Check affected message IDs before an explicit rerun. Adding an existing label is additive, but a rerun can produce different classifications. No exactly-once delivery or batch rollback is promised.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Keep each message’s ID through classification and label lookup, replacing the source’s cross-message merge/aggregate path. Read and validate the whole batch before writing any labels.
@@ -36,10 +39,6 @@ No workflow-level retries are configured. The n8n model adapter allows two addit
 - Make the 25-message budget explicit in both formats. Upgrade the n8n trigger to its native 1.4 queue implementation so a full first page does not silently discard its tail. The original trigger version read one Gmail list page and did not apply the current outgoing-only filter; the polling differences and recovery limits are described above.
 - Use the Gmail Action’s HTML-first body representation in both formats instead of the source’s text-first representation.
 - Skip empty label writes, collapse repeated label names and fail on missing selected labels instead of silently losing them during a merge.
-
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Auto-label incoming Gmail messages with AI nodes](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Gmail_and_Email_Automation/Auto-label%20incoming%20Gmail%20messages%20with%20AI%20nodes.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates). The source credits [workfloows.com](https://workfloows.com/) and [@workfloows](https://www.youtube.com/@workfloows), with a [video guide](https://youtu.be/a8Dhj3Zh9vQ); it states no separate template license.
 

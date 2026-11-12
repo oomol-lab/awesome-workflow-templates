@@ -23,14 +23,14 @@ If creation fails, later requests do not run. If an update or read fails, the al
 
 Open Flow returns the complete incident object; n8n returns the final incident record. No other incident properties are intentionally changed.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Require the member email and service as Open Flow run inputs and replace n8n’s empty setup fields.
 - Use the PagerDuty Provider API for creation, which has no equivalent current Action; retain native Actions for update and get.
 - Confirm completed creation and keep the same returned incident ID through both later requests.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Create, update, and get an incident on PagerDuty](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/0195_Manual_Pagerduty_Create_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

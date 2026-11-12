@@ -19,13 +19,13 @@ At 07:00 UTC each day, the workflow searches Gmail for messages from the configu
 
 Email headers and snippets are sent to the configured model provider. Review access, data handling and the generated summary before relying on it; email content may include instructions that the model cannot be guaranteed to ignore. Read, model or send errors stop the run. An uncertain send may already have delivered; inspect the mailbox before retrying. The source depended on the n8n instance timezone; both formats start at 07:00 UTC. n8n chooses a fixed second within the minute, while Open Flow starts on the minute boundary.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace personal addresses, and use an explicit sender and rolling 24-hour search instead of the source's bare email term and calendar-date cutoff.
 - Escape generated HTML and validate model output before sending. Open Flow uses an AI Agent and bounded, complete Gmail pagination; n8n retains its OpenAI node.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Daily Gmail summary](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Aggregate/1544_Aggregate_Schedule_Send_Scheduled.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n listing](https://n8n.io/workflows/2722-email-summary-agent/) credits Vishal Kumar. The original template does not state a separate license.
 

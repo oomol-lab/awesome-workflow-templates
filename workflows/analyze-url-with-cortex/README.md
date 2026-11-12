@@ -19,13 +19,13 @@ Cortex and the analyzer may send the URL to external services. Only submit URLs 
 
 Each run submits one analyzer job and immediately reads that job once. The returned status can still be waiting or in progress; this workflow does not wait for completion or retrieve a report. Cortex may return a cached job. A failed request stops the workflow; a lost response may mean the job was created, so inspect Cortex before retrying. There is no automatic retry or rollback.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the example URL and instance-specific analyzer with inputs. Use Cortex’s documented job ID field; the source referenced the undocumented _id field. Validate it before reading the job.
 - Both formats check that the returned job matches the submitted ID. Open Flow uses the Cortex HTTP API.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Analyze a URL and get the job details using the Cortex node](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/0202_Manual_Cortex_Import_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n community listing](https://n8n.io/workflows/809-get-the-job-details-using-the-cortex-node/) credits Harshil Agrawal. The original template does not state a separate license.
 

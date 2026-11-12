@@ -29,6 +29,9 @@ Missing or duplicate keys, blank/duplicate headers, malformed records or invalid
 
 There is no workflow retry or cross-service transaction. A failed new-contact append stops later appends and all existing-row updates. A later update failure leaves earlier appends in place. A lost or incomplete response may already have changed the sheet; inspect it before repeating the run. Receipt validation does not roll back remote changes. Avoid concurrent syncs or sheet edits between the read and write. Open Flow's per-invocation Code limits still apply, including1 MiB for input and result in the inspected host. Each Airtable page and new-contact append runs as a separate native execution; large accumulated data fails rather than being truncated.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 Airtable version1 does not accept the source’s `search`/`baseId` parameters. Both formats use its real list/pagination contract and record `fields`. Sheets version1 supports `upsert`, but its actual match parameter is `key`, defaulting to `id`; the source’s `options.compareColumn: Email` is ignored. Its top-level `valueInputMode` and `columnHeaderRow` are also ignored, while RAW is already the native default.
@@ -36,10 +39,6 @@ Airtable version1 does not accept the source’s `search`/`baseId` parameters. B
 The old Sheets append helper additionally builds the wrong header range, `A11:E10001`, from the source’s numeric `A1:E1000` range. The repaired n8n format uses visible authenticated HTTP operations and a one-row append feedback loop. Open Flow uses native Sheets range-read, append and batch-update Actions. Its generic upsert Action forces `USER_ENTERED` and can expand columns/read the whole sheet, so it cannot preserve these settings.
 
 The original helper’s new-appends-before-existing-updates order, null skipping and new-cell text conversion are retained. Both formats validate the complete source/target mapping, reject ambiguous duplicate keys and check receipts. No atomic success or original partial-write rollback is claimed. Tests execute actual Provider/native implementations and the published SDK host with deterministic account/transport fixtures; live permissions, append placement, formula evaluation, concurrent edits and cloud persistence remain unverified.
-
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Airtable to Google Sheets Auto-Sync](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Google_Drive_and_Google_Sheets/Airtable%20to%20Google%20Sheets%20Auto-Sync.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 

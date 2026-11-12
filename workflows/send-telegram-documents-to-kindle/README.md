@@ -21,13 +21,13 @@ A message with a document downloads its complete bytes, sends the file as an ema
 
 Open Flow's file bytes and Base64 representation must fit the host's 1 MiB fetch and Code input/output limits. Oversized files fail rather than being truncated. Open Flow creates an Outlook draft, attaches the file and sends it; a failure can leave a draft or an already sent message. Check Outlook and Telegram before retrying an uncertain operation. The final Telegram reply means the mail service accepted sending, not that Kindle imported the document. Restrict access to runs, which can contain document contents.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the private Kindle address with configuration and make the bot download token explicit.
 - Open Flow uses a draft and the Outlook Provider API to attach bytes before sending; n8n sends the original binary attachment directly.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [send file to kindle through telegram bot](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Microsoftoutlook/1944_Microsoftoutlook_Telegram_Send_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

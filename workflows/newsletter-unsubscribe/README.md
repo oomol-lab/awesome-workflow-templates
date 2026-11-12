@@ -38,7 +38,7 @@ Each request makes one Airtable PATCH containing one record and only `Status: "i
 Blank or malformed record/configuration IDs stop before the API request. An API error, empty update result, different returned ID or a status other than `inactive` prevents confirmation. A successful write followed by a timeout or malformed response may still have changed the record. The workflow has no automatic retry. Open Flow waits up to 60 seconds for its HTTP response and applies its deployment's request limits.
 
 <details>
-<summary>Source and license</summary>
+<summary>Inspiration &amp; credits</summary>
 
 Adapted from the independent unsubscribe form → Airtable update branch in [Email Subscription Service with n8n Forms, Airtable and AI](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Forms_and_Surveys/Email%20Subscription%20Service%20with%20n8n%20Forms%2C%20Airtable%20and%20AI.json) at revision `827110332c21cbe000ab13f6d292d5adb1f1f8db`, collected by [Enes Cingoz / awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates) under [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE).
 

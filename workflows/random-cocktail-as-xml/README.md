@@ -19,12 +19,12 @@ Run manually to retrieve one random recipe. The XML contains the returned `drink
 
 Recipe data: [TheCocktailDB](https://www.thecocktaildb.com/). Check its access terms and the returned licensing metadata before redistributing content.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Open Flow converts the service response to XML with a Code node; n8n retains the original JSON-to-XML node.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Convert the JSON data received from the CocktailDB API in XML](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/1029_Manual_Xml_Process_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

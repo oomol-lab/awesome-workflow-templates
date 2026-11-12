@@ -19,13 +19,13 @@ Every hour in UTC the workflow requests messages received since one hour earlier
 
 IDs are remembered after a confirmed issue; State must fit host limits. A failed or uncertain write may have created an issue. Inspect Jira before retrying; after an uncertain write a later run may create a duplicate. In n8n, a later item failure can also cause earlier successful issues to be repeated if the run state is not saved. Restrict access to email content, model processing and execution history. Review AI output for accuracy.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace private Jira IDs and require an explicit project-specific mapping from model priority 1–5 to Jira priority IDs. Validate the structured output before writing.
 - Remember each message after a confirmed issue instead of before the model and write. Open Flow passes body text or HTML to the Agent; n8n retains the source HTML conversion. Both use UTC instead of the source instance timezone.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Automatically create JIRA issues from Outlook email support requests](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Schedule/0911_Schedule_Removeduplicates_Create_Scheduled.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n listing](https://n8n.io/workflows/3893-automatically-create-jira-issues-from-outlook-email-support-requests/) credits Jimleuk. No separate original template license was found.
 

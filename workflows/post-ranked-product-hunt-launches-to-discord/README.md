@@ -21,13 +21,13 @@ During minute 00 of each hour, the workflow requests up to five Product Hunt pos
 
 A GraphQL error, missing product field or message longer than Discord's 2,000-character limit stops the run before any messages are sent. A failed or uncertain Discord send can leave earlier messages delivered; check the channel before retrying. User and role mentions are neutralized in product text.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Use ISO timestamps accepted by the current Product Hunt DateTime API, keep GraphQL errors from becoming messages, and validate all returned products before sending.
 - Replace the source incoming webhook with a Discord Bot connection and configured server/channel. Disable mentions in generated messages.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Product Hunt Discord ranking](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Graphql/0116_Graphql_Discord_Automate_Scheduled.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n listing](https://n8n.io/workflows/1298-get-top-5-products-on-product-hunt-every-hour/) credits Harshil Agrawal. No separate original template license was found.
 

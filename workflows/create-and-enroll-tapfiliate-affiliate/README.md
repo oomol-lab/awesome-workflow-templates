@@ -19,13 +19,13 @@ The workflow creates an affiliate, sets the metadata key **tag** and adds that s
 
 Tapfiliate may return an automatically generated affiliate password when creating the account. n8n execution data can contain that response; restrict access to execution history. Open Flow returns the affiliate ID and enrollment details, not the password.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the example affiliate, program and tag with inputs and verify enrollment identity.
 - Use the Tapfiliate create Action and Provider API in Open Flow. n8n uses HTTP nodes to avoid the source create node emitting both a raw and a wrapped copy of the affiliate.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Tapfiliate affiliate onboarding](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/1205_Manual_Tapfiliate_Automate_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n community listing](https://n8n.io/workflows/936-add-the-affiliate-to-a-program-automatically/) credits Harshil Agrawal. The original template does not state a separate license.
 

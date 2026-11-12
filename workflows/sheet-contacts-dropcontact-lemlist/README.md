@@ -29,15 +29,15 @@ Leads are created sequentially through Lemlist’s [create endpoint](https://dev
 
 A read/enrichment failure stops before lead creation. A failed or uncertain creation stops later leads; earlier contacts/companies/leads may already have changed. No rollback, workflow retry or cross-run import history is added. Check the campaign and enrichment request before replaying. The complete table, enrichment records, plans and accumulated receipts must fit the inspected Open Flow Code host’s 1 MiB input/result budgets; oversized data fails without truncation. Wait storage and automatic continuation must remain available across the 45-second pause.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Restore the complete sheet → French company enrichment → Lemlist campaign-lead import and replace private account settings with setup.
 - Make the original read, raw field mapping, single 45-second wait and one result fetch explicit.
 - Use current formal Google/Dropcontact Actions and a managed Lemlist Provider API request, preserving French through the documented API default.
 - Validate the complete batch before creating leads, encode campaign/email path segments and confirm every created lead without retrying uncertain writes.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Spreadsheet contact enrichment and Lemlist campaign import](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/0120_Manual_GoogleSheets_Automate_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

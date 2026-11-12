@@ -36,15 +36,15 @@ Missing fields, ambiguous question titles, invalid urgency or an unconfigured de
 
 Repeated delivery can create another task. No workflow retry or exactly-once guarantee is added. Check ClickUp before replaying a write with an unknown result. Webhook acknowledgment does not confirm the later task creation.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the private form, workspace and destination-list IDs with user configuration.
 - Read the complete Typeform response and map answers through field definitions, preserving the four source categories.
 - Use the current ClickUp `description` request field and a Personal API Token in both formats. The source selected OAuth2; reconnect with a Personal API Token for this template.
 - Validate required answers, destination and priority before writing, then verify the returned task ID.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [User Request Management](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Typeform/0215_Typeform_Clickup_Automation_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

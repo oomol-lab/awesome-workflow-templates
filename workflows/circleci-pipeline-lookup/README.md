@@ -17,14 +17,14 @@ In n8n, select CircleCI credentials, choose the source-control provider and set 
 
 Each run makes one read request and returns the complete pipeline object. A pipeline in an errored state is still a valid lookup result; inspect its `state` and `errors`. The workflow does not trigger, retry or modify a pipeline. A missing pipeline, inaccessible project or failed request stops the run. No workflow retry is configured.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace blank project configuration with user-supplied provider, project slug and pipeline number.
 - Use the CircleCI Provider API for the project-and-number lookup in Open Flow.
 - Expose the complete pipeline as an Open Flow output.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Get a pipeline in CircleCI](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/1162_Manual_Circleci_Import_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

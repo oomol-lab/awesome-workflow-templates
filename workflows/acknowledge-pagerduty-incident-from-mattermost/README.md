@@ -23,13 +23,13 @@ A button click returns HTTP 200 with an empty JSON object as an immediate receip
 
 A failed or uncertain PagerDuty update can still have taken effect. A later Mattermost post may fail after acknowledgement. Inspect PagerDuty and the channel before retrying. This shared secret is a bearer capability and does not identify individual users; repeated requests are not deduplicated.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the original PagerDuty email with configuration and require a shared action secret before writing.
 - Return valid JSON to the Mattermost action immediately, and confirm PagerDuty’s returned incident ID and status before posting success.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Acknowledge a PagerDuty incident from Mattermost](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Mattermost/0855_Mattermost_Pagerduty_Automate_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

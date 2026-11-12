@@ -21,13 +21,13 @@ Configure the alert payload to supply inputs.A.key["host.name"], description, me
 
 The immediate HTTP response acknowledges receipt only. The search and writes are not atomic: concurrent alerts or Jira search indexing delays can create duplicate issues. A failed or uncertain create or comment may have succeeded; inspect Jira before retrying. No exactly-once guarantee is provided.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace account-specific project, issue type and custom field IDs with configuration and require a shared webhook secret. Open Flow rejects missing or empty normalized host before Jira writes.
 - Open Flow checks the first 50 matching issues and comments sequentially. n8n uses its native search and item execution.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Create Unique Jira tickets from Splunk alerts](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Stickynote/1986_Stickynote_Jira_Create_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

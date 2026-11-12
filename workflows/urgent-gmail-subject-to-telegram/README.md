@@ -23,15 +23,15 @@ The poll starts at the current mailbox position and does not import old mail. Bo
 
 A failed read or send stops the page; earlier alerts may already have been sent. Check Telegram before replaying an uncertain send. The workflow does not split messages over Telegram’s 4096-character limit. Full fetched Gmail responses and Code inputs must fit execution limits. Restrict access to the mailbox, Telegram chat and run history.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Add the missing Telegram chat setup and remove personal credential identifiers.
 - Upgrade the n8n trigger to version 1.4 with a 50-message budget to retain a backlog and exclude outgoing-only mail, matching the incoming-mail purpose.
 - Keep the exact case-sensitive subject rules and original sender, subject and snippet alert.
 - Escape the alert as literal HTML instead of treating incoming email content as Markdown.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Forward Filtered Gmail Notifications to Telegram Chat](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Telegram/1347_Telegram_Gmail_Automation_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

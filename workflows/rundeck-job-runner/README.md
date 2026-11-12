@@ -19,15 +19,15 @@ Each manual run makes one request with an empty argument string and returns the 
 
 The Open Flow HTTP step has a 30-second execution budget. A rejected request or missing execution ID stops the run. No duplicate check or automatic retry is configured. The job can change remote systems; check Rundeck before repeating a request whose result is uncertain.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the example server and job with user configuration.
 - Use API 17 through formal HTTP authentication in both formats. The source node calls API 14, below the current documented minimum.
 - Validate HTTPS certificates instead of the source V1 node’s default certificate-validation bypass.
 - Check the execution ID and retain the full response without waiting for job success.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Execute a Rundeck job](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/1008_Manual_Rundeck_Automate_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

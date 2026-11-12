@@ -23,14 +23,14 @@ Run manually after setup. Each run sends one company creation request and return
 
 There is no lookup, upsert or duplicate detection. A failed request stops the run without an automatic retry. If a request times out, check Salesmate before running it again.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Require the company name and owner as Open Flow run inputs.
 - Replace n8n’s deprecated v1 company request with the documented tenant v4 endpoint and managed Header Auth.
 - Expose the full API response in both formats.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Create a company in Salesmate](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/0114_Manual_Salesmate_Create_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

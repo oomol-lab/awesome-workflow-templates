@@ -17,14 +17,14 @@ Run manually. The example city is Berlin, Germany. Each normal run makes one cur
 
 OpenWeather [still supports city-name lookup but has deprecated its built-in geocoder](https://openweathermap.org/api/current). This template preserves the source’s single city request; it does not add a separate geocoding request. API permissions and limits apply. Authentication errors, unknown cities, throttling, transport failures and a non-success response stop the run. No workflow retry is configured. n8n’s native authentication helper can repeat a request once after HTTP 401; this does not renew the API key. Open Flow does not repeat that rejected request.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Make the original Current Weather, city-name selection and metric defaults explicit.
 - Check the API success code before returning the complete response.
 - Use the OpenWeather Connector account in Open Flow and preserve the native OpenWeatherMap node in n8n.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Current weather data for a city workflow](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/1173_Manual_Openweathermap_Import_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

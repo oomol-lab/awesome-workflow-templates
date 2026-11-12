@@ -19,13 +19,13 @@ For each subscribed pull request event, the workflow reads the sender's public G
 
 If a read fails, no later write occurs. If a note fails, earlier notes remain and later notes are not attempted. A write with an unknown outcome is not retried automatically; check Pipedrive before rerunning.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the source repository and credentials with user configuration. Use exact email matching rather than partial matching to avoid adding notes to people with different email addresses. Skip missing public email.
 - Escape the URL as HTML in note content and use the GitHub user Action and Pipedrive Provider API for note creation.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Add a note to Pipedrive's contact once PR is added on GitHub](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Http/0253_HTTP_GitHub_Send_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n listing](https://n8n.io/workflows/1789-add-a-note-to-pipedrives-contact-once-pr-is-added-on-github/) credits n8n Team. No separate original template license was found.
 

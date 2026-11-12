@@ -21,14 +21,13 @@ A Telegram photo is downloaded and analyzed with the prompt “What's in this im
 
 Open Flow verifies that the download token identifies the connected bot. Its webhook verifies the Telegram secret; the n8n 1.1 Telegram trigger also checks its configured secret header. Open Flow accepts JPEG photos up to 700,000 bytes so the image and Base64 representation fit host limits. Oversized, invalid or failed downloads stop; n8n has its own service limits. Images and descriptions can appear in execution data; restrict access. Check Telegram before repeating an uncertain reply.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the retired vision-preview model with a configurable current vision-capable model. Open Flow uses OpenAI Responses; n8n keeps its image-analysis node.
 - Preserve the source's three-hour no-photo Wait and make it explicit. Open Flow adds bot identity and image validation before analysis.
-
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Automated Image Analysis and Response via Telegram](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Telegram/0488_Telegram_Stickynote_Update_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n community listing](https://n8n.io/workflows/2235-automated-ai-image-analysis-and-response-via-telegram/) credits AlQaisi. The original template does not state a separate license.
 

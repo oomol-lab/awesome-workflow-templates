@@ -21,13 +21,13 @@ A manual run retrieves a brand profile and selects the first HTTP(S) format URL 
 
 A failed or uncertain Airtable write can have created a record. Check the table before running again; the workflow does not retry or deduplicate.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the original two obsolete Brandfetch lookups with one current brand profile request and select icon and logo formats explicitly. Both formats validate the required fields before writing.
 - Replace the original private base ID and legacy Airtable API-key setup with configurable values and a Personal Access Token.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Get the logo, icon, and information of a company and store it in Airtable](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/0242_Manual_Brandfetch_Import_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

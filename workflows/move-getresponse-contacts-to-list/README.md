@@ -19,13 +19,13 @@ A manual run reads the destination list and all contact pages. It moves each con
 
 If a page is missing, inconsistent, changes during reading, or a contact lacks a list identity, the run stops before moving anyone. n8n stops before updates if the list exceeds its 1,000-page limit. Empty contact lists produce no updates. Updates run one at a time. If an update fails or its outcome is uncertain, earlier contacts may already have moved; inspect GetResponse before retrying. No automatic retry or rollback is configured. Changes made concurrently during pagination can affect which contacts are read.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Choose and verify the destination list instead of using a private ID; compare against that list's actual name.
 - Read and validate all pages before any update and send only the destination campaign field.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Get all the contacts from GetResponse and update them](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/0075_Manual_Noop_Update_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n community listing](https://n8n.io/workflows/778-get-all-the-contacts-from-getresponse-and-update-them/) credits Harshil Agrawal. The original template does not state a separate license.
 

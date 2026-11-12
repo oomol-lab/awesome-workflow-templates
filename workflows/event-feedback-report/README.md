@@ -24,6 +24,9 @@ Use Run in Open Flow or Execute Workflow in n8n. A run reads all rows in the con
 
 OpenAI lists this snapshot for [shutdown on January 14, 2027](https://developers.openai.com/api/docs/deprecations/). Choose an available compatible model in both formats before that date and check the report output. The replacement model can produce different wording and assessments; no model quality or account availability is guaranteed.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Preserve blank answers in each question's list so response positions remain aligned.
@@ -37,9 +40,6 @@ OpenAI lists this snapshot for [shutdown on January 14, 2027](https://developers
 </picture>
 
 [Open Flow JSON](templates/event-feedback-report.openflow.json) · [n8n JSON](templates/event-feedback-report.n8n.json)
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Summarize Google Sheets form feedback via OpenAI_s GPT-4](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Google_Drive_and_Google_Sheets/Summarize%20Google%20Sheets%20form%20feedback%20via%20OpenAI_s%20GPT-4.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 

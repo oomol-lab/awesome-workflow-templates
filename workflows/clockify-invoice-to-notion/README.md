@@ -21,13 +21,13 @@ Each accepted delivery creates a Notion page containing those four values. Dates
 
 Open Flow checks the four fields before creation; n8n uses the mapped source fields directly. Open Flow uses the current Notion data source parent; select the corresponding database in n8n.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the original webhook path, database ID and credential with setup.
 - Set the n8n workflow timezone to UTC and store invoice dates as UTC calendar dates in both formats. Open Flow checks required invoice fields before creating the page.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Send new Clockify invoice to Notion database](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Stickynote/0281_Stickynote_Notion_Create_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

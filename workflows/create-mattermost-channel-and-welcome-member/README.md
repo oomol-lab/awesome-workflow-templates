@@ -25,14 +25,14 @@ Each step confirms its response before starting the next write. A failure or unc
 
 Set the same values in **Choose team, user and channel**, then select the same Mattermost credentials on all three Mattermost nodes. Configure the instance URL and Personal Access Token in those credentials. The native Mattermost V1 node creates a public channel by default; this export sets that choice explicitly. The native authentication helper can automatically send a request once more after HTTP 401; other inspected HTTP errors and unknown writes are not automatically repeated. Open Flow’s Provider/Proxy rejects 401 after one request. This transport difference does not provide a safe workflow replay mechanism.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace private team/user IDs and credential references with setup.
 - Keep public channel creation, membership and the original welcome message in order.
 - Validate dependent IDs and full API receipts before later writes, and retain all three results.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Create a channel, add a member, and post a message to the channel](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/0254_Manual_Mattermost_Create_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

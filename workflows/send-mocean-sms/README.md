@@ -19,13 +19,13 @@ In n8n, select Mocean API key and secret credentials and enter the same sender, 
 
 Run manually to submit one SMS request. Open Flow returns Mocean’s per-recipient status and message ID when provided; n8n returns the native message result. Check the provider status: submission is not proof of delivery. If a request fails or its result is uncertain, check Mocean before repeating, because a message may already have been sent.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the three empty source fields with explicit setup. Open Flow rejects blank or placeholder values before sending and requires a per-recipient result.
 - Open Flow uses a Mocean API token; n8n uses the source API key and secret credential.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Send an SMS using the Mocean node](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/1057_Manual_Mocean_Send_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

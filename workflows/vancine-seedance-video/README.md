@@ -25,14 +25,14 @@ The workflow reads the current `data.status`, `data.result_url` and `data.fail_r
 
 No submission or status request is automatically retried. A lost submission response may leave a task running; check Vancine before starting another run. Polling timeout and workflow cancellation stop local polling and do not cancel the remote generation. Open Flow allows 30 seconds per HTTP execution and enforces Code input/result budgets, including 1 MiB for each in the inspected host. Each poll is an independent HTTP execution; the workflow does not put all polls inside one Code invocation.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Require a supported model as configuration in both formats.
 - Prefer the current task envelope, validate task association and require a completion URL.
 - Keep one submission and a bounded, visible Wait/status feedback loop, with explicit HTTP timeouts.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Generate Seedance videos with Vancine API and bounded polling](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Other_Integrations_and_Use_Cases/Generate%20Seedance%20videos%20with%20Vancine%20API%20and%20bounded%20polling.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 

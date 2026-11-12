@@ -19,13 +19,13 @@ For each new booking, the workflow submits the invitee email and name for French
 
 If enrichment is still pending after 45 seconds, inspect its request before retrying. A failed or uncertain Notion write can have created a page; inspect Notion before replaying. Repeated bookings or webhook deliveries can create additional pages. New subscriptions verify signatures; Open Flow accepts a three-minute signature window and n8n five minutes. An acknowledgment does not confirm the Notion write.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Read the current Calendly invitee and scheduled-event fields and repair the source's reference to a missing Function node.
 - Replace private Notion IDs, use the current data-source API, validate the enrichment and confirm the returned page ID.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Calendly booking enrichment to Notion](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Calendly/0125_Calendly_Notion_Automate_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

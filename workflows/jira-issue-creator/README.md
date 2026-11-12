@@ -17,14 +17,14 @@ The account needs permission to create and read issues in the project. Open Flow
 
 Each run can create another issue. No lookup, duplicate detection or workflow retry is configured. If the read after creation fails in Open Flow, the issue remains created. Check Jira before repeating an uncertain request.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the source’s project-specific issue type with user configuration.
 - Require project ID, issue type ID and summary as Open Flow run inputs.
 - Expose the create Action’s issue result in Open Flow.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Create a new issue in Jira](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/1170_Manual_Jira_Create_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

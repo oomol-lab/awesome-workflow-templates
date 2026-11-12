@@ -19,13 +19,13 @@ In n8n select the same Gmail label, configure Gmail and Odoo credentials, and se
 
 Each new labeled message is summarized for available budget, timeline, industry and a general overview, then creates an Odoo CRM record with the email subject, sender and summary. Open Flow processes one message at a time within each poll page and uses an Agent with one model round; n8n uses its summarization chain and completion model. Long messages can exceed model or workflow limits. Open Flow excludes drafts, spam and trash; n8n retains its source filter behavior. Poll cursors and delivery do not guarantee exactly-once processing. If creating a record fails or its result is uncertain, inspect Odoo before retrying; it may already exist. In Open Flow, earlier records in the page may already have been created when a later email fails. In n8n the summarization chain processes its input page before the Odoo node starts creating records. Limit access to email bodies, model processing and execution history. AI summaries can omit or misstate information; review the opportunity.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the private Gmail label with setup. Open Flow validates message identity and sender before writing and uses a configured single-round Agent; n8n keeps its summarization chain and requires a compatible available completion model.
 - Both formats explicitly set crm.lead type to opportunity. n8n uses the native custom-resource operation and matches each summary to its email by position.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Summarize emails and save them as notes on sales opportunity in Odoo](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Gmail/1565_Gmail_Stickynote_Create_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

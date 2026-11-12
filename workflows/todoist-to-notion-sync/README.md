@@ -32,6 +32,9 @@ All Notion rows are created in task order before any Todoist task is updated. Ea
 
 This sequence is not atomic. A page-creation error leaves earlier rows in Notion and all task labels unchanged. An update error leaves later tasks with their routing label even though their Notion rows already exist. A later poll, overlapping run, or manual retry can create duplicate rows. Check and reconcile the two services before retrying an uncertain run. The workflow does not query for existing Notion rows or automatically replay failed calls.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Store Todoist IDs in a text column instead of parsing them as numbers.
@@ -39,9 +42,6 @@ This sequence is not atomic. A page-creation error leaves earlier rows in Notion
 - Keep unrelated task labels while replacing the routing label.
 - Update n8n Todoist to version 2.2 for the current paginated API, retain the default 50-task batch, and make the 30-second interval explicit.
 - Use Notion’s data source API in Open Flow and expose task-to-page associations.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Sync Todoist tasks to Notion](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Schedule/1607_Schedule_Notion_Sync_Scheduled.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

@@ -23,13 +23,13 @@ Binance applies IP-based request weights. The symbol list uses weight 4 and each
 
 HTTP or batch validation errors stop before any Telegram message. Telegram messages are sent sequentially; earlier messages may already have arrived when a later send fails, and an unknown send may also have arrived. Check the chat before retrying. Open Flow limits each HTTP response to 4 MiB and 30 seconds. Telegram uses legacy Markdown.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the private chat ID, use documented public-data endpoints, and set UTC explicitly.
 - Fetch the initial symbol list and full ticker data in bounded batches, verify complete batches before sending, and send message chunks sequentially.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Binance 24-hour price changes to Telegram](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Telegram/0381_Telegram_Code_Update_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n listing](https://n8n.io/workflows/2043-crypto-market-alert-system-with-binance-and-telegram-integration/) credits Nskha. The original template does not state a separate license.
 

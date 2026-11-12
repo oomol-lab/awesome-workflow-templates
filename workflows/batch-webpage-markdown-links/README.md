@@ -27,6 +27,9 @@ Each page’s read step allows two additional attempts five seconds apart. Open 
 
 The scrape sends each selected URL to Firecrawl. It requests fresh main content with `maxAge: 0`, `onlyMainContent: true`, `formats: ["markdown", "links"]` and a 30-second scrape timeout. Review the [current Firecrawl limits](https://docs.firecrawl.dev/rate-limits) and your allowance before a full batch.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Move to Firecrawl v2 because v1 [shuts down December 10, 2026](https://docs.firecrawl.dev/migrate-to-v2). Keep v1’s fresh-scrape behavior explicitly instead of v2’s two-day cache default.
@@ -34,10 +37,6 @@ The scrape sends each selected URL to Firecrawl. It requests fresh main content 
 - Keep the first-40 cap and return skipped counts, source URL associations and a complete list of page records.
 - Keep the source’s three-attempt retry count, with one page per worker or native loop iteration. The original HTTP node received ten items at once, so retrying that node could repeat earlier page requests. A later failure now retries only the current page.
 - Return links as an array instead of coercing them to text. Remove the unconfigured database placeholders and document the returned records as the handoff point.
-
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Convert URL HTML to Markdown Format and Get Page Links](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/PDF_and_Document_Processing/Convert%20URL%20HTML%20to%20Markdown%20Format%20and%20Get%20Page%20Links.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates). The export credits **Simon at [automake.io](https://automake.io/)**; it states no separate template license.
 

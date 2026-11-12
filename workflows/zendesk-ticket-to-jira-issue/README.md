@@ -21,13 +21,13 @@ The endpoint immediately acknowledges receipt. The workflow validates the secret
 
 An acknowledgement does not mean the issue or ticket was updated. If issue creation succeeds but the follow-up issue read or ticket update fails, the issue remains unlinked. An uncertain write is not retried automatically; check both systems before rerunning. Concurrent events can create duplicate issues or comments because there is no locking or deduplication.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace account-specific IDs and Zendesk URL with user configuration and the returned ticket's host; require a shared webhook secret.
 - Validate the ticket, custom field and issue key before writing, and trim the issue summary. The Open Flow Jira Action reads the created issue before linking it; the n8n node checks the issue type before creating it.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Sync Zendesk tickets with subsequent comments to Jira issues](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Zendesk/0280_Zendesk_Jira_Create_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n listing](https://n8n.io/workflows/1833-sync-zendesk-tickets-with-subsequent-comments-to-jira-issues/) credits n8n Team. No separate original template license was found.
 

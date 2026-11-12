@@ -17,14 +17,14 @@ For n8n, connect Google Calendar in **Google Calendar**, select the calendar, an
 
 Run once to create the event. Open Flow returns its ID and a web link when Google supplies one; n8n shows the created event in the final node output. Each run creates a new event with the configured details. There are no attendees, recurrence rules, or extra notifications configured. Existing calendar reminder defaults apply.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the source’s personal calendar ID with a setup placeholder.
 - Replace the old example dates with a clearly stated UTC example and an editable title.
 - Expose the created event’s ID and link in Open Flow.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Add an event to Calendar](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/0342_Manual_GoogleCalendar_Create_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

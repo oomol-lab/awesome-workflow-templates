@@ -19,14 +19,14 @@ For each fork event, the workflow reads the sender's public GitHub email and sea
 
 Each event can create new leads; there is no deduplication. Concurrent runs can both create a person for the same email. A failure stops later writes, but earlier people, leads or notes remain. An uncertain write is not retried automatically; check Pipedrive before rerunning.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the source repository and credentials with user configuration. Use exact email matching to avoid linking a different address and skip missing public email.
 - Fix the source's empty-search branch so a new person can be created, and correct the email reference. Reject matching people with missing names before writing. Upgrade the n8n HTTP node so GitHub credentials apply to the profile lookup.
 - Process matching people one at a time in both formats, stopping on a failed lead or note. Escape the profile URL as HTML. Use the GitHub user and Pipedrive person Actions and Provider API for lead and note creation.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Add a new lead to Pipedrive once GitHub repo is forked](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Http/0252_HTTP_GitHub_Create_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n listing](https://n8n.io/workflows/1788-add-a-new-lead-to-pipedrive-once-github-repo-is-forked/) credits n8n Team. No separate original template license was found.
 

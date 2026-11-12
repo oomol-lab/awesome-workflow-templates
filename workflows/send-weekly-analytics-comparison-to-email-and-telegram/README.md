@@ -19,13 +19,13 @@ Each Monday at 07:00 UTC, two daily Google Analytics reports compare the seven U
 
 Email is sent before Telegram. A later model or Telegram failure can leave the email delivered. A failed or uncertain send may already have succeeded; inspect the destination before retrying. n8n triggers at a fixed second within the scheduled minute; Open Flow triggers at the minute boundary.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace private accounts, property and chat values. Set UTC explicitly, use two seven-date windows ending yesterday, and fill the source's missing user metric and date dimension.
 - Open Flow calculates differences before model formatting and uses Gmail and an Agent with optional isolated computation; n8n retains SMTP and its native model/Calculator nodes for the comparison. Both format and send Telegram after email.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Google Analytics: Weekly Report](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Telegram/1392_Telegram_Googleanalytics_Automation_Scheduled.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source note credits [Friedemann Schütz](https://www.linkedin.com/in/friedemann-schuetz). The original template does not state a separate license.
 

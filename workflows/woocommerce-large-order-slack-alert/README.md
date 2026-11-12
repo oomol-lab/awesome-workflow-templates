@@ -19,15 +19,15 @@ Each `order.created` event checks whether the order total is at least **100**, i
 
 The message keeps the source’s colored Slack attachment. Dynamic values are escaped for Slack, and timestamps retain the store’s supplied text. If the payload has no currency symbol, the total uses its ISO currency code. The workflow posts once per matching event and keeps no notification history. Duplicate event deliveries or running both formats can produce duplicate messages. A Slack error fails the run; the workflow does not automatically retry or confirm that a person has read the alert.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the original channel with a setup placeholder.
 - Validate the fields used in each alert and escape dynamic Slack values.
 - Add an attachment fallback and make the source event and filters explicit.
 - Use the order currency code when the source’s currency symbol field is absent.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [WooCommerce Large Order to Slack](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Woocommerce/1151_Woocommerce_Slack_Create_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

@@ -19,14 +19,14 @@ Every day at 00:00 UTC, the workflow reads GitHub's latest published release and
 
 GitHub renders the Markdown, so its HTML can differ from the source's renderer. The source inherited the n8n instance timezone; both formats start in UTC. An uncertain Gmail send may already have succeeded, so inspect Sent mail before retrying.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the private recipient and allow the repository to be configured.
 - Use the GitHub release Action and GitHub's Markdown API to render the notes; n8n uses the public GitHub API for both reads and rendering. The original n8n attribution link is omitted.
 - Set the timezone explicitly. No deduplication is added.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Daily latest GitHub release notes](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Splitout/0500_Splitout_Schedule_Send_Scheduled.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n community listing](https://n8n.io/workflows/2278-subscribe-to-new-releases-of-a-github-repository-via-gmail/) credits Ria. The original template does not state a separate license.
 

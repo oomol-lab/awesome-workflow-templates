@@ -36,14 +36,14 @@ Outputs include `workflowName`, `lastNodeExecuted`, `failureCount`, `primaryCate
 
 Common secret-like strings in error messages are redacted, whitespace is normalized, and messages are limited to 300 characters. This does not scrub every field or every possible secret. Review the output before sharing it. Inputs are processed within your configured workflow runtime; no API credentials are required.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Expose the two input objects and diagnosis fields as an Open Flow workflow contract while retaining the n8n sub-workflow entry.
 - Reject an array supplied as the execution object.
 - Redact the complete token in an Authorization Bearer message before applying general key/value redaction.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [n8n Failed Execution Doctor](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/devops/n8n-failed-execution-doctor.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 

@@ -19,13 +19,13 @@ In n8n, set the image URL in **Download the file**, and set the channel ID and f
 
 Run manually to download the file bytes and upload them to the configured channel with the comment “This is the file”. Open Flow returns the Slack file ID and upload result; n8n returns the native upload result. If upload completion fails or the result is uncertain, inspect the channel before retrying: the file may already have been uploaded.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - The original image URL is unavailable, so both formats require an accessible replacement and channel ID; the source channel was removed.
 - Upgrade the n8n Slack node to version 2.2 for Slack’s current external upload protocol. Open Flow uses the Slack upload Action, which fetches the URL and uploads its response bytes.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Manual HTTP download and Slack file upload](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/0191_Manual_Slack_Automation_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

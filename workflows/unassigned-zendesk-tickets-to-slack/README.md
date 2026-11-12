@@ -19,14 +19,14 @@ The workflow searches `type:ticket assignee:none status<pending`, collects all a
 
 A Slack failure stops the run; a message with an uncertain result may already be present, so check the channel before retrying.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the private channel and make the timezone explicit.
 - Validate ticket links and escape message content before posting.
 - Check every search page and the API result limit before posting; n8n uses its authenticated HTTP request to retain page metadata.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Zendesk-to-slack](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/0568_Manual_Zendesk_Automation_Scheduled.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

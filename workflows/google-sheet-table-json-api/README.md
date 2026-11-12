@@ -35,14 +35,14 @@ Values use **UNFORMATTED_VALUE**, preserving numbers and booleans; dates and tim
 
 The complete table, header mapping and JSON result must fit the inspected Open Flow host’s 1 MiB per-Code input/result budget. Oversized tables fail without truncation. Choose a suitable range before exposing large sheets. Read errors, invalid cell values, cancellation or response timeout fail instead of returning a partial array. Repeating a request performs another read; no workflow retry or response cache is added.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Restore the GET → spreadsheet read → complete JSON-array response and replace the fixed spreadsheet ID with setup.
 - Make the original read, service-account authentication, header row, data start and unformatted values explicit.
 - Build literal JSON keys safely, including names such as `__proto__`, using the same row mapping in both formats.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Google Sheets table read with an all-entries webhook response](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Googlesheets/0035_GoogleSheets_Webhook_Automate_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

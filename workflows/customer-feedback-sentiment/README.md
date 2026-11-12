@@ -33,15 +33,15 @@ For n8n, use the included **Submit form with customer feedback** hosted form. Co
 
 Acknowledgment confirms receipt, before classification and storage finish. Invalid feedback or a model failure prevents the sheet write. Each valid submission appends a row, including repeated requests. `Entered by` is `Form` and `Urgent?` stays blank. Only the feedback text is sent to the configured model provider. The submitted form fields and model assessment are stored in Google Sheets.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the legacy text-completion model with `gpt-4o-mini` in both formats; assessments may differ.
 - Validate required input and keep the submitted content available through classification.
 - Write literal values with RAW formatting and stop on empty model results.
 - Remove the source spreadsheet resource and provide explicit column and configuration placeholders.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [AI Customer feedback sentiment analysis](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/OpenAI_and_LLMs/AI%20Customer%20feedback%20sentiment%20analysis.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 

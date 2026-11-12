@@ -19,13 +19,13 @@ On an opened issue or newly created issue comment, the workflow looks for the so
 
 The decision uses the webhook's issue snapshot, not a fresh lookup or an atomic claim. Concurrent requests or later changes can overwrite an assignment or labels. Duplicate deliveries can cause repeated writes or comments; check the issue before retrying after an uncertain result. GitHub may reject assignment when the account lacks access or the requester cannot be assigned.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Remove the original repository and credential identifiers and validate event fields before writing.
 - Preserve the source's assignment pattern, label replacement and comment text while using the current event body.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Automate assigning GitHub issues](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Noop/0096_Noop_GitHub_Automate_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n community listing](https://n8n.io/workflows/1442-automate-assigning-github-issues/) credits manohar. The original template does not state a separate license.
 

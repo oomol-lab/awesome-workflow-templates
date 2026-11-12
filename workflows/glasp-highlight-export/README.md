@@ -29,6 +29,9 @@ The checkpoint uses the time the run began preparing its query. Changes that occ
 
 This template returns export data. It does not save to disk or write to Notion, Slack, or another destination. Before adding a destination, move tracking after its successful completion so a failed downstream write can be retried. Changing the Glasp account requires resetting its saved tracking state.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Correct the n8n pagination option structure and enable the intended 100-page limit. Fail when the final page still has a cursor instead of advancing the checkpoint with missing pages.
@@ -36,9 +39,6 @@ This template returns export data. It does not save to disk or write to Notion, 
 - Preserve a run-start checkpoint, validate pages before saving state, and check document IDs without inherited object properties.
 - Use real line breaks and UTC highlight dates in formatted output.
 - Give query preparation, page collection, formatting, and state saving separate visible steps in Open Flow.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [glasp-highlights-export-workflow](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Other_Integrations_and_Use_Cases/glasp-highlights-export-workflow.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates). Related setup guidance is available in [Glasp's n8n tutorial](https://glasp.co/posts/how-to-autoexport-glasp-highlights-with-n8n).
 

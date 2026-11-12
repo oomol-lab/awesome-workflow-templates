@@ -37,15 +37,15 @@ Open Flow returns the complete queried profile, selected emails, scan counts and
 
 The complete request, GraphQL response, parts and accumulated receipts must fit the inspected Open Flow host’s 1 MiB per-Code input/result budget. Oversized data fails without truncation.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Restore the complete webhook → GitHub → email collection → Slack sequence.
 - Bind the username as a GraphQL variable and use managed credentials.
 - Replace the stateful, unescaped name regular expression with literal matching; handle nullable profile and author fields.
 - Remove GitHub no-reply addresses using an anchored domain check, escape Slack content and preserve long results with confirmed sequential posts.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Slack-GitHub User Info](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Slack/1063_Slack_Graphql_Automation_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

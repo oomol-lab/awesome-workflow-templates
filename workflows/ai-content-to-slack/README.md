@@ -30,6 +30,9 @@ All four fields are optional strings. The content types are `blog`, `newsletter`
 
 The workflow sends one Slack message before returning success. A model or Slack failure prevents a success response. Open Flow waits up to 60 seconds for the HTTP response; timing out does not cancel the run. Check the run before retrying because a retry can create another Slack message. Review generated facts and wording before publishing.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Read topic settings from the webhook body.
@@ -37,9 +40,6 @@ The workflow sends one Slack message before returning success. A model or Slack 
 - Use the Slack connector with a selected channel in both formats.
 - Make Slack delivery and the success response sequential, and bind the returned content to the generation step.
 - Normalize unknown content types to the blog prompt, escape Slack link and mention markup, and reject empty model results.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Claude AI Content Generator](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/OpenAI_and_LLMs/Claude%20AI%20Content%20Generator.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 

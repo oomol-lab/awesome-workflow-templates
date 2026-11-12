@@ -44,6 +44,9 @@ Open Flow waits at most 60 seconds for a final webhook response. Five generation
 
 Submitted content goes to the selected model service. The Sheet receives the generated drafts, title, request ID and completion time. API and model use consumes your configured accounts' allowances.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the fanout into a collector that read unfinished branches with a complete, ordered generation chain and one Sheet append.
@@ -52,10 +55,6 @@ Submitted content goes to the selected model service. The Sheet receives the gen
 - Bind the final result to the collected content rather than assuming a Sheet write response repeats it. Return all drafts, including Instagram's separate hashtags.
 - Replace the environment-specific spreadsheet reference with normal destination configuration, and write cells as literal `RAW` values.
 - Preserve the source retry allowances, prompt budgets and existing `crypto` prerequisite, and pin the model snapshot explicitly.
-
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [FlowScribe Lite - AI Content Repurposing4Platforms](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Instagram_Twitter_Social_Media/FlowScribe%20Lite%20-%20AI%20Content%20Repurposing%204%20Platforms.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 

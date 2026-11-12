@@ -17,14 +17,14 @@ For n8n, connect Google Tasks in **Google Tasks**, select the TaskList Name or I
 
 Run once to create the task. The workflow returns Google’s created task record. Each run creates a new task; it does not search for or update an existing task. Due dates, reminders, notes, parent tasks, and completion status are left at Google’s defaults.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the source’s task list ID with a setup placeholder.
 - Add an editable example title to the source’s otherwise untitled task.
 - Expose the created task record in Open Flow.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Add a task to a task list](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/0744_Manual_Googletasks_Create_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

@@ -21,14 +21,14 @@ Reply to a message from the configured bot with a text entry. The bot’s prompt
 
 Other users, non-replies and non-text messages are ignored. A matching reply with a malformed bot prompt fails before writing. Usernames are Telegram profile fields and can change; restrict the bot and sheet to people who should access journal entries. Google Sheets receives values as RAW text. A failed or uncertain append may already have written a row; inspect the sheet before replaying. Open Flow uses Telegram update IDs to help deduplicate webhook admission; the native n8n trigger does not add that same key. Neither format guarantees exactly-once sheet writes or automatic failed-run replay.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Make bot/user setup explicit and ignore unrelated updates before reading reply fields.
 - Preserve the original colon-based date extraction and entry text, and append only matching replies.
 - Use a secret-checked Telegram trigger version and replace private spreadsheet/credential identifiers.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Save Telegram reply to journal spreadsheet](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Googlesheets/0974_GoogleSheets_Telegram_Export_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

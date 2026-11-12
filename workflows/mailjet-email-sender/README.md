@@ -19,15 +19,15 @@ Each run makes one Send API request containing one message for one recipient. It
 
 The Open Flow HTTP step has a 30-second execution budget. A rejected message, unexpected response or request failure stops the run. Each run can send another email. No duplicate check or automatic retry is configured, so check Mailjet before repeating an uncertain request.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the sender and recipient examples with user configuration.
 - Require sender, recipient, subject and text as Open Flow run inputs.
 - Use secret Variables for HTTP Basic authentication in Open Flow.
 - Check the per-message acceptance result in both formats and expose it in Open Flow.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Mailjet email send workflow](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/0993_Manual_Mailjet_Automate_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

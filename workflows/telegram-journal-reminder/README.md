@@ -17,14 +17,14 @@ Both formats default to 06:00 UTC. The source used the n8n instance’s schedule
 
 Each run formats the date when it executes and sends one message. It does not store journal entries or check whether you answered. A Telegram error stops the run without retry; rerunning sends another reminder.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the personal chat ID with a setup placeholder.
 - Use an explicit UTC schedule and calculate yesterday consistently in UTC.
 - Expose the date formatter as a Code step in both formats.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Daily Journal Reminder](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Telegram/0346_Telegram_Cron_Automation_Scheduled.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

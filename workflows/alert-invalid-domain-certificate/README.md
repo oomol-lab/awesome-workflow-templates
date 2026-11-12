@@ -21,13 +21,13 @@ A manual run asks Uproc to inspect the domain's certificate on port 443. If its 
 
 A Telegram failure stops the run; an uncertain send may already have arrived, so check the chat before retrying. Open Flow applies a 30-second HTTP timeout and a 4 MiB response limit.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the example domain and private destination with configuration. Describe an invalid date range without assuming the certificate has expired.
 - Validate the domain and require a recognized validity value before deciding whether to alert.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Get SSL Certificate](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/0045_Manual_Telegram_Import_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n listing](https://n8n.io/workflows/861-monitor-ssl-certificate-of-any-domain-with-uproc/) credits Miquel Colomer. The original template does not state a separate license.
 

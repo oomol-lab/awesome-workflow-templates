@@ -19,13 +19,13 @@ For each `checkout.session.completed` event, the workflow reads that Session wit
 
 An invalid event, failed read, unexpected response or mismatched Session ID stops the run. No external record is created or updated. Stripe events can be delivered more than once; downstream consumers should handle duplicates. Open Flow's Stripe Provider requests API version 2024-06-20; n8n uses the account's configured API version. Customer information appears in execution data; restrict access.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Validate the event and match the returned Session to the event before producing output.
 - Return null for optional customer or first-item fields instead of relying on missing values, and expose the result as workflow output.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Stripe Payment Order Sync – Auto Retrieve Customer & Product Purchased](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Http/1773_HTTP_Stripe_Sync_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n community listing](https://n8n.io/workflows/3391-stripe-payment-order-sync-auto-retrieve-customer-and-product-purchased/) credits Matt F. The original template does not state a separate license.
 

@@ -63,6 +63,9 @@ There is no automatic workflow retry or cross-run deduplication. Repeating a run
 
 Use canonical endpoints: redirects are errors. Open Flow allows 30 seconds and 4 MiB per Umami HTTP response; the n8n read timeout is also 30 seconds. A slow or oversized response stops the workflow.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Read website statistics from `/stats` rather than the unrelated `/event-data/stats` endpoint.
@@ -74,9 +77,6 @@ Use canonical endpoints: redirects are errors. Open Flow allows 30 seconds and 4
 - Use named Baserow fields and database-token authentication, remove private resource IDs, and confirm the returned row ID.
 
 API references: [self-hosted authentication](https://docs.umami.is/docs/api/authentication), [website summary statistics](https://docs.umami.is/docs/api-reference/get-website-stats) and [ranked website metrics](https://docs.umami.is/docs/api-reference/get-website-metrics). The implementation was checked against [Umami 3.4.1](https://github.com/umami-software/umami/tree/559e3c607c23d2c72d9bd4f6481bda428255323c). Check compatibility before using a different server version.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Summarize Umami data with AI (via Openrouter) and save it to Baserow](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/AI_Research_RAG_and_Data_Analysis/Summarize%20Umami%20data%20with%20AI%20(via%20Openrouter)%20and%20save%20it%20to%20Baserow.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates). The source credits [Keith Rumjahn’s case study](https://rumjahn.com/how-to-analyze-umami-data-using-n8n-and-a-i-to-improve-seo-and-uncover-hidden-insights-for-better-content-optimization/) on rumjahn.com. No separate template license is stated in the export.
 

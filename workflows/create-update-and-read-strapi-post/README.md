@@ -19,13 +19,13 @@ In Open Flow, bind a secret Variable containing the token to **Auth Token** on e
 
 Each run creates a post, updates its slug, and reads the same document by Strapi 5 document ID. Failure stops subsequent requests; there is no automatic retry or rollback. A lost response may mean a write succeeded, so inspect Strapi before rerunning.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace example post values with inputs and validate the same document is returned.
 - Use Strapi 5 REST and document IDs in both formats. The original workflow passes its entry ID; Strapi 5 requires a document ID for update and read.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Create, update, and get an entry in Strapi](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/0079_Manual_Strapi_Create_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n community listing](https://n8n.io/workflows/779-create-update-and-get-an-entry-in-strapi/) credits Harshil Agrawal. The original template does not state a separate license.
 

@@ -17,12 +17,12 @@ Connect Salesforce with permission to create and update Leads and create legacy 
 
 Each run creates one Lead, updates that Lead's city and creates a title-only Note linked to it. The note is a Salesforce legacy Note record; no note body or lead status is set. Failure stops later steps, but earlier writes are not rolled back. A lost response may mean a write succeeded, so inspect Salesforce before retrying. No automatic retry is configured.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace example company, name, city and note title with user-provided values. Open Flow verifies the returned IDs and passes only the source fields to Salesforce Actions.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Create and update a Salesforce lead](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/1094_Manual_Salesforce_Automate_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n community listing](https://n8n.io/workflows/664-create-and-update-lead-in-salesforce/) credits amudhan. The original template does not state a separate license.
 

@@ -21,13 +21,13 @@ At 08:00 UTC each day, the workflow reads contacts, matches structured birthday 
 
 Open Flow refreshes its Google access token for each contacts page. A page error or invalid or repeated page token stops before reminders; each response must fit the 1 MiB Code fetch limit and the collected contacts must fit the run’s execution limits. Google OAuth refresh tokens can expire or be revoked. A Slack failure stops later reminders; earlier sends are not undone, and rerunning can duplicate them.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - The source never sets `today`, compares a structured birthday as a string, and its Slack block is invalid. Both formats now compare month/day and send a valid block with the contact’s name. n8n disables its automatic workflow link.
 - Open Flow uses Google OAuth refresh and the People API for complete pagination because no Google Contacts Provider or Action is available. n8n keeps its Google Contacts node with raw fields. The original channel was unconfigured.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Send Daily Birthday Reminders from Google Contacts to Slack](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Googlecontacts/1239_Googlecontacts_Schedule_Send_Scheduled.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

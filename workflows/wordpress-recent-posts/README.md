@@ -17,13 +17,13 @@ Each run makes one read request for the first five published posts. It returns c
 
 This template reads one page. It does not collect every post, create content or modify the site. Change the limit and filters in the Action or n8n node to read another selection. A failed request stops the run, with no workflow retry configured.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Make the source’s five-post limit and newest-published-post defaults explicit.
 - Expose posts and pagination metadata in Open Flow.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [WordPress post read workflow](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/1014_Manual_Wordpress_Automate_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

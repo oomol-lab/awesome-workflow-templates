@@ -21,13 +21,13 @@ At 03:00 UTC on the chosen start date and every 360 UTC calendar days after it, 
 
 An error stops later steps; earlier changes remain. A lost response can hide a successful create or update, so inspect Zoom, WordPress and Slack before retrying. A successful page update response does not guarantee a visitor’s browser or site theme will execute the redirect.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Use an explicit UTC start date and 360-day interval. The original n8n schedule depends on activation, instance timezone, its day-of-year recurrence calculation, and an unspecified minute. The n8n template uses a fixed second within 03:00; Open Flow uses the minute boundary.
 - Replace private page/channel values with configuration, preserve the source meeting options, and check that the returned page contains the intended redirect before posting to Slack. Remove the automatic n8n workflow link from the Slack message.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Use a custom URL for recurring Zoom meetings](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Schedule/0631_Schedule_Wordpress_Automate_Scheduled.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n listing](https://n8n.io/workflows/2543-use-a-custom-url-for-recurring-zoom-meetings/) credits Eric. No separate original template license was found.
 

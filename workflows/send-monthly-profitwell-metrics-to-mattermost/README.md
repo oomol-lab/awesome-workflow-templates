@@ -17,13 +17,13 @@ Both formats run on the first day of each month during 09:00 UTC. Open Flow runs
 
 The API token grants whatever permissions your ProfitWell account assigns it; protect the secret and restrict access to run history containing financial metrics. If the Mattermost request fails or its outcome is uncertain, check the channel before retrying because the message may already have been posted.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the private channel with configuration and explicitly set UTC in both formats; the source used the n8n instance timezone.
 - Open Flow uses the ProfitWell HTTP API and validates the five fields before posting.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Send ProfitWell metrics to Mattermost](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Mattermost/0169_Mattermost_Profitwell_Send_Scheduled.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

@@ -47,6 +47,9 @@ The watermark advances only after every selected notification succeeds. If a lat
 
 Open Flow returns `sent` and `watermark` after the state save. n8n's final output is the Telegram send results; an empty batch ends before that node.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Sort selected entries by their timestamp instead of assuming the feed arrives in reverse order.
@@ -55,9 +58,6 @@ Open Flow returns `sent` and `watermark` after the state save. n8n's final outpu
 - Validate feed structure before sending. Open Flow persists its watermark after all sends, matching n8n's successful-run static-data persistence.
 - Retain numeric zero as a timestamp and reject nonnumeric boolean or object timestamps.
 - Set an explicit UTC schedule and JSON response format.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [RSS Keyword Alert to Telegram](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Telegram/RSS%20Keyword%20Alert%20to%20Telegram.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 

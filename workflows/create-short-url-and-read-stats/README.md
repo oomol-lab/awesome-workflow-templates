@@ -19,13 +19,13 @@ The signature is sent in the request query, as in the source node. Server and pr
 
 Each run asks YOURLS to shorten the destination and uses the returned short URL to retrieve its statistics. YOURLS controls whether an existing short URL is returned. Failure stops subsequent steps; a lost response may mean creation succeeded, so check YOURLS before retrying. No automatic retry or rollback is performed.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the example URL and title with configurable values. Open Flow requires HTTPS for the instance; configure the n8n credential with an HTTPS instance URL.
 - Open Flow uses the YOURLS API with the same signature authentication and returns the link statistics. Both formats validate the creation result before requesting statistics.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Create a short URL and get the statistics of the URL](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/0210_Manual_Yourls_Create_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n community listing](https://n8n.io/workflows/815-create-a-short-url-and-get-the-statistics-of-the-url/) credits Harshil Agrawal. The original template does not state a separate license.
 

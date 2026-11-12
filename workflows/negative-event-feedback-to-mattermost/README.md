@@ -27,15 +27,15 @@ The result contains **Posted**, the complete **Assessment**, and the saved **Pos
 
 Open Flow uses Typeform’s response token as the trigger deduplication identity; the native n8n trigger does not add the same key. Neither format provides an exactly-once notification guarantee.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Resolve the feedback answer using its field definition and title, with duplicate/missing-answer checks.
 - Make the source’s English default and native AWS IAM authentication explicit; keep Comprehend’s real label and confidence output.
 - Validate the assessment and confirm the saved Mattermost post ID.
 - Preserve one analysis followed by at most one post, with no historical import or additional notifications.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Typeform event feedback sentiment alert](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Mattermost/1215_Mattermost_Typeform_Automate_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

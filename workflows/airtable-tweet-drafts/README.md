@@ -19,14 +19,14 @@ For n8n, edit the list in **FunctionItem**, connect OpenAI in **HTTP Request**, 
 
 Run the workflow manually. One run selects one hashtag and creates one Airtable record. It does not publish to X. Review facts, tone, hashtag choice, and length before using the draft. The prompt asks for fewer than 100 characters; that length is not enforced. Repeating a run creates another record.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the retired text-davinci-001 completion request with the OpenAI message node and `gpt-4o-mini` in both formats. Generated wording will differ from the original model.
 - Configure Airtable access-token authentication and replace the source base ID with a setup placeholder.
 - Stop without creating a record when the model returns an empty draft.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [OpenAI-powered tweet generator](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Instagram_Twitter_Social_Media/OpenAI-powered%20tweet%20generator.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 

@@ -21,12 +21,12 @@ A manual run fetches one random drink, selects its first instructions field and 
 
 Open Flow uses the Lingvanex `api-gl.lingvanex.com` endpoint, which includes the API key in the request URL. Protect URL logs. The n8n LingvaNex node uses the legacy `api-b2b.backenster.com` endpoint with a Bearer credential. Both use automatic source-language detection; translation quality and availability depend on the service.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Check the API response and return both source and translated instructions.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Translate cocktail instructions using LingvaNex](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/0166_Manual_Lingvanex_Automation_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

@@ -17,13 +17,13 @@ Connect a LINE Messaging API channel with permission to send push messages and s
 
 An automatic workflow failure sends one LINE message with its workflow name. Open Flow also reports indeterminate runs and includes the run ID; its error event does not supply an execution URL. n8n includes the execution URL when available. An alert over 5,000 characters stops before sending. Restrict access to the LINE conversation and execution history. A successful API response confirms acceptance, not delivery to a recipient who has blocked the account. A failed or uncertain push may already have been accepted; check LINE before retrying.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the private LINE destination and token with setup; Open Flow uses the formal LINE push Action. n8n constructs the JSON object before sending so names and URLs containing quotes remain valid.
 - Open Flow reports the run ID available in its error event instead of the n8n execution URL.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [n8n Error Report to Line](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Error/1849_Error_Stickynote_Automation_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n community listing](https://n8n.io/workflows/3141-send-n8n-error-reports-to-line/) credits lin. The original template does not state a separate license.
 

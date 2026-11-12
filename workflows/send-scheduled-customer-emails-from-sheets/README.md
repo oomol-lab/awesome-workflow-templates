@@ -23,13 +23,13 @@ The original n8n workflow used its instance timezone; both formats here use UTC,
 
 A send or status update can succeed even if its response is lost. A retry can send the same email again, especially if email was sent but the status could not be updated. Inspect Gmail and the sheet before retrying. Keep the worksheet stable while a run is active; the row can change between the final check and write.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Use the same explicit UTC date boundary in both formats and process messages in order, matching each successful send to its original ID rather than merging by position.
 - Require unique IDs, recheck the row after sending, and update only the Status cell to preserve other columns and formulas.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Sending Messages to Customers](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Schedule/0402_Schedule_Filter_Update_Scheduled.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n listing](https://n8n.io/workflows/2088-send-multiple-emails-in-gmail-directly-via-google-sheets/) credits AlQaisi. No separate original template license was found.
 

@@ -21,14 +21,13 @@ Each minute, a changed record in the selected view supplies linked template, tea
 
 A failed or uncertain create or update stops processing. A task may already exist when its response is lost; check Airtable before retrying. Completed writes are not rolled back. Avoid overlapping runs for the same automation. The selected view should exclude completed automations to avoid repeated creation. Poll batches must fit runtime limits.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace private base, table and view IDs. The source Slack notification node was disabled and is omitted.
 - Use UTC calendar dates, validate linked records before writing, and retain each event's associated records. The source depended on instance local dates and used the first item in several expressions.
-
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Recurring tasks automation](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Code/0393_Code_Slack_Create_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

@@ -24,16 +24,15 @@ The result contains `evaluation` and `sourceUrl`. Evaluation includes `percentag
 
 The output is an AI assessment for human review. Check claims against the original resume and relevant job requirements before making an employment decision. The workflow does not select, reject, contact or notify applicants. It returns the report only: **no Supabase write is configured**, despite the source tutorial notes mentioning storage.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Include the actual job description in the model input and retain the entire extracted resume as readable text, without URI encoding.
 - Configure native PDF download/extraction explicitly and replace the private sample resume URL and employer description with user inputs.
 - Build the n8n JSON request as an object, preserve the four-part evaluation structure and validate completed output.
 - Retain the original author/community/tutorial credit and clarify the difference between the implemented report and the tutorial's unimplemented storage step.
-
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [CV Screening with OpenAI](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/HR_and_Recruitment/CV%20Screening%20with%20OpenAI.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 

@@ -19,13 +19,13 @@ Only add people who have agreed to receive your messages. Check the account's AP
 
 The workflow creates or updates a subscriber by email, updates that same subscriber's city and reads the profile. The create operation can update an existing subscriber's name. It does not request a status change or resubscription. MailerLite controls the resulting status. A failure stops later steps; there is no retry or rollback. Check MailerLite before retrying an uncertain write.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the example subscriber details with inputs and verify the final identity, name and city.
 - Use the current MailerLite API in both formats. The source used MailerLite Classic; Classic and current accounts and credentials are separate. The current create endpoint is an upsert.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Create, update and get a subscriber using the MailerLite node](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/1218_Manual_Mailerlite_Create_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n community listing](https://n8n.io/workflows/751-create-update-and-get-a-subscriber-using-the-mailerlite-node/) credits Harshil Agrawal. The original template does not state a separate license.
 

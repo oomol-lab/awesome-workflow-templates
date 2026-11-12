@@ -19,13 +19,13 @@ An automatic workflow failure sends a plain-text email with the workflow name an
 
 Error details and stack traces may contain sensitive information. Restrict the recipient and workflow history. A failed or uncertain email send may already have been delivered; check Gmail before retrying.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Configure the recipient and bind source workflows through each platform's error trigger.
 - Open Flow reports the diagnostics available in its error event; n8n retains the source's execution URL and stack trace when present.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Workflow Error Email](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Error/0456_Error_Gmail_Send_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

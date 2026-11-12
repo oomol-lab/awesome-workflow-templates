@@ -17,13 +17,13 @@ Use a Stackby API key and a table with positive numeric **ID** and text **Name**
 
 Each run inserts one record and reads the table in pages of 100 until Stackby returns an empty page. Open Flow pauses 300 ms before each page to reduce request rate; n8n pauses 250 ms between pages. The table may change during paging, so the list is not a snapshot. Open Flow returns an array of records and stops with an error if 100 nonempty pages are reached; n8n returns individual records and has no equivalent page limit. An error stops the run. No retry, rollback or duplicate check is performed; after an uncertain insert, inspect the table before retrying.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the example stack, table and row with inputs, validate the insert and return the complete list.
 - Use the Stackby HTTP API in both formats and limit Open Flow paging to prevent an unbounded run. The source Stackby node returns raw row fields without n8n item wrappers; HTTP nodes return valid items.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Insert and retrieve data from a table in Stackby](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/1203_Manual_Stackby_Automate_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n community listing](https://n8n.io/workflows/934-insert-and-retrieve-data-from-a-table-in-stackby/) credits Harshil Agrawal. The original template does not state a separate license.
 

@@ -17,13 +17,13 @@ Connect Stripe to the charge search and customer lookup. Connect Pipedrive to th
 
 Each day during 08:00 UTC, find succeeded Stripe charges created from the saved run time up to, but excluding, the current run time, resolve each charge customer and find the Pipedrive organization by customer name. Open Flow runs at the minute boundary; n8n uses a fixed second within that minute. The first run saves a baseline at the current time before reading, even if the read subsequently fails. Each note contains the charge description, original charge amount formatted using Stripe charge currency units, and currency. The amount is not reduced for later refunds. It follows [Stripe charge currency rules](https://docs.stripe.com/currencies), including zero- and three-decimal currencies and the ISK/UGX compatibility rules. Unsupported currency codes stop before writing. Both formats require each charge to have a customer with a name and exactly one case-insensitive matching Pipedrive organization; missing or ambiguous matches stop the run. Open Flow reads every Stripe search page subject to the host execution limits. n8n stops with an error if more than 100 charge pages are needed. The source did not specify a timezone; review the UTC setting. Charges that were not yet successful when their created-time window was read are not revisited later. When at least one note is created and all notes are confirmed, the workflow advances the saved run time. An empty successful set keeps the previous time and is read again on the next run; in n8n this can eventually reach the 100-page limit. A failed or uncertain note does not advance an existing baseline and can already exist; inspect Pipedrive before rerunning. Earlier notes in the run may have been created; if a note or final State save fails, a retry may duplicate them.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Correct the source assumption that every currency uses two decimal places; apply Stripe charge-specific units. Connect the otherwise disconnected customer data path, read all charge pages rather than only the first, and match organizations by exact name rather than an unassociated result. Escape the note text as HTML.
 - Read the Stripe charges list by creation time and filter for successful charges, avoiding the source search index delay. Use the Stripe and Pipedrive Provider APIs and current Connector Actions.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Create notes in Pipedrive for Stripe charges](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Functionitem/0246_Functionitem_Pipedrive_Create_Scheduled.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n listing](https://n8n.io/workflows/1776-sync-payment-and-customer-data-between-stripe-and-pipedrive/) credits n8n Team. No separate original template license was found.
 

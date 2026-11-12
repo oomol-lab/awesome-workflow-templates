@@ -19,14 +19,14 @@ Run the workflow manually to email six tables for page engagement, Google Search
 
 An uncertain Gmail send may already have succeeded. Check the mailbox before running again. Keep the report and its execution data restricted to people who should see the analytics.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Keep the connected manual trigger. The source also contains a disconnected Schedule Trigger, which does not execute.
 - Use two non-overlapping seven-day date windows ending before the current UTC date instead of overlapping source windows that mix relative property dates and Los Angeles workflow dates. Fill the source's missing country metric as totalUsers, which its formatter expects.
 - Replace the private property ID, sender and recipient, preserve all report pages, and escape report values in HTML. n8n uses the Google Analytics Data API through HTTP with pagination in the request body; the original node placed pagination in the query.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Automate Google Analytics Reporting - AlexK1919](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Googleanalytics/0475_Googleanalytics_Code_Automate_Scheduled.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n listing](https://n8n.io/workflows/2549-automate-google-analytics-reporting/) credits Alex Kim. The original workflow also credits [Keith Rumjahn](https://rumjahn.com/how-i-used-a-i-to-be-an-seo-expert-and-analyzed-my-google-analytics-data-in-n8n-and-make-com/) for an earlier version. No separate original template license was found.
 

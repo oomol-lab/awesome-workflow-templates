@@ -19,12 +19,12 @@ Every 15 minutes the workflow requests each URL. It follows up to 21 redirects a
 
 Open Flow checks URLs sequentially; n8n may issue requests concurrently. Open Flow applies a 30-second timeout per redirect hop and a 4 MiB response limit; exceeding that limit stops the run immediately. Redirect targets must be HTTP or HTTPS without credentials. n8n uses its HTTP node defaults. Both schedules use UTC as a starting point; the source inherited its n8n instance timezone.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the example domains with a configurable list and validate URLs before use. Explicitly set UTC.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [URL Pinger](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Http/1447_HTTP_Schedule_Automation_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

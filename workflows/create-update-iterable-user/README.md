@@ -19,13 +19,13 @@ Make sure your project permits the **Name** field and that you are authorized to
 
 The workflow makes two ordered user upserts for the same email. The first sends only the email; the second sets **Name**. It reads the user and checks that the email and field match. Iterable may drop an unrecognized field depending on project schema settings; the final check reports that case. An error stops subsequent steps. There is no automatic retry or rollback; after a lost response, inspect the profile before retrying.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the empty email and name with configured values, preserve both upserts and use the same email throughout.
 - Return the user after checking the stored **Name**; use the Iterable HTTP API in Open Flow.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Create, update and get a user from Iterable](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/0208_Manual_Iterable_Create_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n community listing](https://n8n.io/workflows/813-create-update-and-get-a-user-from-iterable/) credits Harshil Agrawal. The original template does not state a separate license.
 

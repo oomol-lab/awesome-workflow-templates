@@ -17,13 +17,13 @@ The workflow examines at most 100 search results, follows short pages, and keeps
 
 Open Flow returns an array and processes each post through classification and summary before the next. n8n returns individual items and executes nodes in its normal item batches. Open Flow uses the displayed timezone for dates; configure it to match n8n's workflow timezone. Open Flow fails on malformed Reddit data or a repeated pagination cursor; n8n follows its node behavior. Both formats make two model calls per included post, and a model failure stops the run.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace retired OpenAI completion models with a configurable current model; n8n's response mapping preserves the source conditions and output fields. Open Flow uses Agent nodes and does not enforce the source model's 32/128-token limits.
 - The source note says more than five upvotes; the actual condition is at least five. Its enabled summary prompt asks for one sentence.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Reddit AI digest](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Instagram_Twitter_Social_Media/Reddit%20AI%20digest.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 

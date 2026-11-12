@@ -19,14 +19,14 @@ Every minute the workflow reads the complete configured range. The first success
 
 Open Flow saves the new snapshot before posting; n8n records its static data during the run. A failed or uncertain post may have succeeded and may not be repeated automatically. Inspect Discord and the sheet before resetting state or rerunning. Large tables must fit platform state and execution limits. n8n runs at a fixed second within each minute; Open Flow starts on the minute boundary.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Read the whole table after detecting a change, as described in the source notes; the original code formats only trigger output. Replace the private sheet and webhook details.
 - Compare the configured Security Code column directly. The fixed n8n trigger's any-update column indexing can compare the next column instead. Use a one-minute poll and explicit state for this comparison.
 - Open Flow posts using a Discord bot; n8n uses a Discord webhook credential. Validate the table before advancing state or posting, and avoid unintended mentions.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Send Google Sheets data as a message to a Discord channel](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Googlesheets/0314_GoogleSheets_Discord_Create_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n community listing](https://n8n.io/workflows/1941-send-google-sheets-data-as-a-message-to-a-discord-channel/) credits n8n Team. No separate original template license is stated.
 

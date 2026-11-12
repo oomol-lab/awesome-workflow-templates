@@ -23,14 +23,14 @@ Send a message containing the exact text /deploy. The workflow uses the second f
 
 Open Flow validates Telegram's webhook secret and uses update ID deduplication where available. The native trigger is upgraded to version 1.2 to validate its webhook secret. Neither format promises exactly-once creation. A failed or uncertain create may already have published a release or created a tag; inspect GitHub before replaying. No workflow retry or rollback is added. The n8n OAuth2 helper can refresh credentials and resend once after HTTP 401.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace repository and account identities with setup, and require both a permitted chat and sender before publishing.
 - Validate the tag and the returned published release; retain the source's contains and space-splitting rules.
 - Upgrade the native Telegram trigger to verify its webhook secret.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Telegram command to create a GitHub release](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Noop/0061_Noop_GitHub_Automate_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

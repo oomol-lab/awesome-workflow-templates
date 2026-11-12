@@ -21,14 +21,14 @@ Each run makes one build request. The `202` pending result and request ID confir
 
 The Open Flow HTTP step has a 30-second execution budget. A rejected request, unexpected response or transport failure stops the run. No duplicate check or automatic retry is configured. Check Travis CI before repeating an uncertain request, since it may already have started a build.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace example repository and branch values with user configuration.
 - Use formal HTTP authentication in both formats and correct the source’s JSON content type.
 - Check the pending acceptance record and preserve the complete response.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Trigger a build in Travis CI](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/1000_Manual_Travisci_Create_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

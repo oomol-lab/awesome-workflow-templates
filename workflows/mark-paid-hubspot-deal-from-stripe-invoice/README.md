@@ -23,13 +23,13 @@ Alerts contain the Stripe event ID, customer name and email, purchase order wher
 
 A failure stops subsequent work. Some deals may already be marked paid or messages sent; inspect HubSpot and Slack before retrying an uncertain run. HubSpot search can lag recent changes. Repeated events or manual retries can produce duplicate alerts; avoid overlapping runs.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace account/channel details with setup and explicitly validate the invoice. Missing deal results now reach the alert branch.
 - Fail before updates when more than 100 deals match, rather than silently processing only the first 100. Report Stripe amounts in minor units instead of dividing every currency by 100.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [On new Stripe Invoice Payment update Hubspot and notify the team in Slack](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Slack/0008_Slack_Stripe_Create_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

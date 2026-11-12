@@ -28,15 +28,15 @@ Complete contact and submission collections must fit the execution platform’s 
 
 Twilio returns submission IDs and statuses. These confirm submission, not delivery to the recipient. A service failure stops later submissions without replaying earlier ones. Check Twilio’s message log before rerunning an uncertain batch; rerunning sends the records again.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace Airtable identifiers and the empty sender with setup placeholders.
 - Configure the n8n Airtable node for Access Token authentication.
 - Validate all destination numbers before sending and treat a missing name as empty text.
 - Expose Twilio submission results and the completed count in Open Flow.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Send SMS to numbers stored in Airtable with Twilio](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/0353_Manual_Twilio_Send_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

@@ -19,12 +19,12 @@ Every minute the workflow checks for files created directly in the selected fold
 
 Open Flow processes up to 50 file candidates per page and uses a continuation checkpoint; n8n collects all native result pages in a poll. With more than 50 files, Open Flow can log one page before sharing the next, while n8n processes its collected batch together. On first activation Open Flow starts from the current time rather than importing older files. Open Flow and n8n use different polling checkpoints and neither guarantees exactly-once handling. Events whose run fails may not automatically replay. Inspect Drive permissions and Airtable before retrying; repeated runs can create duplicate records. Earlier permission changes and records are not rolled back if a later operation fails. A lost response can leave a permission or record created even if the run reports failure. No automatic write retry is configured. Avoid concurrent permission changes on the same file.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the empty folder, Airtable identifiers and example recipient with configuration. Validate files and confirm write IDs.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Sync new files from Google Drive with Airtable](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Stickynote/1987_Stickynote_Airtable_Create_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n community listing](https://n8n.io/workflows/2776-sync-new-files-from-google-drive-with-airtable/) credits WeblineIndia. The original template does not state a separate license.
 

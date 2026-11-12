@@ -19,13 +19,13 @@ In n8n, connect the same Google Contacts OAuth2 credential to the Google Contact
 
 Each run creates a contact, reads its current contact-source version, replaces its organization with the supplied values and reads it back. An ETag conflict or any failed step stops the run. A write whose response is lost may have succeeded; inspect Google Contacts before retrying. The workflow does not retry or roll back writes, and each run can create another contact.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace example names and organization with inputs. Read the contact-source ETag and include it when updating, as required by the People API.
 - Verify the returned contact and its organization. The n8n update uses HTTP Request with the Google Contacts credential.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Create, update and get a contact in Google Contacts](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/0409_Manual_Googlecontacts_Create_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n community listing](https://n8n.io/workflows/637-manage-contacts-in-google-contacts/) credits Harshil Agrawal. The original template does not state a separate license.
 

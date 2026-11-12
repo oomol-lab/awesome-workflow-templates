@@ -19,14 +19,14 @@ At midnight UTC, request the first 100 Shopify orders created during the previou
 
 Only the first 100 orders are checked, as in the source; Open Flow reports whether Shopify has more. When attribution is not ready, the whole batch stops before writing and later scheduled runs move to a new date. To retry that batch, set the override date in **Choose yesterday’s orders** to its UTC date in YYYY-MM-DD format, run the workflow, then clear the override. Older orders can require Shopify all-orders access. A Baserow write can succeed even if the response is lost. Earlier rows remain if a later create fails, and retrying can create duplicates. Check Baserow before retrying. Open Flow starts at the minute boundary; n8n chooses a fixed second within the minute.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace private shop, table and field IDs, use the current Shopify money object and include its shop currency with the amount.
 - Correct Source to the UTM source rather than the original medium mapping. Keep decimal amounts as strings rather than converting them to floating point.
 - Use the previous UTC calendar day instead of the n8n instance timezone, validate order data before writes and stop when attribution is not ready.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Shopify order UTM to Baserow](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Splitout/1780_Splitout_Schedule_Automation_Scheduled.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

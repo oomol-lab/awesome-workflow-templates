@@ -23,14 +23,14 @@ Each normal manual run makes one GET request with `limit=100`, with no filter, e
 
 Open Flow returns the complete page response, the contact records and their returned count. n8n returns one item per contact. An empty page yields an empty array and count zero in Open Flow, and no result items in n8n. No contacts are created or changed. n8n can refresh an expired token and resend that read once; Open Flow requires manual token renewal. Other errors stop the run and no workflow retry is configured. Both HTTP steps use a 30-second timeout; this is not a total authorization/refresh budget.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Make the source defaults of one page and a 100-contact request limit explicit.
 - Use a manually renewed OAuth token Variable in Open Flow. In n8n, use formal HTTP with configurable OAuth2 so initial authorization uses Body and refresh uses Header; expand the returned contacts into the source’s one-item-per-contact output.
 - Preserve full records and expose the page metadata in Open Flow.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Keap contacts workflow](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/1022_Manual_Keap_Automate_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

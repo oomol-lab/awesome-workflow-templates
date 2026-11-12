@@ -21,14 +21,14 @@ Open Flow searches HubSpot using last modification time and follows pages before
 
 The source schedule used the n8n instance timezone. Open Flow starts at five-minute UTC boundaries; n8n retains its Schedule Trigger with a stable second within each minute. If a Slack call fails or its outcome is uncertain, earlier messages may already have been sent; check Slack before rerunning. No automatic retry or rollback is configured.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the private recipient and credentials; request the company properties needed for the filter and message.
 - Use the current HubSpot search Action with explicit last-modified filtering, pagination and a safety stop at the search limit in Open Flow.
 - Escape Slack control characters, validate message data before sending, while n8n retains its default workflow link in each message.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Send a notification to Slack when a new high-quality lead is added to Hubspot](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Schedule/0432_Schedule_Filter_Create_Scheduled.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n community listing](https://n8n.io/workflows/2131-send-a-notification-to-slack-when-a-new-high-quality-lead-is-added-to-hubspot/) credits Ricardo Espinozaas. The original template does not state a separate license.
 

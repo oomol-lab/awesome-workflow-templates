@@ -17,14 +17,14 @@ For n8n, connect OpenAI in **Chat Model**, open **Article Form**, and submit the
 
 The workflow normalizes whitespace and sends the first 9,000 characters to the model. It requests `===TWITTER THREAD===` and `===LINKEDIN POST===` sections, with 6–9 tweets and a 120–220-word LinkedIn post. For insufficient material, the requested output begins `[NEEDS-HUMAN]` with a reason. These are model instructions; review grounding, length, and wording before publishing. Nothing is posted automatically.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Fix whitespace normalization so it collapses actual whitespace rather than matching a literal backslash.
 - Validate that the submitted source contains text before calling the model.
 - Replace the source tool-less Agent with a Basic LLM Chain in n8n, keeping its system and user instructions. The single generation request does not need tools or conversation memory.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Grounded Article to Thread and LinkedIn Post](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Instagram_Twitter_Social_Media/Grounded%20Article%20to%20Thread%20and%20LinkedIn%20Post.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 

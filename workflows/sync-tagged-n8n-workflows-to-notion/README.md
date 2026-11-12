@@ -19,13 +19,13 @@ Every 15 minutes in UTC, the workflow reads all pages of tagged n8n workflows an
 
 A failed or uncertain Notion write may have completed. Inspect the data source before retrying; earlier entries remain. Concurrent runs or edits can create duplicates, so do not run multiple copies at once. Removing a tag or deleting a source workflow does not delete existing inventory entries.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace private identifiers, use the current Notion data source API and an exact ID match rather than substring matching. Reject duplicate matches.
 - Preserve the actual error-workflow flag on updates and correct the source's misspelled updated-at property. Use UTC instead of the source instance timezone.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Automatically document n8n workflows directly in Notion database](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Schedule/0448_Schedule_HTTP_Create_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n listing](https://n8n.io/workflows/2151-automatically-document-n8n-workflows-directly-in-notion-database/) credits Mutasem. No separate original template license was found.
 

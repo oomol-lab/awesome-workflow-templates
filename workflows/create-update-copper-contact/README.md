@@ -17,13 +17,13 @@ Use a Copper API key and the email of the Copper user who generated it, with per
 
 The workflow creates one person, replaces that person's phone-number list with the supplied work number and reads the same person. It checks the work email and phone on the final record. Copper applies only fields present in the update; the workflow does not send other fields. An error stops later steps. No retry, rollback or duplicate check is performed; a lost response can mean a write succeeded, so inspect Copper before retrying.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the example personal details with inputs and check the final person ID, work email and phone.
 - Open Flow uses the Copper HTTP API with the same account and key authentication.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Create, update, and get a person from Copper](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/0011_Manual_Copper_Automate_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n community listing](https://n8n.io/workflows/1021-create-update-and-get-a-person-from-copper/) credits Harshil Agrawal. The original template does not state a separate license.
 

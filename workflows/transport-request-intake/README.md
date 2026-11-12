@@ -26,15 +26,15 @@ The response contains `status`, `missing_fields`, and `normalized_request`. Text
 
 This checks field presence and numeric weight. It does not validate postcode geography, date format, positive weight, availability, or pricing, and creates no booking.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Read the JSON webhook body instead of looking for submitted fields in the HTTP envelope.
 - Keep normalized values available through validation and the final response.
 - Reject partial numbers such as `12kg` instead of silently treating them as `12`, and emit JSON `null` for nonfinite or invalid weight.
 - Configure the response through the actual JSON response fields.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Transport_Request_Intake_Lite](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Other_Integrations_and_Use_Cases/Transport_Request_Intake_Lite.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 

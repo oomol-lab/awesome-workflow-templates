@@ -23,15 +23,15 @@ The example repositories are `n8n-io/n8n` and `home-assistant/core`. For n8n, ed
 
 Enable the workflow after setup. It reads one latest release per repository, in list order, before sending any notifications. An empty list or no recent releases sends no messages. A read failure stops all notifications; a Slack failure stops later messages. Rerunning can send duplicate alerts, and an earlier Slack message may already have been delivered. GitHub’s latest-release endpoint omits drafts and prereleases; a repository with no published release fails that read.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Use a correct 24-hour date comparison and an explicit UTC schedule.
 - Handle a missing release body as empty text, use the tag when a release name is absent, and link to the public release page.
 - Escape Slack mention/link markup in repository names and release text.
 - Keep repository identity with each release and preserve the order of reads and notifications.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [GitHub release notifications to Slack](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Code/0546_Code_Schedule_Create_Scheduled.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

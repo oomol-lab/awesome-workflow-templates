@@ -29,6 +29,9 @@ Each run makes one synchronous research request and returns `output` and `citati
 
 The template uses Perplexity’s legacy Sonar-compatible completion route. Perplexity may rewrite these requests to its newer service; model behavior and sampling can change. Domain and publication-recency filters constrain search, and do not prove every generated statement. Check the answer against the cited sources before using it.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Trim domain filters and validate the research question before requesting an answer.
@@ -36,9 +39,6 @@ The template uses Perplexity’s legacy Sonar-compatible completion route. Perpl
 - Use neutral research instructions as the editable default.
 - Preserve the answer’s citation list and handle an omitted list.
 - Replace credential identities and outdated model notes with reusable setup instructions.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Query Perplexity AI from your n8n workflows](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/AI_Research_RAG_and_Data_Analysis/Query%20Perplexity%20AI%20from%20your%20n8n%20workflows.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 

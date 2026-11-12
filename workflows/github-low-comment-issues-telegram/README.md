@@ -19,15 +19,15 @@ Each run queries the first 50 raw results for open, matching-label issues update
 
 “Updated” includes changes to older issues; these alerts are not limited to newly created issues. The 30-minute query window overlaps the ten-minute schedule, and the workflow keeps no notification history. An issue can generate repeated alerts across runs. A read failure prevents notifications; a send failure stops later alerts without replaying earlier ones.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Add repository and chat placeholders and make the source’s 50-result limit explicit.
 - Exclude pull requests from the n8n issue results.
 - Escape issue titles and links for Telegram HTML and disable the automatic n8n footer.
 - Preserve the 30-minute update window, comment threshold, and send order.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [FetchGithubIssues](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Telegram/1945_Telegram_Schedule_Import_Scheduled.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

@@ -21,15 +21,15 @@ Each run sends one input to one target language. The source language is detected
 
 The full single-translation record is returned, including detected source language and any extra properties. A failed request or malformed result stops the run. No workflow retry is configured. Open Flow’s HTTP step has a 30-second execution budget.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace example text and language with user configuration.
 - Make the billing/quota project explicit in both formats.
 - Use a manually renewed secret access-token Variable in Open Flow and retain managed OAuth2 in n8n.
 - Check that one translated-text record is returned before exposing it.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Google Translate workflow](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/1200_Manual_Googletranslate_Automation_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

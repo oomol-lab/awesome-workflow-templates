@@ -19,13 +19,13 @@ Each run asks Screenshotbase for a full-page PNG at a 1024-pixel viewport width 
 
 A failed capture, inaccessible image header, unsupported CDN host or invalid returned URL stops before sending. The header check requires a readable PNG from Screenshotbase’s cache.screenshotbase.com or cdn.screenshotbase.com. A failed or uncertain Telegram send may already have been delivered; inspect the chat before retrying. The image must meet Telegram photo limits and be accessible to Telegram.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace uProc with the available Screenshotbase Action and its API in n8n. Both capture a full-page PNG with a 1024-pixel width; browser rendering, viewport interpretation, image hosting and retention can differ between services.
 - Configure the Telegram destination and validate the returned URL before sending.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Create a screenshot of a website and send it to a Telegram channel](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/0305_Manual_Telegram_Create_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n listing](https://n8n.io/workflows/858-create-a-website-screenshot-and-send-via-telegram-channel/) credits Harshil Agrawal. No separate original template license was found.
 

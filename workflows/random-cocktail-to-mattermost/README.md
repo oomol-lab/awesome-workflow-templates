@@ -19,13 +19,13 @@ The webhook is unauthenticated, as in the source. Anyone who knows its URL can s
 
 Each accepted request fetches one random drink from TheCocktailDB and sends its name, instructions and glass in a Mattermost message, with the drink image as an attachment. A failed lookup or post stops the run; an uncertain post may already have arrived. Repeating a request may choose another drink and create another message. Open Flow checks the required response fields before posting; n8n uses the returned fields directly.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the original webhook path and credential with setup.
 - Preserve the dynamic channel, random lookup, message and image. Open Flow validates the required fields.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Mattermost Webhook](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Http/0154_HTTP_Mattermost_Automation_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

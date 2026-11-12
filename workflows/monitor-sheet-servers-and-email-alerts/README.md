@@ -21,13 +21,13 @@ Each minute the workflow reads the server list and sends an HTTP GET to `http://
 
 Both formats use UTC for log and alert timestamps. Open Flow follows redirects explicitly and checks servers sequentially; n8n processes its items according to its execution order. A log or Gmail failure stops the run; earlier actions are not undone. A lost response may hide a completed write or email, so inspect the destination before replaying. There is no deduplication between runs. In Open Flow, a response larger than 4 MiB stops the run without a down alert, and the server list must fit execution limits.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace personal spreadsheet IDs and add the missing alert recipient. Use the original server row in the failure alert because the HTTP error output does not contain its `Server` field, and describe the HTTP check accurately.
 - Use a 30-second n8n request timeout instead of its five-minute default, plain-text email without the n8n attribution footer, and append rows without interpreting formulas. Both formats use UTC instead of inheriting the n8n instance timezone; Open Flow uses explicit ordered columns.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Web Server Monitor](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Schedule/1952_Schedule_HTTP_Monitor_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

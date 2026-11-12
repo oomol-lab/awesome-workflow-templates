@@ -19,13 +19,13 @@ Every minute, the workflow reads the entire range, scans rows from the bottom an
 
 Open Flow saves the full ID list before sending. n8n saves its changed static IDs at execution end even when a send fails. A failed send can therefore cause remaining notices to be skipped on the next run. Unknown sends may already have delivered. A hard crash or overlapping runs can behave differently between formats. Inspect Mattermost before retrying. State, table data and messages must fit execution limits.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the personal spreadsheet and channel with setup and use an explicit complete range. The source interval parameter defaults to one minute despite its node label; Open Flow runs on UTC minute boundaries while n8n intervals start from activation.
 - Open Flow saves IDs before notifying; n8n retains the source static-data behavior at execution end. Open Flow stops before notices if State cannot be saved.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Receive a Mattermost message when new data gets added to Google Sheets](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Mattermost/1167_Mattermost_GoogleSheets_Create_Scheduled.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

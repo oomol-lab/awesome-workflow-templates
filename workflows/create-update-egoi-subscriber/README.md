@@ -19,13 +19,13 @@ Only add people who have agreed to receive your messages. E-goi determines the c
 
 Each run creates one contact with the initial first name, updates that same contact to the new first name and reads it back. A failed step stops later steps. E-goi may reject an existing email according to its list rules. The workflow does not deduplicate, roll back or retry writes. A lost response can mean a write succeeded; inspect E-goi before retrying. n8n performs an intermediate read after the update; Open Flow reads after the update.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the personal example and list ID with inputs and check the final contact ID, email and name.
 - Return the raw contact in both formats and use the returned contact ID for every operation.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Create, update, and get a subscriber using the e-goi node](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/0300_Manual_Egoi_Create_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n community listing](https://n8n.io/workflows/852-create-update-and-get-a-subscriber-using-the-e-goi-node/) credits Harshil Agrawal. The original template does not state a separate license.
 

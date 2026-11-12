@@ -19,13 +19,13 @@ The workflow requests a full scorecard JSON report, then checks recent reports o
 
 A request can succeed even if its response is lost or report generation later fails. Check the service before repeating an uncertain request. No automatic creation retry is configured. A report that does not appear within an hour stops the run. The API may accept a request before a score is ready and later fail to generate it.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the example domain with configuration and use the current API's top-level `scorecard_identifier` request field.
 - Match the generated report ID and wait for a download URL, instead of immediately selecting the first recent report.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Generate and download a SecurityScorecard report](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/1196_Manual_Securityscorecard_Automate_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n community listing](https://n8n.io/workflows/920-generate-retrieve-and-download-a-report-using-the-securityscorecard/) credits Harshil Agrawal. The original template does not state a separate license.
 

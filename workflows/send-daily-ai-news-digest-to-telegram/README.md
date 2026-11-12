@@ -19,13 +19,13 @@ Every day at 08:00 UTC, the workflow searches English articles for AI: the first
 
 The digest must fit Telegram's message limit; oversized or invalid model output or invalid source data stops before sending rather than being truncated. A failed or uncertain Telegram send may already have succeeded; check the chat before retrying. No automatic write retry or cross-run deduplication is added. n8n runs at a fixed second within the scheduled minute; Open Flow runs at the minute boundary. Restrict access to the API keys and execution history.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Configure both API keys as request headers and replace the private Telegram destination. Set UTC explicitly.
 - Combine both source lists before one Agent call, deduplicate URLs and verify selections against the fetched articles; the source Merge passes the lists as separate items. n8n HTML-escapes the digest for Telegram so article text and URLs are not parsed as Markdown.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Daily AI News Translation & Summary with GPT-4 and Telegram Delivery](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Http/0970_HTTP_Schedule_Create_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n community listing](https://n8n.io/workflows/3596-daily-ai-news-translation-and-summary-with-gpt-4-and-telegram-delivery/) credits SamirLiu. The original template does not state a separate license.
 

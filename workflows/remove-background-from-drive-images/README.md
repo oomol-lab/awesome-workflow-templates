@@ -22,7 +22,7 @@ Each new file is downloaded and its original dimensions are read. Photoroom remo
 Open Flow uses ImageKit for dimensions and connector transit URLs for both input and result; n8n sends its binary directly. Open Flow checks the returned byte count and Drive receipt and stops after an error. Inspect the output folder before replaying an uncertain upload. Open Flow starts a new poll checkpoint at activation and processes received files sequentially; n8n uses its own poll checkpoint. Neither format guarantees exactly-once output. Complete images must fit Open Flow's HTTP and Code budgets. ImageKit may reject unsupported files. If original dimensions are selected, missing dimensions stop processing.
 
 <details>
-<summary>Source and license</summary>
+<summary>Inspiration &amp; credits</summary>
 
 Adapted from [Automatic Background Removal for Images in Google Drive](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Google_Drive_and_Google_Sheets/Automatic%20Background%20Removal%20for%20Images%20in%20Google%20Drive.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 

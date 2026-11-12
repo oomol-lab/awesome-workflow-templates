@@ -23,13 +23,13 @@ The original schedule and date window used the n8n instance timezone. Both forma
 
 An existing audience member causes an error rather than an update. Earlier additions remain if a later request fails; inspect Mailchimp before rerunning an uncertain request. No automatic retry or rollback is configured. HubSpot search indexing can delay newly created contacts, so a late-indexed contact may miss its window.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Remove the private audience and credentials; require user configuration and validate contact fields before writing.
 - Use explicit UTC for the schedule and date boundaries. Keep the source search limit and create-only behavior.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Add new contacts from HubSpot to the email list in Mailchimp](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Hubspot/0243_HubSpot_Mailchimp_Create_Scheduled.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n community listing](https://n8n.io/workflows/1770-add-new-contacts-from-hubspot-to-the-email-list-in-mailchimp/) credits n8n Team. The original template does not state a separate license.
 

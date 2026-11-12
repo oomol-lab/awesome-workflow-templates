@@ -21,13 +21,13 @@ Each minute the workflow requests the ISS position for the current Unix second a
 
 A failed or uncertain push may have reached Firebase. Check /iss before retrying; the workflow does not assign a deduplication ID or add a workflow retry, and repeated runs can create duplicates. Open Flow sends its legacy secret in the request URL; URLs may appear in service or proxy logs. n8n sends an OAuth2 bearer token. Open Flow does not follow redirects and applies a 30-second timeout and 4 MiB response limit; n8n uses its HTTP node defaults.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the database identifier with configuration and send current Unix time in seconds instead of milliseconds.
 - Validate the returned position and the Firebase push key, and set UTC explicitly. Open Flow uses the Firebase REST API and a legacy database secret; n8n retains its native Firebase OAuth2 node.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [ISS position to Firebase Realtime Database](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Http/0136_HTTP_Googlefirebaserealtimedatabase_Update_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n listing](https://n8n.io/workflows/787-receive-updates-for-the-position-of-the-iss-and-push-it-to-a-firbase/) credits Harshil Agrawal. The original template does not state a separate license.
 

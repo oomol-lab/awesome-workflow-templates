@@ -26,14 +26,14 @@ Each completed submission makes one registration call. Missing, ambiguous, or in
 
 Duplicate submissions or event deliveries can make another registration call. The workflow keeps no delivery history and does not automatically retry failed calls. Check the Demio registration before retrying a run whose outcome is uncertain.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the original event and empty form with setup placeholders.
 - Select typed answers by question ID, reference, or title and reject ambiguous matches.
 - Validate the name and email before registering, and expose the complete registration result.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Typeform to Demio registration](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Typeform/1207_Typeform_Demio_Automate_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

@@ -23,13 +23,13 @@ A click immediately receives HTTP 200 with an empty JSON object. The workflow va
 
 Each step stops on error. PagerDuty may already be resolved when Jira fails; both may have changed when a post fails. A failed or uncertain write may have succeeded. Inspect PagerDuty, Jira and both channels before retrying. The shared secret is a bearer capability and does not identify individual users; repeated requests are not deduplicated.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace account-specific email, transition ID and announcement channel with configuration; validate a shared action secret before writing.
 - Return valid JSON to the Mattermost action immediately. Open Flow checks PagerDuty’s returned incident ID and status, uses the Jira Provider API to perform the transition, and checks its HTTP 204 response. The n8n Jira node also sends an issue update after transitioning, which can fail after the transition succeeds.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Resolve a PagerDuty incident and Jira issue from Mattermost](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Mattermost/0857_Mattermost_Webhook_Automate_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

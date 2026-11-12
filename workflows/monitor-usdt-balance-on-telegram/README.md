@@ -21,13 +21,13 @@ Every five minutes the workflow reads the latest token balance. Open Flow runs a
 
 The saved baseline is the last sampled balance, not the last confirmed notification. Open Flow persists it before the Telegram call. n8n updates static data before sending and normally persists it at execution end, including on error. If Telegram fails, the next run compares against that sampled value and may report unchanged, so the change notification can be lost. Hard crashes and overlapping runs may behave differently. A failed or uncertain message may have been delivered; inspect the chat before retrying. Alchemy or Etherscan errors or invalid data stop before the balance is saved. Wallet addresses and balances appear in messages and run history.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Open Flow reads Ethereum mainnet through the Alchemy connector; n8n uses Etherscan V2 with chain ID 1 and stores the API key in credentials. Both validate the service response before changing State.
 - Reset the baseline when wallet or token changes and format six-decimal balances without floating-point rounding. Open Flow validates its Telegram destination before saving State.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Monitor USDT ERC-20 Wallet Balance with Etherscan and Telegram Notifications](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Telegram/1304_Telegram_Code_Monitor_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

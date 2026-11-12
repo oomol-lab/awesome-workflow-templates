@@ -27,6 +27,9 @@ The archive's title links are kept with their requested date. Absolute HTTP(S) l
 
 An HTTP or extraction failure prevents the model and notification. Empty or oversized model output stops before Telegram. The summary is sent using Telegram's Markdown mode and must fit its 4,096-character limit; invalid model-generated Markdown can also fail delivery. No workflow-level retry, persistent checkpoint, or cross-run deduplication is configured. Model adapters and providers can retry transient requests internally. Repeating a run can send another summary.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Use consistent UTC dates, preserve the requested month/day for 2007, and skip invalid leap-day dates instead of shifting them into March.
@@ -34,9 +37,6 @@ An HTTP or extraction failure prevents the model and notification. Empty or over
 - Replace the historical Gemini model configuration with Gemini 3.8 Flash while retaining the complete summary prompt.
 - Make response format, timeout, redirect behavior, and Telegram message validation explicit.
 - Keep headline link handling compatible with n8n's Code runtime.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Hacker News Throwback Machine - See What Was Hot on This Day, Every Year!](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Other_Integrations_and_Use_Cases/Hacker%20News%20Throwback%20Machine%20-%20See%20What%20Was%20Hot%20on%20This%20Day%2C%20Every%20Year!.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 

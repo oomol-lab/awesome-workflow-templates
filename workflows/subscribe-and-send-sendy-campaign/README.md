@@ -30,12 +30,12 @@ Configure the Sendy credential and sender, campaign and list fields in **Sendy1*
 
 A successful subscription request is followed by campaign creation with immediate sending enabled. Sendy may return that the campaign was created or is now sending; this is not proof of delivery. Failure stops later steps. No automatic retry or rollback is configured. A lost response may mean the subscription or campaign succeeded, so inspect Sendy before retrying.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the original personal details and list with configuration. Open Flow sends the documented form requests using secret body Variables; n8n uses Custom Auth for subscription and its native Sendy credential for the campaign, accepting subscription success responses `true` and `1`.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Add a subscriber to a list and create and send a campaign](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/0175_Manual_Sendy_Create_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

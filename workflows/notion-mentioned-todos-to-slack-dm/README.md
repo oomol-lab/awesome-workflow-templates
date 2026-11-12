@@ -21,13 +21,13 @@ The workflow reads all pages of direct child blocks. It selects unchecked to-do 
 
 A read error stops before Slack. Open Flow also stops on an incomplete page or repeated pagination cursor; n8n uses the native Notion node’s pagination. A later Slack error stops the remaining operations; earlier opens or messages may already have succeeded. Check Slack before rerunning after an uncertain write. Very large sets must fit the execution platform's state limits; oversized task titles stop the run before messages.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Use Notion's current rich-text format and a stable mentioned user ID instead of a display name; upgrade the n8n Notion node to version 2. Replace private IDs with configuration.
 - Explicitly paginate and keep each title associated with its direct message; validate responses and use UTC as the schedule starting point.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Check To Do on Notion and send message on Slack](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Noop/0809_Noop_Slack_Send_Scheduled.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n community listing](https://n8n.io/workflows/1105-check-to-do-on-notion-and-send-message-on-slack/) credits Harshil Agrawal. The original template does not state a separate license.
 

@@ -19,13 +19,13 @@ Every day at 06:00 UTC, Airtop opens Product Hunt and extracts up to five launch
 
 Open Flow checks readiness up to 60 times, five seconds apart, then closes its session after a successful query before posting. If an earlier request fails, the session can remain until Airtop's idle timeout. An unknown request outcome may have created a session or sent a message; inspect the service before retrying. There is no automatic deduplication or replay.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the private Slack channel and use UTC instead of the source instance timezone. Open Flow uses the published Airtop session, window and page-query HTTP APIs because no Airtop Provider or Action was available in the checked catalog.
 - Open Flow closes a completed session before posting; the original n8n node relies on its session setting.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Automate product Hunt discovery with Airtop and Slack](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Schedule/1859_Schedule_Slack_Monitor_Scheduled.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n listing](https://n8n.io/workflows/3481-automate-product-hunt-discovery-with-airtop-and-slack/) credits Airtop. No separate original template license was found.
 

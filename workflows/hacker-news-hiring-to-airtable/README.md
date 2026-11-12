@@ -25,14 +25,14 @@ The model extracts company, role, location, employment type, work arrangement, c
 
 Complete ID collections and selected comment content must fit execution and Code limits, including 1 MiB per Code input/result in the inspected Open Flow host. Oversized batches fail rather than silently truncate. Search results are a 30-hit window, not an exhaustive historical job archive. Deleted, missing or mismatched comment records stop the Open Flow run before any extraction or write; n8n also requires usable comment text. Text cleaning follows the source's simple HTML/entity/whitespace substitutions; it is not a complete HTML decoder.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Replace the browser-specific Algolia request and shared-index credential with Hacker News's public date-sorted API.
 - Read story IDs from `objectID`, repair nullable JSON Schema types, model selection and the explicit system-message type and return proper n8n Code items.
 - Preserve collection phase boundaries, validate records and expose confirmed Airtable IDs.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Hacker News Job Listing Scraper and Parser](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/AI_Research_RAG_and_Data_Analysis/Hacker%20News%20Job%20Listing%20Scraper%20and%20Parser.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 

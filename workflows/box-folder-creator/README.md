@@ -17,13 +17,13 @@ Each run makes one creation request. Open Flow returns the folder metadata with 
 
 Box can reject a name that already exists in the parent, typically with HTTP 409. The workflow does not reuse, rename, update or search for an existing folder. Errors stop the run without a retry or rollback. Check Box before rerunning an uncertain request.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Make Box’s root parent ID `0` explicit.
 - Expose the created folder metadata in Open Flow.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Box folder workflow](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/1027_Manual_Box_Automate_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

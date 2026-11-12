@@ -28,6 +28,9 @@ The `request` value can contain your own JSON fields or a text string. Both form
 
 Malformed model output returns the fallback `general` / `medium` with summary `Unable to classify`. Unknown route and priority labels become `general` and `medium`. Model request failures still fail the workflow. Open Flow waits up to 60 seconds for classification; an HTTP timeout does not cancel the run. Review model accuracy for your request types before using the result to make routing decisions.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Wait for classification and parsing before sending the HTTP response.
@@ -35,9 +38,6 @@ Malformed model output returns the fallback `general` / `medium` with summary `U
 - Accept the same explicit `request` wrapper in both formats.
 - Parse complete or fenced JSON containing braces inside strings, retain the malformed-output fallback, and normalize unknown labels.
 - Remove the source switch with no configured downstream actions.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Claude Smart Webhook AI Router](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/OpenAI_and_LLMs/Claude%20Smart%20Webhook%20AI%20Router.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 

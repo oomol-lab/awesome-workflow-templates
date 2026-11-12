@@ -21,13 +21,13 @@ Run manually. The first request creates a product, the second enables product st
 
 If a request fails or its outcome is uncertain, inspect the store before running again. A product may already exist or its stock may already have changed; earlier writes are not rolled back. The workflow does not deduplicate products.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - Enable product stock management in the update: WooCommerce defaults `manage_stock` to false, so a stock quantity alone may not persist. Store-level stock management must also be enabled.
 - Keep the separate create, update and get requests. Open Flow checks that creation returns a valid product ID.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Create, update and get a product from WooCommerce](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/0293_Manual_Woocommerce_Create_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

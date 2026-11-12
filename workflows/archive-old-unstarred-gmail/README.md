@@ -19,13 +19,13 @@ At midnight UTC on weekdays, the workflow finds inbox messages received before 2
 
 A message starred or otherwise changed during a run may still be archived because Gmail does not provide an atomic condition on a label update. Prevent overlapping runs and review the mailbox before retrying a failed or uncertain update; earlier changes are not rolled back. Open Flow must fit the selected message IDs and page tokens within the host execution limits.
 
+<details>
+<summary>Inspiration &amp; credits</summary>
+
 ## Changes to the source
 
 - The source checks the entire serialized thread for the text STARRED, so that text in a message body can also exclude a thread. It then archives the whole selected thread, including any newer messages. Both formats check message labels and archive only individual old unstarred messages, including in mixed threads.
 - Both formats use UTC instead of inheriting the n8n instance timezone, retain full pagination before updates, and remove the source Gmail nodes’ automatic retries for reads and archive operations.
-
-<details>
-<summary>Source and license</summary>
 
 Adapted from [Keep starred emails in inbox, archive everything else](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Schedule/0443_Schedule_Filter_Automation_Scheduled.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 
