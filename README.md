@@ -87,6 +87,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Import Airtable Contacts into a Lemlist Campaign](workflows/airtable-contacts-to-lemlist-campaign/) - Add Airtable contacts to a Lemlist campaign and look up their lead records.
 - [Log and Route Twenty CRM Events](workflows/log-and-route-twenty-crm-events/) - Log signed Twenty CRM record events and notify email for deletions or Slack for other changes.
 - [Enrich Sheet Companies with ProspectLens](workflows/enrich-sheet-companies-with-prospectlens/) - Enrich unprocessed company domains in Google Sheets with ProspectLens data.
+- [Validate Sheet Email Deliverability](workflows/validate-sheet-email-deliverability/) - Validate changed email addresses and write deliverability results to their Google Sheets rows.
 
 ## Operations
 
