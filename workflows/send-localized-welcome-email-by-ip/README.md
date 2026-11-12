@@ -11,7 +11,7 @@ Look up an IP address and send a localized welcome email through Amazon SES.
 
 ## Setup
 
-In Open Flow, bind secret Uproc account email and legacy v2 API key Variables to **Look up IP location**. In **Prepare next welcome email**, configure a verified SES sender. In **Sign SES request**, set the AWS region and bind secret Variables for access key ID and secret access key; bind a session token when using temporary credentials. Run with an IP address and recipient email.
+In Open Flow, bind secret Uproc account email and legacy v2 API key Variables to **Look up IP location**. In **Prepare next welcome email**, configure a verified SES sender. In **Sign SES request**, set the AWS region and bind secret Variables for access key ID and secret access key; for temporary credentials, bind the same session token Variable to **Sign SES request** and **Send with Amazon SES** → **X-Amz-Security-Token**. Leave both unset for long-lived credentials. Run with an IP address and recipient email.
 
 In n8n, configure Uproc and AWS credentials, the IP and recipient in **Create IP and Email Item**, and the verified sender in both SES nodes. Use one format per welcome email. Restrict access to execution data because signed requests and email addresses appear in runs.
 
