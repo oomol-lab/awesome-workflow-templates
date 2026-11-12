@@ -292,6 +292,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Analyze Telegram Images with AI](workflows/analyze-telegram-images-with-ai/) - Describe photos sent to a Telegram bot and reply in the same chat.
 - [Summarize New Google Docs to Sheets](workflows/summarize-new-google-docs-to-sheets/) - Summarize new Google Docs in a Drive folder and append each summary with its last editor to Sheets.
 - [Archive Empty Notion Database Pages](workflows/archive-empty-notion-database-pages/) - Find database pages with empty properties and empty paragraph content and move them to the Notion trash.
+- [Email a Summary of a Drive PDF](workflows/email-a-summary-of-a-drive-pdf/) - Summarize a PDF stored in Google Drive and email the result.
 
 ## Content
 
