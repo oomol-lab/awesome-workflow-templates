@@ -403,6 +403,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Assign Typed Values](workflows/assign-typed-values/) - A tutorial for assigning a number, a string and a boolean to named fields.
 - [Extract a Domain from an Email Address](workflows/extract-domain-from-email/) - A tutorial for extracting the text after the last @ in an email address.
 - [Default a Close Date to Three Weeks](workflows/default-close-date-to-three-weeks/) - A tutorial that keeps a date-like close date or defaults it to 21 calendar days from now.
+- [Explore Date and Time Calculations](workflows/date-and-time-calculation-examples/) - Explore date arithmetic and formatting with two date and time examples.
 
 ## Analytics
 
