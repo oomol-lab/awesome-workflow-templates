@@ -1,0 +1,111 @@
+{
+  "name": "Extract a YouTube Video Transcript",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "686e639a-650d-480d-9887-11bd4140f1fe",
+      "name": "YoutubeVideoURL",
+      "type": "n8n-nodes-base.formTrigger",
+      "position": [
+        -20,
+        0
+      ],
+      "parameters": {
+        "options": {
+          "path": "youtube-transcript"
+        },
+        "formTitle": "Youtube Video Transcriber",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Youtube Video Url",
+              "requiredField": true
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "extract-youtube-video-transcript-id",
+      "name": "Read the video ID",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function main({video,body}) {\n  video=video??body?.video;\n  if(typeof video!=='string')throw Error('Provide a YouTube URL');\n  const v=video.trim();let id;\n  if(/^[A-Za-z0-9_-]{11}$/.test(v))id=v;\n  else {let m=v.match(/^https?:\\/\\/(?:www\\.|m\\.)?youtube\\.com\\/watch\\?([^#]*)/i);if(m)id=m[1].split('&').find(x=>x.startsWith('v='))?.slice(2);else id=v.match(/^https?:\\/\\/(?:www\\.|m\\.)?youtube\\.com\\/(?:shorts|embed|live)\\/([A-Za-z0-9_-]{11})(?:[?#/]|$)/i)?.[1]??v.match(/^https?:\\/\\/(?:www\\.)?youtu\\.be\\/([A-Za-z0-9_-]{11})(?:[?#/]|$)/i)?.[1];}\n  if(!/^[A-Za-z0-9_-]{11}$/.test(id??''))throw Error('Provide a supported YouTube video URL or ID');\n  return {videoId:id};\n}\n\nreturn {json:main({video:$json['Youtube Video Url']})};"
+      }
+    },
+    {
+      "id": "extract-youtube-video-transcript-get",
+      "name": "Fetch the transcript",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "url": "https://getyoutubetranscript.com/api/v1/transcript",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "v",
+              "value": "={{ $json.videoId }}"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "extract-youtube-video-transcript-clean",
+      "name": "Clean the transcript",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function main({requestedId,videoId,transcript}) {\n  if(videoId!==requestedId)throw Error('Transcript belongs to another video');\n  if(typeof transcript!=='string'||!transcript.trim())throw Error('No transcript available');\n  return {videoId,transcript:transcript.replace(/\\s+/g,' ').replace(/\\s([.,!?])/g,'$1').trim()};\n}\n\nif($json.success!==true||!$json.data)throw Error('Transcript request failed');return {json:main({requestedId:$('Read the video ID').item.json.videoId,videoId:$json.data.video_id,transcript:$json.data.transcript})};"
+      }
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "YoutubeVideoURL": {
+      "main": [
+        [
+          {
+            "node": "Read the video ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the video ID": {
+      "main": [
+        [
+          {
+            "node": "Fetch the transcript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch the transcript": {
+      "main": [
+        [
+          {
+            "node": "Clean the transcript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
