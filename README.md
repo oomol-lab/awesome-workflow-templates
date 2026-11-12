@@ -112,6 +112,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Create an Agile CRM Contact](workflows/create-agile-crm-contact/) - Create an Agile CRM contact with a first and last name.
 - [Get Five Zoho CRM Accounts](workflows/get-five-zoho-crm-accounts/) - Read Zoho CRM accounts and return up to five records.
 - [List All HubSpot Contacts](workflows/list-all-hubspot-contacts-legacy/) - Read all HubSpot contacts using the legacy contacts endpoint.
+- [List the First Open Shopify Orders](workflows/list-first-open-shopify-orders/) - Read up to 50 open Shopify orders.
 
 ## Operations
 
