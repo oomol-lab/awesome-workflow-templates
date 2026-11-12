@@ -135,6 +135,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Send Workflow Failure Alerts to LINE](workflows/send-workflow-failure-alerts-to-line/) - Send a LINE message when a configured workflow fails.
 - [Alert on an Invalid Domain Certificate](workflows/alert-invalid-domain-certificate/) - Check a domain certificate with Uproc and alert a Telegram chat when it is outside its validity dates.
 - [Track Amazon Prices from Sheets](workflows/track-amazon-prices-from-sheets/) - Track Amazon product prices from a sheet, record price history and email threshold alerts.
+- [Check a European Company Register](workflows/check-european-company-register/) - Look up a company in one of seven national registers and flag non-active results for review.
 
 ## Marketing
 

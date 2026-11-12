@@ -1,0 +1,348 @@
+{
+  "name": "Check a European Company Register",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "Company check",
+        "formDescription": "Enter a company name or a registration number. The official register of the country is read directly.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Company name or registration number",
+              "placeholder": "Bolt, or cz:27074358",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Country",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "cz"
+                  },
+                  {
+                    "option": "ee"
+                  },
+                  {
+                    "option": "fi"
+                  },
+                  {
+                    "option": "fr"
+                  },
+                  {
+                    "option": "no"
+                  },
+                  {
+                    "option": "pl"
+                  },
+                  {
+                    "option": "sk"
+                  }
+                ]
+              },
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "check-european-company-register-form",
+      "name": "Someone submits the form",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [
+        -220,
+        0
+      ]
+    },
+    {
+      "id": "check-european-company-register-input",
+      "name": "Prepare the register query",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const j=$input.first().json,q=j['Company name or registration number'],country=j.Country;if(typeof q!=='string'||!q.trim()||!['cz','ee','fi','fr','no','pl','sk'].includes(country))throw Error('Invalid input');return [{json:{queries:[q.trim()],countries:[country],maxResultsPerQuery:5,onlyActive:false}}];"
+      }
+    },
+    {
+      "id": "check-european-company-register-start",
+      "name": "Start the register lookup",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apify.com/v2/acts/gubidonius~company-registry-lookup/runs?timeout=600&memory=1024",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 30000,
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          }
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}"
+      }
+    },
+    {
+      "id": "check-european-company-register-initial",
+      "name": "Read started run",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return [{json:{run:$input.first().json.body.data}}];"
+      }
+    },
+    {
+      "id": "check-european-company-register-check",
+      "name": "Check lookup status",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const p=$input.first().json,run=p.run;if(!run||!run.id||!run.status)throw Error('Invalid run');if(p.previous&&p.previous.id!==run.id)throw Error('Run changed');if(['FAILED','ABORTED','TIMED-OUT'].includes(run.status))throw Error('Actor failed');const done=run.status==='SUCCEEDED',count=(p.previous?.count??0)+1;if(!done&&count>90)throw Error('Timed out');if(done&&(!run.defaultDatasetId||!run.defaultKeyValueStoreId))throw Error('Missing outputs');return [{json:{runId:run.id,datasetId:run.defaultDatasetId,storeId:run.defaultKeyValueStoreId,done,state:{id:run.id,count}}}];"
+      }
+    },
+    {
+      "id": "check-european-company-register-if",
+      "name": "Lookup complete?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.done }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "check-european-company-register-poll",
+      "name": "Read lookup status",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ \"https://api.apify.com/v2/actor-runs/\"+encodeURIComponent($json.runId)+\"?waitForFinish=10\" }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 30000,
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "check-european-company-register-restore",
+      "name": "Restore run state",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return [{json:{run:$input.first().json.body.data,previous:$('Lookup complete?').item.json.state}}];"
+      }
+    },
+    {
+      "id": "check-european-company-register-items",
+      "name": "Read matching companies",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ \"https://api.apify.com/v2/datasets/\"+encodeURIComponent($json.datasetId)+\"/items?limit=6\" }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 30000,
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "check-european-company-register-summary",
+      "name": "Read lookup summary",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ \"https://api.apify.com/v2/key-value-stores/\"+encodeURIComponent($(\"Lookup complete?\").item.json.storeId)+\"/records/SUMMARY\" }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 30000,
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "check-european-company-register-format",
+      "name": "Classify company records",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const items=$('Read matching companies').item.json.body,summary=$input.first().json.body;if(!Array.isArray(items)||items.length>5||!summary||typeof summary!=='object')throw Error('Invalid results');return [{json:{records:items.map(x=>{if(!x||typeof x.name!=='string'||typeof x.status!=='string')throw Error('Invalid company');return x.status.toLowerCase()==='active'?{verdict:'ok',company:x.name,registrationNumber:x.registrationNumber??null,country:x.countryName??null,legalForm:x.legalFormCode??null,address:x.address??null,vatNumber:x.vatNumber??null,registryUrl:x.registryUrl??null,registryUpdatedAt:x.registryUpdatedAt??null}:{verdict:'check by hand',company:x.name,status:x.status,statusRaw:x.statusRaw??null,dissolvedAt:x.dissolvedAt??null,registryUrl:x.registryUrl??null}}),summary}}];"
+      }
+    }
+  ],
+  "connections": {
+    "Someone submits the form": {
+      "main": [
+        [
+          {
+            "node": "Prepare the register query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare the register query": {
+      "main": [
+        [
+          {
+            "node": "Start the register lookup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start the register lookup": {
+      "main": [
+        [
+          {
+            "node": "Read started run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read started run": {
+      "main": [
+        [
+          {
+            "node": "Check lookup status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check lookup status": {
+      "main": [
+        [
+          {
+            "node": "Lookup complete?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lookup complete?": {
+      "main": [
+        [
+          {
+            "node": "Read matching companies",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Read lookup status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read lookup status": {
+      "main": [
+        [
+          {
+            "node": "Restore run state",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore run state": {
+      "main": [
+        [
+          {
+            "node": "Check lookup status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read matching companies": {
+      "main": [
+        [
+          {
+            "node": "Read lookup summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read lookup summary": {
+      "main": [
+        [
+          {
+            "node": "Classify company records",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false
+}
