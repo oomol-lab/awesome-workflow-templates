@@ -356,6 +356,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Create Nextcloud Deck Cards from Email](workflows/create-nextcloud-deck-cards-from-email/) - Create a Nextcloud Deck card from the subject and body of each new email.
 - [Send Scheduled Congratulations from Sheets](workflows/send-scheduled-congratulations-from-sheets/) - Send personalized SMS greetings for events listed in Google Sheets.
 - [Add a Track to the Spotify Queue](workflows/add-a-track-to-spotify-queue/) - Add a Spotify track to the current playback queue.
+- [Reply with a Telegram Sticker ID](workflows/reply-with-telegram-sticker-id/) - Reply to Telegram messages with the sticker file ID and set name.
 
 ## Content
 
