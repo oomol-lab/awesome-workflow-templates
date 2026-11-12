@@ -45,6 +45,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Education](#education)
 - [Data](#data)
 - [Communications](#communications)
+- [Creativity](#creativity)
 - [Contribute](#contribute)
 - [Licensing](#licensing)
 
@@ -521,6 +522,10 @@ A growing collection of automation workflows for connecting apps and getting rep
 ## Communications
 
 - [Send Telegram Messages from a Sheet in Batches](workflows/send-telegram-messages-from-sheet-in-batches/) - Send a message to Telegram chat IDs listed in a Google Sheet, with a pause after each batch.
+
+## Creativity
+
+- [Generate Telegram Images with Magic Hour](workflows/generate-telegram-images-with-magic-hour/) - Generate an image from a Telegram text message and send it back to the same chat.
 
 ## Contribute
 
