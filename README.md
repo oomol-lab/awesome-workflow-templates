@@ -207,6 +207,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Hacker News Popular Items](workflows/hacker-news-popular-items/) - Export up to fifty popular Hacker News search items as one JSON snapshot, with titles, points, URLs, timestamps and authors.
 - [Extract Book Listings to Google Sheets](workflows/extract-book-listings-to-google-sheets/) - Read a book catalogue page, extract listings with AI and append them to a Google Sheet.
 - [Reddit n8n Post Digest](workflows/reddit-n8n-post-digest/) - Search Reddit for recent n8n discussions and summarize the relevant posts.
+- [Send a Daily AI News Digest to Telegram](workflows/send-daily-ai-news-digest-to-telegram/) - Collect recent AI articles from GNews and News API, summarize them in Traditional Chinese and send a Telegram digest.
 
 ## Productivity
 
