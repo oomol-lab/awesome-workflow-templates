@@ -214,6 +214,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Fill Airtable SEO Metadata from Webpages](workflows/fill-airtable-seo-metadata-from-webpages/) - Read missing page titles and descriptions from public webpages and update their Airtable records.
 - [Post AI News to X with Perplexity](workflows/post-ai-news-to-x-with-perplexity/) - Search recent AI news with Perplexity and post one headline and link to X.
 - [Identify a Vero User](workflows/identify-vero-user/) - Create or update a Vero user profile using its user ID.
+- [Save MailerLite Classic Group Subscribers to Airtable](workflows/save-mailerlite-classic-group-subscribers-to-airtable/) - Save MailerLite Classic group subscriber names and emails to Airtable.
 
 ## Support
 
