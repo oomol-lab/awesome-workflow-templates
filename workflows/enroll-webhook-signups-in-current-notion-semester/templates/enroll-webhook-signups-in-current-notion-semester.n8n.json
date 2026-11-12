@@ -1,0 +1,439 @@
+{
+  "nodes": [
+    {
+      "name": "Sign Up",
+      "type": "n8n-nodes-base.webhook",
+      "notes": "Example Input Data: {\"name\":\"John Doe\",\"email\":\"doe.j@northeastern.edu\"}",
+      "position": [
+        720,
+        130
+      ],
+      "parameters": {
+        "path": "sign-up",
+        "httpMethod": "POST",
+        "authentication": "basicAuth",
+        "options": {}
+      },
+      "notesInFlow": true,
+      "typeVersion": 1,
+      "id": "enroll-webhook-signups-in-current-notion-semester-0"
+    },
+    {
+      "name": "Prepare signup",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const b=$input.first().json.body;if(typeof b?.name!=='string'||!b.name.trim()||typeof b?.email!=='string'||!b.email.trim())throw Error('Provide name and email');const userSourceId='YOUR_USER_DATA_SOURCE_ID',semesterSourceId='YOUR_SEMESTER_DATA_SOURCE_ID';if([userSourceId,semesterSourceId].some(x=>x.startsWith('YOUR_')))throw Error('Configure both data source IDs');return [{json:{name:b.name.trim(),email:b.email.trim(),userSourceId,semesterSourceId}}];"
+      },
+      "id": "enroll-webhook-signups-in-current-notion-semester-1"
+    },
+    {
+      "name": "Find current semester",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'https://api.notion.com/v1/data_sources/'+$('Prepare signup').first().json.semesterSourceId+'/query' }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Notion-Version",
+              "value": "2026-03-11"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({filter:{property:'Is Current?',checkbox:{equals:true}},page_size:2}) }}",
+        "options": {}
+      },
+      "id": "enroll-webhook-signups-in-current-notion-semester-2"
+    },
+    {
+      "name": "Check current semester",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function semester({output}){if(!output||!Array.isArray(output.results)||output.results.length!==1||output.has_more!==false||typeof output.results[0]?.id!=='string'||!output.results[0].id)throw Error('Exactly one current semester is required');return{semesterId:output.results[0].id}}\n\nreturn [{json:semester({output:$input.first().json})}];"
+      },
+      "id": "enroll-webhook-signups-in-current-notion-semester-3"
+    },
+    {
+      "name": "Find user by email",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'https://api.notion.com/v1/data_sources/'+$('Prepare signup').first().json.userSourceId+'/query' }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Notion-Version",
+              "value": "2026-03-11"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({filter:{property:'Email',email:{equals:$('Prepare signup').first().json.email}},page_size:2}) }}",
+        "options": {}
+      },
+      "id": "enroll-webhook-signups-in-current-notion-semester-4"
+    },
+    {
+      "name": "Check user match",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function user({output,name,email,userSourceId}){if(!output||!Array.isArray(output.results)||output.has_more!==false||output.results.length>1)throw Error('Ambiguous user email');const page=output.results[0];if(page&&(!page.id||!page.properties?.Semesters?.id))throw Error('User relation property is missing');return{exists:!!page,userId:page?.id??'',propertyId:page?.properties?.Semesters?.id??'',parent:{data_source_id:userSourceId},properties:{Name:{title:[{text:{content:name}}]},Email:{email}}}}\n\nconst p=$('Prepare signup').first().json;return [{json:user({output:$input.first().json,name:p.name,email:p.email,userSourceId:p.userSourceId})}];"
+      },
+      "id": "enroll-webhook-signups-in-current-notion-semester-5"
+    },
+    {
+      "name": "Existing user?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "exists",
+              "leftValue": "={{ $json.exists }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "enroll-webhook-signups-in-current-notion-semester-6"
+    },
+    {
+      "name": "Use existing user",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return [{json:{userId:$json.userId,propertyId:$json.propertyId}}];"
+      },
+      "id": "enroll-webhook-signups-in-current-notion-semester-7"
+    },
+    {
+      "name": "Create user",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.notion.com/v1/pages",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Notion-Version",
+              "value": "2026-03-11"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({parent:$json.parent,properties:$json.properties}) }}",
+        "options": {}
+      },
+      "id": "enroll-webhook-signups-in-current-notion-semester-8"
+    },
+    {
+      "name": "Confirm created user",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function created({output}){if(typeof output?.id!=='string'||!output.id||typeof output.properties?.Semesters?.id!=='string'||!output.properties.Semesters.id)throw Error('Created user not confirmed; inspect Notion before retry');return{userId:output.id,propertyId:output.properties.Semesters.id}}\n\nreturn [{json:created({output:$input.first().json})}];"
+      },
+      "id": "enroll-webhook-signups-in-current-notion-semester-9"
+    },
+    {
+      "name": "Resolve user",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "if(typeof $json.userId!=='string'||!$json.userId||typeof $json.propertyId!=='string'||!$json.propertyId)throw Error('Missing user relation');return [{json:{userId:$json.userId,propertyId:$json.propertyId}}];"
+      },
+      "id": "enroll-webhook-signups-in-current-notion-semester-10"
+    },
+    {
+      "name": "Read semester relations",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ 'https://api.notion.com/v1/pages/'+$('Resolve user').first().json.userId+'/properties/'+encodeURIComponent($('Resolve user').first().json.propertyId)+'?page_size=100' }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Notion-Version",
+              "value": "2026-03-11"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          },
+          "pagination": {
+            "pagination": {
+              "paginationMode": "responseContainsNextURL",
+              "nextURL": "={{ 'https://api.notion.com/v1/pages/'+$('Resolve user').first().json.userId+'/properties/'+encodeURIComponent($('Resolve user').first().json.propertyId)+'?page_size=100'+($pageCount===0?'':'&start_cursor='+encodeURIComponent($response.body.next_cursor)) }}",
+              "paginationCompleteWhen": "other",
+              "completeExpression": "={{ (()=>{const b=$response.body;if(b?.object!=='list'||!Array.isArray(b.results)||typeof b.has_more!=='boolean'||(b.has_more&&(typeof b.next_cursor!=='string'||!b.next_cursor)))throw Error('Invalid relation page');return !b.has_more})() }}",
+              "limitPagesFetched": false
+            }
+          }
+        }
+      },
+      "id": "enroll-webhook-signups-in-current-notion-semester-11"
+    },
+    {
+      "name": "Collect existing semesters",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const all=[];for(const {json} of $input.all()){const b=json.body;if(b?.object!=='list'||!Array.isArray(b.results))throw Error('Invalid relation page');for(const x of b.results){if(typeof x?.relation?.id!=='string'||!x.relation.id)throw Error('Invalid relation');all.push(x.relation.id)}}const id=$('Check current semester').first().json.semesterId,unique=[id,...all.filter(x=>x!==id)];if(unique.length>100)throw Error('Notion cannot set more than 100 relations in one request');return [{json:{properties:{Semesters:{relation:unique.map(id=>({id}))}}}}];"
+      },
+      "id": "enroll-webhook-signups-in-current-notion-semester-12"
+    },
+    {
+      "name": "Add current semester",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ 'https://api.notion.com/v1/pages/'+$('Resolve user').first().json.userId }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Notion-Version",
+              "value": "2026-03-11"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({properties:$json.properties}) }}",
+        "options": {}
+      },
+      "id": "enroll-webhook-signups-in-current-notion-semester-13"
+    },
+    {
+      "name": "Confirm enrollment",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "if($json.id!==$('Resolve user').first().json.userId)throw Error('Notion update not confirmed');return [{json:{accepted:true}}];"
+      },
+      "id": "enroll-webhook-signups-in-current-notion-semester-14"
+    }
+  ],
+  "connections": {
+    "Sign Up": {
+      "main": [
+        [
+          {
+            "node": "Prepare signup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare signup": {
+      "main": [
+        [
+          {
+            "node": "Find current semester",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find current semester": {
+      "main": [
+        [
+          {
+            "node": "Check current semester",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check current semester": {
+      "main": [
+        [
+          {
+            "node": "Find user by email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find user by email": {
+      "main": [
+        [
+          {
+            "node": "Check user match",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check user match": {
+      "main": [
+        [
+          {
+            "node": "Existing user?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Use existing user": {
+      "main": [
+        [
+          {
+            "node": "Resolve user",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create user": {
+      "main": [
+        [
+          {
+            "node": "Confirm created user",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm created user": {
+      "main": [
+        [
+          {
+            "node": "Resolve user",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resolve user": {
+      "main": [
+        [
+          {
+            "node": "Read semester relations",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read semester relations": {
+      "main": [
+        [
+          {
+            "node": "Collect existing semesters",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect existing semesters": {
+      "main": [
+        [
+          {
+            "node": "Add current semester",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add current semester": {
+      "main": [
+        [
+          {
+            "node": "Confirm enrollment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Existing user?": {
+      "main": [
+        [
+          {
+            "node": "Use existing user",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create user",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Enroll Webhook Signups in the Current Notion Semester",
+  "active": false,
+  "pinData": {}
+}

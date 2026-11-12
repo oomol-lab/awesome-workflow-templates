@@ -488,6 +488,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 ## Education
 
 - [Route Course Feedback to Google Sheets](workflows/route-course-feedback-to-google-sheets/) - Route course feedback into positive or negative Google Sheets based on the usefulness answer.
+- [Enroll Webhook Signups in the Current Notion Semester](workflows/enroll-webhook-signups-in-current-notion-semester/) - Find or create a Notion user and add the current semester without removing existing relations.
 
 ## Data
 
