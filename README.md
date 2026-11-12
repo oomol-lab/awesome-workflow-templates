@@ -154,6 +154,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Email a Workflow Failure Alert with Gmail](workflows/email-gmail-workflow-failure-alert/) - Email diagnostics when a configured workflow fails.
 - [Send Workflow Failure Alerts with Mailgun](workflows/mailgun-workflow-failure-alert/) - Send a Mailgun email with diagnostics when a configured workflow fails.
 - [Look Up Domain DNS Records with Uproc](workflows/look-up-domain-dns-records-with-uproc/) - Request DNS records for a domain using Uproc.
+- [Look Up a Company by Name with Uproc](workflows/look-up-company-by-name-with-uproc/) - Find company data by name and country using Uproc.
 
 ## Marketing
 
