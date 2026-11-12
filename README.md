@@ -262,6 +262,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Create Trello Cards for Selected Talks](workflows/create-trello-cards-for-selected-talks/) - Create illustrated Trello cards for talk proposals scoring above 15.
 - [Share New Drive Files and Log to Airtable](workflows/share-new-drive-files-and-log-to-airtable/) - Grant a recipient edit access to new files in a Drive folder and log each permission in Airtable.
 - [Translate Random Cocktail Instructions](workflows/translate-random-cocktail-instructions/) - Translate the instructions for a random CocktailDB drink into Italian.
+- [Daily Translated Chinese Poem to Telegram](workflows/daily-translated-chinese-poem-to-telegram/) - Translate a random Chinese classical poem into English and send it to Telegram each day.
 
 ## Content
 
