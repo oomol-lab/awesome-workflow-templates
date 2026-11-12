@@ -1,0 +1,195 @@
+{
+  "kind": "open-flow-workflow",
+  "version": 1,
+  "name": "List Completed Unleashed Sales Orders",
+  "content": {
+    "modelVersion": 14,
+    "document": {
+      "bindings": {},
+      "graph": {
+        "nodes": {
+          "n_086ef96b33c16979": {
+            "name": "List completed orders",
+            "kind": "start",
+            "inputDefs": []
+          },
+          "n_b0076c99443c8dc6": {
+            "inputs": {
+              "apiId": {
+                "kind": "unset"
+              },
+              "apiKey": {
+                "kind": "unset"
+              },
+              "clientType": {
+                "kind": "value",
+                "value": "yourcompany/salesorders"
+              },
+              "previousState": {
+                "kind": "sources",
+                "sources": [
+                  {
+                    "kind": "node",
+                    "nodeId": "n_b0076c99443c8dc6",
+                    "output": "state"
+                  }
+                ]
+              }
+            },
+            "name": "Read order pages",
+            "kind": "task",
+            "task": {
+              "inputs": [
+                {
+                  "jsonSchema": {
+                    "type": "string"
+                  },
+                  "nullable": false,
+                  "handle": "apiId"
+                },
+                {
+                  "jsonSchema": {
+                    "type": "string"
+                  },
+                  "nullable": false,
+                  "handle": "apiKey"
+                },
+                {
+                  "jsonSchema": {
+                    "type": "string"
+                  },
+                  "nullable": false,
+                  "handle": "clientType"
+                },
+                {
+                  "jsonSchema": {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  "nullable": true,
+                  "handle": "previousState"
+                }
+              ],
+              "outputs": [
+                {
+                  "jsonSchema": {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  "nullable": false,
+                  "handle": "state"
+                },
+                {
+                  "jsonSchema": {
+                    "type": "boolean"
+                  },
+                  "nullable": false,
+                  "handle": "more"
+                }
+              ],
+              "name": "Read order pages",
+              "moduleId": "n_53cf4a89b0485d5e",
+              "capabilities": [
+                {
+                  "kind": "http",
+                  "hosts": [
+                    "api.unleashedsoftware.com"
+                  ]
+                }
+              ]
+            }
+          },
+          "n_6c0fc8b88734ef50": {
+            "inputs": {},
+            "name": "Another page?",
+            "kind": "condition",
+            "matchMode": "first",
+            "cases": [
+              {
+                "output": "yes",
+                "groups": [
+                  {
+                    "expressions": [
+                      {
+                        "left": {
+                          "kind": "source",
+                          "source": {
+                            "kind": "node",
+                            "nodeId": "n_b0076c99443c8dc6",
+                            "output": "more"
+                          }
+                        },
+                        "operator": "isTrue"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          "n_3520b5b33b5f706f": {
+            "name": "Orders",
+            "kind": "outputs",
+            "outputDefs": [
+              {
+                "jsonSchema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "nullable": false,
+                "handle": "result"
+              }
+            ],
+            "outputMappings": {
+              "result": {
+                "kind": "sources",
+                "sources": [
+                  {
+                    "kind": "node",
+                    "nodeId": "n_b0076c99443c8dc6",
+                    "output": "state"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "edges": [
+          {
+            "source": "n_086ef96b33c16979",
+            "target": "n_b0076c99443c8dc6"
+          },
+          {
+            "source": "n_b0076c99443c8dc6",
+            "target": "n_6c0fc8b88734ef50"
+          },
+          {
+            "source": "n_6c0fc8b88734ef50",
+            "target": "n_b0076c99443c8dc6",
+            "sourceHandle": "yes"
+          },
+          {
+            "source": "n_6c0fc8b88734ef50",
+            "target": "n_3520b5b33b5f706f",
+            "sourceHandle": "otherwise"
+          }
+        ]
+      }
+    },
+    "modules": {
+      "n_53cf4a89b0485d5e": {
+        "name": "Read order pages",
+        "imports": [],
+        "source": "import{createHmac}from'node:crypto';import{Buffer}from'node:buffer';import{gzipSync}from'node:zlib';\nexport default async function pages({apiId,apiKey,clientType,previousState},context){\n if(!apiId||!apiKey||!clientType)throw Error('Configure Unleashed credentials and client type');const s=previousState??{file:null,page:1,pageSize:100,count:0};if(!Number.isSafeInteger(s.page)||![1,100].includes(s.pageSize)||!Number.isSafeInteger(s.count))throw Error('Invalid state');const query='orderStatus=Completed&pageSize='+s.pageSize,signature=createHmac('sha256',apiKey).update(query).digest('base64');let r;try{r=await context.fetch('https://api.unleashedsoftware.com/SalesOrders/'+s.page+'?'+query,{headers:{Accept:'application/json','api-auth-id':apiId,'api-auth-signature':signature,'client-type':clientType}})}catch{if(s.pageSize===100)return{state:{file:null,page:1,pageSize:1,count:0},more:true};throw Error('Unleashed request failed')};if(!r.ok)throw Error('Unleashed request failed');const response=await r.json(),p=response.Pagination;if(!Array.isArray(response.Items)||!p||p.PageNumber!==s.page||!Number.isSafeInteger(p.NumberOfPages)||p.NumberOfPages<0||(p.NumberOfPages>0&&p.PageNumber>p.NumberOfPages))throw Error('Invalid Unleashed page');function dates(x){if(Array.isArray(x))return x.map(dates);if(x&&typeof x==='object')return Object.fromEntries(Object.entries(x).map(([k,v])=>[k,dates(v)]));if(typeof x==='string'){const m=/\\/Date\\((\\d*)\\)\\//.exec(x);if(m)return new Date(+m[1]).toISOString()}return x}const items=response.Items.map(dates),more=p.PageNumber<p.NumberOfPages,segment=(s.page===1?'[':(s.count&&items.length?',':''))+JSON.stringify(items).slice(1,-1)+(more?'':']'),previous=s.file?Buffer.from(s.file.contentBase64,'base64'):Buffer.alloc(0),compressed=Buffer.concat([previous,gzipSync(Buffer.from(segment))]).toString('base64'),file={name:'completed-orders.json.gz',mimeType:'application/gzip',contentBase64:compressed};return{state:{file,page:s.page+1,pageSize:s.pageSize,count:s.count+items.length},more};\n}\n"
+      }
+    }
+  },
+  "presentation": {
+    "designer": {
+      "version": 1,
+      "flow": {
+        "direction": "vertical"
+      }
+    }
+  }
+}
