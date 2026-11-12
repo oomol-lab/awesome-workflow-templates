@@ -242,6 +242,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Extract Webpage Entities with Google Language](workflows/extract-webpage-entities-with-google-language/) - Fetch a webpage and return its named entities using Google Cloud Natural Language.
 - [Email Trending Show HN Stories](workflows/email-trending-show-hn-stories/) - Collect Show HN stories on the Hacker News front page and email their titles, ranks and links.
 - [Extract a YouTube Video Transcript](workflows/extract-youtube-video-transcript/) - Retrieve and clean the full available transcript for a submitted YouTube video.
+- [Summarize Reddit n8n Discussions](workflows/summarize-reddit-n8n-discussions/) - Search Reddit for recent n8n discussions and summarize the relevant posts.
 
 ## Productivity
 
