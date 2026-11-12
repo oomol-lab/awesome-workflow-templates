@@ -1,0 +1,54 @@
+# Submit a Person Email Search with Icypeas
+
+Submit a person and company to Icypeas to discover a professional email address.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
+  <img alt="Open Flow workflow" src="preview-light.png">
+</picture>
+
+[Open Flow JSON](templates/submit-a-person-email-search-with-icypeas.openflow.json) · [n8n JSON](templates/submit-a-person-email-search-with-icypeas.n8n.json)
+
+## Setup
+
+In Open Flow, connect Icypeas in **Submit the email search** and replace the first name, last name and company domain or name. In n8n, configure an HTTP Header Auth credential named Authorization with your Icypeas API key, and replace those three fields in **Submit the email search**. Run one format.
+
+## Behavior
+
+A manual run submits one search. The response includes the search item ID and its current status when the service provides them. Icypeas processes searches asynchronously; inspect the item in Icypeas to see the result. If a submission fails or its outcome is uncertain, check Icypeas before retrying.
+
+<details>
+<summary>Inspiration &amp; credits</summary>
+
+## Changes to the source
+
+- Use the current email-search endpoint and API-key authorization. The source used an older signing method and pointed to the domain-search endpoint.
+- Replace sample person details with editable placeholders.
+
+Adapted from [Perform an email search with Icypeas (single)](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/2032_Manual_HTTP_Send_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n community listing](https://n8n.io/workflows/2013-perform-an-email-search-with-icypeas-single/) credits Corentin Ribeyre. The original template does not state a separate license.
+
+The collection’s [MIT notice](https://github.com/Zie619/n8n-workflows/blob/94007c1445d9258a7da116646b79473e7c7c3282/LICENSE) is pinned at a later revision. This is the collection notice at that revision; it does not establish a separate original template author's license. Our changes are listed above; see [repository licensing](../../README.md#licensing).
+
+> MIT License
+>
+> Copyright (c) 2025 Zie619
+>
+> Permission is hereby granted, free of charge, to any person obtaining a copy
+> of this software and associated documentation files (the "Software"), to deal
+> in the Software without restriction, including without limitation the rights
+> to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+> copies of the Software, and to permit persons to whom the Software is
+> furnished to do so, subject to the following conditions:
+>
+> The above copyright notice and this permission notice shall be included in all
+> copies or substantial portions of the Software.
+>
+> THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+> IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+> FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+> AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+> LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+> OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+> SOFTWARE.
+
+</details>

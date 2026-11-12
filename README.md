@@ -47,6 +47,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Communications](#communications)
 - [Creativity](#creativity)
 - [Personal](#personal)
+- [Sales and Marketing](#sales-and-marketing)
 - [Contribute](#contribute)
 - [Licensing](#licensing)
 
@@ -541,6 +542,10 @@ A growing collection of automation workflows for connecting apps and getting rep
 ## Personal
 
 - [Send a Daily Gratitude Reminder on LINE](workflows/daily-gratitude-reminder-on-line/) - Generate a daily reflection prompt and send it to a LINE conversation.
+
+## Sales and Marketing
+
+- [Submit a Person Email Search with Icypeas](workflows/submit-a-person-email-search-with-icypeas/) - Submit a person and company to Icypeas to discover a professional email address.
 
 ## Contribute
 
