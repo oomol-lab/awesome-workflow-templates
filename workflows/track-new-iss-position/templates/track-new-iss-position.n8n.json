@@ -1,0 +1,123 @@
+{
+  "nodes": [
+    {
+      "name": "Cron",
+      "type": "n8n-nodes-base.cron",
+      "position": [
+        870,
+        380
+      ],
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1,
+      "id": "track-new-iss-position-0"
+    },
+    {
+      "name": "Prepare the current timestamp",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function query() {const timestamp=Math.floor(Date.now()/1000);return {timestamp,url:'https://api.wheretheiss.at/v1/satellites/25544/positions?timestamps='+timestamp};}\n\nreturn [{json:query()}];"
+      },
+      "id": "track-new-iss-position-1"
+    },
+    {
+      "name": "HTTP Request",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        1070,
+        380
+      ],
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {}
+      },
+      "typeVersion": 1,
+      "id": "track-new-iss-position-2"
+    },
+    {
+      "name": "Validate the position",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function row({body,timestamp}) {\n if(!Array.isArray(body)||body.length!==1)throw Error('Expected one ISS position');const p=body[0];\n if(!p||p.id!==25544||typeof p.name!=='string'||!p.name||!Number.isFinite(p.latitude)||p.latitude < -90||p.latitude>90||!Number.isFinite(p.longitude)||p.longitude < -180||p.longitude>180||p.timestamp!==timestamp)throw Error('ISS position does not match the request');\n const position={name:p.name,latitude:p.latitude,longitude:p.longitude,timestamp:p.timestamp};return {position,rows:[{json:position}]};\n}\n\nconst p=row({body:$input.first().json,timestamp:$('Prepare the current timestamp').first().json.timestamp}).position;return [{json:{timestamp:p.timestamp,latitude:p.latitude,longitude:p.longitude}}];"
+      },
+      "id": "track-new-iss-position-3"
+    },
+    {
+      "name": "Function",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1470,
+        380
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const items=$input.all(),data=$getWorkflowStaticData('node');data.timestamp=data.timestamp||[];const p=items[0].json,duplicate=data.timestamp.includes(p.timestamp);data.timestamp=items.map(x=>x.json.timestamp);return duplicate?[{json:{message:'No new items'}}]:items;"
+      },
+      "typeVersion": 2,
+      "id": "track-new-iss-position-4"
+    }
+  ],
+  "connections": {
+    "Cron": {
+      "main": [
+        [
+          {
+            "node": "Prepare the current timestamp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare the current timestamp": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Validate the position",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate the position": {
+      "main": [
+        [
+          {
+            "node": "Function",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Track New ISS Position",
+  "active": false,
+  "settings": {
+    "timezone": "UTC"
+  },
+  "pinData": {}
+}
