@@ -368,6 +368,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Save Starred Tiny Tiny RSS Articles to Wallabag](workflows/save-starred-ttrss-articles-to-wallabag/) - Save newly starred Tiny Tiny RSS articles to Wallabag every ten minutes.
 - [Download a Google Sheet as an HTML Table](workflows/download-sheet-as-html-table/) - Download a Google Sheets range as an HTML table through a webhook.
 - [Create and Rename Airtable Records](workflows/create-and-rename-airtable-records/) - A tutorial that creates a sample Airtable record and renames all records with a matching name.
+- [Create, Update and Read a Webflow CMS Item](workflows/create-update-and-read-webflow-item/) - Create a Webflow CMS item, add an image and read the updated item.
 
 ## Content
 
