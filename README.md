@@ -577,6 +577,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Log ISS Position to Firebase](workflows/log-iss-position-to-firebase/) - Append the current International Space Station position to Firebase Realtime Database every minute.
 - [Save Taiwan Sheep Prices to Google Sheets](workflows/save-taiwan-sheep-prices-to-sheets/) - Fetch Taiwan sheep market quotations for a date range and append them to Google Sheets.
 - [Track New ISS Position](workflows/track-new-iss-position/) - Fetch the current ISS position every minute and return it when its timestamp changes.
+- [Create, Insert and Update a Snowflake Table](workflows/create-insert-and-update-snowflake-table/) - Create a Snowflake table, insert a row, and update that row.
 
 ## Communications
 
