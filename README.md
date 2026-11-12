@@ -92,6 +92,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Summarize New Pipedrive Organizations to Slack](workflows/summarize-pipedrive-organizations-to-slack/) - Summarize a new organization’s website, save a CRM note and notify Slack.
 - [List HubSpot Contacts with Pagination](workflows/list-all-hubspot-contacts-with-pagination/) - Read every page of HubSpot contacts and return the collected records.
 - [Enrich Typeform Leads in Airtable and Notify Slack](workflows/enrich-typeform-leads-in-airtable-and-notify-slack/) - Enrich a Typeform lead, create or update its Airtable contact and notify Slack.
+- [Find LinkedIn Profiles for Sheet Rows](workflows/find-linkedin-profiles-for-sheet-rows/) - Search for LinkedIn profiles using person descriptions in a Google Sheet and update the corresponding rows.
 
 ## Operations
 
