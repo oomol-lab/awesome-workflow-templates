@@ -388,6 +388,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Binance USDC Market Summary to Telegram](workflows/binance-usdc-market-summary-to-telegram/) - Send an hourly summary of BTC, ETH and SOL against USDC to a Telegram chat.
 - [Alert on Bitcoin Euro Price by SMS](workflows/alert-on-bitcoin-euro-price-by-sms/) - Check the Bitcoin price in euros every minute and send an SMS whenever it reaches a configured threshold.
 - [Monitor USDT Balance on Telegram](workflows/monitor-usdt-balance-on-telegram/) - Check an Ethereum USDT balance every five minutes and report whether it changed.
+- [Binance Price Moves to Telegram](workflows/binance-price-moves-to-telegram/) - Send Telegram updates for Binance spot pairs whose 24-hour price change reaches 15%.
 
 ## Community
 

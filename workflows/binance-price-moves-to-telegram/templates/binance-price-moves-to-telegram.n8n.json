@@ -1,0 +1,230 @@
+{
+  "nodes": [
+    {
+      "id": "binance-price-moves-to-telegram-0",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        520,
+        1279
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "binance-price-moves-to-telegram-1",
+      "name": "Read Binance symbols",
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "Get data of changed price coins in last 24h",
+      "position": [
+        680,
+        1279
+      ],
+      "parameters": {
+        "url": "https://data-api.binance.vision/api/v3/ticker/price",
+        "options": {}
+      },
+      "notesInFlow": true,
+      "typeVersion": 1
+    },
+    {
+      "name": "Create ticker batches",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function symbols({body}) {\n if(!Array.isArray(body))throw Error('Binance did not return the symbol list');\n const list=body.map(x=>x?.symbol);if(list.some(x=>typeof x!=='string'||!x||x.length>64)||new Set(list).size!==list.length)throw Error('Invalid or duplicate Binance symbols');\n return {symbols:list};\n}\n\nconst a=symbols({body:$input.first().json}).symbols;const out=[];for(let i=0;i<a.length;i+=20){const expected=a.slice(i,i+20);out.push({json:{expected,url:'https://data-api.binance.vision/api/v3/ticker/24hr?symbols='+encodeURIComponent(JSON.stringify(expected))}})}return out;"
+      },
+      "id": "binance-price-moves-to-telegram-2"
+    },
+    {
+      "name": "Read batches one at a time",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "binance-price-moves-to-telegram-3"
+    },
+    {
+      "name": "Read ticker batch",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {}
+      },
+      "id": "binance-price-moves-to-telegram-4"
+    },
+    {
+      "name": "Validate ticker batch",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function check({body,expected}) {\n if(!Array.isArray(body)||!Array.isArray(expected))throw Error('Invalid ticker batch');\n const seen=new Set(),allowed=new Set(expected),matches=[];for(const item of body){if(!item||typeof item.symbol!=='string'||!allowed.has(item.symbol)||seen.has(item.symbol))throw Error('Ticker batch has an unexpected or duplicate symbol');seen.add(item.symbol);const percent=parseFloat(item.priceChangePercent);if(typeof item.priceChangePercent!=='string'||!Number.isFinite(percent)||typeof item.lastPrice!=='string')throw Error('Invalid ticker fields');if(Math.abs(percent)>=15)matches.push({symbol:item.symbol,percent,price:item.lastPrice})}if(seen.size!==expected.length)throw Error('Ticker batch is incomplete');return {matches};\n}\n\nreturn [{json:check({body:$input.first().json,expected:$('Read batches one at a time').first().json.expected})}];"
+      },
+      "id": "binance-price-moves-to-telegram-5"
+    },
+    {
+      "name": "Sort and format price moves",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function format({matches}) {\n const entries=[...matches].sort((a,b)=>b.percent-a.percent),messages=[];let current='';for(const x of entries){const line='```'+x.symbol+' Price changed by '+x.percent+'% \\n Last Price: '+x.price+'```\\n';if(line.length>1000)throw Error('Ticker message exceeds 1000 characters');if(current.length+line.length>1000){messages.push(current);current=''}current+=line}if(current)messages.push(current);return {messages};\n}\n\nreturn format({matches:$input.all().flatMap(x=>x.json.matches)}).messages.map(text=>({json:{text}}));"
+      },
+      "id": "binance-price-moves-to-telegram-6"
+    },
+    {
+      "name": "Send updates one at a time",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "binance-price-moves-to-telegram-7"
+    },
+    {
+      "id": "binance-price-moves-to-telegram-8",
+      "name": "Send Telegram Message",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        1360,
+        1279
+      ],
+      "parameters": {
+        "text": "={{ $json.text }}",
+        "chatId": "YOUR_TELEGRAM_CHAT_ID",
+        "additionalFields": {}
+      },
+      "typeVersion": 1
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Read Binance symbols",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Binance symbols": {
+      "main": [
+        [
+          {
+            "node": "Create ticker batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create ticker batches": {
+      "main": [
+        [
+          {
+            "node": "Read batches one at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read ticker batch": {
+      "main": [
+        [
+          {
+            "node": "Validate ticker batch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate ticker batch": {
+      "main": [
+        [
+          {
+            "node": "Read batches one at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sort and format price moves": {
+      "main": [
+        [
+          {
+            "node": "Send updates one at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Telegram Message": {
+      "main": [
+        [
+          {
+            "node": "Send updates one at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read batches one at a time": {
+      "main": [
+        [
+          {
+            "node": "Sort and format price moves",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Read ticker batch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send updates one at a time": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Send Telegram Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Binance Price Moves to Telegram",
+  "active": false,
+  "settings": {
+    "timezone": "UTC",
+    "executionOrder": "v1"
+  }
+}
