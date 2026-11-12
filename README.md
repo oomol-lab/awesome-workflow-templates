@@ -151,6 +151,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Check a European Company Register](workflows/check-european-company-register/) - Look up a company in one of seven national registers and flag non-active results for review.
 - [Alert Negative Typeform Feedback to Mattermost](workflows/alert-negative-typeform-feedback-to-mattermost/) - Analyze Typeform feedback and post negative responses to Mattermost.
 - [Email a Workflow Failure Alert with Gmail](workflows/email-gmail-workflow-failure-alert/) - Email diagnostics when a configured workflow fails.
+- [Send Workflow Failure Alerts with Mailgun](workflows/mailgun-workflow-failure-alert/) - Send a Mailgun email with diagnostics when a configured workflow fails.
 
 ## Marketing
 
