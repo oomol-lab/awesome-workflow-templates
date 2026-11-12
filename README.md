@@ -162,6 +162,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Look Up a Company by Name with Uproc](workflows/look-up-company-by-name-with-uproc/) - Find company data by name and country using Uproc.
 - [Parse and Validate a Phone Number with Uproc](workflows/parse-and-validate-phone-with-uproc/) - Parse and validate the format of a phone number using Uproc.
 - [Check Email Deliverability with Uproc](workflows/check-email-deliverability-with-uproc/) - Check an email recipient status using Uproc.
+- [Send a SIGNL4 Test Alert](workflows/send-a-signl4-test-alert/) - Send a test alert to a SIGNL4 team.
 
 ## Marketing
 
