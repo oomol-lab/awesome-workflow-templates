@@ -50,6 +50,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Sales and Marketing](#sales-and-marketing)
 - [Databases](#databases)
 - [Social](#social)
+- [IT Operations](#it-operations)
 - [Contribute](#contribute)
 - [Licensing](#licensing)
 
@@ -607,6 +608,10 @@ A growing collection of automation workflows for connecting apps and getting rep
 ## Social
 
 - [Check Whether a Twitch Stream Is Live](workflows/check-twitch-stream-live/) - Check the live stream returned for a Twitch login and inspect its details.
+
+## IT Operations
+
+- [Create, Update and Read a Workspace User](workflows/create-update-read-workspace-user/) - Create a Google Workspace user, update their surname, and retrieve the user.
 
 ## Contribute
 
