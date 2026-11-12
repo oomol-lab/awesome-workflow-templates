@@ -455,6 +455,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Send an Approved SMS with MSG91](workflows/send-an-approved-sms-with-msg91/) - Send a configured MSG91 Flow SMS to one recipient.
 - [Send a Text-to-Speech Call with ClickSend](workflows/send-a-text-to-speech-call-with-clicksend/) - Submit a text-to-speech voice call with a chosen language and voice.
 - [Send Pushcut Action Input by SMS](workflows/send-pushcut-action-input-by-sms/) - Send the input of a Pushcut online action as an SMS through Twilio.
+- [Send a Discord Webhook Message](workflows/send-discord-webhook-message/) - Send a message to a Discord channel using an incoming webhook.
 
 ## Customer Support
 
