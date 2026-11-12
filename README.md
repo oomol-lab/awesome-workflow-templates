@@ -493,6 +493,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Send a Localized Welcome Email by IP](workflows/send-localized-welcome-email-by-ip/) - Look up an IP address and send a Spanish or English welcome email through Amazon SES.
 - [Create a Twist Channel and Send a Message](workflows/create-twist-channel-and-send-message/) - Create a Twist channel, update its description and send a message in an existing conversation.
 - [Send a Sample Email to Two Recipients](workflows/send-sample-email-to-two-recipients/) - Send one sample email to two recipients using Amazon SES.
+- [Publish a Message to an SNS Topic](workflows/publish-a-message-to-an-sns-topic/) - Publish a message with a subject to an Amazon SNS topic.
 
 ## Customer Support
 
