@@ -1,0 +1,310 @@
+{
+  "name": "Save Starred Tiny Tiny RSS Articles to Wallabag",
+  "nodes": [
+    {
+      "name": "On clicking 'execute'",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        120,
+        250
+      ],
+      "parameters": {},
+      "typeVersion": 1,
+      "id": "save-starred-ttrss-articles-to-wallabag-0"
+    },
+    {
+      "name": "Cron",
+      "type": "n8n-nodes-base.cron",
+      "position": [
+        120,
+        400
+      ],
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "mode": "everyX",
+              "unit": "minutes",
+              "value": 10
+            }
+          ]
+        }
+      },
+      "typeVersion": 1,
+      "id": "save-starred-ttrss-articles-to-wallabag-1"
+    },
+    {
+      "name": "Log in to Tiny Tiny RSS",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        400,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "authentication": "none",
+        "sendBody": true,
+        "options": {
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "neverError": false
+            }
+          }
+        },
+        "url": "https://YOUR_TTRSS_HOST/tt-rss/api/",
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({op:\"login\",user:$vars.TTRSS_USER,password:$vars.TTRSS_PASSWORD}) }}"
+      },
+      "id": "save-starred-ttrss-articles-to-wallabag-2"
+    },
+    {
+      "name": "Validate Tiny Tiny RSS login",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        500,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if($json.status!==0||typeof $json.content?.session_id!=='string'||!$json.content.session_id)throw Error('Tiny Tiny RSS login failed');return {json:$json};"
+      },
+      "id": "save-starred-ttrss-articles-to-wallabag-3"
+    },
+    {
+      "name": "Read starred articles",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        600,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "authentication": "none",
+        "sendBody": true,
+        "options": {
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "neverError": false
+            }
+          }
+        },
+        "url": "https://YOUR_TTRSS_HOST/tt-rss/api/",
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({op:\"getHeadLines\",feed_id:\"-1\",sid:$json.content.session_id}) }}"
+      },
+      "id": "save-starred-ttrss-articles-to-wallabag-4"
+    },
+    {
+      "name": "Log in to Wallabag",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        800,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "authentication": "none",
+        "sendBody": true,
+        "options": {
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "neverError": false
+            }
+          }
+        },
+        "url": "https://YOUR_WALLABAG_HOST/oauth/v2/token",
+        "contentType": "form-urlencoded",
+        "specifyBody": "string",
+        "body": "={{ \"grant_type=password&client_id=\"+encodeURIComponent($vars.WALLABAG_CLIENT_ID)+\"&client_secret=\"+encodeURIComponent($vars.WALLABAG_CLIENT_SECRET)+\"&username=\"+encodeURIComponent($vars.WALLABAG_USER)+\"&password=\"+encodeURIComponent($vars.WALLABAG_PASSWORD) }}"
+      },
+      "id": "save-starred-ttrss-articles-to-wallabag-5"
+    },
+    {
+      "name": "Select and remember new articles",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1000,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const response=$('Read starred articles').first().json,token=$input.first().json;if(response.status!==0||!Array.isArray(response.content))throw Error('Tiny Tiny RSS headlines failed');if(typeof token.access_token!=='string'||!token.access_token)throw Error('Wallabag login failed');const rows=response.content;for(const r of rows)if(!r||!(typeof r.id==='number'||typeof r.id==='string')||typeof r.link!=='string'||!/^https?:\\/\\//i.test(r.link))throw Error('Invalid article ID or URL');if(!rows.length)return [];const state=$getWorkflowStaticData('global'),old=state.lastStarRssId,plans=[];for(const r of rows){if(old!==undefined&&String(r.id)===String(old))break;plans.push({json:{url:r.link,access_token:token.access_token}})}return plans;"
+      },
+      "id": "save-starred-ttrss-articles-to-wallabag-6"
+    },
+    {
+      "name": "Save to Wallabag",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "authentication": "none",
+        "sendBody": true,
+        "options": {
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "neverError": false
+            }
+          }
+        },
+        "url": "https://YOUR_WALLABAG_HOST/api/entries.json",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$json.access_token}}"
+            }
+          ]
+        },
+        "contentType": "form-urlencoded",
+        "specifyBody": "string",
+        "body": "={{ \"url=\"+encodeURIComponent($json.url) }}"
+      },
+      "id": "save-starred-ttrss-articles-to-wallabag-7"
+    },
+    {
+      "name": "Remember newest article",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1400,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const rows=$('Read starred articles').first().json.content;if(!Array.isArray(rows)||!rows.length)throw Error('Missing starred articles');$getWorkflowStaticData('global').lastStarRssId=rows[0].id;return $input.all();"
+      },
+      "id": "save-starred-ttrss-articles-to-wallabag-8"
+    }
+  ],
+  "active": false,
+  "settings": {
+    "timezone": "UTC",
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "On clicking 'execute'": {
+      "main": [
+        [
+          {
+            "node": "Log in to Tiny Tiny RSS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cron": {
+      "main": [
+        [
+          {
+            "node": "Log in to Tiny Tiny RSS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log in to Tiny Tiny RSS": {
+      "main": [
+        [
+          {
+            "node": "Validate Tiny Tiny RSS login",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Tiny Tiny RSS login": {
+      "main": [
+        [
+          {
+            "node": "Read starred articles",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read starred articles": {
+      "main": [
+        [
+          {
+            "node": "Log in to Wallabag",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log in to Wallabag": {
+      "main": [
+        [
+          {
+            "node": "Select and remember new articles",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select and remember new articles": {
+      "main": [
+        [
+          {
+            "node": "Save to Wallabag",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save to Wallabag": {
+      "main": [
+        [
+          {
+            "node": "Remember newest article",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {}
+}

@@ -359,6 +359,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Add a Track to the Spotify Queue](workflows/add-a-track-to-spotify-queue/) - Add a Spotify track to the current playback queue.
 - [Reply with a Telegram Sticker ID](workflows/reply-with-telegram-sticker-id/) - Reply to Telegram messages with the sticker file ID and set name.
 - [Email a Calendar Invitation](workflows/email-a-calendar-invitation/) - Generate an iCalendar event file and email it as an attachment.
+- [Save Starred Tiny Tiny RSS Articles to Wallabag](workflows/save-starred-ttrss-articles-to-wallabag/) - Save newly starred Tiny Tiny RSS articles to Wallabag every ten minutes.
 
 ## Content
 
