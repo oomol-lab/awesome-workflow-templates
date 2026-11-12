@@ -548,6 +548,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 ## Sales and Marketing
 
 - [Submit a Person Email Search with Icypeas](workflows/submit-a-person-email-search-with-icypeas/) - Submit a person and company to Icypeas to discover a professional email address.
+- [Submit a Domain Scan with Icypeas](workflows/submit-a-domain-scan-with-icypeas/) - Submit a company or domain to Icypeas to find role-based email addresses.
 
 ## Contribute
 
