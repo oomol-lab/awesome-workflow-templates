@@ -94,6 +94,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Enrich Typeform Leads in Airtable and Notify Slack](workflows/enrich-typeform-leads-in-airtable-and-notify-slack/) - Enrich a Typeform lead, create or update its Airtable contact and notify Slack.
 - [Find LinkedIn Profiles for Sheet Rows](workflows/find-linkedin-profiles-for-sheet-rows/) - Search for LinkedIn profiles using person descriptions in a Google Sheet and update the corresponding rows.
 - [Qualify Campaign Replies in Pipedrive](workflows/qualify-campaign-replies-in-pipedrive/) - Classify campaign email replies and create a Pipedrive deal for interested contacts.
+- [Qualify Sales Replies and Create Pipedrive Deals](workflows/qualify-sales-replies-and-create-pipedrive-deals/) - Identify campaign contacts interested in a meeting and create a Pipedrive deal from their Gmail reply.
 
 ## Operations
 
