@@ -409,6 +409,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Explore Date and Time Calculations](workflows/date-and-time-calculation-examples/) - Explore date arithmetic and formatting with two date and time examples.
 - [Merge Ingredient and Band Lists](workflows/merge-ingredient-and-band-lists/) - Learn matching, enrichment, and append operations with ingredient and musician examples.
 - [Sum Example Dollar Amounts](workflows/sum-example-dollar-amounts/) - Learn how to sum three example USD amounts in a workflow.
+- [Sum Three USD Example Values](workflows/sum-three-usd-example-values/) - Learn how to sum three example USD amounts in a workflow.
 
 ## Analytics
 
