@@ -269,6 +269,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Share a Cocktail Banner in Rocket.Chat](workflows/share-cocktail-banner-in-rocket-chat/) - Each Friday, render a random cocktail recipe as a Bannerbear image and share it in Rocket.Chat.
 - [Extract Receipt Data from an Image URL](workflows/extract-receipt-from-image-url/) - Extract structured receipt data from a directly accessible image URL.
 - [Weekly Matrix Coffee Groups](workflows/matrix-weekly-coffee-groups/) - Shuffle Matrix room members into small groups and announce them for weekly virtual coffee.
+- [Archive Whitelisted Email Attachments to Drive](workflows/archive-whitelisted-email-attachments-to-drive/) - Save attachments from whitelisted senders into company and month folders in Google Drive.
 
 ## Content
 
