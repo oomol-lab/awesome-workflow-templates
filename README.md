@@ -370,6 +370,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Create and Rename Airtable Records](workflows/create-and-rename-airtable-records/) - A tutorial that creates a sample Airtable record and renames all records with a matching name.
 - [Create, Update and Read a Webflow CMS Item](workflows/create-update-and-read-webflow-item/) - Create a Webflow CMS item, add an image and read the updated item.
 - [Read Bubble Users Through the Data API](workflows/read-bubble-users-through-data-api/) - Read the first page of Bubble user records with the Data API.
+- [Fetch Bible Passages by Reference](workflows/fetch-bible-passages-by-reference/) - Fetch Bible passages for one or more references using the GetBible API.
 
 ## Content
 
