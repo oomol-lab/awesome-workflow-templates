@@ -278,6 +278,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Weekly Matrix Coffee Groups](workflows/matrix-weekly-coffee-groups/) - Shuffle Matrix room members into small groups and announce them for weekly virtual coffee.
 - [Archive Whitelisted Email Attachments to Drive](workflows/archive-whitelisted-email-attachments-to-drive/) - Save attachments from whitelisted senders into company and month folders in Google Drive.
 - [Plan Random Mealie Dinners](workflows/plan-random-mealie-dinners/) - Choose random recipes from a Mealie category and create dinner plans for consecutive days.
+- [Remind Notion Assignees in Slack](workflows/remind-notion-assignees-in-slack/) - Send weekday Slack reminders for incomplete Notion database tasks assigned to two configured people.
 
 ## Content
 

@@ -1,0 +1,177 @@
+{
+  "nodes": [
+    {
+      "id": "remind-notion-assignees-in-slack-0",
+      "name": "Weekdays at 09:00 UTC",
+      "type": "n8n-nodes-base.cron",
+      "position": [
+        -600,
+        380
+      ],
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "mode": "custom",
+              "cronExpression": "0 9 * * 1,2,3,4,5"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "remind-notion-assignees-in-slack-1",
+      "name": "Read tasks",
+      "type": "n8n-nodes-base.notion",
+      "position": [
+        20,
+        380
+      ],
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "getAll",
+        "databaseId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_NOTION_DATABASE_ID"
+        },
+        "returnAll": true,
+        "simple": false,
+        "options": {}
+      },
+      "typeVersion": 2,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "remind-notion-assignees-in-slack-2",
+      "name": "Read Slack users",
+      "type": "n8n-nodes-base.slack",
+      "position": [
+        440,
+        380
+      ],
+      "parameters": {
+        "resource": "user",
+        "operation": "getAll",
+        "returnAll": true,
+        "authentication": "oAuth2"
+      },
+      "executeOnce": true,
+      "typeVersion": 1,
+      "alwaysOutputData": true
+    },
+    {
+      "name": "Match assignees and tasks",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function plan({state,user1,user2,name1,name2}){\n  const pairs=[[user1,name1],[user2,name2]];\n  if(pairs.some(([a,b])=>typeof a!=='string'||!a.trim()||typeof b!=='string'||!b.trim()||a.startsWith('YOUR_')||b.startsWith('YOUR_'))||user1===user2||name1===name2)throw Error('Configure two distinct Notion user IDs and Slack names');\n  if(!Array.isArray(state?.users)||!Array.isArray(state?.tasks))throw Error('Incomplete read state');\n  const users=pairs.map(([,name])=>{const matches=state.users.filter(u=>!u.isDeleted&&u.realName===name);if(matches.length!==1||!matches[0].userId)throw Error('Slack name must identify exactly one user');return matches[0].userId});\n  const out=[];\n  for(const page of state.tasks){\n    const p=page.properties;if(!p||typeof p!=='object')throw Error('Missing task properties');\n    const status=p.Status?.status?.name??p.Status?.select?.name;if(typeof status!=='string')throw Error('Missing Status');if(status==='Done')continue;\n    const title=p.Task?.title;if(!Array.isArray(title))throw Error('Missing Task title');const task=title.map(x=>x.plain_text??x.text?.content??'').join('');if(!task)throw Error('Empty task title');\n    const people=p['Notion User']?.people;if(!Array.isArray(people)||people.length>=25)throw Error('Missing or possibly truncated Notion User people');\n    const ids=people.map(u=>{if(typeof u.id!=='string'||!u.id)throw Error('Assignee ID unavailable');return u.id});\n    const due=p.Due?.date?.start;if(typeof due!=='string'||!due)throw Error('Missing task due date');\n    const i=pairs.findIndex(([id])=>ids.includes(id));if(i>=0)out.push({channelId:users[i],text:'# TO DO\\n☑️ '+task+' (Due: '+due+')'});\n  }\n  return {items:out};\n}\n\nconst rawTasks=$('Read tasks').all().map(x=>x.json),rawUsers=$input.all().map(x=>x.json);const nonempty=x=>Object.keys(x).length>0;const tasks=rawTasks.filter(nonempty),slack=rawUsers.filter(nonempty);if(tasks.some(x=>x.object!=='page')||slack.some(x=>!x.id))throw Error('Invalid source response');const users=slack.map(x=>({userId:x.id,realName:x.profile?.real_name,isDeleted:x.deleted}));const r=plan({state:{tasks,users},user1:'YOUR_NOTION_USER_ID_1',user2:'YOUR_NOTION_USER_ID_2',name1:'YOUR_SLACK_FULL_NAME_1',name2:'YOUR_SLACK_FULL_NAME_2'});return r.items.map(x=>({json:x}));"
+      },
+      "id": "remind-notion-assignees-in-slack-3"
+    },
+    {
+      "name": "Send reminders one at a time",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "remind-notion-assignees-in-slack-4"
+    },
+    {
+      "id": "remind-notion-assignees-in-slack-5",
+      "name": "Send a Slack reminder",
+      "type": "n8n-nodes-base.slack",
+      "position": [
+        1200,
+        260
+      ],
+      "parameters": {
+        "channel": "={{ $json.channelId }}",
+        "text": "={{ $json.text }}",
+        "otherOptions": {},
+        "authentication": "oAuth2"
+      },
+      "typeVersion": 1
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Weekdays at 09:00 UTC": {
+      "main": [
+        [
+          {
+            "node": "Read tasks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read tasks": {
+      "main": [
+        [
+          {
+            "node": "Read Slack users",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Slack users": {
+      "main": [
+        [
+          {
+            "node": "Match assignees and tasks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Match assignees and tasks": {
+      "main": [
+        [
+          {
+            "node": "Send reminders one at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a Slack reminder": {
+      "main": [
+        [
+          {
+            "node": "Send reminders one at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send reminders one at a time": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Send a Slack reminder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Remind Notion Assignees in Slack",
+  "active": false,
+  "settings": {
+    "timezone": "UTC",
+    "executionOrder": "v1"
+  }
+}
