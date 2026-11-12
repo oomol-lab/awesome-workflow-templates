@@ -262,6 +262,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Monitor Competitor Pricing Changes](workflows/monitor-competitor-pricing-changes/) - Compare competitor pricing pages with saved summaries and notify a Slack channel of changes.
 - [Get Hacker News Search Results](workflows/get-hacker-news-search-results/) - Retrieve up to 100 Hacker News search results from Algolia.
 - [Save New X Search Results to Airtable](workflows/save-new-x-search-results-to-airtable/) - Search recent X posts and append results whose IDs are not already in an Airtable table.
+- [Look Up a Person by Email with Clearbit](workflows/look-up-person-by-email-with-clearbit/) - Look up a person using an email address with Clearbit.
 
 ## Productivity
 
