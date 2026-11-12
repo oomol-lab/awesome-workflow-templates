@@ -1,0 +1,219 @@
+{
+  "name": "Log Shopify Order Campaigns in Baserow",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "log-shopify-order-campaigns-in-baserow-0",
+      "name": "Every day at 00:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        1660,
+        560
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 0
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "name": "Choose yesterday’s orders",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function window({scheduledAt,overrideDay}){const n=new Date(scheduledAt);if(!Number.isFinite(n.getTime()))throw Error('Invalid schedule time');if(typeof overrideDay!=='string')throw Error('Invalid replay date');let start,end;if(overrideDay){if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(overrideDay))throw Error('Replay date must be YYYY-MM-DD');start=new Date(overrideDay+'T00:00:00.000Z');if(!Number.isFinite(start.getTime())||start.toISOString().slice(0,10)!==overrideDay)throw Error('Invalid replay date');end=new Date(start.getTime()+86400000);}else{end=new Date(Date.UTC(n.getUTCFullYear(),n.getUTCMonth(),n.getUTCDate()));start=new Date(end.getTime()-86400000)}const search=\"created_at:>='\"+start.toISOString()+\"' created_at:<'\"+end.toISOString()+\"'\";return{search,variables:{query:search}};}\n\nreturn [{json:window({scheduledAt:new Date().toISOString(),overrideDay:''})}];"
+      },
+      "id": "log-shopify-order-campaigns-in-baserow-1"
+    },
+    {
+      "id": "log-shopify-order-campaigns-in-baserow-2",
+      "name": "Read Shopify order journeys",
+      "type": "n8n-nodes-base.graphql",
+      "position": [
+        1900,
+        560
+      ],
+      "parameters": {
+        "endpoint": "https://YOUR_SHOP.myshopify.com/admin/api/2026-10/graphql.json",
+        "authentication": "headerAuth",
+        "requestMethod": "POST",
+        "requestFormat": "json",
+        "responseFormat": "json",
+        "query": "query Orders($query:String!){orders(first:100,query:$query){pageInfo{hasNextPage} edges{node{id name totalReceivedSet{shopMoney{amount currencyCode}} customerJourneySummary{ready firstVisit{utmParameters{campaign content medium source}}}}}}}",
+        "variables": "={{ JSON.stringify({query:$('Choose yesterday’s orders').first().json.search}) }}"
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "name": "Select campaign orders",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function plan({data}){\n if(!data||!data.orders||!Array.isArray(data.orders.edges)||!data.orders.pageInfo||typeof data.orders.pageInfo.hasNextPage!=='boolean')throw Error('Invalid Shopify order response');const rows=[];\n for(const edge of data.orders.edges){const o=edge?.node;if(!o||typeof o.id!=='string'||!o.id||typeof o.name!=='string'||!o.name)throw Error('Invalid Shopify order');if(!Object.hasOwn(o,'customerJourneySummary'))throw Error('Missing Shopify journey');const j=o.customerJourneySummary;if(j===null)continue;if(typeof j!=='object'||Array.isArray(j)||typeof j.ready!=='boolean'||!j.ready)throw Error('Shopify attribution is not ready');if(!Object.hasOwn(j,'firstVisit'))throw Error('Missing first visit');if(j.firstVisit===null)continue;if(typeof j.firstVisit!=='object'||Array.isArray(j.firstVisit)||!Object.hasOwn(j.firstVisit,'utmParameters'))throw Error('Invalid first visit');const u=j.firstVisit.utmParameters;if(u===null)continue;if(typeof u!=='object'||Array.isArray(u))throw Error('Invalid UTM parameters');if(!Object.hasOwn(u,'campaign')||!(typeof u.campaign==='string'||u.campaign===null))throw Error('Invalid campaign');if(u.campaign===null)continue;for(const key of ['content','medium','source'])if(!Object.hasOwn(u,key)||!(typeof u[key]==='string'||u[key]===null))throw Error('Invalid UTM '+key);const money=o.totalReceivedSet?.shopMoney;if(!money||typeof money.amount!=='string'||!/^\\d+(?:\\.\\d+)?$/.test(money.amount)||typeof money.currencyCode!=='string'||!/^[A-Z]{3}$/.test(money.currencyCode))throw Error('Invalid order amount');rows.push({order:o.name,campaign:u.campaign,content:u.content??'',medium:u.medium??'',source:u.source??'',revenue:money.amount,currency:money.currencyCode});}\n return{rows,truncated:data.orders.pageInfo.hasNextPage};\n}\n\nconst result=plan({data:$input.first().json.data});return result.rows.map((json,i)=>({json,pairedItem:{item:0}}));"
+      },
+      "id": "log-shopify-order-campaigns-in-baserow-3"
+    },
+    {
+      "name": "Process campaign orders one by one",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "log-shopify-order-campaigns-in-baserow-4"
+    },
+    {
+      "id": "log-shopify-order-campaigns-in-baserow-5",
+      "name": "Create the Baserow row",
+      "type": "n8n-nodes-base.baserow",
+      "position": [
+        2860,
+        380
+      ],
+      "parameters": {
+        "operation": "create",
+        "authentication": "usernamePassword",
+        "dataToSend": "defineBelow",
+        "databaseId": "",
+        "tableId": "",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "",
+              "fieldValue": "={{ $json.order }}"
+            },
+            {
+              "fieldId": "",
+              "fieldValue": "={{ $json.campaign }}"
+            },
+            {
+              "fieldId": "",
+              "fieldValue": "={{ $json.content }}"
+            },
+            {
+              "fieldId": "",
+              "fieldValue": "={{ $json.medium }}"
+            },
+            {
+              "fieldId": "",
+              "fieldValue": "={{ $json.source }}"
+            },
+            {
+              "fieldId": "",
+              "fieldValue": "={{ $json.revenue }}"
+            },
+            {
+              "fieldId": "",
+              "fieldValue": "={{ $json.currency }}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "name": "Confirm the Baserow row",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if(!Number.isSafeInteger($json.id)||$json.id<=0)throw Error(\"Baserow did not confirm the row\");return $input.item;"
+      },
+      "id": "log-shopify-order-campaigns-in-baserow-6"
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC"
+  },
+  "connections": {
+    "Every day at 00:00": {
+      "main": [
+        [
+          {
+            "node": "Choose yesterday’s orders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Choose yesterday’s orders": {
+      "main": [
+        [
+          {
+            "node": "Read Shopify order journeys",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Shopify order journeys": {
+      "main": [
+        [
+          {
+            "node": "Select campaign orders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select campaign orders": {
+      "main": [
+        [
+          {
+            "node": "Process campaign orders one by one",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process campaign orders one by one": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Create the Baserow row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create the Baserow row": {
+      "main": [
+        [
+          {
+            "node": "Confirm the Baserow row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm the Baserow row": {
+      "main": [
+        [
+          {
+            "node": "Process campaign orders one by one",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

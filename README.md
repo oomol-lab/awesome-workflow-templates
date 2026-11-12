@@ -162,6 +162,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Create, Update and Read a Strapi Post](workflows/create-update-and-read-strapi-post/) - Create a Strapi post, update its slug and read the same document.
 - [Subscribe and Send a Sendy Campaign](workflows/subscribe-and-send-sendy-campaign/) - Add a subscriber to a Sendy list, then create and send a campaign to the list.
 - [Share Product Hunt Matches to Slack](workflows/share-product-hunt-matches-to-slack/) - Find Product Hunt launches relevant to a topic and share the results with a Slack channel.
+- [Log Shopify Order Campaigns in Baserow](workflows/log-shopify-order-campaigns-in-baserow/) - Record Shopify orders with a first-visit campaign in Baserow each day.
 
 ## Support
 
