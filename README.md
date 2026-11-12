@@ -110,6 +110,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Create an Intercom User by Email](workflows/create-intercom-user-by-email/) - Create an Intercom user contact from an email address.
 - [Look Up a Company with UpLead](workflows/look-up-company-with-uplead/) - Look up company information by name using UpLead.
 - [Create an Agile CRM Contact](workflows/create-agile-crm-contact/) - Create an Agile CRM contact with a first and last name.
+- [Get Five Zoho CRM Accounts](workflows/get-five-zoho-crm-accounts/) - Read Zoho CRM accounts and return up to five records.
 
 ## Operations
 
