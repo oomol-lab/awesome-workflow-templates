@@ -1,0 +1,355 @@
+{
+  "name": "Sync a Squarespace Collection to Sheets",
+  "tags": [
+    {
+      "id": "oIxDbURnjwrJFwau",
+      "name": "Squarespace",
+      "createdAt": "2025-03-06T05:49:51.612Z",
+      "updatedAt": "2025-03-06T05:49:51.612Z"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "sync-squarespace-collection-to-sheets-0",
+      "name": "Daily at midnight UTC",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        -240,
+        420
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 0 * * *"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "sync-squarespace-collection-to-sheets-1",
+      "name": "When clicking ‘Test workflow’",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        -240,
+        180
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "name": "Configure the collection and sheet",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function config({url,spreadsheetId,sheetName}){if(typeof url!=='string'||!/^https:\\/\\/[a-zA-Z0-9](?:[a-zA-Z0-9.-]*[a-zA-Z0-9])?(?:\\/[a-zA-Z0-9._~!$&'()*+,;=:@%/-]*)?$/.test(url)||url.includes('YOUR_'))throw Error('Configure the HTTPS public Squarespace collection URL without query parameters');if(typeof spreadsheetId!=='string'||!spreadsheetId.trim()||spreadsheetId.startsWith('YOUR_')||typeof sheetName!=='string'||!sheetName.trim()||/[!\\r\\n]/.test(sheetName))throw Error('Configure the spreadsheet and sheet');const q=\"'\"+sheetName.replace(/'/g,\"''\")+\"'\";return{url,spreadsheetId,sheetName,range:q+'!A:ZZZ'}}\n\nreturn [{json:config({url:'https://YOUR_SQUARESPACE_DOMAIN/blog',spreadsheetId:'YOUR_SPREADSHEET_ID',sheetName:'Articles'})}];"
+      },
+      "id": "sync-squarespace-collection-to-sheets-2"
+    },
+    {
+      "id": "sync-squarespace-collection-to-sheets-3",
+      "name": "Read collection pages",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        20,
+        300
+      ],
+      "parameters": {
+        "url": "={{ $('Configure the collection and sheet').first().json.url }}",
+        "options": {
+          "pagination": {
+            "pagination": {
+              "parameters": {
+                "parameters": [
+                  {
+                    "name": "offset",
+                    "value": "={{ $pageCount === 0 ? '' : $response.body.pagination.nextPageOffset }}",
+                    "type": "qs"
+                  },
+                  {
+                    "name": "format",
+                    "value": "json",
+                    "type": "qs"
+                  }
+                ]
+              },
+              "requestInterval": 200,
+              "completeExpression": "={{ $response.body.pagination.nextPage !== true }}",
+              "paginationCompleteWhen": "other",
+              "paginationMode": "updateAParameterInEachRequest",
+              "limitPagesFetched": true,
+              "maxRequests": 100
+            }
+          }
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "format",
+              "value": "json"
+            },
+            {
+              "name": "offset"
+            }
+          ]
+        }
+      },
+      "typeVersion": 4.2,
+      "alwaysOutputData": false
+    },
+    {
+      "name": "Read the article sheet",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ 'https://sheets.googleapis.com/v4/spreadsheets/'+encodeURIComponent($('Configure the collection and sheet').first().json.spreadsheetId)+'/values/'+encodeURIComponent($('Configure the collection and sheet').first().json.range) }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "valueRenderOption",
+              "value": "UNFORMATTED_VALUE"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "executeOnce": true,
+      "id": "sync-squarespace-collection-to-sheets-4"
+    },
+    {
+      "name": "Match articles to rows",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function plan({items,values,sheetName}){if(!Array.isArray(items)||!Array.isArray(values)||!values.length||!Array.isArray(values[0]))throw Error('The sheet needs headers');const h=values[0],fields=['id','tags','title','urlId','addedOn','fullUrl','assetUrl','publishOn','categories'];if(fields.some(x=>h.indexOf(x)<0||h.indexOf(x)!==h.lastIndexOf(x)))throw Error('The sheet needs unique required headers');const indexes=Object.fromEntries(fields.map(x=>[x,h.indexOf(x)])),existing=new Map();for(let i=1;i<values.length;i++){let row=values[i];if(!Array.isArray(row))throw Error('Invalid sheet row');let id=row[indexes.id];if(id===null||id===undefined||id==='')continue;if(typeof id!=='string'||existing.has(id))throw Error('Duplicate or invalid sheet ID');existing.set(id,{index:i+1,raw:row})}const seen=new Set(),date=v=>{if((typeof v!=='number'&&typeof v!=='string')||v===''||!Number.isFinite(new Date(v).getTime()))throw Error('Invalid collection date');return new Date(v).toISOString().slice(0,10)},tasks=[];let appendIndex=values.length+1;for(const item of items){if(!item||typeof item.id!=='string'||!item.id||seen.has(item.id))throw Error('Invalid or duplicate collection ID');seen.add(item.id);for(const key of ['title','urlId','fullUrl'])if(typeof item[key]!=='string')throw Error('Missing collection field');for(const key of ['tags','categories'])if(!Array.isArray(item[key])||item[key].some(x=>typeof x!=='string'))throw Error('Invalid collection tags');if(item.assetUrl!=null&&typeof item.assetUrl!=='string')throw Error('Invalid image URL');const fieldsValue={id:item.id,tags:item.tags.join(', '),title:item.title,urlId:item.urlId,addedOn:date(item.addedOn),fullUrl:item.fullUrl,assetUrl:item.assetUrl??'',publishOn:date(item.publishOn),categories:item.categories.join(', ')},target=existing.get(item.id)??{index:appendIndex++,raw:[]};tasks.push({id:item.id,index:target.index,raw:target.raw,indexes,fieldsValue})}return{tasks,sheetName}}\n\nconst c=$('Configure the collection and sheet').first().json,pages=$('Read collection pages').all().map(x=>x.json);const seen=new Set();for(let i=0;i<pages.length;i++){const q=pages[i]?.pagination;if(!Array.isArray(pages[i]?.items)||!q||typeof q.nextPage!=='boolean'||q.nextPage!==(i<pages.length-1))throw Error('Collection pagination incomplete');if(q.nextPage){if(!Number.isSafeInteger(q.nextPageOffset)||q.nextPageOffset<0||seen.has(q.nextPageOffset))throw Error('Invalid or repeated collection offset');seen.add(q.nextPageOffset)}}const p=plan({items:pages.flatMap(x=>x.items),values:$input.first().json.values??[],sheetName:c.sheetName});return p.tasks.map(json=>({json}));"
+      },
+      "id": "sync-squarespace-collection-to-sheets-5"
+    },
+    {
+      "name": "Process articles one at a time",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "sync-squarespace-collection-to-sheets-6"
+    },
+    {
+      "name": "Recheck the sheet row",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ (()=>{const c=$('Configure the collection and sheet').first().json,i=$json.index,q=\"'\"+c.sheetName.replace(/'/g,\"''\")+\"'\";return 'https://sheets.googleapis.com/v4/spreadsheets/'+encodeURIComponent(c.spreadsheetId)+'/values/'+encodeURIComponent(q+'!A'+i+':ZZZ'+i)})() }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "valueRenderOption",
+              "value": "UNFORMATTED_VALUE"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "sync-squarespace-collection-to-sheets-7"
+    },
+    {
+      "name": "Prepare the article cells",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function update({item,checked,sheetName}){if(!Array.isArray(checked)||checked.length>1||JSON.stringify(checked[0]??[])!==JSON.stringify(item.raw))throw Error('Sheet row changed since reading');const q=\"'\"+sheetName.replace(/'/g,\"''\")+\"'\",col=n=>{let x=n+1,s='';while(x){x--;s=String.fromCharCode(65+x%26)+s;x=Math.floor(x/26)}return s};return{data:Object.entries(item.fieldsValue).map(([key,v])=>({range:q+'!'+col(item.indexes[key])+item.index,values:[[v]]}))}}\n\nconst c=$('Configure the collection and sheet').first().json;return [{json:update({item:$('Process articles one at a time').item.json,checked:$input.first().json.values??[],sheetName:c.sheetName})}];"
+      },
+      "id": "sync-squarespace-collection-to-sheets-8"
+    },
+    {
+      "name": "Write the article cells",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'https://sheets.googleapis.com/v4/spreadsheets/'+encodeURIComponent($('Configure the collection and sheet').first().json.spreadsheetId)+'/values:batchUpdate' }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {valueInputOption:'RAW',data:$json.data} }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "sync-squarespace-collection-to-sheets-9"
+    },
+    {
+      "name": "Confirm the article update",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "if($input.first().json.totalUpdatedCells!==9)throw Error('Sheet update not fully confirmed');return [{json:{ok:true}}];"
+      },
+      "id": "sync-squarespace-collection-to-sheets-10"
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC"
+  },
+  "connections": {
+    "Daily at midnight UTC": {
+      "main": [
+        [
+          {
+            "node": "Configure the collection and sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Test workflow’": {
+      "main": [
+        [
+          {
+            "node": "Configure the collection and sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configure the collection and sheet": {
+      "main": [
+        [
+          {
+            "node": "Read collection pages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read collection pages": {
+      "main": [
+        [
+          {
+            "node": "Read the article sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the article sheet": {
+      "main": [
+        [
+          {
+            "node": "Match articles to rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Match articles to rows": {
+      "main": [
+        [
+          {
+            "node": "Process articles one at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recheck the sheet row": {
+      "main": [
+        [
+          {
+            "node": "Prepare the article cells",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare the article cells": {
+      "main": [
+        [
+          {
+            "node": "Write the article cells",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write the article cells": {
+      "main": [
+        [
+          {
+            "node": "Confirm the article update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm the article update": {
+      "main": [
+        [
+          {
+            "node": "Process articles one at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process articles one at a time": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Recheck the sheet row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
