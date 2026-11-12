@@ -233,6 +233,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Send a Daily AI News Digest to Telegram](workflows/send-daily-ai-news-digest-to-telegram/) - Collect recent AI articles from GNews and News API, summarize them in Traditional Chinese and send a Telegram digest.
 - [List Zotero Collection Items](workflows/list-zotero-collection-items/) - List item keys, titles and creator summaries from a Zotero collection.
 - [Watch Competitor Hiring in Slack](workflows/watch-competitor-hiring-in-slack/) - Monitor company job boards and post newly observed positions to Slack.
+- [Extract Webpage Entities with Google Language](workflows/extract-webpage-entities-with-google-language/) - Fetch a webpage and return its named entities using Google Cloud Natural Language.
 
 ## Productivity
 
