@@ -298,6 +298,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Email a Summary of a Drive PDF](workflows/email-a-summary-of-a-drive-pdf/) - Summarize a PDF stored in Google Drive and email the result.
 - [Alert on Web Page Changes](workflows/alert-on-web-page-changes/) - Compare two page responses five minutes apart and notify a Telegram chat when the content changes.
 - [Summarize YouTube Transcripts](workflows/summarize-youtube-transcripts/) - Fetch a YouTube transcript and generate a concise summary.
+- [Summarize New Google Docs to Sheets](workflows/summarize-new-drive-documents-to-sheets/) - Summarize new Google Docs in a Drive folder and append each summary with its last editor to Sheets.
 
 ## Content
 
