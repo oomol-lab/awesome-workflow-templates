@@ -1,0 +1,152 @@
+{
+  "name": "Save New X Search Results to Airtable",
+  "nodes": [
+    {
+      "name": "On clicking 'execute'",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        240,
+        260
+      ],
+      "parameters": {},
+      "typeVersion": 1,
+      "id": "save-new-x-search-results-to-airtable-0"
+    },
+    {
+      "name": "Search recent X posts",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.x.com/2/tweets/search/recent",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "twitterOAuth2Api",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "query",
+              "value": "verstappen"
+            },
+            {
+              "name": "max_results",
+              "value": "100"
+            },
+            {
+              "name": "tweet.fields",
+              "value": "author_id,created_at,public_metrics,in_reply_to_user_id"
+            },
+            {
+              "name": "expansions",
+              "value": "author_id,in_reply_to_user_id"
+            },
+            {
+              "name": "user.fields",
+              "value": "username"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "save-new-x-search-results-to-airtable-1"
+    },
+    {
+      "name": "Read existing Airtable records",
+      "type": "n8n-nodes-base.airtable",
+      "position": [
+        520,
+        360
+      ],
+      "parameters": {
+        "authentication": "airtableTokenApi",
+        "operation": "list",
+        "application": "YOUR_AIRTABLE_BASE_ID",
+        "table": "YOUR_AIRTABLE_TABLE_ID",
+        "returnAll": true,
+        "additionalOptions": {}
+      },
+      "typeVersion": 1,
+      "alwaysOutputData": true,
+      "id": "save-new-x-search-results-to-airtable-2"
+    },
+    {
+      "name": "Find new posts",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function plan({posts,includes,pageState}){const records=pageState?.records;if(!Array.isArray(posts)||!Array.isArray(records))throw Error('Invalid search or Airtable response');const users=new Map((includes?.users??[]).map(u=>[String(u.id),u.username])),known=new Set(records.map(r=>r?.fields?.Tweet_id).filter(x=>x!==undefined&&x!==null).map(String)),pending=[];for(const p of posts){if(typeof p.id!=='string'||typeof p.text!=='string'||typeof p.createdAt!=='string'||typeof p.publicMetrics?.like_count!=='number')throw Error('Missing post ID, text, creation time or like count');if(known.has(p.id))continue;const author=users.get(String(p.authorId));if(typeof author!=='string'||!author)throw Error('Missing expanded post author');const replyId=p.raw?.in_reply_to_user_id,reply=replyId==null?null:users.get(String(replyId));if(replyId!=null&&typeof reply!=='string')throw Error('Missing expanded reply user');pending.push({fields:{Likes:p.publicMetrics?.like_count??0,Tweet:p.text,Tweet_id:p.id,'Tweet URL':'https://twitter.com/'+author+'/status/'+p.id,Author:reply,Time:p.createdAt}})}return{pending}}\n\nconst search=$('Search recent X posts').first().json;const posts=(search.data??[]).map(p=>({id:p.id,text:p.text,authorId:p.author_id,createdAt:p.created_at,publicMetrics:p.public_metrics,raw:p})),records=$input.all().map(x=>x.json).filter(x=>x&&x.fields);const p=plan({posts,includes:search.includes??{},pageState:{records}});return p.pending.map(x=>({json:x.fields,pairedItem:{item:0}}));"
+      },
+      "id": "save-new-x-search-results-to-airtable-3"
+    },
+    {
+      "name": "Append new posts",
+      "type": "n8n-nodes-base.airtable",
+      "position": [
+        1300,
+        260
+      ],
+      "parameters": {
+        "authentication": "airtableTokenApi",
+        "operation": "append",
+        "application": "YOUR_AIRTABLE_BASE_ID",
+        "table": "YOUR_AIRTABLE_TABLE_ID",
+        "addAllFields": true,
+        "options": {}
+      },
+      "typeVersion": 1,
+      "id": "save-new-x-search-results-to-airtable-4"
+    }
+  ],
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "On clicking 'execute'": {
+      "main": [
+        [
+          {
+            "node": "Search recent X posts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search recent X posts": {
+      "main": [
+        [
+          {
+            "node": "Read existing Airtable records",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read existing Airtable records": {
+      "main": [
+        [
+          {
+            "node": "Find new posts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find new posts": {
+      "main": [
+        [
+          {
+            "node": "Append new posts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {}
+}

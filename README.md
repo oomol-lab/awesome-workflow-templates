@@ -261,6 +261,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Summarize Reddit n8n Discussions](workflows/summarize-reddit-n8n-discussions/) - Search Reddit for recent n8n discussions and summarize the relevant posts.
 - [Monitor Competitor Pricing Changes](workflows/monitor-competitor-pricing-changes/) - Compare competitor pricing pages with saved summaries and notify a Slack channel of changes.
 - [Get Hacker News Search Results](workflows/get-hacker-news-search-results/) - Retrieve up to 100 Hacker News search results from Algolia.
+- [Save New X Search Results to Airtable](workflows/save-new-x-search-results-to-airtable/) - Search recent X posts and append results whose IDs are not already in an Airtable table.
 
 ## Productivity
 
