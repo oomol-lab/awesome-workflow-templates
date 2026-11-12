@@ -293,6 +293,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Summarize New Google Docs to Sheets](workflows/summarize-new-google-docs-to-sheets/) - Summarize new Google Docs in a Drive folder and append each summary with its last editor to Sheets.
 - [Archive Empty Notion Database Pages](workflows/archive-empty-notion-database-pages/) - Find database pages with empty properties and empty paragraph content and move them to the Notion trash.
 - [Email a Summary of a Drive PDF](workflows/email-a-summary-of-a-drive-pdf/) - Summarize a PDF stored in Google Drive and email the result.
+- [Alert on Web Page Changes](workflows/alert-on-web-page-changes/) - Compare two page responses five minutes apart and notify a Telegram chat when the content changes.
 
 ## Content
 
