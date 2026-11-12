@@ -1,0 +1,147 @@
+{
+  "nodes": [
+    {
+      "name": "On clicking 'execute'",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        250,
+        300
+      ],
+      "parameters": {},
+      "typeVersion": 1,
+      "id": "draft-hashtag-posts-to-airtable-0"
+    },
+    {
+      "name": "Choose a hashtag",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function pick({hashtags}){if(!Array.isArray(hashtags)||!hashtags.length||hashtags.some(x=>typeof x!=='string'||!/^#[\\p{L}\\p{N}_]+$/u.test(x)||Array.from(x).length>80))throw Error('Configure at least one valid hashtag');const hashtag=hashtags[Math.floor(Math.random()*hashtags.length)];return{hashtag}}\n\nreturn [{json:pick({hashtags:['#techtwitter','#n8n']})}];"
+      },
+      "id": "draft-hashtag-posts-to-airtable-1"
+    },
+    {
+      "name": "Draft a short post",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.7,
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "={{ 'Write one social media post under 100 characters about and including this hashtag. Return only the post.\\n' + $json.hashtag }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "draft-hashtag-posts-to-airtable-2"
+    },
+    {
+      "name": "Validate the draft",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function validate({hashtag,text}){if(typeof hashtag!=='string'||typeof text!=='string')throw Error('Invalid draft');const content=text.trim();let found=false,offset=0;while(offset<content.length){const i=content.indexOf(hashtag,offset);if(i<0)break;const next=Array.from(content.slice(i+hashtag.length))[0]||'';if(!/[\\p{L}\\p{N}_]/u.test(next)){found=true;break}offset=i+hashtag.length}if(!content||Array.from(content).length>=100||!found)throw Error('Draft must include the selected hashtag and be under 100 characters');return{hashtag,content,records:[{fields:{Hashtag:hashtag,Content:content}}]}}\n\nconst result=$input.first().json;if(result.finish_reason==='length')throw Error('Draft was truncated');const r=validate({hashtag:$('Choose a hashtag').first().json.hashtag,text:result.message?.content});return [{json:{Hashtag:r.hashtag,Content:r.content}}];"
+      },
+      "id": "draft-hashtag-posts-to-airtable-3"
+    },
+    {
+      "name": "Save the draft in Airtable",
+      "type": "n8n-nodes-base.airtable",
+      "position": [
+        1050,
+        300
+      ],
+      "parameters": {
+        "authentication": "airtableTokenApi",
+        "application": "YOUR_AIRTABLE_BASE_ID",
+        "table": "YOUR_TABLE_NAME",
+        "operation": "append",
+        "addAllFields": true,
+        "options": {}
+      },
+      "typeVersion": 1,
+      "id": "draft-hashtag-posts-to-airtable-4"
+    },
+    {
+      "name": "Confirm the saved draft",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const r=$input.first().json;if(typeof r.id!=='string'||!r.id)throw Error('Airtable did not confirm the draft');return [{json:{id:r.id}}];"
+      },
+      "id": "draft-hashtag-posts-to-airtable-5"
+    }
+  ],
+  "connections": {
+    "On clicking 'execute'": {
+      "main": [
+        [
+          {
+            "node": "Choose a hashtag",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Choose a hashtag": {
+      "main": [
+        [
+          {
+            "node": "Draft a short post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Draft a short post": {
+      "main": [
+        [
+          {
+            "node": "Validate the draft",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate the draft": {
+      "main": [
+        [
+          {
+            "node": "Save the draft in Airtable",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save the draft in Airtable": {
+      "main": [
+        [
+          {
+            "node": "Confirm the saved draft",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Draft Hashtag Posts to Airtable",
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}

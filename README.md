@@ -171,6 +171,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Subscribe and Send a Sendy Campaign](workflows/subscribe-and-send-sendy-campaign/) - Add a subscriber to a Sendy list, then create and send a campaign to the list.
 - [Share Product Hunt Matches to Slack](workflows/share-product-hunt-matches-to-slack/) - Find Product Hunt launches relevant to a topic and share the results with a Slack channel.
 - [Log Shopify Order Campaigns in Baserow](workflows/log-shopify-order-campaigns-in-baserow/) - Record Shopify orders with a first-visit campaign in Baserow each day.
+- [Draft Hashtag Posts to Airtable](workflows/draft-hashtag-posts-to-airtable/) - Generate a short post about a randomly selected hashtag and save it to Airtable for review.
 
 ## Support
 
