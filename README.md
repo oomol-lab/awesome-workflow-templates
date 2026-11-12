@@ -90,6 +90,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Validate Sheet Email Deliverability](workflows/validate-sheet-email-deliverability/) - Validate changed email addresses and write deliverability results to their Google Sheets rows.
 - [Send New Upwork Jobs to Slack](workflows/send-new-upwork-jobs-to-slack/) - Check configured Upwork searches during working hours and post newly observed jobs to Slack.
 - [Summarize New Pipedrive Organizations to Slack](workflows/summarize-pipedrive-organizations-to-slack/) - Summarize a new organization’s website, save a CRM note and notify Slack.
+- [List HubSpot Contacts with Pagination](workflows/list-all-hubspot-contacts-with-pagination/) - Read every page of HubSpot contacts and return the collected records.
 
 ## Operations
 
