@@ -251,6 +251,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Send Workflow Failure SMS with Twilio](workflows/send-workflow-failure-sms-with-twilio/) - Send a Twilio SMS identifying a workflow that failed.
 - [Notify Slack When a Workflow Fails](workflows/notify-slack-when-a-workflow-fails/) - Send a Slack alert when a configured workflow fails.
 - [Notify Telegram of a Failed Workflow](workflows/notify-telegram-of-failed-workflow/) - Send a Telegram alert identifying a failed workflow.
+- [Invoke an AWS Lambda Function](workflows/invoke-an-aws-lambda-function/) - Invoke a Lambda function synchronously and return its result.
 
 ## Research
 
