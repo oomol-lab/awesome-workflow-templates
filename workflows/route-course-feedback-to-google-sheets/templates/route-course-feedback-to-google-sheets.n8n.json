@@ -1,0 +1,209 @@
+{
+  "name": "Route Course Feedback to Google Sheets",
+  "nodes": [
+    {
+      "name": "Typeform Trigger",
+      "type": "n8n-nodes-base.typeformTrigger",
+      "notes": "course feedback",
+      "position": [
+        450,
+        300
+      ],
+      "parameters": {
+        "authentication": "accessToken",
+        "formId": "YOUR_TYPEFORM_FORM_ID",
+        "simplifyAnswers": false,
+        "onlyAnswers": false
+      },
+      "notesInFlow": true,
+      "typeVersion": 1,
+      "id": "route-course-feedback-to-google-sheets-0"
+    },
+    {
+      "name": "Read the course answers",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function feedback({response}){const fields=response?.definition?.fields,answers=response?.answers;if(!Array.isArray(fields)||!Array.isArray(answers))throw Error('Expected a complete Typeform response');const field=title=>{const f=fields.filter(x=>x?.title===title);if(f.length!==1||typeof f[0].id!=='string'||!f[0].id)throw Error('Expected one '+title+' question');return f[0].id};const ratingId=field('How useful was the course?'),opinionId=field('Your opinion on the course:'),ratings=answers.filter(x=>x?.field?.id===ratingId),opinions=answers.filter(x=>x?.field?.id===opinionId);if(ratings.length!==1||ratings[0].type!=='number'||typeof ratings[0].number!=='number'||!Number.isFinite(ratings[0].number)||opinions.length>1)throw Error('Invalid course feedback');if(opinions.length&&!(opinions[0].type==='text'&&typeof opinions[0].text==='string'))throw Error('Invalid opinion');const usefulness=ratings[0].number,opinion=opinions[0]?.text??'';return {positive:usefulness>=3,usefulness,opinion,values:[[usefulness,opinion]]}}\n\nreturn {json:feedback({response:$json.form_response})};"
+      },
+      "id": "route-course-feedback-to-google-sheets-1"
+    },
+    {
+      "name": "Usefulness at least 3?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "positive",
+              "leftValue": "={{ $json.positive }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "route-course-feedback-to-google-sheets-2"
+    },
+    {
+      "name": "Append positive feedback",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_POSITIVE_SPREADSHEET_ID"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "positive_feedback"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "usefulness": "={{ $json.usefulness }}",
+            "opinion": "={{ $json.opinion }}"
+          },
+          "schema": [
+            {
+              "id": "usefulness",
+              "displayName": "usefulness",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "opinion",
+              "displayName": "opinion",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "matchingColumns": []
+        },
+        "options": {
+          "cellFormat": "RAW",
+          "useAppend": true
+        }
+      },
+      "id": "route-course-feedback-to-google-sheets-3"
+    },
+    {
+      "name": "Append negative feedback",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_NEGATIVE_SPREADSHEET_ID"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "negative_feedback"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "usefulness": "={{ $json.usefulness }}",
+            "opinion": "={{ $json.opinion }}"
+          },
+          "schema": [
+            {
+              "id": "usefulness",
+              "displayName": "usefulness",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "opinion",
+              "displayName": "opinion",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "matchingColumns": []
+        },
+        "options": {
+          "cellFormat": "RAW",
+          "useAppend": true
+        }
+      },
+      "id": "route-course-feedback-to-google-sheets-4"
+    }
+  ],
+  "active": false,
+  "settings": {},
+  "connections": {
+    "Typeform Trigger": {
+      "main": [
+        [
+          {
+            "node": "Read the course answers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the course answers": {
+      "main": [
+        [
+          {
+            "node": "Usefulness at least 3?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Usefulness at least 3?": {
+      "main": [
+        [
+          {
+            "node": "Append positive feedback",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Append negative feedback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {}
+}

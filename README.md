@@ -42,6 +42,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Data and Analytics](#data-and-analytics)
 - [Security](#security)
 - [Social Media](#social-media)
+- [Education](#education)
 - [Contribute](#contribute)
 - [Licensing](#licensing)
 
@@ -433,6 +434,10 @@ A growing collection of automation workflows for connecting apps and getting rep
 ## Social Media
 
 - [Publish a Reddit Post and Comment](workflows/publish-reddit-post-and-comment/) - Publish a text post to a subreddit, verify it and add a comment to the same post.
+
+## Education
+
+- [Route Course Feedback to Google Sheets](workflows/route-course-feedback-to-google-sheets/) - Route course feedback into positive or negative Google Sheets based on the usefulness answer.
 
 ## Contribute
 
