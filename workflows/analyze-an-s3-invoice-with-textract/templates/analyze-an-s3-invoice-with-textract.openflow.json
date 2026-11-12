@@ -1,0 +1,164 @@
+{
+  "kind": "open-flow-workflow",
+  "version": 1,
+  "name": "Analyze an S3 Invoice with Textract",
+  "content": {
+    "modelVersion": 14,
+    "document": {
+      "bindings": {},
+      "graph": {
+        "nodes": {
+          "n_f2f15482575245ff": {
+            "name": "Analyze an invoice",
+            "kind": "start",
+            "inputDefs": []
+          },
+          "n_0786bdd663ecd2f8": {
+            "inputs": {
+              "bucket": {
+                "kind": "value",
+                "value": "YOUR_S3_BUCKET"
+              },
+              "key": {
+                "kind": "value",
+                "value": "YOUR_OBJECT_KEY"
+              },
+              "region": {
+                "kind": "value",
+                "value": "us-east-1"
+              },
+              "accessKeyId": {
+                "kind": "unset"
+              },
+              "secretAccessKey": {
+                "kind": "unset"
+              },
+              "sessionToken": {
+                "kind": "unset"
+              }
+            },
+            "name": "Analyze the S3 invoice",
+            "kind": "task",
+            "task": {
+              "inputs": [
+                {
+                  "jsonSchema": {
+                    "type": "string"
+                  },
+                  "nullable": false,
+                  "handle": "bucket"
+                },
+                {
+                  "jsonSchema": {
+                    "type": "string"
+                  },
+                  "nullable": false,
+                  "handle": "key"
+                },
+                {
+                  "jsonSchema": {
+                    "type": "string"
+                  },
+                  "nullable": false,
+                  "handle": "region"
+                },
+                {
+                  "jsonSchema": {
+                    "type": "string"
+                  },
+                  "nullable": false,
+                  "handle": "accessKeyId"
+                },
+                {
+                  "jsonSchema": {
+                    "type": "string"
+                  },
+                  "nullable": false,
+                  "handle": "secretAccessKey"
+                },
+                {
+                  "jsonSchema": {
+                    "type": "string"
+                  },
+                  "nullable": true,
+                  "handle": "sessionToken"
+                }
+              ],
+              "outputs": [
+                {
+                  "jsonSchema": {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  "nullable": false,
+                  "handle": "fields"
+                }
+              ],
+              "name": "Analyze the S3 invoice",
+              "moduleId": "n_2f22222613ea6db3",
+              "capabilities": [
+                {
+                  "kind": "http",
+                  "hosts": [
+                    "textract.us-east-1.amazonaws.com"
+                  ]
+                }
+              ]
+            }
+          },
+          "n_bd19f7ed187af8f1": {
+            "name": "Invoice summary",
+            "kind": "outputs",
+            "outputDefs": [
+              {
+                "jsonSchema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "nullable": false,
+                "handle": "fields"
+              }
+            ],
+            "outputMappings": {
+              "fields": {
+                "kind": "sources",
+                "sources": [
+                  {
+                    "kind": "node",
+                    "nodeId": "n_0786bdd663ecd2f8",
+                    "output": "fields"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "edges": [
+          {
+            "source": "n_f2f15482575245ff",
+            "target": "n_0786bdd663ecd2f8"
+          },
+          {
+            "source": "n_0786bdd663ecd2f8",
+            "target": "n_bd19f7ed187af8f1"
+          }
+        ]
+      }
+    },
+    "modules": {
+      "n_2f22222613ea6db3": {
+        "name": "Analyze the S3 invoice",
+        "imports": [],
+        "source": "import { createHash, createHmac } from 'node:crypto';\n\nexport default async function textractSignedRequest({ bucket, key, region, accessKeyId, secretAccessKey, sessionToken }, context) {\n  if (typeof bucket !== 'string' || !bucket.trim() || typeof key !== 'string' || !key.trim()) throw new Error('Configure S3 bucket and object key');\n  if (typeof region !== 'string' || !/^[a-z]{2}(?:-[a-z]+){1,2}-[0-9]+$/.test(region)) throw new Error('Configure a valid AWS region');\n  const required = (value, name) => { if (typeof value !== 'string' || !value.trim()) throw new Error('Select the AWS ' + name + ' secret Variable'); return value.trim(); };\n  const keyId = required(accessKeyId, 'access key ID'), secret = required(secretAccessKey, 'secret access key');\n  if (sessionToken != null && typeof sessionToken !== 'string') throw new Error('The AWS session token must be text');\n  const token = sessionToken?.trim() ?? '', service = 'textract', host = service + '.' + region + '.amazonaws.com' + (region.startsWith('cn-') ? '.cn' : '');\n  const body = JSON.stringify({ Document: { S3Object: { Bucket: bucket, Name: key } } }), timestamp = new Date().toISOString().replace(/[:-]|\\.\\d{3}/g, ''), date = timestamp.slice(0, 8);\n  const headers = { 'content-type': 'application/x-amz-json-1.1', host, 'x-amz-date': timestamp, 'x-amz-target': 'Textract.AnalyzeExpense', ...(token ? { 'x-amz-security-token': token } : {}) };\n  const names = Object.keys(headers).sort(), signedHeaders = names.join(';'), canonicalHeaders = names.map(name => name + ':' + headers[name].trim().replace(/\\s+/g, ' ') + '\\n').join('');\n  const hash = value => createHash('sha256').update(value).digest('hex'), hmac = (key, value) => createHmac('sha256', key).update(value).digest();\n  const scope = date + '/' + region + '/' + service + '/aws4_request', canonical = ['POST', '/', '', canonicalHeaders, signedHeaders, hash(body)].join('\\n');\n  const toSign = ['AWS4-HMAC-SHA256', timestamp, scope, hash(canonical)].join('\\n');\n  const signingKey = hmac(hmac(hmac(hmac('AWS4' + secret, date), region), service), 'aws4_request'), signature = createHmac('sha256', signingKey).update(toSign).digest('hex');\n  delete headers.host;\n  headers.authorization = 'AWS4-HMAC-SHA256 Credential=' + keyId + '/' + scope + ', SignedHeaders=' + signedHeaders + ', Signature=' + signature;\n  const response = await context.fetch('https://' + host + '/', {method:'POST',headers,body});\n  if (!response.ok) throw new Error('Textract request failed');\n  const result = await response.json();\n  if (!Array.isArray(result?.ExpenseDocuments)) throw new Error('Invalid Textract response');\n  const fields = {};\n  for (const doc of result.ExpenseDocuments) { if (!Array.isArray(doc.SummaryFields)) throw new Error('Invalid expense fields'); for (const f of doc.SummaryFields) { const name=f?.Type?.Text||f?.LabelDetection?.Text, text=f?.ValueDetection?.Text; if(typeof name!=='string'||typeof text!=='string') throw new Error('Invalid expense field'); fields[name]=text; } }\n  return {fields};\n}\n"
+      }
+    }
+  },
+  "presentation": {
+    "designer": {
+      "version": 1,
+      "flow": {
+        "direction": "vertical"
+      }
+    }
+  }
+}
