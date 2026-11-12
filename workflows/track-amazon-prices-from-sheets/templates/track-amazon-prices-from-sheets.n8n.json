@@ -1,0 +1,513 @@
+{
+  "name": "Track Amazon Prices from Sheets",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "track-amazon-prices-from-sheets-0",
+      "name": "Every hour",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        -360,
+        -220
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 * * * *"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "name": "Configure the sheets and alerts",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function config({spreadsheetId,productsSheet,historySheet,recipient}){for(const [k,v]of Object.entries({spreadsheetId,productsSheet,historySheet,recipient}))if(typeof v!=='string'||!v.trim()||v.startsWith('YOUR_'))throw Error('Configure '+k);if(productsSheet===historySheet||/[!\\r\\n]/.test(productsSheet+historySheet)||!/^[^\\s@<>]+@[^\\s@<>]+\\.[^\\s@<>]+$/.test(recipient)||/[\\x00-\\x1f\\x7f]/.test(recipient))throw Error('Invalid sheet names or recipient');const quote=s=>\"'\"+s.replace(/'/g,\"''\")+\"'\";return{spreadsheetId,productsSheet,recipient,productsRange:quote(productsSheet)+'!A:ZZZ',historyRange:quote(historySheet)+'!A:C'}}\n\nreturn [{json:config({spreadsheetId:'YOUR_SPREADSHEET_ID',productsSheet:'Products to Monitor',historySheet:'Price History',recipient:'YOUR_ALERT_EMAIL'})}];"
+      },
+      "id": "track-amazon-prices-from-sheets-1"
+    },
+    {
+      "name": "Read monitored products",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ 'https://sheets.googleapis.com/v4/spreadsheets/'+encodeURIComponent($json.spreadsheetId)+'/values/'+encodeURIComponent($json.productsRange) }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "valueRenderOption",
+              "value": "UNFORMATTED_VALUE"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "track-amazon-prices-from-sheets-2"
+    },
+    {
+      "name": "Validate product rows",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function rows({values,sheetName}){if(typeof sheetName!=='string'||!sheetName.trim()||sheetName.includes('!'))throw Error('Configure the products sheet name');if(!Array.isArray(values))throw Error('Invalid sheet data');if(!values.length)return{items:[],sheetName};const h=values[0],required=['asin','name','pricing','product_url','alert_status','last_updated','price_change','average_rating','percent_change','alert_threshold_low','alert_threshold_high'];if(!Array.isArray(h)||required.some(k=>h.indexOf(k)<0||h.lastIndexOf(k)!==h.indexOf(k)))throw Error('Sheet requires unique product headers');const indexes=Object.fromEntries(required.map(k=>[k,h.indexOf(k)])),items=[],ids=new Set();for(let i=1;i<values.length;i++){const r=values[i];if(!Array.isArray(r))throw Error('Malformed row');if(!r.some(x=>x!==null&&x!==''))continue;const asin=String(r[indexes.asin]??'').trim();if(!/^[A-Z0-9]{10}$/.test(asin)||ids.has(asin))throw Error('Each product requires a unique 10-character ASIN');ids.add(asin);const low=Number(r[indexes.alert_threshold_low]),high=Number(r[indexes.alert_threshold_high]);if(r[indexes.alert_threshold_low]===''||r[indexes.alert_threshold_low]==null||r[indexes.alert_threshold_high]===''||r[indexes.alert_threshold_high]==null||!Number.isFinite(low)||!Number.isFinite(high)||low>=high)throw Error('Invalid alert thresholds');const prior=r[indexes.pricing];if(prior!==''&&prior!=null&&(!Number.isFinite(Number(prior))||Number(prior)<0))throw Error('Invalid previous price');items.push({asin,index:i+1,raw:r,indexes,low,high,prior:prior==null||prior===''?null:Number(prior)})}return{items,sheetName:sheetName.trim()}}\n\nconst c=$('Configure the sheets and alerts').first().json,r=rows({values:$input.first().json.values??[],sheetName:c.productsSheet});return r.items.map(json=>({json}));"
+      },
+      "id": "track-amazon-prices-from-sheets-3"
+    },
+    {
+      "name": "Select the next product",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "track-amazon-prices-from-sheets-4"
+    },
+    {
+      "name": "Read the Amazon product",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "https://proxy.scrapeops.io/v1/",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "url",
+              "value": "={{ 'https://www.amazon.com/dp/'+$json.asin }}"
+            },
+            {
+              "name": "auto_extract",
+              "value": "amazon"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "track-amazon-prices-from-sheets-5"
+    },
+    {
+      "name": "Validate the product price",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function parse({body,asin}){if(!body||typeof body!=='object'||!body.data||typeof body.data!=='object')throw Error('Invalid ScrapeOps response');const d=body.data;if(typeof asin!=='string'||!/^[A-Z0-9]{10}$/.test(asin)||d.product_information?.ASIN!==asin)throw Error('Returned product ASIN does not match request');if(d.pricing===null||d.pricing===undefined||d.pricing==='')return{valid:false,product:{}};if(typeof d.pricing!=='string'||!/^\\$?\\s*(?:\\d{1,3}(?:,\\d{3})+|\\d+)(?:\\.\\d{1,2})?$/.test(d.pricing.trim()))throw Error('Ambiguous US dollar price');const price=Number(d.pricing.replace(/[$,\\s]/g,''));if(!Number.isFinite(price)||price<=0)return{valid:false,product:{}};if(typeof d.name!=='string'||!d.name.trim()||d.name.length>300||/[\\x00-\\x1f\\x7f]/.test(d.name))throw Error('Missing product name');const rating=d.average_rating;if(rating!=null&&rating!==''&&(!Number.isFinite(Number(rating))||Number(rating)<0||Number(rating)>5))throw Error('Invalid product rating');return{valid:true,product:{price,name:d.name.trim(),rating:rating==null?'':rating}}}\n\nreturn [{json:parse({body:$input.first().json,asin:$('Select the next product').item.json.asin})}];"
+      },
+      "id": "track-amazon-prices-from-sheets-6"
+    },
+    {
+      "name": "Is a price available?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "valid",
+              "leftValue": "={{ $json.valid }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "track-amazon-prices-from-sheets-7"
+    },
+    {
+      "name": "Recheck the product row",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ (()=>{const c=$('Configure the sheets and alerts').first().json,i=$('Select the next product').item.json,n=\"'\"+c.productsSheet.replace(/'/g,\"''\")+\"'\";return 'https://sheets.googleapis.com/v4/spreadsheets/'+encodeURIComponent(c.spreadsheetId)+'/values/'+encodeURIComponent(n+'!A'+i.index+':ZZZ'+i.index)})() }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "valueRenderOption",
+              "value": "UNFORMATTED_VALUE"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "track-amazon-prices-from-sheets-8"
+    },
+    {
+      "name": "Prepare the price update",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function plan({item,product,checked,sheetName}){if(!Array.isArray(checked)||checked.length!==1||JSON.stringify(checked[0])!==JSON.stringify(item.raw))throw Error('Product row changed during lookup');const q=\"'\"+sheetName.replace(/'/g,\"''\")+\"'\",col=n=>{let x=n+1,s='';while(x){x--;s=String.fromCharCode(65+x%26)+s;x=Math.floor(x/26)}return s},at=k=>q+'!'+col(item.indexes[k])+item.index,delta=item.prior===null?0:product.price-item.prior,ratio=item.prior===null||item.prior===0?0:delta/item.prior,alert=ratio>item.high?'High':ratio<item.low?'Low':'',timestamp=new Date().toISOString(),url='https://www.amazon.com/dp/'+item.asin,values={name:product.name,pricing:product.price,product_url:url,alert_status:alert,last_updated:timestamp,price_change:delta,average_rating:product.rating,percent_change:ratio},data=Object.entries(values).map(([k,v])=>({range:at(k),values:[[v]]}));return{data,history:[[item.asin,product.price,timestamp]],alert:!!alert,subject:'Amazon price alert: '+product.name,body:'ASIN: '+item.asin+'\\nPrevious price: '+(item.prior===null?'not available':item.prior)+'\\nCurrent price: '+product.price+'\\nChange: '+delta+' ('+(ratio*100).toFixed(2)+'%)\\n'+url}}\n\nconst c=$('Configure the sheets and alerts').first().json;return [{json:plan({item:$('Select the next product').item.json,product:$('Validate the product price').item.json.product,checked:$input.first().json.values??[],sheetName:c.productsSheet})}];"
+      },
+      "id": "track-amazon-prices-from-sheets-9"
+    },
+    {
+      "name": "Update the product cells",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'https://sheets.googleapis.com/v4/spreadsheets/'+encodeURIComponent($('Configure the sheets and alerts').first().json.spreadsheetId)+'/values:batchUpdate' }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {valueInputOption:'RAW',data:$json.data} }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "track-amazon-prices-from-sheets-10"
+    },
+    {
+      "name": "Confirm the product update",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function confirm({totalUpdatedCells,history,alert,subject,body}){if(totalUpdatedCells!==8)throw Error('Sheet update not fully confirmed');return{history,alert,subject,body}}\n\nreturn [{json:confirm({totalUpdatedCells:$input.first().json.totalUpdatedCells,...$('Prepare the price update').item.json})}];"
+      },
+      "id": "track-amazon-prices-from-sheets-11"
+    },
+    {
+      "name": "Append the price history",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'https://sheets.googleapis.com/v4/spreadsheets/'+encodeURIComponent($('Configure the sheets and alerts').first().json.spreadsheetId)+'/values/'+encodeURIComponent($('Configure the sheets and alerts').first().json.historyRange)+':append' }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "valueInputOption",
+              "value": "RAW"
+            },
+            {
+              "name": "insertDataOption",
+              "value": "INSERT_ROWS"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {majorDimension:'ROWS',values:$json.history} }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "track-amazon-prices-from-sheets-12"
+    },
+    {
+      "name": "Confirm the history entry",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function confirm({updatedRows,alert,subject,body}){if(updatedRows!==1)throw Error('History append not confirmed');return{alert,subject,body}}\n\nreturn [{json:confirm({updatedRows:$input.first().json.updates?.updatedRows,...$('Confirm the product update').item.json})}];"
+      },
+      "id": "track-amazon-prices-from-sheets-13"
+    },
+    {
+      "name": "Threshold crossed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "alert",
+              "leftValue": "={{ $json.alert }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "track-amazon-prices-from-sheets-14"
+    },
+    {
+      "name": "Email the price alert",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "parameters": {
+        "sendTo": "={{ $('Configure the sheets and alerts').first().json.recipient }}",
+        "subject": "={{ $json.subject }}",
+        "emailType": "text",
+        "message": "={{ $json.body }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "track-amazon-prices-from-sheets-15"
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC"
+  },
+  "connections": {
+    "Every hour": {
+      "main": [
+        [
+          {
+            "node": "Configure the sheets and alerts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configure the sheets and alerts": {
+      "main": [
+        [
+          {
+            "node": "Read monitored products",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read monitored products": {
+      "main": [
+        [
+          {
+            "node": "Validate product rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate product rows": {
+      "main": [
+        [
+          {
+            "node": "Select the next product",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the Amazon product": {
+      "main": [
+        [
+          {
+            "node": "Validate the product price",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate the product price": {
+      "main": [
+        [
+          {
+            "node": "Is a price available?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recheck the product row": {
+      "main": [
+        [
+          {
+            "node": "Prepare the price update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare the price update": {
+      "main": [
+        [
+          {
+            "node": "Update the product cells",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update the product cells": {
+      "main": [
+        [
+          {
+            "node": "Confirm the product update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm the product update": {
+      "main": [
+        [
+          {
+            "node": "Append the price history",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append the price history": {
+      "main": [
+        [
+          {
+            "node": "Confirm the history entry",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm the history entry": {
+      "main": [
+        [
+          {
+            "node": "Threshold crossed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email the price alert": {
+      "main": [
+        [
+          {
+            "node": "Select the next product",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select the next product": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Read the Amazon product",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is a price available?": {
+      "main": [
+        [
+          {
+            "node": "Recheck the product row",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Select the next product",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Threshold crossed?": {
+      "main": [
+        [
+          {
+            "node": "Email the price alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Select the next product",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
