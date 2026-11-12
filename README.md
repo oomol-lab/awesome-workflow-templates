@@ -412,6 +412,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Sum Example Dollar Amounts](workflows/sum-example-dollar-amounts/) - Learn how to sum three example USD amounts in a workflow.
 - [Sum Three USD Example Values](workflows/sum-three-usd-example-values/) - Learn how to sum three example USD amounts in a workflow.
 - [Route Example Items by ID](workflows/route-example-items-by-id/) - Learn how a condition routes two example items and assigns a name on each branch.
+- [Route Three Example Items by ID](workflows/route-three-example-items-by-id/) - Learn how a switch routes three example items by ID and assigns branch-specific names.
 
 ## Analytics
 
