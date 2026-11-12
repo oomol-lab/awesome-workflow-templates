@@ -234,6 +234,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [List Zotero Collection Items](workflows/list-zotero-collection-items/) - List item keys, titles and creator summaries from a Zotero collection.
 - [Watch Competitor Hiring in Slack](workflows/watch-competitor-hiring-in-slack/) - Monitor company job boards and post newly observed positions to Slack.
 - [Extract Webpage Entities with Google Language](workflows/extract-webpage-entities-with-google-language/) - Fetch a webpage and return its named entities using Google Cloud Natural Language.
+- [Email Trending Show HN Stories](workflows/email-trending-show-hn-stories/) - Collect Show HN stories on the Hacker News front page and email their titles, ranks and links.
 
 ## Productivity
 
