@@ -1,0 +1,146 @@
+{
+  "name": "Log ISS Position to Firebase",
+  "nodes": [
+    {
+      "name": "Cron",
+      "type": "n8n-nodes-base.cron",
+      "position": [
+        550,
+        300
+      ],
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1,
+      "id": "log-iss-position-to-firebase-0"
+    },
+    {
+      "name": "Prepare the current timestamp",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function query() {const timestamp=Math.floor(Date.now()/1000);return {timestamp,url:'https://api.wheretheiss.at/v1/satellites/25544/positions?timestamps='+timestamp};}\n\nreturn [{json:query()}];"
+      },
+      "id": "log-iss-position-to-firebase-1"
+    },
+    {
+      "name": "HTTP Request",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        750,
+        300
+      ],
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {}
+      },
+      "typeVersion": 1,
+      "id": "log-iss-position-to-firebase-2"
+    },
+    {
+      "name": "Validate the position",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function row({body,timestamp}) {\n if(!Array.isArray(body)||body.length!==1)throw Error('Expected one ISS position');const p=body[0];\n if(!p||p.id!==25544||typeof p.name!=='string'||!p.name||!Number.isFinite(p.latitude)||p.latitude < -90||p.latitude>90||!Number.isFinite(p.longitude)||p.longitude < -180||p.longitude>180||p.timestamp!==timestamp)throw Error('ISS position does not match the request');\n const position={name:p.name,latitude:p.latitude,longitude:p.longitude,timestamp:p.timestamp};return {position,rows:[{json:position}]};\n}\n\nconst p=row({body:$input.first().json,timestamp:$('Prepare the current timestamp').first().json.timestamp}).position;return [{json:{latitude:p.latitude,longitude:p.longitude,timestamp:p.timestamp}}];"
+      },
+      "id": "log-iss-position-to-firebase-3"
+    },
+    {
+      "name": "Google Cloud Realtime Database",
+      "type": "n8n-nodes-base.googleFirebaseRealtimeDatabase",
+      "position": [
+        1150,
+        300
+      ],
+      "parameters": {
+        "path": "iss",
+        "operation": "push",
+        "projectId": "YOUR_DATABASE_ID",
+        "attributes": "latitude, longitude, timestamp"
+      },
+      "typeVersion": 1,
+      "id": "log-iss-position-to-firebase-4"
+    },
+    {
+      "name": "Confirm the push key",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function confirm({body}){if(!body||typeof body.name!=='string'||!body.name)throw Error('Firebase did not confirm the push key');return{key:body.name}}\n\nreturn [{json:confirm({body:$input.first().json})}];"
+      },
+      "id": "log-iss-position-to-firebase-5"
+    }
+  ],
+  "active": false,
+  "settings": {
+    "timezone": "UTC"
+  },
+  "connections": {
+    "Cron": {
+      "main": [
+        [
+          {
+            "node": "Prepare the current timestamp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare the current timestamp": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Validate the position",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate the position": {
+      "main": [
+        [
+          {
+            "node": "Google Cloud Realtime Database",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Cloud Realtime Database": {
+      "main": [
+        [
+          {
+            "node": "Confirm the push key",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {}
+}

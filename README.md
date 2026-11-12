@@ -456,6 +456,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 ## Data
 
 - [Log ISS Position to BigQuery](workflows/log-iss-position-to-bigquery/) - Record the current International Space Station position in a BigQuery table each minute.
+- [Log ISS Position to Firebase](workflows/log-iss-position-to-firebase/) - Append the current International Space Station position to Firebase Realtime Database every minute.
 
 ## Contribute
 
