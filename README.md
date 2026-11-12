@@ -457,6 +457,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Send a Text-to-Speech Call with ClickSend](workflows/send-a-text-to-speech-call-with-clicksend/) - Submit a text-to-speech voice call with a chosen language and voice.
 - [Send Pushcut Action Input by SMS](workflows/send-pushcut-action-input-by-sms/) - Send the input of a Pushcut online action as an SMS through Twilio.
 - [Send a Discord Webhook Message](workflows/send-discord-webhook-message/) - Send a message to a Discord channel using an incoming webhook.
+- [Send an SMS with MessageBird](workflows/send-sms-with-messagebird/) - Send an SMS to one or more recipients using MessageBird.
 
 ## Customer Support
 
