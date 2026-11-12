@@ -384,6 +384,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Search OneDrive for Excel Workbooks](workflows/search-onedrive-for-excel-workbooks/) - Search the current user’s OneDrive for the text .xlsx and return the first page of results.
 - [Append and Adjust Berlin Rent in Google Sheets](workflows/append-and-adjust-berlin-rent-in-sheets/) - Append an example property and increase rent for matching Berlin rows.
 - [Append an ID and Name to Google Sheets](workflows/append-id-and-name-to-google-sheets/) - Append an ID and name to a Google Sheet and read the table.
+- [Turn On a Philips Hue Light](workflows/turn-on-a-philips-hue-light/) - Turn on a Philips Hue light and set its brightness.
 
 ## Content
 
