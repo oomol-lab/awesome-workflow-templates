@@ -297,6 +297,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Matomo Repeat Visits SEO Report](workflows/matomo-repeat-visits-seo-report/) - Analyze recent repeat-visitor paths with an OpenRouter model and save the report to Baserow.
 - [Send Monthly ProfitWell Metrics to Mattermost](workflows/send-monthly-profitwell-metrics-to-mattermost/) - Post monthly ProfitWell customer and recurring revenue metrics to a Mattermost channel.
 - [Save Analytics Sessions by Country to Airtable](workflows/analytics-sessions-by-country-to-airtable/) - Read Google Analytics sessions by country and add the results to Airtable.
+- [Email a Google Analytics Comparison Report](workflows/email-a-google-analytics-comparison-report/) - Compare page engagement, search performance and country views across two seven-day periods in an emailed report.
 
 ## Lifestyle
 
