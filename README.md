@@ -124,6 +124,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Extract Inbound Orders to Google Sheets](workflows/extract-inbound-orders-to-google-sheets/) - Extract purchase order lines from matching Gmail messages and append them to Google Sheets.
 - [Scheduled Scrappey Page Fetch](workflows/scheduled-scrappey-page-fetch/) - Fetch a configured page through Scrappey each day and return its response.
 - [Send Workflow Failure Alerts to LINE](workflows/send-workflow-failure-alerts-to-line/) - Send a LINE message when a configured workflow fails.
+- [Alert on an Invalid Domain Certificate](workflows/alert-invalid-domain-certificate/) - Check a domain certificate with Uproc and alert a Telegram chat when it is outside its validity dates.
 
 ## Marketing
 

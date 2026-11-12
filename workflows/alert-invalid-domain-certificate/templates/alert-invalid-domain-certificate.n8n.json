@@ -1,0 +1,145 @@
+{
+  "name": "Alert on an Invalid Domain Certificate",
+  "nodes": [
+    {
+      "name": "On clicking 'execute'",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        240,
+        290
+      ],
+      "parameters": {},
+      "typeVersion": 1,
+      "id": "alert-invalid-domain-certificate-0"
+    },
+    {
+      "name": "Set domain",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function domain({domain}) {\n if(typeof domain!=='string'||domain.length>253||!domain||!domain.split('.').every(x=>/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/i.test(x))||!domain.includes('.'))throw Error('Enter a valid domain name without protocol or port');\n return {domain:domain.toLowerCase(),body:{processor:'get-domain-certificate',params:{domain:domain.toLowerCase()}}};\n}\n\nreturn [{json:domain({domain:'example.com'})}];"
+      },
+      "id": "alert-invalid-domain-certificate-1"
+    },
+    {
+      "name": "Get SSL Certificate",
+      "type": "n8n-nodes-base.uproc",
+      "position": [
+        650,
+        290
+      ],
+      "parameters": {
+        "tool": "getDomainCertificate",
+        "group": "internet",
+        "domain": "={{ $json.domain }}",
+        "additionalOptions": {}
+      },
+      "typeVersion": 1,
+      "id": "alert-invalid-domain-certificate-2"
+    },
+    {
+      "name": "Read certificate validity",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function certificate({body,domain}) {\n const valid=body?.message?.valid;if(valid!==true&&valid!==false&&valid!=='true'&&valid!=='false')throw Error('Uproc did not return certificate validity');\n return {invalid:valid===false||valid==='false',text:'The certificate for '+domain+' is outside its validity date range.'};\n}\n\nreturn [{json:certificate({body:$input.first().json,domain:$('Set domain').first().json.domain})}];"
+      },
+      "id": "alert-invalid-domain-certificate-3"
+    },
+    {
+      "name": "Outside validity dates?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.invalid.toString() }}",
+              "value2": "true",
+              "operation": "equal"
+            }
+          ]
+        }
+      },
+      "id": "alert-invalid-domain-certificate-4"
+    },
+    {
+      "name": "Send Expired Alarm",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        1070,
+        270
+      ],
+      "parameters": {
+        "text": "={{ $json.text }}",
+        "chatId": "YOUR_TELEGRAM_CHAT_ID",
+        "additionalFields": {}
+      },
+      "typeVersion": 1,
+      "id": "alert-invalid-domain-certificate-5"
+    }
+  ],
+  "active": false,
+  "settings": {},
+  "connections": {
+    "On clicking 'execute'": {
+      "main": [
+        [
+          {
+            "node": "Set domain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set domain": {
+      "main": [
+        [
+          {
+            "node": "Get SSL Certificate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get SSL Certificate": {
+      "main": [
+        [
+          {
+            "node": "Read certificate validity",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read certificate validity": {
+      "main": [
+        [
+          {
+            "node": "Outside validity dates?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Outside validity dates?": {
+      "main": [
+        [
+          {
+            "node": "Send Expired Alarm",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    }
+  },
+  "pinData": {}
+}
