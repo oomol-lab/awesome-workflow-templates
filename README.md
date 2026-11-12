@@ -284,6 +284,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Send Sheet Investment Updates to Discord](workflows/send-sheet-investment-updates-to-discord/) - Watch investment security codes and send the complete sheet table to Discord when rows are added or codes change.
 - [Email a Daily Gmail Summary](workflows/email-daily-gmail-summary/) - Summarize the previous day’s matching Gmail messages and email the summary and actions.
 - [Save Orlen Invoices to Drive](workflows/save-orlen-invoices-to-drive/) - Archive unread Orlen invoice attachments in dated Google Drive folders and notify Slack.
+- [Analyze Telegram Images with AI](workflows/analyze-telegram-images-with-ai/) - Describe photos sent to a Telegram bot and reply in the same chat.
 
 ## Content
 
