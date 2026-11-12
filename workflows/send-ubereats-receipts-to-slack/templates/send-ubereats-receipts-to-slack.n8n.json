@@ -1,0 +1,187 @@
+{
+  "name": "Send Uber Eats Receipts to Slack",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "send-ubereats-receipts-to-slack-0",
+      "name": "Loop Over Items",
+      "type": "n8n-nodes-base.splitInBatches",
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "options": {}
+      },
+      "typeVersion": 3
+    },
+    {
+      "id": "send-ubereats-receipts-to-slack-1",
+      "name": "Click to Test Flow",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        40,
+        0
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "send-ubereats-receipts-to-slack-2",
+      "name": "Get emails from Gmail with certain subject",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "simple": false,
+        "filters": {
+          "q": "subject:透過 Uber Eats 系統送出的訂單"
+        },
+        "options": {},
+        "operation": "getAll",
+        "returnAll": true
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "id": "send-ubereats-receipts-to-slack-3",
+      "name": "Receive certain keyword Gmail Trigger",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "position": [
+        120,
+        -180
+      ],
+      "parameters": {
+        "simple": false,
+        "filters": {
+          "q": "subject:透過 Uber Eats 系統送出的訂單"
+        },
+        "options": {},
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyHour",
+              "minute": 30
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "send-ubereats-receipts-to-slack-4",
+      "name": "Extract Price, Shop, Date, TIme",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        620,
+        60
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function format({body}){if(typeof body!=='string')throw Error('Email has no plain text');const amount=body.match(/\\$(\\d+(?:\\.\\d{2})?)/)?.[1],shop=body.match(/以下是您在([\\u4e00-\\u9fa5a-zA-Z0-9\\s]+)訂購/)?.[1],date=body.match(/Date: (\\d{4})年(\\d{1,2})月(\\d{1,2})日/),time=body.match(/(上午|下午) (\\d{1,2}):(\\d{2})/);if(!amount||!shop||!date)throw Error('Receipt does not match the expected format');const day=`${date[1]}.${date[2]}.${date[3]}`,hour=time?((Number(time[2])%12)+(time[1]==='下午'?12:0))+':'+time[3]:'';const link='moze3://expense?'+Object.entries({amount,account:'信用卡',subcategory:'外送',store:shop,date:day,project:'生活開銷',...(time?{time:hour}:{})}).map(([k,v])=>encodeURIComponent(k)+'='+encodeURIComponent(v)).join('&');const esc=x=>x.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');const text=`Ubereat 訂餐資訊:\\n商家: ${shop}\\n金額: ${amount}\\n日期: ${day}\\n記帳網址: ${link}`,blocks=[{type:'section',text:{type:'mrkdwn',text:`Ubereat 訂餐資訊:\\n\\n*商家:* ${esc(shop)}\\n*金額:* ${amount}\\n*日期:* ${day}`}},{type:'divider'},{type:'section',text:{type:'mrkdwn',text:'Moze 記帳請點我'},accessory:{type:'button',text:{type:'plain_text',text:'記帳'},value:'click',url:link,action_id:'button-action'}}];return{text,blocks};}\n\nreturn {json:format({body:$json.text})};"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "send-ubereats-receipts-to-slack-5",
+      "name": "Send to Slack with Block",
+      "type": "n8n-nodes-base.slack",
+      "position": [
+        800,
+        60
+      ],
+      "parameters": {
+        "text": "={{ $json.text }}",
+        "select": "channel",
+        "blocksUi": "={{ {blocks:$json.blocks} }}",
+        "channelId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_SLACK_CHANNEL_ID"
+        },
+        "messageType": "block",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        },
+        "authentication": "oAuth2"
+      },
+      "typeVersion": 2.3
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Extract Price, Shop, Date, TIme",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Click to Test Flow": {
+      "main": [
+        [
+          {
+            "node": "Get emails from Gmail with certain subject",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send to Slack with Block": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Price, Shop, Date, TIme": {
+      "main": [
+        [
+          {
+            "node": "Send to Slack with Block",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Receive certain keyword Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get emails from Gmail with certain subject": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
