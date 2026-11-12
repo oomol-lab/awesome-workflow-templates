@@ -410,6 +410,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Merge Ingredient and Band Lists](workflows/merge-ingredient-and-band-lists/) - Learn matching, enrichment, and append operations with ingredient and musician examples.
 - [Sum Example Dollar Amounts](workflows/sum-example-dollar-amounts/) - Learn how to sum three example USD amounts in a workflow.
 - [Sum Three USD Example Values](workflows/sum-three-usd-example-values/) - Learn how to sum three example USD amounts in a workflow.
+- [Route Example Items by ID](workflows/route-example-items-by-id/) - Learn how a condition routes two example items and assigns a name on each branch.
 
 ## Analytics
 
