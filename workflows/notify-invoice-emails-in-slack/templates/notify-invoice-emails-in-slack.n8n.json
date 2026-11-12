@@ -1,0 +1,427 @@
+{
+  "name": "Notify Invoice Emails in Slack",
+  "nodes": [
+    {
+      "name": "Check for new emails",
+      "type": "n8n-nodes-base.emailReadImap",
+      "position": [
+        500,
+        300
+      ],
+      "parameters": {
+        "format": "resolved",
+        "mailbox": "Inbox",
+        "options": {}
+      },
+      "typeVersion": 1,
+      "id": "notify-invoice-emails-in-slack-0"
+    },
+    {
+      "name": "If email body contains invoice",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        700,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json[\"text\"].toLowerCase()}}",
+              "value2": "invoice",
+              "operation": "contains"
+            }
+          ]
+        },
+        "combineOperation": "any"
+      },
+      "typeVersion": 1,
+      "id": "notify-invoice-emails-in-slack-1"
+    },
+    {
+      "name": "Select invoice attachment",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if(!$binary?.attachment_0)throw Error(\"Invoice attachment missing\"); return {json:$json,binary:$binary};"
+      },
+      "id": "notify-invoice-emails-in-slack-2"
+    },
+    {
+      "name": "Submit the receipt to Mindee",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://api-v2.mindee.net/v2/products/extraction/enqueue",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model_id",
+              "value": "YOUR_MINDEE_MODEL_ID"
+            },
+            {
+              "name": "file",
+              "parameterType": "formBinaryData",
+              "inputDataFieldName": "attachment_0"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "notify-invoice-emails-in-slack-3"
+    },
+    {
+      "name": "Validate the receipt job",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if(!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test($json.job?.id || \"\"))throw Error(\"Mindee returned an invalid job ID\"); return {json:{jobId:$json.job.id}};"
+      },
+      "id": "notify-invoice-emails-in-slack-4"
+    },
+    {
+      "name": "Wait for receipt processing",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "parameters": {
+        "amount": 3,
+        "unit": "seconds"
+      },
+      "id": "notify-invoice-emails-in-slack-5"
+    },
+    {
+      "name": "Check the receipt job",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ \"https://api-v2.mindee.net/v2/jobs/\" + $(\"Validate the receipt job\").first().json.jobId + \"?redirect=false\" }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "notify-invoice-emails-in-slack-6"
+    },
+    {
+      "name": "Check the job status",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const job=$json.job; const expected=$(\"Validate the receipt job\").first().json.jobId; if(!job || job.id!==expected || job.status===\"Failed\" || (job.status===\"Processing\" && $runIndex>=199)) throw Error(\"Mindee job failed or timed out\"); if(job.status!==\"Processing\" && job.status!==\"Processed\") throw Error(\"Invalid Mindee status\"); if(job.status===\"Processed\" && !/^https:\\/\\/api-v2\\.mindee\\.net\\/v2\\/products\\/extraction\\/results\\/[0-9a-f-]{36}$/i.test(job.result_url||\"\"))throw Error(\"Invalid result URL\"); return {json:{ready:job.status===\"Processed\",resultUrl:job.result_url}};"
+      },
+      "id": "notify-invoice-emails-in-slack-7"
+    },
+    {
+      "name": "Is the receipt ready?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "ready",
+              "leftValue": "={{ $json.ready }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "notify-invoice-emails-in-slack-8"
+    },
+    {
+      "name": "Read the receipt result",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.resultUrl }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "notify-invoice-emails-in-slack-9"
+    },
+    {
+      "name": "Prepare invoice notification",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const amount=$json?.inference?.result?.fields?.total_amount?.value; if($json?.inference?.job?.id!==$(\"Validate the receipt job\").item.json.jobId || typeof amount!==\"number\" || !Number.isFinite(amount))throw Error(\"Invalid invoice total\"); const email=$(\"Check for new emails\").item; return {json:{amount},binary:email.binary};"
+      },
+      "id": "notify-invoice-emails-in-slack-10"
+    },
+    {
+      "name": "If Amount > 1000",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "amount",
+              "leftValue": "={{ $json.amount }}",
+              "rightValue": 1000,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "notify-invoice-emails-in-slack-11"
+    },
+    {
+      "name": "Send email to finance manager",
+      "type": "n8n-nodes-base.emailSend",
+      "position": [
+        1340,
+        120
+      ],
+      "parameters": {
+        "text": "Hi,\n\nThere is a new high value invoice to be paid that you may need to approve.\n\n~ n8n workflow",
+        "options": {},
+        "subject": "New high value invoice",
+        "toEmail": "finance@example.com",
+        "fromEmail": "workflow@example.com",
+        "attachments": "attachment_0"
+      },
+      "typeVersion": 1,
+      "id": "notify-invoice-emails-in-slack-12"
+    },
+    {
+      "name": "Send new invoice notification",
+      "type": "n8n-nodes-base.slack",
+      "position": [
+        1580,
+        300
+      ],
+      "parameters": {
+        "text": ":new: There is a new invoice to pay :new:",
+        "channel": "YOUR_SLACK_CHANNEL_ID",
+        "blocksUi": {
+          "blocksValues": []
+        },
+        "attachments": [
+          {
+            "color": "#FFBF00",
+            "fields": {
+              "item": [
+                {
+                  "short": true,
+                  "title": "Amount",
+                  "value": "={{ $(\"Prepare invoice notification\").item.json.amount }}"
+                },
+                {
+                  "short": false,
+                  "title": "From",
+                  "value": "={{ $(\"Check for new emails\").item.json.from.value[0].address }}"
+                },
+                {
+                  "short": true,
+                  "title": "Subject",
+                  "value": "={{ $(\"Check for new emails\").item.json.subject }}"
+                }
+              ]
+            },
+            "footer": "=*Date:* {{ $(\"Check for new emails\").item.json.date }}"
+          }
+        ],
+        "otherOptions": {}
+      },
+      "typeVersion": 1,
+      "id": "notify-invoice-emails-in-slack-13"
+    }
+  ],
+  "active": false,
+  "settings": {},
+  "connections": {
+    "Check for new emails": {
+      "main": [
+        [
+          {
+            "node": "If email body contains invoice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select invoice attachment": {
+      "main": [
+        [
+          {
+            "node": "Submit the receipt to Mindee",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Submit the receipt to Mindee": {
+      "main": [
+        [
+          {
+            "node": "Validate the receipt job",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate the receipt job": {
+      "main": [
+        [
+          {
+            "node": "Wait for receipt processing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for receipt processing": {
+      "main": [
+        [
+          {
+            "node": "Check the receipt job",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check the receipt job": {
+      "main": [
+        [
+          {
+            "node": "Check the job status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check the job status": {
+      "main": [
+        [
+          {
+            "node": "Is the receipt ready?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the receipt result": {
+      "main": [
+        [
+          {
+            "node": "Prepare invoice notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare invoice notification": {
+      "main": [
+        [
+          {
+            "node": "If Amount > 1000",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send email to finance manager": {
+      "main": [
+        [
+          {
+            "node": "Send new invoice notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If email body contains invoice": {
+      "main": [
+        [
+          {
+            "node": "Select invoice attachment",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Is the receipt ready?": {
+      "main": [
+        [
+          {
+            "node": "Read the receipt result",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait for receipt processing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Amount > 1000": {
+      "main": [
+        [
+          {
+            "node": "Send email to finance manager",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send new invoice notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {}
+}

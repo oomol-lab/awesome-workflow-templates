@@ -338,6 +338,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Start Transcription Jobs for S3 Objects](workflows/start-transcription-jobs-for-s3-objects/) - Start an automatic-language Amazon Transcribe job for each nonempty object in an S3 bucket.
 - [Save User Registration to Airtable](workflows/save-user-registration-to-airtable/) - Record a user registration with contact details and subscription choice in Airtable.
 - [Send Daily Weather to Gotify](workflows/send-daily-weather-to-gotify/) - Send the current temperature for a chosen city to a Gotify application each morning.
+- [Notify Invoice Emails in Slack](workflows/notify-invoice-emails-in-slack/) - Extract invoice totals from incoming email attachments and notify finance and Slack.
 
 ## Content
 
