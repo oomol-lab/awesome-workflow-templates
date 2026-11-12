@@ -394,6 +394,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Recent WordPress Posts](workflows/wordpress-recent-posts/) - Read the five most recent published posts from a WordPress site.
 - [French to English Audio](workflows/french-to-english-audio/) - Generate French speech from text, transcribe it, translate the transcript into English and generate English speech in the same voice.
 - [Publish Recent WordPress Posts to Medium](workflows/publish-recent-wordpress-posts-to-medium/) - Publish up to five recent WordPress posts to Medium.
+- [List Contentful Entry Fields](workflows/list-contentful-entry-fields/) - Read the fields of all published entries in a Contentful environment.
 
 ## Commerce
 
