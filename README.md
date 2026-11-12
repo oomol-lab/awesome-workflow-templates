@@ -308,6 +308,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Send Monthly ProfitWell Metrics to Mattermost](workflows/send-monthly-profitwell-metrics-to-mattermost/) - Post monthly ProfitWell customer and recurring revenue metrics to a Mattermost channel.
 - [Save Analytics Sessions by Country to Airtable](workflows/analytics-sessions-by-country-to-airtable/) - Read Google Analytics sessions by country and add the results to Airtable.
 - [Email a Google Analytics Comparison Report](workflows/email-a-google-analytics-comparison-report/) - Compare page engagement, search performance and country views across two seven-day periods in an emailed report.
+- [Send Weekly Analytics Comparison to Email and Telegram](workflows/send-weekly-analytics-comparison-to-email-and-telegram/) - Compare weekly Google Analytics metrics with the same dates in the previous year and send an AI-written report by email and Telegram.
 
 ## Lifestyle
 

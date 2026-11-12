@@ -1,0 +1,334 @@
+{
+  "name": "Send Weekly Analytics Comparison to Email and Telegram",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "send-weekly-analytics-comparison-to-email-and-telegram-0",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        -1740,
+        300
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtDay": [
+                1
+              ],
+              "triggerAtHour": 7
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "name": "Configure the report",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function dates({propertyId,recipient,chatId}){if(!/^\\d+$/.test(propertyId)||typeof recipient!=='string'||!/^\\S+@\\S+\\.\\S+$/.test(recipient)||typeof chatId!=='string'||!chatId||chatId.startsWith('YOUR_'))throw Error('Configure property, email and Telegram chat');const today=new Date(),iso=d=>d.toISOString().slice(0,10),end=new Date(Date.UTC(today.getUTCFullYear(),today.getUTCMonth(),today.getUTCDate()-1)),start=new Date(end.getTime()-6*86400000),year=d=>{let x=new Date(d);x.setUTCFullYear(x.getUTCFullYear()-1);return x};const priorEnd=year(end),priorStart=new Date(priorEnd.getTime()-6*86400000);return {propertyId,recipient,chatId,recentStart:iso(start),recentEnd:iso(end),previousStart:iso(priorStart),previousEnd:iso(priorEnd)}}\n\nreturn [{json:dates({propertyId:'YOUR_PROPERTY_ID',recipient:'report@example.com',chatId:'configured-separately'})}];"
+      },
+      "id": "send-weekly-analytics-comparison-to-email-and-telegram-1"
+    },
+    {
+      "id": "send-weekly-analytics-comparison-to-email-and-telegram-2",
+      "name": "Google Analytics Letzte 7 Tage",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -1540,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'https://analyticsdata.googleapis.com/v1beta/properties/' + $('Configure the report').first().json.propertyId + ':runReport' }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleAnalyticsOAuth2",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {dateRanges:[{startDate:$('Configure the report').first().json.recentStart,endDate:$('Configure the report').first().json.recentEnd}],dimensions:[{name:'date'}],metrics:[{\"name\":\"screenPageViews\"},{\"name\":\"totalUsers\"},{\"name\":\"sessions\"},{\"name\":\"sessionsPerUser\"},{\"name\":\"averageSessionDuration\"},{\"name\":\"ecommercePurchases\"},{\"name\":\"averagePurchaseRevenue\"},{\"name\":\"purchaseRevenue\"}],keepEmptyRows:true,limit:10000,offset:0} }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "send-weekly-analytics-comparison-to-email-and-telegram-3",
+      "name": "Summarize Data",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -1080,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const r=$input.first().json.body, rows=r?.rows??[],count=r?.rowCount??(rows.length===0?0:null);if(!r||!Array.isArray(rows)||!Number.isInteger(count)||count!==rows.length||count>8)throw Error('Invalid analytics report');const a=Array(8).fill(0);for(const row of rows){if(!Array.isArray(row.dimensionValues)||!/^\\d{8}$/.test(row.dimensionValues[0]?.value)||!Array.isArray(row.metricValues)||row.metricValues.length!==8)throw Error('Invalid analytics row');row.metricValues.forEach((x,i)=>{const n=Number(x.value);if(typeof x.value!=='string'||!Number.isFinite(n))throw Error('Invalid metric');a[i]+=n})}for(const i of [3,4,6])if(rows.length)a[i]/=rows.length;return [{json:{sum_Aufrufe:a[0],sum_Nutzer:a[1],sum_Sitzungen:a[2],average_Sitzungen_pro_Nutzer:a[3],average_Sitzungsdauer:a[4],sum_Käufe:a[5],average_Revenue_pro_Kauf:a[6],sum_Revenue:a[7]},pairedItem:{item:0}}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "send-weekly-analytics-comparison-to-email-and-telegram-4",
+      "name": "Google Analytics: Past 7 days of the previous year",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -600,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'https://analyticsdata.googleapis.com/v1beta/properties/' + $('Configure the report').first().json.propertyId + ':runReport' }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleAnalyticsOAuth2",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {dateRanges:[{startDate:$('Configure the report').first().json.previousStart,endDate:$('Configure the report').first().json.previousEnd}],dimensions:[{name:'date'}],metrics:[{\"name\":\"screenPageViews\"},{\"name\":\"totalUsers\"},{\"name\":\"sessions\"},{\"name\":\"sessionsPerUser\"},{\"name\":\"averageSessionDuration\"},{\"name\":\"ecommercePurchases\"},{\"name\":\"averagePurchaseRevenue\"},{\"name\":\"purchaseRevenue\"}],keepEmptyRows:true,limit:10000,offset:0} }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "send-weekly-analytics-comparison-to-email-and-telegram-5",
+      "name": "Summarize Data1",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -220,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const r=$input.first().json.body, rows=r?.rows??[],count=r?.rowCount??(rows.length===0?0:null);if(!r||!Array.isArray(rows)||!Number.isInteger(count)||count!==rows.length||count>8)throw Error('Invalid analytics report');const a=Array(8).fill(0);for(const row of rows){if(!Array.isArray(row.dimensionValues)||!/^\\d{8}$/.test(row.dimensionValues[0]?.value)||!Array.isArray(row.metricValues)||row.metricValues.length!==8)throw Error('Invalid analytics row');row.metricValues.forEach((x,i)=>{const n=Number(x.value);if(typeof x.value!=='string'||!Number.isFinite(n))throw Error('Invalid metric');a[i]+=n})}for(const i of [3,4,6])if(rows.length)a[i]/=rows.length;return [{json:{sum_Aufrufe:a[0],sum_Nutzer:a[1],sum_Sitzungen:a[2],average_Sitzungen_pro_Nutzer:a[3],average_Sitzungsdauer:a[4],sum_Käufe:a[5],average_Revenue_pro_Kauf:a[6],sum_Revenue:a[7]},pairedItem:{item:0}}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "send-weekly-analytics-comparison-to-email-and-telegram-6",
+      "name": "Processing for email",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "position": [
+        60,
+        80
+      ],
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o",
+          "cachedResultName": "GPT-4O"
+        },
+        "options": {},
+        "messages": {
+          "values": [
+            {
+              "content": "=Please analyze the following data and output the results in tabular form:\n\n| Metrics | Last 7 days | Previous year | Percentage change |\n|-------------------------------|---------------|---------|\n| Total page views | {{ $('Summarize Data').item.json.sum_Aufrufe }} | {{ $('Summarize Data1').item.json.sum_Aufrufe }} | Percentage change |\n| total users | {{ $('Summarize Data').item.json.sum_Nutzer }} | {{ $('Summarize Data1').item.json.sum_Nutzer }} | Percentage change |\n| Total sessions | {{ $('Summarize Data').item.json.sum_Sitzungen }} | {{ $('Summarize Data1').item.json.sum_Sitzungen }} | Percentage change |\n| Average sessions/user | {{ $('Summarize Data').item.json.average_Sitzungen_pro_Nutzer }} | {{ $('Summarize Data1').item.json.average_Sitzungen_pro_Nutzer }} | Percentage change |\n| Average session duration | {{ $('Summarize Data').item.json.average_Sitzungsdauer }} | {{ $('Summarize Data1').item.json.average_Sitzungsdauer }} | Percentage change |\n| Total purchases | {{ $('Summarize Data').item.json['sum_Käufe'] }} | {{ $('Summarize Data1').item.json['sum_Käufe'] }} | Percentage change |\n| Average revenue/purchase | {{ $('Summarize Data').item.json.average_Revenue_pro_Kauf }} | {{ $('Summarize Data1').item.json.average_Revenue_pro_Kauf }} | Percentage change |\n| Total revenue | {{ $('Summarize Data').item.json.sum_Revenue }} | {{ $('Summarize Data1').item.json.sum_Revenue }} | Percentage change |\n\nFormat for numbers:\n- Dot (.) for numbers in thousands (e.g. 4,000)\n- Comma (,) for decimal numbers (e.g. 3.4)\n- Conversion of average session duration in minutes instead of seconds\n- Average turnover/purchase and total turnover in the property reporting currency, without adding a currency symbol\n\nPlease write a short summary of the analyzed data above the table (in a maximum of 3 sentences!)\n\nPlease format to a sleek and modern HTML format so that the result can be sent as HTML mail!\n\nStructure of the e-mail:\n\n“Hello! Here is the Weekly Report: Google Analytics of the last 7 days!\n[Summary]\n[Table]”"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.7
+    },
+    {
+      "id": "send-weekly-analytics-comparison-to-email-and-telegram-7",
+      "name": "Send Email",
+      "type": "n8n-nodes-base.emailSend",
+      "position": [
+        420,
+        80
+      ],
+      "parameters": {
+        "html": "={{ $json.message.content }}",
+        "options": {},
+        "subject": "Weekly Report: Google Analytics: Last 7 days",
+        "toEmail": "YOUR_REPORT_EMAIL",
+        "fromEmail": "YOUR_SENDER_EMAIL"
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "id": "send-weekly-analytics-comparison-to-email-and-telegram-8",
+      "name": "Processing for Telegram",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "position": [
+        60,
+        420
+      ],
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "options": {},
+        "messages": {
+          "values": [
+            {
+              "content": "=Convert the following text from HTML to normal text:\n\n{{ $('Processing for email').item.json.message.content }}\n\nPlease format the table so that each metric is a separate paragraph!\n\nExample:\n\nTotal views: xx.xxx\nTotal views previous year: xx,xxx\nDifference: x.xx %\n\nTotal users: xx,xxx\nTotal users previous year: xx,xxx\nDifference: -x.xx %"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.7
+    },
+    {
+      "id": "send-weekly-analytics-comparison-to-email-and-telegram-9",
+      "name": "Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        420,
+        420
+      ],
+      "parameters": {
+        "text": "={{ $json.message.content }}",
+        "chatId": "YOUR_TELEGRAM_CHAT_ID",
+        "additionalFields": {}
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "send-weekly-analytics-comparison-to-email-and-telegram-10",
+      "name": "Calculator",
+      "type": "@n8n/n8n-nodes-langchain.toolCalculator",
+      "position": [
+        140,
+        300
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC"
+  },
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Configure the report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configure the report": {
+      "main": [
+        [
+          {
+            "node": "Google Analytics Letzte 7 Tage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Analytics Letzte 7 Tage": {
+      "main": [
+        [
+          {
+            "node": "Summarize Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Summarize Data": {
+      "main": [
+        [
+          {
+            "node": "Google Analytics: Past 7 days of the previous year",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Analytics: Past 7 days of the previous year": {
+      "main": [
+        [
+          {
+            "node": "Summarize Data1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Summarize Data1": {
+      "main": [
+        [
+          {
+            "node": "Processing for email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Processing for email": {
+      "main": [
+        [
+          {
+            "node": "Send Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Email": {
+      "main": [
+        [
+          {
+            "node": "Processing for Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Processing for Telegram": {
+      "main": [
+        [
+          {
+            "node": "Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculator": {
+      "ai_tool": [
+        [
+          {
+            "node": "Processing for email",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
