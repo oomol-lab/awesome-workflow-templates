@@ -279,6 +279,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Archive Whitelisted Email Attachments to Drive](workflows/archive-whitelisted-email-attachments-to-drive/) - Save attachments from whitelisted senders into company and month folders in Google Drive.
 - [Plan Random Mealie Dinners](workflows/plan-random-mealie-dinners/) - Choose random recipes from a Mealie category and create dinner plans for consecutive days.
 - [Remind Notion Assignees in Slack](workflows/remind-notion-assignees-in-slack/) - Send weekday Slack reminders for incomplete Notion database tasks assigned to two configured people.
+- [Save First Gmail Attachments to Drive](workflows/save-first-gmail-attachments-to-drive/) - Save the first attachment from each of up to ten Gmail messages in a chosen label to Google Drive.
 
 ## Content
 
