@@ -388,6 +388,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Turn On a Philips Hue Light](workflows/turn-on-a-philips-hue-light/) - Turn on a Philips Hue light and set its brightness.
 - [Create, Update and Read a FileMaker Record](workflows/create-update-and-read-a-filemaker-record/) - Create a FileMaker contact, update its country, and read the same record.
 - [Email Hacker News Headlines as a Spreadsheet](workflows/email-hacker-news-headlines-as-a-spreadsheet/) - Email the current Hacker News front-page titles and links in a spreadsheet attachment.
+- [Email a Random Open Library Book](workflows/email-a-random-open-library-book/) - Choose a random book from an Open Library subject and email a recommendation.
 
 ## Content
 
