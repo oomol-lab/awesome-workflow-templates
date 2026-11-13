@@ -540,6 +540,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Extract HackerNoon Heading Links](workflows/extract-hackernoon-heading-links/) - Extract titles and links from HackerNoon homepage headings.
 - [Inspect a Random Image with ImageKit](workflows/inspect-random-image-with-imagekit/) - Inspect a random sample image and return its image metadata.
 - [Upload a URL and List S3 Objects](workflows/upload-url-and-list-s3-objects/) - Upload a public file to an S3 bucket and list the bucket objects.
+- [Respond to an HMAC CRC Challenge](workflows/respond-to-hmac-crc-challenge/) - Answer a CRC webhook challenge with a signed response token.
 
 ## Communication
 
