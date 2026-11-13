@@ -505,6 +505,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Back Up n8n Workflows Daily to GitHub](workflows/back-up-n8n-workflows-daily-to-github/) - Save new or changed n8n workflow JSON files to a GitHub repository.
 - [Publish New GitLab Releases to Outline](workflows/publish-gitlab-releases-to-outline/) - Publish an Outline document when a GitLab release is created.
 - [Back Up n8n Workflows to Google Drive](workflows/back-up-n8n-workflows-to-google-drive/) - Save n8n workflows as JSON in a fresh Drive folder and clean up older items in a dedicated parent folder.
+- [Explore HTTP Request Examples](workflows/explore-http-request-examples/) - Explore JSON arrays, a random Wikipedia title, and paginated GitHub stars.
 
 ## Communication
 
