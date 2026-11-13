@@ -242,6 +242,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Create Instagram Captions for New Airtable Records](workflows/airtable-new-record-instagram-caption/) - Create Instagram captions for new Airtable editorial records using audience background.
 - [Sync Facebook Leads to KlickTipp](workflows/sync-facebook-leads-to-klicktipp/) - Import Facebook Lead Ads contacts and form answers into KlickTipp.
 - [Create Mautic Contacts for New Shopify Customers](workflows/create-mautic-contacts-for-new-shopify-customers/) - Create a Mautic contact when a Shopify customer is created.
+- [Share New Shopify Products on X and Telegram](workflows/share-new-shopify-products-on-x-and-telegram/) - Announce a new Shopify product on X and in a Telegram chat.
 
 ## Support
 
