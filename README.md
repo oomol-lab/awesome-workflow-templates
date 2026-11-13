@@ -51,6 +51,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Databases](#databases)
 - [Social](#social)
 - [IT Operations](#it-operations)
+- [AI](#ai)
 - [Contribute](#contribute)
 - [Licensing](#licensing)
 
@@ -677,6 +678,10 @@ A growing collection of automation workflows for connecting apps and getting rep
 ## IT Operations
 
 - [Create, Update and Read a Workspace User](workflows/create-update-read-workspace-user/) - Create a Google Workspace user, update their surname, and retrieve the user.
+
+## AI
+
+- [Repair Structured State Data with AI](workflows/repair-structured-state-data-with-ai/) - Ask a model for state and city data and repair an answer that does not match the required JSON format.
 
 ## Contribute
 
