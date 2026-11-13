@@ -394,6 +394,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Email a Random Open Library Book](workflows/email-a-random-open-library-book/) - Choose a random book from an Open Library subject and email a recommendation.
 - [Extract Icypeas Search Notifications](workflows/extract-icypeas-search-notifications/) - Receive an Icypeas search notification and extract its first email and contact name.
 - [Set Slack Status and Light from Calendar Starts](workflows/set-slack-status-and-light-from-calendar-starts/) - Update Slack status and a light webhook when a Google Calendar event starts.
+- [Post a List of Names to a Webhook](workflows/post-a-list-of-names-to-a-webhook/) - Send each name in a supplied list to an authenticated HTTP endpoint.
 
 ## Content
 
