@@ -392,6 +392,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Email Hacker News Headlines as a Spreadsheet](workflows/email-hacker-news-headlines-as-a-spreadsheet/) - Email the current Hacker News front-page titles and links in a spreadsheet attachment.
 - [Email a Random Open Library Book](workflows/email-a-random-open-library-book/) - Choose a random book from an Open Library subject and email a recommendation.
 - [Extract Icypeas Search Notifications](workflows/extract-icypeas-search-notifications/) - Receive an Icypeas search notification and extract its first email and contact name.
+- [Set Slack Status and Light from Calendar Starts](workflows/set-slack-status-and-light-from-calendar-starts/) - Update Slack status and a light webhook when a Google Calendar event starts.
 
 ## Content
 
