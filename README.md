@@ -430,6 +430,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Save a Sales Line Chart to Google Drive](workflows/save-sales-line-chart-to-google-drive/) - Render a line chart from sales data and save the PNG to Google Drive.
 - [Comment on Jira for a Figma Version](workflows/comment-jira-on-figma-version/) - Post Figma Commit plugin version details to the linked Jira issue.
 - [Save Form Submissions to Airtable and Google Sheets](workflows/save-form-submissions-to-airtable-and-sheets/) - Store form submissions in Airtable and Google Sheets and send a message after each write.
+- [Send AI Calendar Event Reminders to Telegram](workflows/telegram-ai-calendar-event-reminders/) - Generate a friendly Telegram reminder for upcoming Google Calendar events.
 
 ## Content
 

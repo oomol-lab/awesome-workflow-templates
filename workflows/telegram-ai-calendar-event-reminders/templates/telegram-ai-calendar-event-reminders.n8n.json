@@ -1,0 +1,389 @@
+{
+  "name": "Send AI Calendar Event Reminders to Telegram",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "telegram-ai-calendar-event-reminders-0",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "disabled": true,
+      "position": [
+        -40,
+        300
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 1
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "telegram-ai-calendar-event-reminders-1",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "position": [
+        700,
+        500
+      ],
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "telegram-ai-calendar-event-reminders-2",
+      "name": "Get upcoming event",
+      "type": "n8n-nodes-base.googleCalendar",
+      "position": [
+        240,
+        300
+      ],
+      "parameters": {
+        "limit": 5,
+        "options": {},
+        "timeMax": "={{ $now.plus({ hour: 1, minute:1 }) }}",
+        "timeMin": "={{ $now.plus({ hour: 1 }) }}",
+        "calendar": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_CALENDAR_ID"
+        },
+        "operation": "getAll"
+      },
+      "typeVersion": 1.3
+    },
+    {
+      "id": "telegram-ai-calendar-event-reminders-3",
+      "name": "Secretary Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        720,
+        300
+      ],
+      "parameters": {
+        "text": "=These are the details of the event/appointment:\n\nEvent Name: {{ $json.summary }}\nDescription: {{ $json.description }}\nLocation: {{ $json.location }}\nStart: {{ $json.start.dateTime }}\nEnd: {{ $json.end.dateTime }}\nCreated by: {{ $json.creator.email }}",
+        "options": {
+          "systemMessage": "=## Core Identity\nYou are a professional and friendly virtual secretary, dedicated to reminder appointments with efficiency and a warm personal touch.\n\n## Communication Style\n- Communicate in a conversational, approachable manner\n- Maintain a balance between professional competence and friendly rapport\n- Use a tone that is informal yet precise\n- Inject occasional light humor and personality into interactions\n\n## Key Responsibilities\n1. Calendar Management\n   - Provide timely reminders and scheduling updates\n\n2. Communication Approach\n   - Respond promptly and clearly\n   - Maintain confidentiality and discretion\n\n## Interaction Guidelines\n- Use a friendly, conversational tone\n- Just describe the details of the event without asking questions\n\n## Tone and Language\n- Warm and approachable\n- Professional but not overly formal\n- Direct and clear in communication\n- Use simple, straightforward language\n- Show genuine care and attentiveness\n\nRemember: Your primary goal is to make the user's life easier, more organized, and less stressful through efficient and friendly administrative support."
+        },
+        "promptType": "define",
+        "hasOutputParser": false
+      },
+      "typeVersion": 1.8
+    },
+    {
+      "id": "telegram-ai-calendar-event-reminders-4",
+      "name": "Send reminder",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        1100,
+        300
+      ],
+      "parameters": {
+        "text": "={{ $('Secretary Agent').item.json.output }}",
+        "chatId": "YOUR_TELEGRAM_CHAT_ID",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "telegram-ai-calendar-event-reminders-5",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -40,
+        -140
+      ],
+      "parameters": {
+        "color": 3,
+        "width": 620,
+        "content": "## Google Calendar Event Reminder\nThis smart **Google Calendar** workflow fixes that by sending you a clear, friendly reminder exactly **1 hour before your event starts**—delivered through **Telegram** as if a personal assistant were looking out for you. Powered by **AI**, it transforms cold calendar alerts into warm, conversational nudges you won't ignore."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "telegram-ai-calendar-event-reminders-6",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -40,
+        40
+      ],
+      "parameters": {
+        "width": 620,
+        "height": 140,
+        "content": "## STEP 1\n- In the \"Get upcoming event\" node enter how much time before the event starts you want to be notified. It is currently set to 1 hour\n- In the Telegram node replace CHAT_ID with that of your personal Bot"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "telegram-ai-calendar-event-reminders-7",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        420,
+        240
+      ],
+      "parameters": {
+        "width": 220,
+        "height": 200,
+        "content": "Prevent multiple reminders for the same event"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "telegram-ai-calendar-event-reminders-loop",
+      "name": "Process one event",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      }
+    },
+    {
+      "id": "telegram-ai-calendar-event-reminders-exists",
+      "name": "Existing checkpoint",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "event_id",
+              "condition": "eq",
+              "keyValue": "={{ $json.id }}"
+            }
+          ]
+        },
+        "operation": "rowExists"
+      }
+    },
+    {
+      "id": "telegram-ai-calendar-event-reminders-missing",
+      "name": "New event checkpoint",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "event_id",
+              "condition": "eq",
+              "keyValue": "={{ $json.id }}"
+            }
+          ]
+        },
+        "operation": "rowNotExists"
+      }
+    },
+    {
+      "id": "telegram-ai-calendar-event-reminders-pending",
+      "name": "Mark reminder pending",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "event_id": "={{ $('Process one event').item.json.id }}",
+            "status": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "telegram-ai-calendar-event-reminders-done",
+      "name": "Mark reminder sent",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Mark reminder pending').item.json.id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "sent"
+          },
+          "schema": []
+        },
+        "options": {}
+      }
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "timezone": "UTC",
+    "callerPolicy": "workflowsFromSameOwner",
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Secretary Agent": {
+      "main": [
+        [
+          {
+            "node": "Mark reminder pending",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get upcoming event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Secretary Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get upcoming event": {
+      "main": [
+        [
+          {
+            "node": "Process one event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process one event": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Existing checkpoint",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "New event checkpoint",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Existing checkpoint": {
+      "main": [
+        [
+          {
+            "node": "Process one event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "New event checkpoint": {
+      "main": [
+        [
+          {
+            "node": "Secretary Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark reminder pending": {
+      "main": [
+        [
+          {
+            "node": "Send reminder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send reminder": {
+      "main": [
+        [
+          {
+            "node": "Mark reminder sent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark reminder sent": {
+      "main": [
+        [
+          {
+            "node": "Process one event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
