@@ -402,6 +402,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Daily Weather Temperature to Pushcut](workflows/daily-weather-temperature-to-pushcut/) - Send the current city temperature to Pushcut every morning.
 - [Daily Weather Temperature to Plivo SMS](workflows/daily-weather-temperature-to-plivo-sms/) - Send the current city temperature by SMS every morning.
 - [Daily Weather Temperature to LINE](workflows/daily-weather-temperature-to-line/) - Send the current city temperature to LINE every morning.
+- [Return City Weather by Webhook](workflows/return-city-weather-by-webhook/) - Return current city temperature, humidity, wind and conditions to a webhook caller.
 
 ## Content
 
