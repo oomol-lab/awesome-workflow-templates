@@ -1,0 +1,209 @@
+{
+  "name": "Research Global Keyword Metrics",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "4e420798-7523-4d47-af27-10f85d09f01d",
+      "name": "When chat message received",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "position": [
+        -300,
+        -60
+      ],
+      "parameters": {
+        "options": {}
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "9cb26cde-dbff-4118-a141-ebd1fd7df1b1",
+      "name": "Keyword Query Extraction & Cleaning Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        -80,
+        -60
+      ],
+      "parameters": {
+        "options": {
+          "systemMessage": "You are a helpful assistant. You job is to check the user message and pick out the SEO keyword they have provided and output it. Make sure you output just one SEO keyword. No commentary. Do not rephrase, just correct grammar if it has been misspelt."
+        }
+      },
+      "typeVersion": 1.8
+    },
+    {
+      "id": "0f71c28e-a11b-4aed-a342-e15d2714ab47",
+      "name": "Google Gemini Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "position": [
+        -160,
+        140
+      ],
+      "parameters": {
+        "options": {},
+        "modelName": "models/gemini-1.5-flash"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "global-keyword-metrics-with-dataforseo-volume",
+      "name": "Get keyword volume",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.dataforseo.com/v3/keywords_data/google_ads/search_volume/live",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify([{keywords: [$(\"Keyword Query Extraction & Cleaning Agent\").first().json.output.trim()]}]) }}",
+        "options": {
+          "timeout": 30000
+        }
+      }
+    },
+    {
+      "id": "global-keyword-metrics-with-dataforseo-ideas",
+      "name": "Get related keywords",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.dataforseo.com/v3/keywords_data/google_ads/keywords_for_keywords/live",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify([{keywords: [$(\"Keyword Query Extraction & Cleaning Agent\").first().json.output.trim()]}]) }}",
+        "options": {
+          "timeout": 30000
+        }
+      }
+    },
+    {
+      "id": "global-keyword-metrics-with-dataforseo-select",
+      "name": "Select keyword metrics",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function result({ keyword, volume, ideas, volumeStatus, ideasStatus }) {\n  function task(body, status) {\n    if (\n      status < 200 ||\n      status >= 300 ||\n      !body ||\n      body.status_code !== 20000 ||\n      !Array.isArray(body.tasks) ||\n      body.tasks[0]?.status_code !== 20000 ||\n      !Array.isArray(body.tasks[0].result)\n    )\n      throw Error(\"Keyword API failed\");\n    return body.tasks[0].result;\n  }\n  const main = task(volume, volumeStatus).find(\n      (x) => String(x.keyword).toLowerCase() === keyword.toLowerCase(),\n    ),\n    related = task(ideas, ideasStatus)\n      .filter((x) => String(x.keyword).toLowerCase() !== keyword.toLowerCase())\n      .slice(0, 10);\n  function fields(x) {\n    if (!x) return null;\n    return {\n      keyword: x.keyword,\n      avg_monthly_searches: x.search_volume ?? null,\n      competition_index: x.competition_index ?? null,\n      competition_value: x.competition ?? null,\n      high_cpc: x.high_top_of_page_bid ?? null,\n      low_cpc: x.low_top_of_page_bid ?? null,\n    };\n  }\n  if (!main) throw Error(\"No metrics for requested keyword\");\n  return { data: [fields(main), ...related.map(fields)] };\n}\n\nreturn {\n  json: result({\n    keyword: $(\"Keyword Query Extraction & Cleaning Agent\").first().json.output.trim(),\n    volume: $(\"Get keyword volume\").first().json,\n    ideas: $json,\n    volumeStatus: 200,\n    ideasStatus: 200,\n  }),\n};\n"
+      }
+    },
+    {
+      "id": "d0cbe978-040d-4663-895e-85844e203773",
+      "name": "Keyword Data Response Formatter",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        980,
+        -60
+      ],
+      "parameters": {
+        "text": "Provide reponse according to the system message. ",
+        "options": {
+          "systemMessage": "=Format the keyword metrics clearly, preserving values and labeling missing data. Do not invent metrics. {{ JSON.stringify($json.data) }}"
+        },
+        "promptType": "define"
+      },
+      "typeVersion": 1.8
+    },
+    {
+      "id": "9b24fc9d-ac8d-4a9b-a7a5-00d1665f47af",
+      "name": "Google Gemini Chat Model1",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "position": [
+        980,
+        160
+      ],
+      "parameters": {
+        "options": {},
+        "modelName": "models/gemini-1.5-flash"
+      },
+      "typeVersion": 1
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "Keyword Query Extraction & Cleaning Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Keyword Query Extraction & Cleaning Agent": {
+      "main": [
+        [
+          {
+            "node": "Get keyword volume",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get keyword volume": {
+      "main": [
+        [
+          {
+            "node": "Get related keywords",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get related keywords": {
+      "main": [
+        [
+          {
+            "node": "Select keyword metrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select keyword metrics": {
+      "main": [
+        [
+          {
+            "node": "Keyword Data Response Formatter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Keyword Query Extraction & Cleaning Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Keyword Data Response Formatter",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
