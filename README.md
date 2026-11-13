@@ -431,6 +431,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Route Three Example Items by ID](workflows/route-three-example-items-by-id/) - Learn how a switch routes three example items by ID and assigns branch-specific names.
 - [Get Current Local Datetime](workflows/get-current-local-datetime/) - Return the current date and time in a chosen time zone.
 - [Generate a Custom Placeholder Image](workflows/generate-custom-placeholder-image/) - Generate a placeholder image with custom colors, text and font.
+- [Split an Example Array into Items](workflows/split-example-array-into-items/) - Learn how to turn an example array into individual workflow items.
 
 ## Analytics
 
