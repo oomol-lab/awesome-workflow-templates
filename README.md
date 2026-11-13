@@ -624,6 +624,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Analyze an S3 Invoice with Textract](workflows/analyze-an-s3-invoice-with-textract/) - Extract invoice summary fields from an image stored in Amazon S3.
 - [Send Uber Eats Receipts to Slack](workflows/send-ubereats-receipts-to-slack/) - Extract food delivery receipt details from Gmail and send them to Slack with a Moze expense link.
 - [Create a PayPal Payout Batch](workflows/create-a-paypal-payout-batch/) - Submit a configured batch of payout items to PayPal.
+- [Email a JSReport Invoice from a Form](workflows/email-jsreport-invoice-from-form/) - Generate an invoice PDF with JSReport and email it after a form submission.
 
 ## Community
 
