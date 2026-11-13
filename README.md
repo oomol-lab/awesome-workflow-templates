@@ -116,6 +116,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [List Completed Unleashed Sales Orders](workflows/list-completed-unleashed-sales-orders/) - Read all completed sales orders from Unleashed.
 - [Search Sheet Contacts with Icypeas](workflows/search-sheet-contacts-with-icypeas/) - Submit Google Sheet contacts to Icypeas bulk email search.
 - [Scan Sheet Domains with Icypeas](workflows/scan-sheet-domains-with-icypeas/) - Submit Google Sheet companies to Icypeas bulk domain search.
+- [Verify Sheet Emails with Icypeas](workflows/verify-sheet-emails-with-icypeas/) - Submit Google Sheet email addresses to Icypeas bulk verification.
 
 ## Operations
 
