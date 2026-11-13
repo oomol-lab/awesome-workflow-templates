@@ -432,6 +432,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Comment on Jira for a Figma Version](workflows/comment-jira-on-figma-version/) - Post Figma Commit plugin version details to the linked Jira issue.
 - [Save Form Submissions to Airtable and Google Sheets](workflows/save-form-submissions-to-airtable-and-sheets/) - Store form submissions in Airtable and Google Sheets and send a message after each write.
 - [Send AI Calendar Event Reminders to Telegram](workflows/telegram-ai-calendar-event-reminders/) - Generate a friendly Telegram reminder for upcoming Google Calendar events.
+- [Replace Google Slides Images by Alt Text](workflows/replace-google-slides-images-by-alt-text/) - Replace matching images across a Google Slides presentation using an image URL.
 
 ## Content
 
