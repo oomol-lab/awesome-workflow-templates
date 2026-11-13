@@ -679,6 +679,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 
 - [Generate Telegram Images with Magic Hour](workflows/generate-telegram-images-with-magic-hour/) - Generate an image from a Telegram text message and send it back to the same chat.
 - [Generate an Image from a Telegram Message](workflows/generate-an-image-from-a-telegram-message/) - Generate an image from a Telegram text message and send it back to the same chat.
+- [Generate a Telegram Image from a Prompt](workflows/generate-telegram-image-from-prompt/) - Generate an image from a Telegram text message and send it back to the same chat.
 
 ## Personal
 

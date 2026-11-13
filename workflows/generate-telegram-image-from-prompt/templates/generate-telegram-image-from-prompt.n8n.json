@@ -1,0 +1,125 @@
+{
+  "nodes": [
+    {
+      "id": "a998289c-65da-49ea-ba8a-4b277d9e16f3",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "position": [
+        1060,
+        640
+      ],
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "generate-telegram-images-with-magic-hour-input",
+      "name": "Prepare the image prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function prepare({ body }) {\n  const m = body?.message;\n  if (!m || typeof m.text !== \"string\" || !m.text.trim() || !Number.isSafeInteger(m.chat?.id))\n    throw Error(\"Send an image description as a text message\");\n  return { chatId: String(m.chat.id), style: { prompt: m.text } };\n}\n\nreturn { json: prepare({ body: $json }) };\n"
+      }
+    },
+    {
+      "id": "generate-telegram-images-with-magic-hour-magic",
+      "name": "Generate the image",
+      "type": "@gladiator1st/n8n-nodes-magichour.magicHour",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "image",
+        "operation": "generate",
+        "imagePrompt": "={{ $json.style.prompt }}",
+        "imageModel": "flux-2-klein",
+        "imageResolution": "640px",
+        "imageCount": 1,
+        "imageAspectRatio": "1:1",
+        "waitForCompletion": true,
+        "additionalOptions": {
+          "pollingInterval": 10,
+          "maxWaitTime": 600
+        }
+      }
+    },
+    {
+      "id": "generate-telegram-images-with-magic-hour-check",
+      "name": "Check the completed image",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function result({ body }) {\n  if (\n    !body ||\n    body.status !== \"complete\" ||\n    !Array.isArray(body.downloads) ||\n    typeof body.downloads[0]?.url !== \"string\" ||\n    !/^https:\\/\\/[^\\/?#@\\s]+(?:[\\/?#][^\\s]*)?$/i.test(body.downloads[0].url)\n  )\n    throw Error(\"The image project did not return a completed HTTPS image\");\n  return { url: body.downloads[0].url };\n}\n\nreturn {\n  json: { ...result({ body: $json }), chatId: $(\"Prepare the image prompt\").first().json.chatId },\n};\n"
+      }
+    },
+    {
+      "id": "a59264d6-c199-4d7b-ade4-1e31f10eb632",
+      "name": "Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        1580,
+        1000
+      ],
+      "parameters": {
+        "chatId": "={{ $json.chatId }}",
+        "operation": "sendPhoto",
+        "file": "={{ $json.url }}",
+        "additionalFields": {}
+      },
+      "typeVersion": 1.1
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Prepare the image prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare the image prompt": {
+      "main": [
+        [
+          {
+            "node": "Generate the image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate the image": {
+      "main": [
+        [
+          {
+            "node": "Check the completed image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check the completed image": {
+      "main": [
+        [
+          {
+            "node": "Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Generate a Telegram Image from a Prompt",
+  "active": false
+}
