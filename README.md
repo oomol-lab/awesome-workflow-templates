@@ -398,6 +398,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Set Slack Status and Light from Calendar Starts](workflows/set-slack-status-and-light-from-calendar-starts/) - Update Slack status and a light webhook when a Google Calendar event starts.
 - [Post a List of Names to a Webhook](workflows/post-a-list-of-names-to-a-webhook/) - Send each name in a supplied list to an authenticated HTTP endpoint.
 - [Daily Weather Temperature to Pushover](workflows/daily-weather-temperature-to-pushover/) - Send the current city temperature to Pushover every morning.
+- [Daily Weather Temperature to Vonage SMS](workflows/daily-weather-temperature-to-vonage-sms/) - Send the current city temperature by SMS every morning.
 
 ## Content
 
