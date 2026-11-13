@@ -387,6 +387,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Append an ID and Name to Google Sheets](workflows/append-id-and-name-to-google-sheets/) - Append an ID and name to a Google Sheet and read the table.
 - [Turn On a Philips Hue Light](workflows/turn-on-a-philips-hue-light/) - Turn on a Philips Hue light and set its brightness.
 - [Create, Update and Read a FileMaker Record](workflows/create-update-and-read-a-filemaker-record/) - Create a FileMaker contact, update its country, and read the same record.
+- [Email Hacker News Headlines as a Spreadsheet](workflows/email-hacker-news-headlines-as-a-spreadsheet/) - Email the current Hacker News front-page titles and links in a spreadsheet attachment.
 
 ## Content
 
