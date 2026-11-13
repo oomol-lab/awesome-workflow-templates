@@ -589,6 +589,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Send a Lark Group Message](workflows/send-a-lark-group-message/) - Send a configured text message to a Lark group as an app.
 - [Create, Rename and Message a Teams Channel](workflows/create-rename-and-message-teams-channel/) - Create a Teams channel, rename it and send a message to the new channel.
 - [Notify Mattermost on Emelia Replies](workflows/notify-mattermost-on-emelia-replies/) - Notify a Mattermost channel when a contact replies to an Emelia email campaign.
+- [Notify Mattermost on Lemlist Replies](workflows/notify-mattermost-on-lemlist-replies/) - Post a Lemlist email reply to a Mattermost channel.
 
 ## Customer Support
 
