@@ -558,6 +558,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Check TRON USDT Blacklist in Telegram](workflows/check-tron-usdt-blacklist-in-telegram/) - Reply to a Telegram message with the current TRON USDT contract blacklist status for an address.
 - [Analyze an S3 Invoice with Textract](workflows/analyze-an-s3-invoice-with-textract/) - Extract invoice summary fields from an image stored in Amazon S3.
 - [Send Uber Eats Receipts to Slack](workflows/send-ubereats-receipts-to-slack/) - Extract food delivery receipt details from Gmail and send them to Slack with a Moze expense link.
+- [Create a PayPal Payout Batch](workflows/create-a-paypal-payout-batch/) - Submit a configured batch of payout items to PayPal.
 
 ## Community
 
