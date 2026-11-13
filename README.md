@@ -407,6 +407,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Return City Weather by Webhook](workflows/return-city-weather-by-webhook/) - Return current city temperature, humidity, wind and conditions to a webhook caller.
 - [Create Latest Sheet Event in Google Calendar](workflows/create-latest-sheet-event-in-google-calendar/) - Create a Google Calendar all-day event from the latest newly added sheet row.
 - [Publish ISS Position to ActiveMQ](workflows/publish-iss-position-to-activemq/) - Publish the current ISS position to an ActiveMQ topic every minute.
+- [Email a Baserow Investment Report](workflows/email-baserow-investment-report/) - Read holdings from Baserow, look up Tradegate bid prices and email an investment report.
 
 ## Content
 
