@@ -469,6 +469,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Build a Google Search Link by Webhook](workflows/build-a-google-search-link-by-webhook/) - Return a Google search URL for a first and last name supplied to a webhook.
 - [Split Files from a ZIP Archive](workflows/split-files-from-a-zip-archive/) - Download an example ZIP and return each extracted file separately.
 - [Validate Emails and Extract Domains](workflows/validate-emails-and-extract-domains/) - Validate example email addresses and extract their domains.
+- [Process Ten Example Items One at a Time](workflows/process-ten-example-items-one-at-a-time/) - Learn how a one-item batch loop finishes after ten example numbers.
 
 ## Analytics
 
