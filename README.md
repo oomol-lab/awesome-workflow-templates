@@ -52,6 +52,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Social](#social)
 - [IT Operations](#it-operations)
 - [AI](#ai)
+- [E-commerce](#e-commerce)
 - [Contribute](#contribute)
 - [Licensing](#licensing)
 
@@ -719,6 +720,10 @@ A growing collection of automation workflows for connecting apps and getting rep
 ## AI
 
 - [Repair Structured State Data with AI](workflows/repair-structured-state-data-with-ai/) - Ask a model for state and city data and repair an answer that does not match the required JSON format.
+
+## E-commerce
+
+- [Alert Discord on Shopify Inventory Changes](workflows/alert-discord-on-shopify-inventory/) - Send a Discord alert for low or sold-out Shopify inventory.
 
 ## Contribute
 
