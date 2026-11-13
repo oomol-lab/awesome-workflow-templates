@@ -1,0 +1,910 @@
+{
+  "name": "Mirror Google Calendar Events to Outlook",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "mirror-google-calendar-events-to-outlook-0",
+      "name": "Incoming Event Trigger",
+      "type": "n8n-nodes-base.googleCalendarTrigger",
+      "position": [
+        500,
+        360
+      ],
+      "parameters": {
+        "options": {},
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "triggerOn": "eventCreated",
+        "calendarId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_GOOGLE_CALENDAR_ID"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "mirror-google-calendar-events-to-outlook-1",
+      "name": "Cancel Event Trigger",
+      "type": "n8n-nodes-base.googleCalendarTrigger",
+      "position": [
+        280,
+        600
+      ],
+      "parameters": {
+        "options": {},
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "triggerOn": "eventCancelled",
+        "calendarId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_GOOGLE_CALENDAR_ID"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "mirror-google-calendar-events-to-outlook-2",
+      "name": "Send E-mail with details",
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "position": [
+        1060,
+        620
+      ],
+      "parameters": {
+        "subject": "={{ $('Resolve cancellation').item.json.subject + ' Cancelled' }}",
+        "bodyContent": "<h1>Event cancelled via Google Calendar</h1>",
+        "toRecipients": "YOUR_NOTIFICATION_EMAIL",
+        "additionalFields": {
+          "bodyContentType": "html"
+        }
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "mirror-google-calendar-events-to-outlook-enqueue-created",
+      "name": "Prepare created batch",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return $input.all().map((item, index) => ({\n  json: { kind: \"created\", payload: JSON.stringify(item.json), status: \"queued\" },\n  pairedItem: { item: index },\n}));\n"
+      }
+    },
+    {
+      "id": "mirror-google-calendar-events-to-outlook-enqueue-cancelled",
+      "name": "Prepare cancelled batch",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return $input.all().map((item, index) => ({\n  json: { kind: \"cancelled\", payload: JSON.stringify(item.json), status: \"queued\" },\n  pairedItem: { item: index },\n}));\n"
+      }
+    },
+    {
+      "id": "mirror-google-calendar-events-to-outlook-queue-insert",
+      "name": "Save incoming batch",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_QUEUE_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "kind": "={{ $json.kind }}",
+            "payload": "={{ $json.payload }}",
+            "status": "queued"
+          },
+          "schema": []
+        },
+        "options": {
+          "optimizeBulk": true
+        }
+      }
+    },
+    {
+      "id": "mirror-google-calendar-events-to-outlook-schedule",
+      "name": "Process queued events every minute",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 1
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "mirror-google-calendar-events-to-outlook-manual",
+      "name": "Resume queued events",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "parameters": {}
+    },
+    {
+      "id": "mirror-google-calendar-events-to-outlook-queue-read",
+      "name": "Read queued and pending events",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_QUEUE_TABLE_ID"
+        },
+        "matchType": "anyCondition",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "status",
+              "condition": "eq",
+              "keyValue": "queued"
+            },
+            {
+              "keyName": "status",
+              "condition": "eq",
+              "keyValue": "pending"
+            }
+          ]
+        },
+        "returnAll": true,
+        "orderBy": true,
+        "orderByColumn": "id",
+        "orderByDirection": "ASC"
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "id": "mirror-google-calendar-events-to-outlook-select",
+      "name": "Select oldest queued event",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const rows = $input\n  .all()\n  .map((x) => x.json)\n  .filter((x) => x.id !== undefined)\n  .sort((a, b) => a.id - b.id);\nif (!rows.length) return [];\nconst pending = rows.find((r) => r.status === \"pending\");\nif (pending)\n  throw Error(\"Pending queue item \" + pending.id + \": inspect and resolve before resuming\");\nreturn [{ json: rows[0] }];\n"
+      }
+    },
+    {
+      "id": "mirror-google-calendar-events-to-outlook-queue-reserve",
+      "name": "Reserve queue item",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_QUEUE_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $json.id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "mirror-google-calendar-events-to-outlook-unpack",
+      "name": "Read queued event",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const row = $json,\n  e = JSON.parse(row.payload);\nif (!e.id || ![\"created\", \"cancelled\"].includes(row.kind)) throw Error(\"Invalid queued event\");\nreturn { json: { queueId: row.id, kind: row.kind, event: e } };\n"
+      }
+    },
+    {
+      "id": "mirror-google-calendar-events-to-outlook-route",
+      "name": "New event?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "created",
+              "leftValue": "={{ $json.kind }}",
+              "rightValue": "created",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "mirror-google-calendar-events-to-outlook-create-lookup",
+      "name": "Find existing mapping",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "google_id",
+              "condition": "eq",
+              "keyValue": "={{ $('Read queued event').item.json.event.id }}"
+            }
+          ]
+        },
+        "returnAll": true,
+        "options": {}
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "id": "mirror-google-calendar-events-to-outlook-create-resolve",
+      "name": "Check existing mapping",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const rows = $input\n  .all()\n  .map((x) => x.json)\n  .filter((x) => x.id !== undefined);\nif (rows.length > 1) throw Error(\"Duplicate Google event mapping\");\nif (rows.length && rows[0].status !== \"created\" && rows[0].status !== \"cancelled\")\n  throw Error(\"Pending mapping; inspect Outlook and repair it\");\nreturn [{ json: { exists: rows.length > 0 } }];\n"
+      }
+    },
+    {
+      "id": "mirror-google-calendar-events-to-outlook-create-gate",
+      "name": "Already mapped?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "exists",
+              "leftValue": "={{ $json.exists }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "mirror-google-calendar-events-to-outlook-pending",
+      "name": "Reserve new event",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "google_id": "={{ $('Read queued event').item.json.event.id }}",
+            "subject": "={{ 'From private: ' + ($('Read queued event').item.json.event.summary || '') }}",
+            "status": "pending-create",
+            "outlook_id": ""
+          },
+          "schema": []
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "mirror-google-calendar-events-to-outlook-created",
+      "name": "Confirm new event",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Reserve new event').item.json.id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "created",
+            "outlook_id": "={{ $json.id }}"
+          },
+          "schema": []
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "mirror-google-calendar-events-to-outlook-lookup",
+      "name": "Find mapping",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "google_id",
+              "condition": "eq",
+              "keyValue": "={{ $('Read queued event').item.json.event.id }}"
+            }
+          ]
+        },
+        "returnAll": true,
+        "options": {}
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "id": "mirror-google-calendar-events-to-outlook-resolve",
+      "name": "Resolve cancellation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const rows = $input\n  .all()\n  .map((x) => x.json)\n  .filter((x) => x.id !== undefined);\nif (!rows.length) return [{ json: { matched: false } }];\nif (rows.length !== 1) throw Error(\"Duplicate Google event mapping\");\nconst r = rows[0];\nif (r.status !== \"created\" || !r.outlook_id)\n  throw Error(\"Event is pending; inspect Outlook and repair the mapping\");\nreturn [{ json: { matched: true, rowId: r.id, outlook_id: r.outlook_id, subject: r.subject } }];\n"
+      }
+    },
+    {
+      "id": "mirror-google-calendar-events-to-outlook-gate",
+      "name": "Mapping found?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "matched",
+              "leftValue": "={{ $json.matched }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "mirror-google-calendar-events-to-outlook-cancel-pending",
+      "name": "Reserve cancellation",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $json.rowId }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "pending-cancel"
+          },
+          "schema": []
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "mirror-google-calendar-events-to-outlook-cancel-done",
+      "name": "Confirm cancellation",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Resolve cancellation').item.json.rowId }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "cancelled"
+          },
+          "schema": []
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "mirror-google-calendar-events-to-outlook-queue-done",
+      "name": "Finish queue item",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_QUEUE_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Read queued event').item.json.queueId }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "done"
+          },
+          "schema": []
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "mirror-google-calendar-events-to-outlook-prepare",
+      "name": "Prepare Outlook event",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const e = $(\"Read queued event\").item.json.event,\n  allDay = !!e.start?.date;\nfunction time(x) {\n  const raw = allDay ? x.date + \"T00:00:00Z\" : x.dateTime,\n    d = new Date(raw);\n  if (!Number.isFinite(d.getTime())) throw Error(\"Invalid event time\");\n  return { dateTime: d.toISOString().slice(0, 19), timeZone: \"UTC\" };\n}\nreturn {\n  json: {\n    body: {\n      subject: \"From private: \" + (e.summary || \"\"),\n      start: time(e.start),\n      end: time(e.end),\n      isAllDay: allDay,\n      body: {\n        contentType: \"text\",\n        content: (e.description != null ? e.description + \"\\n\" : \"\") + (e.htmlLink || \"\"),\n      },\n    },\n  },\n};\n"
+      }
+    },
+    {
+      "id": "mirror-google-calendar-events-to-outlook-create",
+      "name": "Create Outlook Event",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'https://graph.microsoft.com/v1.0/me/calendars/' + encodeURIComponent('YOUR_OUTLOOK_CALENDAR_ID') + '/events' }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "microsoftOutlookOAuth2Api",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.body }}"
+      }
+    },
+    {
+      "id": "mirror-google-calendar-events-to-outlook-delete",
+      "name": "Delete Event",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "DELETE",
+        "url": "={{ 'https://graph.microsoft.com/v1.0/me/calendars/' + encodeURIComponent('YOUR_OUTLOOK_CALENDAR_ID') + '/events/' + encodeURIComponent($('Resolve cancellation').item.json.outlook_id) }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "microsoftOutlookOAuth2Api",
+        "options": {}
+      },
+      "alwaysOutputData": true
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC"
+  },
+  "connections": {
+    "Incoming Event Trigger": {
+      "main": [
+        [
+          {
+            "node": "Prepare created batch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cancel Event Trigger": {
+      "main": [
+        [
+          {
+            "node": "Prepare cancelled batch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare created batch": {
+      "main": [
+        [
+          {
+            "node": "Save incoming batch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare cancelled batch": {
+      "main": [
+        [
+          {
+            "node": "Save incoming batch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process queued events every minute": {
+      "main": [
+        [
+          {
+            "node": "Read queued and pending events",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resume queued events": {
+      "main": [
+        [
+          {
+            "node": "Read queued and pending events",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read queued and pending events": {
+      "main": [
+        [
+          {
+            "node": "Select oldest queued event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select oldest queued event": {
+      "main": [
+        [
+          {
+            "node": "Reserve queue item",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve queue item": {
+      "main": [
+        [
+          {
+            "node": "Read queued event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read queued event": {
+      "main": [
+        [
+          {
+            "node": "New event?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "New event?": {
+      "main": [
+        [
+          {
+            "node": "Find existing mapping",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Find mapping",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find existing mapping": {
+      "main": [
+        [
+          {
+            "node": "Check existing mapping",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check existing mapping": {
+      "main": [
+        [
+          {
+            "node": "Already mapped?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Already mapped?": {
+      "main": [
+        [
+          {
+            "node": "Finish queue item",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reserve new event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve new event": {
+      "main": [
+        [
+          {
+            "node": "Prepare Outlook event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Outlook event": {
+      "main": [
+        [
+          {
+            "node": "Create Outlook Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Outlook Event": {
+      "main": [
+        [
+          {
+            "node": "Confirm new event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm new event": {
+      "main": [
+        [
+          {
+            "node": "Finish queue item",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find mapping": {
+      "main": [
+        [
+          {
+            "node": "Resolve cancellation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resolve cancellation": {
+      "main": [
+        [
+          {
+            "node": "Mapping found?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mapping found?": {
+      "main": [
+        [
+          {
+            "node": "Reserve cancellation",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Finish queue item",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve cancellation": {
+      "main": [
+        [
+          {
+            "node": "Delete Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete Event": {
+      "main": [
+        [
+          {
+            "node": "Send E-mail with details",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send E-mail with details": {
+      "main": [
+        [
+          {
+            "node": "Confirm cancellation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm cancellation": {
+      "main": [
+        [
+          {
+            "node": "Finish queue item",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Finish queue item": {
+      "main": [
+        [
+          {
+            "node": "Read queued and pending events",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
