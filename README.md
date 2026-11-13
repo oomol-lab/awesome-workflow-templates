@@ -439,6 +439,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Split Example People into Items](workflows/split-example-people-into-items/) - Learn to turn a sample array of people into individual workflow items.
 - [Collect Example People into an Array](workflows/collect-example-people-into-an-array/) - Learn to collect sample workflow items into an array of people.
 - [Parse a Labeled Email Body](workflows/parse-labeled-email-body/) - Extract labeled values from a sample plain-text email body.
+- [Compare Example Fruit Datasets](workflows/compare-example-fruit-datasets/) - Compare two sample fruit datasets by fruit name and inspect four result groups.
 
 ## Analytics
 
