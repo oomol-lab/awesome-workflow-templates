@@ -440,6 +440,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Route RSS Articles to Telegram Chats](workflows/route-rss-articles-to-telegram-chats/) - Read several feeds and route new article links to Telegram chats by subject.
 - [Convert Airtable Markdown Descriptions to HTML](workflows/convert-airtable-markdown-descriptions-to-html/) - Convert one Airtable video description or the first three descriptions from Markdown to HTML.
 - [Mirror Google Calendar Events to Outlook](workflows/mirror-google-calendar-events-to-outlook/) - Create Outlook events for new Google Calendar events and delete the matching Outlook event on cancellation.
+- [Translate a Random Cocktail Recipe to French](workflows/translate-a-random-cocktail-recipe-to-french/) - Fetch a random cocktail and translate its preparation instructions into French.
 
 ## Content
 
