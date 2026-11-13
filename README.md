@@ -389,6 +389,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Create, Update and Read a FileMaker Record](workflows/create-update-and-read-a-filemaker-record/) - Create a FileMaker contact, update its country, and read the same record.
 - [Email Hacker News Headlines as a Spreadsheet](workflows/email-hacker-news-headlines-as-a-spreadsheet/) - Email the current Hacker News front-page titles and links in a spreadsheet attachment.
 - [Email a Random Open Library Book](workflows/email-a-random-open-library-book/) - Choose a random book from an Open Library subject and email a recommendation.
+- [Extract Icypeas Search Notifications](workflows/extract-icypeas-search-notifications/) - Receive an Icypeas search notification and extract its first email and contact name.
 
 ## Content
 
