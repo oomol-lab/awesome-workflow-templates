@@ -441,6 +441,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Convert Airtable Markdown Descriptions to HTML](workflows/convert-airtable-markdown-descriptions-to-html/) - Convert one Airtable video description or the first three descriptions from Markdown to HTML.
 - [Mirror Google Calendar Events to Outlook](workflows/mirror-google-calendar-events-to-outlook/) - Create Outlook events for new Google Calendar events and delete the matching Outlook event on cancellation.
 - [Translate a Random Cocktail Recipe to French](workflows/translate-a-random-cocktail-recipe-to-french/) - Fetch a random cocktail and translate its preparation instructions into French.
+- [Return Current Weather for a City](workflows/return-current-weather-for-a-city/) - Return a city’s current and feels-like temperature in Celsius through a GET webhook.
 
 ## Content
 
