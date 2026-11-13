@@ -532,6 +532,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Check ComfyUI Service Status](workflows/check-comfyui-service-status/) - Return ComfyUI system statistics and the number of available node types.
 - [Try ReqRes User API Requests](workflows/try-reqres-user-api-requests/) - Try reading, creating, and updating sample users with the ReqRes API.
 - [Exchange Facebook User and Page Tokens](workflows/exchange-facebook-user-and-page-tokens/) - Exchange a short-lived Facebook user token and retrieve the first page of associated Page tokens.
+- [Extract HackerNoon Heading Links](workflows/extract-hackernoon-heading-links/) - Extract titles and links from HackerNoon homepage headings.
 
 ## Communication
 
