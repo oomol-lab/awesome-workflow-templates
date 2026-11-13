@@ -461,6 +461,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Merge Downloaded Files into One Item](workflows/merge-downloaded-files-into-one-item/) - Download example files and combine their contents into one result.
 - [Build a Google Search Link by Webhook](workflows/build-a-google-search-link-by-webhook/) - Return a Google search URL for a first and last name supplied to a webhook.
 - [Split Files from a ZIP Archive](workflows/split-files-from-a-zip-archive/) - Download an example ZIP and return each extracted file separately.
+- [Validate Emails and Extract Domains](workflows/validate-emails-and-extract-domains/) - Validate example email addresses and extract their domains.
 
 ## Analytics
 
