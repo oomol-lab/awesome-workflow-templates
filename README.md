@@ -404,6 +404,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Daily Weather Temperature to LINE](workflows/daily-weather-temperature-to-line/) - Send the current city temperature to LINE every morning.
 - [Return City Weather by Webhook](workflows/return-city-weather-by-webhook/) - Return current city temperature, humidity, wind and conditions to a webhook caller.
 - [Create Latest Sheet Event in Google Calendar](workflows/create-latest-sheet-event-in-google-calendar/) - Create a Google Calendar all-day event from the latest newly added sheet row.
+- [Publish ISS Position to ActiveMQ](workflows/publish-iss-position-to-activemq/) - Publish the current ISS position to an ActiveMQ topic every minute.
 
 ## Content
 
