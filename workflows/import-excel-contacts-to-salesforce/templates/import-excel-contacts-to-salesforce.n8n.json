@@ -1,0 +1,341 @@
+{
+  "nodes": [
+    {
+      "id": "import-sheet-contacts-to-salesforce-0",
+      "name": "On clicking 'execute'",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        20,
+        240
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "import-sheet-contacts-to-salesforce-1",
+      "name": "Read Google Sheet",
+      "type": "n8n-nodes-base.spreadsheetFile",
+      "position": [
+        460,
+        240
+      ],
+      "parameters": {
+        "options": {}
+      },
+      "typeVersion": 1
+    },
+    {
+      "name": "Validate contacts",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const rows=$input.all().filter(x=>Object.values(x.json).some(v=>v!==''&&v!=null));for(const x of rows){const r=x.json;if(!['Company Name','First Name','Last Name','Email'].every(k=>typeof r[k]==='string'&&r[k].trim())||/[\\r\\n\\x00]/.test(r['Company Name'])||!/^\\S+@\\S+\\.\\S+$/.test(r.Email))throw Error('Every row needs company, first name, last name and email');}return rows;"
+      },
+      "id": "import-sheet-contacts-to-salesforce-2"
+    },
+    {
+      "name": "Loop contacts",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "parameters": {
+        "options": {}
+      },
+      "id": "import-sheet-contacts-to-salesforce-3"
+    },
+    {
+      "name": "Prepare contact",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const r=$input.first().json,accounts=$runIndex===0?{}:$('Remember account').first(0,$runIndex-1).json.accounts,company=r['Company Name'],knownId=Object.hasOwn(accounts,company)?accounts[company]:'',escaped=company.replace(/\\\\/g,'\\\\\\\\').replace(/'/g,\"\\\\'\");return [{json:{row:{company,first:r['First Name'],last:r['Last Name'],email:r.Email},accounts,knownId,soql:\"SELECT Id, Name FROM Account WHERE Name = '\"+escaped+\"' LIMIT 2\"}}];"
+      },
+      "id": "import-sheet-contacts-to-salesforce-4"
+    },
+    {
+      "id": "import-sheet-contacts-to-salesforce-5",
+      "name": "Search Salesforce accounts",
+      "type": "n8n-nodes-base.salesforce",
+      "position": [
+        680,
+        240
+      ],
+      "parameters": {
+        "query": "={{ $json.soql }}",
+        "resource": "search"
+      },
+      "typeVersion": 1,
+      "alwaysOutputData": true
+    },
+    {
+      "name": "Resolve account",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const p=$('Prepare contact').first(0,$runIndex).json;let a=$input.all().map(x=>x.json);if(a.some(x=>Object.keys(x).length>0&&!x.Id))throw Error('Invalid account result');a=a.filter(x=>x.Id);if(a.length>1)throw Error('Account name is ambiguous');if(a.length&&typeof a[0].Name!=='string')throw Error('Invalid account name');a=a.filter(x=>x.Name===p.row.company);let id=a[0]?.Id??p.knownId;if(id&&!/^[A-Za-z0-9]{15}(?:[A-Za-z0-9]{3})?$/.test(id))throw Error('Invalid account ID');if(p.knownId&&a[0]?.Id&&p.knownId!==a[0].Id)throw Error('Account changed during import');return [{json:{found:!!id,id:id??'',row:p.row}}];"
+      },
+      "id": "import-sheet-contacts-to-salesforce-6"
+    },
+    {
+      "name": "Account found?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "found",
+              "leftValue": "={{ $json.found }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "import-sheet-contacts-to-salesforce-7"
+    },
+    {
+      "id": "import-sheet-contacts-to-salesforce-8",
+      "name": "Create Salesforce account",
+      "type": "n8n-nodes-base.salesforce",
+      "position": [
+        1340,
+        140
+      ],
+      "parameters": {
+        "name": "={{ $json.row.company }}",
+        "resource": "account",
+        "additionalFields": {}
+      },
+      "typeVersion": 1
+    },
+    {
+      "name": "Set Account ID",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const id=$input.first().json.id;if(typeof id!=='string'||!/^[A-Za-z0-9]{15}(?:[A-Za-z0-9]{3})?$/.test(id))throw Error('Missing account ID');return [{json:{id}}];"
+      },
+      "id": "import-sheet-contacts-to-salesforce-9"
+    },
+    {
+      "id": "import-sheet-contacts-to-salesforce-10",
+      "name": "Create Salesforce contact",
+      "type": "n8n-nodes-base.salesforce",
+      "position": [
+        2000,
+        240
+      ],
+      "parameters": {
+        "lastname": "={{ $('Prepare contact').first(0,$runIndex).json.row.last }}",
+        "resource": "contact",
+        "operation": "upsert",
+        "externalId": "Email",
+        "externalIdValue": "={{ encodeURIComponent($('Prepare contact').first(0,$runIndex).json.row.email) }}",
+        "additionalFields": {
+          "email": "={{ $('Prepare contact').first(0,$runIndex).json.row.email }}",
+          "firstName": "={{ $('Prepare contact').first(0,$runIndex).json.row.first }}",
+          "acconuntId": "={{ $('Set Account ID').first(0,$runIndex).json.id }}"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "name": "Remember account",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const p=$('Prepare contact').first(0,$runIndex).json,id=$('Set Account ID').first(0,$runIndex).json.id;return [{json:{accounts:{...p.accounts,[p.row.company]:id}}}];"
+      },
+      "id": "import-sheet-contacts-to-salesforce-11"
+    },
+    {
+      "id": "import-excel-contacts-to-salesforce-download",
+      "name": "Download file",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        240,
+        240
+      ],
+      "parameters": {
+        "url": "https://example.com/contacts.xlsx",
+        "options": {},
+        "responseFormat": "file"
+      },
+      "typeVersion": 2
+    }
+  ],
+  "connections": {
+    "On clicking 'execute'": {
+      "main": [
+        [
+          {
+            "node": "Download file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Google Sheet": {
+      "main": [
+        [
+          {
+            "node": "Validate contacts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate contacts": {
+      "main": [
+        [
+          {
+            "node": "Loop contacts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare contact": {
+      "main": [
+        [
+          {
+            "node": "Search Salesforce accounts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Salesforce accounts": {
+      "main": [
+        [
+          {
+            "node": "Resolve account",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resolve account": {
+      "main": [
+        [
+          {
+            "node": "Account found?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Salesforce account": {
+      "main": [
+        [
+          {
+            "node": "Set Account ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Account ID": {
+      "main": [
+        [
+          {
+            "node": "Create Salesforce contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Salesforce contact": {
+      "main": [
+        [
+          {
+            "node": "Remember account",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Remember account": {
+      "main": [
+        [
+          {
+            "node": "Loop contacts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop contacts": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Prepare contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Account found?": {
+      "main": [
+        [
+          {
+            "node": "Set Account ID",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create Salesforce account",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download file": {
+      "main": [
+        [
+          {
+            "node": "Read Google Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Import Excel Contacts to Salesforce",
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}
