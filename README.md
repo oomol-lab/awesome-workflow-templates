@@ -598,6 +598,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 ## Data and Analytics
 
 - [Random Cocktail as XML](workflows/random-cocktail-as-xml/) - Fetch a random cocktail from TheCocktailDB and return its recipe as XML.
+- [Convert Orders XML to JSON](workflows/convert-orders-xml-to-json/) - Convert an example ORDERS05 XML document to JSON, retaining attributes.
 
 ## Security
 
