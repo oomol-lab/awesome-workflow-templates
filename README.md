@@ -455,6 +455,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Send Weekly Analytics Comparison to Email and Telegram](workflows/send-weekly-analytics-comparison-to-email-and-telegram/) - Compare weekly Google Analytics metrics with the same dates in the previous year and send an AI-written report by email and Telegram.
 - [Analyze SerpBear Rankings to Baserow](workflows/analyze-serpbear-rankings-to-baserow/) - Analyze a domain’s SerpBear keyword rankings and save a report to Baserow.
 - [Save Weekly Analytics Insights to Baserow](workflows/save-weekly-analytics-insights-to-baserow/) - Compare weekly page engagement, search performance and country views with AI and save the insights to Baserow.
+- [Capture a PostHog Event from a Webhook](workflows/capture-posthog-event-from-webhook/) - Capture a named PostHog event when a webhook is requested.
 
 ## Lifestyle
 
