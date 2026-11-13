@@ -1,0 +1,194 @@
+{
+  "nodes": [
+    {
+      "id": "scan-sheet-domains-with-icypeas-start",
+      "name": "Run the search",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        640,
+        1700
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "scan-sheet-domains-with-icypeas-read",
+      "name": "Read company rows",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        840,
+        1700
+      ],
+      "parameters": {
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        }
+      },
+      "typeVersion": 4.1
+    },
+    {
+      "id": "scan-sheet-domains-with-icypeas-batch",
+      "name": "Prepare batches",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        800,
+        1700
+      ],
+      "parameters": {
+        "jsCode": "const rows=$input.all().map(item=>item.json).map(x=>[String(x.company??'')]);for(const r of rows)if(!r[0])throw Error('Each row needs a company or domain');const out=[];for(let i=0;i<rows.length;i+=5000)out.push({json:{name:'dernierT',task:'domain-search',data:rows.slice(i,i+5000)}});return out;"
+      }
+    },
+    {
+      "id": "scan-sheet-domains-with-icypeas-loop",
+      "name": "Next batch",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1020,
+        1700
+      ],
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      }
+    },
+    {
+      "id": "scan-sheet-domains-with-icypeas-submit",
+      "name": "Submit a search batch",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1240,
+        1700
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://app.icypeas.com/api/bulk-search",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "scan-sheet-domains-with-icypeas-confirm",
+      "name": "Confirm submission",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1460,
+        1700
+      ],
+      "parameters": {
+        "jsCode": "return $input.all().map(item=>{if(item.json.success!==true||typeof item.json.file!=='string'||!item.json.file)throw Error('Icypeas did not confirm batch; it may have been submitted');return item});"
+      }
+    },
+    {
+      "id": "scan-sheet-domains-with-icypeas-wait",
+      "name": "Wait between requests",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1680,
+        1700
+      ],
+      "parameters": {
+        "amount": 1,
+        "unit": "seconds"
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Run the search": {
+      "main": [
+        [
+          {
+            "node": "Read company rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read company rows": {
+      "main": [
+        [
+          {
+            "node": "Prepare batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare batches": {
+      "main": [
+        [
+          {
+            "node": "Next batch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Next batch": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Submit a search batch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Submit a search batch": {
+      "main": [
+        [
+          {
+            "node": "Confirm submission",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm submission": {
+      "main": [
+        [
+          {
+            "node": "Wait between requests",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait between requests": {
+      "main": [
+        [
+          {
+            "node": "Next batch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Scan Sheet Domains with Icypeas",
+  "active": false
+}

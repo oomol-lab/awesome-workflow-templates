@@ -115,6 +115,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [List the First Open Shopify Orders](workflows/list-first-open-shopify-orders/) - Read up to 50 open Shopify orders.
 - [List Completed Unleashed Sales Orders](workflows/list-completed-unleashed-sales-orders/) - Read all completed sales orders from Unleashed.
 - [Search Sheet Contacts with Icypeas](workflows/search-sheet-contacts-with-icypeas/) - Submit Google Sheet contacts to Icypeas bulk email search.
+- [Scan Sheet Domains with Icypeas](workflows/scan-sheet-domains-with-icypeas/) - Submit Google Sheet companies to Icypeas bulk domain search.
 
 ## Operations
 
