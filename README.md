@@ -229,6 +229,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Save MailerLite Classic Group Subscribers to Airtable](workflows/save-mailerlite-classic-group-subscribers-to-airtable/) - Save MailerLite Classic group subscriber names and emails to Airtable.
 - [Update Rank Math SEO Metadata](workflows/update-rank-math-seo-metadata/) - Update a WordPress post’s Rank Math SEO title, description and canonical URL.
 - [Overlay Text on a Remote Image](workflows/overlay-text-on-remote-image/) - Add text to a remotely hosted image and return the result.
+- [Publish an Image to LinkedIn](workflows/publish-an-image-to-linkedin/) - Publish a configured image and message to a LinkedIn personal profile.
 
 ## Support
 

@@ -1,0 +1,454 @@
+{
+  "nodes": [
+    {
+      "name": "On clicking 'execute'",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        250,
+        300
+      ],
+      "parameters": {},
+      "typeVersion": 1,
+      "id": "publish-an-image-to-linkedin-start"
+    },
+    {
+      "id": "publish-an-image-to-linkedin-init",
+      "name": "Initialize image upload",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        450,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.linkedin.com/rest/images?action=initializeUpload",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "linkedInOAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "LinkedIn-Version",
+              "value": "202605"
+            },
+            {
+              "name": "X-Restli-Protocol-Version",
+              "value": "2.0.0"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"initializeUploadRequest\":{\"owner\":\"urn:li:person:YOUR_LINKEDIN_PERSON_ID\"}}",
+        "options": {
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "publish-an-image-to-linkedin-check",
+      "name": "Check upload address",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        650,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const v = $json.value;\nif (\n  !v ||\n  typeof v.image !== \"string\" ||\n  !/^urn:li:image:/.test(v.image) ||\n  typeof v.uploadUrl !== \"string\" ||\n  !v.uploadUrl.startsWith(\"https://www.linkedin.com/dms-uploads/\")\n)\n  throw new Error(\"Unexpected LinkedIn upload response\");\nreturn { json: { image: v.image, uploadUrl: v.uploadUrl } };\n"
+      }
+    },
+    {
+      "id": "publish-an-image-to-linkedin-download",
+      "name": "Download image",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        850,
+        0
+      ],
+      "parameters": {
+        "url": "https://example.com/YOUR_IMAGE.png",
+        "options": {
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "outputPropertyName": "data"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "publish-an-image-to-linkedin-upload",
+      "name": "Upload image",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1050,
+        0
+      ],
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ $(\"Check upload address\").item.json.uploadUrl }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "linkedInOAuth2Api",
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "data",
+        "options": {
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "id": "publish-an-image-to-linkedin-attempts",
+      "name": "Prepare status checks",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return Array.from({ length: 12 }, (_, i) => ({ json: { attempt: i + 1 } }));\n"
+      }
+    },
+    {
+      "id": "publish-an-image-to-linkedin-loop",
+      "name": "Check up to twelve times",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1400,
+        0
+      ],
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      }
+    },
+    {
+      "id": "publish-an-image-to-linkedin-status",
+      "name": "Read image status",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1600,
+        0
+      ],
+      "parameters": {
+        "url": "={{ \"https://api.linkedin.com/rest/images/\" + encodeURIComponent($(\"Check upload address\").first().json.image) }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "linkedInOAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Restli-Protocol-Version",
+              "value": "2.0.0"
+            }
+          ]
+        },
+        "options": {
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "publish-an-image-to-linkedin-result",
+      "name": "Check image status",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1800,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const image = $(\"Check upload address\").first().json.image;\nif ($json.id !== image) throw new Error(\"LinkedIn returned a different image\");\nif ($json.status === \"AVAILABLE\") return { json: { available: true } };\nif (![\"PROCESSING\", \"WAITING_UPLOAD\"].includes($json.status))\n  throw new Error(\"LinkedIn image processing failed or returned an unknown status\");\nreturn { json: { available: false } };\n"
+      }
+    },
+    {
+      "id": "publish-an-image-to-linkedin-gate",
+      "name": "Image ready?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2000,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "available",
+              "leftValue": "={{ $json.available }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "publish-an-image-to-linkedin-wait",
+      "name": "Wait for image processing",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        2200,
+        140
+      ],
+      "parameters": {
+        "amount": 5,
+        "unit": "seconds"
+      }
+    },
+    {
+      "id": "publish-an-image-to-linkedin-timeout",
+      "name": "Image processing timed out",
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        1600,
+        220
+      ],
+      "parameters": {
+        "errorMessage": "LinkedIn image processing timed out; no post was created"
+      }
+    },
+    {
+      "id": "publish-an-image-to-linkedin-post",
+      "name": "Publish image post",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1250,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.linkedin.com/rest/posts",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "linkedInOAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "LinkedIn-Version",
+              "value": "202605"
+            },
+            {
+              "name": "X-Restli-Protocol-Version",
+              "value": "2.0.0"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {author:\"urn:li:person:YOUR_LINKEDIN_PERSON_ID\",commentary:\"Your message\",visibility:\"PUBLIC\",distribution:{feedDistribution:\"MAIN_FEED\",targetEntities:[],thirdPartyDistributionChannels:[]},content:{media:{id:$(\"Check upload address\").item.json.image}},lifecycleState:\"PUBLISHED\",isReshareDisabledByAuthor:false} }}",
+        "options": {
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "responseFormat": "json"
+            }
+          }
+        }
+      }
+    }
+  ],
+  "connections": {
+    "On clicking 'execute'": {
+      "main": [
+        [
+          {
+            "node": "Initialize image upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Initialize image upload": {
+      "main": [
+        [
+          {
+            "node": "Check upload address",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check upload address": {
+      "main": [
+        [
+          {
+            "node": "Download image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download image": {
+      "main": [
+        [
+          {
+            "node": "Upload image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload image": {
+      "main": [
+        [
+          {
+            "node": "Prepare status checks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare status checks": {
+      "main": [
+        [
+          {
+            "node": "Check up to twelve times",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read image status": {
+      "main": [
+        [
+          {
+            "node": "Check image status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check image status": {
+      "main": [
+        [
+          {
+            "node": "Image ready?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for image processing": {
+      "main": [
+        [
+          {
+            "node": "Check up to twelve times",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check up to twelve times": {
+      "main": [
+        [
+          {
+            "node": "Image processing timed out",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Read image status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Image ready?": {
+      "main": [
+        [
+          {
+            "node": "Publish image post",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait for image processing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Publish an Image to LinkedIn",
+  "active": false,
+  "pinData": {}
+}
