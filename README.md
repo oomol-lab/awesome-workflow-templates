@@ -632,6 +632,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Send Uber Eats Receipts to Slack](workflows/send-ubereats-receipts-to-slack/) - Extract food delivery receipt details from Gmail and send them to Slack with a Moze expense link.
 - [Create a PayPal Payout Batch](workflows/create-a-paypal-payout-batch/) - Submit a configured batch of payout items to PayPal.
 - [Email a JSReport Invoice from a Form](workflows/email-jsreport-invoice-from-form/) - Generate an invoice PDF with JSReport and email it after a form submission.
+- [Create and Email a QuickBooks Invoice](workflows/create-and-email-a-quickbooks-invoice/) - Create a customer, create a consulting invoice, and send it by email.
 
 ## Community
 
