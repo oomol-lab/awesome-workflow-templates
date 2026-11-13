@@ -602,6 +602,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Triage Outlook Support in Jira](workflows/triage-outlook-support-in-jira/) - Triage recent Outlook support messages with AI and create Jira issues.
 - [Classify WordPress Inquiries and Draft Replies](workflows/classify-wordpress-inquiries-and-draft-replies/) - Classify incoming WordPress contact inquiries, prepare Gmail drafts for review and log the inquiries in Google Sheets.
 - [Route Support Form to Asana and WhatsApp](workflows/route-support-form-to-asana-and-whatsapp/) - Create an Asana support task and send a WhatsApp confirmation for each form submission.
+- [Sync Zendesk Tickets to Slack Threads](workflows/sync-zendesk-tickets-to-slack-threads/) - Create a Slack thread for a Zendesk ticket and send later comments to that thread.
 
 ## Finance
 
