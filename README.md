@@ -168,6 +168,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Parse and Validate a Phone Number with Uproc](workflows/parse-and-validate-phone-with-uproc/) - Parse and validate the format of a phone number using Uproc.
 - [Check Email Deliverability with Uproc](workflows/check-email-deliverability-with-uproc/) - Check an email recipient status using Uproc.
 - [Send a SIGNL4 Test Alert](workflows/send-a-signl4-test-alert/) - Send a test alert to a SIGNL4 team.
+- [Send a Log to Better Stack](workflows/send-a-log-to-better-stack/) - Send a message and level to Better Stack Logs from a workflow or a manual test.
 
 ## Marketing
 
