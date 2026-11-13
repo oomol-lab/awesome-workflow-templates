@@ -545,6 +545,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Publish a Message to an SNS Topic](workflows/publish-a-message-to-an-sns-topic/) - Publish a message with a subject to an Amazon SNS topic.
 - [Send a Mandrill Template Email](workflows/send-a-mandrill-template-email/) - Send a transactional email using a Mandrill template.
 - [Send a Plain-Text Email](workflows/send-a-plain-text-email/) - Send a plain-text email with a subject to a recipient.
+- [Send a Lark Group Message](workflows/send-a-lark-group-message/) - Send a configured text message to a Lark group as an app.
 
 ## Customer Support
 
