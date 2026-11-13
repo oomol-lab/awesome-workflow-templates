@@ -413,6 +413,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Import CSV Users to Snowflake](workflows/import-csv-users-to-snowflake/) - Read user records from a CSV URL and insert them into a Snowflake users table.
 - [Summarize Podcast Transcript with Refinement](workflows/summarize-podcast-transcript-with-refinement/) - Summarize a YouTube podcast transcript and generate specific example questions and answers.
 - [Send ISS Position to Amazon SQS](workflows/send-iss-position-to-sqs/) - Send the current ISS position as a JSON message to an Amazon SQS queue every minute.
+- [Update an XML Slideshow in Dropbox](workflows/update-an-xml-slideshow-in-dropbox/) - Fetch the sample XML slideshow, change its title and save the XML to Dropbox.
 
 ## Content
 
