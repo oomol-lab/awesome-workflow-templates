@@ -1,0 +1,170 @@
+{
+  "kind": "open-flow-workflow",
+  "version": 1,
+  "name": "Save Webflow Forms in Airtable Tables",
+  "content": {
+    "modelVersion": 15,
+    "document": {
+      "bindings": {},
+      "graph": {
+        "nodes": {
+          "n_a0e4ccd6ca991640": {
+            "name": "Receive Webflow submission",
+            "kind": "webhook",
+            "bodyFields": [
+              {
+                "jsonSchema": {
+                  "type": "string"
+                },
+                "nullable": false,
+                "handle": "triggerType"
+              },
+              {
+                "jsonSchema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "nullable": false,
+                "handle": "payload"
+              }
+            ],
+            "method": "POST"
+          },
+          "n_676aa985439b2bd8": {
+            "name": "Resume queued submissions",
+            "kind": "start",
+            "inputDefs": []
+          },
+          "n_0da2b1a7a24d64d7": {
+            "inputs": {
+              "body": {
+                "kind": "sources",
+                "sources": [
+                  {
+                    "kind": "node",
+                    "nodeId": "n_a0e4ccd6ca991640",
+                    "output": "body"
+                  }
+                ]
+              },
+              "baseId": {
+                "kind": "value",
+                "value": "YOUR_AIRTABLE_BASE_ID"
+              },
+              "siteId": {
+                "kind": "value",
+                "value": "YOUR_WEBFLOW_SITE_ID"
+              },
+              "ackSubmissionId": {
+                "kind": "value",
+                "value": ""
+              },
+              "ackResolution": {
+                "kind": "value",
+                "value": ""
+              }
+            },
+            "name": "Save submissions by form",
+            "kind": "task",
+            "task": {
+              "inputs": [
+                {
+                  "jsonSchema": {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  "nullable": true,
+                  "handle": "body"
+                },
+                {
+                  "jsonSchema": {
+                    "type": "string"
+                  },
+                  "nullable": false,
+                  "handle": "baseId"
+                },
+                {
+                  "jsonSchema": {
+                    "type": "string"
+                  },
+                  "nullable": false,
+                  "handle": "siteId"
+                },
+                {
+                  "jsonSchema": {
+                    "type": "string"
+                  },
+                  "nullable": false,
+                  "handle": "ackSubmissionId"
+                },
+                {
+                  "jsonSchema": {
+                    "type": "string"
+                  },
+                  "nullable": false,
+                  "handle": "ackResolution"
+                }
+              ],
+              "outputs": [
+                {
+                  "jsonSchema": {
+                    "type": "integer"
+                  },
+                  "nullable": false,
+                  "handle": "processed"
+                }
+              ],
+              "name": "Save submissions by form",
+              "moduleId": "n_ada221005b8bf868",
+              "capabilities": [
+                {
+                  "kind": "connector",
+                  "mode": "independent",
+                  "actions": [
+                    {
+                      "action": "airtable.get_base_schema"
+                    },
+                    {
+                      "action": "airtable.create_table"
+                    },
+                    {
+                      "action": "airtable.list_records"
+                    },
+                    {
+                      "action": "airtable.create_records"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        "edges": [
+          {
+            "source": "n_a0e4ccd6ca991640",
+            "target": "n_0da2b1a7a24d64d7"
+          },
+          {
+            "source": "n_676aa985439b2bd8",
+            "target": "n_0da2b1a7a24d64d7"
+          }
+        ]
+      }
+    },
+    "modules": {
+      "n_ada221005b8bf868": {
+        "name": "Save submissions by form",
+        "imports": [],
+        "source": "export default async function sync(\n  { body, baseId, siteId, ackSubmissionId, ackResolution },\n  context,\n) {\n  const s = (await context.state.get(\"webflow-airtable-progress\")) ?? {\n    queue: [],\n    seen: [],\n    pending: null,\n  };\n  if (!Array.isArray(s.queue) || !Array.isArray(s.seen)) throw Error(\"Invalid submission state\");\n  if (body !== null) {\n    const p = body?.payload;\n    if (\n      body?.triggerType !== \"form_submission\" ||\n      !p ||\n      p.siteId !== siteId ||\n      ![p.id, p.formId, p.name, p.submittedAt].every((v) => typeof v === \"string\" && v.trim()) ||\n      !p.data ||\n      typeof p.data !== \"object\" ||\n      Array.isArray(p.data)\n    )\n      throw Error(\"Invalid Webflow form submission\");\n    if (!s.seen.includes(p.id) && !s.queue.some((x) => x.id === p.id)) s.queue.push(p);\n    await context.state.set(\"webflow-airtable-progress\", s);\n  }\n  if (s.pending) {\n    if (ackSubmissionId !== s.pending.id)\n      throw Error(\n        \"Pending submission \" +\n          s.pending.id +\n          \" at \" +\n          s.pending.stage +\n          \": inspect Airtable before resolving\",\n      );\n    if (s.queue[0]?.id !== s.pending.id) throw Error(\"Pending queue mismatch\");\n    if (ackResolution === \"completed\") {\n      s.seen.push(s.pending.id);\n      s.queue.shift();\n    } else if (ackResolution !== \"retry\")\n      throw Error(\n        \"Choose completed after manually storing the submission, or retry after ensuring no duplicate\",\n      );\n    s.pending = null;\n    await context.state.set(\"webflow-airtable-progress\", s);\n  }\n  if (!s.queue.length) return { processed: 0 };\n  if (typeof baseId !== \"string\" || !baseId || typeof siteId !== \"string\" || !siteId)\n    throw Error(\"Configure Airtable base and Webflow site\");\n  let count = 0;\n  const action = async (name, input) => context.actions.call(name, input),\n    pending = async (id, stage, tableId) => {\n      s.pending = { id, stage, ...(tableId ? { tableId } : {}) };\n      await context.state.set(\"webflow-airtable-progress\", s);\n    },\n    clear = async () => {\n      s.pending = null;\n      await context.state.set(\"webflow-airtable-progress\", s);\n    },\n    fields = (names) =>\n      names.map((name) => ({ name, type: name === \"FormContent\" ? \"richText\" : \"singleLineText\" }));\n  while (s.queue.length) {\n    const p = s.queue[0],\n      schema = await action(\"airtable.get_base_schema\", { baseId });\n    if (!Array.isArray(schema?.tables)) throw Error(\"Missing base schema\");\n    let tables = schema.tables,\n      index = tables.filter(\n        (t) => typeof t.name === \"string\" && t.name.toLowerCase() === \"form index\",\n      );\n    if (index.length > 1) throw Error(\"Multiple Form Index tables\");\n    let indexId = index[0]?.id;\n    if (!indexId) {\n      await pending(p.id, \"create-index-table\");\n      const r = await action(\"airtable.create_table\", {\n        baseId,\n        name: \"Form Index\",\n        fields: fields([\"FormId\", \"FormName\", \"TableId\", \"TableName\"]),\n      });\n      indexId = r?.id;\n      if (typeof indexId !== \"string\" || !indexId) throw Error(\"Index creation returned no ID\");\n      await clear();\n    }\n    const escaped = p.formId.replace(/\\\\/g, \"\\\\\\\\\").replace(/'/g, \"\\\\'\");\n    const found = await action(\"airtable.list_records\", {\n      baseId,\n      tableIdOrName: indexId,\n      filterByFormula: \"{FormId}='\" + escaped + \"'\",\n      maxRecords: 2,\n    });\n    if (!Array.isArray(found?.records)) throw Error(\"Missing index records\");\n    if (found.records.length > 1) throw Error(\"Duplicate form index entries\");\n    let tableId = found.records[0]?.fields?.TableId;\n    if (found.records.length && !tableId) throw Error(\"Index entry has no table ID\");\n    if (tableId && !tables.some((t) => t.id === tableId))\n      throw Error(\"Indexed form table no longer exists\");\n    if (!tableId) {\n      await pending(p.id, \"create-form-table\");\n      const t = await action(\"airtable.create_table\", {\n        baseId,\n        name: p.name,\n        fields: fields([\"Id\", \"FormId\", \"FormName\", \"FormCreationDate\", \"FormContent\"]),\n      });\n      tableId = t?.id;\n      if (typeof tableId !== \"string\" || !tableId)\n        throw Error(\"Form table creation returned no ID\");\n      await pending(p.id, \"write-index\", tableId);\n      await action(\"airtable.create_records\", {\n        baseId,\n        tableIdOrName: indexId,\n        records: [\n          { fields: { FormId: p.formId, FormName: p.name, TableId: tableId, TableName: p.name } },\n        ],\n        typecast: false,\n        returnFieldsByFieldId: false,\n      });\n      await clear();\n    }\n    await pending(p.id, \"write-submission\");\n    await action(\"airtable.create_records\", {\n      baseId,\n      tableIdOrName: tableId,\n      records: [\n        {\n          fields: {\n            Id: p.id,\n            FormId: p.formId,\n            FormName: p.name,\n            FormCreationDate: p.submittedAt,\n            FormContent: JSON.stringify(p.data),\n          },\n        },\n      ],\n      typecast: false,\n      returnFieldsByFieldId: false,\n    });\n    s.seen.push(p.id);\n    s.queue.shift();\n    s.pending = null;\n    await context.state.set(\"webflow-airtable-progress\", s);\n    count++;\n  }\n  return { processed: count };\n}\n"
+      }
+    }
+  },
+  "presentation": {
+    "designer": {
+      "version": 1,
+      "flow": {
+        "direction": "vertical"
+      }
+    }
+  }
+}

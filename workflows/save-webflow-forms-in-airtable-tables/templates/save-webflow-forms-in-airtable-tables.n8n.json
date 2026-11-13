@@ -1,0 +1,828 @@
+{
+  "name": "Save Webflow Forms in Airtable Tables",
+  "tags": [
+    {
+      "id": "7cKuF8oYmXKMRDsD",
+      "name": "webflow",
+      "createdAt": "2024-01-09T02:22:11.773Z",
+      "updatedAt": "2024-01-09T02:22:11.773Z"
+    },
+    {
+      "id": "rQvbZ2PzC648UvCU",
+      "name": "airtable",
+      "createdAt": "2024-01-17T09:01:13.833Z",
+      "updatedAt": "2024-01-17T09:01:13.833Z"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "save-webflow-forms-in-airtable-tables-webhook",
+      "name": "Receive Webflow submission",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "save-webflow-forms-in-airtable-tables",
+        "options": {}
+      }
+    },
+    {
+      "id": "save-webflow-forms-in-airtable-tables-prep",
+      "name": "Prepare submission",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const body = $json.body,\n  p = body?.payload;\nif (\n  body?.triggerType !== \"form_submission\" ||\n  p?.siteId !== \"YOUR_WEBFLOW_SITE_ID\" ||\n  ![p?.id, p?.formId, p?.name, p?.submittedAt].every((x) => typeof x === \"string\" && x.trim()) ||\n  !p.data ||\n  typeof p.data !== \"object\" ||\n  Array.isArray(p.data)\n)\n  throw Error(\"Invalid Webflow submission\");\nreturn { json: { payload: JSON.stringify(p), status: \"queued\" } };\n"
+      }
+    },
+    {
+      "id": "save-webflow-forms-in-airtable-tables-queue",
+      "name": "Save incoming submission",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_QUEUE_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "payload": "={{ $json.payload }}",
+            "status": "queued"
+          },
+          "schema": [],
+          "matchingColumns": []
+        },
+        "options": {
+          "optimizeBulk": true
+        }
+      }
+    },
+    {
+      "id": "save-webflow-forms-in-airtable-tables-schedule",
+      "name": "Process submissions every minute",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 1
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "save-webflow-forms-in-airtable-tables-resume",
+      "name": "Resume queued submissions",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "parameters": {}
+    },
+    {
+      "id": "save-webflow-forms-in-airtable-tables-fetch",
+      "name": "Read queued and pending submissions",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_QUEUE_TABLE_ID"
+        },
+        "matchType": "anyCondition",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "status",
+              "condition": "eq",
+              "keyValue": "queued"
+            },
+            {
+              "keyName": "status",
+              "condition": "eq",
+              "keyValue": "pending"
+            }
+          ]
+        },
+        "returnAll": true,
+        "orderBy": true,
+        "orderByColumn": "id",
+        "orderByDirection": "ASC"
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "id": "save-webflow-forms-in-airtable-tables-select",
+      "name": "Select oldest submission",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const rows = $input\n  .all()\n  .map((x) => x.json)\n  .filter((x) => x.id !== undefined)\n  .sort((a, b) => a.id - b.id);\nif (!rows.length) return [];\nconst pending = rows.find((x) => x.status === \"pending\");\nif (pending) throw Error(\"Pending queue item \" + pending.id + \": inspect Airtable and resolve it\");\nreturn [{ json: rows[0] }];\n"
+      }
+    },
+    {
+      "id": "save-webflow-forms-in-airtable-tables-reserve",
+      "name": "Reserve submission",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_QUEUE_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $json.id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "pending"
+          },
+          "schema": [],
+          "matchingColumns": []
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "save-webflow-forms-in-airtable-tables-unpack",
+      "name": "Read submission",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const p = JSON.parse($json.payload);\nreturn { json: { queueId: $json.id, payload: p } };\n"
+      }
+    },
+    {
+      "id": "save-webflow-forms-in-airtable-tables-schema",
+      "name": "Get base schema",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2,
+      "alwaysOutputData": true,
+      "parameters": {
+        "authentication": "airtableTokenApi",
+        "resource": "base",
+        "operation": "getSchema",
+        "base": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_AIRTABLE_BASE_ID"
+        }
+      }
+    },
+    {
+      "id": "save-webflow-forms-in-airtable-tables-inspect",
+      "name": "Inspect base schema",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const tables = $input\n    .all()\n    .map((x) => x.json)\n    .filter((x) => x.id),\n  matches = tables.filter(\n    (t) => typeof t.name === \"string\" && t.name.toLowerCase() === \"form index\",\n  );\nif (matches.length > 1) throw Error(\"Multiple Form Index tables\");\nreturn [{ json: { indexId: matches[0]?.id ?? null, tables }, pairedItem: { item: 0 } }];\n"
+      }
+    },
+    {
+      "id": "save-webflow-forms-in-airtable-tables-index-gate",
+      "name": "Index exists?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "test",
+              "leftValue": "={{ !!$json.indexId }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "save-webflow-forms-in-airtable-tables-index",
+      "name": "Create Form Index",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.airtable.com/v0/meta/bases/YOUR_AIRTABLE_BASE_ID/tables",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "airtableTokenApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"name\":\"Form Index\",\"fields\":[{\"name\":\"FormId\",\"type\":\"singleLineText\"},{\"name\":\"FormName\",\"type\":\"singleLineText\"},{\"name\":\"TableId\",\"type\":\"singleLineText\"},{\"name\":\"TableName\",\"type\":\"singleLineText\"}]}",
+        "options": {}
+      }
+    },
+    {
+      "id": "save-webflow-forms-in-airtable-tables-choose-index",
+      "name": "Select index table",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const id = $json.indexId ?? $json.id;\nif (typeof id !== \"string\" || !id) throw Error(\"Missing index table ID\");\nconst p = $(\"Read submission\").item.json.payload;\nconst escaped = p.formId.replace(/\\\\/g, \"\\\\\\\\\").replace(/'/g, \"\\\\'\");\nreturn { json: { indexId: id, formula: \"{FormId}='\" + escaped + \"'\" } };\n"
+      }
+    },
+    {
+      "id": "save-webflow-forms-in-airtable-tables-index-search",
+      "name": "Find form mapping",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2,
+      "parameters": {
+        "authentication": "airtableTokenApi",
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_AIRTABLE_BASE_ID"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.indexId }}"
+        },
+        "filterByFormula": "={{ $json.formula }}",
+        "returnAll": false,
+        "limit": 2,
+        "options": {}
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "id": "save-webflow-forms-in-airtable-tables-inspect-form",
+      "name": "Inspect form mapping",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const rows = $input\n    .all()\n    .map((x) => x.json)\n    .filter((x) => x.id !== undefined),\n  indexId = $(\"Select index table\").item.json.indexId,\n  p = $(\"Read submission\").item.json.payload;\nif (rows.length > 1) throw Error(\"Duplicate form index entries\");\nif (rows.length && !rows[0].TableId) throw Error(\"Missing target table ID\");\nreturn [\n  {\n    json: { indexId, tableId: rows[0]?.TableId ?? null, name: p.name, formId: p.formId },\n    pairedItem: { item: 0 },\n  },\n];\n"
+      }
+    },
+    {
+      "id": "save-webflow-forms-in-airtable-tables-form-gate",
+      "name": "Form table exists?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "test",
+              "leftValue": "={{ !!$json.tableId }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "save-webflow-forms-in-airtable-tables-form",
+      "name": "Create form table",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.airtable.com/v0/meta/bases/YOUR_AIRTABLE_BASE_ID/tables",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "airtableTokenApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {name:$json.name,fields:['Id','FormId','FormName','FormCreationDate','FormContent'].map(name=>({name,type:name==='FormContent'?'richText':'singleLineText'}))} }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "save-webflow-forms-in-airtable-tables-build-index",
+      "name": "Prepare form index record",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const f = $(\"Inspect form mapping\").item.json;\nif (!$json.id) throw Error(\"Missing created table ID\");\nreturn { json: { indexId: f.indexId, tableId: $json.id, name: f.name, formId: f.formId } };\n"
+      }
+    },
+    {
+      "id": "save-webflow-forms-in-airtable-tables-insert-index",
+      "name": "Save form mapping",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2,
+      "parameters": {
+        "authentication": "airtableTokenApi",
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_AIRTABLE_BASE_ID"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.indexId }}"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "FormId": "={{ $json.formId }}",
+            "FormName": "={{ $json.name }}",
+            "TableId": "={{ $json.tableId }}",
+            "TableName": "={{ $json.name }}"
+          },
+          "schema": [],
+          "matchingColumns": []
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "save-webflow-forms-in-airtable-tables-target",
+      "name": "Select form table",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const id = $json.tableId ?? $json.TableId;\nif (typeof id !== \"string\" || !id) throw Error(\"Missing target table ID\");\nconst p = $(\"Read submission\").item.json.payload;\nconst escaped = p.id.replace(/\\\\/g, \"\\\\\\\\\").replace(/'/g, \"\\\\'\");\nreturn { json: { tableId: id, formula: \"{Id}='\" + escaped + \"'\" } };\n"
+      }
+    },
+    {
+      "id": "save-webflow-forms-in-airtable-tables-find",
+      "name": "Find existing submission",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2,
+      "parameters": {
+        "authentication": "airtableTokenApi",
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_AIRTABLE_BASE_ID"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.tableId }}"
+        },
+        "filterByFormula": "={{ $json.formula }}",
+        "returnAll": false,
+        "limit": 2,
+        "options": {}
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "id": "save-webflow-forms-in-airtable-tables-check",
+      "name": "Inspect submission",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const rows = $input\n  .all()\n  .map((x) => x.json)\n  .filter((x) => x.id !== undefined);\nif (rows.length > 1) throw Error(\"Duplicate submission records\");\nreturn [\n  {\n    json: { exists: rows.length === 1, tableId: $(\"Select form table\").item.json.tableId },\n    pairedItem: { item: 0 },\n  },\n];\n"
+      }
+    },
+    {
+      "id": "save-webflow-forms-in-airtable-tables-exists",
+      "name": "Submission exists?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "test",
+              "leftValue": "={{ $json.exists }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "save-webflow-forms-in-airtable-tables-insert",
+      "name": "Save submission",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2,
+      "parameters": {
+        "authentication": "airtableTokenApi",
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_AIRTABLE_BASE_ID"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.tableId }}"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Id": "={{ $('Read submission').item.json.payload.id }}",
+            "FormId": "={{ $('Read submission').item.json.payload.formId }}",
+            "FormName": "={{ $('Read submission').item.json.payload.name }}",
+            "FormCreationDate": "={{ $('Read submission').item.json.payload.submittedAt }}",
+            "FormContent": "={{ JSON.stringify($('Read submission').item.json.payload.data) }}"
+          },
+          "schema": [],
+          "matchingColumns": []
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "save-webflow-forms-in-airtable-tables-done",
+      "name": "Finish submission",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_QUEUE_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Read submission').item.json.queueId }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "done"
+          },
+          "schema": [],
+          "matchingColumns": []
+        },
+        "options": {}
+      }
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC"
+  },
+  "connections": {
+    "Receive Webflow submission": {
+      "main": [
+        [
+          {
+            "node": "Prepare submission",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare submission": {
+      "main": [
+        [
+          {
+            "node": "Save incoming submission",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process submissions every minute": {
+      "main": [
+        [
+          {
+            "node": "Read queued and pending submissions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resume queued submissions": {
+      "main": [
+        [
+          {
+            "node": "Read queued and pending submissions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read queued and pending submissions": {
+      "main": [
+        [
+          {
+            "node": "Select oldest submission",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select oldest submission": {
+      "main": [
+        [
+          {
+            "node": "Reserve submission",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve submission": {
+      "main": [
+        [
+          {
+            "node": "Read submission",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read submission": {
+      "main": [
+        [
+          {
+            "node": "Get base schema",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get base schema": {
+      "main": [
+        [
+          {
+            "node": "Inspect base schema",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Inspect base schema": {
+      "main": [
+        [
+          {
+            "node": "Index exists?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Index exists?": {
+      "main": [
+        [
+          {
+            "node": "Select index table",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create Form Index",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Form Index": {
+      "main": [
+        [
+          {
+            "node": "Select index table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select index table": {
+      "main": [
+        [
+          {
+            "node": "Find form mapping",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find form mapping": {
+      "main": [
+        [
+          {
+            "node": "Inspect form mapping",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Inspect form mapping": {
+      "main": [
+        [
+          {
+            "node": "Form table exists?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Form table exists?": {
+      "main": [
+        [
+          {
+            "node": "Select form table",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create form table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create form table": {
+      "main": [
+        [
+          {
+            "node": "Prepare form index record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare form index record": {
+      "main": [
+        [
+          {
+            "node": "Save form mapping",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save form mapping": {
+      "main": [
+        [
+          {
+            "node": "Select form table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select form table": {
+      "main": [
+        [
+          {
+            "node": "Find existing submission",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find existing submission": {
+      "main": [
+        [
+          {
+            "node": "Inspect submission",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Inspect submission": {
+      "main": [
+        [
+          {
+            "node": "Submission exists?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Submission exists?": {
+      "main": [
+        [
+          {
+            "node": "Finish submission",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Save submission",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save submission": {
+      "main": [
+        [
+          {
+            "node": "Finish submission",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Finish submission": {
+      "main": [
+        [
+          {
+            "node": "Read queued and pending submissions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
