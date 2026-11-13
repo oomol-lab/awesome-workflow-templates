@@ -598,6 +598,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Turn Support Gmail into Linear Issues](workflows/turn-support-gmail-into-linear-issues/) - Triage the latest matching support email with AI and create a Linear issue.
 - [Triage Outlook Support in Jira](workflows/triage-outlook-support-in-jira/) - Triage recent Outlook support messages with AI and create Jira issues.
 - [Classify WordPress Inquiries and Draft Replies](workflows/classify-wordpress-inquiries-and-draft-replies/) - Classify incoming WordPress contact inquiries, prepare Gmail drafts for review and log the inquiries in Google Sheets.
+- [Route Support Form to Asana and WhatsApp](workflows/route-support-form-to-asana-and-whatsapp/) - Create an Asana support task and send a WhatsApp confirmation for each form submission.
 
 ## Finance
 
