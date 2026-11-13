@@ -654,6 +654,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 
 - [Random Cocktail as XML](workflows/random-cocktail-as-xml/) - Fetch a random cocktail from TheCocktailDB and return its recipe as XML.
 - [Convert Orders XML to JSON](workflows/convert-orders-xml-to-json/) - Convert an example ORDERS05 XML document to JSON, retaining attributes.
+- [Record NHL Events and Scores in Airtable](workflows/record-nhl-events-and-scores-in-airtable/) - Create upcoming NHL event records and update matching records with scores.
 
 ## Security
 
