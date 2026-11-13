@@ -1,0 +1,159 @@
+{
+  "name": "Check ComfyUI Service Status",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "comfyui-status",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "check-comfyui-service-status-0",
+      "name": "Status Check Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        250,
+        300
+      ]
+    },
+    {
+      "name": "Configure server address",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function endpoints({ base }) {\n  const root = base.replace(/\\/+$/, \"\");\n  if (!/^https?:\\/\\/[^/?#@\\s]+$/i.test(root)) throw new Error(\"Configure a ComfyUI base URL\");\n  return {\n    statsUrl: root + \"/system_stats\",\n    nodesUrl: root + \"/object_info\",\n    endpoints: {\n      prompt: \"POST \" + root + \"/prompt\",\n      history: \"GET \" + root + \"/history/{prompt_id}\",\n      queue: \"GET \" + root + \"/queue\",\n      system_stats: \"GET \" + root + \"/system_stats\",\n      view_image: \"GET \" + root + \"/view?filename={name}&type=output\",\n    },\n  };\n}\n\nreturn [{ json: endpoints({ base: \"https://YOUR_COMFYUI_HOST\" }) }];\n"
+      },
+      "id": "check-comfyui-service-status-1"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.statsUrl }}",
+        "options": {}
+      },
+      "id": "check-comfyui-service-status-2",
+      "name": "Get ComfyUI Stats",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        470,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Configure server address').first().json.nodesUrl }}",
+        "options": {}
+      },
+      "id": "check-comfyui-service-status-3",
+      "name": "Get Available Nodes",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        470,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "function status({ stats, nodes, endpoints }) {\n  if (\n    !stats ||\n    typeof stats !== \"object\" ||\n    Array.isArray(stats) ||\n    !nodes ||\n    typeof nodes !== \"object\" ||\n    Array.isArray(nodes)\n  )\n    throw new Error(\"ComfyUI returned invalid data\");\n  return {\n    response: {\n      status: \"connected\",\n      comfyui: { system_stats: stats, available_nodes: Object.keys(nodes).length, endpoints },\n      message: \"ComfyUI is running and accessible.\",\n    },\n  };\n}\n\nreturn [\n  {\n    json: status({\n      stats: $(\"Get ComfyUI Stats\").first().json,\n      nodes: $json,\n      endpoints: $(\"Configure server address\").first().json.endpoints,\n    }).response,\n  },\n];\n"
+      },
+      "id": "check-comfyui-service-status-4",
+      "name": "Format Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        690,
+        380
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json, null, 2) }}",
+        "options": {}
+      },
+      "id": "check-comfyui-service-status-5",
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        910,
+        380
+      ]
+    }
+  ],
+  "connections": {
+    "Status Check Webhook": {
+      "main": [
+        [
+          {
+            "node": "Configure server address",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configure server address": {
+      "main": [
+        [
+          {
+            "node": "Get ComfyUI Stats",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get ComfyUI Stats": {
+      "main": [
+        [
+          {
+            "node": "Get Available Nodes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Available Nodes": {
+      "main": [
+        [
+          {
+            "node": "Format Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Response": {
+      "main": [
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [
+    {
+      "name": "ComfyUI",
+      "id": "1"
+    },
+    {
+      "name": "Test",
+      "id": "2"
+    }
+  ],
+  "active": false,
+  "pinData": {}
+}
