@@ -429,6 +429,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Enrich Airtable Inventory with Image Research](workflows/enrich-airtable-inventory-with-image-research/) - Research inventory images and update Airtable records with product attributes.
 - [Save a Sales Line Chart to Google Drive](workflows/save-sales-line-chart-to-google-drive/) - Render a line chart from sales data and save the PNG to Google Drive.
 - [Comment on Jira for a Figma Version](workflows/comment-jira-on-figma-version/) - Post Figma Commit plugin version details to the linked Jira issue.
+- [Save Form Submissions to Airtable and Google Sheets](workflows/save-form-submissions-to-airtable-and-sheets/) - Store form submissions in Airtable and Google Sheets and send a message after each write.
 
 ## Content
 
