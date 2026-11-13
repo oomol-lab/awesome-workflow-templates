@@ -176,6 +176,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Send a Log to Better Stack](workflows/send-a-log-to-better-stack/) - Send a message and level to Better Stack Logs from a workflow or a manual test.
 - [Sync Syncro Offline Alerts to Opsgenie](workflows/sync-syncro-offline-alerts-to-opsgenie/) - Create or close an Opsgenie alert when Syncro reports an agent offline or resolved.
 - [Create, Update, and Read an UptimeRobot Monitor](workflows/create-update-and-read-an-uptimerobot-monitor/) - Create an HTTP monitor, rename it, and read its details.
+- [Export n8n Executions as CSV](workflows/export-n8n-executions-as-csv/) - Read all available n8n executions and convert their metadata to CSV.
 
 ## Marketing
 
