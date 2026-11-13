@@ -528,6 +528,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Back Up n8n Workflows to Google Drive](workflows/back-up-n8n-workflows-to-google-drive/) - Save n8n workflows as JSON in a fresh Drive folder and clean up older items in a dedicated parent folder.
 - [Explore HTTP Request Examples](workflows/explore-http-request-examples/) - Explore JSON arrays, a random Wikipedia title, and paginated GitHub stars.
 - [Check ComfyUI Service Status](workflows/check-comfyui-service-status/) - Return ComfyUI system statistics and the number of available node types.
+- [Try ReqRes User API Requests](workflows/try-reqres-user-api-requests/) - Try reading, creating, and updating sample users with the ReqRes API.
 
 ## Communication
 
