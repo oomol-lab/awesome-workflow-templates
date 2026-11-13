@@ -235,6 +235,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Route Webinar Feedback to KlickTipp](workflows/route-webinar-feedback-to-klicktipp/) - Subscribe webinar feedback respondents and assign tags from their form answers.
 - [Route Typeform Quiz to KlickTipp](workflows/route-typeform-quiz-to-klicktipp/) - Subscribe Typeform quiz respondents and assign tags from their answers.
 - [Research Global Keyword Metrics](workflows/global-keyword-metrics-with-dataforseo/) - Research global search volume, competition and bid metrics for a keyword and related terms.
+- [Create Airtable Instagram Captions](workflows/create-airtable-instagram-captions/) - Create Instagram captions for new Airtable editorial records using audience background.
 
 ## Support
 
