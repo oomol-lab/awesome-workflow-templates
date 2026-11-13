@@ -230,6 +230,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Update Rank Math SEO Metadata](workflows/update-rank-math-seo-metadata/) - Update a WordPress post’s Rank Math SEO title, description and canonical URL.
 - [Overlay Text on a Remote Image](workflows/overlay-text-on-remote-image/) - Add text to a remotely hosted image and return the result.
 - [Publish an Image to LinkedIn](workflows/publish-an-image-to-linkedin/) - Publish a configured image and message to a LinkedIn personal profile.
+- [Notify Mattermost of Emelia Replies](workflows/notify-mattermost-of-emelia-replies/) - Send a Mattermost notice when a contact replies to a legacy Emelia email campaign.
 
 ## Support
 
