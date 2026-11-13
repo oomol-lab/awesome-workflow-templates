@@ -240,6 +240,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Create Airtable Instagram Captions](workflows/create-airtable-instagram-captions/) - Create Instagram captions for new Airtable editorial records using audience background.
 - [Save GetResponse Subscribers to Airtable](workflows/save-getresponse-subscribers-to-airtable/) - Append subscribers from a GetResponse campaign to an Airtable table.
 - [Create Instagram Captions for New Airtable Records](workflows/airtable-new-record-instagram-caption/) - Create Instagram captions for new Airtable editorial records using audience background.
+- [Sync Facebook Leads to KlickTipp](workflows/sync-facebook-leads-to-klicktipp/) - Import Facebook Lead Ads contacts and form answers into KlickTipp.
 
 ## Support
 
