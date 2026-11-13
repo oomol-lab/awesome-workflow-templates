@@ -415,6 +415,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Summarize Podcast Transcript with Refinement](workflows/summarize-podcast-transcript-with-refinement/) - Summarize a YouTube podcast transcript and generate specific example questions and answers.
 - [Send ISS Position to Amazon SQS](workflows/send-iss-position-to-sqs/) - Send the current ISS position as a JSON message to an Amazon SQS queue every minute.
 - [Update an XML Slideshow in Dropbox](workflows/update-an-xml-slideshow-in-dropbox/) - Fetch the sample XML slideshow, change its title and save the XML to Dropbox.
+- [Create a Wekan Board and Move a Card](workflows/create-a-wekan-board-and-move-a-card/) - Create a Wekan board with To Do and Done lists, then move a sample card.
 
 ## Content
 
