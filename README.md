@@ -412,6 +412,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Create an HTML Timesheet Report](workflows/create-an-html-timesheet-report/) - Group timesheet entries by person and task and create an HTML report with avatars and task totals.
 - [Import CSV Users to Snowflake](workflows/import-csv-users-to-snowflake/) - Read user records from a CSV URL and insert them into a Snowflake users table.
 - [Summarize Podcast Transcript with Refinement](workflows/summarize-podcast-transcript-with-refinement/) - Summarize a YouTube podcast transcript and generate specific example questions and answers.
+- [Send ISS Position to Amazon SQS](workflows/send-iss-position-to-sqs/) - Send the current ISS position as a JSON message to an Amazon SQS queue every minute.
 
 ## Content
 
