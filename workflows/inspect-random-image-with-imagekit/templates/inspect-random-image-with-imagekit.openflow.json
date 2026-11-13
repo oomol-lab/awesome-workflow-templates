@@ -1,0 +1,217 @@
+{
+  "kind": "open-flow-workflow",
+  "version": 1,
+  "name": "Inspect a Random Image with ImageKit",
+  "content": {
+    "modelVersion": 15,
+    "document": {
+      "bindings": {},
+      "graph": {
+        "nodes": {
+          "n_bcc70b0218ae589e": {
+            "name": "Run manually",
+            "kind": "start",
+            "inputDefs": []
+          },
+          "n_60ea21c1542c35b9": {
+            "inputs": {
+              "privateKey": {
+                "kind": "unset"
+              }
+            },
+            "name": "Upload sample image",
+            "kind": "task",
+            "task": {
+              "inputs": [
+                {
+                  "jsonSchema": {
+                    "type": "string"
+                  },
+                  "nullable": false,
+                  "handle": "privateKey"
+                }
+              ],
+              "outputs": [
+                {
+                  "jsonSchema": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "nullable": false,
+                  "handle": "fileId"
+                }
+              ],
+              "name": "Upload sample image",
+              "moduleId": "n_1c65c2ddd01fd5c3",
+              "capabilities": [
+                {
+                  "kind": "http",
+                  "hosts": [
+                    "picsum.photos",
+                    "fastly.picsum.photos",
+                    "upload.imagekit.io"
+                  ]
+                }
+              ]
+            }
+          },
+          "n_bca0bc6bc3e75a73": {
+            "inputs": {
+              "fileId": {
+                "kind": "sources",
+                "sources": [
+                  {
+                    "kind": "node",
+                    "nodeId": "n_60ea21c1542c35b9",
+                    "output": "fileId"
+                  }
+                ]
+              }
+            },
+            "name": "Read image metadata",
+            "kind": "task",
+            "task": {
+              "inputs": [
+                {
+                  "description": "The unique ImageKit fileId returned by upload or list assets APIs.",
+                  "jsonSchema": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "The unique ImageKit fileId returned by upload or list assets APIs."
+                  },
+                  "nullable": false,
+                  "handle": "fileId"
+                }
+              ],
+              "outputs": [
+                {
+                  "description": "Image or video metadata returned by ImageKit.",
+                  "jsonSchema": {
+                    "type": "object",
+                    "properties": {},
+                    "additionalProperties": true,
+                    "description": "Image or video metadata returned by ImageKit."
+                  },
+                  "nullable": false,
+                  "handle": "metadata"
+                }
+              ],
+              "name": "Read image metadata",
+              "executor": {
+                "kind": "connector",
+                "action": "imagekit.get_uploaded_file_metadata"
+              }
+            }
+          },
+          "n_bbc191b4aa9cd6a9": {
+            "inputs": {
+              "fileId": {
+                "kind": "sources",
+                "sources": [
+                  {
+                    "kind": "node",
+                    "nodeId": "n_60ea21c1542c35b9",
+                    "output": "fileId"
+                  }
+                ]
+              }
+            },
+            "name": "Delete uploaded sample",
+            "kind": "task",
+            "task": {
+              "inputs": [
+                {
+                  "description": "The unique ImageKit fileId returned by upload or list assets APIs.",
+                  "jsonSchema": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "The unique ImageKit fileId returned by upload or list assets APIs."
+                  },
+                  "nullable": false,
+                  "handle": "fileId"
+                }
+              ],
+              "outputs": [
+                {
+                  "description": "Whether the delete request completed successfully.",
+                  "jsonSchema": {
+                    "type": "boolean",
+                    "description": "Whether the delete request completed successfully."
+                  },
+                  "nullable": false,
+                  "handle": "deleted"
+                }
+              ],
+              "name": "Delete uploaded sample",
+              "executor": {
+                "kind": "connector",
+                "action": "imagekit.delete_file"
+              }
+            }
+          },
+          "n_2e76b5ce6bd21e63": {
+            "name": "Image metadata",
+            "kind": "outputs",
+            "outputDefs": [
+              {
+                "jsonSchema": {
+                  "type": "object",
+                  "properties": {},
+                  "additionalProperties": true,
+                  "description": "Image or video metadata returned by ImageKit."
+                },
+                "nullable": false,
+                "handle": "metadata"
+              }
+            ],
+            "outputMappings": {
+              "metadata": {
+                "kind": "sources",
+                "sources": [
+                  {
+                    "kind": "node",
+                    "nodeId": "n_bca0bc6bc3e75a73",
+                    "output": "metadata"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "edges": [
+          {
+            "source": "n_bcc70b0218ae589e",
+            "target": "n_60ea21c1542c35b9"
+          },
+          {
+            "source": "n_60ea21c1542c35b9",
+            "target": "n_bca0bc6bc3e75a73"
+          },
+          {
+            "source": "n_bca0bc6bc3e75a73",
+            "target": "n_bbc191b4aa9cd6a9"
+          },
+          {
+            "source": "n_bbc191b4aa9cd6a9",
+            "target": "n_2e76b5ce6bd21e63"
+          }
+        ]
+      }
+    },
+    "modules": {
+      "n_1c65c2ddd01fd5c3": {
+        "name": "Upload sample image",
+        "imports": [],
+        "source": "import { Buffer } from \"node:buffer\";\nexport default async function upload({ privateKey }, context) {\n  if (typeof privateKey !== \"string\" || !privateKey.trim())\n    throw Error(\"ImageKit private key is required\");\n  let redirect;\n  try {\n    redirect = await context.fetch(\"https://picsum.photos/200/300\", { method: \"GET\" });\n  } catch {\n    throw Error(\"Sample image request failed\");\n  }\n  if (redirect.status !== 302) throw Error(\"Sample image did not return the expected redirect\");\n  let url;\n  try {\n    url = new URL(redirect.headers.get(\"location\"));\n  } catch {\n    throw Error(\"Sample image redirect is invalid\");\n  }\n  if (\n    url.protocol !== \"https:\" ||\n    url.hostname !== \"fastly.picsum.photos\" ||\n    url.port ||\n    url.username ||\n    url.password ||\n    url.hash\n  )\n    throw Error(\"Sample image redirect has an unexpected destination\");\n  let image;\n  try {\n    image = await context.fetch(url.href, { method: \"GET\" });\n  } catch {\n    throw Error(\"Sample image download failed\");\n  }\n  if (!image.ok || !/^image\\/jpeg(?:\\s*;|$)/i.test(image.headers.get(\"content-type\") || \"\"))\n    throw Error(\"Sample image response is not a JPEG\");\n  const bytes = Buffer.from(await image.arrayBuffer());\n  if (\n    !bytes.length ||\n    bytes[0] !== 255 ||\n    bytes[1] !== 216 ||\n    bytes[bytes.length - 2] !== 255 ||\n    bytes[bytes.length - 1] !== 217\n  )\n    throw Error(\"Sample image was incomplete\");\n  const auth = \"Basic \" + Buffer.from(privateKey + \":\").toString(\"base64\");\n  const boundary = \"openflow-imagekit-boundary\";\n  const fields = [\n    [\"file\", bytes.toString(\"base64\")],\n    [\"fileName\", \"picsum-image.jpg\"],\n    [\"useUniqueFileName\", \"true\"],\n  ];\n  const body =\n    fields\n      .map(\n        ([k, v]) => `--${boundary}\\r\\nContent-Disposition: form-data; name=\"${k}\"\\r\\n\\r\\n${v}\\r\\n`,\n      )\n      .join(\"\") + `--${boundary}--\\r\\n`;\n  let response;\n  try {\n    response = await context.fetch(\"https://upload.imagekit.io/api/v1/files/upload\", {\n      method: \"POST\",\n      headers: { authorization: auth, \"content-type\": `multipart/form-data; boundary=${boundary}` },\n      body,\n    });\n  } catch {\n    throw Error(\"ImageKit upload result is unknown; inspect your media library before retrying\");\n  }\n  if (!response.ok)\n    throw Error(\"ImageKit upload failed; inspect your media library before retrying\");\n  let data;\n  try {\n    data = await response.json();\n  } catch {\n    throw Error(\"ImageKit upload response was invalid; inspect your media library before retrying\");\n  }\n  if (typeof data?.fileId !== \"string\" || !data.fileId)\n    throw Error(\"ImageKit returned no file ID; inspect your media library before retrying\");\n  return { fileId: data.fileId };\n}\n"
+      }
+    }
+  },
+  "presentation": {
+    "designer": {
+      "version": 1,
+      "flow": {
+        "direction": "vertical"
+      }
+    }
+  }
+}
