@@ -428,6 +428,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Generate an OpenAI Speech MP3](workflows/generate-an-openai-speech-mp3/) - Convert text into an MP3 using OpenAI speech synthesis.
 - [Scrape Page Markdown with Firecrawl](workflows/scrape-page-markdown-with-firecrawl/) - Call Firecrawl to scrape one page and return its Markdown.
 - [Translate French Speech to English Audio](workflows/translate-french-speech-to-english-audio/) - Generate French speech from text, transcribe it, translate the transcript into English and generate English speech in the same voice.
+- [Publish a Post to a Medium Publication](workflows/publish-a-post-to-a-medium-publication/) - Publish a supplied article to a Medium publication.
 
 ## Commerce
 
