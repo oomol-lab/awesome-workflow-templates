@@ -1,0 +1,462 @@
+{
+  "nodes": [
+    {
+      "id": "9e4a97c9-65dc-4be1-bd9d-d5e84ffedd69",
+      "name": "Subscribe contact in KlickTipp",
+      "type": "n8n-nodes-klicktipp.klicktipp",
+      "notes": "This node subscribes the formatted contact data to a specific KlickTipp list.",
+      "position": [
+        900,
+        340
+      ],
+      "parameters": {
+        "email": "={{ $('New submission via Gravityforms').first().json.body['4'] }}",
+        "fields": {
+          "dataFields": [
+            {
+              "fieldId": "fieldFirstName",
+              "fieldValue": "={{ $('New submission via Gravityforms').first().json.body['1'] }}"
+            },
+            {
+              "fieldId": "fieldLastName",
+              "fieldValue": "={{ $('New submission via Gravityforms').first().json.body['3'] }}"
+            },
+            {
+              "fieldId": "fieldBirthday",
+              "fieldValue": "={{ $json.birthday }}"
+            },
+            {
+              "fieldId": "YOUR_FEEDBACK_FIELD_ID",
+              "fieldValue": "={{ $('New submission via Gravityforms').first().json.body['7'] }}"
+            },
+            {
+              "fieldId": "YOUR_RATING_FIELD_ID",
+              "fieldValue": "={{ $json.webinar_rating }}"
+            },
+            {
+              "fieldId": "YOUR_COMMENTS_FIELD_ID",
+              "fieldValue": "={{ $('New submission via Gravityforms').first().json.body['9'] }}"
+            },
+            {
+              "fieldId": "YOUR_CHOICE_FIELD_ID",
+              "fieldValue": "={{ $('New submission via Gravityforms').first().json.body['12.1'] }}"
+            },
+            {
+              "fieldId": "YOUR_WEBINAR_FIELD_ID",
+              "fieldValue": "={{ $json.webinar_choice }}"
+            }
+          ]
+        },
+        "listId": "YOUR_OPT_IN_PROCESS_ID",
+        "resource": "subscriber",
+        "operation": "subscribe",
+        "smsNumber": "={{ $json.mobile_number }}"
+      },
+      "notesInFlow": true,
+      "typeVersion": 2
+    },
+    {
+      "id": "a6cc678f-b8bf-4dc9-a9f5-3edeaee44d3b",
+      "name": "Convert and set feedback data",
+      "type": "n8n-nodes-base.code",
+      "notes": "This node transforms the form data from Gravity Forms into the appropriate format required for the KlickTipp API.",
+      "position": [
+        680,
+        340
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function prepare({ body, listId, customFields }) {\n  const v = body;\n  if (!v || typeof v !== \"object\" || typeof v[\"4\"] !== \"string\" || !v[\"4\"].includes(\"@\"))\n    throw Error(\"Email required\");\n  if (!Number.isSafeInteger(listId) || listId <= 0) throw Error(\"Configure opt-in process ID\");\n  const keys = [\"feedback\", \"rating\", \"comments\", \"choice\", \"webinar\"];\n  if (\n    !customFields ||\n    keys.some((k) => !/^field\\d+$/.test(customFields[k] || \"\")) ||\n    new Set(keys.map((k) => customFields[k])).size !== 5\n  )\n    throw Error(\"Configure five distinct custom fields\");\n  const birthday = Date.parse(String(v[\"6\"]) + \"T00:00:00Z\"),\n    match = /^(\\d{2})\\.(\\d{2})\\.(\\d{4}) (\\d{2}):(\\d{2})$/.exec(v[\"13\"] || \"\");\n  if (!Number.isFinite(birthday) || !match) throw Error(\"Invalid dates\");\n  const [, day, month, year, hour, minute] = match,\n    webinar = Date.parse(`${year}-${month}-${day}T${hour}:${minute}:00Z`);\n  if (!Number.isFinite(webinar)) throw Error(\"Invalid webinar date\");\n  const rating = Number(v[\"8\"]);\n  if (!Number.isFinite(rating)) throw Error(\"Invalid rating\");\n  let extra = [];\n  try {\n    extra = v[\"11\"] ? JSON.parse(v[\"11\"]) : [];\n  } catch {\n    extra = [];\n  }\n  if (!Array.isArray(extra)) extra = [extra];\n  const tags = [v[\"8\"] || null, v[\"13\"] || null, ...extra].filter((x) => x !== null);\n  if (tags.some((x) => typeof x !== \"string\" || !x.trim())) throw Error(\"Invalid tag\");\n  const fields = {\n    fieldFirstName: String(v[\"1\"] || \"\"),\n    fieldLastName: String(v[\"3\"] || \"\"),\n    fieldBirthday: String(Math.floor(birthday / 1000)),\n    [customFields.feedback]: String(v[\"7\"] || \"\"),\n    [customFields.rating]: String(rating * 100),\n    [customFields.comments]: String(v[\"9\"] || \"\"),\n    [customFields.choice]: String(v[\"12.1\"] || \"\"),\n    [customFields.webinar]: String(Math.floor(webinar / 1000)),\n  };\n  const phone = String(v[\"5\"] || \"\")\n    .replace(/^\\+/, \"00\")\n    .replace(/[^0-9]/g, \"\");\n  return {\n    email: v[\"4\"],\n    subscriber: { email: v[\"4\"], ...(phone ? { smsnumber: phone } : {}), listid: listId, fields },\n    tags: [...new Set(tags)],\n  };\n}\n\nconst p = prepare({\n  body: $json.body,\n  listId: 1,\n  customFields: {\n    feedback: \"field101\",\n    rating: \"field102\",\n    comments: \"field103\",\n    choice: \"field104\",\n    webinar: \"field105\",\n  },\n});\nreturn {\n  json: {\n    mobile_number: p.subscriber.smsnumber || \"\",\n    birthday: p.subscriber.fields.fieldBirthday,\n    webinar_rating: p.subscriber.fields.field102,\n    webinar_choice: p.subscriber.fields.field105,\n  },\n};\n"
+      },
+      "notesInFlow": true,
+      "typeVersion": 2
+    },
+    {
+      "id": "b2206acf-c3e1-40bc-b268-7a7b89506f5d",
+      "name": "Tag contact directly in KlickTipp",
+      "type": "n8n-nodes-klicktipp.klicktipp",
+      "notes": "Applies existing tags to a subscriber in KlickTipp. This enables the use of specific signatures, sign out automations as well as the automation of emails and campaigns or other automations.",
+      "position": [
+        2620,
+        240
+      ],
+      "parameters": {
+        "email": "={{ $('New submission via Gravityforms').first().json.body['4'] }}",
+        "tagId": "={{$json.tag_ids}}",
+        "resource": "contact-tagging"
+      },
+      "notesInFlow": true,
+      "typeVersion": 2
+    },
+    {
+      "id": "a143bed3-a63b-4759-b249-a1cb0683c22a",
+      "name": "Tag creation check",
+      "type": "n8n-nodes-base.if",
+      "notes": "This node checks the result of the tag comparison and branches the workflow accordingly in order to directly tag the contact or to create the tag first and to then follow through with the tagging.",
+      "position": [
+        1920,
+        340
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "d9567816-9236-434d-b46e-e47f4d36f289",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.exist }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "notesInFlow": true,
+      "typeVersion": 2.2
+    },
+    {
+      "id": "9cac27ed-0fa7-4e80-84da-4d9f5bae7d72",
+      "name": "Aggregate tags to add to contact",
+      "type": "n8n-nodes-base.aggregate",
+      "notes": "This node aggregates all IDs of the existing tags to a list.",
+      "position": [
+        2420,
+        240
+      ],
+      "parameters": {
+        "options": {},
+        "fieldsToAggregate": {
+          "fieldToAggregate": [
+            {
+              "renameField": true,
+              "outputFieldName": "tag_ids",
+              "fieldToAggregate": "tag_id"
+            }
+          ]
+        }
+      },
+      "notesInFlow": true,
+      "typeVersion": 1
+    },
+    {
+      "id": "7f72f6ca-e13f-4f66-a8c9-c9efee511d84",
+      "name": "Create the tag in KlickTipp",
+      "type": "n8n-nodes-klicktipp.klicktipp",
+      "notes": "Creates a new tag in KlickTipp if it does not already exist.",
+      "position": [
+        2220,
+        460
+      ],
+      "parameters": {
+        "name": "={{ $json.name }}",
+        "operation": "create"
+      },
+      "notesInFlow": true,
+      "typeVersion": 2
+    },
+    {
+      "id": "b44fe73c-011e-4dee-9961-e8221d577140",
+      "name": "Aggregate array of created tags",
+      "type": "n8n-nodes-base.aggregate",
+      "notes": "This node aggregates all IDs of the newly created tags to a list.",
+      "position": [
+        2420,
+        460
+      ],
+      "parameters": {
+        "options": {},
+        "fieldsToAggregate": {
+          "fieldToAggregate": [
+            {
+              "renameField": true,
+              "outputFieldName": "tag_ids",
+              "fieldToAggregate": "id"
+            }
+          ]
+        }
+      },
+      "notesInFlow": true,
+      "typeVersion": 1
+    },
+    {
+      "id": "a03ba56c-1470-48c4-a3ea-aa7d282e5e37",
+      "name": "Tag contact KlickTipp after trag creation",
+      "type": "n8n-nodes-klicktipp.klicktipp",
+      "notes": "Associates a specific tag with a subscriber in KlickTipp using their email address. This enables the use of specific signatures, signout automations as well as the automation of emails and campaigns or other automations.",
+      "position": [
+        2620,
+        460
+      ],
+      "parameters": {
+        "email": "={{ $('New submission via Gravityforms').first().json.body['4'] }}",
+        "tagId": "={{$json.tag_ids}}",
+        "resource": "contact-tagging"
+      },
+      "notesInFlow": true,
+      "typeVersion": 2
+    },
+    {
+      "id": "605a93b4-1ebf-4436-8aad-ea433e4bf5bf",
+      "name": "Get list of all existing tags",
+      "type": "n8n-nodes-klicktipp.klicktipp",
+      "notes": "This node fetches all tags that already exist in KlickTipp.",
+      "position": [
+        1280,
+        460
+      ],
+      "parameters": {},
+      "notesInFlow": true,
+      "typeVersion": 2,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "b17669be-62b3-423d-8018-dc92c983c5c7",
+      "name": "Merge",
+      "type": "n8n-nodes-base.merge",
+      "notes": "This node merges the tags which are fetched via the form with the existing tags we requested in order to identify if new tags need to be created.",
+      "position": [
+        1700,
+        340
+      ],
+      "parameters": {
+        "mode": "append"
+      },
+      "notesInFlow": true,
+      "typeVersion": 3
+    },
+    {
+      "id": "3f643d7b-7acd-46ad-a31a-aa1cd4ec0424",
+      "name": "Define Array of tags from Gravityforms",
+      "type": "n8n-nodes-base.set",
+      "notes": "This node defines tags based on the form submission, such as the webinar selection, date, and reminder interval, and saves them as an array for further processing.",
+      "position": [
+        1280,
+        240
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "814576c1-ba16-4546-9815-2b7dec324f94",
+              "name": "tags",
+              "type": "array",
+              "value": "={{ \n  Array.from([\n    // Extracts value from Typeform response (field 8), or returns null if not found\n    $('New submission via Gravityforms')?.first()?.json?.body?.['8'] || null, \n    $('New submission via Gravityforms').first().json.body['13'],\n    (() => {\n      try {\n        // Extracts and parses JSON from Typeform response (field 11), or returns null if not found\n        let value = $('New submission via Gravityforms')?.first()?.json?.body?.['11'];\n        return value ? JSON.parse(value) : null;\n      } catch (error) {\n        return null; // Return null if JSON parsing fails\n      }\n    })()\n  ].flat().filter(item => item !== null)) // Flattens the array and removes null values\n}}"
+            }
+          ]
+        }
+      },
+      "notesInFlow": true,
+      "typeVersion": 3.4
+    },
+    {
+      "id": "e52482ea-5604-4c4d-a202-de770d4fb240",
+      "name": "Split Out Gravityforms tags",
+      "type": "n8n-nodes-base.splitOut",
+      "notes": "In this node we split the created array again into items so we can merge them with the existing tags we request from KlickTipp.",
+      "position": [
+        1460,
+        240
+      ],
+      "parameters": {
+        "options": {},
+        "fieldToSplitOut": "tags"
+      },
+      "notesInFlow": true,
+      "typeVersion": 1
+    },
+    {
+      "id": "3d020c2b-69d7-4c09-9b09-47ac4d87861c",
+      "name": "New submission via Gravityforms",
+      "type": "n8n-nodes-base.webhook",
+      "notes": "This webhook node captures incoming data from the Gravity Forms plugin on the website. It triggers the workflow when a new form submission is received.",
+      "position": [
+        460,
+        340
+      ],
+      "parameters": {
+        "path": "webinar-feedback",
+        "options": {},
+        "httpMethod": "POST"
+      },
+      "notesInFlow": true,
+      "typeVersion": 2
+    },
+    {
+      "id": "feedback-match-tags",
+      "name": "Match tags",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1880,
+        340
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const names = $(\"Split Out Gravityforms tags\")\n  .all()\n  .map((x) => x.json.tags);\nconst existing = $(\"Get list of all existing tags\")\n  .all()\n  .map((x) => x.json)\n  .filter((x) => x.id != null && typeof x.value === \"string\");\nreturn names.map((name) => {\n  const hit = existing.find((x) => x.value === name);\n  return { json: { name, exist: !!hit, tag_id: hit?.id ?? null } };\n});\n"
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Match tags",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tag creation check": {
+      "main": [
+        [
+          {
+            "node": "Aggregate tags to add to contact",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create the tag in KlickTipp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create the tag in KlickTipp": {
+      "main": [
+        [
+          {
+            "node": "Aggregate array of created tags",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out Gravityforms tags": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert and set feedback data": {
+      "main": [
+        [
+          {
+            "node": "Subscribe contact in KlickTipp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get list of all existing tags": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Subscribe contact in KlickTipp": {
+      "main": [
+        [
+          {
+            "node": "Define Array of tags from Gravityforms",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get list of all existing tags",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate array of created tags": {
+      "main": [
+        [
+          {
+            "node": "Tag contact KlickTipp after trag creation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "New submission via Gravityforms": {
+      "main": [
+        [
+          {
+            "node": "Convert and set feedback data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate tags to add to contact": {
+      "main": [
+        [
+          {
+            "node": "Tag contact directly in KlickTipp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Define Array of tags from Gravityforms": {
+      "main": [
+        [
+          {
+            "node": "Split Out Gravityforms tags",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Match tags": {
+      "main": [
+        [
+          {
+            "node": "Tag creation check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Route Webinar Feedback to KlickTipp",
+  "active": false,
+  "settings": {
+    "timezone": "UTC"
+  }
+}

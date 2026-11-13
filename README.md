@@ -232,6 +232,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Overlay Text on a Remote Image](workflows/overlay-text-on-remote-image/) - Add text to a remotely hosted image and return the result.
 - [Publish an Image to LinkedIn](workflows/publish-an-image-to-linkedin/) - Publish a configured image and message to a LinkedIn personal profile.
 - [Notify Mattermost of Emelia Replies](workflows/notify-mattermost-of-emelia-replies/) - Send a Mattermost notice when a contact replies to a legacy Emelia email campaign.
+- [Route Webinar Feedback to KlickTipp](workflows/route-webinar-feedback-to-klicktipp/) - Subscribe webinar feedback respondents and assign tags from their form answers.
 
 ## Support
 
