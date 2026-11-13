@@ -1,0 +1,169 @@
+{
+  "kind": "open-flow-workflow",
+  "version": 1,
+  "name": "Exchange Facebook User and Page Tokens",
+  "content": {
+    "modelVersion": 15,
+    "document": {
+      "bindings": {},
+      "graph": {
+        "nodes": {
+          "n_50a52a2ffbc08ce0": {
+            "name": "Run manually",
+            "kind": "start",
+            "inputDefs": []
+          },
+          "n_4e891e0bf78f14a9": {
+            "inputs": {
+              "appId": {
+                "kind": "value",
+                "value": "YOUR_APP_ID"
+              },
+              "appSecret": {
+                "kind": "unset"
+              },
+              "shortToken": {
+                "kind": "unset"
+              },
+              "userId": {
+                "kind": "value",
+                "value": "YOUR_APP_SCOPED_USER_ID"
+              }
+            },
+            "name": "Exchange and retrieve tokens",
+            "kind": "task",
+            "task": {
+              "inputs": [
+                {
+                  "jsonSchema": {
+                    "type": "string"
+                  },
+                  "nullable": false,
+                  "handle": "appId"
+                },
+                {
+                  "jsonSchema": {
+                    "type": "string"
+                  },
+                  "nullable": false,
+                  "handle": "appSecret"
+                },
+                {
+                  "jsonSchema": {
+                    "type": "string"
+                  },
+                  "nullable": false,
+                  "handle": "shortToken"
+                },
+                {
+                  "jsonSchema": {
+                    "type": "string"
+                  },
+                  "nullable": false,
+                  "handle": "userId"
+                }
+              ],
+              "outputs": [
+                {
+                  "jsonSchema": {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  "nullable": false,
+                  "handle": "user"
+                },
+                {
+                  "jsonSchema": {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  "nullable": false,
+                  "handle": "pages"
+                }
+              ],
+              "name": "Exchange and retrieve tokens",
+              "moduleId": "n_e82bdc439a5bb8e9",
+              "capabilities": [
+                {
+                  "kind": "http",
+                  "hosts": [
+                    "graph.facebook.com"
+                  ]
+                }
+              ]
+            }
+          },
+          "n_da318369c22ec759": {
+            "name": "User and Page tokens",
+            "kind": "outputs",
+            "outputDefs": [
+              {
+                "jsonSchema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "nullable": false,
+                "handle": "user"
+              },
+              {
+                "jsonSchema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "nullable": false,
+                "handle": "pages"
+              }
+            ],
+            "outputMappings": {
+              "user": {
+                "kind": "sources",
+                "sources": [
+                  {
+                    "kind": "node",
+                    "nodeId": "n_4e891e0bf78f14a9",
+                    "output": "user"
+                  }
+                ]
+              },
+              "pages": {
+                "kind": "sources",
+                "sources": [
+                  {
+                    "kind": "node",
+                    "nodeId": "n_4e891e0bf78f14a9",
+                    "output": "pages"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "edges": [
+          {
+            "source": "n_50a52a2ffbc08ce0",
+            "target": "n_4e891e0bf78f14a9"
+          },
+          {
+            "source": "n_4e891e0bf78f14a9",
+            "target": "n_da318369c22ec759"
+          }
+        ]
+      }
+    },
+    "modules": {
+      "n_e82bdc439a5bb8e9": {
+        "name": "Exchange and retrieve tokens",
+        "imports": [],
+        "source": "export default async function exchange({ appId, appSecret, shortToken, userId }, context) {\n  if (\n    !appId ||\n    !appSecret ||\n    !shortToken ||\n    !userId ||\n    appId.startsWith(\"YOUR_\") ||\n    userId.startsWith(\"YOUR_\")\n  )\n    throw Error(\"Configure the Facebook app, user, and secret variables\");\n  const exchange = new URL(\"https://graph.facebook.com/v27.0/oauth/access_token\");\n  exchange.searchParams.set(\"grant_type\", \"fb_exchange_token\");\n  exchange.searchParams.set(\"client_id\", appId);\n  exchange.searchParams.set(\"client_secret\", appSecret);\n  exchange.searchParams.set(\"fb_exchange_token\", shortToken);\n  let first;\n  try {\n    first = await context.fetch(exchange.href);\n  } catch {\n    throw Error(\"Token exchange failed or its result is unknown\");\n  }\n  if (!first.ok) throw Error(\"Token exchange was rejected\");\n  const user = await first.json();\n  if (typeof user?.access_token !== \"string\" || !user.access_token)\n    throw Error(\"Token exchange returned no user token\");\n  const accounts = new URL(\n    \"https://graph.facebook.com/v27.0/\" + encodeURIComponent(userId) + \"/accounts\",\n  );\n  accounts.searchParams.set(\"access_token\", user.access_token);\n  let response;\n  try {\n    response = await context.fetch(accounts.href);\n  } catch {\n    throw Error(\"Page token lookup failed\");\n  }\n  if (!response.ok) throw Error(\"Page token lookup was rejected\");\n  const pages = await response.json();\n  if (!Array.isArray(pages?.data)) throw Error(\"Page token lookup returned an invalid response\");\n  return { user, pages };\n}\n"
+      }
+    }
+  },
+  "presentation": {
+    "designer": {
+      "version": 1,
+      "flow": {
+        "direction": "vertical"
+      }
+    }
+  }
+}
