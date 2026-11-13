@@ -434,6 +434,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Generate a Custom Placeholder Image](workflows/generate-custom-placeholder-image/) - Generate a placeholder image with custom colors, text and font.
 - [Split an Example Array into Items](workflows/split-example-array-into-items/) - Learn how to turn an example array into individual workflow items.
 - [Split Example People into Items](workflows/split-example-people-into-items/) - Learn to turn a sample array of people into individual workflow items.
+- [Collect Example People into an Array](workflows/collect-example-people-into-an-array/) - Learn to collect sample workflow items into an array of people.
 
 ## Analytics
 
