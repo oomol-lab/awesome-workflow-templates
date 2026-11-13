@@ -433,6 +433,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Get Current Local Datetime](workflows/get-current-local-datetime/) - Return the current date and time in a chosen time zone.
 - [Generate a Custom Placeholder Image](workflows/generate-custom-placeholder-image/) - Generate a placeholder image with custom colors, text and font.
 - [Split an Example Array into Items](workflows/split-example-array-into-items/) - Learn how to turn an example array into individual workflow items.
+- [Split Example People into Items](workflows/split-example-people-into-items/) - Learn to turn a sample array of people into individual workflow items.
 
 ## Analytics
 
