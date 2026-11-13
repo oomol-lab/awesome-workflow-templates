@@ -121,6 +121,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Verify Sheet Emails with Icypeas](workflows/verify-sheet-emails-with-icypeas/) - Submit Google Sheet email addresses to Icypeas bulk verification.
 - [Import Excel Contacts to Salesforce](workflows/import-excel-contacts-to-salesforce/) - Find or create Salesforce accounts and upsert workbook contacts by email.
 - [Receive Affinity List Created Events](workflows/receive-affinity-list-created/) - Receive new-list events from Affinity and retrieve the complete list record.
+- [Schedule telli Calls from Airtable](workflows/schedule-telli-calls-from-airtable/) - Create telli contacts and schedule voice-agent calls for new Airtable records.
 
 ## Operations
 
