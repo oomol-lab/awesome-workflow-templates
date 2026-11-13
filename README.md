@@ -703,6 +703,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Save Taiwan Sheep Prices to Google Sheets](workflows/save-taiwan-sheep-prices-to-sheets/) - Fetch Taiwan sheep market quotations for a date range and append them to Google Sheets.
 - [Track New ISS Position](workflows/track-new-iss-position/) - Fetch the current ISS position every minute and return it when its timestamp changes.
 - [Create, Insert and Update a Snowflake Table](workflows/create-insert-and-update-snowflake-table/) - Create a Snowflake table, insert a row, and update that row.
+- [Create a QuestDB Table and Insert a Row](workflows/create-a-questdb-table-and-insert-a-row/) - Create a QuestDB table, insert a sample row, and read it back.
 
 ## Communications
 
