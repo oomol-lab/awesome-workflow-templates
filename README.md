@@ -470,6 +470,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Split Files from a ZIP Archive](workflows/split-files-from-a-zip-archive/) - Download an example ZIP and return each extracted file separately.
 - [Validate Emails and Extract Domains](workflows/validate-emails-and-extract-domains/) - Validate example email addresses and extract their domains.
 - [Process Ten Example Items One at a Time](workflows/process-ten-example-items-one-at-a-time/) - Learn how a one-item batch loop finishes after ten example numbers.
+- [Stop an Example Batch Loop at Index Five](workflows/stop-an-example-batch-loop-at-index-five/) - Learn how a one-item batch loop stops at run index five.
 
 ## Analytics
 
