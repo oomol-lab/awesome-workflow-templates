@@ -458,6 +458,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Compare Example Fruit Datasets](workflows/compare-example-fruit-datasets/) - Compare two sample fruit datasets by fruit name and inspect four result groups.
 - [Match Greetings by Language](workflows/match-greetings-by-language/) - Learn to match example names and greetings by language.
 - [Validate a TOTP Code](workflows/validate-a-totp-code/) - Demonstrate validating a six-digit TOTP code against a Base32 secret.
+- [Merge Downloaded Files into One Item](workflows/merge-downloaded-files-into-one-item/) - Download example files and combine their contents into one result.
 
 ## Analytics
 
