@@ -399,6 +399,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Publish Recent WordPress Posts to Medium](workflows/publish-recent-wordpress-posts-to-medium/) - Publish up to five recent WordPress posts to Medium.
 - [List Contentful Entry Fields](workflows/list-contentful-entry-fields/) - Read the fields of all published entries in a Contentful environment.
 - [Read Cockpit Collection Entries](workflows/read-cockpit-collection-entries/) - Read up to 100 entries from a Cockpit CMS collection.
+- [Generate an OpenAI Speech MP3](workflows/generate-an-openai-speech-mp3/) - Convert text into an MP3 using OpenAI speech synthesis.
 
 ## Commerce
 
