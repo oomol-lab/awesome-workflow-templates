@@ -670,6 +670,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Receive Copper Project Events](workflows/receive-copper-project-events/) - Receive new project notifications from Copper.
 - [Receive Jotform Submission Answers](workflows/receive-jotform-submission-answers/) - Receive answers when a Jotform form is submitted.
 - [Receive Gumroad Sales](workflows/receive-gumroad-sales/) - Receive Gumroad sale notifications.
+- [Receive Eventbrite Order Events](workflows/receive-eventbrite-order-events/) - Receive Eventbrite order events and fetch the order details.
 
 ## Communication
 
