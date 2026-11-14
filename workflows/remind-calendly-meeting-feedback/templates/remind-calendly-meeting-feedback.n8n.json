@@ -1,0 +1,279 @@
+{
+  "nodes": [
+    {
+      "name": "Calendly Trigger",
+      "type": "n8n-nodes-base.calendlyTrigger",
+      "position": [
+        -600,
+        1700
+      ],
+      "parameters": {
+        "events": [
+          "invitee.created"
+        ],
+        "authentication": "oAuth2"
+      },
+      "typeVersion": 1,
+      "id": "remind-calendly-meeting-feedback-0"
+    },
+    {
+      "id": "remind-calendly-meeting-feedback-execution-mode",
+      "name": "Execution mode",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "mode",
+              "name": "executionMode",
+              "type": "string",
+              "value": "n8n"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "position": [
+        -360,
+        1400
+      ]
+    },
+    {
+      "id": "remind-calendly-meeting-feedback-use-open-flow-",
+      "name": "Use Open Flow?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.executionMode }}",
+              "operation": "equal",
+              "value2": "openflow"
+            }
+          ]
+        }
+      },
+      "position": [
+        -120,
+        1400
+      ]
+    },
+    {
+      "id": "remind-calendly-meeting-feedback-forward-to-open-flow",
+      "name": "Forward to Open Flow",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "YOUR_OPEN_FLOW_WEBHOOK_URL",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {event:JSON.stringify($('Calendly Trigger').first().json)} }}",
+        "options": {}
+      },
+      "position": [
+        120,
+        1200
+      ]
+    },
+    {
+      "id": "remind-calendly-meeting-feedback-read-calendly-event",
+      "name": "Read Calendly event",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const url = $json.payload?.scheduled_event?.event_type;\nif (\n  typeof url !== \"string\" ||\n  !/^https:\\/\\/api\\.calendly\\.com\\/event_types\\/[A-Za-z0-9_-]+$/.test(url)\n)\n  throw Error(\"Invalid Calendly event type URL\");\nreturn { json: { eventTypeUrl: url } };\n"
+      },
+      "position": [
+        120,
+        1600
+      ]
+    },
+    {
+      "id": "remind-calendly-meeting-feedback-read-calendly-event-type",
+      "name": "Read Calendly event type",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "url": "={{ $json.eventTypeUrl }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "options": {}
+      },
+      "position": [
+        360,
+        1600
+      ]
+    },
+    {
+      "id": "remind-calendly-meeting-feedback-prepare-activity-and-reminder",
+      "name": "Prepare activity and reminder",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const p = $(\"Calendly Trigger\").first().json.payload,\n  e = p.scheduled_event,\n  t = $json.resource,\n  host = e.event_memberships?.[0]?.user_email ?? e.event_memberships?.[0]?.user_name;\nif (!t?.name || !t?.kind || !p?.name || !e?.start_time || !e?.end_time || !host)\n  throw Error(\"Calendly event is missing meeting details\");\nconst end = new Date(Date.parse(e.end_time) + 15 * 60000);\nif (!Number.isFinite(end.getTime())) throw Error(\"Invalid meeting end time\");\nreturn {\n  json: {\n    subject: `${t.name} with ${p.name} on ${e.start_time}`,\n    text: `${host}, today you had a ${t.name} ${t.kind} meeting with ${p.name}. Please write your notes from the call here YOUR_CALL_NOTES_URL and mark this message with ✅ when you're done.`,\n    feedbackTime: end.toISOString(),\n  },\n};\n"
+      },
+      "position": [
+        600,
+        1600
+      ]
+    },
+    {
+      "id": "remind-calendly-meeting-feedback-create-pipedrive-call-activity",
+      "name": "Create Pipedrive call activity",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.pipedrive.com/api/v2/activities",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {subject:$json.subject,type:\"call\"} }}",
+        "options": {}
+      },
+      "position": [
+        850,
+        1500
+      ]
+    },
+    {
+      "id": "remind-calendly-meeting-feedback-wait-until-feedback-time",
+      "name": "Wait until feedback time",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "parameters": {
+        "resume": "specificTime",
+        "dateTime": "={{ $json.feedbackTime }}"
+      },
+      "position": [
+        850,
+        1750
+      ]
+    },
+    {
+      "id": "remind-calendly-meeting-feedback-ask-for-meeting-notes",
+      "name": "Ask for meeting notes",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 1,
+      "parameters": {
+        "authentication": "accessToken",
+        "resource": "message",
+        "operation": "post",
+        "channel": "YOUR_SLACK_CHANNEL_ID",
+        "text": "={{ $json.text }}",
+        "jsonParameters": false,
+        "blocksUi": {
+          "blocksValues": []
+        },
+        "otherOptions": {
+          "sendAsUser": ""
+        }
+      },
+      "position": [
+        1100,
+        1750
+      ]
+    }
+  ],
+  "connections": {
+    "Calendly Trigger": {
+      "main": [
+        [
+          {
+            "node": "Execution mode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execution mode": {
+      "main": [
+        [
+          {
+            "node": "Use Open Flow?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Use Open Flow?": {
+      "main": [
+        [
+          {
+            "node": "Forward to Open Flow",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Read Calendly event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Calendly event": {
+      "main": [
+        [
+          {
+            "node": "Read Calendly event type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Calendly event type": {
+      "main": [
+        [
+          {
+            "node": "Prepare activity and reminder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare activity and reminder": {
+      "main": [
+        [
+          {
+            "node": "Create Pipedrive call activity",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Wait until feedback time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait until feedback time": {
+      "main": [
+        [
+          {
+            "node": "Ask for meeting notes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Remind Calendly Meeting Feedback",
+  "active": false,
+  "pinData": {}
+}
