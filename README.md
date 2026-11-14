@@ -509,6 +509,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Sync Notion and ClickUp Tasks](workflows/sync-notion-and-clickup-tasks/) - Synchronize Notion page details to ClickUp and ClickUp status changes back to Notion.
 - [Route Customers by Conditions](workflows/route-customer-conditions/) - Demonstrate three independent condition and country-routing rules for a customer list.
 - [Count Customer Records](workflows/count-customer-records/) - Count the customer records in an input list.
+- [Map Customers to Google Sheets](workflows/map-customers-to-google-sheet/) - Map customer fields and upsert them by ID in a Google Sheet.
 
 ## Content
 
