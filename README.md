@@ -185,6 +185,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Delete n8n Executions Older Than Ten Days](workflows/delete-n8n-executions-older-than-ten-days/) - Delete n8n execution records older than ten days on a schedule or manually.
 - [Create an Onfleet Task for an Updated Drive File](workflows/create-onfleet-task-for-updated-drive-file/) - Create an Onfleet delivery task when a selected Google Drive file is updated.
 - [Email Calendar Absence Summary](workflows/email-calendar-absence-summary/) - Summarize holiday and illness events by person and email the absence totals.
+- [Delete n8n Executions Stopped Over 30 Days Ago](workflows/delete-n8n-executions-stopped-over-30-days-ago/) - Delete n8n execution records stopped before the date 30 days ago on a schedule or manually.
 
 ## Marketing
 
