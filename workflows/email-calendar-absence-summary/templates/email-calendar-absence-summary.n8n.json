@@ -1,0 +1,149 @@
+{
+  "nodes": [
+    {
+      "id": "email-calendar-absence-summary-0",
+      "name": "Previous Month",
+      "type": "n8n-nodes-base.dateTime",
+      "position": [
+        360,
+        420
+      ],
+      "parameters": {
+        "value": "={{Date()}}",
+        "action": "calculate",
+        "options": {},
+        "duration": 1,
+        "timeUnit": "months",
+        "operation": "subtract"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "email-calendar-absence-summary-1",
+      "name": "1st of Every month at 8am",
+      "type": "n8n-nodes-base.cron",
+      "position": [
+        180,
+        420
+      ],
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "hour": 8,
+              "mode": "everyMonth"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "email-calendar-absence-summary-8",
+      "name": "Get previous months events",
+      "type": "n8n-nodes-base.googleCalendar",
+      "position": [
+        560,
+        420
+      ],
+      "parameters": {
+        "options": {
+          "timeMax": "={{new Date().toISOString()}}",
+          "timeMin": "={{$json[\"data\"]}}"
+        },
+        "calendar": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_CALENDAR_ID"
+        },
+        "operation": "getAll",
+        "returnAll": true
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "email-calendar-absence-summary-9",
+      "name": "Send email to payroll",
+      "type": "n8n-nodes-base.emailSend",
+      "position": [
+        1980,
+        320
+      ],
+      "parameters": {
+        "text": "={{$json[\"message\"]}}",
+        "options": {},
+        "subject": "Absences from last month",
+        "toEmail": "payroll@example.com",
+        "fromEmail": "sender@example.com"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "email-calendar-absence-summary-aggregate",
+      "name": "Summarize absences",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        700,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const groups = { Holiday: new Map(), Illness: new Map() };\nfor (const item of $input.all()) {\n  const e = item.json;\n  const type = e.summary?.includes(\"Holiday\")\n    ? \"Holiday\"\n    : e.summary?.includes(\"Illness\")\n      ? \"Illness\"\n      : null;\n  if (!type) continue;\n  if (!e.start?.date || !e.end?.date || typeof e.description !== \"string\")\n    throw Error(\"Matching events require all-day dates and a description\");\n  const days = (Date.parse(e.end.date) - Date.parse(e.start.date)) / 86400000;\n  if (!Number.isFinite(days)) throw Error(\"Invalid event dates\");\n  const name = e.description.split(\",\")[0];\n  groups[type].set(name, (groups[type].get(name) || 0) + parseInt(days));\n}\nif (!groups.Holiday.size && !groups.Illness.size) return [];\nlet message = \"Here is a breakdown of absences for the last month.\\n\\n\";\nfor (const type of [\"Holiday\", \"Illness\"]) {\n  const rows = [...groups[type]].map(([name, days]) => `${name} had ${days} days\\n`).join(\"\");\n  message += rows\n    ? `${type} Events\\n${rows}${type === \"Holiday\" ? \"\\n\" : \"\"}`\n    : `No ${type} Events\\n`;\n}\nreturn [{ json: { message } }];\n"
+      }
+    }
+  ],
+  "connections": {
+    "1st of Every month at 8am": {
+      "main": [
+        [
+          {
+            "node": "Previous Month",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Previous Month": {
+      "main": [
+        [
+          {
+            "node": "Get previous months events",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get previous months events": {
+      "main": [
+        [
+          {
+            "node": "Summarize absences",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Summarize absences": {
+      "main": [
+        [
+          {
+            "node": "Send email to payroll",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Email Calendar Absence Summary",
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "timezone": "UTC",
+    "executionOrder": "v1"
+  }
+}
