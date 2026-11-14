@@ -813,6 +813,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Archive Telegram Receipts with Textract](workflows/archive-telegram-receipts-with-textract/) - Archive Telegram receipt images in S3 and save extracted expense fields in Airtable.
 - [Extract Deposit Rows from a Bank Statement](workflows/extract-deposits-from-bank-statement/) - Transcribe each page of a bank statement and extract deposit rows with a vision model.
 - [Parse Drive Invoices into Airtable](workflows/parse-drive-invoices-into-airtable/) - Parse new Google Drive invoices and create linked Airtable invoice and line-item records.
+- [Extract Bank Transactions to Drive CSV](workflows/extract-bank-transactions-to-drive-csv/) - Extract and categorize bank statement transactions from PDFs or images, then save CSV files to Google Drive.
 
 ## Community
 

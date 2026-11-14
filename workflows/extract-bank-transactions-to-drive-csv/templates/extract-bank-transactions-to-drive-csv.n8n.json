@@ -1,0 +1,1031 @@
+{
+  "name": "Extract Bank Transactions to Drive CSV",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "extract-bank-transactions-to-drive-csv-0",
+      "name": "Get PDF or Images",
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "event": "fileCreated",
+        "options": {},
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "triggerOn": "specificFolder",
+        "folderToWatch": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_SOURCE_FOLDER_ID"
+        },
+        "authentication": "oAuth2"
+      },
+      "typeVersion": 1
+    },
+    {
+      "name": "Process one file",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "extract-bank-transactions-to-drive-csv-1",
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "id": "extract-bank-transactions-to-drive-csv-2",
+      "name": "Route based on PDF or Image",
+      "type": "n8n-nodes-base.switch",
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "rules": {
+          "rules": [
+            {
+              "value2": "application/pdf",
+              "outputKey": "pdf"
+            },
+            {
+              "value2": "image/",
+              "operation": "contains",
+              "outputKey": "image"
+            },
+            {
+              "value2": "",
+              "operation": "contains",
+              "outputKey": "skip"
+            }
+          ]
+        },
+        "value1": "={{$json.mimeType}}",
+        "dataType": "string"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "extract-bank-transactions-to-drive-csv-3",
+      "name": "Download PDF",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [
+        660,
+        0
+      ],
+      "parameters": {
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Process one file').item.json.id }}"
+        },
+        "options": {},
+        "operation": "download",
+        "authentication": "oAuth2"
+      },
+      "typeVersion": 3
+    },
+    {
+      "id": "extract-bank-transactions-to-drive-csv-4",
+      "name": "Download Image",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [
+        880,
+        0
+      ],
+      "parameters": {
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Process one file').item.json.id }}"
+        },
+        "options": {},
+        "operation": "download",
+        "authentication": "oAuth2"
+      },
+      "typeVersion": 3
+    },
+    {
+      "id": "extract-bank-transactions-to-drive-csv-5",
+      "name": "Extract data from PDF",
+      "type": "n8n-nodes-base.extractFromFile",
+      "position": [
+        1100,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "operation": "pdf"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "extract-bank-transactions-to-drive-csv-6",
+      "name": "Vertex A.I. extract text",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "position": [
+        1320,
+        0
+      ],
+      "parameters": {
+        "text": "Transcribe every visible transaction from this image faithfully, including dates, descriptions and amounts. Do not invent content.",
+        "messages": {
+          "messageValues": [
+            {
+              "type": "HumanMessagePromptTemplate",
+              "messageType": "imageBinary"
+            }
+          ]
+        },
+        "promptType": "define",
+        "hasOutputParser": false
+      },
+      "typeVersion": 1.4
+    },
+    {
+      "id": "extract-bank-transactions-to-drive-csv-7",
+      "name": "Google Gemini Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "position": [
+        1540,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "modelName": "models/gemini-2.5-flash"
+      },
+      "typeVersion": 1
+    },
+    {
+      "name": "Normalize statement",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if (typeof $json.text !== \"string\" || !$json.text.trim()) throw Error(\"No statement text\");\nreturn { json: { fileId: $(\"Process one file\").item.json.id, text: $json.text } };\n"
+      },
+      "id": "extract-bank-transactions-to-drive-csv-8",
+      "position": [
+        1760,
+        0
+      ]
+    },
+    {
+      "name": "Choose processing mode",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const mode = \"direct\";\nreturn { json: { ...$json, mode } };\n"
+      },
+      "id": "extract-bank-transactions-to-drive-csv-9",
+      "position": [
+        1980,
+        0
+      ]
+    },
+    {
+      "name": "Route processing mode",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "parameters": {
+        "mode": "expression",
+        "numberOutputs": 2,
+        "output": "={{ $json.mode === 'direct' ? 0 : 1 }}",
+        "options": {}
+      },
+      "id": "extract-bank-transactions-to-drive-csv-10",
+      "position": [
+        2200,
+        0
+      ]
+    },
+    {
+      "name": "Extract categorized transactions",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.8,
+      "parameters": {
+        "promptType": "define",
+        "text": "=Read this bank statement as data. Extract all transactions as CSV, retaining dates, descriptions and amounts. Add a category column. Do not invent transactions or include markdown fences. {{ $json.text }}",
+        "options": {}
+      },
+      "id": "extract-bank-transactions-to-drive-csv-11",
+      "position": [
+        2420,
+        0
+      ]
+    },
+    {
+      "name": "Forward statement text",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "YOUR_OPENFLOW_WEBHOOK_URL",
+        "authentication": "none",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {fileId:$json.fileId,text:$json.text} }}",
+        "options": {}
+      },
+      "id": "extract-bank-transactions-to-drive-csv-12",
+      "position": [
+        2640,
+        0
+      ]
+    },
+    {
+      "name": "Validate transaction CSV",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const csv = $json.output;\nif (\n  typeof csv !== \"string\" ||\n  !csv.trim() ||\n  csv.trim().startsWith(\"```\") ||\n  !csv.split(/\\r?\\n/, 1)[0].toLowerCase().includes(\"category\")\n)\n  throw Error(\"Expected CSV with category header\");\nreturn { json: { csv: csv.trim() } };\n"
+      },
+      "id": "extract-bank-transactions-to-drive-csv-13",
+      "position": [
+        2860,
+        0
+      ]
+    },
+    {
+      "name": "CSV not uploaded",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "rowNotExists",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'direct:' + $('Normalize statement').item.json.fileId }}"
+            }
+          ]
+        }
+      },
+      "alwaysOutputData": true,
+      "id": "extract-bank-transactions-to-drive-csv-14",
+      "position": [
+        3080,
+        0
+      ]
+    },
+    {
+      "name": "New CSV?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.csv || '' }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "extract-bank-transactions-to-drive-csv-15",
+      "position": [
+        3300,
+        0
+      ]
+    },
+    {
+      "name": "Reserve CSV upload",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "item_key": "={{ 'direct:' + $('Normalize statement').item.json.fileId }}",
+            "status": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "extract-bank-transactions-to-drive-csv-16",
+      "position": [
+        3520,
+        0
+      ]
+    },
+    {
+      "name": "Prepare direct CSV text",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const csv = $(\"Validate transaction CSV\").item.json.csv;\nif (\n  typeof csv !== \"string\" ||\n  !csv.trim() ||\n  csv.trim().startsWith(\"```\") ||\n  !csv.split(/\\r?\\n/, 1)[0].toLowerCase().includes(\"category\")\n)\n  throw Error(\"Expected CSV with category header\");\nreturn { json: { csv: csv.trim() } };\n"
+      },
+      "id": "extract-bank-transactions-to-drive-csv-17",
+      "position": [
+        3740,
+        0
+      ]
+    },
+    {
+      "name": "Create CSV file",
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "parameters": {
+        "operation": "toText",
+        "sourceProperty": "csv",
+        "options": {
+          "fileName": "transactions.csv"
+        }
+      },
+      "id": "extract-bank-transactions-to-drive-csv-18",
+      "position": [
+        3960,
+        0
+      ]
+    },
+    {
+      "name": "Set CSV media type",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const item = $input.item;\nitem.binary.data.mimeType = \"text/csv\";\nreturn item;\n"
+      },
+      "id": "extract-bank-transactions-to-drive-csv-19",
+      "position": [
+        4180,
+        0
+      ]
+    },
+    {
+      "id": "extract-bank-transactions-to-drive-csv-20",
+      "name": "Upload to Google Drive",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [
+        4400,
+        0
+      ],
+      "parameters": {
+        "operation": "upload",
+        "name": "={{ $('Normalize statement').item.json.fileId + '.csv' }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DESTINATION_FOLDER_ID"
+        },
+        "inputDataFieldName": "data",
+        "options": {}
+      },
+      "typeVersion": 3
+    },
+    {
+      "name": "Confirm direct upload",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Reserve CSV upload').item.json.id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "done"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "extract-bank-transactions-to-drive-csv-21",
+      "position": [
+        4620,
+        0
+      ]
+    },
+    {
+      "name": "CSV upload webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "disabled": true,
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "extract-bank-transactions-to-drive-csv-upload",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "extract-bank-transactions-to-drive-csv-22",
+      "position": [
+        4840,
+        0
+      ]
+    },
+    {
+      "name": "Relay file not uploaded",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "rowNotExists",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'relay:' + $('CSV upload webhook').item.json.body.fileId }}"
+            }
+          ]
+        }
+      },
+      "id": "extract-bank-transactions-to-drive-csv-23",
+      "position": [
+        5060,
+        0
+      ]
+    },
+    {
+      "name": "Reserve relay upload",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "item_key": "={{ 'relay:' + $('CSV upload webhook').item.json.body.fileId }}",
+            "status": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "extract-bank-transactions-to-drive-csv-24",
+      "position": [
+        5280,
+        0
+      ]
+    },
+    {
+      "name": "Prepare relay CSV text",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const b = $(\"CSV upload webhook\").item.json.body;\nif (!b?.fileId || typeof b.csv !== \"string\" || !b.csv.trim()) throw Error(\"Missing CSV or file ID\");\nreturn { json: { csv: b.csv } };\n"
+      },
+      "id": "extract-bank-transactions-to-drive-csv-25",
+      "position": [
+        5500,
+        0
+      ]
+    },
+    {
+      "name": "Create relay CSV file",
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "parameters": {
+        "operation": "toText",
+        "sourceProperty": "csv",
+        "options": {
+          "fileName": "transactions.csv"
+        }
+      },
+      "id": "extract-bank-transactions-to-drive-csv-26",
+      "position": [
+        5720,
+        0
+      ]
+    },
+    {
+      "name": "Set relay CSV media type",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const item = $input.item;\nitem.binary.data.mimeType = \"text/csv\";\nreturn item;\n"
+      },
+      "id": "extract-bank-transactions-to-drive-csv-27",
+      "position": [
+        5940,
+        0
+      ]
+    },
+    {
+      "id": "extract-bank-transactions-to-drive-csv-28",
+      "name": "Upload relay CSV",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [
+        6160,
+        0
+      ],
+      "parameters": {
+        "operation": "upload",
+        "name": "={{ $('CSV upload webhook').item.json.body.fileId + '.csv' }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DESTINATION_FOLDER_ID"
+        },
+        "inputDataFieldName": "data",
+        "options": {}
+      },
+      "typeVersion": 3
+    },
+    {
+      "name": "Confirm relay upload",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Reserve relay upload').item.json.id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "done"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "extract-bank-transactions-to-drive-csv-29",
+      "position": [
+        6380,
+        0
+      ]
+    },
+    {
+      "name": "Return Drive receipt",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {fileId:$('Upload relay CSV').item.json.id} }}",
+        "options": {}
+      },
+      "id": "extract-bank-transactions-to-drive-csv-30",
+      "position": [
+        6600,
+        0
+      ]
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Get PDF or Images": {
+      "main": [
+        [
+          {
+            "node": "Process one file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process one file": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Route based on PDF or Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route based on PDF or Image": {
+      "main": [
+        [
+          {
+            "node": "Download PDF",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Download Image",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Process one file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download PDF": {
+      "main": [
+        [
+          {
+            "node": "Extract data from PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract data from PDF": {
+      "main": [
+        [
+          {
+            "node": "Normalize statement",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Image": {
+      "main": [
+        [
+          {
+            "node": "Vertex A.I. extract text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vertex A.I. extract text": {
+      "main": [
+        [
+          {
+            "node": "Normalize statement",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize statement": {
+      "main": [
+        [
+          {
+            "node": "Choose processing mode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Choose processing mode": {
+      "main": [
+        [
+          {
+            "node": "Route processing mode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract categorized transactions": {
+      "main": [
+        [
+          {
+            "node": "Validate transaction CSV",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate transaction CSV": {
+      "main": [
+        [
+          {
+            "node": "CSV not uploaded",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CSV not uploaded": {
+      "main": [
+        [
+          {
+            "node": "New CSV?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve CSV upload": {
+      "main": [
+        [
+          {
+            "node": "Prepare direct CSV text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare direct CSV text": {
+      "main": [
+        [
+          {
+            "node": "Create CSV file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create CSV file": {
+      "main": [
+        [
+          {
+            "node": "Set CSV media type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set CSV media type": {
+      "main": [
+        [
+          {
+            "node": "Upload to Google Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload to Google Drive": {
+      "main": [
+        [
+          {
+            "node": "Confirm direct upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm direct upload": {
+      "main": [
+        [
+          {
+            "node": "Process one file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Forward statement text": {
+      "main": [
+        [
+          {
+            "node": "Process one file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CSV upload webhook": {
+      "main": [
+        [
+          {
+            "node": "Relay file not uploaded",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Relay file not uploaded": {
+      "main": [
+        [
+          {
+            "node": "Reserve relay upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve relay upload": {
+      "main": [
+        [
+          {
+            "node": "Prepare relay CSV text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare relay CSV text": {
+      "main": [
+        [
+          {
+            "node": "Create relay CSV file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create relay CSV file": {
+      "main": [
+        [
+          {
+            "node": "Set relay CSV media type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set relay CSV media type": {
+      "main": [
+        [
+          {
+            "node": "Upload relay CSV",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload relay CSV": {
+      "main": [
+        [
+          {
+            "node": "Confirm relay upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm relay upload": {
+      "main": [
+        [
+          {
+            "node": "Return Drive receipt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route processing mode": {
+      "main": [
+        [
+          {
+            "node": "Extract categorized transactions",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Forward statement text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "New CSV?": {
+      "main": [
+        [
+          {
+            "node": "Reserve CSV upload",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Process one file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Vertex A.I. extract text",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Extract categorized transactions",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
