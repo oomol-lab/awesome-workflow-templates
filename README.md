@@ -298,6 +298,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Generate an Event Banner for Discord](workflows/generate-event-banner-for-discord/) - Generate an event poster from a prompt and share it as a Discord attachment.
 - [Create Event Posters for Discord](workflows/create-event-posters-for-discord/) - Generate an event poster from a prompt and share it as a Discord attachment.
 - [Create Campaign Links and Email Analytics Reports](workflows/create-campaign-links-and-email-analytics-report/) - Create a tracked campaign URL and QR code, and email a scheduled AI summary of Google Analytics traffic.
+- [Author and Publish Scheduled Blog Posts](workflows/author-and-publish-scheduled-blog-posts/) - Generate blog content from scheduled spreadsheet rows and publish due posts to WordPress.
 
 ## Support
 
