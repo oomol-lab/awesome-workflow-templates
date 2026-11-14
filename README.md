@@ -187,6 +187,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Email Calendar Absence Summary](workflows/email-calendar-absence-summary/) - Summarize holiday and illness events by person and email the absence totals.
 - [Delete n8n Executions Stopped Over 30 Days Ago](workflows/delete-n8n-executions-stopped-over-30-days-ago/) - Delete n8n execution records stopped before the date 30 days ago on a schedule or manually.
 - [Update Namecheap Dynamic DNS](workflows/update-namecheap-dynamic-dns/) - Keep Namecheap dynamic DNS host records pointed at the current public IPv4 address.
+- [Rotate the First DigitalOcean Droplet Snapshot](workflows/rotate-first-digitalocean-droplet-snapshot/) - Periodically request a snapshot of the first DigitalOcean Droplet and remove its oldest snapshot when four already exist.
 
 ## Marketing
 

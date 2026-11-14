@@ -1,0 +1,413 @@
+{
+  "nodes": [
+    {
+      "id": "rotate-first-digitalocean-droplet-snapshot-0",
+      "name": "Filter",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1080,
+        420
+      ],
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $json.count }}",
+              "operation": "largerEqual",
+              "value2": 4
+            }
+          ]
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "rotate-first-digitalocean-droplet-snapshot-1",
+      "name": "List Snapshots for a Droplet",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        840,
+        420
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ 'https://api.digitalocean.com/v2/droplets/'+encodeURIComponent($json.droplets[0].id)+'/snapshots?per_page=200' }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "options": {}
+      },
+      "typeVersion": 4.2,
+      "alwaysOutputData": false
+    },
+    {
+      "id": "rotate-first-digitalocean-droplet-snapshot-2",
+      "name": "List All Droplets",
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "f3bc462f9219860aafe79747ee369e2f79ccd7f9b096dfe66b55d946871e8942",
+      "position": [
+        600,
+        420
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.digitalocean.com/v2/droplets",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "options": {}
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "rotate-first-digitalocean-droplet-snapshot-3",
+      "name": "Delete a Snapshot",
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "f3bc462f9219860aafe79747ee369e2f79ccd7f9b096dfe66b55d946871e8942",
+      "position": [
+        1320,
+        420
+      ],
+      "parameters": {
+        "method": "DELETE",
+        "url": "={{ 'https://api.digitalocean.com/v2/snapshots/'+encodeURIComponent($('Find oldest snapshot').first().json.oldest) }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text",
+              "outputPropertyName": "data"
+            }
+          }
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "rotate-first-digitalocean-droplet-snapshot-4",
+      "name": "Droplet Actions snapshot (n8n.optimus01.co.za)",
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "f3bc462f9219860aafe79747ee369e2f79ccd7f9b096dfe66b55d946871e8942",
+      "position": [
+        1560,
+        420
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'https://api.digitalocean.com/v2/droplets/'+encodeURIComponent($('List All Droplets').first().json.droplets[0].id)+'/actions' }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {type:'snapshot'} }}",
+        "options": {}
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "rotate-first-digitalocean-droplet-snapshot-5",
+      "name": "Runs every 48hrs",
+      "type": "n8n-nodes-base.cron",
+      "position": [
+        360,
+        420
+      ],
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "mode": "everyX",
+              "value": 48
+            }
+          ]
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "rotate-first-digitalocean-droplet-snapshot-check",
+      "name": "Find oldest snapshot",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        750,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const b = $input.first().json;\nif (\n  !Array.isArray(b.snapshots) ||\n  !Number.isSafeInteger(b.meta?.total) ||\n  b.meta.total > b.snapshots.length\n)\n  throw Error(\"Incomplete snapshot list\");\nconst s = [...b.snapshots];\nif (s.some((x) => x.id == null || !Number.isFinite(Date.parse(x.created_at))))\n  throw Error(\"Invalid snapshot\");\ns.sort((a, b) => Date.parse(a.created_at) - Date.parse(b.created_at));\nreturn [{ json: { count: s.length, oldest: s[0]?.id ?? \"\" } }];\n"
+      }
+    },
+    {
+      "id": "rotate-first-digitalocean-droplet-snapshot-gate",
+      "name": "No pending operation",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "status",
+              "condition": "eq",
+              "keyValue": "pending"
+            }
+          ]
+        },
+        "operation": "rowNotExists"
+      }
+    },
+    {
+      "id": "rotate-first-digitalocean-droplet-snapshot-delete-reserve",
+      "name": "Reserve deletion",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "operation": "delete",
+            "status": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "rotate-first-digitalocean-droplet-snapshot-delete-finish",
+      "name": "Confirm deletion",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Reserve deletion').item.json.id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "resolved"
+          },
+          "schema": []
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "rotate-first-digitalocean-droplet-snapshot-create-reserve",
+      "name": "Reserve snapshot request",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "operation": "create",
+            "status": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "rotate-first-digitalocean-droplet-snapshot-create-finish",
+      "name": "Confirm snapshot request",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Reserve snapshot request').item.json.id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "resolved"
+          },
+          "schema": []
+        },
+        "options": {}
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Filter": {
+      "main": [
+        [
+          {
+            "node": "Reserve deletion",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reserve snapshot request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Runs every 48hrs": {
+      "main": [
+        [
+          {
+            "node": "No pending operation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete a Snapshot": {
+      "main": [
+        [
+          {
+            "node": "Confirm deletion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List All Droplets": {
+      "main": [
+        [
+          {
+            "node": "List Snapshots for a Droplet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List Snapshots for a Droplet": {
+      "main": [
+        [
+          {
+            "node": "Find oldest snapshot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "No pending operation": {
+      "main": [
+        [
+          {
+            "node": "List All Droplets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find oldest snapshot": {
+      "main": [
+        [
+          {
+            "node": "Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve deletion": {
+      "main": [
+        [
+          {
+            "node": "Delete a Snapshot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm deletion": {
+      "main": [
+        [
+          {
+            "node": "Reserve snapshot request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve snapshot request": {
+      "main": [
+        [
+          {
+            "node": "Droplet Actions snapshot (n8n.optimus01.co.za)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Droplet Actions snapshot (n8n.optimus01.co.za)": {
+      "main": [
+        [
+          {
+            "node": "Confirm snapshot request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Rotate the First DigitalOcean Droplet Snapshot",
+  "active": false
+}
