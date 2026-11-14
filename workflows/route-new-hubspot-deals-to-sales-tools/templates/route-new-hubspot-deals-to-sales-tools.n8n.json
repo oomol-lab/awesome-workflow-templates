@@ -1,0 +1,771 @@
+{
+  "name": "Route New HubSpot Deals to Sales Tools",
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "nodes": [
+    {
+      "id": "route-new-hubspot-deals-to-sales-tools-0",
+      "name": "Receive HubSpot events",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "receive-hubspot-app-events",
+        "options": {
+          "rawBody": true
+        }
+      }
+    },
+    {
+      "id": "route-new-hubspot-deals-to-sales-tools-1",
+      "name": "Read original request bytes",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const bytes = await helpers.getBinaryDataBuffer($itemIndex, \"data\");\nreturn {\n  json: { headers: $json.headers, raw: bytes.toString(\"utf8\") },\n  binary: $binary,\n  pairedItem: { item: $itemIndex },\n};\n"
+      }
+    },
+    {
+      "id": "route-new-hubspot-deals-to-sales-tools-2",
+      "name": "Compute HubSpot signature",
+      "type": "n8n-nodes-base.crypto",
+      "typeVersion": 1,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "action": "hash",
+        "type": "SHA256",
+        "binaryData": false,
+        "value": "={{ $env.HUBSPOT_CLIENT_SECRET + $json.raw }}",
+        "dataPropertyName": "computedHmac",
+        "encoding": "hex"
+      }
+    },
+    {
+      "id": "route-new-hubspot-deals-to-sales-tools-3",
+      "name": "Valid HubSpot request?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        660,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.computedHmac }}",
+              "rightValue": "={{ $json.headers['x-hubspot-signature'] }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "leftValue": "={{ $json.headers['x-hubspot-signature'] }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "leftValue": "={{ $env.HUBSPOT_CLIENT_SECRET }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "route-new-hubspot-deals-to-sales-tools-4",
+      "name": "Decode events",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const events = JSON.parse($input.first().json.raw, (key, value, context) =>\n  typeof value === \"number\" && Number.isInteger(value) && !Number.isSafeInteger(value)\n    ? context.source\n    : value,\n);\nreturn events.map((event) => {\n  const type = event.subscriptionType || \"\";\n  for (const name of [\"contact\", \"company\", \"deal\", \"ticket\"])\n    if (type.includes(name)) event[name + \"Id\"] = event.objectId;\n  delete event.objectId;\n  return { json: event };\n});\n"
+      }
+    },
+    {
+      "id": "route-new-hubspot-deals-to-sales-tools-5",
+      "name": "Forward to Open Flow",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1100,
+        0
+      ],
+      "disabled": true,
+      "parameters": {
+        "method": "POST",
+        "url": "YOUR_OPEN_FLOW_WEBHOOK_URL",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {event: JSON.stringify($json)} }}",
+        "options": {}
+      }
+    },
+    {
+      "name": "Is deal creation?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.subscriptionType }}",
+              "value2": "deal.creation"
+            }
+          ]
+        }
+      },
+      "id": "route-new-hubspot-deals-to-sales-tools-6",
+      "position": [
+        1320,
+        0
+      ]
+    },
+    {
+      "name": "Deal event not processed",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "rowNotExists",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'deal:' + $('Decode events').item.json.eventId }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "route-new-hubspot-deals-to-sales-tools-7",
+      "position": [
+        1540,
+        0
+      ]
+    },
+    {
+      "name": "Reserve deal event",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "item_key": "={{ 'deal:' + $('Decode events').item.json.eventId }}",
+            "status": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "route-new-hubspot-deals-to-sales-tools-8",
+      "position": [
+        1760,
+        0
+      ]
+    },
+    {
+      "name": "Hubspot",
+      "type": "n8n-nodes-base.hubspot",
+      "position": [
+        1980,
+        0
+      ],
+      "parameters": {
+        "dealId": "={{ $('Decode events').item.json.dealId }}",
+        "operation": "get",
+        "additionalFields": {}
+      },
+      "typeVersion": 1,
+      "id": "route-new-hubspot-deals-to-sales-tools-9"
+    },
+    {
+      "name": "Set",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        2200,
+        0
+      ],
+      "parameters": {
+        "values": {
+          "number": [
+            {
+              "name": "deal_value",
+              "value": "={{$json[\"properties\"][\"amount\"][\"value\"]}}"
+            },
+            {
+              "name": "deal_id",
+              "value": "={{$json[\"dealId\"]}}"
+            }
+          ],
+          "string": [
+            {
+              "name": "deal_name",
+              "value": "={{$json[\"properties\"][\"dealname\"][\"value\"]}}"
+            },
+            {
+              "name": "deal_description",
+              "value": "={{$json[\"properties\"][\"description\"][\"value\"]}}"
+            },
+            {
+              "name": "deal_type",
+              "value": "={{$json[\"properties\"][\"dealtype\"][\"value\"]}}"
+            },
+            {
+              "name": "deal_stage",
+              "value": "={{$json[\"properties\"][\"dealstage\"][\"value\"]}}"
+            }
+          ]
+        },
+        "options": {},
+        "keepOnlySet": true
+      },
+      "typeVersion": 1,
+      "id": "route-new-hubspot-deals-to-sales-tools-10"
+    },
+    {
+      "name": "IF",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        2420,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{$json[\"deal_value\"]}}",
+              "value2": 500,
+              "operation": "larger"
+            }
+          ],
+          "string": [
+            {
+              "value1": "={{$json[\"deal_type\"]}}",
+              "value2": "newbusiness"
+            },
+            {
+              "value1": "={{$json[\"deal_stage\"]}}",
+              "value2": "closedlost|closedwon",
+              "operation": "notEqual"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1,
+      "id": "route-new-hubspot-deals-to-sales-tools-11"
+    },
+    {
+      "name": "high-priority",
+      "type": "n8n-nodes-base.hubspot",
+      "position": [
+        2640,
+        0
+      ],
+      "parameters": {
+        "stageId": "YOUR_TICKET_STAGE_ID",
+        "resource": "ticket",
+        "pipelineId": "YOUR_TICKET_PIPELINE_ID",
+        "ticketName": "=Deal: {{$json[\"deal_name\"]}}",
+        "additionalFields": {
+          "priority": "HIGH",
+          "description": "={{$json[\"deal_description\"]}}",
+          "ticketOwnerId": "YOUR_HIGH_PRIORITY_OWNER_ID"
+        }
+      },
+      "typeVersion": 1,
+      "id": "route-new-hubspot-deals-to-sales-tools-12"
+    },
+    {
+      "name": "low-priority",
+      "type": "n8n-nodes-base.hubspot",
+      "position": [
+        2860,
+        0
+      ],
+      "parameters": {
+        "stageId": "YOUR_TICKET_STAGE_ID",
+        "resource": "ticket",
+        "pipelineId": "YOUR_TICKET_PIPELINE_ID",
+        "ticketName": "=Deal: {{$json[\"deal_name\"]}}",
+        "additionalFields": {
+          "priority": "MEDIUM",
+          "description": "={{$json[\"deal_description\"]}}"
+        }
+      },
+      "typeVersion": 1,
+      "id": "route-new-hubspot-deals-to-sales-tools-13"
+    },
+    {
+      "name": "Restore deal fields",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return { json: $(\"Set\").item.json, pairedItem: { item: $itemIndex } };\n"
+      },
+      "id": "route-new-hubspot-deals-to-sales-tools-14",
+      "position": [
+        3080,
+        0
+      ]
+    },
+    {
+      "name": "Deal won?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $('Set').item.json.deal_stage }}",
+              "value2": "closedwon"
+            }
+          ]
+        }
+      },
+      "id": "route-new-hubspot-deals-to-sales-tools-15",
+      "position": [
+        3300,
+        0
+      ]
+    },
+    {
+      "name": "Presentation scheduled?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $('Set').item.json.deal_stage }}",
+              "value2": "presentationscheduled"
+            }
+          ]
+        }
+      },
+      "id": "route-new-hubspot-deals-to-sales-tools-16",
+      "position": [
+        3520,
+        0
+      ]
+    },
+    {
+      "name": "Deal lost?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $('Set').item.json.deal_stage }}",
+              "value2": "closedlost"
+            }
+          ]
+        }
+      },
+      "id": "route-new-hubspot-deals-to-sales-tools-17",
+      "position": [
+        3740,
+        0
+      ]
+    },
+    {
+      "name": "#closedwon",
+      "type": "n8n-nodes-base.slack",
+      "position": [
+        3960,
+        0
+      ],
+      "parameters": {
+        "text": "={{ 'We successfully closed the deal ' + $('Set').item.json.deal_name + '!' }}",
+        "channel": "YOUR_SLACK_CHANNEL_ID",
+        "attachments": [],
+        "otherOptions": {}
+      },
+      "typeVersion": 1,
+      "id": "route-new-hubspot-deals-to-sales-tools-18"
+    },
+    {
+      "name": "Google Slides",
+      "type": "n8n-nodes-base.googleSlides",
+      "position": [
+        4180,
+        0
+      ],
+      "parameters": {
+        "title": "={{ 'Presentation for deal ' + $('Set').item.json.deal_name }}",
+        "authentication": "oAuth2"
+      },
+      "typeVersion": 1,
+      "id": "route-new-hubspot-deals-to-sales-tools-19"
+    },
+    {
+      "name": "Airtable",
+      "type": "n8n-nodes-base.airtable",
+      "position": [
+        4400,
+        0
+      ],
+      "parameters": {
+        "table": "YOUR_AIRTABLE_TABLE_ID",
+        "fields": [
+          "deal_name",
+          "deal_id",
+          "deal_type"
+        ],
+        "options": {},
+        "operation": "append",
+        "application": "YOUR_AIRTABLE_BASE_ID",
+        "addAllFields": false
+      },
+      "typeVersion": 1,
+      "id": "route-new-hubspot-deals-to-sales-tools-20"
+    },
+    {
+      "name": "Confirm deal event",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Reserve deal event').item.json.id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "done"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "route-new-hubspot-deals-to-sales-tools-21",
+      "position": [
+        4620,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Receive HubSpot events": {
+      "main": [
+        [
+          {
+            "node": "Read original request bytes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read original request bytes": {
+      "main": [
+        [
+          {
+            "node": "Compute HubSpot signature",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compute HubSpot signature": {
+      "main": [
+        [
+          {
+            "node": "Valid HubSpot request?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Valid HubSpot request?": {
+      "main": [
+        [
+          {
+            "node": "Decode events",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Decode events": {
+      "main": [
+        [
+          {
+            "node": "Is deal creation?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Forward to Open Flow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is deal creation?": {
+      "main": [
+        [
+          {
+            "node": "Deal event not processed",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Deal event not processed": {
+      "main": [
+        [
+          {
+            "node": "Reserve deal event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve deal event": {
+      "main": [
+        [
+          {
+            "node": "Hubspot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hubspot": {
+      "main": [
+        [
+          {
+            "node": "Set",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set": {
+      "main": [
+        [
+          {
+            "node": "IF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF": {
+      "main": [
+        [
+          {
+            "node": "high-priority",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "low-priority",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "high-priority": {
+      "main": [
+        [
+          {
+            "node": "Restore deal fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "low-priority": {
+      "main": [
+        [
+          {
+            "node": "Restore deal fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore deal fields": {
+      "main": [
+        [
+          {
+            "node": "Deal won?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Deal won?": {
+      "main": [
+        [
+          {
+            "node": "#closedwon",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Presentation scheduled?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Presentation scheduled?": {
+      "main": [
+        [
+          {
+            "node": "Google Slides",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Deal lost?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Deal lost?": {
+      "main": [
+        [
+          {
+            "node": "Airtable",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Confirm deal event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "#closedwon": {
+      "main": [
+        [
+          {
+            "node": "Confirm deal event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Slides": {
+      "main": [
+        [
+          {
+            "node": "Confirm deal event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Airtable": {
+      "main": [
+        [
+          {
+            "node": "Confirm deal event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

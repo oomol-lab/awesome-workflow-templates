@@ -134,6 +134,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Track Crunchbase Funding Rounds in Google Sheets](workflows/track-crunchbase-funding-rounds-in-sheets/) - Track recent seed and Series A/B funding rounds with company details in Google Sheets.
 - [Send Follow-up Campaigns from Google Sheets](workflows/send-follow-up-campaigns-from-google-sheets/) - Send a configurable email sequence to contacts and stop follow-ups after a reply.
 - [Enrich Calendly Invitees in HubSpot](workflows/enrich-calendly-invitees-in-hubspot/) - Enrich Calendly invitees and their companies in HubSpot.
+- [Route New HubSpot Deals to Sales Tools](workflows/route-new-hubspot-deals-to-sales-tools/) - Create a HubSpot ticket for each new deal and route its stage to Slack, Google Slides or Airtable.
 
 ## Operations
 
