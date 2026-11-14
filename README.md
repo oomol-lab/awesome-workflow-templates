@@ -663,6 +663,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Receive Box Folder Events](workflows/receive-box-folder-events/) - Receive Box folder move and download events.
 - [Receive Chargebee Events](workflows/receive-chargebee-events/) - Receive Chargebee subscription and billing events.
 - [Receive Kit Form Subscriptions](workflows/receive-kit-form-subscriptions/) - Receive subscriber events for a Kit form.
+- [Receive Help Scout Customer Events](workflows/receive-help-scout-customer-events/) - Receive Help Scout customer creation events.
 
 ## Communication
 
