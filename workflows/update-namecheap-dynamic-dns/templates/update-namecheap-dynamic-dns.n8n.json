@@ -1,0 +1,225 @@
+{
+  "name": "Update Namecheap Dynamic DNS",
+  "nodes": [
+    {
+      "name": "Cron",
+      "type": "n8n-nodes-base.cron",
+      "position": [
+        380,
+        300
+      ],
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "mode": "everyX",
+              "unit": "minutes",
+              "value": 15
+            }
+          ]
+        }
+      },
+      "typeVersion": 1,
+      "id": "update-namecheap-dynamic-dns-0"
+    },
+    {
+      "name": "Checks IP if new",
+      "type": "n8n-nodes-base.function",
+      "position": [
+        740,
+        300
+      ],
+      "parameters": {
+        "functionCode": "const ip = items[0].json.ip;\nif (!/^\\d{1,3}(\\.\\d{1,3}){3}$/.test(ip) || ip.split(\".\").some((x) => Number(x) > 255))\n  throw Error(\"Expected IPv4\");\nconst s = getWorkflowStaticData(\"global\");\nreturn s.lastIp === ip ? [] : items;\n"
+      },
+      "typeVersion": 1,
+      "id": "update-namecheap-dynamic-dns-1"
+    },
+    {
+      "name": "subdomains",
+      "type": "n8n-nodes-base.function",
+      "position": [
+        1100,
+        300
+      ],
+      "parameters": {
+        "functionCode": "items[0].json = {\n  value: [{ id: \"subdomain1\" }, { id: \"subdomain2\" }, { id: \"subdomain3\" }],\n};\nreturn items;\n"
+      },
+      "typeVersion": 1,
+      "id": "update-namecheap-dynamic-dns-2"
+    },
+    {
+      "name": "Loops trough Subdomain list",
+      "type": "n8n-nodes-base.function",
+      "position": [
+        1280,
+        300
+      ],
+      "parameters": {
+        "functionCode": "const newItems = [];\n\nfor (const item of items[0].json.value) {\n  newItems.push({ json: item });\n}\n\nreturn newItems;\n"
+      },
+      "typeVersion": 1,
+      "id": "update-namecheap-dynamic-dns-3"
+    },
+    {
+      "name": "Send data to Namecheap",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        1460,
+        300
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ 'https://dynamicdns.park-your-domain.com/update?host='+encodeURIComponent($json.id)+'&domain='+encodeURIComponent($('yourdomain.com').first().json.domain)+'&ip='+encodeURIComponent($('Get Public IP address').first().json.ip) }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text",
+              "outputPropertyName": "data"
+            }
+          }
+        }
+      },
+      "typeVersion": 4.2,
+      "id": "update-namecheap-dynamic-dns-4"
+    },
+    {
+      "name": "Get Public IP address",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        560,
+        300
+      ],
+      "parameters": {
+        "url": "https://api.ipify.org?format=json",
+        "options": {},
+        "jsonParameters": true,
+        "allowUnauthorizedCerts": true
+      },
+      "retryOnFail": true,
+      "typeVersion": 1,
+      "continueOnFail": true,
+      "id": "update-namecheap-dynamic-dns-5"
+    },
+    {
+      "name": "yourdomain.com",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        920,
+        300
+      ],
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "domain",
+              "value": "YOUR_DOMAIN"
+            }
+          ]
+        },
+        "options": {},
+        "keepOnlySet": true
+      },
+      "typeVersion": 1,
+      "id": "update-namecheap-dynamic-dns-6"
+    },
+    {
+      "id": "update-namecheap-dynamic-dns-confirm",
+      "name": "Confirm all updates",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1600,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const all = $input.all();\nif (\n  !all.length ||\n  all.some((x) => !/<ErrCount>\\s*0\\s*<\\/ErrCount>/i.test(String(x.json.data ?? \"\")))\n)\n  throw Error(\"Namecheap did not confirm updates\");\nconst ip = $(\"Get Public IP address\").first().json.ip;\n$getWorkflowStaticData(\"global\").lastIp = ip;\nreturn [{ json: { ip } }];\n"
+      }
+    }
+  ],
+  "active": false,
+  "settings": {},
+  "connections": {
+    "Cron": {
+      "main": [
+        [
+          {
+            "node": "Get Public IP address",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "subdomains": {
+      "main": [
+        [
+          {
+            "node": "Loops trough Subdomain list",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "yourdomain.com": {
+      "main": [
+        [
+          {
+            "node": "subdomains",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Checks IP if new": {
+      "main": [
+        [
+          {
+            "node": "yourdomain.com",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Public IP address": {
+      "main": [
+        [
+          {
+            "node": "Checks IP if new",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loops trough Subdomain list": {
+      "main": [
+        [
+          {
+            "node": "Send data to Namecheap",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send data to Namecheap": {
+      "main": [
+        [
+          {
+            "node": "Confirm all updates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {}
+}

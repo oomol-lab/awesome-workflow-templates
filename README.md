@@ -186,6 +186,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Create an Onfleet Task for an Updated Drive File](workflows/create-onfleet-task-for-updated-drive-file/) - Create an Onfleet delivery task when a selected Google Drive file is updated.
 - [Email Calendar Absence Summary](workflows/email-calendar-absence-summary/) - Summarize holiday and illness events by person and email the absence totals.
 - [Delete n8n Executions Stopped Over 30 Days Ago](workflows/delete-n8n-executions-stopped-over-30-days-ago/) - Delete n8n execution records stopped before the date 30 days ago on a schedule or manually.
+- [Update Namecheap Dynamic DNS](workflows/update-namecheap-dynamic-dns/) - Keep Namecheap dynamic DNS host records pointed at the current public IPv4 address.
 
 ## Marketing
 
