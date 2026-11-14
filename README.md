@@ -253,6 +253,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Create Mautic Contacts for New Shopify Customers](workflows/create-mautic-contacts-for-new-shopify-customers/) - Create a Mautic contact when a Shopify customer is created.
 - [Share New Shopify Products on X and Telegram](workflows/share-new-shopify-products-on-x-and-telegram/) - Announce a new Shopify product on X and in a Telegram chat.
 - [Create an Automizy List and Contact](workflows/create-an-automizy-list-and-contact/) - Create a list, add and tag a contact, and retrieve the list contacts.
+- [Generate and Post a Stoic Tweet](workflows/generate-and-post-a-stoic-tweet/) - Generate a tweet using an influencer profile and post it manually or every six hours.
 
 ## Support
 
