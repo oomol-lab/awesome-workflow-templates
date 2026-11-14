@@ -188,6 +188,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Delete n8n Executions Stopped Over 30 Days Ago](workflows/delete-n8n-executions-stopped-over-30-days-ago/) - Delete n8n execution records stopped before the date 30 days ago on a schedule or manually.
 - [Update Namecheap Dynamic DNS](workflows/update-namecheap-dynamic-dns/) - Keep Namecheap dynamic DNS host records pointed at the current public IPv4 address.
 - [Rotate the First DigitalOcean Droplet Snapshot](workflows/rotate-first-digitalocean-droplet-snapshot/) - Periodically request a snapshot of the first DigitalOcean Droplet and remove its oldest snapshot when four already exist.
+- [Create Google Credentials in n8n](workflows/create-google-credentials-in-n8n/) - Create seven named Google OAuth credential records in n8n using one Google OAuth client.
 
 ## Marketing
 
