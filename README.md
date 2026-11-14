@@ -932,6 +932,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 ## Creative
 
 - [Generate Images from a Prompt](workflows/generate-images-from-a-prompt/) - Generate images from a prompt and return each image as a downloadable file.
+- [Generate an Image from a Form](workflows/generate-image-from-a-form/) - Generate an image from a prompt and selected size.
 
 ## Contribute
 
