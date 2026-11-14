@@ -650,6 +650,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Get the Latest Unread Fastmail Messages](workflows/get-the-latest-unread-fastmail-messages/) - Read the three most recent unread messages in the Fastmail inbox.
 - [Create a Matrix Room and Invite Members](workflows/create-a-matrix-room-and-invite-members/) - Create a Matrix room, invite members of another room and send a welcome message.
 - [Create a Fastmail Masked Email](workflows/create-a-fastmail-masked-email/) - Create a Fastmail masked email and return the address to the webhook caller.
+- [Send Scheduled Discord Messages](workflows/send-scheduled-discord-messages/) - Send three messages to a Discord webhook on separate schedules.
 
 ## Customer Support
 
