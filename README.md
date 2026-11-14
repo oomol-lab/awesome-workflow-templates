@@ -612,6 +612,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Back Up n8n Workflows Daily to Google Drive](workflows/back-up-n8n-workflows-daily-to-google-drive/) - Save a JSON copy of each n8n workflow in Google Drive every day.
 - [List GitHub Trending Repositories](workflows/list-github-trending-repositories/) - Read GitHub Trending and return repository names, descriptions and languages.
 - [Trigger Travis Builds from GitHub](workflows/trigger-travis-builds-from-github/) - Request a Travis CI build when a GitHub repository is pushed or a pull request opens.
+- [Route Webhook Ping or Process](workflows/route-webhook-ping-or-process/) - Route a webhook ping or send its payload to an HTTP service and return a JSON response.
 
 ## Communication
 
