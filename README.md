@@ -649,6 +649,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Notify Slack About Linear Bugs](workflows/notify-slack-linear-bug/) - Send a Slack notification for Linear issue events that match the configured bug filter.
 - [Receive ClickUp Workspace Events](workflows/receive-clickup-workspace-events/) - Receive workspace events from ClickUp.
 - [Receive Calendly Invitee Events](workflows/receive-calendly-invitee-events/) - Receive Calendly booking and cancellation events.
+- [Receive GitHub Repository Events](workflows/receive-github-repository-events/) - Receive webhook events from a GitHub repository.
 
 ## Communication
 
