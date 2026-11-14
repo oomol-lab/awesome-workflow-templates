@@ -356,6 +356,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Extract Latest TechCrunch Articles](workflows/extract-latest-techcrunch-articles/) - Read the latest TechCrunch listing and extract each article’s text and metadata.
 - [Report Nostr Hashtag Themes](workflows/report-nostr-hashtag-themes/) - Summarize Nostr hashtag posts and send a themes overview and detailed report by email and Telegram.
 - [Classify Website Domains in Google Sheets](workflows/classify-website-domains-in-google-sheets/) - Read website domains from a sheet, classify each site and update the matching row.
+- [Extract Products from Page Screenshots](workflows/extract-products-from-page-screenshots/) - Read page URLs from Google Sheets, extract product details from screenshots and append the results.
 
 ## Productivity
 
