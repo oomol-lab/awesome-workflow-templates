@@ -306,6 +306,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Notify Slack When a Workflow Fails](workflows/notify-slack-when-a-workflow-fails/) - Send a Slack alert when a configured workflow fails.
 - [Notify Telegram of a Failed Workflow](workflows/notify-telegram-of-failed-workflow/) - Send a Telegram alert identifying a failed workflow.
 - [Invoke an AWS Lambda Function](workflows/invoke-an-aws-lambda-function/) - Invoke a Lambda function synchronously and return its result.
+- [Manage GitHub Hooks and Notify Telegram](workflows/manage-github-hooks-and-notify-telegram/) - Register or delete repository webhooks and send push and pull request updates to Telegram.
 
 ## Research
 
