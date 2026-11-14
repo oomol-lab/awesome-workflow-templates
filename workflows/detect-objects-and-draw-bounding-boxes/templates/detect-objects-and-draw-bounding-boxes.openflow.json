@@ -1,0 +1,231 @@
+{
+  "kind": "open-flow-workflow",
+  "version": 1,
+  "name": "Detect Objects and Draw Bounding Boxes",
+  "content": {
+    "modelVersion": 15,
+    "document": {
+      "bindings": {},
+      "graph": {
+        "nodes": {
+          "n_bf9edb049cc41f5c": {
+            "name": "Start object detection",
+            "kind": "start",
+            "inputDefs": []
+          },
+          "n_c540108df39bb445": {
+            "inputs": {
+              "imageUrl": {
+                "kind": "value",
+                "value": "https://example.com/image.jpg"
+              },
+              "apiKey": {
+                "kind": "unset"
+              },
+              "model": {
+                "kind": "value",
+                "value": "gemini-3.8-flash"
+              },
+              "subject": {
+                "kind": "value",
+                "value": "rabbits"
+              }
+            },
+            "name": "Detect and draw objects",
+            "kind": "task",
+            "task": {
+              "inputs": [
+                {
+                  "jsonSchema": {
+                    "type": "string"
+                  },
+                  "nullable": false,
+                  "handle": "imageUrl"
+                },
+                {
+                  "jsonSchema": {
+                    "type": "string"
+                  },
+                  "nullable": false,
+                  "handle": "apiKey"
+                },
+                {
+                  "jsonSchema": {
+                    "type": "string"
+                  },
+                  "nullable": false,
+                  "handle": "model"
+                },
+                {
+                  "jsonSchema": {
+                    "type": "string"
+                  },
+                  "nullable": false,
+                  "handle": "subject"
+                }
+              ],
+              "outputs": [
+                {
+                  "jsonSchema": {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "const": "artifact"
+                      },
+                      "id": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "mediaType": {
+                        "type": "string"
+                      },
+                      "size": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "digest": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "id",
+                      "name",
+                      "size",
+                      "digest"
+                    ]
+                  },
+                  "nullable": false,
+                  "handle": "file"
+                },
+                {
+                  "jsonSchema": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": true
+                    }
+                  },
+                  "nullable": false,
+                  "handle": "boxes"
+                }
+              ],
+              "name": "Detect and draw objects",
+              "moduleId": "n_82ff064ff5d9f9f0",
+              "capabilities": [
+                {
+                  "kind": "http",
+                  "hosts": [
+                    "example.com",
+                    "generativelanguage.googleapis.com"
+                  ]
+                }
+              ]
+            }
+          },
+          "n_3dbbd70a378bbcc5": {
+            "name": "Return annotated image",
+            "kind": "outputs",
+            "outputDefs": [
+              {
+                "jsonSchema": {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "const": "artifact"
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "mediaType": {
+                      "type": "string"
+                    },
+                    "size": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "digest": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "id",
+                    "name",
+                    "size",
+                    "digest"
+                  ]
+                },
+                "nullable": false,
+                "handle": "file"
+              },
+              {
+                "jsonSchema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": true
+                  }
+                },
+                "nullable": false,
+                "handle": "boxes"
+              }
+            ],
+            "outputMappings": {
+              "file": {
+                "kind": "sources",
+                "sources": [
+                  {
+                    "kind": "node",
+                    "nodeId": "n_c540108df39bb445",
+                    "output": "file"
+                  }
+                ]
+              },
+              "boxes": {
+                "kind": "sources",
+                "sources": [
+                  {
+                    "kind": "node",
+                    "nodeId": "n_c540108df39bb445",
+                    "output": "boxes"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "edges": [
+          {
+            "source": "n_bf9edb049cc41f5c",
+            "target": "n_c540108df39bb445"
+          },
+          {
+            "source": "n_c540108df39bb445",
+            "target": "n_3dbbd70a378bbcc5"
+          }
+        ]
+      }
+    },
+    "modules": {
+      "n_82ff064ff5d9f9f0": {
+        "name": "Detect and draw objects",
+        "imports": [],
+        "source": "import { Buffer } from \"node:buffer\";\nfunction dimensions(b) {\n  if (b[0] === 0xff && b[1] === 0xd8) {\n    let p = 2;\n    while (p + 9 < b.length) {\n      if (b[p++] !== 0xff) continue;\n      let marker = b[p++];\n      while (marker === 0xff) marker = b[p++];\n      if (marker === 0xd8 || marker === 0xd9 || (marker >= 0xd0 && marker <= 0xd7)) continue;\n      const size = (b[p] << 8) | b[p + 1];\n      if (size < 2 || p + size > b.length) throw Error(\"Invalid JPEG segment\");\n      if (\n        [0xc0, 0xc1, 0xc2, 0xc3, 0xc5, 0xc6, 0xc7, 0xc9, 0xca, 0xcb, 0xcd, 0xce, 0xcf].includes(\n          marker,\n        )\n      )\n        return {\n          height: (b[p + 3] << 8) | b[p + 4],\n          width: (b[p + 5] << 8) | b[p + 6],\n          mime: \"image/jpeg\",\n        };\n      p += size;\n    }\n  }\n  if (b.length > 24 && b[0] === 137 && b[1] === 80 && b[2] === 78 && b[3] === 71) {\n    const u = (i) => (b[i] * 16777216 + (b[i + 1] << 16) + (b[i + 2] << 8) + b[i + 3]) >>> 0;\n    return { width: u(16), height: u(20), mime: \"image/png\" };\n  }\n  throw Error(\"Use a JPEG or PNG image\");\n}\nexport default async function detect({ imageUrl, apiKey, model, subject }, ctx) {\n  if (!/^https:\\/\\//.test(imageUrl) || !apiKey || !model || !subject)\n    throw Error(\"Configure image URL, subject and Gemini key\");\n  const chunk = 524288,\n    parts = [];\n  let offset = 0,\n    total = null,\n    validator = \"\";\n  do {\n    const h = { Range: `bytes=${offset}-${offset + chunk - 1}` };\n    if (validator) h[\"If-Range\"] = validator;\n    const r = await ctx.fetch(imageUrl, { headers: h });\n    if (r.status !== 200 && r.status !== 206) throw Error(\"Image download failed\");\n    const bytes = new Uint8Array(await r.arrayBuffer());\n    if (r.status === 200) {\n      if (offset) throw Error(\"Image changed while downloading\");\n      parts.push(bytes);\n      total = bytes.length;\n      offset = total;\n      break;\n    }\n    const m = /^bytes (\\d+)-(\\d+)\\/(\\d+)$/.exec(r.headers.get(\"content-range\") || \"\");\n    if (!m || Number(m[1]) !== offset || Number(m[2]) - offset + 1 !== bytes.length)\n      throw Error(\"Invalid image range\");\n    if (total !== null && total !== Number(m[3])) throw Error(\"Image changed during download\");\n    total = Number(m[3]);\n    if (!validator) validator = r.headers.get(\"etag\") || r.headers.get(\"last-modified\") || \"\";\n    if (!validator && total > bytes.length)\n      throw Error(\"Large image download needs an ETag or Last-Modified validator\");\n    parts.push(bytes);\n    offset += bytes.length;\n  } while (offset < total);\n  if (!total || total > 20 * 1024 * 1024) throw Error(\"Image must be at most 20 MiB\");\n  const bytes = new Uint8Array(total);\n  let pos = 0;\n  for (const p of parts) {\n    bytes.set(p, pos);\n    pos += p.length;\n  }\n  const { width, height, mime } = dimensions(bytes);\n  if (!width || !height) throw Error(\"Image dimensions missing\");\n  const start = await ctx.fetch(\"https://generativelanguage.googleapis.com/upload/v1beta/files\", {\n    method: \"POST\",\n    headers: {\n      \"x-goog-api-key\": apiKey,\n      \"x-goog-upload-protocol\": \"resumable\",\n      \"x-goog-upload-command\": \"start\",\n      \"x-goog-upload-header-content-length\": String(bytes.length),\n      \"x-goog-upload-header-content-type\": mime,\n      \"content-type\": \"application/json\",\n    },\n    body: JSON.stringify({ file: { display_name: \"detection-image\" } }),\n  });\n  if (!start.ok) throw Error(\"Gemini upload initialization failed\");\n  const upload = start.headers.get(\"x-goog-upload-url\");\n  if (!upload || new URL(upload).hostname !== \"generativelanguage.googleapis.com\")\n    throw Error(\"Unexpected Gemini upload host\");\n  let uploaded;\n  for (let p = 0; p < bytes.length; p += chunk) {\n    const end = Math.min(p + chunk, bytes.length),\n      last = end === bytes.length,\n      r = await ctx.fetch(upload, {\n        method: \"POST\",\n        headers: {\n          \"x-goog-upload-offset\": String(p),\n          \"x-goog-upload-command\": last ? \"upload, finalize\" : \"upload\",\n        },\n        body: bytes.slice(p, end),\n      });\n    if (!r.ok) throw Error(\"Image upload failed or outcome unknown\");\n    if (last) uploaded = await r.json();\n  }\n  const uri = uploaded?.file?.uri;\n  if (typeof uri !== \"string\") throw Error(\"Gemini image upload unconfirmed\");\n  const response = await ctx.fetch(\n    \"https://generativelanguage.googleapis.com/v1beta/models/\" +\n      encodeURIComponent(model) +\n      \":generateContent\",\n    {\n      method: \"POST\",\n      headers: { \"x-goog-api-key\": apiKey, \"content-type\": \"application/json\" },\n      body: JSON.stringify({\n        contents: [\n          {\n            parts: [\n              { file_data: { mime_type: mime, file_uri: uri } },\n              {\n                text:\n                  \"Detect all \" +\n                  subject +\n                  \" in this image. Return each bounding box as [ymin,xmin,ymax,xmax], normalized to 0–1000.\",\n              },\n            ],\n          },\n        ],\n        generationConfig: {\n          response_mime_type: \"application/json\",\n          response_schema: {\n            type: \"ARRAY\",\n            items: {\n              type: \"OBJECT\",\n              properties: {\n                box_2d: { type: \"ARRAY\", items: { type: \"NUMBER\" } },\n                label: { type: \"STRING\" },\n              },\n              required: [\"box_2d\"],\n            },\n          },\n        },\n      }),\n    },\n  );\n  if (!response.ok) throw Error(\"Gemini detection failed\");\n  const output = await response.json(),\n    candidate = output.candidates?.[0];\n  if (candidate?.finishReason !== \"STOP\") throw Error(\"Gemini detection incomplete\");\n  const raw = JSON.parse((candidate.content?.parts ?? []).map((x) => x.text ?? \"\").join(\"\"));\n  if (!Array.isArray(raw)) throw Error(\"Invalid detections\");\n  const boxes = raw.map((x) => {\n    const a = x.box_2d;\n    if (\n      !Array.isArray(a) ||\n      a.length !== 4 ||\n      a.some((v) => !Number.isFinite(v) || v < 0 || v > 1000) ||\n      a[0] > a[2] ||\n      a[1] > a[3]\n    )\n      throw Error(\"Invalid bounding box\");\n    return {\n      xmin: (a[1] * width) / 1000,\n      ymin: (a[0] * height) / 1000,\n      xmax: (a[3] * width) / 1000,\n      ymax: (a[2] * height) / 1000,\n      label: String(x.label ?? \"\"),\n    };\n  });\n  const rects = boxes\n    .map(\n      (b) =>\n        `<rect x=\"${b.xmin}\" y=\"${b.ymin}\" width=\"${b.xmax - b.xmin}\" height=\"${b.ymax - b.ymin}\" fill=\"none\" stroke=\"#ff00f2\" stroke-opacity=\"0.47\" stroke-width=\"4\"/>`,\n    )\n    .join(\"\");\n  let encoded = \"\";\n  for (let i = 0; i < bytes.length; i += 196608)\n    encoded += Buffer.from(bytes.slice(i, i + 196608)).toString(\"base64\");\n  const svg = `<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"${width}\" height=\"${height}\" viewBox=\"0 0 ${width} ${height}\"><image width=\"${width}\" height=\"${height}\" href=\"data:${mime};base64,${encoded}\"/>${rects}</svg>`;\n  const file = await ctx.artifact.put(new TextEncoder().encode(svg), {\n    name: \"detections.svg\",\n    mediaType: \"image/svg+xml\",\n  });\n  return { file, boxes };\n}\n"
+      }
+    }
+  },
+  "presentation": {
+    "designer": {
+      "version": 1,
+      "flow": {
+        "direction": "vertical"
+      }
+    }
+  }
+}

@@ -1,0 +1,204 @@
+{
+  "nodes": [
+    {
+      "id": "detect-objects-and-draw-bounding-boxes-0",
+      "name": "When clicking ‘Test workflow’",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        -1440,
+        -280
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "detect-objects-and-draw-bounding-boxes-1",
+      "name": "Get Variables",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        -200,
+        -180
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b455afe0-2311-4d3f-8751-269624d76cf1",
+              "name": "coords",
+              "type": "array",
+              "value": "={{ JSON.parse($json.candidates[0].content.parts[0].text) }}"
+            },
+            {
+              "id": "92f09465-9a0b-443c-aa72-6d208e4df39c",
+              "name": "width",
+              "type": "string",
+              "value": "={{ $('Get Image Info').item.json.size.width }}"
+            },
+            {
+              "id": "da98ce2a-4600-46a6-b4cb-159ea515cb50",
+              "name": "height",
+              "type": "string",
+              "value": "={{ $('Get Image Info').item.json.size.height }}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "detect-objects-and-draw-bounding-boxes-2",
+      "name": "Get Test Image",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -1260,
+        -280
+      ],
+      "parameters": {
+        "url": "https://example.com/image.jpg",
+        "options": {}
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "detect-objects-and-draw-bounding-boxes-3",
+      "name": "Gemini 2.0 Object Detection",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -680,
+        -180
+      ],
+      "parameters": {
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent",
+        "method": "POST",
+        "options": {},
+        "jsonBody": "={{\n{\n  \"contents\": [{\n    \"parts\":[\n        {\"text\": \"I want to see all bounding boxes of rabbits in this image.\"},\n        {\n          \"inline_data\": {\n            \"mime_type\":$('Get Image Info').item.json.mime,\n            \"data\": $('Get Image Info').item.json.imageBase64\n          }\n        }\n    ]\n  }],\n  \"generationConfig\": {\n    \"response_mime_type\": \"application/json\",\n    \"response_schema\": {\n      \"type\": \"ARRAY\",\n      \"items\": {\n        \"type\": \"OBJECT\",\n        \"properties\": {\n          \"box_2d\": {\"type\":\"ARRAY\", \"items\": { \"type\": \"NUMBER\" } },\n          \"label\": { \"type\": \"STRING\"}\n        }\n      }\n    }\n  }\n}\n}}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googlePalmApi"
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "detect-objects-and-draw-bounding-boxes-4",
+      "name": "Scale Normalised Coords",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -20,
+        -180
+      ],
+      "parameters": {
+        "jsCode": "const { coords, width, height } = $input.first().json;\nconst boxes = coords.map((c) => {\n  const a = c.box_2d;\n  if (\n    !Array.isArray(a) ||\n    a.length !== 4 ||\n    a.some((v) => !Number.isFinite(v) || v < 0 || v > 1000) ||\n    a[0] > a[2] ||\n    a[1] > a[3]\n  )\n    throw Error(\"Invalid box\");\n  return {\n    xmin: (a[1] * width) / 1000,\n    ymin: (a[0] * height) / 1000,\n    xmax: (a[3] * width) / 1000,\n    ymax: (a[2] * height) / 1000,\n  };\n});\nreturn {\n  json: { boxes, width: Number(width), height: Number(height) },\n  binary: $(\"Get Test Image\").first().binary,\n};\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "detect-objects-and-draw-bounding-boxes-5",
+      "name": "Draw Bounding Boxes",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        400,
+        -180
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const b = await this.helpers.getBinaryDataBuffer(0, \"data\"),\n  { boxes, width, height } = $json,\n  mime = $input.item.binary.data.mimeType;\nif (![\"image/jpeg\", \"image/png\"].includes(mime)) throw Error(\"Unsupported image\");\nconst rects = boxes\n  .map(\n    (x) =>\n      `<rect x=\"${x.xmin}\" y=\"${x.ymin}\" width=\"${x.xmax - x.xmin}\" height=\"${x.ymax - x.ymin}\" fill=\"none\" stroke=\"#ff00f2\" stroke-opacity=\"0.47\" stroke-width=\"4\"/>`,\n  )\n  .join(\"\");\nconst svg = `<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"${width}\" height=\"${height}\" viewBox=\"0 0 ${width} ${height}\"><image width=\"${width}\" height=\"${height}\" href=\"data:${mime};base64,${b.toString(\"base64\")}\"/>${rects}</svg>`;\nreturn {\n  json: { boxes },\n  binary: {\n    data: await this.helpers.prepareBinaryData(Buffer.from(svg), \"detections.svg\", \"image/svg+xml\"),\n  },\n};\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "detect-objects-and-draw-bounding-boxes-6",
+      "name": "Get Image Info",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -1080,
+        -280
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const b = await this.helpers.getBinaryDataBuffer(0, \"data\");\nlet width, height, mime;\nif (b[0] === 255 && b[1] === 216) {\n  mime = \"image/jpeg\";\n  let p = 2;\n  while (p + 9 < b.length) {\n    if (b[p++] !== 255) continue;\n    let m = b[p++];\n    while (m === 255) m = b[p++];\n    if (m === 216 || m === 217 || (m >= 208 && m <= 215)) continue;\n    const n = b.readUInt16BE(p);\n    if (n < 2 || p + n > b.length) throw Error(\"Invalid JPEG\");\n    if ([192, 193, 194, 195, 197, 198, 199, 201, 202, 203, 205, 206, 207].includes(m)) {\n      height = b.readUInt16BE(p + 3);\n      width = b.readUInt16BE(p + 5);\n      break;\n    }\n    p += n;\n  }\n} else if (b[0] === 137 && b[1] === 80 && b[2] === 78 && b[3] === 71) {\n  mime = \"image/png\";\n  width = b.readUInt32BE(16);\n  height = b.readUInt32BE(20);\n}\nif (!width || !height) throw Error(\"Expected JPEG or PNG\");\nreturn {\n  json: { size: { width, height }, imageBase64: b.toString(\"base64\"), mime },\n  binary: $input.item.binary,\n};\n"
+      },
+      "typeVersion": 2
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Get Variables": {
+      "main": [
+        [
+          {
+            "node": "Scale Normalised Coords",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Image Info": {
+      "main": [
+        [
+          {
+            "node": "Gemini 2.0 Object Detection",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Test Image": {
+      "main": [
+        [
+          {
+            "node": "Get Image Info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Draw Bounding Boxes": {
+      "main": [
+        []
+      ]
+    },
+    "Scale Normalised Coords": {
+      "main": [
+        [
+          {
+            "node": "Draw Bounding Boxes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini 2.0 Object Detection": {
+      "main": [
+        [
+          {
+            "node": "Get Variables",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Test workflow’": {
+      "main": [
+        [
+          {
+            "node": "Get Test Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Detect Objects and Draw Bounding Boxes",
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

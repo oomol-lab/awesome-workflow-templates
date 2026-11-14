@@ -539,6 +539,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Summarize Google Search and Notify](workflows/summarize-google-search-and-notify/) - Extract and summarize Google search results and send them to a webhook.
 - [Qualify and Approve Appointment Requests](workflows/qualify-and-approve-appointment-requests/) - Qualify an enquiry, request an administrator decision and create an appointment or send a rejection.
 - [Send Personalized Factoid Emails](workflows/send-personalized-factoid-emails/) - Manage subscribers and send illustrated facts about their chosen topics.
+- [Detect Objects and Draw Bounding Boxes](workflows/detect-objects-and-draw-bounding-boxes/) - Detect requested objects in an image and draw bounding boxes over it.
 
 ## Content
 
