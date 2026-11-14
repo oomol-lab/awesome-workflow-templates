@@ -507,6 +507,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Create ClickUp Tasks from Slack Commands](workflows/slack-command-to-clickup-task/) - Create a ClickUp task from a Slack slash command and reply with its task ID.
 - [Sync Notion and ClickUp Tasks](workflows/sync-notion-and-clickup-tasks/) - Synchronize Notion page details to ClickUp and ClickUp status changes back to Notion.
 - [Route Customers by Conditions](workflows/route-customer-conditions/) - Demonstrate three independent condition and country-routing rules for a customer list.
+- [Count Customer Records](workflows/count-customer-records/) - Count the customer records in an input list.
 
 ## Content
 
