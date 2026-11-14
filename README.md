@@ -553,6 +553,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Route Contact Forms by Topic](workflows/route-contact-form-by-topic/) - Classify a contact request, email the matching department and log it to Google Sheets.
 - [Transcribe New Drive Recordings to Sheets](workflows/transcribe-new-drive-recordings-to-sheets/) - Transcribe new Drive recordings with Amazon Transcribe and append the results to Google Sheets.
 - [Summarize Daily Calendar Meetings in Slack](workflows/summarize-daily-calendar-meetings-in-slack/) - Summarize today’s calendar meetings and attendees with AI, then post the summary in Slack.
+- [Append MySQL Books to Google Sheets Weekly](workflows/append-mysql-books-to-google-sheets-weekly/) - Read the books table from MySQL each week and append matching columns to Google Sheets.
 
 ## Content
 

@@ -1,0 +1,386 @@
+{
+  "nodes": [
+    {
+      "name": "Cron",
+      "type": "n8n-nodes-base.cron",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "mode": "everyWeek",
+              "weekday": "1",
+              "hour": 5,
+              "minute": 0
+            }
+          ]
+        }
+      },
+      "typeVersion": 1,
+      "id": "append-mysql-books-to-google-sheets-weekly-0"
+    },
+    {
+      "name": "MySQL - select",
+      "type": "n8n-nodes-base.mySql",
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "query": "SELECT * FROM books;",
+        "operation": "executeQuery"
+      },
+      "typeVersion": 1,
+      "id": "append-mysql-books-to-google-sheets-weekly-1"
+    },
+    {
+      "name": "Group MySQL rows",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return [{ json: { rows: $input.all().map((x) => x.json) } }];\n"
+      },
+      "id": "append-mysql-books-to-google-sheets-weekly-2",
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "name": "Week not appended",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "rowNotExists",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'books:' + $now.toFormat('yyyy-MM-dd') }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "append-mysql-books-to-google-sheets-weekly-3",
+      "position": [
+        660,
+        0
+      ]
+    },
+    {
+      "name": "Reserve weekly append",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "item_key": "={{ 'books:' + $now.toFormat('yyyy-MM-dd') }}",
+            "status": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "append-mysql-books-to-google-sheets-weekly-4",
+      "position": [
+        880,
+        0
+      ]
+    },
+    {
+      "name": "Restore MySQL rows",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return $(\"Group MySQL rows\")\n  .first()\n  .json.rows.map((row) => ({ json: row, pairedItem: { item: 0 } }));\n"
+      },
+      "id": "append-mysql-books-to-google-sheets-weekly-5",
+      "position": [
+        1100,
+        0
+      ]
+    },
+    {
+      "name": "Google Sheets - write",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        1320,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "sheetId": "YOUR_SPREADSHEET_ID",
+        "operation": "append",
+        "authentication": "oAuth2",
+        "range": "Sheet1!A:F",
+        "keyRow": 0
+      },
+      "typeVersion": 1,
+      "id": "append-mysql-books-to-google-sheets-weekly-6"
+    },
+    {
+      "name": "Collect append result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return [{ json: { ok: true }, pairedItem: $input.all().map((_, i) => ({ item: i })) }];\n"
+      },
+      "id": "append-mysql-books-to-google-sheets-weekly-7",
+      "position": [
+        1540,
+        0
+      ]
+    },
+    {
+      "name": "Confirm weekly append",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Reserve weekly append').first().json.id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "done"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "append-mysql-books-to-google-sheets-weekly-8",
+      "position": [
+        1760,
+        0
+      ]
+    },
+    {
+      "name": "MySQL read webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "disabled": true,
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "append-mysql-books-to-google-sheets-weekly-mysql",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "append-mysql-books-to-google-sheets-weekly-9",
+      "position": [
+        1980,
+        0
+      ]
+    },
+    {
+      "name": "Read books for Open Flow",
+      "type": "n8n-nodes-base.mySql",
+      "position": [
+        2200,
+        0
+      ],
+      "parameters": {
+        "query": "SELECT * FROM books;",
+        "operation": "executeQuery"
+      },
+      "typeVersion": 1,
+      "alwaysOutputData": true,
+      "id": "append-mysql-books-to-google-sheets-weekly-10"
+    },
+    {
+      "name": "Collect relay rows",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return [\n  {\n    json: {\n      rows: $input\n        .all()\n        .map((x) => x.json)\n        .filter((x) => Object.keys(x).length > 0),\n    },\n  },\n];\n"
+      },
+      "id": "append-mysql-books-to-google-sheets-weekly-11",
+      "position": [
+        2420,
+        0
+      ]
+    },
+    {
+      "name": "Return MySQL rows",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "append-mysql-books-to-google-sheets-weekly-12",
+      "position": [
+        2640,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Cron": {
+      "main": [
+        [
+          {
+            "node": "MySQL - select",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MySQL - select": {
+      "main": [
+        [
+          {
+            "node": "Group MySQL rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Group MySQL rows": {
+      "main": [
+        [
+          {
+            "node": "Week not appended",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Week not appended": {
+      "main": [
+        [
+          {
+            "node": "Reserve weekly append",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve weekly append": {
+      "main": [
+        [
+          {
+            "node": "Restore MySQL rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore MySQL rows": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets - write",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets - write": {
+      "main": [
+        [
+          {
+            "node": "Collect append result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect append result": {
+      "main": [
+        [
+          {
+            "node": "Confirm weekly append",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MySQL read webhook": {
+      "main": [
+        [
+          {
+            "node": "Read books for Open Flow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read books for Open Flow": {
+      "main": [
+        [
+          {
+            "node": "Collect relay rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect relay rows": {
+      "main": [
+        [
+          {
+            "node": "Return MySQL rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Append MySQL Books to Google Sheets Weekly",
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "timezone": "UTC"
+  }
+}
