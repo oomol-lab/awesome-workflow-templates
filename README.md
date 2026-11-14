@@ -763,6 +763,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 ## E-commerce
 
 - [Alert Discord on Shopify Inventory Changes](workflows/alert-discord-on-shopify-inventory/) - Send a Discord alert for low or sold-out Shopify inventory.
+- [Replace Shopify Order Tags for Onfleet Delays](workflows/replace-shopify-order-tags-for-onfleet-delays/) - Replace the configured Shopify order tags when its mapped Onfleet task is delayed.
 
 ## Media
 

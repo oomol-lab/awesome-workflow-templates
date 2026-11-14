@@ -1,0 +1,161 @@
+{
+  "name": "Replace Shopify Order Tags for Onfleet Delays",
+  "nodes": [
+    {
+      "name": "Onfleet Trigger",
+      "type": "n8n-nodes-base.onfleetTrigger",
+      "position": [
+        460,
+        300
+      ],
+      "parameters": {
+        "triggerOn": "taskDelayed",
+        "additionalFields": {}
+      },
+      "typeVersion": 1,
+      "id": "replace-shopify-order-tags-for-onfleet-delays-trigger"
+    },
+    {
+      "id": "replace-shopify-order-tags-for-onfleet-delays-mode",
+      "name": "Choose delivery mode",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const mode = \"direct\";\nif (![\"direct\", \"relay\"].includes(mode)) throw Error(\"Choose direct or relay mode\");\nreturn { json: { mode, event: $json } };\n"
+      }
+    },
+    {
+      "id": "replace-shopify-order-tags-for-onfleet-delays-gate",
+      "name": "Route delivery mode",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "parameters": {
+        "mode": "expression",
+        "numberOutputs": 2,
+        "output": "={{ $json.mode === 'direct' ? 0 : 1 }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "replace-shopify-order-tags-for-onfleet-delays-relay",
+      "name": "Forward event to Open Flow",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "YOUR_OPENFLOW_WEBHOOK_URL",
+        "authentication": "none",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.event }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "replace-shopify-order-tags-for-onfleet-delays-map",
+      "name": "Map task to order and replacement tags",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function map({ body, taskOrders, tags }) {\n  if (\n    body?.triggerId !== 12 ||\n    body?.triggerName !== \"taskDelayed\" ||\n    typeof body.taskId !== \"string\" ||\n    !body.taskId\n  )\n    throw Error(\"Expected an Onfleet taskDelayed event\");\n  if (body.data?.task?.id && body.data.task.id !== body.taskId)\n    throw Error(\"Onfleet task IDs disagree\");\n  if (!taskOrders || typeof taskOrders !== \"object\" || !Object.hasOwn(taskOrders, body.taskId))\n    throw Error(\"Configure a Shopify order for this Onfleet task\");\n  const id = taskOrders[body.taskId];\n  if (typeof id !== \"string\" || !/^gid:\\/\\/shopify\\/Order\\/\\d+$/.test(id))\n    throw Error(\"Configure the Shopify order GraphQL ID\");\n  if (\n    !Array.isArray(tags) ||\n    !tags.length ||\n    tags.some((t) => typeof t !== \"string\" || !t.trim() || t.startsWith(\"YOUR_\"))\n  )\n    throw Error(\"Configure replacement tags\");\n  const variables = { input: { id, tags } },\n    query =\n      \"mutation UpdateOrder($input: OrderInput!){orderUpdate(input:$input){order{id} userErrors{field message}}}\";\n  return { variables, requestBody: { query, variables } };\n}\n\nconst taskOrders = { YOUR_ONFLEET_TASK_ID: \"gid://shopify/Order/YOUR_ORDER_ID\" },\n  tags = [\"YOUR_REPLACEMENT_TAG\"];\nreturn { json: map({ body: $json.event, taskOrders, tags }) };\n"
+      }
+    },
+    {
+      "id": "replace-shopify-order-tags-for-onfleet-delays-update",
+      "name": "Replace Shopify tags",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://YOUR_SHOP.myshopify.com/admin/api/2026-07/graphql.json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { query: \"mutation UpdateOrder($input: OrderInput!){orderUpdate(input:$input){order{id} userErrors{field message}}}\", variables:$json.variables } }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "replace-shopify-order-tags-for-onfleet-delays-confirm",
+      "name": "Confirm the same order",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function confirm({ data, variables }) {\n  const result = data?.data?.orderUpdate;\n  if (\n    !result ||\n    !Array.isArray(result.userErrors) ||\n    result.userErrors.length ||\n    result.order?.id !== variables.input.id\n  )\n    throw Error(\"Shopify did not confirm the expected order update\");\n  return { confirmed: true };\n}\n\nreturn {\n  json: confirm({\n    data: $json,\n    variables: $(\"Map task to order and replacement tags\").item.json.variables,\n  }),\n};\n"
+      }
+    }
+  ],
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Onfleet Trigger": {
+      "main": [
+        [
+          {
+            "node": "Choose delivery mode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Choose delivery mode": {
+      "main": [
+        [
+          {
+            "node": "Route delivery mode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route delivery mode": {
+      "main": [
+        [
+          {
+            "node": "Map task to order and replacement tags",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Forward event to Open Flow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Map task to order and replacement tags": {
+      "main": [
+        [
+          {
+            "node": "Replace Shopify tags",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Replace Shopify tags": {
+      "main": [
+        [
+          {
+            "node": "Confirm the same order",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {}
+}
