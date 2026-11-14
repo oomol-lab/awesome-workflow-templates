@@ -678,6 +678,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Receive Mailjet Sent Events](workflows/receive-mailjet-sent-events/) - Receive Mailjet email sent events with exact message IDs.
 - [Receive Postmark Email Events](workflows/receive-postmark-email-events/) - Receive Postmark bounce and email open events.
 - [Receive Zendesk Ticket Updates](workflows/receive-zendesk-ticket-updates/) - Receive Zendesk Support ticket notifications.
+- [Receive Taiga Project Events](workflows/receive-taiga-project-events/) - Receive events from a Taiga project.
 
 ## Communication
 
