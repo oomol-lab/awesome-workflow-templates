@@ -179,6 +179,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Export n8n Executions as CSV](workflows/export-n8n-executions-as-csv/) - Read all available n8n executions and convert their metadata to CSV.
 - [Diagnose n8n Execution Errors by Email](workflows/diagnose-n8n-execution-errors-by-email/) - Analyze failed n8n execution errors with AI and email a diagnostic report.
 - [Activate n8n Workflows With an Auto Start Tag](workflows/activate-n8n-workflows-with-an-auto-start-tag/) - Activate imported n8n workflows tagged Auto start.
+- [Resume Tagged n8n Workflows Every Four Hours](workflows/resume-tagged-n8n-workflows-every-four-hours/) - Reactivate inactive n8n workflows tagged auto_resume:true.
 
 ## Marketing
 
