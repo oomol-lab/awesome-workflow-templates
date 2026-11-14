@@ -655,6 +655,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Receive GitLab Repository Events](workflows/receive-gitlab-repository-events/) - Receive webhook events from a GitLab project.
 - [Download an S3 Folder as ZIP](workflows/download-s3-folder-as-zip/) - Download nonempty files directly within an S3 folder into a ZIP archive.
 - [Receive Jira Workspace Events](workflows/receive-jira-workspace-events/) - Receive supported Jira webhook events.
+- [Receive Bitbucket Repository Pushes](workflows/receive-bitbucket-repository-pushes/) - Receive push events for a Bitbucket repository.
 
 ## Communication
 
