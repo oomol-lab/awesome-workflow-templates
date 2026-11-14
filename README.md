@@ -762,6 +762,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Create a Matrix Room and Invite Members](workflows/create-a-matrix-room-and-invite-members/) - Create a Matrix room, invite members of another room and send a welcome message.
 - [Create a Fastmail Masked Email](workflows/create-a-fastmail-masked-email/) - Create a Fastmail masked email and return the address to the webhook caller.
 - [Send Scheduled Discord Messages](workflows/send-scheduled-discord-messages/) - Send three messages to a Discord webhook on separate schedules.
+- [Reply to Gmail and Record Feedback](workflows/reply-to-gmail-and-record-feedback/) - Generate a reply to an incoming email, log it and record linked feedback.
 
 ## Customer Support
 
