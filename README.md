@@ -769,6 +769,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Save ISS Position to TimescaleDB](workflows/save-iss-position-to-timescaledb/) - Save the current International Space Station position to TimescaleDB every minute.
 - [Fetch, Transform and Deliver Posts](workflows/fetch-transform-and-deliver-posts/) - Fetch posts, select three fields from the first ten, and deliver each item to an HTTP endpoint.
 - [Publish Machine Telemetry to AMQP](workflows/publish-machine-telemetry-to-amqp/) - Generate sample machine telemetry every second and publish it to an AMQP destination.
+- [Find PDF Links in a Sitemap](workflows/find-pdf-links-in-a-sitemap/) - Fetch a sitemap and return entries whose URL ends in .pdf.
 
 ## Communications
 
