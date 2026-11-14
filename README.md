@@ -928,6 +928,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 ## Files
 
 - [Upload Video via Apps Script and Rename](workflows/upload-video-via-apps-script-and-rename/) - Send a video URL to a Google Apps Script web app and rename the uploaded Drive file.
+- [Index Drive Image Analysis](workflows/index-drive-image-analysis/) - Analyze a Drive image and store embeddings of its keywords and color information.
 
 ## Entertainment
 
