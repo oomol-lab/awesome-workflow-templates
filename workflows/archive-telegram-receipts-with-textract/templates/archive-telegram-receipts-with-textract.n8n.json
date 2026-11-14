@@ -1,0 +1,225 @@
+{
+  "nodes": [
+    {
+      "name": "AWS Textract",
+      "type": "n8n-nodes-base.awsTextract",
+      "position": [
+        700,
+        340
+      ],
+      "parameters": {},
+      "typeVersion": 1,
+      "id": "archive-telegram-receipts-with-textract-0"
+    },
+    {
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "position": [
+        520,
+        220
+      ],
+      "parameters": {
+        "updates": [
+          "*"
+        ],
+        "additionalFields": {
+          "download": true,
+          "imageSize": "medium"
+        }
+      },
+      "typeVersion": 1.2,
+      "id": "archive-telegram-receipts-with-textract-1"
+    },
+    {
+      "name": "Airtable",
+      "type": "n8n-nodes-base.airtable",
+      "position": [
+        880,
+        340
+      ],
+      "parameters": {
+        "table": "receipts",
+        "options": {},
+        "operation": "append",
+        "application": "YOUR_AIRTABLE_BASE_ID",
+        "addAllFields": false,
+        "authentication": "airtableTokenApi",
+        "fields": [
+          "YOUR_TEXTRACT_FIELD_NAMES"
+        ]
+      },
+      "typeVersion": 1,
+      "id": "archive-telegram-receipts-with-textract-2"
+    },
+    {
+      "name": "AWS S3",
+      "type": "n8n-nodes-base.awsS3",
+      "position": [
+        700,
+        100
+      ],
+      "parameters": {
+        "fileName": "={{$binary.data.fileName}}",
+        "operation": "upload",
+        "bucketName": "YOUR_S3_BUCKET",
+        "additionalFields": {}
+      },
+      "typeVersion": 1,
+      "id": "archive-telegram-receipts-with-textract-3"
+    },
+    {
+      "id": "archive-telegram-receipts-with-textract-choose",
+      "name": "Choose delivery mode",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const item = $input.first();\nreturn [{ json: { ...item.json, deliveryMode: \"direct\" }, binary: item.binary }];\n"
+      }
+    },
+    {
+      "id": "archive-telegram-receipts-with-textract-gate",
+      "name": "Relay selected?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        200,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "mode",
+              "leftValue": "={{ $json.deliveryMode }}",
+              "rightValue": "relay",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "archive-telegram-receipts-with-textract-pack",
+      "name": "Package receipt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        450,
+        -100
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const item = $input.first();\nif (!item.binary?.data) throw Error(\"A downloaded receipt is required\");\nconst bytes = await this.helpers.getBinaryDataBuffer(0, \"data\");\nreturn [\n  {\n    json: {\n      event: $(\"Telegram Trigger\").first().json,\n      file: { name: item.binary.data.fileName, base64: bytes.toString(\"base64\") },\n    },\n  },\n];\n"
+      }
+    },
+    {
+      "id": "archive-telegram-receipts-with-textract-relay",
+      "name": "Forward receipt",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        700,
+        -100
+      ],
+      "parameters": {
+        "authentication": "none",
+        "method": "POST",
+        "url": "https://YOUR_OPEN_FLOW_HOST/v1/webhooks/YOUR_ENDPOINT",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "AWS Textract": {
+      "main": [
+        [
+          {
+            "node": "Airtable",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Choose delivery mode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Choose delivery mode": {
+      "main": [
+        [
+          {
+            "node": "Relay selected?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Relay selected?": {
+      "main": [
+        [
+          {
+            "node": "Package receipt",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AWS S3",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "AWS Textract",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Package receipt": {
+      "main": [
+        [
+          {
+            "node": "Forward receipt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Archive Telegram Receipts with Textract",
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}
