@@ -50,6 +50,6 @@ The collection’s [MIT notice](https://github.com/Zie619/n8n-workflows/blob/940
 > OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 > SOFTWARE.
 
-The bundled fast-xml-parser 4.4.1 is provided under its MIT license, included in the workflow module.
+The bundled fast-xml-parser 4.4.1 and strnum 1.0.5 are provided under their MIT licenses, included in the workflow module.
 
 </details>
