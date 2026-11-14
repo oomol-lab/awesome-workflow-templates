@@ -1,0 +1,300 @@
+{
+  "nodes": [
+    {
+      "id": "copy-confirmed-grist-rows-once-0",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "copy-confirmed-grist-rows-once",
+        "options": {}
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "name": "Choose delivery mode",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const mode = \"direct\";\nif (![\"direct\", \"relay\"].includes(mode)) throw Error(\"Choose direct or relay\");\nif (!Array.isArray($json.body)) throw Error(\"Expected Grist array\");\nreturn { json: { mode, events: $json.body } };\n"
+      },
+      "id": "copy-confirmed-grist-rows-once-1",
+      "position": [
+        230,
+        300
+      ]
+    },
+    {
+      "name": "Route delivery mode",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "parameters": {
+        "mode": "expression",
+        "numberOutputs": 2,
+        "output": "={{ $json.mode === 'direct' ? 0 : 1 }}",
+        "options": {}
+      },
+      "id": "copy-confirmed-grist-rows-once-2",
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "name": "Forward to Open Flow",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "YOUR_OPENFLOW_WEBHOOK_URL",
+        "authentication": "none",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {events:$json.events} }}",
+        "options": {}
+      },
+      "id": "copy-confirmed-grist-rows-once-3",
+      "position": [
+        690,
+        300
+      ]
+    },
+    {
+      "name": "Select confirmed rows",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const events = $input.first().json.events;\nreturn events.flatMap((x) => {\n  if (!Number.isSafeInteger(x?.id) || x.id <= 0) throw Error(\"Invalid Grist row\");\n  return x.Confirmed === true ? [{ json: x }] : [];\n});\n"
+      },
+      "id": "copy-confirmed-grist-rows-once-4",
+      "position": [
+        920,
+        300
+      ]
+    },
+    {
+      "name": "Loop confirmed rows",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "copy-confirmed-grist-rows-once-5",
+      "position": [
+        1150,
+        300
+      ]
+    },
+    {
+      "id": "copy-confirmed-grist-rows-once-6",
+      "name": "get existing",
+      "type": "n8n-nodes-base.grist",
+      "position": [
+        1380,
+        300
+      ],
+      "parameters": {
+        "docId": "YOUR_DESTINATION_DOCUMENT_ID",
+        "tableId": "YOUR_DESTINATION_TABLE_ID",
+        "operation": "getAll",
+        "returnAll": false,
+        "limit": 1,
+        "additionalOptions": {
+          "filter": {
+            "filterProperties": [
+              {
+                "field": "Source",
+                "values": "={{ $json.id }}"
+              }
+            ]
+          }
+        }
+      },
+      "typeVersion": 1,
+      "alwaysOutputData": true
+    },
+    {
+      "name": "Check existing rows",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const id = $(\"Loop confirmed rows\").first(1, $runIndex).json.id;\nreturn [\n  {\n    json: { id, exists: $input.all().some((x) => Number.isSafeInteger(x.json.id)) },\n    pairedItem: { item: 0 },\n  },\n];\n"
+      },
+      "id": "copy-confirmed-grist-rows-once-7",
+      "position": [
+        1610,
+        300
+      ]
+    },
+    {
+      "name": "Already exists?",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "parameters": {
+        "mode": "expression",
+        "numberOutputs": 2,
+        "output": "={{ $json.exists ? 0 : 1 }}",
+        "options": {}
+      },
+      "id": "copy-confirmed-grist-rows-once-8",
+      "position": [
+        1840,
+        300
+      ]
+    },
+    {
+      "id": "copy-confirmed-grist-rows-once-9",
+      "name": "Create Row",
+      "type": "n8n-nodes-base.grist",
+      "position": [
+        2070,
+        300
+      ],
+      "parameters": {
+        "docId": "YOUR_DESTINATION_DOCUMENT_ID",
+        "tableId": "YOUR_DESTINATION_TABLE_ID",
+        "operation": "create",
+        "dataToSend": "defineInNode",
+        "fieldsToSend": {
+          "properties": [
+            {
+              "fieldId": "Source",
+              "fieldValue": "={{ $json.id }}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Choose delivery mode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Choose delivery mode": {
+      "main": [
+        [
+          {
+            "node": "Route delivery mode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route delivery mode": {
+      "main": [
+        [
+          {
+            "node": "Select confirmed rows",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Forward to Open Flow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select confirmed rows": {
+      "main": [
+        [
+          {
+            "node": "Loop confirmed rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop confirmed rows": {
+      "main": [
+        [],
+        [
+          {
+            "node": "get existing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get existing": {
+      "main": [
+        [
+          {
+            "node": "Check existing rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check existing rows": {
+      "main": [
+        [
+          {
+            "node": "Already exists?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Already exists?": {
+      "main": [
+        [
+          {
+            "node": "Loop confirmed rows",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Row": {
+      "main": [
+        [
+          {
+            "node": "Loop confirmed rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Copy Confirmed Grist Rows Once",
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
