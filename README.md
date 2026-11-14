@@ -722,6 +722,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Create a QuestDB Table and Insert a Row](workflows/create-a-questdb-table-and-insert-a-row/) - Create a QuestDB table, insert a sample row, and read it back.
 - [Create a CrateDB Table and Insert a Row](workflows/create-a-cratedb-table-and-insert-a-row/) - Create a CrateDB table and insert a row.
 - [Convert Potsdam Venue CSV to Excel](workflows/convert-potsdam-venue-csv-to-excel/) - Download Potsdam venue data as CSV and convert it to an Excel workbook.
+- [Import an XML Breakfast Menu to Google Sheets](workflows/import-an-xml-breakfast-menu-to-google-sheets/) - Download a breakfast menu XML file and create a Google spreadsheet containing its items.
 
 ## Communications
 
