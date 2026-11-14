@@ -1,0 +1,345 @@
+{
+  "nodes": [
+    {
+      "id": "control-n8n-workflows-from-telegram-0",
+      "name": "Receive commands from Telegram",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "name": "Configure commands",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const chat = \"YOUR_CHAT_ID\",\n  marketing = \"YOUR_MARKETING_WORKFLOW_ID\",\n  sales = \"YOUR_SALES_WORKFLOW_ID\";\nif (!/^-?\\d+$/.test(chat) || [marketing, sales].some((x) => !x || x.startsWith(\"YOUR_\")))\n  throw Error(\"Configure chat and workflow IDs\");\nconst event = $input.first().json,\n  msg = event.message;\nif (String(msg?.chat?.id ?? \"\") !== chat || typeof msg?.text !== \"string\") return [];\nconst m = msg.text.trim().match(/^\\/(start|stop)\\s+(marketing|sales)$/i);\nif (!m) return [];\nif (!Number.isSafeInteger(event.update_id)) throw Error(\"Missing update ID\");\nreturn [\n  {\n    json: {\n      updateId: String(event.update_id),\n      action: m[1].toLowerCase(),\n      workflowId: m[2].toLowerCase() === \"marketing\" ? marketing : sales,\n    },\n    pairedItem: { item: 0 },\n  },\n];\n"
+      },
+      "id": "control-n8n-workflows-from-telegram-1",
+      "position": [
+        250,
+        300
+      ]
+    },
+    {
+      "name": "Existing checkpoint",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "update_id",
+              "condition": "eq",
+              "keyValue": "={{ $json.updateId }}"
+            }
+          ]
+        },
+        "operation": "rowExists"
+      },
+      "id": "control-n8n-workflows-from-telegram-2",
+      "position": [
+        500,
+        300
+      ]
+    },
+    {
+      "name": "New checkpoint",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "update_id",
+              "condition": "eq",
+              "keyValue": "={{ $json.updateId }}"
+            }
+          ]
+        },
+        "operation": "rowNotExists"
+      },
+      "id": "control-n8n-workflows-from-telegram-3",
+      "position": [
+        750,
+        300
+      ]
+    },
+    {
+      "name": "Mark command pending",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "update_id": "={{ $('Configure commands').item.json.updateId }}",
+            "status": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "control-n8n-workflows-from-telegram-4",
+      "position": [
+        1000,
+        300
+      ]
+    },
+    {
+      "name": "Start workflow?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $('Configure commands').item.json.action }}",
+              "rightValue": "start",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "control-n8n-workflows-from-telegram-5",
+      "position": [
+        1250,
+        300
+      ]
+    },
+    {
+      "id": "control-n8n-workflows-from-telegram-6",
+      "name": "Activate workflow",
+      "type": "n8n-nodes-base.n8n",
+      "position": [
+        1500,
+        300
+      ],
+      "parameters": {
+        "operation": "activate",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Configure commands').item.json.workflowId }}"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "control-n8n-workflows-from-telegram-7",
+      "name": "Deactivate workflow",
+      "type": "n8n-nodes-base.n8n",
+      "position": [
+        1750,
+        300
+      ],
+      "parameters": {
+        "operation": "deactivate",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Configure commands').item.json.workflowId }}"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "name": "Confirm workflow state",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const command = $(\"Configure commands\").item.json;\nif ($json.id !== command.workflowId || $json.active !== (command.action === \"start\"))\n  throw Error(\"Workflow state not confirmed\");\nreturn [{ json: { confirmed: true }, pairedItem: { item: 0 } }];\n"
+      },
+      "id": "control-n8n-workflows-from-telegram-8",
+      "position": [
+        2000,
+        300
+      ]
+    },
+    {
+      "name": "Mark command done",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Mark command pending').item.json.id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "done"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "control-n8n-workflows-from-telegram-9",
+      "position": [
+        2250,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Receive commands from Telegram": {
+      "main": [
+        [
+          {
+            "node": "Configure commands",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configure commands": {
+      "main": [
+        [
+          {
+            "node": "Existing checkpoint",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "New checkpoint",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "New checkpoint": {
+      "main": [
+        [
+          {
+            "node": "Mark command pending",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark command pending": {
+      "main": [
+        [
+          {
+            "node": "Start workflow?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start workflow?": {
+      "main": [
+        [
+          {
+            "node": "Activate workflow",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Deactivate workflow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Activate workflow": {
+      "main": [
+        [
+          {
+            "node": "Confirm workflow state",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Deactivate workflow": {
+      "main": [
+        [
+          {
+            "node": "Confirm workflow state",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm workflow state": {
+      "main": [
+        [
+          {
+            "node": "Mark command done",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Control n8n Workflows from Telegram",
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}

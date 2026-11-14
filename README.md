@@ -192,6 +192,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Rotate the First DigitalOcean Droplet Snapshot](workflows/rotate-first-digitalocean-droplet-snapshot/) - Periodically request a snapshot of the first DigitalOcean Droplet and remove its oldest snapshot when four already exist.
 - [Create Google Credentials in n8n](workflows/create-google-credentials-in-n8n/) - Create seven named Google OAuth credential records in n8n using one Google OAuth client.
 - [Email n8n Execution and Trigger Errors](workflows/email-n8n-execution-and-trigger-errors/) - Email detailed n8n execution errors and trigger failures.
+- [Control n8n Workflows from Telegram](workflows/control-n8n-workflows-from-telegram/) - Start or stop two configured n8n workflows from an authorized Telegram chat.
 
 ## Marketing
 
