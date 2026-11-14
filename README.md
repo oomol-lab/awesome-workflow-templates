@@ -603,6 +603,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Return an XML Example From a Webhook](workflows/return-an-xml-example-from-a-webhook/) - Respond to a GET webhook with an example XML document.
 - [Back Up n8n Workflows Daily to Google Drive](workflows/back-up-n8n-workflows-daily-to-google-drive/) - Save a JSON copy of each n8n workflow in Google Drive every day.
 - [List GitHub Trending Repositories](workflows/list-github-trending-repositories/) - Read GitHub Trending and return repository names, descriptions and languages.
+- [Trigger Travis Builds from GitHub](workflows/trigger-travis-builds-from-github/) - Request a Travis CI build when a GitHub repository is pushed or a pull request opens.
 
 ## Communication
 

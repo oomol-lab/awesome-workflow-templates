@@ -1,0 +1,292 @@
+{
+  "nodes": [
+    {
+      "name": "Github Trigger",
+      "type": "n8n-nodes-base.githubTrigger",
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {
+        "owner": "your-owner",
+        "events": [
+          "push",
+          "pull_request"
+        ],
+        "repository": "your-repo",
+        "authentication": "oAuth2"
+      },
+      "typeVersion": 1,
+      "id": "trigger-travis-builds-from-github-0"
+    },
+    {
+      "name": "Configure build branch",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const branch = \"YOUR_TRAVIS_BRANCH\";\nif (!branch || branch.startsWith(\"YOUR_\")) throw Error(\"Configure branch\");\nconst event = $input.first().json,\n  h = event.headers ?? {},\n  body = event.body ?? {},\n  type = h[\"x-github-event\"],\n  deliveryId = h[\"x-github-delivery\"];\nif (type !== \"push\" && !(type === \"pull_request\" && body.action === \"opened\")) return [];\nconst slug = body.repository?.full_name;\nif (typeof slug !== \"string\" || !/^[-A-Za-z0-9_.]+\\/[-A-Za-z0-9_.]+$/.test(slug) || !deliveryId)\n  throw Error(\"Missing repository or delivery ID\");\nreturn [{ json: { slug, branch, deliveryId }, pairedItem: { item: 0 } }];\n"
+      },
+      "id": "trigger-travis-builds-from-github-1",
+      "position": [
+        250,
+        300
+      ]
+    },
+    {
+      "name": "Existing checkpoint",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "delivery_id",
+              "condition": "eq",
+              "keyValue": "={{ $json.deliveryId }}"
+            }
+          ]
+        },
+        "operation": "rowExists"
+      },
+      "id": "trigger-travis-builds-from-github-2",
+      "position": [
+        500,
+        300
+      ]
+    },
+    {
+      "name": "New checkpoint",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "delivery_id",
+              "condition": "eq",
+              "keyValue": "={{ $json.deliveryId }}"
+            }
+          ]
+        },
+        "operation": "rowNotExists"
+      },
+      "id": "trigger-travis-builds-from-github-3",
+      "position": [
+        750,
+        300
+      ]
+    },
+    {
+      "name": "Mark build pending",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "delivery_id": "={{ $('Configure build branch').item.json.deliveryId }}",
+            "status": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "trigger-travis-builds-from-github-4",
+      "position": [
+        1000,
+        300
+      ]
+    },
+    {
+      "name": "Request Travis build",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        1250,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'https://api.travis-ci.com/repo/'+encodeURIComponent($('Configure build branch').item.json.slug)+'/requests' }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Travis-API-Version",
+              "value": "3"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({request:{branch:$('Configure build branch').item.json.branch}}) }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "typeVersion": 4.2,
+      "id": "trigger-travis-builds-from-github-5"
+    },
+    {
+      "name": "Confirm build request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "if ($json[\"@type\"] !== \"pending\") throw Error(\"Build request not confirmed\");\nreturn [{ json: { confirmed: true }, pairedItem: { item: 0 } }];\n"
+      },
+      "id": "trigger-travis-builds-from-github-6",
+      "position": [
+        1500,
+        300
+      ]
+    },
+    {
+      "name": "Mark build done",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Mark build pending').item.json.id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "done"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "trigger-travis-builds-from-github-7",
+      "position": [
+        1750,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Github Trigger": {
+      "main": [
+        [
+          {
+            "node": "Configure build branch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configure build branch": {
+      "main": [
+        [
+          {
+            "node": "Existing checkpoint",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "New checkpoint",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "New checkpoint": {
+      "main": [
+        [
+          {
+            "node": "Mark build pending",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark build pending": {
+      "main": [
+        [
+          {
+            "node": "Request Travis build",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Request Travis build": {
+      "main": [
+        [
+          {
+            "node": "Confirm build request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm build request": {
+      "main": [
+        [
+          {
+            "node": "Mark build done",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Trigger Travis Builds from GitHub",
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}
