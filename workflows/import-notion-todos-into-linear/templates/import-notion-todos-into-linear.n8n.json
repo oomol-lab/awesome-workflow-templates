@@ -1,0 +1,709 @@
+{
+  "nodes": [
+    {
+      "id": "import-notion-todos-into-linear-0",
+      "name": "Loop Over Items",
+      "type": "n8n-nodes-base.splitInBatches",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "options": {}
+      },
+      "typeVersion": 3
+    },
+    {
+      "id": "import-notion-todos-into-linear-1",
+      "name": "Fetch Linear team details",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        250,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.linear.app/graphql",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {query:\"query($name:String!){teams(filter:{name:{eq:$name}},first:100){nodes{id name members(first:100){nodes{id name email}}}}}\",variables:{name:$json.form[\"Linear team name\"]}} }}",
+        "options": {}
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "import-notion-todos-into-linear-2",
+      "name": "Get issue contents",
+      "type": "n8n-nodes-base.notion",
+      "position": [
+        500,
+        0
+      ],
+      "parameters": {
+        "blockId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Set assignee and title').item.json.id }}"
+        },
+        "resource": "block",
+        "operation": "getAll",
+        "returnAll": true,
+        "simplifyOutput": false,
+        "fetchNestedBlocks": true
+      },
+      "typeVersion": 2.1,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "import-notion-todos-into-linear-3",
+      "name": "Prepare issue data",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        750,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e1b44489-ee32-4da4-816e-f56d640a9731",
+              "name": "title",
+              "type": "string",
+              "value": "={{ $if($('Set assignee and title').item.json.title.length <= 70, $('Set assignee and title').item.json.title, $('Shorten title').item.json.message.content) }}"
+            },
+            {
+              "id": "f3fab4f6-8ea3-4b93-91ea-ec08c2d9eded",
+              "name": "description",
+              "type": "string",
+              "value": "=_Issue created automatically from a [Notion block]({{ $('Set page URL').last().json.page_url + '?pvs=4#' + $('Loop Over Items').item.json.id.replaceAll('-', '') }})_ {{ $if($('Set assignee and title').item.json.assignee_fragment && !$('Set assignee and title').item.json.assignee, \"\\nAssignee '\" + $('Set assignee and title').item.json.assignee_fragment + \"' not found\", '') }}\n\n{{ $json.markdown?.join('\\n') }}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.3
+    },
+    {
+      "id": "import-notion-todos-into-linear-4",
+      "name": "Create linear issue",
+      "type": "n8n-nodes-base.linear",
+      "position": [
+        1000,
+        0
+      ],
+      "parameters": {
+        "title": "={{ $(\"Prepare issue data\").item.json.title }}",
+        "teamId": "={{ $('Set team ID').item.json.team_id }}",
+        "additionalFields": {
+          "assigneeId": "={{ $(\"Set assignee and title\").item.json.assignee?.id || undefined }}",
+          "description": "={{ $(\"Prepare issue data\").item.json.description }}"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "import-notion-todos-into-linear-5",
+      "name": "Set assignee and title",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1250,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const item = $input.item;\nconst r = item.json.to_do.rich_text ?? item.json.to_do.text ?? [];\nconst first = r.map((t) => t.plain_text ?? t.text?.content ?? \"\").join(\"\"),\n  m = first.match(/^(?:\\[([^\\]]+)\\]\\s*)?(.+)$/s);\nif (!m) throw Error(\"Empty to-do title\");\nconst names = $(\"Fetch Linear team details\").first().json.data.teams.nodes[0].members.nodes,\n  fragment = m[1] ?? \"\",\n  matches = fragment\n    ? names.filter((x) => x.name.toLowerCase().startsWith(fragment.toLowerCase()))\n    : [];\nitem.json.title = m[2];\nitem.json.assignee_fragment = fragment;\nitem.json.assignee = matches.length === 1 ? matches[0] : null;\nitem.json.original_rich = r.map((t) => {\n  const type = t.type ?? \"text\";\n  if (![\"text\", \"mention\", \"equation\"].includes(type) || !t[type])\n    throw Error(\"Unsupported rich text\");\n  return { type, [type]: t[type], ...(t.annotations ? { annotations: t.annotations } : {}) };\n});\nreturn item;\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "import-notion-todos-into-linear-6",
+      "name": "Team missing?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1500,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "047fbe62-ebab-44ab-89b1-232f5f15874d",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.data.teams?.nodes?.length !== 1 }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "import-notion-todos-into-linear-7",
+      "name": "Set page URL",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        1750,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "0b0ced59-14c9-43e9-a5ee-f4b1862fccd6",
+              "name": "page_url",
+              "type": "string",
+              "value": "={{ $(\"n8n Form Trigger\").first().json[\"Notion page URL\"].split(\"?\")[0] }}"
+            },
+            {
+              "id": "3df2b2e6-38ca-4fb6-b00c-e3a6ceb3f9b3",
+              "name": "root_content",
+              "type": "object",
+              "value": "={{ $('Set assignee and title').item.json[$('Set assignee and title').item.json.type] }}"
+            },
+            {
+              "id": "41a18b43-49fd-45a5-850d-55b9f08f9b93",
+              "name": "root_id",
+              "type": "string",
+              "value": "={{ $('Set assignee and title').item.json.id }}"
+            }
+          ]
+        },
+        "includeOtherFields": true
+      },
+      "typeVersion": 3.3
+    },
+    {
+      "id": "import-notion-todos-into-linear-8",
+      "name": "Set team ID",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        2000,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b22a4a67-67b5-415a-ab38-4d7f781e8b7e",
+              "name": "team_id",
+              "type": "string",
+              "value": "={{ $json.data.teams.nodes[0].id }}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.3
+    },
+    {
+      "id": "import-notion-todos-into-linear-9",
+      "name": "Add link to Notion block",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        2250,
+        0
+      ],
+      "parameters": {
+        "url": "=https://api.notion.com/v1/blocks/{{ $(\"Set assignee and title\").item.json.id }}",
+        "method": "PATCH",
+        "options": {},
+        "jsonBody": "={{ {to_do:{rich_text:[{type:\"text\",text:{content:\"[\"}},{type:\"text\",text:{content:\"In Linear\",link:{url:$json.data.issue.url}}},{type:\"text\",text:{content:\"] \"}},...$(\"Set assignee and title\").item.json.original_rich]}} }}",
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "authentication": "predefinedCredentialType",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Notion-Version",
+              "value": "2022-06-28"
+            }
+          ]
+        },
+        "nodeCredentialType": "notionApi"
+      },
+      "typeVersion": 4.1
+    },
+    {
+      "id": "import-notion-todos-into-linear-10",
+      "name": "Get issue URL",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        2500,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.linear.app/graphql",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {query:\"query($id:String!){issue(id:$id){url}}\",variables:{id:$json.id}} }}",
+        "options": {}
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "import-notion-todos-into-linear-11",
+      "name": "Shorten title",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "position": [
+        2750,
+        0
+      ],
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4",
+          "cachedResultName": "GPT-4"
+        },
+        "options": {},
+        "messages": {
+          "values": [
+            {
+              "content": "=Make the following text more concise, so that it's max 150 chars long. If it's already less than 70 chars long, just return the original text. Do not return anything else other than the text.\n\nTEXT:\n{{ $json.title }}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "import-notion-todos-into-linear-12",
+      "name": "Unimported, unchecked to_do blocks only",
+      "type": "n8n-nodes-base.filter",
+      "position": [
+        3000,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "d7e85c09-8548-4fc8-a8a9-636e4529e9d9",
+              "operator": {
+                "name": "filter.operator.equals",
+                "type": "string",
+                "operation": "equals"
+              },
+              "leftValue": "={{ $json.type }}",
+              "rightValue": "to_do"
+            },
+            {
+              "id": "13fb565d-8951-4c89-9684-85c357459794",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ !($json.to_do.rich_text ?? $json.to_do.text ?? []).map(t => t.plain_text ?? t.text?.content ?? \"\").join(\"\").startsWith(\"[In Linear\") }}",
+              "rightValue": ""
+            },
+            {
+              "id": "0a9c8e94-11ec-4317-8de5-f22862555b78",
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.to_do.checked }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "import-notion-todos-into-linear-13",
+      "name": "n8n Form Trigger",
+      "type": "n8n-nodes-base.formTrigger",
+      "position": [
+        3250,
+        0
+      ],
+      "parameters": {
+        "path": "import-notion-todos-into-linear",
+        "formTitle": "Import Linear issues from Notion",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Notion page URL",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Linear team name",
+              "requiredField": true
+            }
+          ]
+        },
+        "responseMode": "onReceived",
+        "formDescription": "More information on Notion formatting required here: https://www.notion.so/n8n/8848dd09892341969faedd1313eea586"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "import-notion-todos-into-linear-14",
+      "name": "Get issues",
+      "type": "n8n-nodes-base.notion",
+      "onError": "continueErrorOutput",
+      "position": [
+        3500,
+        0
+      ],
+      "parameters": {
+        "blockId": {
+          "__rl": true,
+          "mode": "url",
+          "value": "={{ $('n8n Form Trigger').item.json['Notion page URL'] }}"
+        },
+        "resource": "block",
+        "operation": "getAll",
+        "returnAll": true,
+        "simplifyOutput": false
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "id": "import-notion-todos-into-linear-15",
+      "name": "Convert contents to Markdown",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3750,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const items = $input.all(),\n  root = items[0]?.json;\nif (!root?.root_content) throw Error(\"Missing source Notion block\");\nfunction md(a) {\n  return (a ?? [])\n    .map((t) =>\n      t.text?.link?.url\n        ? \"[\" + (t.text.content ?? \"\") + \"](\" + t.text.link.url + \")\"\n        : (t.plain_text ?? t.text?.content ?? \"\"),\n    )\n    .join(\"\");\n}\nlet parents = [root.root_id],\n  lines = [md(root.root_content.rich_text ?? root.root_content.text)];\nfor (const { json: b } of items) {\n  if (!b.type) continue;\n  const data = b[b.type] ?? {},\n    text = md(data.rich_text ?? data.text),\n    prefix = [\"bulleted_list_item\", \"toggle\"].includes(b.type)\n      ? \"* \"\n      : b.type === \"numbered_list_item\"\n        ? \"1. \"\n        : b.type === \"to_do\"\n          ? \"+ [ ] \"\n          : \"\";\n  let line = prefix + text;\n  if (b.type === \"image\") line = \"![image](\" + (data[data.type]?.url ?? \"\") + \")\";\n  if (b.type === \"video\") line = \"[Video](\" + root.page_url + \"#\" + b.id.replaceAll(\"-\", \"\") + \")\";\n  const index = parents.indexOf(b.parent_id);\n  if (index >= 0) parents.splice(index + 1);\n  else parents.push(b.parent_id);\n  lines.push(\"    \".repeat(parents.length - 1) + line);\n}\nreturn [{ json: { markdown: lines }, pairedItem: { item: 0 } }];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "import-notion-todos-into-linear-16",
+      "name": "Choose delivery mode",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4000,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const mode = \"direct\";\nif (![\"direct\", \"relay\"].includes(mode)) throw Error(\"Choose direct or relay\");\nreturn { json: { mode, form: $json } };\n"
+      }
+    },
+    {
+      "id": "import-notion-todos-into-linear-17",
+      "name": "Route delivery mode",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        4250,
+        0
+      ],
+      "parameters": {
+        "mode": "expression",
+        "numberOutputs": 2,
+        "output": "={{ $json.mode === \"direct\" ? 0 : 1 }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "import-notion-todos-into-linear-18",
+      "name": "Forward to Open Flow",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4500,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "YOUR_OPENFLOW_WEBHOOK_URL",
+        "authentication": "none",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.form }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "import-notion-todos-into-linear-19",
+      "name": "Mark Notion to-do pending",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        4750,
+        0
+      ],
+      "parameters": {
+        "url": "=https://api.notion.com/v1/blocks/{{ $(\"Set assignee and title\").item.json.id }}",
+        "method": "PATCH",
+        "options": {},
+        "jsonBody": "={{ {to_do:{rich_text:[{type:\"text\",text:{content:\"[In Linear pending] \"}},...$(\"Set assignee and title\").item.json.original_rich]}} }}",
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "authentication": "predefinedCredentialType",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Notion-Version",
+              "value": "2022-06-28"
+            }
+          ]
+        },
+        "nodeCredentialType": "notionApi"
+      },
+      "typeVersion": 4.1
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Get issues": {
+      "main": [
+        [
+          {
+            "node": "Unimported, unchecked to_do blocks only",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Set team ID": {
+      "main": [
+        [
+          {
+            "node": "Get issues",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set page URL": {
+      "main": [
+        [
+          {
+            "node": "Convert contents to Markdown",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get issue URL": {
+      "main": [
+        [
+          {
+            "node": "Add link to Notion block",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shorten title": {
+      "main": [
+        [
+          {
+            "node": "Get issue contents",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Team missing?": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Set team ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Set assignee and title",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "n8n Form Trigger": {
+      "main": [
+        [
+          {
+            "node": "Choose delivery mode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get issue contents": {
+      "main": [
+        [
+          {
+            "node": "Set page URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare issue data": {
+      "main": [
+        [
+          {
+            "node": "Mark Notion to-do pending",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create linear issue": {
+      "main": [
+        [
+          {
+            "node": "Get issue URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set assignee and title": {
+      "main": [
+        [
+          {
+            "node": "Shorten title",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add link to Notion block": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Linear team details": {
+      "main": [
+        [
+          {
+            "node": "Team missing?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert contents to Markdown": {
+      "main": [
+        [
+          {
+            "node": "Prepare issue data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Unimported, unchecked to_do blocks only": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Choose delivery mode": {
+      "main": [
+        [
+          {
+            "node": "Route delivery mode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route delivery mode": {
+      "main": [
+        [
+          {
+            "node": "Fetch Linear team details",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Forward to Open Flow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Notion to-do pending": {
+      "main": [
+        [
+          {
+            "node": "Create linear issue",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Import Notion To-Dos into Linear",
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

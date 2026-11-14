@@ -531,6 +531,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Calculate Cylinder Mass and Speed](workflows/calculate-cylinder-mass-and-speed/) - Run cylinder, mass and speed calculations with CalcsLive and email the mass result.
 - [Receive Adobe Sign Agreement Events](workflows/receive-adobe-sign-agreement-events/) - Receive Adobe Sign agreement notifications and expose agreement details.
 - [Notify Slack for Matching Webhook Emails](workflows/notify-slack-for-n8n-webhook-email/) - Send a Slack message when a GET webhook email contains @n8n.
+- [Import Notion To-Dos into Linear](workflows/import-notion-todos-into-linear/) - Create Linear issues from unchecked Notion to-dos, including their nested contents, and add issue links back.
 
 ## Content
 
