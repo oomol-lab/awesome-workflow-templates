@@ -564,6 +564,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Receive Shopify Order Events](workflows/receive-shopify-order-events/) - Receive new Shopify orders with their original large integer IDs preserved.
 - [Receive SurveyMonkey Response Starts](workflows/receive-surveymonkey-response-starts/) - Receive notifications when a survey response begins.
 - [Receive HubSpot App Events](workflows/receive-hubspot-app-events/) - Receive events from a HubSpot app subscription.
+- [Collect Orders and Email a Daily Summary](workflows/collect-orders-and-email-daily-summary/) - Store orders received by webhook in Airtable and email a daily table of recent orders.
 
 ## Utilities
 
