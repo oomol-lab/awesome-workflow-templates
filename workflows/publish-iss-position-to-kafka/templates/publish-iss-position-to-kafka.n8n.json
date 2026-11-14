@@ -1,0 +1,220 @@
+{
+  "name": "Publish ISS Position to Kafka",
+  "nodes": [
+    {
+      "name": "Cron",
+      "type": "n8n-nodes-base.cron",
+      "position": [
+        510,
+        300
+      ],
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1,
+      "id": "publish-iss-position-to-kafka-0"
+    },
+    {
+      "name": "HTTP Request",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        710,
+        300
+      ],
+      "parameters": {
+        "url": "https://api.wheretheiss.at/v1/satellites/25544",
+        "options": {}
+      },
+      "typeVersion": 1,
+      "id": "publish-iss-position-to-kafka-1"
+    },
+    {
+      "name": "Set",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        910,
+        300
+      ],
+      "parameters": {
+        "values": {
+          "number": [],
+          "string": [
+            {
+              "name": "Name",
+              "value": "={{$node[\"HTTP Request\"].json[\"name\"]}}"
+            },
+            {
+              "name": "Latitude",
+              "value": "={{$node[\"HTTP Request\"].json[\"latitude\"]}}"
+            },
+            {
+              "name": "Longitude",
+              "value": "={{$node[\"HTTP Request\"].json[\"longitude\"]}}"
+            },
+            {
+              "name": "Timestamp",
+              "value": "={{$node[\"HTTP Request\"].json[\"timestamp\"]}}"
+            }
+          ]
+        },
+        "options": {},
+        "keepOnlySet": true
+      },
+      "typeVersion": 1,
+      "id": "publish-iss-position-to-kafka-2"
+    },
+    {
+      "name": "Kafka",
+      "type": "n8n-nodes-base.kafka",
+      "position": [
+        1110,
+        300
+      ],
+      "parameters": {
+        "topic": "iss-position",
+        "options": {}
+      },
+      "typeVersion": 1,
+      "id": "publish-iss-position-to-kafka-3"
+    },
+    {
+      "id": "publish-iss-position-to-kafka-hook",
+      "name": "Kafka relay webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        300,
+        500
+      ],
+      "disabled": true,
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "publish-iss-position-to-kafka",
+        "responseMode": "responseNode",
+        "options": {}
+      }
+    },
+    {
+      "id": "publish-iss-position-to-kafka-unpack",
+      "name": "Read relayed position",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        600,
+        500
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const b = $json.body;\nif (!b || [\"Name\", \"Latitude\", \"Longitude\", \"Timestamp\"].some((k) => typeof b[k] !== \"string\"))\n  throw Error(\"Invalid relayed position\");\nreturn { json: b };\n"
+      }
+    },
+    {
+      "name": "Kafka relay producer",
+      "type": "n8n-nodes-base.kafka",
+      "position": [
+        900,
+        500
+      ],
+      "parameters": {
+        "topic": "iss-position",
+        "options": {}
+      },
+      "typeVersion": 1,
+      "id": "publish-iss-position-to-kafka-relay-kafka"
+    },
+    {
+      "id": "publish-iss-position-to-kafka-respond",
+      "name": "Confirm Kafka producer",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1200,
+        500
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\"ok\":true}",
+        "options": {
+          "responseCode": 200
+        }
+      }
+    }
+  ],
+  "active": false,
+  "settings": {},
+  "connections": {
+    "Set": {
+      "main": [
+        [
+          {
+            "node": "Kafka",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cron": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Set",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kafka relay webhook": {
+      "main": [
+        [
+          {
+            "node": "Read relayed position",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read relayed position": {
+      "main": [
+        [
+          {
+            "node": "Kafka relay producer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kafka relay producer": {
+      "main": [
+        [
+          {
+            "node": "Confirm Kafka producer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {}
+}

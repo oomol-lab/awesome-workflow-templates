@@ -753,6 +753,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Random User Name and Country to CSV and Sheets](workflows/random-user-name-and-country-to-csv-and-sheets/) - Fetch a random user, create a CSV and append the same fields to Google Sheets.
 - [Publish ISS Position to MQTT](workflows/publish-iss-position-to-mqtt/) - Publish the current International Space Station position to an MQTT topic every minute.
 - [Publish ISS Position to RabbitMQ](workflows/publish-iss-position-to-rabbitmq/) - Publish the current International Space Station position to a RabbitMQ queue every minute.
+- [Publish ISS Position to Kafka](workflows/publish-iss-position-to-kafka/) - Publish the current International Space Station position to a Kafka topic every minute.
 
 ## Communications
 

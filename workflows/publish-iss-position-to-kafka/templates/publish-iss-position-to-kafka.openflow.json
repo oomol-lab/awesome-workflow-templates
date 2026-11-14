@@ -1,0 +1,242 @@
+{
+  "kind": "open-flow-workflow",
+  "version": 1,
+  "name": "Publish ISS Position to Kafka",
+  "content": {
+    "modelVersion": 15,
+    "document": {
+      "bindings": {},
+      "graph": {
+        "nodes": {
+          "n_34be7504a52d9988": {
+            "name": "Check every minute",
+            "kind": "cron",
+            "cronTimes": [
+              {
+                "type": "every",
+                "unit": "minute",
+                "value": 1
+              }
+            ]
+          },
+          "n_6c63dc12845ac38e": {
+            "inputs": {
+              "url": {
+                "kind": "value",
+                "value": "https://api.wheretheiss.at/v1/satellites/25544"
+              }
+            },
+            "name": "Get current ISS position",
+            "kind": "task",
+            "task": {
+              "inputs": [
+                {
+                  "jsonSchema": {
+                    "type": "string"
+                  },
+                  "nullable": false,
+                  "handle": "url"
+                }
+              ],
+              "outputs": [
+                {
+                  "jsonSchema": {},
+                  "nullable": true,
+                  "handle": "body"
+                },
+                {
+                  "jsonSchema": {
+                    "type": "integer"
+                  },
+                  "nullable": false,
+                  "handle": "statusCode"
+                },
+                {
+                  "jsonSchema": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    }
+                  },
+                  "nullable": false,
+                  "handle": "headers"
+                }
+              ],
+              "name": "Get current ISS position",
+              "executor": {
+                "method": "GET",
+                "query": {
+                  "mode": "fields",
+                  "names": []
+                },
+                "headers": {
+                  "mode": "fields",
+                  "names": []
+                },
+                "bodyFormat": "none",
+                "authentication": {
+                  "type": "none"
+                },
+                "responseFormat": "json",
+                "statusPolicy": "success",
+                "kind": "http-request"
+              }
+            }
+          },
+          "n_fc70e3c2ddbc48c3": {
+            "inputs": {
+              "body": {
+                "kind": "sources",
+                "sources": [
+                  {
+                    "kind": "node",
+                    "nodeId": "n_6c63dc12845ac38e",
+                    "output": "body"
+                  }
+                ]
+              }
+            },
+            "name": "Prepare Kafka message",
+            "kind": "task",
+            "task": {
+              "inputs": [
+                {
+                  "jsonSchema": {},
+                  "nullable": true,
+                  "handle": "body"
+                }
+              ],
+              "outputs": [
+                {
+                  "jsonSchema": {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  "nullable": false,
+                  "handle": "body"
+                }
+              ],
+              "name": "Prepare Kafka message",
+              "moduleId": "n_685978ebf74601d9",
+              "capabilities": [
+                {
+                  "kind": "connector",
+                  "mode": "independent",
+                  "actions": []
+                }
+              ]
+            }
+          },
+          "n_c537f8727a49b26f": {
+            "inputs": {
+              "url": {
+                "kind": "value",
+                "value": "https://YOUR_N8N_HOST/webhook/publish-iss-position-to-kafka"
+              },
+              "body": {
+                "kind": "sources",
+                "sources": [
+                  {
+                    "kind": "node",
+                    "nodeId": "n_fc70e3c2ddbc48c3",
+                    "output": "body"
+                  }
+                ]
+              }
+            },
+            "name": "Send to n8n Kafka relay",
+            "kind": "task",
+            "task": {
+              "inputs": [
+                {
+                  "jsonSchema": {
+                    "type": "string"
+                  },
+                  "nullable": false,
+                  "handle": "url"
+                },
+                {
+                  "jsonSchema": {},
+                  "nullable": true,
+                  "handle": "body"
+                }
+              ],
+              "outputs": [
+                {
+                  "jsonSchema": {},
+                  "nullable": true,
+                  "handle": "body"
+                },
+                {
+                  "jsonSchema": {
+                    "type": "integer"
+                  },
+                  "nullable": false,
+                  "handle": "statusCode"
+                },
+                {
+                  "jsonSchema": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    }
+                  },
+                  "nullable": false,
+                  "handle": "headers"
+                }
+              ],
+              "name": "Send to n8n Kafka relay",
+              "executor": {
+                "method": "POST",
+                "query": {
+                  "mode": "fields",
+                  "names": []
+                },
+                "headers": {
+                  "mode": "fields",
+                  "names": []
+                },
+                "bodyFormat": "json",
+                "authentication": {
+                  "type": "none"
+                },
+                "responseFormat": "json",
+                "statusPolicy": "success",
+                "kind": "http-request"
+              }
+            }
+          }
+        },
+        "edges": [
+          {
+            "source": "n_34be7504a52d9988",
+            "target": "n_6c63dc12845ac38e"
+          },
+          {
+            "source": "n_6c63dc12845ac38e",
+            "target": "n_fc70e3c2ddbc48c3"
+          },
+          {
+            "source": "n_fc70e3c2ddbc48c3",
+            "target": "n_c537f8727a49b26f"
+          }
+        ]
+      }
+    },
+    "modules": {
+      "n_685978ebf74601d9": {
+        "name": "Prepare Kafka message",
+        "imports": [],
+        "source": "export default function prepare({ body }) {\n  if (\n    typeof body?.name !== \"string\" ||\n    typeof body?.latitude !== \"number\" ||\n    typeof body?.longitude !== \"number\" ||\n    typeof body?.timestamp !== \"number\"\n  )\n    throw Error(\"Incomplete ISS position\");\n  return {\n    body: {\n      Name: String(body.name),\n      Latitude: String(body.latitude),\n      Longitude: String(body.longitude),\n      Timestamp: String(body.timestamp),\n    },\n  };\n}\n"
+      }
+    }
+  },
+  "presentation": {
+    "designer": {
+      "version": 1,
+      "flow": {
+        "direction": "vertical"
+      }
+    }
+  }
+}
