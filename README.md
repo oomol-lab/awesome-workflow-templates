@@ -520,6 +520,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Extract Image Text to Google Sheets](workflows/extract-image-text-to-google-sheets/) - Extract text from an image with Amazon Rekognition and append the result to Google Sheets.
 - [Convert Baserow Video Descriptions to HTML](workflows/convert-baserow-video-descriptions-to-html/) - Convert one or all Baserow video descriptions from Markdown to HTML.
 - [Email News Before Company Meetings](workflows/email-news-before-company-meetings/) - Email recent company news for today’s matching calendar meetings.
+- [Save Luma Video Callback to Airtable](workflows/save-luma-video-callback-to-airtable/) - Save completed Luma video and thumbnail URLs to the matching Airtable generation record.
 
 ## Content
 
