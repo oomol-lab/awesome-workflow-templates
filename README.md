@@ -495,6 +495,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Create and Update a Raindrop Bookmark](workflows/create-and-update-raindrop-bookmark/) - Create a collection and bookmark, update the bookmark title, and retrieve the result.
 - [Post Weekly RSS News to Trello](workflows/post-weekly-rss-news-to-trello/) - Collect recent RSS articles, post a weekly Trello comment, and email a reviewer.
 - [Batch Airtable Record Operations](workflows/batch-airtable-record-operations/) - Insert, update or upsert Airtable records in batches of ten.
+- [Reformat a Telegram Resume PDF](workflows/reformat-telegram-resume-pdf/) - Extract a resume PDF sent to a Telegram bot, format its details, and return a new PDF.
 
 ## Content
 
