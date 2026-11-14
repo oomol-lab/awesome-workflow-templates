@@ -765,6 +765,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Sync Zendesk Tickets to Slack Threads](workflows/sync-zendesk-tickets-to-slack-threads/) - Create a Slack thread for a Zendesk ticket and send later comments to that thread.
 - [Classify Customer Feedback to Google Sheets](workflows/classify-customer-feedback-to-google-sheets/) - Classify customer feedback sentiment and save the feedback with the result in Google Sheets.
 - [Sync Zendesk Tickets to HubSpot](workflows/sync-zendesk-tickets-to-hubspot/) - Create or update HubSpot tickets from changed Zendesk tickets and link new tickets to their requester.
+- [Export Zammad Administration to XLSX](workflows/export-zammad-administration-to-xlsx/) - Export Zammad users, organizations, roles and groups to four Excel workbooks.
 
 ## Finance
 
