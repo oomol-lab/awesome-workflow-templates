@@ -1,0 +1,129 @@
+{
+  "kind": "open-flow-workflow",
+  "version": 1,
+  "name": "Cache an Access Token for One Minute",
+  "content": {
+    "modelVersion": 15,
+    "document": {
+      "bindings": {},
+      "graph": {
+        "nodes": {
+          "n_01c3b5413199eab3": {
+            "name": "Check every minute",
+            "kind": "cron",
+            "cronTimes": [
+              {
+                "type": "cron",
+                "expression": "* * * * *",
+                "timezone": "UTC"
+              }
+            ]
+          },
+          "n_f9db1d90245a80d6": {
+            "name": "Check by webhook",
+            "kind": "webhook",
+            "bodyFields": [],
+            "method": "GET",
+            "options": {
+              "responseStatusCode": 200
+            }
+          },
+          "n_a701cc97464d1f88": {
+            "inputs": {
+              "endpoint": {
+                "kind": "value",
+                "value": "https://example.com/token"
+              }
+            },
+            "name": "Refresh cached token if needed",
+            "kind": "task",
+            "task": {
+              "inputs": [
+                {
+                  "jsonSchema": {
+                    "type": "string"
+                  },
+                  "nullable": false,
+                  "handle": "endpoint"
+                }
+              ],
+              "outputs": [
+                {
+                  "jsonSchema": {
+                    "type": "string"
+                  },
+                  "nullable": false,
+                  "handle": "status"
+                }
+              ],
+              "name": "Refresh cached token if needed",
+              "moduleId": "n_09b30485d527dbef",
+              "capabilities": [
+                {
+                  "kind": "http",
+                  "hosts": [
+                    "example.com"
+                  ]
+                }
+              ]
+            }
+          },
+          "n_876013d19d155441": {
+            "name": "Return cache status",
+            "kind": "outputs",
+            "outputDefs": [
+              {
+                "jsonSchema": {
+                  "type": "string"
+                },
+                "nullable": false,
+                "handle": "status"
+              }
+            ],
+            "outputMappings": {
+              "status": {
+                "kind": "sources",
+                "sources": [
+                  {
+                    "kind": "node",
+                    "nodeId": "n_a701cc97464d1f88",
+                    "output": "status"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "edges": [
+          {
+            "source": "n_01c3b5413199eab3",
+            "target": "n_a701cc97464d1f88"
+          },
+          {
+            "source": "n_f9db1d90245a80d6",
+            "target": "n_a701cc97464d1f88"
+          },
+          {
+            "source": "n_a701cc97464d1f88",
+            "target": "n_876013d19d155441"
+          }
+        ]
+      }
+    },
+    "modules": {
+      "n_09b30485d527dbef": {
+        "name": "Refresh cached token if needed",
+        "imports": [],
+        "source": "export default async function cache({ endpoint }, ctx) {\n  if (!/^https:\\/\\//.test(endpoint)) throw Error(\"Configure HTTPS token endpoint\");\n  const now = Date.now(),\n    old = await ctx.state.get(\"access-token-demo\");\n  if (\n    old &&\n    typeof old.token === \"string\" &&\n    old.token &&\n    Number.isFinite(old.timestamp) &&\n    now - old.timestamp < 60000 &&\n    now >= old.timestamp\n  )\n    return { status: \"cached\" };\n  const response = await ctx.fetch(endpoint);\n  if (!response.ok) throw Error(\"Token endpoint failed\");\n  const body = await response.json();\n  if (typeof body.AccessToken !== \"string\" || !body.AccessToken)\n    throw Error(\"Response must contain AccessToken\");\n  await ctx.state.set(\"access-token-demo\", { token: body.AccessToken, timestamp: Date.now() });\n  return { status: \"refreshed\" };\n}\n"
+      }
+    }
+  },
+  "presentation": {
+    "designer": {
+      "version": 1,
+      "flow": {
+        "direction": "vertical"
+      }
+    }
+  }
+}
