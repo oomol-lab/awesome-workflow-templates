@@ -1,0 +1,320 @@
+{
+  "nodes": [
+    {
+      "id": "email-news-before-company-meetings-0",
+      "name": "Setup",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        420,
+        680
+      ],
+      "parameters": {
+        "fields": {
+          "values": [
+            {
+              "name": "newsAge",
+              "type": "numberValue",
+              "numberValue": "10"
+            },
+            {
+              "name": "maxArticles",
+              "stringValue": "20"
+            },
+            {
+              "name": "emails",
+              "stringValue": "YOUR_EMAIL@example.com"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "typeVersion": 3.2
+    },
+    {
+      "id": "email-news-before-company-meetings-1",
+      "name": "Extract company name",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        1100,
+        480
+      ],
+      "parameters": {
+        "fields": {
+          "values": [
+            {
+              "name": "companyName",
+              "stringValue": "={{ $json.summary.toLowerCase().replace('meeting with', '').replace('call with', '').trim() }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "typeVersion": 3.2
+    },
+    {
+      "id": "email-news-before-company-meetings-2",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        200,
+        320
+      ],
+      "parameters": {
+        "color": 4,
+        "width": 436,
+        "height": 192,
+        "content": "### Latest company news before a call\n\nThis workflow will send you a list of latest news about a company for every meeting in your calendar each day, keeping you up to date with your leads and meeting partners.\n"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "email-news-before-company-meetings-3",
+      "name": "Every morning @ 7",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        200,
+        680
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 7
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "email-news-before-company-meetings-4",
+      "name": "Filter meetings",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        840,
+        680
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "or",
+          "conditions": [
+            {
+              "id": "bcfb06b1-d365-43a8-9802-869529baca98",
+              "operator": {
+                "type": "string",
+                "operation": "startsWith"
+              },
+              "leftValue": "={{ $json.summary.toLowerCase() }}",
+              "rightValue": "call with"
+            },
+            {
+              "id": "4ea43ccf-d586-4985-87db-fc1e9f734351",
+              "operator": {
+                "type": "string",
+                "operation": "startsWith"
+              },
+              "leftValue": "={{ $json.summary.toLowerCase() }}",
+              "rightValue": "meeting with"
+            }
+          ]
+        }
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "email-news-before-company-meetings-5",
+      "name": "Get latest news",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        1300,
+        480
+      ],
+      "parameters": {
+        "url": "={{ \"https://newsapi.org/v2/everything?q=\" + encodeURIComponent($json.companyName) + \"&from=\" + $now.minus({days: $(\"Setup\").first().json.newsAge}).toFormat(\"yyyy-MM-dd\") + \"&sortBy=publishedAt&language=en&pageSize=\" + $(\"Setup\").first().json.maxArticles + \"&searchIn=title\" }}",
+        "options": {},
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "typeVersion": 4.1
+    },
+    {
+      "id": "email-news-before-company-meetings-6",
+      "name": "Format for email",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1500,
+        480
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const esc = (v) =>\n  String(v ?? \"\").replace(\n    /[&<>\"']/g,\n    (c) => ({ \"&\": \"&amp;\", \"<\": \"&lt;\", \">\": \"&gt;\", '\"': \"&quot;\", \"'\": \"&#39;\" })[c],\n  );\nlet rows = $json.articles\n  .map((a) => {\n    const url = typeof a.url === \"string\" && /^https?:\\/\\//i.test(a.url) ? a.url : \"\";\n    return (\n      '<tr><td><a href=\"' +\n      esc(url) +\n      '\">' +\n      esc(a.title) +\n      \"</a><p>\" +\n      esc(a.description ?? a.content) +\n      \"</p><b>Source:</b> \" +\n      esc(a.source?.name) +\n      \"</td></tr>\"\n    );\n  })\n  .join(\"\");\nreturn { json: { html: \"<table>\" + rows + \"</table>\" } };\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "email-news-before-company-meetings-7",
+      "name": "Send news",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        1700,
+        480
+      ],
+      "parameters": {
+        "sendTo": "={{ $('Setup').first().json.emails }}",
+        "message": "={{ $json.html }}",
+        "options": {},
+        "subject": "={{ \"Latest news for \" + $(\"Extract company name\").item.json.companyName }}"
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "id": "email-news-before-company-meetings-8",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        820,
+        660
+      ],
+      "parameters": {
+        "width": 231.52514020446353,
+        "height": 275.2500697149263,
+        "content": "\n\n\n\n\n\n\n\n\n\n\n\n\nThis will get all meetings that start with *Meeting with* or *Call with* but feel free to update the filter to suit your needs."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "email-news-before-company-meetings-9",
+      "name": "No meetings today",
+      "type": "n8n-nodes-base.noOp",
+      "position": [
+        1700,
+        700
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "email-news-before-company-meetings-10",
+      "name": "Get meetings for today",
+      "type": "n8n-nodes-base.googleCalendar",
+      "position": [
+        660,
+        680
+      ],
+      "parameters": {
+        "options": {
+          "timeMax": "={{ $today.plus({ days: 1 }) }}",
+          "timeMin": "={{ $today }}",
+          "singleEvents": true
+        },
+        "calendar": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_CALENDAR_ID"
+        },
+        "operation": "getAll",
+        "returnAll": true
+      },
+      "typeVersion": 1
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Setup": {
+      "main": [
+        [
+          {
+            "node": "Get meetings for today",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter meetings": {
+      "main": [
+        [
+          {
+            "node": "Extract company name",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No meetings today",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get latest news": {
+      "main": [
+        [
+          {
+            "node": "Format for email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format for email": {
+      "main": [
+        [
+          {
+            "node": "Send news",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Every morning @ 7": {
+      "main": [
+        [
+          {
+            "node": "Setup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract company name": {
+      "main": [
+        [
+          {
+            "node": "Get latest news",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get meetings for today": {
+      "main": [
+        [
+          {
+            "node": "Filter meetings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Email News Before Company Meetings",
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC"
+  }
+}
