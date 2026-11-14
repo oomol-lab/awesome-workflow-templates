@@ -806,6 +806,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 
 - [Generate a HeyGen Avatar Video](workflows/generate-a-heygen-avatar-video/) - Generate a narrated avatar video and return its finished URL.
 - [Generate Speech with ElevenLabs](workflows/generate-speech-with-elevenlabs/) - Generate an audio response from text and an ElevenLabs voice ID.
+- [ElevenLabs Voice Generation Webhook](workflows/elevenlabs-voice-generation-webhook/) - Generate an audio response from text and an ElevenLabs voice ID.
 
 ## Contribute
 
