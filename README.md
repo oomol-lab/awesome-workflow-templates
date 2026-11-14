@@ -765,6 +765,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Publish ISS Position to Kafka](workflows/publish-iss-position-to-kafka/) - Publish the current International Space Station position to a Kafka topic every minute.
 - [Save ISS Position to TimescaleDB](workflows/save-iss-position-to-timescaledb/) - Save the current International Space Station position to TimescaleDB every minute.
 - [Fetch, Transform and Deliver Posts](workflows/fetch-transform-and-deliver-posts/) - Fetch posts, select three fields from the first ten, and deliver each item to an HTTP endpoint.
+- [Publish Machine Telemetry to AMQP](workflows/publish-machine-telemetry-to-amqp/) - Generate sample machine telemetry every second and publish it to an AMQP destination.
 
 ## Communications
 
