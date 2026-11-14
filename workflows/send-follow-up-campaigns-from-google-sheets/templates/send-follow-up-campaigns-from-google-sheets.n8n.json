@@ -1,0 +1,711 @@
+{
+  "nodes": [
+    {
+      "id": "send-follow-up-campaigns-from-google-sheets-cron",
+      "name": "Every hour",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        320,
+        140
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "triggerAtMinute": 12
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "send-follow-up-campaigns-from-google-sheets-config",
+      "name": "Configure campaign",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const fn = function config({ scheduledAt }) {\n  const spreadsheetId = \"YOUR_SPREADSHEET_ID\",\n    sheetName = \"Sheet1\",\n    subject = \"YOUR_SUBJECT\";\n  const templates = [\n    { day: 0, body: \"Hello {name},<br><br>Would you like to talk about {company}?\" },\n    { day: 3, body: \"Hello {name},<br><br>Following up on my earlier message.\" },\n    { day: 8, body: \"Hello {name},<br><br>One last follow-up.\" },\n  ];\n  const quoted = \"'\" + sheetName.replace(/'/g, \"''\") + \"'\";\n  return { spreadsheetId, sheetName, range: quoted, subject, templates, now: scheduledAt };\n};\nreturn [{ json: fn({ scheduledAt: new Date().toISOString() }) }];\n"
+      }
+    },
+    {
+      "id": "send-follow-up-campaigns-from-google-sheets-read",
+      "name": "Read contacts",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ \"https://sheets.googleapis.com/v4/spreadsheets/\" + encodeURIComponent($(\"Configure campaign\").first().json.spreadsheetId) + \"/values/\" + encodeURIComponent($(\"Configure campaign\").first().json.range) }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "options": {}
+      }
+    },
+    {
+      "id": "send-follow-up-campaigns-from-google-sheets-plan",
+      "name": "Select campaign contacts",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const fn = function plan({ values, now }) {\n  const header = [\"email\", \"name\", \"company\", \"first_emailed\", \"thread_id\", \"sequence\", \"pending\"];\n  if (!Array.isArray(values) || header.some((h, i) => values[0]?.[i] !== h))\n    throw Error(\"Expected headers email,name,company,first_emailed,thread_id,sequence,pending\");\n  const weekday = new Date(now).getUTCDay();\n  if (weekday === 0 || weekday === 6) return { contacts: [] };\n  const contacts = [],\n    seen = new Set();\n  for (let i = 1; i < values.length; i++) {\n    const [email = \"\", name = \"\", company = \"\", first = \"\", thread = \"\", seq = \"\", pending = \"\"] =\n      values[i];\n    const placeholders = Object.fromEntries(values[0].map((h, j) => [h, values[i][j] ?? \"\"]));\n    if (!email) continue;\n    if (seen.has(email.toLowerCase())) throw Error(\"Duplicate recipient email\");\n    seen.add(email.toLowerCase());\n    if (pending) continue;\n    if (!first && !thread && !seq)\n      contacts.push({ email, name, company, first, thread, seq: 0, row: i + 1, placeholders });\n    else if (first && thread && /^[1-9][0-9]*$/.test(String(seq)))\n      contacts.push({\n        email,\n        name,\n        company,\n        first,\n        thread,\n        seq: Number(seq),\n        row: i + 1,\n        placeholders,\n      });\n    else throw Error(\"Incomplete campaign state for \" + email);\n  }\n  return { contacts };\n};\nreturn fn({\n  values: $json.values ?? [],\n  now: $(\"Configure campaign\").first().json.now,\n}).contacts.map((x) => ({ json: x }));\n"
+      }
+    },
+    {
+      "id": "send-follow-up-campaigns-from-google-sheets-loop",
+      "name": "Process contacts one by one",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      }
+    },
+    {
+      "id": "send-follow-up-campaigns-from-google-sheets-next",
+      "name": "Prepare next contact",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const fn = function next({ contacts, previous, templates, subject, now, sheetName }) {\n  const index = previous?.index ?? 0,\n    c = contacts[index],\n    more = !!c,\n    t = more ? templates[c.seq] : null;\n  let due = false,\n    body = \"\";\n  if (t) {\n    const days = c.first ? (Date.parse(now) - Date.parse(c.first)) / 86400000 : 0;\n    due = Number.isFinite(days) && days >= t.day;\n    if (due)\n      body = t.body.replace(/\\{([a-zA-Z0-9_-]+)\\}/g, (_, k) => {\n        if (!(k in c.placeholders)) throw Error(\"Missing placeholder column \" + k);\n        return String(c.placeholders[k] ?? \"\")\n          .replace(/&/g, \"&amp;\")\n          .replace(/</g, \"&lt;\")\n          .replace(/>/g, \"&gt;\");\n      });\n  }\n  const prefix = \"'\" + sheetName.replace(/'/g, \"''\") + \"'!\";\n  return {\n    state: { index: index + 1 },\n    more,\n    current: c ?? {},\n    due,\n    follow: !!c?.thread,\n    threadId: c?.thread ?? \"\",\n    to: c?.email ?? \"\",\n    subject,\n    body,\n    pendingRange: prefix + \"G\" + (c?.row ?? 2),\n    finalRange: prefix + \"D\" + (c?.row ?? 2) + \":G\" + (c?.row ?? 2),\n    now,\n  };\n};\nconst c = $(\"Configure campaign\").first().json;\nreturn [\n  {\n    json: fn({\n      contacts: [$json],\n      previous: null,\n      templates: c.templates,\n      subject: c.subject,\n      now: c.now,\n      sheetName: c.sheetName,\n    }),\n    pairedItem: { item: 0 },\n  },\n];\n"
+      }
+    },
+    {
+      "id": "send-follow-up-campaigns-from-google-sheets-due",
+      "name": "Message due?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "send-follow-up-campaigns-from-google-sheets-due-if",
+              "leftValue": "={{ $json.due }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "send-follow-up-campaigns-from-google-sheets-follow",
+      "name": "Existing thread?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "send-follow-up-campaigns-from-google-sheets-follow-if",
+              "leftValue": "={{ $json.follow }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "send-follow-up-campaigns-from-google-sheets-get",
+      "name": "Read conversation",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        1500,
+        620
+      ],
+      "parameters": {
+        "simple": false,
+        "options": {},
+        "resource": "thread",
+        "threadId": "={{ $(\"Prepare next contact\").item.json.threadId }}",
+        "operation": "get"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "send-follow-up-campaigns-from-google-sheets-check",
+      "name": "Check for recipient replies",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const fn = function check({ body, statusCode }) {\n  if (\n    statusCode < 200 ||\n    statusCode >= 300 ||\n    !body ||\n    !Array.isArray(body.messages) ||\n    !body.messages.length\n  )\n    throw Error(\"Cannot verify Gmail conversation\");\n  return {\n    unanswered: body.messages.every(\n      (m) =>\n        (Array.isArray(m.labelIds) && m.labelIds.includes(\"SENT\")) ||\n        (Array.isArray(m.labels) && m.labels.some((x) => x.id === \"SENT\")),\n    ),\n  };\n};\nreturn [{ json: fn({ body: $json, statusCode: 200 }), pairedItem: { item: 0 } }];\n"
+      }
+    },
+    {
+      "id": "send-follow-up-campaigns-from-google-sheets-unanswered",
+      "name": "Still unanswered?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "send-follow-up-campaigns-from-google-sheets-unanswered-if",
+              "leftValue": "={{ $json.unanswered }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "send-follow-up-campaigns-from-google-sheets-send",
+      "name": "Send first email",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        2380,
+        1240
+      ],
+      "parameters": {
+        "sendTo": "={{ $(\"Prepare next contact\").item.json.to }}",
+        "subject": "={{ $(\"Prepare next contact\").item.json.subject }}",
+        "emailType": "html",
+        "message": "={{ $(\"Prepare next contact\").item.json.body }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "id": "send-follow-up-campaigns-from-google-sheets-reply",
+      "name": "Send follow-up",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        2380,
+        1020
+      ],
+      "parameters": {
+        "operation": "reply",
+        "emailType": "html",
+        "messageId": "={{ $(\"Read conversation\").item.json.messages.at(-1).id }}",
+        "message": "={{ $(\"Prepare next contact\").item.json.body }}",
+        "options": {
+          "appendAttribution": false,
+          "replyToRecipientsOnly": true
+        }
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "send-follow-up-campaigns-from-google-sheets-pending-initial",
+      "name": "Mark initial pending",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ \"https://sheets.googleapis.com/v4/spreadsheets/\" + encodeURIComponent($(\"Configure campaign\").first().json.spreadsheetId) + \"/values/\" + encodeURIComponent($(\"Prepare next contact\").item.json.pendingRange) + \"?valueInputOption=RAW\" }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {values:[[\"pending\"]]} }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "send-follow-up-campaigns-from-google-sheets-confirm-pending-initial",
+      "name": "Confirm initial pending",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const fn = function confirm({ updatedCells, expected }) {\n  if (updatedCells !== expected) throw Error(\"Sheet update was not confirmed\");\n  return { ok: true };\n};\nreturn [{ json: fn({ updatedCells: $json.updatedCells, expected: 1 }), pairedItem: { item: 0 } }];\n"
+      }
+    },
+    {
+      "id": "send-follow-up-campaigns-from-google-sheets-final-initial",
+      "name": "Prepare initial confirmation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const fn = function final({ current, threadId, now }) {\n  if (!threadId)\n    throw Error(\"Sent message has no thread ID; inspect Gmail before clearing pending\");\n  return { values: [[current.first || now, threadId, String(current.seq + 1), \"\"]] };\n};\nreturn [\n  {\n    json: fn({\n      current: $(\"Prepare next contact\").item.json.current,\n      threadId: $json.threadId,\n      now: $(\"Configure campaign\").first().json.now,\n    }),\n    pairedItem: { item: 0 },\n  },\n];\n"
+      }
+    },
+    {
+      "id": "send-follow-up-campaigns-from-google-sheets-write-initial",
+      "name": "Record initial success",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ \"https://sheets.googleapis.com/v4/spreadsheets/\" + encodeURIComponent($(\"Configure campaign\").first().json.spreadsheetId) + \"/values/\" + encodeURIComponent($(\"Prepare next contact\").item.json.finalRange) + \"?valueInputOption=RAW\" }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {values:$json.values} }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "send-follow-up-campaigns-from-google-sheets-confirm-initial",
+      "name": "Confirm initial success",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const fn = function confirm({ updatedCells, expected }) {\n  if (updatedCells !== expected) throw Error(\"Sheet update was not confirmed\");\n  return { ok: true };\n};\nreturn [{ json: fn({ updatedCells: $json.updatedCells, expected: 4 }), pairedItem: { item: 0 } }];\n"
+      }
+    },
+    {
+      "id": "send-follow-up-campaigns-from-google-sheets-pending-followup",
+      "name": "Mark followup pending",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ \"https://sheets.googleapis.com/v4/spreadsheets/\" + encodeURIComponent($(\"Configure campaign\").first().json.spreadsheetId) + \"/values/\" + encodeURIComponent($(\"Prepare next contact\").item.json.pendingRange) + \"?valueInputOption=RAW\" }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {values:[[\"pending\"]]} }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "send-follow-up-campaigns-from-google-sheets-confirm-pending-followup",
+      "name": "Confirm followup pending",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const fn = function confirm({ updatedCells, expected }) {\n  if (updatedCells !== expected) throw Error(\"Sheet update was not confirmed\");\n  return { ok: true };\n};\nreturn [{ json: fn({ updatedCells: $json.updatedCells, expected: 1 }), pairedItem: { item: 0 } }];\n"
+      }
+    },
+    {
+      "id": "send-follow-up-campaigns-from-google-sheets-final-followup",
+      "name": "Prepare followup confirmation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const fn = function final({ current, threadId, now }) {\n  if (!threadId)\n    throw Error(\"Sent message has no thread ID; inspect Gmail before clearing pending\");\n  return { values: [[current.first || now, threadId, String(current.seq + 1), \"\"]] };\n};\nreturn [\n  {\n    json: fn({\n      current: $(\"Prepare next contact\").item.json.current,\n      threadId: $(\"Prepare next contact\").item.json.threadId,\n      now: $(\"Configure campaign\").first().json.now,\n    }),\n    pairedItem: { item: 0 },\n  },\n];\n"
+      }
+    },
+    {
+      "id": "send-follow-up-campaigns-from-google-sheets-write-followup",
+      "name": "Record followup success",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ \"https://sheets.googleapis.com/v4/spreadsheets/\" + encodeURIComponent($(\"Configure campaign\").first().json.spreadsheetId) + \"/values/\" + encodeURIComponent($(\"Prepare next contact\").item.json.finalRange) + \"?valueInputOption=RAW\" }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {values:$json.values} }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "send-follow-up-campaigns-from-google-sheets-confirm-followup",
+      "name": "Confirm followup success",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const fn = function confirm({ updatedCells, expected }) {\n  if (updatedCells !== expected) throw Error(\"Sheet update was not confirmed\");\n  return { ok: true };\n};\nreturn [{ json: fn({ updatedCells: $json.updatedCells, expected: 4 }), pairedItem: { item: 0 } }];\n"
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Every hour": {
+      "main": [
+        [
+          {
+            "node": "Configure campaign",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configure campaign": {
+      "main": [
+        [
+          {
+            "node": "Read contacts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read contacts": {
+      "main": [
+        [
+          {
+            "node": "Select campaign contacts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select campaign contacts": {
+      "main": [
+        [
+          {
+            "node": "Process contacts one by one",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process contacts one by one": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Prepare next contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare next contact": {
+      "main": [
+        [
+          {
+            "node": "Message due?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message due?": {
+      "main": [
+        [
+          {
+            "node": "Existing thread?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Process contacts one by one",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Existing thread?": {
+      "main": [
+        [
+          {
+            "node": "Read conversation",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mark initial pending",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read conversation": {
+      "main": [
+        [
+          {
+            "node": "Check for recipient replies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check for recipient replies": {
+      "main": [
+        [
+          {
+            "node": "Still unanswered?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Still unanswered?": {
+      "main": [
+        [
+          {
+            "node": "Mark followup pending",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Process contacts one by one",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark initial pending": {
+      "main": [
+        [
+          {
+            "node": "Confirm initial pending",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm initial pending": {
+      "main": [
+        [
+          {
+            "node": "Send first email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send first email": {
+      "main": [
+        [
+          {
+            "node": "Prepare initial confirmation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare initial confirmation": {
+      "main": [
+        [
+          {
+            "node": "Record initial success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record initial success": {
+      "main": [
+        [
+          {
+            "node": "Confirm initial success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm initial success": {
+      "main": [
+        [
+          {
+            "node": "Process contacts one by one",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark followup pending": {
+      "main": [
+        [
+          {
+            "node": "Confirm followup pending",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm followup pending": {
+      "main": [
+        [
+          {
+            "node": "Send follow-up",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send follow-up": {
+      "main": [
+        [
+          {
+            "node": "Prepare followup confirmation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare followup confirmation": {
+      "main": [
+        [
+          {
+            "node": "Record followup success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record followup success": {
+      "main": [
+        [
+          {
+            "node": "Confirm followup success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm followup success": {
+      "main": [
+        [
+          {
+            "node": "Process contacts one by one",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Send Follow-up Campaigns from Google Sheets",
+  "active": false,
+  "settings": {
+    "timezone": "UTC",
+    "executionOrder": "v1"
+  }
+}
