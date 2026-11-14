@@ -650,6 +650,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Receive ClickUp Workspace Events](workflows/receive-clickup-workspace-events/) - Receive workspace events from ClickUp.
 - [Receive Calendly Invitee Events](workflows/receive-calendly-invitee-events/) - Receive Calendly booking and cancellation events.
 - [Receive GitHub Repository Events](workflows/receive-github-repository-events/) - Receive webhook events from a GitHub repository.
+- [Receive GitLab Repository Events](workflows/receive-gitlab-repository-events/) - Receive webhook events from a GitLab project.
 
 ## Communication
 
