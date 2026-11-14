@@ -645,6 +645,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Receive Trello List Changes](workflows/receive-trello-list-changes/) - Receive change events for a Trello list.
 - [Send Customer Posts With Delay](workflows/send-customer-posts-with-delay/) - Post customer IDs and names one at a time with a four-second delay.
 - [Notify Slack About Linear Bugs](workflows/notify-slack-linear-bug/) - Send a Slack notification for Linear issue events that match the configured bug filter.
+- [Receive ClickUp Workspace Events](workflows/receive-clickup-workspace-events/) - Receive workspace events from ClickUp.
 
 ## Communication
 
