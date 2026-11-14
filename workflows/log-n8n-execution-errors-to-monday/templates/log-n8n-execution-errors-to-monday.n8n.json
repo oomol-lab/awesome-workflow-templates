@@ -1,0 +1,202 @@
+{
+  "nodes": [
+    {
+      "id": "log-n8n-execution-errors-to-monday-0",
+      "name": "Monday",
+      "type": "n8n-nodes-base.mondayCom",
+      "notes": "CREATE ERROR ITEM",
+      "position": [
+        620,
+        240
+      ],
+      "parameters": {
+        "name": "={{ \"\".concat($('Error Trigger').last().json.execution.id) }}",
+        "boardId": "YOUR_BOARD_ID",
+        "groupId": "YOUR_GROUP_ID",
+        "resource": "boardItem",
+        "additionalFields": {}
+      },
+      "notesInFlow": true,
+      "typeVersion": 1
+    },
+    {
+      "id": "log-n8n-execution-errors-to-monday-2",
+      "name": "Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "position": [
+        380,
+        240
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "log-n8n-execution-errors-to-monday-4",
+      "name": "UPDATE",
+      "type": "n8n-nodes-base.mondayCom",
+      "notes": "POPULUATE MONDAY ITEM",
+      "position": [
+        1280,
+        240
+      ],
+      "parameters": {
+        "itemId": "={{ $('Monday').last().json.id }}",
+        "boardId": "YOUR_BOARD_ID",
+        "resource": "boardItem",
+        "operation": "changeMultipleColumnValues",
+        "columnValues": "={{ JSON.stringify($json.columnValues) }}"
+      },
+      "notesInFlow": true,
+      "typeVersion": 1
+    },
+    {
+      "id": "log-n8n-execution-errors-to-monday-choose-delivery-mode",
+      "name": "Choose delivery mode",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return [{ json: { ...$input.first().json, deliveryMode: \"direct\" } }];\n"
+      }
+    },
+    {
+      "id": "log-n8n-execution-errors-to-monday-mode",
+      "name": "Relay selected?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        200,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "mode",
+              "leftValue": "={{ $json.deliveryMode }}",
+              "rightValue": "relay",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "log-n8n-execution-errors-to-monday-prepare-monday-columns",
+      "name": "Prepare Monday columns",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        800,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const e = $(\"Error Trigger\").first().json;\nconst ids = [\n  \"YOUR_WORKFLOW_COLUMN_ID\",\n  \"YOUR_STACK_COLUMN_ID\",\n  \"YOUR_MESSAGE_COLUMN_ID\",\n  \"YOUR_DATE_COLUMN_ID\",\n];\nif (ids.some((x) => x.startsWith(\"YOUR_\")) || new Set(ids).size !== 4)\n  throw Error(\"Configure Monday column IDs\");\nreturn [\n  {\n    json: {\n      columnValues: {\n        [ids[0]]: e.workflow.name,\n        [ids[1]]: { text: escape(e.execution.error.stack) },\n        [ids[2]]: e.execution.error.message,\n        [ids[3]]: new Date().toISOString(),\n      },\n    },\n  },\n];\n"
+      }
+    },
+    {
+      "id": "log-n8n-execution-errors-to-monday-relay",
+      "name": "Forward error to Open Flow",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        450,
+        -100
+      ],
+      "parameters": {
+        "authentication": "none",
+        "method": "POST",
+        "url": "https://YOUR_OPEN_FLOW_HOST/v1/webhooks/YOUR_ENDPOINT",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $(\"Error Trigger\").first().json }}",
+        "options": {}
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Choose delivery mode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Choose delivery mode": {
+      "main": [
+        [
+          {
+            "node": "Relay selected?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Relay selected?": {
+      "main": [
+        [
+          {
+            "node": "Forward error to Open Flow",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Monday",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Monday": {
+      "main": [
+        [
+          {
+            "node": "Prepare Monday columns",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Monday columns": {
+      "main": [
+        [
+          {
+            "node": "UPDATE",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Log n8n Execution Errors to Monday",
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
