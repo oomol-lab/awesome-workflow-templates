@@ -1,0 +1,702 @@
+{
+  "nodes": [
+    {
+      "id": "route-matching-gmail-pdfs-to-drive-0",
+      "name": "Read PDF",
+      "type": "n8n-nodes-base.extractFromFile",
+      "position": [
+        860,
+        1420
+      ],
+      "parameters": {
+        "operation": "pdf",
+        "binaryPropertyName": "data",
+        "options": {
+          "keepSource": "both"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "route-matching-gmail-pdfs-to-drive-1",
+      "name": "Configure",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        -20,
+        1520
+      ],
+      "parameters": {
+        "values": {
+          "number": [
+            {
+              "name": "maxTokenSize",
+              "value": 4000
+            },
+            {
+              "name": "replyTokenSize",
+              "value": 50
+            }
+          ],
+          "string": [
+            {
+              "name": "Match on",
+              "value": "payslip"
+            },
+            {
+              "name": "Google Drive folder to upload matched PDFs",
+              "value": "YOUR_DRIVE_FOLDER_ID"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "route-matching-gmail-pdfs-to-drive-2",
+      "name": "Is PDF",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        640,
+        1520
+      ],
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $binary.data.fileExtension }}",
+              "value2": "pdf"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "route-matching-gmail-pdfs-to-drive-3",
+      "name": "Not a PDF",
+      "type": "n8n-nodes-base.noOp",
+      "position": [
+        860,
+        1620
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "route-matching-gmail-pdfs-to-drive-4",
+      "name": "Is matched",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1720,
+        1480
+      ],
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json[\"text\"] }}",
+              "value2": "true"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "route-matching-gmail-pdfs-to-drive-5",
+      "name": "This is a matched PDF",
+      "type": "n8n-nodes-base.noOp",
+      "position": [
+        1940,
+        1380
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "route-matching-gmail-pdfs-to-drive-6",
+      "name": "This is not a matched PDF",
+      "type": "n8n-nodes-base.noOp",
+      "position": [
+        1940,
+        1580
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "route-matching-gmail-pdfs-to-drive-7",
+      "name": "Iterate over email attachments",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        420,
+        1420
+      ],
+      "parameters": {
+        "jsCode": "const results = [];\nfor (const [index, item] of $input.all().entries())\n  for (const key of Object.keys(item.binary ?? {}))\n    results.push({\n      json: { messageId: item.json.id, attachmentKey: key },\n      binary: { data: item.binary[key] },\n      pairedItem: { item: index },\n    });\nreturn results;\n"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "route-matching-gmail-pdfs-to-drive-8",
+      "name": "OpenAI matches PDF textual content",
+      "type": "n8n-nodes-base.openAi",
+      "position": [
+        1300,
+        1340
+      ],
+      "parameters": {
+        "prompt": "=Does this PDF file look like a {{ $(\"Configure\").first().json[\"Match on\"] }}? Return \"true\" if it is a {{ $(\"Configure\").first().json[\"Match on\"] }} and \"false\" if not. Only reply with lowercase letters \"true\" or \"false\".\n\nThis is the PDF filename:\n```\n{{ $binary.data.fileName }}\n```\n\nThis is the PDF text content:\n```\n{{ $json.text }}\n```",
+        "options": {
+          "maxTokens": "={{ $('Configure').first().json.replyTokenSize }}",
+          "temperature": 0.1
+        }
+      },
+      "typeVersion": 1,
+      "alwaysOutputData": false
+    },
+    {
+      "id": "route-matching-gmail-pdfs-to-drive-9",
+      "name": "Merge",
+      "type": "n8n-nodes-base.merge",
+      "position": [
+        1500,
+        1480
+      ],
+      "parameters": {
+        "mode": "combine",
+        "options": {
+          "clashHandling": {
+            "values": {
+              "resolveClash": "preferInput1"
+            }
+          }
+        },
+        "combinationMode": "mergeByPosition"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "route-matching-gmail-pdfs-to-drive-10",
+      "name": "Upload file to folder",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [
+        2160,
+        1380
+      ],
+      "parameters": {
+        "name": "={{ $binary.data.fileName }}",
+        "options": {},
+        "parents": [
+          "={{ $(\"Configure\").first().json[\"Google Drive folder to upload matched PDFs\"] }}"
+        ],
+        "binaryData": true
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "route-matching-gmail-pdfs-to-drive-11",
+      "name": "On email received",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "position": [
+        -240,
+        1520
+      ],
+      "parameters": {
+        "simple": false,
+        "filters": {},
+        "options": {
+          "downloadAttachments": true,
+          "dataPropertyAttachmentsPrefixName": "attachment_"
+        },
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "route-matching-gmail-pdfs-to-drive-12",
+      "name": "Ignore large PDFs",
+      "type": "n8n-nodes-base.noOp",
+      "position": [
+        1300,
+        1620
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "route-matching-gmail-pdfs-to-drive-13",
+      "name": "Is text within token limit?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1080,
+        1520
+      ],
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.text.length() / 4 <= $('Configure').first().json.maxTokenSize - $('Configure').first().json.replyTokenSize }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "route-matching-gmail-pdfs-to-drive-14",
+      "name": "Has attachments?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        200,
+        1520
+      ],
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $('On email received').item.binary.isNotEmpty() }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "route-matching-gmail-pdfs-to-drive-15",
+      "name": "There are no attachments",
+      "type": "n8n-nodes-base.noOp",
+      "position": [
+        420,
+        1620
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "route-matching-gmail-pdfs-to-drive-choose-mode",
+      "name": "Choose mode",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const mode = \"direct\";\nif (![\"direct\", \"relay\"].includes(mode)) throw Error(\"Choose direct or relay\");\nreturn { json: { ...$json, openFlowMode: mode === \"relay\" }, binary: $binary };\n"
+      },
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "id": "route-matching-gmail-pdfs-to-drive-use-open-flow-",
+      "name": "Use Open Flow?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "relay",
+              "leftValue": "={{ $(\"Choose mode\").item.json.openFlowMode }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "id": "route-matching-gmail-pdfs-to-drive-classify-pdf-with-open-flow",
+      "name": "Classify PDF with Open Flow",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "YOUR_OPENFLOW_WEBHOOK_URL",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {filename:$binary.data.fileName,text:$json.text,matchOn:$(\"Configure\").first().json[\"Match on\"],messageId:$json.messageId,attachmentKey:$json.attachmentKey,folderId:$(\"Configure\").first().json[\"Google Drive folder to upload matched PDFs\"]} }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "id": "route-matching-gmail-pdfs-to-drive-convert-classification",
+      "name": "Convert classification",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if (typeof $json.matched !== \"boolean\") throw Error(\"Invalid classification\");\nreturn { json: { text: String($json.matched) } };\n"
+      },
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "id": "route-matching-gmail-pdfs-to-drive-upload-relay-webhook",
+      "name": "Upload relay webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "route-matching-gmail-pdfs-to-drive-upload",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "id": "route-matching-gmail-pdfs-to-drive-reload-original-gmail-message",
+      "name": "Reload original Gmail message",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "parameters": {
+        "resource": "message",
+        "operation": "get",
+        "messageId": "={{ $json.body.messageId }}",
+        "simple": false,
+        "options": {
+          "downloadAttachments": true,
+          "dataPropertyAttachmentsPrefixName": "attachment_"
+        }
+      },
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "id": "route-matching-gmail-pdfs-to-drive-select-original-attachment",
+      "name": "Select original attachment",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const x = $(\"Upload relay webhook\").first().json.body;\nconst f = $binary[x.attachmentKey];\nif (!f || f.fileName !== x.filename) throw Error(\"Original attachment not found\");\nreturn { json: { folderId: x.folderId, filename: x.filename }, binary: { data: f } };\n"
+      },
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "id": "route-matching-gmail-pdfs-to-drive-relay-upload",
+      "name": "Upload selected attachment",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [
+        2160,
+        1380
+      ],
+      "parameters": {
+        "name": "={{ $json.filename }}",
+        "options": {},
+        "parents": [
+          "={{ $json.folderId }}"
+        ],
+        "binaryData": true
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "route-matching-gmail-pdfs-to-drive-confirm-uploaded-file",
+      "name": "Confirm uploaded file",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {id:$json.id} }}",
+        "options": {}
+      },
+      "position": [
+        0,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Is matched",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is PDF": {
+      "main": [
+        [
+          {
+            "node": "Read PDF",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Not a PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read PDF": {
+      "main": [
+        [
+          {
+            "node": "Is text within token limit?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configure": {
+      "main": [
+        [
+          {
+            "node": "Has attachments?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is matched": {
+      "main": [
+        [
+          {
+            "node": "This is a matched PDF",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "This is not a matched PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has attachments?": {
+      "main": [
+        [
+          {
+            "node": "Iterate over email attachments",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "There are no attachments",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "On email received": {
+      "main": [
+        [
+          {
+            "node": "Choose mode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "This is a matched PDF": {
+      "main": [
+        [
+          {
+            "node": "Upload file to folder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is text within token limit?": {
+      "main": [
+        [
+          {
+            "node": "Use Open Flow?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Ignore large PDFs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Iterate over email attachments": {
+      "main": [
+        [
+          {
+            "node": "Is PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI matches PDF textual content": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Choose mode": {
+      "main": [
+        [
+          {
+            "node": "Configure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Use Open Flow?": {
+      "main": [
+        [
+          {
+            "node": "Classify PDF with Open Flow",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "OpenAI matches PDF textual content",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Classify PDF with Open Flow": {
+      "main": [
+        []
+      ]
+    },
+    "Upload relay webhook": {
+      "main": [
+        [
+          {
+            "node": "Reload original Gmail message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reload original Gmail message": {
+      "main": [
+        [
+          {
+            "node": "Select original attachment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select original attachment": {
+      "main": [
+        [
+          {
+            "node": "Upload selected attachment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload selected attachment": {
+      "main": [
+        [
+          {
+            "node": "Confirm uploaded file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert classification": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Route Matching Gmail PDFs to Drive",
+  "active": false,
+  "pinData": {}
+}
