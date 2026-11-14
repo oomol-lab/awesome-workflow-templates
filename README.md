@@ -651,6 +651,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Receive Calendly Invitee Events](workflows/receive-calendly-invitee-events/) - Receive Calendly booking and cancellation events.
 - [Receive GitHub Repository Events](workflows/receive-github-repository-events/) - Receive webhook events from a GitHub repository.
 - [Receive GitLab Repository Events](workflows/receive-gitlab-repository-events/) - Receive webhook events from a GitLab project.
+- [Download an S3 Folder as ZIP](workflows/download-s3-folder-as-zip/) - Download nonempty files directly within an S3 folder into a ZIP archive.
 
 ## Communication
 

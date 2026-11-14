@@ -1,0 +1,229 @@
+{
+  "kind": "open-flow-workflow",
+  "version": 1,
+  "name": "Download an S3 Folder as ZIP",
+  "content": {
+    "modelVersion": 15,
+    "document": {
+      "bindings": {},
+      "graph": {
+        "nodes": {
+          "n_1601b92a6878d28b": {
+            "name": "Start",
+            "kind": "start",
+            "inputDefs": []
+          },
+          "n_5fa28b88571d370a": {
+            "inputs": {
+              "bucket": {
+                "kind": "value",
+                "value": "YOUR_BUCKET"
+              },
+              "region": {
+                "kind": "value",
+                "value": "us-east-1"
+              },
+              "prefix": {
+                "kind": "value",
+                "value": "YOUR_FOLDER/"
+              }
+            },
+            "name": "List folder objects",
+            "kind": "task",
+            "task": {
+              "inputs": [
+                {
+                  "jsonSchema": {
+                    "type": "string"
+                  },
+                  "nullable": false,
+                  "handle": "bucket"
+                },
+                {
+                  "jsonSchema": {
+                    "type": "string"
+                  },
+                  "nullable": false,
+                  "handle": "region"
+                },
+                {
+                  "jsonSchema": {
+                    "type": "string"
+                  },
+                  "nullable": false,
+                  "handle": "prefix"
+                }
+              ],
+              "outputs": [
+                {
+                  "jsonSchema": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": true
+                    }
+                  },
+                  "nullable": false,
+                  "handle": "objects"
+                }
+              ],
+              "name": "List folder objects",
+              "moduleId": "n_980cef13b00cc906",
+              "capabilities": [
+                {
+                  "kind": "connector",
+                  "mode": "independent",
+                  "actions": [
+                    {
+                      "action": "aws_s3.list_objects"
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          "n_2c68a0bd7de36289": {
+            "inputs": {
+              "objects": {
+                "kind": "sources",
+                "sources": [
+                  {
+                    "kind": "node",
+                    "nodeId": "n_5fa28b88571d370a",
+                    "output": "objects"
+                  }
+                ]
+              },
+              "bucket": {
+                "kind": "value",
+                "value": "YOUR_BUCKET"
+              },
+              "region": {
+                "kind": "value",
+                "value": "us-east-1"
+              }
+            },
+            "name": "Download and archive objects",
+            "kind": "task",
+            "task": {
+              "inputs": [
+                {
+                  "jsonSchema": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": true
+                    }
+                  },
+                  "nullable": false,
+                  "handle": "objects"
+                },
+                {
+                  "jsonSchema": {
+                    "type": "string"
+                  },
+                  "nullable": false,
+                  "handle": "bucket"
+                },
+                {
+                  "jsonSchema": {
+                    "type": "string"
+                  },
+                  "nullable": false,
+                  "handle": "region"
+                }
+              ],
+              "outputs": [
+                {
+                  "jsonSchema": {
+                    "contentMediaType": "oomol/artifact"
+                  },
+                  "nullable": false,
+                  "handle": "archive"
+                }
+              ],
+              "name": "Download and archive objects",
+              "moduleId": "n_fecdc8c1a75b4d01",
+              "capabilities": [
+                {
+                  "kind": "connector",
+                  "mode": "independent",
+                  "actions": [
+                    {
+                      "action": "aws_s3.download_object"
+                    }
+                  ]
+                },
+                {
+                  "kind": "http",
+                  "hosts": [
+                    "example.com"
+                  ]
+                }
+              ]
+            }
+          },
+          "n_ca8aa4edac79f398": {
+            "name": "ZIP archive",
+            "kind": "outputs",
+            "outputDefs": [
+              {
+                "jsonSchema": {
+                  "contentMediaType": "oomol/artifact"
+                },
+                "nullable": false,
+                "handle": "archive"
+              }
+            ],
+            "outputMappings": {
+              "archive": {
+                "kind": "sources",
+                "sources": [
+                  {
+                    "kind": "node",
+                    "nodeId": "n_2c68a0bd7de36289",
+                    "output": "archive"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "edges": [
+          {
+            "source": "n_1601b92a6878d28b",
+            "target": "n_5fa28b88571d370a"
+          },
+          {
+            "source": "n_5fa28b88571d370a",
+            "target": "n_2c68a0bd7de36289"
+          },
+          {
+            "source": "n_2c68a0bd7de36289",
+            "target": "n_ca8aa4edac79f398"
+          }
+        ]
+      }
+    },
+    "modules": {
+      "n_980cef13b00cc906": {
+        "name": "List folder objects",
+        "imports": [],
+        "source": "export default async function list({ bucket, region, prefix }, context) {\n  if (!bucket || bucket.startsWith(\"YOUR_\") || !region) throw Error(\"Configure bucket and region\");\n  const objects = [],\n    seen = new Set();\n  let token = null;\n  do {\n    const page = await context.actions.call(\"aws_s3.list_objects\", {\n      bucket,\n      region,\n      prefix,\n      delimiter: \"/\",\n      maxKeys: 1000,\n      ...(token ? { continuationToken: token } : {}),\n    });\n    if (!Array.isArray(page.objects) || typeof page.isTruncated !== \"boolean\")\n      throw Error(\"Invalid S3 page\");\n    for (const o of page.objects) {\n      if (typeof o.name !== \"string\" || !o.name.startsWith(prefix) || !Number.isSafeInteger(o.size))\n        throw Error(\"Invalid S3 object\");\n      if (o.size > 0 && !o.name.endsWith(\"/\")) objects.push(o);\n    }\n    const next = page.isTruncated ? page.nextContinuationToken : null;\n    if (page.isTruncated && (!next || seen.has(next))) throw Error(\"Invalid continuation token\");\n    if (next) seen.add(next);\n    token = next;\n  } while (token);\n  return { objects };\n}\n"
+      },
+      "n_fecdc8c1a75b4d01": {
+        "name": "Download and archive objects",
+        "imports": [],
+        "source": "/* fflate 0.7.4 license:\nMIT License\n\nCopyright (c) 2020 Arjun Barrett\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n*/\nvar A = Uint8Array,\n  U = Uint16Array,\n  _ = Uint32Array,\n  vr = new A([\n    0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 0, 0, 0, 0,\n  ]),\n  hr = new A([\n    0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13,\n    13, 0, 0,\n  ]),\n  wr = new A([16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15]),\n  Tr = function (n, r) {\n    var e = new U(31);\n    for (var t = 0; t < 31; ++t) e[t] = r += 1 << n[t - 1];\n    var i = new _(e[30]);\n    for (var t = 1; t < 30; ++t) for (var a = e[t]; a < e[t + 1]; ++a) i[a] = ((a - e[t]) << 5) | t;\n    return [e, i];\n  },\n  Ur = Tr(vr, 2),\n  Or = Ur[0],\n  ar = Ur[1];\n((Or[28] = 258), (ar[258] = 28));\nvar Dr = Tr(hr, 0),\n  Vr = Dr[0],\n  mr = Dr[1],\n  or = new U(32768);\nfor (h = 0; h < 32768; ++h)\n  ((N = ((h & 43690) >>> 1) | ((h & 21845) << 1)),\n    (N = ((N & 52428) >>> 2) | ((N & 13107) << 2)),\n    (N = ((N & 61680) >>> 4) | ((N & 3855) << 4)),\n    (or[h] = (((N & 65280) >>> 8) | ((N & 255) << 8)) >>> 1));\nvar N,\n  h,\n  X = function (n, r, e) {\n    var t = n.length,\n      i = 0,\n      a = new U(r);\n    for (; i < t; ++i) if (n[i]) ++a[n[i] - 1];\n    var u = new U(r);\n    for (i = 0; i < r; ++i) u[i] = (u[i - 1] + a[i - 1]) << 1;\n    var s;\n    if (e) {\n      s = new U(1 << r);\n      var c = 15 - r;\n      for (i = 0; i < t; ++i)\n        if (n[i]) {\n          var f = (i << 4) | n[i],\n            o = r - n[i],\n            v = u[n[i] - 1]++ << o;\n          for (var p = v | ((1 << o) - 1); v <= p; ++v) s[or[v] >>> c] = f;\n        }\n    } else {\n      s = new U(t);\n      for (i = 0; i < t; ++i) if (n[i]) s[i] = or[u[n[i] - 1]++] >>> (15 - n[i]);\n    }\n    return s;\n  },\n  W = new A(288);\nfor (h = 0; h < 144; ++h) W[h] = 8;\nvar h;\nfor (h = 144; h < 256; ++h) W[h] = 9;\nvar h;\nfor (h = 256; h < 280; ++h) W[h] = 7;\nvar h;\nfor (h = 280; h < 288; ++h) W[h] = 8;\nvar h,\n  b = new A(32);\nfor (h = 0; h < 32; ++h) b[h] = 5;\nvar h,\n  Lr = X(W, 9, 0);\nvar Pr = X(b, 5, 0);\nvar Cr = function (n) {\n    return ((n + 7) / 8) | 0;\n  },\n  Er = function (n, r, e) {\n    if (r == null || r < 0) r = 0;\n    if (e == null || e > n.length) e = n.length;\n    var t = new (n.BYTES_PER_ELEMENT == 2 ? U : n.BYTES_PER_ELEMENT == 4 ? _ : A)(e - r);\n    return (t.set(n.subarray(r, e)), t);\n  };\nvar Nr = [\n    \"unexpected EOF\",\n    \"invalid block type\",\n    \"invalid length/literal\",\n    \"invalid distance\",\n    \"stream finished\",\n    \"no stream handler\",\n    ,\n    \"no callback\",\n    \"invalid UTF-8 data\",\n    \"extra field too long\",\n    \"date not in range 1980-2099\",\n    \"filename too long\",\n    \"stream finishing\",\n    \"invalid zip data\",\n  ],\n  rr = function (n, r, e) {\n    var t = Error(r || Nr[n]);\n    if (((t.code = n), Error.captureStackTrace)) Error.captureStackTrace(t, rr);\n    if (!e) throw t;\n    return t;\n  };\nvar q = function (n, r, e) {\n    e <<= r & 7;\n    var t = (r / 8) | 0;\n    ((n[t] |= e), (n[t + 1] |= e >>> 8));\n  },\n  Q = function (n, r, e) {\n    e <<= r & 7;\n    var t = (r / 8) | 0;\n    ((n[t] |= e), (n[t + 1] |= e >>> 8), (n[t + 2] |= e >>> 16));\n  },\n  ir = function (n, r) {\n    var e = [];\n    for (var t = 0; t < n.length; ++t) if (n[t]) e.push({ s: t, f: n[t] });\n    var i = e.length,\n      a = e.slice();\n    if (!i) return [lr, 0];\n    if (i == 1) {\n      var u = new A(e[0].s + 1);\n      return ((u[e[0].s] = 1), [u, 1]);\n    }\n    (e.sort(function (F, T) {\n      return F.f - T.f;\n    }),\n      e.push({ s: -1, f: 25001 }));\n    var s = e[0],\n      c = e[1],\n      f = 0,\n      o = 1,\n      v = 2;\n    e[0] = { s: -1, f: s.f + c.f, l: s, r: c };\n    while (o != i - 1)\n      ((s = e[e[f].f < e[v].f ? f++ : v++]),\n        (c = e[f != o && e[f].f < e[v].f ? f++ : v++]),\n        (e[o++] = { s: -1, f: s.f + c.f, l: s, r: c }));\n    var p = a[0].s;\n    for (var t = 1; t < i; ++t) if (a[t].s > p) p = a[t].s;\n    var g = new U(p + 1),\n      m = fr(e[o - 1], g, 0);\n    if (m > r) {\n      var t = 0,\n        y = 0,\n        M = m - r,\n        G = 1 << M;\n      a.sort(function (T, w) {\n        return g[w.s] - g[T.s] || T.f - w.f;\n      });\n      for (; t < i; ++t) {\n        var D = a[t].s;\n        if (g[D] > r) ((y += G - (1 << (m - g[D]))), (g[D] = r));\n        else break;\n      }\n      y >>>= M;\n      while (y > 0) {\n        var R = a[t].s;\n        if (g[R] < r) y -= 1 << (r - g[R]++ - 1);\n        else ++t;\n      }\n      for (; t >= 0 && y; --t) {\n        var S = a[t].s;\n        if (g[S] == r) (--g[S], ++y);\n      }\n      m = r;\n    }\n    return [new A(g), m];\n  },\n  fr = function (n, r, e) {\n    return n.s == -1 ? Math.max(fr(n.l, r, e + 1), fr(n.r, r, e + 1)) : (r[n.s] = e);\n  },\n  xr = function (n) {\n    var r = n.length;\n    while (r && !n[--r]);\n    var e = new U(++r),\n      t = 0,\n      i = n[0],\n      a = 1,\n      u = function (c) {\n        e[t++] = c;\n      };\n    for (var s = 1; s <= r; ++s)\n      if (n[s] == i && s != r) ++a;\n      else {\n        if (!i && a > 2) {\n          for (; a > 138; a -= 138) u(32754);\n          if (a > 2) (u(a > 10 ? ((a - 11) << 5) | 28690 : ((a - 3) << 5) | 12305), (a = 0));\n        } else if (a > 3) {\n          (u(i), --a);\n          for (; a > 6; a -= 6) u(8304);\n          if (a > 2) (u(((a - 3) << 5) | 8208), (a = 0));\n        }\n        while (a--) u(i);\n        ((a = 1), (i = n[s]));\n      }\n    return [e.subarray(0, t), r];\n  },\n  V = function (n, r) {\n    var e = 0;\n    for (var t = 0; t < r.length; ++t) e += n[t] * r[t];\n    return e;\n  },\n  sr = function (n, r, e) {\n    var t = e.length,\n      i = Cr(r + 2);\n    ((n[i] = t & 255), (n[i + 1] = t >>> 8), (n[i + 2] = n[i] ^ 255), (n[i + 3] = n[i + 1] ^ 255));\n    for (var a = 0; a < t; ++a) n[i + a + 4] = e[a];\n    return (i + 4 + t) * 8;\n  },\n  zr = function (n, r, e, t, i, a, u, s, c, f, o) {\n    (q(r, o++, e), ++i[256]);\n    var v = ir(i, 15),\n      p = v[0],\n      g = v[1],\n      m = ir(a, 15),\n      y = m[0],\n      M = m[1],\n      G = xr(p),\n      D = G[0],\n      R = G[1],\n      S = xr(y),\n      F = S[0],\n      T = S[1],\n      w = new U(19);\n    for (var l = 0; l < D.length; ++l) w[D[l] & 31]++;\n    for (var l = 0; l < F.length; ++l) w[F[l] & 31]++;\n    var Y = ir(w, 7),\n      I = Y[0],\n      d = Y[1],\n      C = 19;\n    for (; C > 4 && !I[wr[C - 1]]; --C);\n    var j = (f + 5) << 3,\n      B = V(i, W) + V(a, b) + u,\n      Z = V(i, p) + V(a, y) + u + 14 + 3 * C + V(w, I) + (2 * w[16] + 3 * w[17] + 7 * w[18]);\n    if (j <= B && j <= Z) return sr(r, o, n.subarray(c, c + f));\n    var O, x, k, H;\n    if ((q(r, o, 1 + (Z < B)), (o += 2), Z < B)) {\n      ((O = X(p, g, 0)), (x = p), (k = X(y, M, 0)), (H = y));\n      var nr = X(I, d, 0);\n      (q(r, o, R - 257), q(r, o + 5, T - 1), q(r, o + 10, C - 4), (o += 14));\n      for (var l = 0; l < C; ++l) q(r, o + 3 * l, I[wr[l]]);\n      o += 3 * C;\n      var L = [D, F];\n      for (var K = 0; K < 2; ++K) {\n        var J = L[K];\n        for (var l = 0; l < J.length; ++l) {\n          var P = J[l] & 31;\n          if ((q(r, o, nr[P]), (o += I[P]), P > 15))\n            (q(r, o, (J[l] >>> 5) & 127), (o += J[l] >>> 12));\n        }\n      }\n    } else ((O = Lr), (x = W), (k = Pr), (H = b));\n    for (var l = 0; l < s; ++l)\n      if (t[l] > 255) {\n        var P = (t[l] >>> 18) & 31;\n        if ((Q(r, o, O[P + 257]), (o += x[P + 257]), P > 7))\n          (q(r, o, (t[l] >>> 23) & 31), (o += vr[P]));\n        var E = t[l] & 31;\n        if ((Q(r, o, k[E]), (o += H[E]), E > 3)) (Q(r, o, (t[l] >>> 5) & 8191), (o += hr[E]));\n      } else (Q(r, o, O[t[l]]), (o += x[t[l]]));\n    return (Q(r, o, O[256]), o + x[256]);\n  },\n  Rr = new _([65540, 131080, 131088, 131104, 262176, 1048704, 1048832, 2114560, 2117632]),\n  lr = new A(0),\n  $r = function (n, r, e, t, i, a) {\n    var u = n.length,\n      s = new A(t + u + 5 * (1 + Math.ceil(u / 7000)) + i),\n      c = s.subarray(t, s.length - i),\n      f = 0;\n    if (!r || u < 8)\n      for (var o = 0; o <= u; o += 65535) {\n        var v = o + 65535;\n        if (v >= u) c[f >> 3] = a;\n        f = sr(c, f + 1, n.subarray(o, v));\n      }\n    else {\n      var p = Rr[r - 1],\n        g = p >>> 13,\n        m = p & 8191,\n        y = (1 << e) - 1,\n        M = new U(32768),\n        G = new U(y + 1),\n        D = Math.ceil(e / 3),\n        R = 2 * D,\n        S = function (er) {\n          return (n[er] ^ (n[er + 1] << D) ^ (n[er + 2] << R)) & y;\n        },\n        F = new _(25000),\n        T = new U(288),\n        w = new U(32),\n        l = 0,\n        Y = 0,\n        o = 0,\n        I = 0,\n        d = 0,\n        C = 0;\n      for (; o < u; ++o) {\n        var j = S(o),\n          B = o & 32767,\n          Z = G[j];\n        if (((M[B] = Z), (G[j] = B), d <= o)) {\n          var O = u - o;\n          if ((l > 7000 || I > 24576) && O > 423) {\n            ((f = zr(n, c, 0, F, T, w, Y, I, C, o - C, f)), (I = l = Y = 0), (C = o));\n            for (var x = 0; x < 286; ++x) T[x] = 0;\n            for (var x = 0; x < 30; ++x) w[x] = 0;\n          }\n          var k = 2,\n            H = 0,\n            nr = m,\n            L = (B - Z) & 32767;\n          if (O > 2 && j == S(o - L)) {\n            var K = Math.min(g, O) - 1,\n              J = Math.min(32767, o),\n              P = Math.min(258, O);\n            while (L <= J && --nr && B != Z) {\n              if (n[o + k] == n[o + k - L]) {\n                var E = 0;\n                for (; E < P && n[o + E] == n[o + E - L]; ++E);\n                if (E > k) {\n                  if (((k = E), (H = L), E > K)) break;\n                  var kr = Math.min(L, E - 2),\n                    cr = 0;\n                  for (var x = 0; x < kr; ++x) {\n                    var tr = (o - L + x + 32768) & 32767,\n                      Gr = M[tr],\n                      pr = (tr - Gr + 32768) & 32767;\n                    if (pr > cr) ((cr = pr), (Z = tr));\n                  }\n                }\n              }\n              ((B = Z), (Z = M[B]), (L += (B - Z + 32768) & 32767));\n            }\n          }\n          if (H) {\n            F[I++] = 268435456 | (ar[k] << 18) | mr[H];\n            var gr = ar[k] & 31,\n              yr = mr[H] & 31;\n            ((Y += vr[gr] + hr[yr]), ++T[257 + gr], ++w[yr], (d = o + k), ++l);\n          } else ((F[I++] = n[o]), ++T[n[o]]);\n        }\n      }\n      if (((f = zr(n, c, a, F, T, w, Y, I, C, o - C, f)), !a && f & 7)) f = sr(c, f + 1, lr);\n    }\n    return Er(s, 0, t + Cr(f) + i);\n  },\n  qr = (function () {\n    var n = new Int32Array(256);\n    for (var r = 0; r < 256; ++r) {\n      var e = r,\n        t = 9;\n      while (--t) e = (e & 1 && -306674912) ^ (e >>> 1);\n      n[r] = e;\n    }\n    return n;\n  })(),\n  Hr = function () {\n    var n = -1;\n    return {\n      p: function (r) {\n        var e = n;\n        for (var t = 0; t < r.length; ++t) e = qr[(e & 255) ^ r[t]] ^ (e >>> 8);\n        n = e;\n      },\n      d: function () {\n        return ~n;\n      },\n    };\n  };\nvar Yr = function (n, r, e, t, i) {\n    return $r(\n      n,\n      r.level == null ? 6 : r.level,\n      r.mem == null ? Math.ceil(Math.max(8, Math.min(13, Math.log(n.length))) * 1.5) : 12 + r.mem,\n      e,\n      t,\n      !i,\n    );\n  },\n  Fr = function (n, r) {\n    var e = {};\n    for (var t in n) e[t] = n[t];\n    for (var t in r) e[t] = r[t];\n    return e;\n  };\nvar z = function (n, r, e) {\n  for (; e; ++r) ((n[r] = e), (e >>>= 8));\n};\nfunction Wr(n, r) {\n  return Yr(n, r || {}, 0, 0);\n}\nvar Ir = function (n, r, e, t) {\n    for (var i in n) {\n      var a = n[i],\n        u = r + i,\n        s = t;\n      if (Array.isArray(a)) ((s = Fr(t, a[1])), (a = a[0]));\n      if (a instanceof A) e[u] = [a, s];\n      else ((e[(u += \"/\")] = [new A(0), s]), Ir(a, u, e, t));\n    }\n  },\n  Ar = typeof TextEncoder < \"u\" && new TextEncoder(),\n  jr = typeof TextDecoder < \"u\" && new TextDecoder(),\n  Jr = 0;\ntry {\n  (jr.decode(lr, { stream: !0 }), (Jr = 1));\n} catch (n) {}\nfunction Mr(n, r) {\n  if (r) {\n    var e = new A(n.length);\n    for (var t = 0; t < n.length; ++t) e[t] = n.charCodeAt(t);\n    return e;\n  }\n  if (Ar) return Ar.encode(n);\n  var i = n.length,\n    a = new A(n.length + (n.length >> 1)),\n    u = 0,\n    s = function (o) {\n      a[u++] = o;\n    };\n  for (var t = 0; t < i; ++t) {\n    if (u + 5 > a.length) {\n      var c = new A(u + 8 + ((i - t) << 1));\n      (c.set(a), (a = c));\n    }\n    var f = n.charCodeAt(t);\n    if (f < 128 || r) s(f);\n    else if (f < 2048) (s(192 | (f >> 6)), s(128 | (f & 63)));\n    else if (f > 55295 && f < 57344)\n      ((f = (65536 + (f & 1047552)) | (n.charCodeAt(++t) & 1023)),\n        s(240 | (f >> 18)),\n        s(128 | ((f >> 12) & 63)),\n        s(128 | ((f >> 6) & 63)),\n        s(128 | (f & 63)));\n    else (s(224 | (f >> 12)), s(128 | ((f >> 6) & 63)), s(128 | (f & 63)));\n  }\n  return Er(a, 0, u);\n}\nvar ur = function (n) {\n    var r = 0;\n    if (n)\n      for (var e in n) {\n        var t = n[e].length;\n        if (t > 65535) rr(9);\n        r += t + 4;\n      }\n    return r;\n  },\n  Sr = function (n, r, e, t, i, a, u, s) {\n    var c = t.length,\n      f = e.extra,\n      o = s && s.length,\n      v = ur(f);\n    if ((z(n, r, u != null ? 33639248 : 67324752), (r += 4), u != null))\n      ((n[r++] = 20), (n[r++] = e.os));\n    ((n[r] = 20),\n      (r += 2),\n      (n[r++] = (e.flag << 1) | (a < 0 && 8)),\n      (n[r++] = i && 8),\n      (n[r++] = e.compression & 255),\n      (n[r++] = e.compression >> 8));\n    var p = new Date(e.mtime == null ? Date.now() : e.mtime),\n      g = p.getFullYear() - 1980;\n    if (g < 0 || g > 119) rr(10);\n    if (\n      (z(\n        n,\n        r,\n        (g << 25) |\n          ((p.getMonth() + 1) << 21) |\n          (p.getDate() << 16) |\n          (p.getHours() << 11) |\n          (p.getMinutes() << 5) |\n          (p.getSeconds() >>> 1),\n      ),\n      (r += 4),\n      a != -1)\n    )\n      (z(n, r, e.crc), z(n, r + 4, a < 0 ? -a - 2 : a), z(n, r + 8, e.size));\n    if ((z(n, r + 12, c), z(n, r + 14, v), (r += 16), u != null))\n      (z(n, r, o), z(n, r + 6, e.attrs), z(n, r + 10, u), (r += 14));\n    if ((n.set(t, r), (r += c), v))\n      for (var m in f) {\n        var y = f[m],\n          M = y.length;\n        (z(n, r, +m), z(n, r + 2, M), n.set(y, r + 4), (r += 4 + M));\n      }\n    if (o) (n.set(s, r), (r += o));\n    return r;\n  },\n  Kr = function (n, r, e, t, i) {\n    (z(n, r, 101010256), z(n, r + 8, e), z(n, r + 10, e), z(n, r + 12, t), z(n, r + 16, i));\n  };\nfunction Br(n, r) {\n  if (!r) r = {};\n  var e = {},\n    t = [];\n  Ir(n, \"\", e, r);\n  var i = 0,\n    a = 0;\n  for (var u in e) {\n    var s = e[u],\n      c = s[0],\n      f = s[1],\n      o = f.level == 0 ? 0 : 8,\n      v = Mr(u),\n      p = v.length,\n      g = f.comment,\n      m = g && Mr(g),\n      y = m && m.length,\n      M = ur(f.extra);\n    if (p > 65535) rr(11);\n    var G = o ? Wr(c, f) : c,\n      D = G.length,\n      R = Hr();\n    (R.p(c),\n      t.push(\n        Fr(f, {\n          size: c.length,\n          crc: R.d(),\n          c: G,\n          f: v,\n          m,\n          u: p != u.length || (m && g.length != y),\n          o: i,\n          compression: o,\n        }),\n      ),\n      (i += 30 + p + M + D),\n      (a += 76 + 2 * (p + M) + (y || 0) + D));\n  }\n  var S = new A(a + 22),\n    F = i,\n    T = a - i;\n  for (var w = 0; w < t.length; ++w) {\n    var v = t[w];\n    Sr(S, v.o, v, v.f, v.u, v.c.length);\n    var l = 30 + v.f.length + ur(v.extra);\n    (S.set(v.c, v.o + l),\n      Sr(S, i, v, v.f, v.u, v.c.length, v.o, v.m),\n      (i += 16 + l + (v.m ? v.m.length : 0)));\n  }\n  return (Kr(S, i, t.length, T, F), S);\n}\nexport default async function archive({ objects, bucket, region }, context) {\n  if (!Array.isArray(objects) || !objects.length) throw Error(\"No files found\");\n  const files = {},\n    names = new Set();\n  for (const o of objects) {\n    if (typeof o.name !== \"string\" || !o.name || o.name.endsWith(\"/\"))\n      throw Error(\"Invalid or folder-marker key\");\n    const name = o.name.split(\"/\").pop();\n    if (!name || names.has(name)) throw Error(\"Duplicate file names in selected folder\");\n    names.add(name);\n    const d = await context.actions.call(\"aws_s3.download_object\", {\n      bucket,\n      region,\n      objectKey: o.name,\n    });\n    if (d.objectKey !== o.name || !d.transitUrl) throw Error(\"Mismatched S3 download\");\n    const response = await context.fetch(d.transitUrl);\n    if (!response.ok) throw Error(\"Transit download failed\");\n    const bytes = await response.bytes();\n    if (bytes.length !== d.sizeBytes) throw Error(\"Download size mismatch\");\n    files[name] = new Uint8Array(bytes);\n  }\n  return {\n    archive: await context.artifact.put(Br(files), {\n      name: \"s3-export.zip\",\n      mediaType: \"application/zip\",\n    }),\n  };\n}\n"
+      }
+    }
+  },
+  "presentation": {
+    "designer": {
+      "version": 1,
+      "flow": {
+        "direction": "vertical"
+      }
+    }
+  }
+}
