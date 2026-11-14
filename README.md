@@ -542,6 +542,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Send Personalized Factoid Emails](workflows/send-personalized-factoid-emails/) - Manage subscribers and send illustrated facts about their chosen topics.
 - [Detect Objects and Draw Bounding Boxes](workflows/detect-objects-and-draw-bounding-boxes/) - Detect requested objects in an image and draw bounding boxes over it.
 - [Review Knowledge-Grounded Email Replies](workflows/review-knowledge-grounded-email-replies/) - Draft knowledge-grounded email replies and revise them with human feedback before sending.
+- [Extract Email Spending to Sheets](workflows/extract-email-spending-to-sheets/) - Extract invoice and card transaction details from labeled Gmail messages into a Google Sheet.
 
 ## Content
 
