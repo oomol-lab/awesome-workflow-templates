@@ -660,6 +660,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Receive Bitbucket Repository Pushes](workflows/receive-bitbucket-repository-pushes/) - Receive push events for a Bitbucket repository.
 - [Receive Asana Resource Events](workflows/receive-asana-resource-events/) - Receive change events for an Asana task or project.
 - [Receive Box Folder Events](workflows/receive-box-folder-events/) - Receive Box folder move and download events.
+- [Receive Chargebee Events](workflows/receive-chargebee-events/) - Receive Chargebee subscription and billing events.
 
 ## Communication
 
