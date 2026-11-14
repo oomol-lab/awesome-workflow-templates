@@ -276,6 +276,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Create and Update GoToWebinar](workflows/create-and-update-gotowebinar/) - Create a webinar, update a configured webinar description, and retrieve that webinar.
 - [Create an Autopilot List and Contact](workflows/create-autopilot-list-and-contact/) - Create a list, upsert a contact twice, and read all contacts in that list.
 - [Search Meta Interests from Telegram](workflows/search-meta-interests-from-telegram/) - Search Meta ad interests from an authorized Telegram command and return a CSV document.
+- [Sync Google Sheet Contacts to Mautic](workflows/sync-sheet-contacts-to-mautic/) - Keep Mautic contacts aligned with email, first name and mobile fields in a Google Sheet.
 
 ## Support
 
