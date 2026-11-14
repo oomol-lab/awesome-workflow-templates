@@ -325,6 +325,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Compare Workflow Tools with Perplexity](workflows/compare-workflow-tools-with-perplexity/) - Ask Perplexity Sonar to compare workflow tools using selected domains and return citations.
 - [Research a Query With Perplexity Sonar](workflows/research-a-query-with-perplexity-sonar/) - Research a query with Perplexity Sonar and return the answer.
 - [Extract Latest TechCrunch Articles](workflows/extract-latest-techcrunch-articles/) - Read the latest TechCrunch listing and extract each article’s text and metadata.
+- [Report Nostr Hashtag Themes](workflows/report-nostr-hashtag-themes/) - Summarize Nostr hashtag posts and send a themes overview and detailed report by email and Telegram.
 
 ## Productivity
 
