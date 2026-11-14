@@ -659,6 +659,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Receive Jira Workspace Events](workflows/receive-jira-workspace-events/) - Receive supported Jira webhook events.
 - [Receive Bitbucket Repository Pushes](workflows/receive-bitbucket-repository-pushes/) - Receive push events for a Bitbucket repository.
 - [Receive Asana Resource Events](workflows/receive-asana-resource-events/) - Receive change events for an Asana task or project.
+- [Receive Box Folder Events](workflows/receive-box-folder-events/) - Receive Box folder move and download events.
 
 ## Communication
 
