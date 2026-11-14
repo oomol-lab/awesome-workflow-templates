@@ -1,0 +1,218 @@
+{
+  "name": "Receive Shopify Order Events",
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "nodes": [
+    {
+      "id": "receive-shopify-order-events-hook",
+      "name": "Receive Shopify order",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "receive-shopify-order-events",
+        "options": {
+          "rawBody": true
+        }
+      }
+    },
+    {
+      "id": "receive-shopify-order-events-read",
+      "name": "Read original request bytes",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        110,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const bytes = await helpers.getBinaryDataBuffer($itemIndex, \"data\");\nreturn {\n  json: { headers: $json.headers, raw: bytes.toString(\"utf8\") },\n  binary: $binary,\n  pairedItem: { item: $itemIndex },\n};\n"
+      }
+    },
+    {
+      "id": "receive-shopify-order-events-hmac",
+      "name": "Compute Shopify HMAC",
+      "type": "n8n-nodes-base.crypto",
+      "typeVersion": 1,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "action": "hmac",
+        "type": "SHA256",
+        "binaryData": true,
+        "binaryPropertyName": "data",
+        "dataPropertyName": "computedHmac",
+        "secret": "={{ $env.SHOPIFY_WEBHOOK_SECRET }}",
+        "encoding": "base64"
+      }
+    },
+    {
+      "id": "receive-shopify-order-events-check",
+      "name": "Valid Shopify request?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.computedHmac }}",
+              "rightValue": "={{ $json.headers['x-shopify-hmac-sha256'] }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "leftValue": "={{ $json.headers['x-shopify-topic'] }}",
+              "rightValue": "orders/create",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "leftValue": "={{ $json.headers['x-shopify-shop-domain'] }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "leftValue": "={{ $json.headers['x-shopify-api-version'] }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "leftValue": "={{ $env.SHOPIFY_WEBHOOK_SECRET }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "receive-shopify-order-events-decode",
+      "name": "Decode order without rounding",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const order = JSON.parse($json.raw, (key, value, context) =>\n  typeof value === \"number\" && Number.isInteger(value) && !Number.isSafeInteger(value)\n    ? context.source\n    : value,\n);\nreturn { json: order, pairedItem: { item: $itemIndex } };\n"
+      }
+    },
+    {
+      "id": "receive-shopify-order-events-relay",
+      "name": "Forward to Open Flow",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        880,
+        0
+      ],
+      "disabled": true,
+      "parameters": {
+        "method": "POST",
+        "url": "YOUR_OPEN_FLOW_WEBHOOK_URL",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {event: JSON.stringify($json)} }}",
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Receive Shopify order": {
+      "main": [
+        [
+          {
+            "node": "Read original request bytes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read original request bytes": {
+      "main": [
+        [
+          {
+            "node": "Compute Shopify HMAC",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compute Shopify HMAC": {
+      "main": [
+        [
+          {
+            "node": "Valid Shopify request?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Valid Shopify request?": {
+      "main": [
+        [
+          {
+            "node": "Decode order without rounding",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Decode order without rounding": {
+      "main": [
+        [
+          {
+            "node": "Forward to Open Flow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

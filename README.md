@@ -546,6 +546,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Create a WooCommerce Product and Set Stock](workflows/create-woocommerce-product-and-set-stock/) - Create a product, set its stock quantity to 100, and retrieve it from WooCommerce.
 - [WooCommerce Processing Orders to Telegram](workflows/woocommerce-processing-order-to-telegram/) - Send order details to Telegram when an updated WooCommerce order is processing.
 - [Create a Stripe Payment Link from a Form](workflows/create-stripe-payment-link-from-form/) - Create a Stripe product and payment link from a title and EUR price.
+- [Receive Shopify Order Events](workflows/receive-shopify-order-events/) - Receive new Shopify orders with their original large integer IDs preserved.
 
 ## Utilities
 
