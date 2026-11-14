@@ -53,6 +53,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [IT Operations](#it-operations)
 - [AI](#ai)
 - [E-commerce](#e-commerce)
+- [Media](#media)
 - [Contribute](#contribute)
 - [Licensing](#licensing)
 
@@ -754,6 +755,10 @@ A growing collection of automation workflows for connecting apps and getting rep
 ## E-commerce
 
 - [Alert Discord on Shopify Inventory Changes](workflows/alert-discord-on-shopify-inventory/) - Send a Discord alert for low or sold-out Shopify inventory.
+
+## Media
+
+- [Generate a HeyGen Avatar Video](workflows/generate-a-heygen-avatar-video/) - Generate a narrated avatar video and return its finished URL.
 
 ## Contribute
 
