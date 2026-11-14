@@ -501,6 +501,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Reformat a Telegram Resume PDF](workflows/reformat-telegram-resume-pdf/) - Extract a resume PDF sent to a Telegram bot, format its details, and return a new PDF.
 - [Send Gmail Promotions as Telegram Audio](workflows/send-gmail-promotions-as-telegram-audio/) - Summarize new promotional emails and send the summary as Telegram audio.
 - [Copy New Drive Files to S3](workflows/copy-new-drive-files-to-s3/) - Copy updated Google Drive files to S3 when their names are absent from the bucket.
+- [Archive Liked Songs in Monthly Spotify Playlists](workflows/archive-liked-songs-in-monthly-spotify-playlists/) - Save recently liked songs in NocoDB and add them to a matching monthly Spotify playlist.
 
 ## Content
 
