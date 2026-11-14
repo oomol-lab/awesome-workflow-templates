@@ -796,6 +796,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Fund a Wise Transfer from Balance](workflows/fund-wise-transfer-from-balance/) - Create a Wise quote and transfer, fund it from balance, and read its status.
 - [Archive Telegram Receipts with Textract](workflows/archive-telegram-receipts-with-textract/) - Archive Telegram receipt images in S3 and save extracted expense fields in Airtable.
 - [Extract Deposit Rows from a Bank Statement](workflows/extract-deposits-from-bank-statement/) - Transcribe each page of a bank statement and extract deposit rows with a vision model.
+- [Parse Drive Invoices into Airtable](workflows/parse-drive-invoices-into-airtable/) - Parse new Google Drive invoices and create linked Airtable invoice and line-item records.
 
 ## Community
 
