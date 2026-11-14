@@ -641,6 +641,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Classify WordPress Inquiries and Draft Replies](workflows/classify-wordpress-inquiries-and-draft-replies/) - Classify incoming WordPress contact inquiries, prepare Gmail drafts for review and log the inquiries in Google Sheets.
 - [Route Support Form to Asana and WhatsApp](workflows/route-support-form-to-asana-and-whatsapp/) - Create an Asana support task and send a WhatsApp confirmation for each form submission.
 - [Sync Zendesk Tickets to Slack Threads](workflows/sync-zendesk-tickets-to-slack-threads/) - Create a Slack thread for a Zendesk ticket and send later comments to that thread.
+- [Classify Customer Feedback to Google Sheets](workflows/classify-customer-feedback-to-google-sheets/) - Classify customer feedback sentiment and save the feedback with the result in Google Sheets.
 
 ## Finance
 
