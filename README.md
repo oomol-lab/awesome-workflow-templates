@@ -465,6 +465,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Create a Google Doc from Form Fields](workflows/create-google-doc-from-form-fields/) - Copy a Google Docs template and replace placeholders with submitted fields.
 - [Upload a Remote Image to SharePoint](workflows/upload-a-remote-image-to-sharepoint/) - Download a remote image and upload its bytes to the root SharePoint site drive.
 - [Send a Sweater Weather SMS](workflows/send-sweater-weather-sms/) - Send an SMS when the current feels-like temperature is below 18°C.
+- [Save Slack Ideas to Google Sheets](workflows/slack-ideas-to-google-sheets/) - Save ideas from a Slack slash command to Google Sheets and reply with a details link.
 
 ## Content
 
