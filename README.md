@@ -557,6 +557,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [WooCommerce Processing Orders to Telegram](workflows/woocommerce-processing-order-to-telegram/) - Send order details to Telegram when an updated WooCommerce order is processing.
 - [Create a Stripe Payment Link from a Form](workflows/create-stripe-payment-link-from-form/) - Create a Stripe product and payment link from a title and EUR price.
 - [Receive Shopify Order Events](workflows/receive-shopify-order-events/) - Receive new Shopify orders with their original large integer IDs preserved.
+- [Receive SurveyMonkey Response Starts](workflows/receive-surveymonkey-response-starts/) - Receive notifications when a survey response begins.
 
 ## Utilities
 
