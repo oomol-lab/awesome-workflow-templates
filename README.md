@@ -657,6 +657,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Download an S3 Folder as ZIP](workflows/download-s3-folder-as-zip/) - Download nonempty files directly within an S3 folder into a ZIP archive.
 - [Receive Jira Workspace Events](workflows/receive-jira-workspace-events/) - Receive supported Jira webhook events.
 - [Receive Bitbucket Repository Pushes](workflows/receive-bitbucket-repository-pushes/) - Receive push events for a Bitbucket repository.
+- [Receive Asana Resource Events](workflows/receive-asana-resource-events/) - Receive change events for an Asana task or project.
 
 ## Communication
 
