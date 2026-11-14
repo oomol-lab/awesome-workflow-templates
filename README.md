@@ -511,6 +511,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Count Customer Records](workflows/count-customer-records/) - Count the customer records in an input list.
 - [Map Customers to Google Sheets](workflows/map-customers-to-google-sheet/) - Map customer fields and upsert them by ID in a Google Sheet.
 - [Restore Customer Emails](workflows/restore-customer-emails/) - Reduce customer records to names and restore each corresponding email address.
+- [Upload a Form File to Spaces](workflows/upload-form-file-to-spaces/) - Upload a form file to DigitalOcean Spaces and return its CDN link.
 
 ## Content
 
