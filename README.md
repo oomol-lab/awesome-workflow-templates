@@ -530,6 +530,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Save Luma Video Callback to Airtable](workflows/save-luma-video-callback-to-airtable/) - Save completed Luma video and thumbnail URLs to the matching Airtable generation record.
 - [Calculate Cylinder Mass and Speed](workflows/calculate-cylinder-mass-and-speed/) - Run cylinder, mass and speed calculations with CalcsLive and email the mass result.
 - [Receive Adobe Sign Agreement Events](workflows/receive-adobe-sign-agreement-events/) - Receive Adobe Sign agreement notifications and expose agreement details.
+- [Notify Slack for Matching Webhook Emails](workflows/notify-slack-for-n8n-webhook-email/) - Send a Slack message when a GET webhook email contains @n8n.
 
 ## Content
 
