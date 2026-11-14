@@ -57,6 +57,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Files](#files)
 - [Entertainment](#entertainment)
 - [Creative](#creative)
+- [Human Resources](#human-resources)
 - [Contribute](#contribute)
 - [Licensing](#licensing)
 
@@ -966,6 +967,10 @@ A growing collection of automation workflows for connecting apps and getting rep
 
 - [Generate Images from a Prompt](workflows/generate-images-from-a-prompt/) - Generate images from a prompt and return each image as a downloadable file.
 - [Generate an Image from a Form](workflows/generate-image-from-a-form/) - Generate an image from a prompt and selected size.
+
+## Human Resources
+
+- [Review Resumes Against a Job Profile](workflows/review-resumes-against-job-profile/) - Collect PDF resumes, summarize candidate information, and record a role-fit assessment for human review.
 
 ## Contribute
 
