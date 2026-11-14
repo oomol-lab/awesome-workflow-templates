@@ -760,6 +760,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Publish ISS Position to MQTT](workflows/publish-iss-position-to-mqtt/) - Publish the current International Space Station position to an MQTT topic every minute.
 - [Publish ISS Position to RabbitMQ](workflows/publish-iss-position-to-rabbitmq/) - Publish the current International Space Station position to a RabbitMQ queue every minute.
 - [Publish ISS Position to Kafka](workflows/publish-iss-position-to-kafka/) - Publish the current International Space Station position to a Kafka topic every minute.
+- [Save ISS Position to TimescaleDB](workflows/save-iss-position-to-timescaledb/) - Save the current International Space Station position to TimescaleDB every minute.
 
 ## Communications
 
