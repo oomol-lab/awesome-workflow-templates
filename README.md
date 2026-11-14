@@ -575,6 +575,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Upload a URL and List S3 Objects](workflows/upload-url-and-list-s3-objects/) - Upload a public file to an S3 bucket and list the bucket objects.
 - [Respond to an HMAC CRC Challenge](workflows/respond-to-hmac-crc-challenge/) - Answer a CRC webhook challenge with a signed response token.
 - [Return a Country Dialing Code by Webhook](workflows/return-country-dialing-code-by-webhook/) - Look up a country by code and return its dialing code and emoji.
+- [Return an XML Example From a Webhook](workflows/return-an-xml-example-from-a-webhook/) - Respond to a GET webhook with an example XML document.
 
 ## Communication
 
