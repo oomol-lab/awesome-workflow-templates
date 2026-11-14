@@ -124,6 +124,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Receive Affinity List Created Events](workflows/receive-affinity-list-created/) - Receive new-list events from Affinity and retrieve the complete list record.
 - [Schedule telli Calls from Airtable](workflows/schedule-telli-calls-from-airtable/) - Create telli contacts and schedule voice-agent calls for new Airtable records.
 - [Verify Groundhogg Contact Mailing Address](workflows/verify-groundhogg-contact-mailing-address/) - Verify a Groundhogg contact’s US mailing address and send a deliverability tag to its webhook listener.
+- [Verify Keap Contact Mailing Address](workflows/verify-keap-contact-mailing-address/) - Verify Keap contact mailing addresses and apply deliverability tags.
 
 ## Operations
 
