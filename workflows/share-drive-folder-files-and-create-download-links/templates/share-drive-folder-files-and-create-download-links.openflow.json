@@ -1,0 +1,138 @@
+{
+  "kind": "open-flow-workflow",
+  "version": 1,
+  "name": "Share Drive Folder Files and Create Download Links",
+  "content": {
+    "modelVersion": 15,
+    "document": {
+      "bindings": {},
+      "graph": {
+        "nodes": {
+          "n_623288f46c932d4e": {
+            "name": "Choose a Drive folder",
+            "kind": "start",
+            "inputDefs": [
+              {
+                "jsonSchema": {
+                  "type": "string"
+                },
+                "nullable": false,
+                "handle": "folderId"
+              }
+            ]
+          },
+          "n_88c398c1b3a2f52e": {
+            "inputs": {
+              "folderId": {
+                "kind": "sources",
+                "sources": [
+                  {
+                    "kind": "node",
+                    "nodeId": "n_623288f46c932d4e",
+                    "output": "folderId"
+                  }
+                ]
+              }
+            },
+            "name": "Share files and create links",
+            "kind": "task",
+            "task": {
+              "inputs": [
+                {
+                  "jsonSchema": {
+                    "type": "string"
+                  },
+                  "nullable": false,
+                  "handle": "folderId"
+                }
+              ],
+              "outputs": [
+                {
+                  "jsonSchema": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": true
+                    }
+                  },
+                  "nullable": false,
+                  "handle": "links"
+                }
+              ],
+              "name": "Share files and create links",
+              "moduleId": "n_7ff48cf9eb77dcd2",
+              "capabilities": [
+                {
+                  "kind": "connector",
+                  "mode": "independent",
+                  "actions": [
+                    {
+                      "action": "googledrive.files.list"
+                    },
+                    {
+                      "action": "googledrive.permissions.create"
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          "n_d27c196f78855ac0": {
+            "name": "Download links",
+            "kind": "outputs",
+            "outputDefs": [
+              {
+                "jsonSchema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": true
+                  }
+                },
+                "nullable": false,
+                "handle": "links"
+              }
+            ],
+            "outputMappings": {
+              "links": {
+                "kind": "sources",
+                "sources": [
+                  {
+                    "kind": "node",
+                    "nodeId": "n_88c398c1b3a2f52e",
+                    "output": "links"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "edges": [
+          {
+            "source": "n_623288f46c932d4e",
+            "target": "n_88c398c1b3a2f52e"
+          },
+          {
+            "source": "n_88c398c1b3a2f52e",
+            "target": "n_d27c196f78855ac0"
+          }
+        ]
+      }
+    },
+    "modules": {
+      "n_7ff48cf9eb77dcd2": {
+        "name": "Share files and create links",
+        "imports": [],
+        "source": "export default async function ({ folderId }, ctx) {\n  if (typeof folderId !== \"string\" || !folderId.trim() || folderId.startsWith(\"YOUR_\"))\n    throw Error(\"Configure a Drive folder ID\");\n  const escaped = folderId.replace(/\\\\/g, \"\\\\\\\\\").replace(/'/g, \"\\\\'\");\n  const files = [],\n    seen = new Set();\n  let token;\n  do {\n    const page = await ctx.actions.call(\"googledrive.files.list\", {\n      q: `'${escaped}' in parents`,\n      pageSize: 100 - files.length,\n      orderBy: \"modifiedTime\",\n      corpora: \"allDrives\",\n      includeItemsFromAllDrives: true,\n      supportsAllDrives: true,\n      spaces: \"drive\",\n      ...(token ? { pageToken: token } : {}),\n    });\n    if (!Array.isArray(page?.files)) throw Error(\"Invalid Drive listing\");\n    files.push(...page.files);\n    token = page.nextPageToken;\n    if (token) {\n      if (typeof token !== \"string\" || seen.has(token)) throw Error(\"Invalid Drive page token\");\n      seen.add(token);\n    }\n  } while (token && files.length < 100);\n  const links = [];\n  for (const f of files.slice(0, 100)) {\n    if (typeof f?.id !== \"string\" || !f.id || typeof f.name !== \"string\")\n      throw Error(\"Invalid Drive file\");\n    const r = await ctx.actions.call(\"googledrive.permissions.create\", {\n      fileId: f.id,\n      type: \"anyone\",\n      role: \"reader\",\n      supportsAllDrives: true,\n    });\n    if (typeof r?.id !== \"string\" || !r.id) throw Error(\"Permission not confirmed\");\n    links.push({\n      name: f.name,\n      link: `https://drive.google.com/uc?id=${encodeURIComponent(f.id)}&export=download&confirm=t`,\n    });\n  }\n  return { links };\n}\n"
+      }
+    }
+  },
+  "presentation": {
+    "designer": {
+      "version": 1,
+      "flow": {
+        "direction": "vertical"
+      }
+    }
+  }
+}
