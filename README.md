@@ -538,6 +538,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Import Notion To-Dos into Linear](workflows/import-notion-todos-into-linear/) - Create Linear issues from unchecked Notion to-dos, including their nested contents, and add issue links back.
 - [Summarize Google Search and Notify](workflows/summarize-google-search-and-notify/) - Extract and summarize Google search results and send them to a webhook.
 - [Qualify and Approve Appointment Requests](workflows/qualify-and-approve-appointment-requests/) - Qualify an enquiry, request an administrator decision and create an appointment or send a rejection.
+- [Send Personalized Factoid Emails](workflows/send-personalized-factoid-emails/) - Manage subscribers and send illustrated facts about their chosen topics.
 
 ## Content
 
