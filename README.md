@@ -846,6 +846,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Analyze a URL with Cortex](workflows/analyze-url-with-cortex/) - Submit a URL to a Cortex analyzer and read the resulting job details.
 - [Generate a SecurityScorecard Report](workflows/generate-securityscorecard-report/) - Request a full SecurityScorecard report and retrieve the matching completed report.
 - [Scan Indicators with VirusTotal and GreyNoise](workflows/scan-indicators-with-virustotal-and-greynoise/) - Scan submitted URLs or IPs, enrich results with GreyNoise and send a report.
+- [Report Phishing Emails to Jira](workflows/report-phishing-emails-to-jira/) - Analyze incoming email screenshots and headers for phishing indicators, then create Jira issues with screenshot attachments.
 
 ## Social Media
 
