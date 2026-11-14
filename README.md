@@ -56,6 +56,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Media](#media)
 - [Files](#files)
 - [Entertainment](#entertainment)
+- [Creative](#creative)
 - [Contribute](#contribute)
 - [Licensing](#licensing)
 
@@ -927,6 +928,10 @@ A growing collection of automation workflows for connecting apps and getting rep
 ## Entertainment
 
 - [Email Monthly Songkick Events](workflows/email-monthly-songkick-events/) - Email a monthly list of Songkick concerts for a chosen location.
+
+## Creative
+
+- [Generate Images from a Prompt](workflows/generate-images-from-a-prompt/) - Generate images from a prompt and return each image as a downloadable file.
 
 ## Contribute
 
