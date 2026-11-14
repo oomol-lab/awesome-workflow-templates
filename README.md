@@ -686,6 +686,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Receive Mailchimp Subscribers](workflows/receive-mailchimp-subscribers/) - Receive Mailchimp audience subscribe notifications.
 - [Receive Pipedrive Changes](workflows/receive-pipedrive-changes/) - Receive Pipedrive change notifications.
 - [Receive PayPal Plan Activations](workflows/receive-paypal-plan-activations/) - Receive PayPal billing plan activation events.
+- [Receive Server-Sent Events](workflows/receive-server-sent-events/) - Receive JSON events from a server-sent events stream.
 
 ## Communication
 
