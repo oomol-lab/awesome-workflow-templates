@@ -177,6 +177,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Sync Syncro Offline Alerts to Opsgenie](workflows/sync-syncro-offline-alerts-to-opsgenie/) - Create or close an Opsgenie alert when Syncro reports an agent offline or resolved.
 - [Create, Update, and Read an UptimeRobot Monitor](workflows/create-update-and-read-an-uptimerobot-monitor/) - Create an HTTP monitor, rename it, and read its details.
 - [Export n8n Executions as CSV](workflows/export-n8n-executions-as-csv/) - Read all available n8n executions and convert their metadata to CSV.
+- [Diagnose n8n Execution Errors by Email](workflows/diagnose-n8n-execution-errors-by-email/) - Analyze failed n8n execution errors with AI and email a diagnostic report.
 
 ## Marketing
 
