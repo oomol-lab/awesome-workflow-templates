@@ -1,0 +1,269 @@
+{
+  "name": "Email a YouTube Transcript Summary",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "email-youtube-transcript-summary-0",
+      "name": "When clicking ‘Test workflow’",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "email-youtube-transcript-summary-1",
+      "name": "Set YouTube URL",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        250,
+        300
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "3ee42e4c-3cee-4934-97e7-64c96b5691ed",
+              "name": "youtubeUrl",
+              "type": "string",
+              "value": "https://youtu.be/YOUR_VIDEO_ID"
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "email-youtube-transcript-summary-2",
+      "name": "YouTube Video ID",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        500,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const url = String($json.youtubeUrl ?? \"\"),\n  match = url.match(\n    /^https?:\\/\\/(?:youtu\\.be\\/([A-Za-z0-9_-]{11})(?:[?&#/]|$)|(?:www\\.|m\\.)?youtube\\.com\\/(?:watch\\?(?:[^#]*?&)?v=|(?:shorts|embed|live)\\/)([A-Za-z0-9_-]{11})(?:[?&#/]|$))/,\n  );\nif (!match) throw Error(\"Invalid YouTube URL\");\nreturn [{ json: { videoId: match[1] ?? match[2] } }];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "email-youtube-transcript-summary-3",
+      "name": "Generate transcript",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        750,
+        300
+      ],
+      "parameters": {
+        "url": "https://www.youtube-transcript.io/api/transcripts",
+        "method": "POST",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        },
+        "jsonBody": "={{ JSON.stringify({ids:[$json.videoId]}) }}",
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "name": "Read transcript",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const data = $input.all();\nconst id = $(\"YouTube Video ID\").first().json.videoId;\nif (data.length !== 1 || data[0].json.id !== id) throw Error(\"Transcript does not match video\");\nconst track = data[0].json.tracks?.[0];\nif (\n  !Array.isArray(track?.transcript) ||\n  !track.transcript.length ||\n  track.transcript.some((x) => typeof x?.text !== \"string\")\n)\n  throw Error(\"No transcript available\");\nreturn [\n  {\n    json: {\n      fulltext: track.transcript\n        .map((x) => x.text)\n        .join(\" \")\n        .trim(),\n    },\n  },\n];\n"
+      },
+      "id": "email-youtube-transcript-summary-4",
+      "position": [
+        1000,
+        300
+      ]
+    },
+    {
+      "id": "email-youtube-transcript-summary-5",
+      "name": "Analyze LLM Chain",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "position": [
+        1250,
+        300
+      ],
+      "parameters": {
+        "text": "={{ $json.fulltext }}",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=Please analyze the given text and create a structured summary following these guidelines:\n\n1. Insert what is requested in a json in the \"text\" variable and also generate a title that will be inserted in the \"title\" variable of the response json.\n2. Under each header:\n   - List only the most essential concepts and key points\n   - Use bullet points for clarity\n   - Keep explanations concise\n   - Preserve technical accuracy\n   - Highlight key terms in bold\n3. Organize the information in this sequence:\n   - Definition/Background\n   - Main characteristics\n   - Implementation details\n   - Advantages/Disadvantages\n4. Format requirements:\n   - Use markdown formatting\n   - Keep bullet points simple (no nesting)\n   - Bold important terms \n   - Use tables for comparisons\n   - Include relevant technical details\n\nPlease provide a clear, structured summarythat captures the core concepts while maintaining technical accuracy."
+            }
+          ]
+        },
+        "promptType": "define",
+        "hasOutputParser": true
+      },
+      "typeVersion": 1.5
+    },
+    {
+      "id": "email-youtube-transcript-summary-6",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "position": [
+        1500,
+        300
+      ],
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "email-youtube-transcript-summary-7",
+      "name": "Structured Output Parser",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "position": [
+        1750,
+        300
+      ],
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\"type\":\"object\",\"properties\":{\"title\":{\"type\":\"string\"},\"text\":{\"type\":\"string\"}},\"required\":[\"title\",\"text\"],\"additionalProperties\":false}"
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "email-youtube-transcript-summary-8",
+      "name": "Send Email",
+      "type": "n8n-nodes-base.emailSend",
+      "position": [
+        2000,
+        300
+      ],
+      "parameters": {
+        "text": "={{ $json.output.text }}",
+        "options": {},
+        "subject": "={{ $json.output.title }}",
+        "emailFormat": "text",
+        "fromEmail": "YOUR_SENDER_EMAIL",
+        "toEmail": "YOUR_RECIPIENT_EMAIL"
+      },
+      "typeVersion": 2.1
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "When clicking ‘Test workflow’": {
+      "main": [
+        [
+          {
+            "node": "Set YouTube URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set YouTube URL": {
+      "main": [
+        [
+          {
+            "node": "YouTube Video ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "YouTube Video ID": {
+      "main": [
+        [
+          {
+            "node": "Generate transcript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate transcript": {
+      "main": [
+        [
+          {
+            "node": "Read transcript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read transcript": {
+      "main": [
+        [
+          {
+            "node": "Analyze LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Send Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Analyze LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Analyze LLM Chain",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

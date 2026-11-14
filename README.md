@@ -477,6 +477,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Invite Sheet Contacts to n8n](workflows/invite-sheet-contacts-to-n8n/) - Invite email addresses from a Google Sheet that are not yet n8n users.
 - [Create Nested Google Drive Folders](workflows/create-nested-google-drive-folders/) - Find or create each segment of a folder path in Google Drive.
 - [Archive Duplicate Notion Pages](workflows/archive-duplicate-notion-pages/) - Archive extra Notion database pages with the same text property.
+- [Email a YouTube Transcript Summary](workflows/email-youtube-transcript-summary/) - Summarize a YouTube transcript and email the result.
 
 ## Content
 
