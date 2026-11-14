@@ -559,6 +559,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Create a Stripe Payment Link from a Form](workflows/create-stripe-payment-link-from-form/) - Create a Stripe product and payment link from a title and EUR price.
 - [Receive Shopify Order Events](workflows/receive-shopify-order-events/) - Receive new Shopify orders with their original large integer IDs preserved.
 - [Receive SurveyMonkey Response Starts](workflows/receive-surveymonkey-response-starts/) - Receive notifications when a survey response begins.
+- [Receive HubSpot App Events](workflows/receive-hubspot-app-events/) - Receive events from a HubSpot app subscription.
 
 ## Utilities
 

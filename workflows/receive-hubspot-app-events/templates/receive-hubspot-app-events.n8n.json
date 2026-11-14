@@ -1,0 +1,199 @@
+{
+  "name": "Receive HubSpot App Events",
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "nodes": [
+    {
+      "id": "receive-hubspot-app-events-hook",
+      "name": "Receive HubSpot events",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "receive-hubspot-app-events",
+        "options": {
+          "rawBody": true
+        }
+      }
+    },
+    {
+      "id": "receive-hubspot-app-events-read",
+      "name": "Read original request bytes",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        110,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const bytes = await helpers.getBinaryDataBuffer($itemIndex, \"data\");\nreturn {\n  json: { headers: $json.headers, raw: bytes.toString(\"utf8\") },\n  binary: $binary,\n  pairedItem: { item: $itemIndex },\n};\n"
+      }
+    },
+    {
+      "id": "receive-hubspot-app-events-hmac",
+      "name": "Compute HubSpot signature",
+      "type": "n8n-nodes-base.crypto",
+      "typeVersion": 1,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "action": "hash",
+        "type": "SHA256",
+        "binaryData": false,
+        "value": "={{ $env.HUBSPOT_CLIENT_SECRET + $json.raw }}",
+        "dataPropertyName": "computedHmac",
+        "encoding": "hex"
+      }
+    },
+    {
+      "id": "receive-hubspot-app-events-check",
+      "name": "Valid HubSpot request?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.computedHmac }}",
+              "rightValue": "={{ $json.headers['x-hubspot-signature'] }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "leftValue": "={{ $json.headers['x-hubspot-signature'] }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "leftValue": "={{ $env.HUBSPOT_CLIENT_SECRET }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "receive-hubspot-app-events-decode",
+      "name": "Decode events",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const events = JSON.parse($input.first().json.raw, (key, value, context) =>\n  typeof value === \"number\" && Number.isInteger(value) && !Number.isSafeInteger(value)\n    ? context.source\n    : value,\n);\nreturn events.map((event) => {\n  const type = event.subscriptionType || \"\";\n  for (const name of [\"contact\", \"company\", \"deal\", \"ticket\"])\n    if (type.includes(name)) event[name + \"Id\"] = event.objectId;\n  delete event.objectId;\n  return { json: event };\n});\n"
+      }
+    },
+    {
+      "id": "receive-hubspot-app-events-relay",
+      "name": "Forward to Open Flow",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        880,
+        0
+      ],
+      "disabled": true,
+      "parameters": {
+        "method": "POST",
+        "url": "YOUR_OPEN_FLOW_WEBHOOK_URL",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {event: JSON.stringify($json)} }}",
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Receive HubSpot events": {
+      "main": [
+        [
+          {
+            "node": "Read original request bytes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read original request bytes": {
+      "main": [
+        [
+          {
+            "node": "Compute HubSpot signature",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compute HubSpot signature": {
+      "main": [
+        [
+          {
+            "node": "Valid HubSpot request?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Valid HubSpot request?": {
+      "main": [
+        [
+          {
+            "node": "Decode events",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Decode events": {
+      "main": [
+        [
+          {
+            "node": "Forward to Open Flow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
