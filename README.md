@@ -677,6 +677,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Receive Customer.io Unsubscribes](workflows/receive-customerio-unsubscribes/) - Receive Customer.io customer unsubscribe events.
 - [Receive Mailjet Sent Events](workflows/receive-mailjet-sent-events/) - Receive Mailjet email sent events with exact message IDs.
 - [Receive Postmark Email Events](workflows/receive-postmark-email-events/) - Receive Postmark bounce and email open events.
+- [Receive Zendesk Ticket Updates](workflows/receive-zendesk-ticket-updates/) - Receive Zendesk Support ticket notifications.
 
 ## Communication
 
