@@ -504,6 +504,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Copy New Drive Files to S3](workflows/copy-new-drive-files-to-s3/) - Copy updated Google Drive files to S3 when their names are absent from the bucket.
 - [Archive Liked Songs in Monthly Spotify Playlists](workflows/archive-liked-songs-in-monthly-spotify-playlists/) - Save recently liked songs in NocoDB and add them to a matching monthly Spotify playlist.
 - [Create ClickUp Tasks from Slack Commands](workflows/slack-command-to-clickup-task/) - Create a ClickUp task from a Slack slash command and reply with its task ID.
+- [Sync Notion and ClickUp Tasks](workflows/sync-notion-and-clickup-tasks/) - Synchronize Notion page details to ClickUp and ClickUp status changes back to Notion.
 
 ## Content
 
