@@ -1,0 +1,168 @@
+{
+  "kind": "open-flow-workflow",
+  "version": 1,
+  "name": "Read a SharePoint List on a Schedule",
+  "content": {
+    "modelVersion": 15,
+    "document": {
+      "bindings": {},
+      "graph": {
+        "nodes": {
+          "n_0067292d788e72e5": {
+            "name": "Daily at 00:00 UTC",
+            "kind": "cron",
+            "cronTimes": [
+              {
+                "type": "cron",
+                "expression": "0 0 * * *",
+                "timezone": "UTC"
+              }
+            ]
+          },
+          "n_82620c9f7707ac37": {
+            "inputs": {
+              "tenantId": {
+                "kind": "value",
+                "value": "YOUR_TENANT_ID"
+              },
+              "clientId": {
+                "kind": "value",
+                "value": "YOUR_CLIENT_ID"
+              },
+              "clientSecret": {
+                "kind": "unset"
+              },
+              "siteId": {
+                "kind": "value",
+                "value": "YOUR_SITE_ID"
+              },
+              "listId": {
+                "kind": "value",
+                "value": "YOUR_LIST_ID"
+              }
+            },
+            "name": "Read the SharePoint list",
+            "kind": "task",
+            "task": {
+              "inputs": [
+                {
+                  "jsonSchema": {
+                    "type": "string"
+                  },
+                  "nullable": false,
+                  "handle": "tenantId"
+                },
+                {
+                  "jsonSchema": {
+                    "type": "string"
+                  },
+                  "nullable": false,
+                  "handle": "clientId"
+                },
+                {
+                  "jsonSchema": {
+                    "type": "string"
+                  },
+                  "nullable": false,
+                  "handle": "clientSecret"
+                },
+                {
+                  "jsonSchema": {
+                    "type": "string"
+                  },
+                  "nullable": false,
+                  "handle": "siteId"
+                },
+                {
+                  "jsonSchema": {
+                    "type": "string"
+                  },
+                  "nullable": false,
+                  "handle": "listId"
+                }
+              ],
+              "outputs": [
+                {
+                  "jsonSchema": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": true
+                    }
+                  },
+                  "nullable": false,
+                  "handle": "items"
+                }
+              ],
+              "name": "Read the SharePoint list",
+              "moduleId": "n_bb236a618e50e86d",
+              "capabilities": [
+                {
+                  "kind": "http",
+                  "hosts": [
+                    "login.microsoftonline.com",
+                    "graph.microsoft.com"
+                  ]
+                }
+              ]
+            }
+          },
+          "n_3f2f69ec7d1176e1": {
+            "name": "List items",
+            "kind": "outputs",
+            "outputDefs": [
+              {
+                "jsonSchema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": true
+                  }
+                },
+                "nullable": false,
+                "handle": "items"
+              }
+            ],
+            "outputMappings": {
+              "items": {
+                "kind": "sources",
+                "sources": [
+                  {
+                    "kind": "node",
+                    "nodeId": "n_82620c9f7707ac37",
+                    "output": "items"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "edges": [
+          {
+            "source": "n_0067292d788e72e5",
+            "target": "n_82620c9f7707ac37"
+          },
+          {
+            "source": "n_82620c9f7707ac37",
+            "target": "n_3f2f69ec7d1176e1"
+          }
+        ]
+      }
+    },
+    "modules": {
+      "n_bb236a618e50e86d": {
+        "name": "Read the SharePoint list",
+        "imports": [],
+        "source": "export default async function read({ tenantId, clientId, clientSecret, siteId, listId }, context) {\n  for (const v of [tenantId, clientId, clientSecret, siteId, listId])\n    if (typeof v !== \"string\" || !v.trim() || v.startsWith(\"YOUR_\"))\n      throw Error(\"Configure Microsoft application, site and list\");\n  if (!/^[a-zA-Z0-9.-]+$/.test(tenantId)) throw Error(\"Invalid tenant ID\");\n  let tokenResponse;\n  try {\n    tokenResponse = await context.fetch(\n      `https://login.microsoftonline.com/${encodeURIComponent(tenantId)}/oauth2/v2.0/token`,\n      {\n        method: \"POST\",\n        headers: { \"content-type\": \"application/x-www-form-urlencoded\" },\n        body:\n          \"client_id=\" +\n          encodeURIComponent(clientId) +\n          \"&client_secret=\" +\n          encodeURIComponent(clientSecret) +\n          \"&scope=\" +\n          encodeURIComponent(\"https://graph.microsoft.com/.default\") +\n          \"&grant_type=client_credentials\",\n      },\n    );\n  } catch {\n    throw Error(\"Microsoft token request failed\");\n  }\n  if (!tokenResponse.ok) throw Error(\"Microsoft token request rejected\");\n  const token = (await tokenResponse.json()).access_token;\n  if (typeof token !== \"string\" || !token) throw Error(\"Microsoft token missing\");\n  let url = `https://graph.microsoft.com/v1.0/sites/${encodeURIComponent(siteId)}/lists/${encodeURIComponent(listId)}/items?%24expand=fields`,\n    items = [],\n    seen = new Set();\n  while (url) {\n    if (!url.startsWith(\"https://graph.microsoft.com/v1.0/\") || seen.has(url))\n      throw Error(\"Invalid Graph next link\");\n    seen.add(url);\n    if (seen.size > 1000) throw Error(\"Graph page limit exceeded\");\n    let r;\n    try {\n      r = await context.fetch(url, {\n        headers: { authorization: \"Bearer \" + token, accept: \"application/json\" },\n      });\n    } catch {\n      throw Error(\"Graph list request failed\");\n    }\n    if (!r.ok) throw Error(\"Graph list request rejected\");\n    const page = await r.json();\n    if (!Array.isArray(page?.value)) throw Error(\"Invalid Graph list page\");\n    items.push(...page.value);\n    url = page[\"@odata.nextLink\"] ?? null;\n    if (url !== null && typeof url !== \"string\") throw Error(\"Invalid Graph next link\");\n  }\n  return { items };\n}\n"
+      }
+    }
+  },
+  "presentation": {
+    "designer": {
+      "version": 1,
+      "flow": {
+        "direction": "vertical"
+      }
+    }
+  }
+}

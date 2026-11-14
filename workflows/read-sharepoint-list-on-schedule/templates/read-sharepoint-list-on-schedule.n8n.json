@@ -1,0 +1,129 @@
+{
+  "nodes": [
+    {
+      "id": "read-sharepoint-list-on-schedule-0",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "daysInterval": 1,
+              "triggerAtHour": 0,
+              "triggerAtMinute": 0
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "name": "Configure list",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const siteId = \"YOUR_SITE_ID\",\n  listId = \"YOUR_LIST_ID\";\nif ([siteId, listId].some((x) => !x || x.startsWith(\"YOUR_\")))\n  throw Error(\"Configure site and list\");\nreturn [{ json: { siteId, listId } }];\n"
+      },
+      "id": "read-sharepoint-list-on-schedule-1",
+      "position": [
+        250,
+        300
+      ]
+    },
+    {
+      "name": "Read Graph list pages",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ 'https://graph.microsoft.com/v1.0/sites/'+encodeURIComponent($('Configure list').first().json.siteId)+'/lists/'+encodeURIComponent($('Configure list').first().json.listId)+'/items?%24expand=fields' }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "oAuth2Api",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          },
+          "pagination": {
+            "pagination": {
+              "paginationMode": "responseContainsNextURL",
+              "nextURL": "={{ $pageCount === 0 ? 'https://graph.microsoft.com/v1.0/sites/'+encodeURIComponent($('Configure list').first().json.siteId)+'/lists/'+encodeURIComponent($('Configure list').first().json.listId)+'/items?%24expand=fields' : (()=>{const u=$response.body['@odata.nextLink'];if(typeof u!=='string'||!u.startsWith('https://graph.microsoft.com/v1.0/'))throw Error('Invalid Graph next link');return u})() }}",
+              "paginationCompleteWhen": "other",
+              "completeExpression": "={{ (()=>{const b=$response.body;if(!Array.isArray(b?.value))throw Error('Invalid Graph list page');return !b['@odata.nextLink']})() }}",
+              "limitPagesFetched": false
+            }
+          }
+        }
+      },
+      "id": "read-sharepoint-list-on-schedule-2",
+      "position": [
+        500,
+        300
+      ]
+    },
+    {
+      "name": "Collect list items",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const items = [];\nfor (const x of $input.all()) {\n  if (!Array.isArray(x.json.body?.value)) throw Error(\"Invalid Graph list page\");\n  items.push(...x.json.body.value);\n}\nreturn [{ json: { items } }];\n"
+      },
+      "id": "read-sharepoint-list-on-schedule-3",
+      "position": [
+        750,
+        300
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Configure list",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configure list": {
+      "main": [
+        [
+          {
+            "node": "Read Graph list pages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Graph list pages": {
+      "main": [
+        [
+          {
+            "node": "Collect list items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Read a SharePoint List on a Schedule",
+  "active": false,
+  "settings": {
+    "timezone": "UTC",
+    "executionOrder": "v1"
+  }
+}
