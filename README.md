@@ -762,6 +762,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Publish ISS Position to RabbitMQ](workflows/publish-iss-position-to-rabbitmq/) - Publish the current International Space Station position to a RabbitMQ queue every minute.
 - [Publish ISS Position to Kafka](workflows/publish-iss-position-to-kafka/) - Publish the current International Space Station position to a Kafka topic every minute.
 - [Save ISS Position to TimescaleDB](workflows/save-iss-position-to-timescaledb/) - Save the current International Space Station position to TimescaleDB every minute.
+- [Fetch, Transform and Deliver Posts](workflows/fetch-transform-and-deliver-posts/) - Fetch posts, select three fields from the first ten, and deliver each item to an HTTP endpoint.
 
 ## Communications
 
