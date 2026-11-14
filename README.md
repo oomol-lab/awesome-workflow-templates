@@ -689,6 +689,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Receive Pipedrive Changes](workflows/receive-pipedrive-changes/) - Receive Pipedrive change notifications.
 - [Receive PayPal Plan Activations](workflows/receive-paypal-plan-activations/) - Receive PayPal billing plan activation events.
 - [Receive Server-Sent Events](workflows/receive-server-sent-events/) - Receive JSON events from a server-sent events stream.
+- [Receive Clockify Time Entries](workflows/receive-clockify-time-entries/) - Poll Clockify for completed time entries.
 
 ## Communication
 
