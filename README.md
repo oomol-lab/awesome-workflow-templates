@@ -750,6 +750,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Import 2023 DACH COVID Testing Data](workflows/import-2023-dach-covid-testing-data/) - Import 2023 COVID testing records for Germany, Austria and Switzerland into Google Sheets.
 - [Random User to CSV and Google Sheets](workflows/random-user-to-csv-and-google-sheets/) - Fetch a random user, create a CSV and append the same fields to Google Sheets.
 - [Random User Name and Country to CSV and Sheets](workflows/random-user-name-and-country-to-csv-and-sheets/) - Fetch a random user, create a CSV and append the same fields to Google Sheets.
+- [Publish ISS Position to MQTT](workflows/publish-iss-position-to-mqtt/) - Publish the current International Space Station position to an MQTT topic every minute.
 
 ## Communications
 
