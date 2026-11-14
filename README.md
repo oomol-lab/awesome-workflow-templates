@@ -294,6 +294,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Extract Amazon Bestsellers and Notify](workflows/extract-amazon-bestsellers-and-notify/) - Extract structured bestseller information from an Amazon page and send it to a webhook.
 - [Sync Calendly Guests with KlickTipp](workflows/sync-calendly-guests-with-klicktipp/) - Synchronize Calendly invitees and guests with KlickTipp on bookings and cancellations.
 - [Generate an Event Banner for Discord](workflows/generate-event-banner-for-discord/) - Generate an event poster from a prompt and share it as a Discord attachment.
+- [Create Event Posters for Discord](workflows/create-event-posters-for-discord/) - Generate an event poster from a prompt and share it as a Discord attachment.
 
 ## Support
 
