@@ -1,0 +1,244 @@
+{
+  "nodes": [
+    {
+      "name": "Google Drive Trigger",
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "position": [
+        480,
+        1480
+      ],
+      "parameters": {
+        "event": "fileUpdated",
+        "options": {},
+        "triggerOn": "specificFolder",
+        "folderToWatch": "YOUR_DRIVE_FOLDER_ID"
+      },
+      "typeVersion": 1,
+      "id": "copy-new-drive-files-to-s3-0"
+    },
+    {
+      "name": "Merge",
+      "type": "n8n-nodes-base.merge",
+      "position": [
+        680,
+        1560
+      ],
+      "parameters": {
+        "mode": "removeKeyMatches",
+        "propertyName1": "name",
+        "propertyName2": "Key"
+      },
+      "typeVersion": 1,
+      "id": "copy-new-drive-files-to-s3-1"
+    },
+    {
+      "name": "AWS S3  - get",
+      "type": "n8n-nodes-base.awsS3",
+      "position": [
+        480,
+        1660
+      ],
+      "parameters": {
+        "options": {},
+        "operation": "getAll",
+        "bucketName": "YOUR_S3_BUCKET",
+        "returnAll": true
+      },
+      "typeVersion": 1,
+      "id": "copy-new-drive-files-to-s3-2",
+      "alwaysOutputData": true
+    },
+    {
+      "name": "AWS S3 - upload",
+      "type": "n8n-nodes-base.awsS3",
+      "position": [
+        860,
+        1560
+      ],
+      "parameters": {
+        "tagsUi": {
+          "tagsValues": [
+            {
+              "key": "source",
+              "value": "gdrive"
+            }
+          ]
+        },
+        "fileName": "={{$json[\"name\"]}}",
+        "operation": "upload",
+        "binaryData": true,
+        "bucketName": "YOUR_S3_BUCKET",
+        "additionalFields": {
+          "serverSideEncryption": "AES256"
+        },
+        "binaryPropertyName": "data"
+      },
+      "typeVersion": 1,
+      "id": "copy-new-drive-files-to-s3-3"
+    },
+    {
+      "name": "Google Drive Trigger (Open Flow)",
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "position": [
+        480,
+        2000
+      ],
+      "parameters": {
+        "event": "fileUpdated",
+        "options": {},
+        "triggerOn": "specificFolder",
+        "folderToWatch": "YOUR_DRIVE_FOLDER_ID"
+      },
+      "typeVersion": 1,
+      "id": "copy-new-drive-files-to-s3-relay-trigger",
+      "disabled": true
+    },
+    {
+      "id": "copy-new-drive-files-to-s3-forward",
+      "name": "Ask Open Flow",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        700,
+        2000
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "YOUR_OPEN_FLOW_WEBHOOK_URL",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {event: JSON.stringify($json)} }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "copy-new-drive-files-to-s3-check",
+      "name": "Upload absent file?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        920,
+        2000
+      ],
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.upload }}",
+              "operation": "equal",
+              "value2": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "copy-new-drive-files-to-s3-download",
+      "name": "Download Drive file",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 2,
+      "position": [
+        1100,
+        1600
+      ],
+      "parameters": {
+        "resource": "file",
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Download Drive file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AWS S3  - get": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Google Drive Trigger": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "AWS S3  - get",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Drive Trigger (Open Flow)": {
+      "main": [
+        [
+          {
+            "node": "Ask Open Flow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ask Open Flow": {
+      "main": [
+        [
+          {
+            "node": "Upload absent file?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload absent file?": {
+      "main": [
+        [
+          {
+            "node": "Download Drive file",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Download Drive file": {
+      "main": [
+        [
+          {
+            "node": "AWS S3 - upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Copy New Drive Files to S3",
+  "active": false,
+  "pinData": {}
+}

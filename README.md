@@ -500,6 +500,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Batch Airtable Record Operations](workflows/batch-airtable-record-operations/) - Insert, update or upsert Airtable records in batches of ten.
 - [Reformat a Telegram Resume PDF](workflows/reformat-telegram-resume-pdf/) - Extract a resume PDF sent to a Telegram bot, format its details, and return a new PDF.
 - [Send Gmail Promotions as Telegram Audio](workflows/send-gmail-promotions-as-telegram-audio/) - Summarize new promotional emails and send the summary as Telegram audio.
+- [Copy New Drive Files to S3](workflows/copy-new-drive-files-to-s3/) - Copy updated Google Drive files to S3 when their names are absent from the bucket.
 
 ## Content
 
