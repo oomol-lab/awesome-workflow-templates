@@ -1,0 +1,466 @@
+{
+  "name": "Archive Duplicate Notion Pages",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "archive-duplicate-notion-pages-0",
+      "name": "Every day",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "daysInterval": 1,
+              "triggerAtHour": 0,
+              "triggerAtMinute": 0
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "archive-duplicate-notion-pages-1",
+      "name": "When a page is added to the database",
+      "type": "n8n-nodes-base.notionTrigger",
+      "position": [
+        240,
+        300
+      ],
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "databaseId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_NOTION_DATABASE_ID"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "name": "Configure database",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const sourceId = \"YOUR_NOTION_DATA_SOURCE_ID\",\n  property = \"YOUR_TEXT_PROPERTY\";\nif ([sourceId, property].some((x) => !x || x.startsWith(\"YOUR_\")))\n  throw Error(\"Configure data source and property\");\nreturn [{ json: { sourceId, property } }];\n"
+      },
+      "id": "archive-duplicate-notion-pages-2",
+      "position": [
+        480,
+        300
+      ]
+    },
+    {
+      "name": "Query pages",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'https://api.notion.com/v1/data_sources/'+$('Configure database').first().json.sourceId+'/query' }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Notion-Version",
+              "value": "2026-03-11"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({page_size:100}) }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          },
+          "pagination": {
+            "pagination": {
+              "paginationMode": "updateAParameterInEachRequest",
+              "parameters": {
+                "parameters": [
+                  {
+                    "type": "body",
+                    "name": "start_cursor",
+                    "value": "={{ $response?.body?.next_cursor }}"
+                  }
+                ]
+              },
+              "paginationCompleteWhen": "other",
+              "completeExpression": "={{ !$response.body.has_more }}",
+              "limitPagesFetched": false
+            }
+          }
+        }
+      },
+      "id": "archive-duplicate-notion-pages-3",
+      "position": [
+        720,
+        300
+      ]
+    },
+    {
+      "name": "Find duplicates",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const property = $(\"Configure database\").first().json.property,\n  pages = [];\nfor (const item of $input.all()) {\n  const b = item.json.body;\n  if (!Array.isArray(b?.results) || typeof b.has_more !== \"boolean\") throw Error(\"Invalid page\");\n  pages.push(...b.results);\n}\nconst entries = pages\n  .map((p) => {\n    const prop = p?.properties?.[property],\n      type = prop?.type,\n      parts = prop?.[type];\n    if (\n      !p?.id ||\n      !p.created_time ||\n      ![\"title\", \"rich_text\"].includes(type) ||\n      !Array.isArray(parts) ||\n      parts.length >= 25 ||\n      parts.some((x) => typeof x?.plain_text !== \"string\")\n    )\n      throw Error(\"Unsupported or incomplete text property\");\n    return {\n      id: p.id,\n      created: p.created_time,\n      key: parts.map((x) => x.plain_text ?? \"\").join(\"\"),\n    };\n  })\n  .filter((x) => x.key)\n  .sort((a, b) => a.created.localeCompare(b.created) || a.id.localeCompare(b.id));\nconst seen = new Set(),\n  ids = new Set(),\n  out = [];\nfor (const e of entries) {\n  if (ids.has(e.id)) continue;\n  ids.add(e.id);\n  if (seen.has(e.key)) out.push({ json: { id: e.id } });\n  else seen.add(e.key);\n}\nreturn out;\n"
+      },
+      "id": "archive-duplicate-notion-pages-4",
+      "position": [
+        960,
+        300
+      ]
+    },
+    {
+      "name": "Process duplicate",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "archive-duplicate-notion-pages-5",
+      "position": [
+        1200,
+        300
+      ]
+    },
+    {
+      "name": "Existing checkpoint",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "page_id",
+              "condition": "eq",
+              "keyValue": "={{ $json.id }}"
+            }
+          ]
+        },
+        "operation": "rowExists"
+      },
+      "id": "archive-duplicate-notion-pages-6",
+      "position": [
+        1440,
+        300
+      ]
+    },
+    {
+      "name": "New checkpoint",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "page_id",
+              "condition": "eq",
+              "keyValue": "={{ $json.id }}"
+            }
+          ]
+        },
+        "operation": "rowNotExists"
+      },
+      "id": "archive-duplicate-notion-pages-7",
+      "position": [
+        1680,
+        300
+      ]
+    },
+    {
+      "name": "Mark archive pending",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "page_id": "={{ $('Process duplicate').item.json.id }}",
+            "status": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "archive-duplicate-notion-pages-8",
+      "position": [
+        1920,
+        300
+      ]
+    },
+    {
+      "name": "Archive page",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ 'https://api.notion.com/v1/pages/'+$('Process duplicate').item.json.id }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Notion-Version",
+              "value": "2026-03-11"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({in_trash:true}) }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "archive-duplicate-notion-pages-9",
+      "position": [
+        2160,
+        300
+      ]
+    },
+    {
+      "name": "Confirm archive",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const expected = $(\"Process duplicate\").item.json.id;\nif ($json.id !== expected || $json.in_trash !== true) throw Error(\"Archive not confirmed\");\nreturn [{ json: { confirmed: true }, pairedItem: { item: 0 } }];\n"
+      },
+      "id": "archive-duplicate-notion-pages-10",
+      "position": [
+        2400,
+        300
+      ]
+    },
+    {
+      "name": "Mark archive done",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Mark archive pending').item.json.id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "done"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "archive-duplicate-notion-pages-11",
+      "position": [
+        2640,
+        300
+      ]
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC"
+  },
+  "connections": {
+    "Every day": {
+      "main": [
+        [
+          {
+            "node": "Configure database",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When a page is added to the database": {
+      "main": [
+        [
+          {
+            "node": "Configure database",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configure database": {
+      "main": [
+        [
+          {
+            "node": "Query pages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Query pages": {
+      "main": [
+        [
+          {
+            "node": "Find duplicates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find duplicates": {
+      "main": [
+        [
+          {
+            "node": "Process duplicate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process duplicate": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Existing checkpoint",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "New checkpoint",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Existing checkpoint": {
+      "main": [
+        [
+          {
+            "node": "Process duplicate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "New checkpoint": {
+      "main": [
+        [
+          {
+            "node": "Mark archive pending",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark archive pending": {
+      "main": [
+        [
+          {
+            "node": "Archive page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Archive page": {
+      "main": [
+        [
+          {
+            "node": "Confirm archive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm archive": {
+      "main": [
+        [
+          {
+            "node": "Mark archive done",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark archive done": {
+      "main": [
+        [
+          {
+            "node": "Process duplicate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
