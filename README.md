@@ -178,6 +178,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Create, Update, and Read an UptimeRobot Monitor](workflows/create-update-and-read-an-uptimerobot-monitor/) - Create an HTTP monitor, rename it, and read its details.
 - [Export n8n Executions as CSV](workflows/export-n8n-executions-as-csv/) - Read all available n8n executions and convert their metadata to CSV.
 - [Diagnose n8n Execution Errors by Email](workflows/diagnose-n8n-execution-errors-by-email/) - Analyze failed n8n execution errors with AI and email a diagnostic report.
+- [Activate n8n Workflows With an Auto Start Tag](workflows/activate-n8n-workflows-with-an-auto-start-tag/) - Activate imported n8n workflows tagged Auto start.
 
 ## Marketing
 
