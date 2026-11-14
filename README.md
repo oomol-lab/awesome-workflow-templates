@@ -193,6 +193,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Create Google Credentials in n8n](workflows/create-google-credentials-in-n8n/) - Create seven named Google OAuth credential records in n8n using one Google OAuth client.
 - [Email n8n Execution and Trigger Errors](workflows/email-n8n-execution-and-trigger-errors/) - Email detailed n8n execution errors and trigger failures.
 - [Control n8n Workflows from Telegram](workflows/control-n8n-workflows-from-telegram/) - Start or stop two configured n8n workflows from an authorized Telegram chat.
+- [Email Recent n8n Release Notes](workflows/email-recent-n8n-release-notes/) - Check the latest n8n GitHub release daily and email its release notes when it is less than one day old.
 
 ## Marketing
 
