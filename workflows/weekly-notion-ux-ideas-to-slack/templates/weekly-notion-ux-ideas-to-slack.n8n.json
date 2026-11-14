@@ -1,0 +1,192 @@
+{
+  "nodes": [
+    {
+      "id": "weekly-notion-ux-ideas-to-slack-0",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "notes": "Execute WF on a schedule",
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "weeksInterval": 1,
+              "triggerAtDay": [
+                1
+              ],
+              "triggerAtHour": 9,
+              "triggerAtMinute": 0
+            }
+          ]
+        }
+      },
+      "notesInFlow": true,
+      "typeVersion": 1.1
+    },
+    {
+      "name": "Configure report",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const sourceId = \"YOUR_NOTION_DATA_SOURCE_ID\",\n  typeProperty = \"YOUR_MULTI_SELECT_PROPERTY\";\nif ([sourceId, typeProperty].some((x) => !x || x.startsWith(\"YOUR_\")))\n  throw Error(\"Configure data source and property\");\nreturn [\n  { json: { sourceId, typeProperty, since: new Date(Date.now() - 7 * 86400000).toISOString() } },\n];\n"
+      },
+      "id": "weekly-notion-ux-ideas-to-slack-1",
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "name": "Query ideas",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'https://api.notion.com/v1/data_sources/'+$('Configure report').first().json.sourceId+'/query' }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Notion-Version",
+              "value": "2026-03-11"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({page_size:100,filter:{timestamp:'created_time',created_time:{on_or_after:$('Configure report').first().json.since}}}) }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          },
+          "pagination": {
+            "pagination": {
+              "paginationMode": "updateAParameterInEachRequest",
+              "parameters": {
+                "parameters": [
+                  {
+                    "type": "body",
+                    "name": "start_cursor",
+                    "value": "={{ $response?.body?.next_cursor }}"
+                  }
+                ]
+              },
+              "paginationCompleteWhen": "other",
+              "completeExpression": "={{ !$response.body.has_more }}",
+              "limitPagesFetched": false
+            }
+          }
+        }
+      },
+      "id": "weekly-notion-ux-ideas-to-slack-2",
+      "position": [
+        480,
+        300
+      ]
+    },
+    {
+      "name": "Count new UX ideas",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const prop = $(\"Configure report\").first().json.typeProperty,\n  ids = new Set();\nfor (const item of $input.all()) {\n  const b = item.json.body;\n  if (!b || !Array.isArray(b.results) || typeof b.has_more !== \"boolean\")\n    throw Error(\"Invalid Notion page\");\n  for (const p of b.results) {\n    const v = p?.properties?.[prop];\n    if (\n      p?.object !== \"page\" ||\n      !p.id ||\n      v?.type !== \"multi_select\" ||\n      !Array.isArray(v.multi_select)\n    )\n      throw Error(\"Invalid page or UX property\");\n    if (v.multi_select.some((x) => x.name === \"UX\")) ids.add(p.id);\n  }\n}\nreturn [{ json: { text: `Yay, we added *${ids.size} new UX ideas* in the last 7 days :tada:` } }];\n"
+      },
+      "id": "weekly-notion-ux-ideas-to-slack-3",
+      "position": [
+        720,
+        300
+      ]
+    },
+    {
+      "id": "weekly-notion-ux-ideas-to-slack-4",
+      "name": "Post weekly summary",
+      "type": "n8n-nodes-base.slack",
+      "notes": "Post message in channel",
+      "position": [
+        960,
+        300
+      ],
+      "parameters": {
+        "authentication": "accessToken",
+        "resource": "message",
+        "operation": "post",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_SLACK_CHANNEL_ID"
+        },
+        "messageType": "text",
+        "text": "={{ $json.text }}",
+        "otherOptions": {}
+      },
+      "notesInFlow": true,
+      "typeVersion": 2
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Configure report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configure report": {
+      "main": [
+        [
+          {
+            "node": "Query ideas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Query ideas": {
+      "main": [
+        [
+          {
+            "node": "Count new UX ideas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Count new UX ideas": {
+      "main": [
+        [
+          {
+            "node": "Post weekly summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Weekly Notion UX Ideas to Slack",
+  "active": false,
+  "settings": {
+    "timezone": "UTC",
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}

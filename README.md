@@ -458,6 +458,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Translate SRT Subtitles with Google](workflows/translate-srt-subtitles-with-google/) - Translate SRT subtitle text into English or Japanese while retaining cue numbers and timestamps.
 - [Record LINE Receipt Images in Google Sheets](workflows/record-line-receipts-in-google-sheets/) - Archive LINE receipt images and record extracted Thai transfer details in Google Sheets.
 - [Reconcile Gmail Messages with Todoist Tasks](workflows/reconcile-gmail-messages-with-todoist-tasks/) - Turn unread or starred inbox messages into Todoist tasks and close tracked tasks when messages leave the active inbox set.
+- [Weekly Notion UX Ideas to Slack](workflows/weekly-notion-ux-ideas-to-slack/) - Count new UX ideas in a Notion data source and post a weekly Slack summary.
 
 ## Content
 
