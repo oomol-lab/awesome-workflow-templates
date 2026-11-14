@@ -618,6 +618,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Truncate a Text Summary via Webhook](workflows/truncate-text-summary-webhook/) - Return a short text excerpt from a webhook request.
 - [Receive TheHive Event Updates](workflows/receive-thehive-event-updates/) - Receive all TheHive events with their original request details.
 - [Receive Toggl Time Entries](workflows/receive-toggl-time-entries/) - Poll Toggl for time entries on a schedule.
+- [Receive Trello List Changes](workflows/receive-trello-list-changes/) - Receive change events for a Trello list.
 
 ## Communication
 
