@@ -302,6 +302,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Save New X Search Results to Airtable](workflows/save-new-x-search-results-to-airtable/) - Search recent X posts and append results whose IDs are not already in an Airtable table.
 - [Look Up a Person by Email with Clearbit](workflows/look-up-person-by-email-with-clearbit/) - Look up a person using an email address with Clearbit.
 - [Compare Workflow Tools with Perplexity](workflows/compare-workflow-tools-with-perplexity/) - Ask Perplexity Sonar to compare workflow tools using selected domains and return citations.
+- [Research a Query With Perplexity Sonar](workflows/research-a-query-with-perplexity-sonar/) - Research a query with Perplexity Sonar and return the answer.
 
 ## Productivity
 
