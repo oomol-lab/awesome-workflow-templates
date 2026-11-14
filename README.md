@@ -574,6 +574,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Process Ten Example Items One at a Time](workflows/process-ten-example-items-one-at-a-time/) - Learn how a one-item batch loop finishes after ten example numbers.
 - [Stop an Example Batch Loop at Index Five](workflows/stop-an-example-batch-loop-at-index-five/) - Learn how a one-item batch loop stops at run index five.
 - [Create or Update a Dub Short Link](workflows/create-or-update-a-dub-short-link/) - Create a short link or update an existing link with the same domain and key.
+- [ZIP Multiple Input Files](workflows/zip-multiple-input-files/) - Combine multiple input files into a single ZIP archive.
 
 ## Analytics
 
