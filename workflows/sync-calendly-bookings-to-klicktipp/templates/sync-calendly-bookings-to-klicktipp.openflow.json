@@ -1,0 +1,234 @@
+{
+  "kind": "open-flow-workflow",
+  "version": 1,
+  "name": "Sync Calendly Bookings to KlickTipp",
+  "content": {
+    "modelVersion": 15,
+    "document": {
+      "bindings": {},
+      "graph": {
+        "nodes": {
+          "n_06f8be4420f206fb": {
+            "name": "Receive Calendly event",
+            "kind": "webhook",
+            "bodyFields": [
+              {
+                "jsonSchema": {
+                  "type": "string"
+                },
+                "nullable": false,
+                "handle": "event"
+              }
+            ],
+            "method": "POST"
+          },
+          "n_98dee7288273e087": {
+            "inputs": {
+              "body": {
+                "kind": "sources",
+                "sources": [
+                  {
+                    "kind": "node",
+                    "nodeId": "n_06f8be4420f206fb",
+                    "output": "body"
+                  }
+                ]
+              }
+            },
+            "name": "Decode event",
+            "kind": "task",
+            "task": {
+              "inputs": [
+                {
+                  "jsonSchema": {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  "nullable": false,
+                  "handle": "body"
+                }
+              ],
+              "outputs": [
+                {
+                  "jsonSchema": {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  "nullable": false,
+                  "handle": "event"
+                }
+              ],
+              "name": "Decode event",
+              "moduleId": "n_63842a438d888a3d",
+              "capabilities": [
+                {
+                  "kind": "connector",
+                  "mode": "independent",
+                  "actions": []
+                }
+              ]
+            }
+          },
+          "n_f8032545619b595c": {
+            "inputs": {
+              "event": {
+                "kind": "sources",
+                "sources": [
+                  {
+                    "kind": "node",
+                    "nodeId": "n_98dee7288273e087",
+                    "output": "event"
+                  }
+                ]
+              },
+              "username": {
+                "kind": "unset"
+              },
+              "password": {
+                "kind": "unset"
+              },
+              "settings": {
+                "kind": "value",
+                "value": {
+                  "listId": 0,
+                  "bookingTagId": 0,
+                  "cancellationTagId": 0,
+                  "fields": {
+                    "eventName": "YOUR_EVENT_NAME_FIELD",
+                    "joinUrl": "YOUR_JOIN_URL_FIELD",
+                    "rescheduleUrl": "YOUR_RESCHEDULE_URL_FIELD",
+                    "cancelUrl": "YOUR_CANCEL_URL_FIELD",
+                    "start": "YOUR_EVENT_START_FIELD",
+                    "end": "YOUR_EVENT_END_FIELD",
+                    "localStart": "YOUR_LOCAL_START_FIELD",
+                    "localEnd": "YOUR_LOCAL_END_FIELD",
+                    "startTime": "YOUR_START_TIME_FIELD",
+                    "endTime": "YOUR_END_TIME_FIELD",
+                    "timezone": "YOUR_TIMEZONE_FIELD",
+                    "guests": "YOUR_GUESTS_FIELD"
+                  }
+                }
+              }
+            },
+            "name": "Sync invitee and guests",
+            "kind": "task",
+            "task": {
+              "inputs": [
+                {
+                  "jsonSchema": {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  "nullable": false,
+                  "handle": "event"
+                },
+                {
+                  "jsonSchema": {
+                    "type": "string"
+                  },
+                  "nullable": false,
+                  "handle": "username"
+                },
+                {
+                  "jsonSchema": {
+                    "type": "string"
+                  },
+                  "nullable": false,
+                  "handle": "password"
+                },
+                {
+                  "jsonSchema": {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  "nullable": false,
+                  "handle": "settings"
+                }
+              ],
+              "outputs": [
+                {
+                  "jsonSchema": {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  "nullable": false,
+                  "handle": "result"
+                }
+              ],
+              "name": "Sync invitee and guests",
+              "moduleId": "n_f1f97a82fd9d3fb3",
+              "capabilities": [
+                {
+                  "kind": "http",
+                  "hosts": [
+                    "api.klicktipp.com"
+                  ]
+                }
+              ]
+            }
+          },
+          "n_75ef6ce680035631": {
+            "name": "Return sync result",
+            "kind": "outputs",
+            "outputDefs": [
+              {
+                "jsonSchema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "nullable": false,
+                "handle": "result"
+              }
+            ],
+            "outputMappings": {
+              "result": {
+                "kind": "sources",
+                "sources": [
+                  {
+                    "kind": "node",
+                    "nodeId": "n_f8032545619b595c",
+                    "output": "result"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "edges": [
+          {
+            "source": "n_06f8be4420f206fb",
+            "target": "n_98dee7288273e087"
+          },
+          {
+            "source": "n_98dee7288273e087",
+            "target": "n_f8032545619b595c"
+          },
+          {
+            "source": "n_f8032545619b595c",
+            "target": "n_75ef6ce680035631"
+          }
+        ]
+      }
+    },
+    "modules": {
+      "n_63842a438d888a3d": {
+        "name": "Decode event",
+        "imports": [],
+        "source": "export default function decode({ body }) {\n  return { event: JSON.parse(body.event) };\n}\n"
+      },
+      "n_f1f97a82fd9d3fb3": {
+        "name": "Sync invitee and guests",
+        "imports": [],
+        "source": "export default async function sync({ event, username, password, settings }, context) {\n  const p = event.payload,\n    s = p.scheduled_event,\n    booking = event.event === \"invitee.created\";\n  if (![\"invitee.created\", \"invitee.canceled\"].includes(event.event))\n    return { result: { ignored: true } };\n  const login = await context.fetch(\"https://api.klicktipp.com/account/login\", {\n    method: \"POST\",\n    headers: { \"Content-Type\": \"application/json\" },\n    body: JSON.stringify({ username, password }),\n  });\n  if (!login.ok) throw Error(\"KlickTipp login failed\");\n  const session = await login.json();\n  if (!session.sessid || !session.session_name) throw Error(\"KlickTipp login returned no session\");\n  const cookie = `${session.session_name}=${session.sessid}`;\n  const send = async (data) => {\n    let r;\n    try {\n      r = await context.fetch(\"https://api.klicktipp.com/subscriber\", {\n        method: \"POST\",\n        headers: { \"Content-Type\": \"application/json\", Cookie: cookie },\n        body: JSON.stringify(data),\n      });\n    } catch {\n      throw Error(\"KlickTipp write result unknown; inspect contacts before retrying\");\n    }\n    if (!r.ok) throw Error(\"KlickTipp write failed; inspect contacts before retrying\");\n    return await r.json();\n  };\n  const tagid = booking ? settings.bookingTagId : settings.cancellationTagId;\n  const base = { listid: settings.listId, tagid };\n  const mobile = (p.text_reminder_number || \"\").replace(\"+\", \"00\").replace(/\\s+/g, \"\");\n  const guestField = settings.fields.guests;\n  let guests = [],\n    fields;\n  if (booking) {\n    guests = (s.event_guests || []).map((g) => g.email);\n    const names = (p.name || \"\").split(\" \"),\n      f = settings.fields;\n    const clock = (v) => {\n      const parts = new Intl.DateTimeFormat(\"en-GB\", {\n        timeZone: p.timezone,\n        hour: \"2-digit\",\n        minute: \"2-digit\",\n        second: \"2-digit\",\n        hourCycle: \"h23\",\n      }).formatToParts(new Date(v));\n      const n = Object.fromEntries(parts.map((x) => [x.type, x.value]));\n      return Number(n.hour) * 3600 + Number(n.minute) * 60 + Number(n.second);\n    };\n    fields = {\n      fieldFirstName: p.first_name || names.slice(0, -1).join(\" \"),\n      fieldLastName: p.last_name || names.slice(-1).join(\"\"),\n      [f.eventName]: s.name,\n      [f.joinUrl]: s.location?.join_url || \"\",\n      [f.rescheduleUrl]: p.reschedule_url,\n      [f.cancelUrl]: p.cancel_url,\n      [f.start]: Math.floor(Date.parse(s.start_time) / 1000),\n      [f.end]: Math.floor(Date.parse(s.end_time) / 1000),\n      [f.localStart]: Math.floor(\n        new Date(\n          new Date(s.start_time).toLocaleString(\"en-US\", { timeZone: p.timezone }),\n        ).getTime() / 1000,\n      ),\n      [f.localEnd]: Math.floor(\n        new Date(new Date(s.end_time).toLocaleString(\"en-US\", { timeZone: p.timezone })).getTime() /\n          1000,\n      ),\n      [f.startTime]: clock(s.start_time),\n      [f.endTime]: clock(s.end_time),\n      [f.timezone]: p.timezone,\n      [guestField]: JSON.stringify(guests),\n    };\n  }\n  const invitee = await send({\n    ...base,\n    email: p.email,\n    ...(mobile ? { smsnumber: mobile } : {}),\n    ...(fields ? { fields } : {}),\n  });\n  if (!booking) {\n    const stored = invitee[guestField] || \"\";\n    if (stored) guests = JSON.parse(stored.replace(/&quot;/g, '\"'));\n  }\n  const written = [];\n  for (const email of guests) {\n    const guest = await send({\n      ...base,\n      email,\n      ...(fields\n        ? {\n            fields: Object.fromEntries(\n              Object.entries(fields).filter(\n                ([key]) => ![\"fieldFirstName\", \"fieldLastName\", guestField].includes(key),\n              ),\n            ),\n          }\n        : {}),\n    });\n    written.push(guest.id);\n  }\n  if (!booking && guests.length && !p.rescheduled)\n    await send({ ...base, email: p.email, fields: { [guestField]: \"\" } });\n  return { result: { inviteeId: invitee.id, guestIds: written } };\n}\n"
+      }
+    }
+  },
+  "presentation": {
+    "designer": {
+      "version": 1,
+      "flow": {
+        "direction": "vertical"
+      }
+    }
+  }
+}
