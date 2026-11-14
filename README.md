@@ -462,6 +462,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Weekly Notion UX Ideas to Slack](workflows/weekly-notion-ux-ideas-to-slack/) - Count new UX ideas in a Notion data source and post a weekly Slack summary.
 - [Create a Google Doc from Form Fields](workflows/create-google-doc-from-form-fields/) - Copy a Google Docs template and replace placeholders with submitted fields.
 - [Upload a Remote Image to SharePoint](workflows/upload-a-remote-image-to-sharepoint/) - Download a remote image and upload its bytes to the root SharePoint site drive.
+- [Send a Sweater Weather SMS](workflows/send-sweater-weather-sms/) - Send an SMS when the current feels-like temperature is below 18°C.
 
 ## Content
 
