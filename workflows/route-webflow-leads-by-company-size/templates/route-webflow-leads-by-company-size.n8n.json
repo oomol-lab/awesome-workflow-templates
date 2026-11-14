@@ -1,0 +1,187 @@
+{
+  "nodes": [
+    {
+      "id": "route-webflow-leads-by-company-size-0",
+      "name": "Get domain from email",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        -720,
+        700
+      ],
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "domain",
+              "value": "={{ $json.body.email.split(\"@\")[1] }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "route-webflow-leads-by-company-size-1",
+      "name": "Qualify Account",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        220,
+        700
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// this code will route lead in companies with more than 100 employees to 1:1 demo and other leads to group demo\n\n// feel free to tweak this code to fit your own qualification criteria\n\n// set default value to 2\n$input.item.json.result = 2;\n// initialize company_size\ncompany_size = 0;\n\nif ($input?.item?.json?.company_size) {\n  company_size = $input.item.json.company_size;\n}\n\n// route lead to 1:1 if company size > 100\nif (company_size > 100) {\n  $input.item.json.result = 1;\n}\n\nreturn $input.item;\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "route-webflow-leads-by-company-size-2",
+      "name": "Simplify Datagma Output",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        -20,
+        700
+      ],
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "company_size",
+              "value": "={{ parseInt(($json.company.premium.employeesAmountInLinkedin).replace(/\\s/g, ''), 10)}}"
+            }
+          ]
+        },
+        "options": {},
+        "keepOnlySet": true
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "route-webflow-leads-by-company-size-3",
+      "name": "Enrich with Datagma",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -260,
+        700
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ 'https://gateway.datagma.net/api/ingress/v2/full?data='+encodeURIComponent($json.domain)+'&companyPremium=true&companyFull=true&companyEmployees=false&employeeCountry=US' }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "options": {}
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "route-webflow-leads-by-company-size-4",
+      "name": "Receive form submission from Webflow",
+      "type": "n8n-nodes-base.webhook",
+      "position": [
+        -920,
+        700
+      ],
+      "parameters": {
+        "path": "route-webflow-leads-by-company-size",
+        "options": {},
+        "httpMethod": "POST",
+        "responseMode": "responseNode"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "route-webflow-leads-by-company-size-5",
+      "name": "Send result to Webflow",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        520,
+        700
+      ],
+      "parameters": {
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "GET, POST"
+              }
+            ]
+          }
+        },
+        "respondWith": "json",
+        "responseBody": "={\"result\":{{ $json[\"result\"] }}}"
+      },
+      "typeVersion": 1
+    }
+  ],
+  "connections": {
+    "Qualify Account": {
+      "main": [
+        [
+          {
+            "node": "Send result to Webflow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enrich with Datagma": {
+      "main": [
+        [
+          {
+            "node": "Simplify Datagma Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get domain from email": {
+      "main": [
+        [
+          {
+            "node": "Enrich with Datagma",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simplify Datagma Output": {
+      "main": [
+        [
+          {
+            "node": "Qualify Account",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Receive form submission from Webflow": {
+      "main": [
+        [
+          {
+            "node": "Get domain from email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Route Webflow Leads by Company Size",
+  "active": false,
+  "pinData": {}
+}
