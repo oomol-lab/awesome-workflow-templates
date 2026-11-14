@@ -280,6 +280,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Create an Autopilot List and Contact](workflows/create-autopilot-list-and-contact/) - Create a list, upsert a contact twice, and read all contacts in that list.
 - [Search Meta Interests from Telegram](workflows/search-meta-interests-from-telegram/) - Search Meta ad interests from an authorized Telegram command and return a CSV document.
 - [Sync Google Sheet Contacts to Mautic](workflows/sync-sheet-contacts-to-mautic/) - Keep Mautic contacts aligned with email, first name and mobile fields in a Google Sheet.
+- [Save Gumroad Sales to MailerLite and Sheets](workflows/save-gumroad-sales-to-mailerlite-and-sheets/) - Add Gumroad buyers to a MailerLite group and record their sales in Google Sheets.
 
 ## Support
 
