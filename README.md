@@ -454,6 +454,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Save Webflow Forms in Airtable Tables](workflows/save-webflow-forms-in-airtable-tables/) - Create an Airtable table per Webflow form and save each submission in the corresponding table.
 - [Translate SRT Subtitles with Google](workflows/translate-srt-subtitles-with-google/) - Translate SRT subtitle text into English or Japanese while retaining cue numbers and timestamps.
 - [Record LINE Receipt Images in Google Sheets](workflows/record-line-receipts-in-google-sheets/) - Archive LINE receipt images and record extracted Thai transfer details in Google Sheets.
+- [Reconcile Gmail Messages with Todoist Tasks](workflows/reconcile-gmail-messages-with-todoist-tasks/) - Turn unread or starred inbox messages into Todoist tasks and close tracked tasks when messages leave the active inbox set.
 
 ## Content
 
