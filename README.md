@@ -466,6 +466,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Upload a Remote Image to SharePoint](workflows/upload-a-remote-image-to-sharepoint/) - Download a remote image and upload its bytes to the root SharePoint site drive.
 - [Send a Sweater Weather SMS](workflows/send-sweater-weather-sms/) - Send an SMS when the current feels-like temperature is below 18°C.
 - [Save Slack Ideas to Google Sheets](workflows/slack-ideas-to-google-sheets/) - Save ideas from a Slack slash command to Google Sheets and reply with a details link.
+- [Save Slack Ideas to Notion](workflows/slack-ideas-to-notion/) - Create a Notion idea page from a Slack slash command and reply with a details link.
 
 ## Content
 
