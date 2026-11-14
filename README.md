@@ -516,6 +516,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Extract FileMaker Contact Fields](workflows/extract-filemaker-contact-fields/) - Extract each fieldData object from a FileMaker Data API response.
 - [Prepare Customer Records](workflows/prepare-quickstart-customer-records/) - Prepare customer IDs, names and descriptions for a later workflow step.
 - [Extract Image Text to Google Sheets](workflows/extract-image-text-to-google-sheets/) - Extract text from an image with Amazon Rekognition and append the result to Google Sheets.
+- [Convert Baserow Video Descriptions to HTML](workflows/convert-baserow-video-descriptions-to-html/) - Convert one or all Baserow video descriptions from Markdown to HTML.
 
 ## Content
 
