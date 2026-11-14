@@ -661,6 +661,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Receive Asana Resource Events](workflows/receive-asana-resource-events/) - Receive change events for an Asana task or project.
 - [Receive Box Folder Events](workflows/receive-box-folder-events/) - Receive Box folder move and download events.
 - [Receive Chargebee Events](workflows/receive-chargebee-events/) - Receive Chargebee subscription and billing events.
+- [Receive Kit Form Subscriptions](workflows/receive-kit-form-subscriptions/) - Receive subscriber events for a Kit form.
 
 ## Communication
 
