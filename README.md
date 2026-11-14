@@ -467,6 +467,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Send a Sweater Weather SMS](workflows/send-sweater-weather-sms/) - Send an SMS when the current feels-like temperature is below 18°C.
 - [Save Slack Ideas to Google Sheets](workflows/slack-ideas-to-google-sheets/) - Save ideas from a Slack slash command to Google Sheets and reply with a details link.
 - [Save Slack Ideas to Notion](workflows/slack-ideas-to-notion/) - Create a Notion idea page from a Slack slash command and reply with a details link.
+- [Create Linear Bugs from Slack Commands](workflows/slack-bug-command-to-linear/) - Create a Linear bug from a Slack slash command and reply with its issue link.
 
 ## Content
 
