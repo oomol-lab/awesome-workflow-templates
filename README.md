@@ -133,6 +133,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Sync Captured Stripe Spend to HubSpot](workflows/sync-captured-stripe-spend-to-hubspot/) - Sum captured Stripe charges by customer email and update a HubSpot contact property.
 - [Track Crunchbase Funding Rounds in Google Sheets](workflows/track-crunchbase-funding-rounds-in-sheets/) - Track recent seed and Series A/B funding rounds with company details in Google Sheets.
 - [Send Follow-up Campaigns from Google Sheets](workflows/send-follow-up-campaigns-from-google-sheets/) - Send a configurable email sequence to contacts and stop follow-ups after a reply.
+- [Enrich Calendly Invitees in HubSpot](workflows/enrich-calendly-invitees-in-hubspot/) - Enrich Calendly invitees and their companies in HubSpot.
 
 ## Operations
 
