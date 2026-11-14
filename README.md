@@ -701,6 +701,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Receive Keap New Contacts](workflows/receive-keap-new-contacts/) - Receive notifications when Keap contacts are added.
 - [Receive AWS SNS Notifications](workflows/receive-aws-sns-notifications/) - Receive complete Amazon SNS notification events.
 - [Cache an Access Token for One Minute](workflows/cache-an-access-token-for-one-minute/) - Demonstrate a one-minute access token cache with a scheduled or webhook trigger.
+- [Generate Structured State and City Data](workflows/generate-structured-state-and-city-data/) - Generate a structured example of US states, cities and populations.
 
 ## Communication
 
