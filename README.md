@@ -54,6 +54,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [AI](#ai)
 - [E-commerce](#e-commerce)
 - [Media](#media)
+- [Files](#files)
 - [Contribute](#contribute)
 - [Licensing](#licensing)
 
@@ -823,6 +824,10 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Generate a HeyGen Avatar Video](workflows/generate-a-heygen-avatar-video/) - Generate a narrated avatar video and return its finished URL.
 - [Generate Speech with ElevenLabs](workflows/generate-speech-with-elevenlabs/) - Generate an audio response from text and an ElevenLabs voice ID.
 - [ElevenLabs Voice Generation Webhook](workflows/elevenlabs-voice-generation-webhook/) - Generate an audio response from text and an ElevenLabs voice ID.
+
+## Files
+
+- [Upload Video via Apps Script and Rename](workflows/upload-video-via-apps-script-and-rename/) - Send a video URL to a Google Apps Script web app and rename the uploaded Drive file.
 
 ## Contribute
 
