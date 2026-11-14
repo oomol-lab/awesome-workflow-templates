@@ -448,6 +448,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Translate a Random Cocktail Recipe to French](workflows/translate-a-random-cocktail-recipe-to-french/) - Fetch a random cocktail and translate its preparation instructions into French.
 - [Return Current Weather for a City](workflows/return-current-weather-for-a-city/) - Return a city’s current and feels-like temperature in Celsius through a GET webhook.
 - [Save Webflow Forms in Airtable Tables](workflows/save-webflow-forms-in-airtable-tables/) - Create an Airtable table per Webflow form and save each submission in the corresponding table.
+- [Translate SRT Subtitles with Google](workflows/translate-srt-subtitles-with-google/) - Translate SRT subtitle text into English or Japanese while retaining cue numbers and timestamps.
 
 ## Content
 

@@ -1,0 +1,156 @@
+{
+  "kind": "open-flow-workflow",
+  "version": 1,
+  "name": "Translate SRT Subtitles with Google",
+  "content": {
+    "modelVersion": 15,
+    "document": {
+      "bindings": {},
+      "graph": {
+        "nodes": {
+          "n_af9e6bdfec457c45": {
+            "name": "Receive SRT text",
+            "kind": "webhook",
+            "bodyFields": [
+              {
+                "jsonSchema": {
+                  "type": "string"
+                },
+                "nullable": false,
+                "handle": "srt"
+              },
+              {
+                "jsonSchema": {
+                  "type": "string"
+                },
+                "nullable": false,
+                "handle": "language"
+              }
+            ],
+            "method": "POST",
+            "options": {
+              "responseBody": {
+                "kind": "workflow-outputs",
+                "output": "response",
+                "timeoutMs": 60000
+              },
+              "responseHeaders": {
+                "Content-Type": "application/json; charset=utf-8"
+              },
+              "responseStatusCode": 200
+            }
+          },
+          "n_2234aaaa901b6e6d": {
+            "inputs": {
+              "body": {
+                "kind": "sources",
+                "sources": [
+                  {
+                    "kind": "node",
+                    "nodeId": "n_af9e6bdfec457c45",
+                    "output": "body"
+                  }
+                ]
+              },
+              "apiKey": {
+                "kind": "unset"
+              }
+            },
+            "name": "Translate each subtitle cue",
+            "kind": "task",
+            "task": {
+              "inputs": [
+                {
+                  "jsonSchema": {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  "nullable": false,
+                  "handle": "body"
+                },
+                {
+                  "jsonSchema": {
+                    "type": "string"
+                  },
+                  "nullable": false,
+                  "handle": "apiKey"
+                }
+              ],
+              "outputs": [
+                {
+                  "jsonSchema": {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  "nullable": false,
+                  "handle": "response"
+                }
+              ],
+              "name": "Translate each subtitle cue",
+              "moduleId": "n_80e460c1f76ad838",
+              "capabilities": [
+                {
+                  "kind": "http",
+                  "hosts": [
+                    "translation.googleapis.com"
+                  ]
+                }
+              ]
+            }
+          },
+          "n_6820074e65e2f405": {
+            "name": "Return translated SRT",
+            "kind": "outputs",
+            "outputDefs": [
+              {
+                "jsonSchema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "nullable": false,
+                "handle": "response"
+              }
+            ],
+            "outputMappings": {
+              "response": {
+                "kind": "sources",
+                "sources": [
+                  {
+                    "kind": "node",
+                    "nodeId": "n_2234aaaa901b6e6d",
+                    "output": "response"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "edges": [
+          {
+            "source": "n_af9e6bdfec457c45",
+            "target": "n_2234aaaa901b6e6d"
+          },
+          {
+            "source": "n_2234aaaa901b6e6d",
+            "target": "n_6820074e65e2f405"
+          }
+        ]
+      }
+    },
+    "modules": {
+      "n_80e460c1f76ad838": {
+        "name": "Translate each subtitle cue",
+        "imports": [],
+        "source": "export default async function translate({ body, apiKey }, context) {\n  const language = String(body.language || \"\").toLowerCase();\n  const target = language === \"jp\" ? \"ja\" : language;\n  if (![\"en\", \"ja\"].includes(target) || typeof body.srt !== \"string\" || !apiKey)\n    throw Error(\"Provide SRT text, EN or JP, and a Google API key\");\n  const blocks = body.srt\n    .replace(/^\\uFEFF/, \"\")\n    .replace(/\\r\\n?/g, \"\\n\")\n    .trim()\n    .split(/\\n[\\t ]*\\n/);\n  const cues = blocks.map((block) => {\n    const lines = block.split(\"\\n\");\n    if (\n      lines.length < 3 ||\n      !/^\\d+$/.test(lines[0]) ||\n      !/^\\d\\d:\\d\\d:\\d\\d,\\d{3}\\s+-->\\s+\\d\\d:\\d\\d:\\d\\d,\\d{3}/.test(lines[1])\n    )\n      throw Error(\"Invalid SRT cue\");\n    return { header: lines.slice(0, 2).join(\"\\n\"), text: lines.slice(2).join(\"\\n\") };\n  });\n  const translated = [];\n  for (const cue of cues) {\n    const r = await context.fetch(\"https://translation.googleapis.com/language/translate/v2\", {\n      method: \"POST\",\n      headers: { \"content-type\": \"application/json\", \"x-goog-api-key\": apiKey },\n      body: JSON.stringify({ q: cue.text, target, format: \"text\" }),\n    });\n    if (!r.ok) throw Error(\"Translation request failed\");\n    const t = (await r.json())?.data?.translations?.[0]?.translatedText;\n    if (typeof t !== \"string\") throw Error(\"Translation response missing text\");\n    translated.push(cue.header + \"\\n\" + t);\n  }\n  return { response: { srt: translated.join(\"\\n\\n\") + \"\\n\" } };\n}\n"
+      }
+    }
+  },
+  "presentation": {
+    "designer": {
+      "version": 1,
+      "flow": {
+        "direction": "vertical"
+      }
+    }
+  }
+}

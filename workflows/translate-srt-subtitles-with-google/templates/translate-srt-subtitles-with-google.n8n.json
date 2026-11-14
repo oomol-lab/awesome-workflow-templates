@@ -1,0 +1,210 @@
+{
+  "name": "Translate SRT Subtitles with Google",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "translate-srt-subtitles-with-google-0",
+      "name": "Convert to File",
+      "type": "n8n-nodes-base.convertToFile",
+      "position": [
+        1400,
+        340
+      ],
+      "parameters": {
+        "operation": "toBinary",
+        "sourceProperty": "data",
+        "binaryPropertyName": "file",
+        "options": {
+          "fileName": "translated.srt",
+          "mimeType": "application/x-subrip"
+        }
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "translate-srt-subtitles-with-google-1",
+      "name": "Respond with file",
+      "type": "n8n-nodes-base.form",
+      "position": [
+        1620,
+        340
+      ],
+      "parameters": {
+        "options": {},
+        "operation": "completion",
+        "respondWith": "returnBinary",
+        "completionTitle": "Done",
+        "inputDataFieldName": "file"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "translate-srt-subtitles-with-google-2",
+      "name": "Receive SRT File to Translate",
+      "type": "n8n-nodes-base.formTrigger",
+      "position": [
+        300,
+        140
+      ],
+      "parameters": {
+        "options": {
+          "appendAttribution": false,
+          "path": "translate-srt-subtitles-with-google"
+        },
+        "formTitle": "upload srt",
+        "formFields": {
+          "values": [
+            {
+              "fieldType": "dropdown",
+              "fieldLabel": "Translate to Language",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "EN"
+                  },
+                  {
+                    "option": "JP"
+                  }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldType": "file",
+              "fieldLabel": "Upload SRT file",
+              "multipleFiles": false,
+              "requiredField": true,
+              "acceptFileTypes": ".srt"
+            }
+          ]
+        },
+        "responseMode": "lastNode"
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "translate-srt-subtitles-with-google-3",
+      "name": "Extract text from Binary File",
+      "type": "n8n-nodes-base.extractFromFile",
+      "position": [
+        740,
+        140
+      ],
+      "parameters": {
+        "options": {},
+        "operation": "text",
+        "binaryPropertyName": "Upload_SRT_file"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "translate-srt-subtitles-with-google-parse",
+      "name": "Parse subtitle cues",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const raw = $input.first().json.data,\n  lang = $(\"Receive SRT File to Translate\").first().json[\"Translate to Language\"];\nconst target = lang === \"JP\" ? \"ja\" : lang === \"EN\" ? \"en\" : null;\nif (typeof raw !== \"string\" || !target) throw Error(\"Invalid SRT or language\");\nreturn raw\n  .replace(/^\\uFEFF/, \"\")\n  .replace(/\\r\\n?/g, \"\\n\")\n  .trim()\n  .split(/\\n[\\t ]*\\n/)\n  .map((block) => {\n    const lines = block.split(\"\\n\");\n    if (\n      lines.length < 3 ||\n      !/^\\d+$/.test(lines[0]) ||\n      !/^\\d\\d:\\d\\d:\\d\\d,\\d{3}\\s+-->\\s+\\d\\d:\\d\\d:\\d\\d,\\d{3}/.test(lines[1])\n    )\n      throw Error(\"Invalid SRT cue\");\n    return {\n      json: { header: lines.slice(0, 2).join(\"\\n\"), text: lines.slice(2).join(\"\\n\"), target },\n      pairedItem: { item: 0 },\n    };\n  });\n"
+      }
+    },
+    {
+      "id": "translate-srt-subtitles-with-google-http",
+      "name": "Translate cue",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://translation.googleapis.com/language/translate/v2",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleTranslateOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { q: $json.text, target: $json.target, format: \"text\" } }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "translate-srt-subtitles-with-google-assemble",
+      "name": "Assemble translated SRT",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const cues = $(\"Parse subtitle cues\").all(),\n  results = $input.all();\nif (cues.length !== results.length) throw Error(\"Translation count mismatch\");\nconst srt =\n  results\n    .map((r, i) => {\n      const text = r.json?.data?.translations?.[0]?.translatedText;\n      if (typeof text !== \"string\") throw Error(\"Translation missing\");\n      return cues[i].json.header + \"\\n\" + text;\n    })\n    .join(\"\\n\\n\") + \"\\n\";\nreturn [{ json: { data: Buffer.from(srt, \"utf8\").toString(\"base64\") } }];\n"
+      }
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Receive SRT File to Translate": {
+      "main": [
+        [
+          {
+            "node": "Extract text from Binary File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract text from Binary File": {
+      "main": [
+        [
+          {
+            "node": "Parse subtitle cues",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse subtitle cues": {
+      "main": [
+        [
+          {
+            "node": "Translate cue",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Translate cue": {
+      "main": [
+        [
+          {
+            "node": "Assemble translated SRT",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assemble translated SRT": {
+      "main": [
+        [
+          {
+            "node": "Convert to File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to File": {
+      "main": [
+        [
+          {
+            "node": "Respond with file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
