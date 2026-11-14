@@ -292,6 +292,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Route Webflow Leads by Company Size](workflows/route-webflow-leads-by-company-size/) - Return a demo routing result using the company size associated with a submitted email.
 - [Analyze Landing Page Conversions](workflows/analyze-landing-page-conversions/) - Analyze a landing page and suggest ten conversion improvements.
 - [Extract Amazon Bestsellers and Notify](workflows/extract-amazon-bestsellers-and-notify/) - Extract structured bestseller information from an Amazon page and send it to a webhook.
+- [Sync Calendly Guests with KlickTipp](workflows/sync-calendly-guests-with-klicktipp/) - Synchronize Calendly invitees and guests with KlickTipp on bookings and cancellations.
 
 ## Support
 
