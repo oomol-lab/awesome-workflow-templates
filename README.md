@@ -690,6 +690,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Receive PayPal Plan Activations](workflows/receive-paypal-plan-activations/) - Receive PayPal billing plan activation events.
 - [Receive Server-Sent Events](workflows/receive-server-sent-events/) - Receive JSON events from a server-sent events stream.
 - [Receive Clockify Time Entries](workflows/receive-clockify-time-entries/) - Poll Clockify for completed time entries.
+- [Receive Keap New Contacts](workflows/receive-keap-new-contacts/) - Receive notifications when Keap contacts are added.
 
 ## Communication
 
