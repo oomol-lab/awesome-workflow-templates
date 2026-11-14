@@ -540,6 +540,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Qualify and Approve Appointment Requests](workflows/qualify-and-approve-appointment-requests/) - Qualify an enquiry, request an administrator decision and create an appointment or send a rejection.
 - [Send Personalized Factoid Emails](workflows/send-personalized-factoid-emails/) - Manage subscribers and send illustrated facts about their chosen topics.
 - [Detect Objects and Draw Bounding Boxes](workflows/detect-objects-and-draw-bounding-boxes/) - Detect requested objects in an image and draw bounding boxes over it.
+- [Review Knowledge-Grounded Email Replies](workflows/review-knowledge-grounded-email-replies/) - Draft knowledge-grounded email replies and revise them with human feedback before sending.
 
 ## Content
 

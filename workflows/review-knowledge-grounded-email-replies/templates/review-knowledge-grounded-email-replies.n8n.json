@@ -1,0 +1,919 @@
+{
+  "name": "Review Knowledge-Grounded Email Replies",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "review-knowledge-grounded-email-replies-0",
+      "name": "Email Trigger (IMAP)",
+      "type": "n8n-nodes-base.emailReadImap",
+      "position": [
+        -2000,
+        -180
+      ],
+      "parameters": {
+        "options": {}
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "review-knowledge-grounded-email-replies-1",
+      "name": "Markdown",
+      "type": "n8n-nodes-base.markdown",
+      "position": [
+        -1740,
+        -180
+      ],
+      "parameters": {
+        "html": "={{ $json.textHtml }}",
+        "options": {}
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "review-knowledge-grounded-email-replies-2",
+      "name": "Send Email",
+      "type": "n8n-nodes-base.emailSend",
+      "position": [
+        400,
+        -320
+      ],
+      "parameters": {
+        "html": "={{ $('Edit Fields').last().json.email }}",
+        "options": {},
+        "subject": "={{ 'Re: ' + $('Email Trigger (IMAP)').first().json.subject }}",
+        "toEmail": "={{ $('Email Trigger (IMAP)').first().json.from }}",
+        "fromEmail": "={{ $('Email Trigger (IMAP)').first().json.to }}",
+        "operation": "send",
+        "emailFormat": "html"
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "id": "review-knowledge-grounded-email-replies-3",
+      "name": "Qdrant Vector Store",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreQdrant",
+      "position": [
+        -320,
+        600
+      ],
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "options": {},
+        "toolName": "company_knowladge_base",
+        "toolDescription": "Extracts information regarding the request made.",
+        "qdrantCollection": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_COLLECTION"
+        },
+        "includeDocumentMetadata": false
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "review-knowledge-grounded-email-replies-4",
+      "name": "Embeddings OpenAI",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "position": [
+        -440,
+        800
+      ],
+      "parameters": {
+        "options": {}
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "review-knowledge-grounded-email-replies-5",
+      "name": "Email Summarization Chain",
+      "type": "@n8n/n8n-nodes-langchain.chainSummarization",
+      "position": [
+        -1480,
+        -180
+      ],
+      "parameters": {
+        "options": {
+          "summarizationMethodAndPrompts": {
+            "values": {
+              "prompt": "=Write a concise summary of the following in max 100 words:\n\n\"{{ $json.data }}\"\n\nDo not enter the total number of words used.",
+              "combineMapPrompt": "=Write a concise summary of the following in max 100 words:\n\n\"{{ $json.data }}\"\n\nDo not enter the total number of words used."
+            }
+          }
+        },
+        "operationMode": "nodeInputJson"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "review-knowledge-grounded-email-replies-6",
+      "name": "Write email",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        -1040,
+        -180
+      ],
+      "parameters": {
+        "text": "=Write the text to reply to the following email:\n\n{{ $json.response.text }}",
+        "options": {
+          "systemMessage": "You are an expert at answering emails. You need to answer them professionally based on the information you have. This is a business email. Be concise and never exceed 100 words. Only the body of the email, not create the subject"
+        },
+        "promptType": "define",
+        "hasOutputParser": true
+      },
+      "typeVersion": 1.7
+    },
+    {
+      "id": "review-knowledge-grounded-email-replies-7",
+      "name": "OpenAI",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "position": [
+        -180,
+        280
+      ],
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "review-knowledge-grounded-email-replies-8",
+      "name": "Gmail",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        -300,
+        -180
+      ],
+      "parameters": {
+        "sendTo": "YOUR_REVIEWER_EMAIL",
+        "message": "=<h3>MESSAGE</h3>\n{{ $('Email Trigger (IMAP)').first().json.textHtml }}\n\n<h3>AI RESPONSE</h3>\n{{ $json.email }}",
+        "options": {},
+        "subject": "=[Approval Required] {{ $('Email Trigger (IMAP)').first().json.subject }}",
+        "operation": "sendAndWait",
+        "responseType": "freeText"
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "id": "review-knowledge-grounded-email-replies-9",
+      "name": "Text Classifier",
+      "type": "@n8n/n8n-nodes-langchain.textClassifier",
+      "position": [
+        -60,
+        -180
+      ],
+      "parameters": {
+        "options": {
+          "systemPromptTemplate": "Please classify the text provided by the user into one of the following categories: {categories}, and use the provided formatting instructions below. Don't explain, and only output the json."
+        },
+        "inputText": "={{ $json.data.text }}",
+        "categories": {
+          "categories": [
+            {
+              "category": "Approved",
+              "description": "The email has been reviewed and accepted as-is. The human explicitly or implicity express approva, indicating that no changes ar needed.\n\nExample:\n\"Ok\",\n\"Approvato\",\n\"Invia\""
+            },
+            {
+              "category": "Declined",
+              "description": "The email has been reviewd, but the human request modifications before it sent link tweaks, removing parts, rewording etc... This could include suggested edits, rewording or major revision."
+            }
+          ]
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "review-knowledge-grounded-email-replies-10",
+      "name": "Edit Fields",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        -580,
+        -180
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "35d7c303-42f4-4dd1-b41e-6eb087c23c3d",
+              "name": "email",
+              "type": "string",
+              "value": "={{ $json.output }}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "review-knowledge-grounded-email-replies-11",
+      "name": "Refresh knowledge base",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        -1340,
+        -1300
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "review-knowledge-grounded-email-replies-12",
+      "name": "Create collection",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -1040,
+        -1440
+      ],
+      "parameters": {
+        "url": "https://YOUR_QDRANT_HOST/collections/YOUR_COLLECTION",
+        "method": "PUT",
+        "options": {},
+        "jsonBody": "{\"vectors\":{\"size\":1536,\"distance\":\"Cosine\"}}",
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "review-knowledge-grounded-email-replies-13",
+      "name": "Refresh collection",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -1040,
+        -1180
+      ],
+      "parameters": {
+        "url": "https://YOUR_QDRANT_HOST/collections/YOUR_COLLECTION/points/delete?wait=true",
+        "method": "POST",
+        "options": {},
+        "jsonBody": "{\n \"filter\": {}\n}",
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "review-knowledge-grounded-email-replies-14",
+      "name": "Get folder",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [
+        -820,
+        -1180
+      ],
+      "parameters": {
+        "filter": {
+          "driveId": {
+            "__rl": true,
+            "mode": "list",
+            "value": "My Drive",
+            "cachedResultUrl": "https://drive.google.com/drive/my-drive",
+            "cachedResultName": "My Drive"
+          },
+          "folderId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "YOUR_FOLDER_ID"
+          }
+        },
+        "options": {},
+        "resource": "fileFolder"
+      },
+      "typeVersion": 3
+    },
+    {
+      "id": "review-knowledge-grounded-email-replies-15",
+      "name": "Download Files",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [
+        -600,
+        -1180
+      ],
+      "parameters": {
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.id }}"
+        },
+        "options": {
+          "googleFileConversion": {
+            "conversion": {
+              "docsToFormat": "text/plain"
+            }
+          }
+        },
+        "operation": "download"
+      },
+      "typeVersion": 3
+    },
+    {
+      "id": "review-knowledge-grounded-email-replies-16",
+      "name": "Default Data Loader",
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "position": [
+        -200,
+        -980
+      ],
+      "parameters": {
+        "options": {},
+        "dataType": "binary"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "review-knowledge-grounded-email-replies-17",
+      "name": "Token Splitter",
+      "type": "@n8n/n8n-nodes-langchain.textSplitterTokenSplitter",
+      "position": [
+        -240,
+        -820
+      ],
+      "parameters": {
+        "chunkSize": 300,
+        "chunkOverlap": 30
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "review-knowledge-grounded-email-replies-18",
+      "name": "Qdrant Vector Store1",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreQdrant",
+      "position": [
+        -360,
+        -1180
+      ],
+      "parameters": {
+        "mode": "insert",
+        "options": {},
+        "qdrantCollection": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_COLLECTION"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "review-knowledge-grounded-email-replies-19",
+      "name": "Embeddings OpenAI1",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "position": [
+        -380,
+        -980
+      ],
+      "parameters": {
+        "options": {}
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "review-knowledge-grounded-email-replies-20",
+      "name": "DeepSeek Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatDeepSeek",
+      "position": [
+        -1560,
+        40
+      ],
+      "parameters": {
+        "options": {}
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "review-knowledge-grounded-email-replies-21",
+      "name": "Email Reviewer",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        380,
+        -40
+      ],
+      "parameters": {
+        "text": "=Review at the following email:\n{{ $('Edit Fields').last().json.email }}\n\nFeedback from human:\n{{ $json.data.text }}",
+        "options": {
+          "systemMessage": "If you are an expert in reviewing emails before sending them. You need to review and structure them in such a way that you can send them. It must be in HTML format and you can insert (if you think it is appropriate) only HTML characters such as <br>, <b>, <i>, <p> where necessary. Be concise and never exceed 100 words. Only the body of the email"
+        },
+        "promptType": "define",
+        "hasOutputParser": true
+      },
+      "typeVersion": 1.7
+    },
+    {
+      "id": "review-knowledge-grounded-email-replies-open-flow-mode",
+      "name": "Open Flow mode",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "parameters": {
+        "mode": "raw",
+        "includeOtherFields": true,
+        "jsonOutput": "{\"openFlowMode\":false}",
+        "options": {}
+      },
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "id": "review-knowledge-grounded-email-replies-use-open-flow-for-draft-",
+      "name": "Use Open Flow for draft?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "mode",
+              "leftValue": "={{ $json.openFlowMode }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "position": [
+        200,
+        0
+      ]
+    },
+    {
+      "id": "review-knowledge-grounded-email-replies-use-open-flow-for-review-",
+      "name": "Use Open Flow for review?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "mode",
+              "leftValue": "={{ $(\"Open Flow mode\").first().json.openFlowMode }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "position": [
+        200,
+        600
+      ]
+    },
+    {
+      "id": "review-knowledge-grounded-email-replies-forward-draft-request",
+      "name": "Forward draft request",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://YOUR_OPENFLOW_HOST/webhook/YOUR_FLOW",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {event: JSON.stringify({kind:\"draft\", text:$(\"Email Summarization Chain\").first().json.response.text})} }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "position": [
+        450,
+        0
+      ]
+    },
+    {
+      "id": "review-knowledge-grounded-email-replies-forward-review-request",
+      "name": "Forward review request",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://YOUR_OPENFLOW_HOST/webhook/YOUR_FLOW",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {event: JSON.stringify({kind:\"review\",text:$(\"Email Summarization Chain\").first().json.response.text,draft:$(\"Edit Fields\").last().json.email,feedback:$json.data.text})} }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "position": [
+        450,
+        600
+      ]
+    },
+    {
+      "id": "review-knowledge-grounded-email-replies-create-collection-once",
+      "name": "Create collection once",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "parameters": {},
+      "position": [
+        -500,
+        900
+      ]
+    },
+    {
+      "id": "review-knowledge-grounded-email-replies-check-collection-exists",
+      "name": "Check collection exists",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "url": "https://YOUR_QDRANT_HOST/collections/YOUR_COLLECTION",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "position": [
+        -250,
+        1000
+      ]
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Gmail": {
+      "main": [
+        [
+          {
+            "node": "Text Classifier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Write email",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Email Reviewer",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Text Classifier",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Markdown": {
+      "main": [
+        [
+          {
+            "node": "Email Summarization Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get folder": {
+      "main": [
+        [
+          {
+            "node": "Download Files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Gmail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write email": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Files": {
+      "main": [
+        [
+          {
+            "node": "Qdrant Vector Store1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email Reviewer": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Token Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Default Data Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Text Classifier": {
+      "main": [
+        [
+          {
+            "node": "Send Email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Use Open Flow for review?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Qdrant Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI1": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Qdrant Vector Store1",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Refresh collection": {
+      "main": [
+        [
+          {
+            "node": "Get folder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DeepSeek Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Email Summarization Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Qdrant Vector Store1",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Qdrant Vector Store": {
+      "ai_tool": [
+        [
+          {
+            "node": "Write email",
+            "type": "ai_tool",
+            "index": 0
+          },
+          {
+            "node": "Email Reviewer",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email Trigger (IMAP)": {
+      "main": [
+        [
+          {
+            "node": "Markdown",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email Summarization Chain": {
+      "main": [
+        [
+          {
+            "node": "Open Flow mode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Refresh knowledge base": {
+      "main": [
+        [
+          {
+            "node": "Check collection exists",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check collection exists": {
+      "main": [
+        [
+          {
+            "node": "Refresh collection",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create collection once": {
+      "main": [
+        [
+          {
+            "node": "Create collection",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Open Flow mode": {
+      "main": [
+        [
+          {
+            "node": "Use Open Flow for draft?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Use Open Flow for draft?": {
+      "main": [
+        [
+          {
+            "node": "Forward draft request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Write email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Forward draft request": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Use Open Flow for review?": {
+      "main": [
+        [
+          {
+            "node": "Forward review request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Email Reviewer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Forward review request": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
