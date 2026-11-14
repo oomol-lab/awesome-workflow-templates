@@ -310,6 +310,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Look Up a Person by Email with Clearbit](workflows/look-up-person-by-email-with-clearbit/) - Look up a person using an email address with Clearbit.
 - [Compare Workflow Tools with Perplexity](workflows/compare-workflow-tools-with-perplexity/) - Ask Perplexity Sonar to compare workflow tools using selected domains and return citations.
 - [Research a Query With Perplexity Sonar](workflows/research-a-query-with-perplexity-sonar/) - Research a query with Perplexity Sonar and return the answer.
+- [Extract Latest TechCrunch Articles](workflows/extract-latest-techcrunch-articles/) - Read the latest TechCrunch listing and extract each article’s text and metadata.
 
 ## Productivity
 
