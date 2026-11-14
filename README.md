@@ -685,6 +685,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Receive Wufoo Form Answers](workflows/receive-wufoo-form-answers/) - Receive answers submitted to a Wufoo form.
 - [Receive Mailchimp Subscribers](workflows/receive-mailchimp-subscribers/) - Receive Mailchimp audience subscribe notifications.
 - [Receive Pipedrive Changes](workflows/receive-pipedrive-changes/) - Receive Pipedrive change notifications.
+- [Receive PayPal Plan Activations](workflows/receive-paypal-plan-activations/) - Receive PayPal billing plan activation events.
 
 ## Communication
 
