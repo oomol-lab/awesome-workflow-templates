@@ -474,6 +474,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Read a SharePoint List on a Schedule](workflows/read-sharepoint-list-on-schedule/) - Read all items from a SharePoint list on a daily schedule.
 - [Share Drive Folder Files and Create Download Links](workflows/share-drive-folder-files-and-create-download-links/) - Grant public reader access to files in a Google Drive folder and create download links.
 - [Invite Sheet Contacts to n8n](workflows/invite-sheet-contacts-to-n8n/) - Invite email addresses from a Google Sheet that are not yet n8n users.
+- [Create Nested Google Drive Folders](workflows/create-nested-google-drive-folders/) - Find or create each segment of a folder path in Google Drive.
 
 ## Content
 

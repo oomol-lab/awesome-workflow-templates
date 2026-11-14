@@ -1,0 +1,154 @@
+{
+  "kind": "open-flow-workflow",
+  "version": 1,
+  "name": "Create Nested Google Drive Folders",
+  "content": {
+    "modelVersion": 15,
+    "document": {
+      "bindings": {},
+      "graph": {
+        "nodes": {
+          "n_c02e335b5ab04dfe": {
+            "name": "Enter the folder path",
+            "kind": "start",
+            "inputDefs": [
+              {
+                "jsonSchema": {
+                  "type": "string"
+                },
+                "nullable": false,
+                "handle": "parentId"
+              },
+              {
+                "jsonSchema": {
+                  "type": "string"
+                },
+                "nullable": false,
+                "handle": "path"
+              }
+            ]
+          },
+          "n_4c1b29028f23aa72": {
+            "inputs": {
+              "parentId": {
+                "kind": "sources",
+                "sources": [
+                  {
+                    "kind": "node",
+                    "nodeId": "n_c02e335b5ab04dfe",
+                    "output": "parentId"
+                  }
+                ]
+              },
+              "path": {
+                "kind": "sources",
+                "sources": [
+                  {
+                    "kind": "node",
+                    "nodeId": "n_c02e335b5ab04dfe",
+                    "output": "path"
+                  }
+                ]
+              }
+            },
+            "name": "Find or create folders",
+            "kind": "task",
+            "task": {
+              "inputs": [
+                {
+                  "jsonSchema": {
+                    "type": "string"
+                  },
+                  "nullable": false,
+                  "handle": "parentId"
+                },
+                {
+                  "jsonSchema": {
+                    "type": "string"
+                  },
+                  "nullable": false,
+                  "handle": "path"
+                }
+              ],
+              "outputs": [
+                {
+                  "jsonSchema": {
+                    "type": "string"
+                  },
+                  "nullable": false,
+                  "handle": "folderId"
+                }
+              ],
+              "name": "Find or create folders",
+              "moduleId": "n_86aa2f7acfaabe5a",
+              "capabilities": [
+                {
+                  "kind": "connector",
+                  "mode": "independent",
+                  "actions": [
+                    {
+                      "action": "googledrive.files.list"
+                    },
+                    {
+                      "action": "googledrive.files.create"
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          "n_88dad7c49418d555": {
+            "name": "Final folder ID",
+            "kind": "outputs",
+            "outputDefs": [
+              {
+                "jsonSchema": {
+                  "type": "string"
+                },
+                "nullable": false,
+                "handle": "folderId"
+              }
+            ],
+            "outputMappings": {
+              "folderId": {
+                "kind": "sources",
+                "sources": [
+                  {
+                    "kind": "node",
+                    "nodeId": "n_4c1b29028f23aa72",
+                    "output": "folderId"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "edges": [
+          {
+            "source": "n_c02e335b5ab04dfe",
+            "target": "n_4c1b29028f23aa72"
+          },
+          {
+            "source": "n_4c1b29028f23aa72",
+            "target": "n_88dad7c49418d555"
+          }
+        ]
+      }
+    },
+    "modules": {
+      "n_86aa2f7acfaabe5a": {
+        "name": "Find or create folders",
+        "imports": [],
+        "source": "export default async function ({ parentId, path }, ctx) {\n  if (typeof parentId !== \"string\" || !parentId.trim() || typeof path !== \"string\")\n    throw Error(\"Set a parent and path\");\n  const parts = path.split(\"/\");\n  if (!parts.length || parts.some((x) => !x.trim())) throw Error(\"Path segments must be non-empty\");\n  let parent = parentId;\n  for (const name of parts) {\n    const quote = (x) => x.replace(/\\\\/g, \"\\\\\\\\\").replace(/'/g, \"\\\\'\");\n    const q = `'${quote(parent)}' in parents and trashed = false and mimeType = 'application/vnd.google-apps.folder' and name = '${quote(name)}'`;\n    let token,\n      seen = new Set(),\n      matches = [];\n    do {\n      const r = await ctx.actions.call(\"googledrive.files.list\", {\n        q,\n        pageSize: 100,\n        ...(token ? { pageToken: token } : {}),\n      });\n      if (!Array.isArray(r?.files)) throw Error(\"Invalid Drive list\");\n      matches.push(...r.files);\n      token = r.nextPageToken;\n      if (token) {\n        if (typeof token !== \"string\" || seen.has(token)) throw Error(\"Invalid page cursor\");\n        seen.add(token);\n      }\n    } while (token);\n    if (matches.length > 1) throw Error(\"Ambiguous duplicate folder \" + name);\n    if (matches.length) {\n      if (typeof matches[0].id !== \"string\" || !matches[0].id || matches[0].name !== name)\n        throw Error(\"Invalid Drive match\");\n      parent = matches[0].id;\n    } else {\n      const created = await ctx.actions.call(\"googledrive.files.create\", {\n        name,\n        mimeType: \"application/vnd.google-apps.folder\",\n        parents: [parent],\n      });\n      if (typeof created?.id !== \"string\" || !created.id)\n        throw Error(\"Folder creation not confirmed\");\n      parent = created.id;\n    }\n  }\n  return { folderId: parent };\n}\n"
+      }
+    }
+  },
+  "presentation": {
+    "designer": {
+      "version": 1,
+      "flow": {
+        "direction": "vertical"
+      }
+    }
+  }
+}

@@ -1,0 +1,335 @@
+{
+  "nodes": [
+    {
+      "id": "create-nested-google-drive-folders-0",
+      "name": "When clicking ‘Test workflow’",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "create-nested-google-drive-folders-1",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "position": [
+        250,
+        300
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "name": "Folder path",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const input = $input.first().json,\n  parentId = input.google_drive_folder_id ?? \"root\",\n  path = input.desired_path ?? \"YOUR_FOLDER/PATH\";\nif (!parentId || !path || path.startsWith(\"YOUR_\")) throw Error(\"Configure folder path\");\nconst parts = path.split(\"/\");\nif (parts.some((x) => !x.trim())) throw Error(\"Empty path segment\");\nreturn [{ json: { parentId, parts } }];\n"
+      },
+      "id": "create-nested-google-drive-folders-2",
+      "position": [
+        500,
+        300
+      ]
+    },
+    {
+      "name": "Prepare segment",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const { parentId, parts } = $json;\nif (!parentId || !Array.isArray(parts) || !parts.length) throw Error(\"Invalid path\");\nreturn { json: { parentId, parts, name: parts[0] }, pairedItem: { item: $itemIndex } };\n"
+      },
+      "id": "create-nested-google-drive-folders-3",
+      "position": [
+        750,
+        300
+      ]
+    },
+    {
+      "id": "create-nested-google-drive-folders-4",
+      "name": "Check if top folder exists",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [
+        1000,
+        300
+      ],
+      "parameters": {
+        "filter": {
+          "whatToSearch": "folders"
+        },
+        "options": {},
+        "resource": "fileFolder",
+        "queryString": "={{ \"'\" + $json.parentId.replace(/\\\\/g,'\\\\\\\\').replace(/'/g,\"\\\\'\") + \"' in parents and name = '\" + $json.name.replace(/\\\\/g,'\\\\\\\\').replace(/'/g,\"\\\\'\") + \"'\" }}",
+        "searchMethod": "query",
+        "returnAll": true
+      },
+      "typeVersion": 3,
+      "alwaysOutputData": true
+    },
+    {
+      "name": "Select matching folder",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const state = $(\"Prepare segment\").first(0, $runIndex).json;\nconst matches = $input\n  .all()\n  .map((x) => x.json)\n  .filter((x) => x.name === state.name);\nif (matches.length > 1) throw Error(\"Ambiguous folder name\");\nif (matches.length && (!matches[0].id || typeof matches[0].id !== \"string\"))\n  throw Error(\"Invalid folder\");\nreturn [{ json: { ...state, selectedId: matches[0]?.id ?? \"\", create: matches.length === 0 } }];\n"
+      },
+      "id": "create-nested-google-drive-folders-5",
+      "position": [
+        1250,
+        300
+      ]
+    },
+    {
+      "name": "Create folder?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.create }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "create-nested-google-drive-folders-6",
+      "position": [
+        1500,
+        300
+      ]
+    },
+    {
+      "id": "create-nested-google-drive-folders-7",
+      "name": "Create new subfolder",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [
+        1750,
+        300
+      ],
+      "parameters": {
+        "name": "={{ $json.name }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "options": {},
+        "folderId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.parentId }}"
+        },
+        "resource": "folder"
+      },
+      "typeVersion": 3
+    },
+    {
+      "name": "Advance path",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const s = $(\"Select matching folder\").first(0, $runIndex).json;\nconst parentId = s.create ? $input.first().json.id : s.selectedId;\nif (typeof parentId !== \"string\" || !parentId) throw Error(\"Folder not confirmed\");\nreturn [{ json: { parentId, parts: s.parts.slice(1) } }];\n"
+      },
+      "id": "create-nested-google-drive-folders-8",
+      "position": [
+        2000,
+        300
+      ]
+    },
+    {
+      "name": "Path complete?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.parts.length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "create-nested-google-drive-folders-9",
+      "position": [
+        2250,
+        300
+      ]
+    },
+    {
+      "name": "Final folder ID",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return { json: { google_drive_folder_id: $json.parentId }, pairedItem: { item: $itemIndex } };\n"
+      },
+      "id": "create-nested-google-drive-folders-10",
+      "position": [
+        2500,
+        300
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Test workflow’": {
+      "main": [
+        [
+          {
+            "node": "Folder path",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Folder path",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Folder path": {
+      "main": [
+        [
+          {
+            "node": "Prepare segment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare segment": {
+      "main": [
+        [
+          {
+            "node": "Check if top folder exists",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check if top folder exists": {
+      "main": [
+        [
+          {
+            "node": "Select matching folder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select matching folder": {
+      "main": [
+        [
+          {
+            "node": "Create folder?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create folder?": {
+      "main": [
+        [
+          {
+            "node": "Create new subfolder",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Advance path",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create new subfolder": {
+      "main": [
+        [
+          {
+            "node": "Advance path",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Advance path": {
+      "main": [
+        [
+          {
+            "node": "Path complete?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Path complete?": {
+      "main": [
+        [
+          {
+            "node": "Final folder ID",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare segment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Create Nested Google Drive Folders",
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
