@@ -55,6 +55,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [E-commerce](#e-commerce)
 - [Media](#media)
 - [Files](#files)
+- [Entertainment](#entertainment)
 - [Contribute](#contribute)
 - [Licensing](#licensing)
 
@@ -846,6 +847,10 @@ A growing collection of automation workflows for connecting apps and getting rep
 ## Files
 
 - [Upload Video via Apps Script and Rename](workflows/upload-video-via-apps-script-and-rename/) - Send a video URL to a Google Apps Script web app and rename the uploaded Drive file.
+
+## Entertainment
+
+- [Email Monthly Songkick Events](workflows/email-monthly-songkick-events/) - Email a monthly list of Songkick concerts for a chosen location.
 
 ## Contribute
 
