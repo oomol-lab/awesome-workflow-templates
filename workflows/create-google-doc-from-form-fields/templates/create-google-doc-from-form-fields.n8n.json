@@ -1,0 +1,130 @@
+{
+  "nodes": [
+    {
+      "id": "create-google-doc-from-form-fields-0",
+      "name": "Form",
+      "type": "n8n-nodes-base.formTrigger",
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {
+        "options": {
+          "path": "create-google-doc-from-form-fields"
+        },
+        "formTitle": "Form",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "name",
+              "requiredField": true
+            }
+          ]
+        },
+        "authentication": "basicAuth"
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "create-google-doc-from-form-fields-1",
+      "name": "Copy template file",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [
+        250,
+        300
+      ],
+      "parameters": {
+        "name": "={{ $json.name }}",
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_TEMPLATE_DOCUMENT_ID"
+        },
+        "options": {},
+        "operation": "copy"
+      },
+      "typeVersion": 3
+    },
+    {
+      "name": "Prepare form fields",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const input = $(\"Form\").first().json;\nif (typeof input.name !== \"string\" || !input.name.trim()) throw Error(\"Provide name\");\nconst requests = Object.entries(input)\n  .filter(([k]) => ![\"submittedAt\", \"formMode\"].includes(k))\n  .map(([key, v]) => {\n    if (typeof v !== \"string\") throw Error(\"Field values must be strings\");\n    return {\n      replaceAllText: {\n        containsText: { text: \"{{\" + key + \"}}\", matchCase: true },\n        replaceText: v,\n      },\n    };\n  });\nreturn [{ json: { requests, name: input.name } }];\n"
+      },
+      "id": "create-google-doc-from-form-fields-2",
+      "position": [
+        500,
+        300
+      ]
+    },
+    {
+      "id": "create-google-doc-from-form-fields-3",
+      "name": "Replace data in Google Doc",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        750,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'https://docs.googleapis.com/v1/documents/'+$('Copy template file').first().json.id+':batchUpdate' }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDocsOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({requests:$('Prepare form fields').first().json.requests}) }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "typeVersion": 4.2
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Form": {
+      "main": [
+        [
+          {
+            "node": "Prepare form fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare form fields": {
+      "main": [
+        [
+          {
+            "node": "Copy template file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Copy template file": {
+      "main": [
+        [
+          {
+            "node": "Replace data in Google Doc",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Create a Google Doc from Form Fields",
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

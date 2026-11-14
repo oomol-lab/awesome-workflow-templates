@@ -459,6 +459,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Record LINE Receipt Images in Google Sheets](workflows/record-line-receipts-in-google-sheets/) - Archive LINE receipt images and record extracted Thai transfer details in Google Sheets.
 - [Reconcile Gmail Messages with Todoist Tasks](workflows/reconcile-gmail-messages-with-todoist-tasks/) - Turn unread or starred inbox messages into Todoist tasks and close tracked tasks when messages leave the active inbox set.
 - [Weekly Notion UX Ideas to Slack](workflows/weekly-notion-ux-ideas-to-slack/) - Count new UX ideas in a Notion data source and post a weekly Slack summary.
+- [Create a Google Doc from Form Fields](workflows/create-google-doc-from-form-fields/) - Copy a Google Docs template and replace placeholders with submitted fields.
 
 ## Content
 
