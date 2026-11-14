@@ -1,0 +1,373 @@
+{
+  "nodes": [
+    {
+      "id": "classify-website-domains-in-google-sheets-0",
+      "name": "When clicking \"Execute Workflow\"",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        -180,
+        300
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "classify-website-domains-in-google-sheets-1",
+      "name": "HTTP Request",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        640,
+        460
+      ],
+      "parameters": {
+        "url": "={{ 'https://www.' + $('Split In Batches').first().json.Domain }}",
+        "options": {
+          "redirect": {
+            "redirect": {
+              "followRedirects": true
+            }
+          }
+        }
+      },
+      "typeVersion": 3
+    },
+    {
+      "id": "classify-website-domains-in-google-sheets-2",
+      "name": "HTML Extract",
+      "type": "n8n-nodes-base.htmlExtract",
+      "position": [
+        820,
+        460
+      ],
+      "parameters": {
+        "options": {
+          "trimValues": false
+        },
+        "extractionValues": {
+          "values": [
+            {
+              "key": "body",
+              "cssSelector": "html"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "classify-website-domains-in-google-sheets-3",
+      "name": "OpenAI",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        1140,
+        460
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/responses",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {model:\"gpt-4.1-mini\",input:$json.input,text:{format:{type:\"json_object\"}},temperature:0,max_output_tokens:500,store:false} }}",
+        "options": {}
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "classify-website-domains-in-google-sheets-4",
+      "name": "Merge",
+      "type": "n8n-nodes-base.merge",
+      "position": [
+        1600,
+        320
+      ],
+      "parameters": {
+        "mode": "combine",
+        "options": {},
+        "combinationMode": "mergeByPosition"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "classify-website-domains-in-google-sheets-5",
+      "name": "Clean Content",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        980,
+        460
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const text = String($input.item.json.body ?? \"\")\n  .replace(/\\s+/g, \" \")\n  .trim()\n  .slice(0, 10000);\nreturn { json: { contentShort: text } };\n"
+      },
+      "executeOnce": false,
+      "typeVersion": 1
+    },
+    {
+      "id": "classify-website-domains-in-google-sheets-6",
+      "name": "Update Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        1840,
+        320
+      ],
+      "parameters": {
+        "options": {},
+        "fieldsUi": {
+          "values": [
+            {
+              "column": "Market",
+              "fieldValue": "={{ $json[\"market\"] }}"
+            },
+            {
+              "column": "Industry",
+              "fieldValue": "={{ $json[\"industry\"] }}"
+            },
+            {
+              "column": "Value Proposition",
+              "fieldValue": "={{ $json[\"value_proposition\"] }}"
+            },
+            {
+              "column": "Target Audience",
+              "fieldValue": "={{ $json[\"target_audience\"] }}"
+            }
+          ]
+        },
+        "operation": "update",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Sheet1"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_SPREADSHEET_ID"
+        },
+        "valueToMatchOn": "={{ $json[\"Domain\"] }}",
+        "columnToMatchOn": "Domain"
+      },
+      "typeVersion": 3
+    },
+    {
+      "id": "classify-website-domains-in-google-sheets-7",
+      "name": "Parse JSON",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1300,
+        460
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const r = $input.item.json;\nif (r.status && r.status !== \"completed\") throw Error(\"OpenAI response incomplete\");\nconst text =\n  r.output_text ??\n  r.output?.flatMap((x) => x.content ?? []).find((x) => x.type === \"output_text\")?.text;\nconst data = JSON.parse(text);\nfor (const k of [\"value_proposition\", \"industry\", \"market\", \"target_audience\"])\n  if (typeof data[k] !== \"string\") throw Error(\"Missing classification field\");\nreturn { json: data };\n"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "classify-website-domains-in-google-sheets-8",
+      "name": "Read Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        40,
+        300
+      ],
+      "parameters": {
+        "options": {},
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Sheet1"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_SPREADSHEET_ID"
+        }
+      },
+      "typeVersion": 3
+    },
+    {
+      "id": "classify-website-domains-in-google-sheets-9",
+      "name": "Split In Batches",
+      "type": "n8n-nodes-base.splitInBatches",
+      "position": [
+        260,
+        300
+      ],
+      "parameters": {
+        "options": {}
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "classify-website-domains-in-google-sheets-10",
+      "name": "Wait",
+      "type": "n8n-nodes-base.wait",
+      "position": [
+        2060,
+        560
+      ],
+      "parameters": {
+        "unit": "seconds"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "classify-website-domains-in-google-sheets-prompt",
+      "name": "Prepare classification request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        300,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const prompt = function prompt({ domain, content }) {\n  return {\n    input: `This is the content of the website ${domain}: \"${content}\"\\n\\nIn JSON provide value_proposition (under 25 English words, casual, formatted \"[Company Name] helps [target audience] [achieve desired outcome] and [additional benefit]\"), industry (choose Agriculture, Arts, Construction, Consumer Goods, Education, Entertainment, Finance, Other, Health Care, Legal, Manufacturing, Media & Communications, Public Administration, Advertisements, Real Estate, Recreation & Travel, Retail, Software, Transportation & Logistics, Wellness & Fitness; prefer Consumer Goods when ambiguous with Software), target_audience (choose lowercase sales teams, marketing teams, hr teams, customer service teams, consumers, c-levels), and market (B2B or B2C).`,\n  };\n};\n\nreturn {\n  json: prompt({ domain: $(\"Split In Batches\").first().json.Domain, content: $json.contentShort }),\n};\n"
+      }
+    }
+  ],
+  "connections": {
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Split In Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Update Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI": {
+      "main": [
+        [
+          {
+            "node": "Parse JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse JSON": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "HTML Extract": {
+      "main": [
+        [
+          {
+            "node": "Clean Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "HTML Extract",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clean Content": {
+      "main": [
+        [
+          {
+            "node": "Prepare classification request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split In Batches": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Split In Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking \"Execute Workflow\"": {
+      "main": [
+        [
+          {
+            "node": "Read Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare classification request": {
+      "main": [
+        [
+          {
+            "node": "OpenAI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Classify Website Domains in Google Sheets",
+  "active": false,
+  "pinData": {}
+}

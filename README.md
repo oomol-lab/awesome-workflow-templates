@@ -329,6 +329,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Research a Query With Perplexity Sonar](workflows/research-a-query-with-perplexity-sonar/) - Research a query with Perplexity Sonar and return the answer.
 - [Extract Latest TechCrunch Articles](workflows/extract-latest-techcrunch-articles/) - Read the latest TechCrunch listing and extract each article’s text and metadata.
 - [Report Nostr Hashtag Themes](workflows/report-nostr-hashtag-themes/) - Summarize Nostr hashtag posts and send a themes overview and detailed report by email and Telegram.
+- [Classify Website Domains in Google Sheets](workflows/classify-website-domains-in-google-sheets/) - Read website domains from a sheet, classify each site and update the matching row.
 
 ## Productivity
 
