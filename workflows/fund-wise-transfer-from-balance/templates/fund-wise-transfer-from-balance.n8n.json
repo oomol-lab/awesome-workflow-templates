@@ -1,0 +1,263 @@
+{
+  "nodes": [
+    {
+      "id": "fund-wise-transfer-from-balance-start",
+      "name": "Run manually",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "parameters": {},
+      "position": [
+        0,
+        300
+      ]
+    },
+    {
+      "id": "fund-wise-transfer-from-balance-setup",
+      "name": "Configure payment",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const profileId = 0,\n  recipientId = 0,\n  amount = 0,\n  sourceCurrency = \"EUR\",\n  targetCurrency = \"USD\",\n  reference = \"YOUR_REFERENCE\",\n  transactionId = \"YOUR_UNIQUE_TRANSACTION_UUID\";\nif (!profileId || !recipientId || !amount || transactionId.startsWith(\"YOUR_\"))\n  throw Error(\"Configure payment details and unique UUID\");\nreturn {\n  json: {\n    profileId,\n    recipientId,\n    amount,\n    sourceCurrency,\n    targetCurrency,\n    reference,\n    transactionId,\n  },\n};\n"
+      },
+      "position": [
+        230,
+        300
+      ]
+    },
+    {
+      "id": "fund-wise-transfer-from-balance-missing",
+      "name": "New payment checkpoint",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "transaction_id",
+              "condition": "eq",
+              "keyValue": "={{ $json.transactionId }}"
+            }
+          ]
+        },
+        "operation": "rowNotExists"
+      },
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "id": "fund-wise-transfer-from-balance-pending",
+      "name": "Mark payment pending",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "transaction_id": "={{ $('Configure payment').item.json.transactionId }}"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "position": [
+        690,
+        300
+      ]
+    },
+    {
+      "name": "Wise",
+      "type": "n8n-nodes-base.wise",
+      "position": [
+        920,
+        300
+      ],
+      "parameters": {
+        "amount": "={{ $('Configure payment').item.json.amount }}",
+        "resource": "quote",
+        "operation": "create",
+        "profileId": "={{ $('Configure payment').item.json.profileId }}",
+        "sourceCurrency": "={{ $('Configure payment').item.json.sourceCurrency }}",
+        "targetCurrency": "={{ $('Configure payment').item.json.targetCurrency }}"
+      },
+      "typeVersion": 1,
+      "id": "fund-wise-transfer-from-balance-0"
+    },
+    {
+      "name": "Wise1",
+      "type": "n8n-nodes-base.wise",
+      "position": [
+        1150,
+        300
+      ],
+      "parameters": {
+        "quoteId": "={{$json[\"id\"]}}",
+        "resource": "transfer",
+        "operation": "create",
+        "profileId": "={{ $('Configure payment').item.json.profileId }}",
+        "targetAccountId": "={{ $('Configure payment').item.json.recipientId }}",
+        "additionalFields": {
+          "reference": "={{ $('Configure payment').item.json.reference }}"
+        }
+      },
+      "typeVersion": 1,
+      "id": "fund-wise-transfer-from-balance-1"
+    },
+    {
+      "name": "Wise2",
+      "type": "n8n-nodes-base.wise",
+      "position": [
+        1380,
+        300
+      ],
+      "parameters": {
+        "resource": "transfer",
+        "operation": "execute",
+        "profileId": "={{ $('Configure payment').item.json.profileId }}",
+        "transferId": "={{$json[\"id\"]}}"
+      },
+      "typeVersion": 1,
+      "id": "fund-wise-transfer-from-balance-2"
+    },
+    {
+      "id": "fund-wise-transfer-from-balance-confirm",
+      "name": "Confirm funding",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if ($json.status !== \"COMPLETED\") throw Error(\"Funding not confirmed; inspect Wise\");\nreturn { json: $json };\n"
+      },
+      "position": [
+        1610,
+        300
+      ]
+    },
+    {
+      "name": "Wise3",
+      "type": "n8n-nodes-base.wise",
+      "position": [
+        1840,
+        300
+      ],
+      "parameters": {
+        "resource": "transfer",
+        "transferId": "={{$node[\"Wise1\"].json[\"id\"]}}"
+      },
+      "typeVersion": 1,
+      "id": "fund-wise-transfer-from-balance-3"
+    }
+  ],
+  "connections": {
+    "Run manually": {
+      "main": [
+        [
+          {
+            "node": "Configure payment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configure payment": {
+      "main": [
+        [
+          {
+            "node": "New payment checkpoint",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "New payment checkpoint": {
+      "main": [
+        [
+          {
+            "node": "Mark payment pending",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark payment pending": {
+      "main": [
+        [
+          {
+            "node": "Wise",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wise": {
+      "main": [
+        [
+          {
+            "node": "Wise1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wise1": {
+      "main": [
+        [
+          {
+            "node": "Wise2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wise2": {
+      "main": [
+        [
+          {
+            "node": "Confirm funding",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm funding": {
+      "main": [
+        [
+          {
+            "node": "Wise3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Fund a Wise Transfer from Balance",
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

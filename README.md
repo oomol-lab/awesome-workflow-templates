@@ -686,6 +686,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Create and Email a QuickBooks Invoice](workflows/create-and-email-a-quickbooks-invoice/) - Create a customer, create a consulting invoice, and send it by email.
 - [Find Stripe Checkout Sessions with Custom Fields](workflows/find-stripe-checkout-sessions-with-custom-fields/) - Find recent Stripe Checkout sessions with both nickname and job title filled.
 - [Log Wise Transfer Changes to Airtable](workflows/log-wise-transfer-changes-to-airtable/) - Append transfer details to Airtable when a Wise transfer changes state.
+- [Fund a Wise Transfer from Balance](workflows/fund-wise-transfer-from-balance/) - Create a Wise quote and transfer, fund it from balance, and read its status.
 
 ## Community
 
