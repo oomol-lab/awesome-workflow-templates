@@ -1,0 +1,183 @@
+{
+  "name": "Email n8n Execution and Trigger Errors",
+  "tags": [
+    {
+      "id": "GLfSiUrpHvSix03S",
+      "name": "Error Handling",
+      "createdAt": "2025-03-03T17:54:29.858Z",
+      "updatedAt": "2025-03-03T17:54:29.858Z"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "email-n8n-execution-and-trigger-errors-0",
+      "name": "Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "name": "Choose delivery mode",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const mode = \"direct\",\n  recipient = \"YOUR_ALERT_EMAIL\",\n  baseUrl = \"\",\n  relayUrl = \"YOUR_OPEN_FLOW_WEBHOOK_URL\";\nif (![\"direct\", \"relay\"].includes(mode)) throw Error(\"Choose direct or relay\");\nif (mode === \"direct\" && (!recipient || recipient.startsWith(\"YOUR_\")))\n  throw Error(\"Configure recipient\");\nif (mode === \"relay\" && (!relayUrl || relayUrl.startsWith(\"YOUR_\")))\n  throw Error(\"Configure relay URL\");\nreturn [{ json: { mode, recipient, baseUrl, relayUrl } }];\n"
+      },
+      "id": "email-n8n-execution-and-trigger-errors-1",
+      "position": [
+        250,
+        300
+      ]
+    },
+    {
+      "name": "Direct email?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.mode }}",
+              "rightValue": "direct",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "email-n8n-execution-and-trigger-errors-2",
+      "position": [
+        500,
+        300
+      ]
+    },
+    {
+      "name": "Format error report",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function format({ body, baseUrl, handlerId, handlerName }) {\n  if (!body || typeof body !== \"object\" || !body.workflow?.id || !body.workflow?.name)\n    throw Error(\"Missing workflow in error event\");\n  const source = body.execution?.error ? body.execution : body.trigger?.error ? body.trigger : null;\n  if (!source) throw Error(\"Expected execution or trigger error\");\n  const redact = (v, k = \"\") => {\n    if (/password|secret|token|authorization|api.?key/i.test(k)) return \"[redacted]\";\n    if (Array.isArray(v)) return v.map((x) => redact(x));\n    if (v && typeof v === \"object\")\n      return Object.fromEntries(Object.entries(v).map(([a, b]) => [a, redact(b, a)]));\n    return typeof v === \"string\"\n      ? v\n          .replace(/(bearer\\s+)[^\\s,;]+/gi, \"$1[redacted]\")\n          .replace(\n            /([\"']?(?:api[_-]?key|token|password|secret|authorization)[\"']?\\s*[=:]\\s*[\"']?)[^\"'\\s,;}]+/gi,\n            \"$1[redacted]\",\n          )\n      : v;\n  };\n  const safe = redact(body),\n    execution = !!body.execution?.error,\n    kind = execution ? \"execution error\" : \"trigger failure\",\n    name = String(body.workflow.name).replace(/[\\r\\n]+/g, \" \"),\n    message = String(redact(source.error.message ?? \"\")).replace(/[\\r\\n]+/g, \" \"),\n    base = String(baseUrl ?? \"\").replace(/\\/+$/, \"\");\n  if (base && !/^https?:\\/\\//.test(base)) throw Error(\"Invalid instance URL\");\n  const workflowUrl = base\n    ? base + \"/workflow/\" + encodeURIComponent(String(body.workflow.id))\n    : \"\";\n  return {\n    subject: `Workflow ${body.workflow.id} (${name}) ${kind}: ${message}`,\n    text: `Workflow: ${name} (${body.workflow.id})\\n${workflowUrl ? \"Workflow URL: \" + workflowUrl + \"\\n\" : \"\"}Error handler: ${handlerName || \"(not configured)\"} (${handlerId || \"unknown\"})\\nType: ${kind}\\n\\nError event:\\n${JSON.stringify(safe, null, 2)}`,\n  };\n}\n\nconst cfg = $(\"Choose delivery mode\").first().json;\nreturn [\n  {\n    json: format({\n      body: $(\"Error Trigger\").first().json,\n      baseUrl: cfg.baseUrl,\n      handlerId: $workflow.id,\n      handlerName: $workflow.name,\n    }),\n  },\n];\n"
+      },
+      "id": "email-n8n-execution-and-trigger-errors-3",
+      "position": [
+        750,
+        300
+      ]
+    },
+    {
+      "id": "email-n8n-execution-and-trigger-errors-4",
+      "name": "Send error email",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        1000,
+        300
+      ],
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "sendTo": "={{ $('Choose delivery mode').first().json.recipient }}",
+        "subject": "={{ $json.subject }}",
+        "emailType": "text",
+        "message": "={{ $json.text }}",
+        "options": {}
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "name": "Relay complete error event",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Choose delivery mode').first().json.relayUrl }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($('Error Trigger').first().json) }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "email-n8n-execution-and-trigger-errors-5",
+      "position": [
+        1250,
+        300
+      ]
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Choose delivery mode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Choose delivery mode": {
+      "main": [
+        [
+          {
+            "node": "Direct email?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Direct email?": {
+      "main": [
+        [
+          {
+            "node": "Format error report",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Relay complete error event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format error report": {
+      "main": [
+        [
+          {
+            "node": "Send error email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
