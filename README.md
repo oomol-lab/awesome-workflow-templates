@@ -972,6 +972,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 ## Human Resources
 
 - [Review Resumes Against a Job Profile](workflows/review-resumes-against-job-profile/) - Collect PDF resumes, summarize candidate information, and record a role-fit assessment for human review.
+- [Collect Two-Step CV Applications](workflows/collect-two-step-cv-applications/) - Extract a PDF CV into an editable application form and store the confirmed application with its PDF.
 
 ## Contribute
 
