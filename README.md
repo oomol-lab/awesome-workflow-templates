@@ -613,6 +613,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [List GitHub Trending Repositories](workflows/list-github-trending-repositories/) - Read GitHub Trending and return repository names, descriptions and languages.
 - [Trigger Travis Builds from GitHub](workflows/trigger-travis-builds-from-github/) - Request a Travis CI build when a GitHub repository is pushed or a pull request opens.
 - [Route Webhook Ping or Process](workflows/route-webhook-ping-or-process/) - Route a webhook ping or send its payload to an HTTP service and return a JSON response.
+- [Truncate a Text Summary via Webhook](workflows/truncate-text-summary-webhook/) - Return a short text excerpt from a webhook request.
 
 ## Communication
 

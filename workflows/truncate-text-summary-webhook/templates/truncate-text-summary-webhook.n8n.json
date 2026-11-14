@@ -1,0 +1,226 @@
+{
+  "name": "Truncate a Text Summary via Webhook",
+  "nodes": [
+    {
+      "id": "truncate-text-summary-webhook-0",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "position": [
+        200,
+        300
+      ],
+      "parameters": {
+        "path": "truncate-text-summary-webhook",
+        "httpMethod": "POST",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "truncate-text-summary-webhook-1",
+      "name": "Notas & Testes",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -140,
+        80
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 760,
+        "height": 380,
+        "content": "## Template: Resumidor com LLM (pronto para escalar)\n\n- Objetivo: Receber texto e gerar resumo com LLM ou fallback local.\n- Teste rápido:\n```bash\ncurl -X POST http://<SEU_N8N>/webhook/template/ai-summarizer \\\n -H 'Content-Type: application/json' \\\n -d '{\\\"text\\\":\\\"Escreva um parágrafo longo aqui...\\\"}'\n```\n- Produção: habilite o nó OpenAI e configure credenciais.\n- Fallback: 'Local Summarize' funciona sem credenciais."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "truncate-text-summary-webhook-2",
+      "name": "Prepare Text",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        460,
+        300
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "txt",
+              "name": "text",
+              "type": "string",
+              "value": "={{ $json.body?.text || 'Digite seu texto aqui para resumir.' }}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "truncate-text-summary-webhook-3",
+      "name": "OpenAI (opcional)",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "position": [
+        720,
+        220
+      ],
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "options": {},
+        "messages": {
+          "values": [
+            {
+              "content": "Resuma de forma objetiva o seguinte texto:\n\n{{ $json.text }}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.5,
+      "disabled": true
+    },
+    {
+      "id": "truncate-text-summary-webhook-4",
+      "name": "Local Summarize",
+      "type": "n8n-nodes-base.function",
+      "position": [
+        720,
+        380
+      ],
+      "parameters": {
+        "functionCode": "// Fallback simples: truncar e manter frases principais\nconst t = ($json.text || \"\").trim();\nif (!t) return [{ json: { summary: \"\" } }];\nconst max = 240;\nconst summary = t.length <= max ? t : t.slice(0, max) + \"...\";\nreturn [{ json: { summary } }];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "truncate-text-summary-webhook-5",
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        980,
+        380
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "truncate-text-summary-webhook-relay-hook",
+      "name": "Open Flow relay webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        200,
+        650
+      ],
+      "disabled": true,
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "truncate-text-summary-webhook-relay",
+        "responseMode": "responseNode",
+        "options": {}
+      }
+    },
+    {
+      "id": "truncate-text-summary-webhook-forward",
+      "name": "Forward complete request",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        500,
+        650
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://YOUR_OPENFLOW_HOST/webhook/YOUR_FLOW",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {event: JSON.stringify($json.body)} }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "truncate-text-summary-webhook-relay-response",
+      "name": "Return Open Flow response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        800,
+        650
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseCode": 200
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Prepare Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Text": {
+      "main": [
+        [
+          {
+            "node": "Local Summarize",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Local Summarize": {
+      "main": [
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Open Flow relay webhook": {
+      "main": [
+        [
+          {
+            "node": "Forward complete request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Forward complete request": {
+      "main": [
+        [
+          {
+            "node": "Return Open Flow response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "pinData": {}
+}
