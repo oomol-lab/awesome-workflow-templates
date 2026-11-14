@@ -734,6 +734,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Convert Potsdam Venue CSV to Excel](workflows/convert-potsdam-venue-csv-to-excel/) - Download Potsdam venue data as CSV and convert it to an Excel workbook.
 - [Import an XML Breakfast Menu to Google Sheets](workflows/import-an-xml-breakfast-menu-to-google-sheets/) - Download a breakfast menu XML file and create a Google spreadsheet containing its items.
 - [Import 2023 DACH COVID Testing Data](workflows/import-2023-dach-covid-testing-data/) - Import 2023 COVID testing records for Germany, Austria and Switzerland into Google Sheets.
+- [Random User to CSV and Google Sheets](workflows/random-user-to-csv-and-google-sheets/) - Fetch a random user, create a CSV and append the same fields to Google Sheets.
 
 ## Communications
 
