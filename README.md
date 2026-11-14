@@ -852,6 +852,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Export a Postgres Table to CSV](workflows/export-postgres-table-to-csv/) - Read a PostgreSQL table and export its rows as a CSV file.
 - [Extract PDF Pages from a URL](workflows/extract-pdf-pages-from-url/) - Download a PDF and extract a selected page range into a new PDF.
 - [Query NetSuite with a SuiteQL Webhook](workflows/query-netsuite-with-suiteql-webhook/) - Run a SuiteQL query supplied to a webhook and return matching NetSuite records.
+- [Convert a Gmail JSON Attachment to CSV](workflows/gmail-json-attachment-to-csv/) - Find a Gmail message, read a named JSON attachment and export it to CSV.
 
 ## Communications
 
