@@ -680,6 +680,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Receive Zendesk Ticket Updates](workflows/receive-zendesk-ticket-updates/) - Receive Zendesk Support ticket notifications.
 - [Receive Taiga Project Events](workflows/receive-taiga-project-events/) - Receive events from a Taiga project.
 - [Receive Webflow Form Submissions](workflows/receive-webflow-form-submissions/) - Receive form submission events from a Webflow site.
+- [Receive Wufoo Form Answers](workflows/receive-wufoo-form-answers/) - Receive answers submitted to a Wufoo form.
 
 ## Communication
 
