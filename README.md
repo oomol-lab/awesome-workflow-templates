@@ -838,6 +838,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Publish Machine Telemetry to AMQP](workflows/publish-machine-telemetry-to-amqp/) - Generate sample machine telemetry every second and publish it to an AMQP destination.
 - [Find PDF Links in a Sitemap](workflows/find-pdf-links-in-a-sitemap/) - Fetch a sitemap and return entries whose URL ends in .pdf.
 - [Merge Interviews with Staff Records](workflows/merge-interviews-with-staff-records/) - Join interview records with staff records using the first interviewer ID.
+- [Download Webhook Rows as Excel](workflows/download-webhook-rows-as-excel/) - Convert a JSON array of row objects into a downloadable Excel workbook.
 
 ## Communications
 
