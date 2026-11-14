@@ -265,6 +265,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Generate and Post a Stoic Tweet](workflows/generate-and-post-a-stoic-tweet/) - Generate a tweet using an influencer profile and post it manually or every six hours.
 - [Create and Inspect an Emelia Campaign](workflows/create-and-inspect-emelia-campaign/) - Create a campaign, add a contact to a configured campaign, and retrieve the newly created campaign.
 - [Draft WordPress Posts from Airtable](workflows/draft-wordpress-posts-from-airtable/) - Create WordPress drafts with Pexels featured images from Airtable articles.
+- [Create and Update GoToWebinar](workflows/create-and-update-gotowebinar/) - Create a webinar, update a configured webinar description, and retrieve that webinar.
 
 ## Support
 
