@@ -202,6 +202,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Clean Old MySQL Packages and Notify](workflows/clean-old-mysql-packages-and-notify/) - Mark old received packages in two MySQL databases and send a Telegram notification for each confirmed update.
 - [Back Up n8n Workflows to GitHub](workflows/back-up-n8n-workflows-by-creation-date/) - Back up n8n workflows into a GitHub repository and send progress notifications to Slack.
 - [Create a Bitwarden Group for Organization Members](workflows/create-bitwarden-group-for-organization-members/) - Create a Bitwarden organization group, add the organization members, and retrieve its member IDs.
+- [Email Server Package Update Notice](workflows/email-server-package-update-notice/) - Check a remote server for upgradable apt packages and email a notice when updates are available.
 
 ## Marketing
 
