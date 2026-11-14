@@ -485,6 +485,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Create Nested Google Drive Folders](workflows/create-nested-google-drive-folders/) - Find or create each segment of a folder path in Google Drive.
 - [Archive Duplicate Notion Pages](workflows/archive-duplicate-notion-pages/) - Archive extra Notion database pages with the same text property.
 - [Email a YouTube Transcript Summary](workflows/email-youtube-transcript-summary/) - Summarize a YouTube transcript and email the result.
+- [Create and Update a Raindrop Bookmark](workflows/create-and-update-raindrop-bookmark/) - Create a collection and bookmark, update the bookmark title, and retrieve the result.
 
 ## Content
 
