@@ -1,0 +1,609 @@
+{
+  "nodes": [
+    {
+      "id": "invite-sheet-contacts-to-n8n-0",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "daysInterval": 1,
+              "triggerAtHour": 0,
+              "triggerAtMinute": 0
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "invite-sheet-contacts-to-n8n-1",
+      "name": "When clicking ‘Test workflow’",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        220,
+        300
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "invite-sheet-contacts-to-n8n-2",
+      "name": "Edit Fields",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        440,
+        300
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c3a7a1ee-d1a2-4a29-b4b3-dcadf0fc16e2",
+              "name": "n8n_url",
+              "type": "string",
+              "value": "https://YOUR_N8N_HOST/api/v1/users"
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "invite-sheet-contacts-to-n8n-3",
+      "name": "Get all Users",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        660,
+        300
+      ],
+      "parameters": {
+        "url": "={{ $json.n8n_url }}",
+        "options": {
+          "pagination": {
+            "pagination": {
+              "parameters": {
+                "parameters": [
+                  {
+                    "name": "cursor",
+                    "value": "={{ $response?.body?.nextCursor }}",
+                    "type": "qs"
+                  }
+                ]
+              },
+              "completeExpression": "={{ !$response.body.nextCursor }}",
+              "paginationCompleteWhen": "other",
+              "paginationMode": "updateAParameterInEachRequest"
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        },
+        "sendQuery": true,
+        "authentication": "predefinedCredentialType",
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "limit",
+              "value": "5"
+            }
+          ]
+        },
+        "nodeCredentialType": "n8nApi"
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "invite-sheet-contacts-to-n8n-4",
+      "name": "Combine all paginated results",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        880,
+        300
+      ],
+      "parameters": {
+        "jsCode": "let results = [];\nfor (let i = 0; i < $input.all().length; i++) {\n  results = results.concat($input.all()[i].json.data);\n}\n\nreturn results;\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "name": "Normalize users",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return $input.all().map((x) => ({\n  json: {\n    ...x.json,\n    email: String(x.json.email ?? \"\")\n      .trim()\n      .toLowerCase(),\n  },\n}));\n"
+      },
+      "id": "invite-sheet-contacts-to-n8n-5",
+      "position": [
+        1100,
+        300
+      ]
+    },
+    {
+      "id": "invite-sheet-contacts-to-n8n-6",
+      "name": "Get all rows",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        1320,
+        300
+      ],
+      "parameters": {
+        "options": {},
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "YOUR_SHEET_NAME"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_SPREADSHEET_ID"
+        }
+      },
+      "typeVersion": 4.5
+    },
+    {
+      "name": "Normalize email rows",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const seen = new Set();\nreturn $input.all().flatMap((x) => {\n  const email = String(x.json[\"Email Address\"] ?? \"\")\n    .trim()\n    .toLowerCase();\n  if (!email) return [];\n  if (!/^\\S+@\\S+\\.\\S+$/.test(email)) throw Error(\"Invalid email\");\n  if (seen.has(email)) return [];\n  seen.add(email);\n  return [{ json: { \"Email Address\": email } }];\n});\n"
+      },
+      "id": "invite-sheet-contacts-to-n8n-7",
+      "position": [
+        1540,
+        300
+      ]
+    },
+    {
+      "id": "invite-sheet-contacts-to-n8n-8",
+      "name": "Get non-users",
+      "type": "n8n-nodes-base.merge",
+      "position": [
+        1760,
+        300
+      ],
+      "parameters": {
+        "mode": "combine",
+        "options": {},
+        "advanced": true,
+        "joinMode": "keepNonMatches",
+        "mergeByFields": {
+          "values": [
+            {
+              "field1": "Email Address",
+              "field2": "email"
+            }
+          ]
+        },
+        "outputDataFrom": "input1"
+      },
+      "typeVersion": 3
+    },
+    {
+      "id": "invite-sheet-contacts-to-n8n-9",
+      "name": "Create users list",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        1980,
+        300
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "36282722-07ec-47b1-ab08-c649b7901ed7",
+              "name": "email",
+              "type": "string",
+              "value": "={{ $json['Email Address'] }}"
+            },
+            {
+              "id": "9b073e1d-8c16-45b1-b333-97dfe635eb73",
+              "name": "role",
+              "type": "string",
+              "value": "global:member"
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "name": "Process invitation",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "invite-sheet-contacts-to-n8n-10",
+      "position": [
+        2200,
+        300
+      ]
+    },
+    {
+      "name": "Existing checkpoint",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "email",
+              "condition": "eq",
+              "keyValue": "={{ $json.email }}"
+            }
+          ]
+        },
+        "operation": "rowExists"
+      },
+      "id": "invite-sheet-contacts-to-n8n-11",
+      "position": [
+        2420,
+        300
+      ]
+    },
+    {
+      "name": "New checkpoint",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "email",
+              "condition": "eq",
+              "keyValue": "={{ $json.email }}"
+            }
+          ]
+        },
+        "operation": "rowNotExists"
+      },
+      "id": "invite-sheet-contacts-to-n8n-12",
+      "position": [
+        2640,
+        300
+      ]
+    },
+    {
+      "name": "Mark invitation pending",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "email": "={{ $('Process invitation').item.json.email }}",
+            "status": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "invite-sheet-contacts-to-n8n-13",
+      "position": [
+        2860,
+        300
+      ]
+    },
+    {
+      "id": "invite-sheet-contacts-to-n8n-14",
+      "name": "Invite Users",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        3080,
+        300
+      ],
+      "parameters": {
+        "url": "={{ $('Edit Fields').first().json.n8n_url }}",
+        "method": "POST",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        },
+        "jsonBody": "={{ JSON.stringify([{email:$('Process invitation').item.json.email,role:'global:member'}]) }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "n8nApi"
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "name": "Confirm invitation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const expected = $(\"Process invitation\").item.json.email;\nif ($json.error || !$json.user?.id || $json.user.email?.toLowerCase() !== expected)\n  throw Error(\"Invitation not confirmed; inspect n8n\");\nreturn { json: { confirmed: true }, pairedItem: { item: $itemIndex } };\n"
+      },
+      "id": "invite-sheet-contacts-to-n8n-15",
+      "position": [
+        3300,
+        300
+      ]
+    },
+    {
+      "name": "Mark invitation sent",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Mark invitation pending').item.json.id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "sent"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "invite-sheet-contacts-to-n8n-16",
+      "position": [
+        3520,
+        300
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Test workflow’": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Get all Users",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get all rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get all Users": {
+      "main": [
+        [
+          {
+            "node": "Combine all paginated results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combine all paginated results": {
+      "main": [
+        [
+          {
+            "node": "Normalize users",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get all rows": {
+      "main": [
+        [
+          {
+            "node": "Normalize email rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize email rows": {
+      "main": [
+        [
+          {
+            "node": "Get non-users",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize users": {
+      "main": [
+        [
+          {
+            "node": "Get non-users",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Get non-users": {
+      "main": [
+        [
+          {
+            "node": "Create users list",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create users list": {
+      "main": [
+        [
+          {
+            "node": "Process invitation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process invitation": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Existing checkpoint",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "New checkpoint",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Existing checkpoint": {
+      "main": [
+        [
+          {
+            "node": "Process invitation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "New checkpoint": {
+      "main": [
+        [
+          {
+            "node": "Mark invitation pending",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark invitation pending": {
+      "main": [
+        [
+          {
+            "node": "Invite Users",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Invite Users": {
+      "main": [
+        [
+          {
+            "node": "Confirm invitation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm invitation": {
+      "main": [
+        [
+          {
+            "node": "Mark invitation sent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark invitation sent": {
+      "main": [
+        [
+          {
+            "node": "Process invitation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Invite Sheet Contacts to n8n",
+  "active": false,
+  "settings": {
+    "timezone": "UTC",
+    "executionOrder": "v1"
+  }
+}
