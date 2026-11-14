@@ -1,0 +1,871 @@
+{
+  "nodes": [
+    {
+      "id": "sync-zendesk-tickets-to-hubspot-0",
+      "name": "Every five minutes",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "mode": "everyX",
+              "unit": "minutes",
+              "value": 5
+            }
+          ]
+        }
+      },
+      "position": [
+        0,
+        300
+      ]
+    },
+    {
+      "id": "sync-zendesk-tickets-to-hubspot-1",
+      "name": "Configure export",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const subdomain = \"YOUR_ZENDESK_SUBDOMAIN\";\nconst startTime = 0;\nconst pipeline = \"YOUR_PIPELINE_ID\";\nconst stage = \"YOUR_STAGE_ID\";\nif (\n  !/^[a-z0-9-]+$/.test(subdomain) ||\n  subdomain.startsWith(\"YOUR\") ||\n  !Number.isInteger(startTime) ||\n  startTime <= 0 ||\n  startTime >= Date.now() / 1000 - 60 ||\n  pipeline.startsWith(\"YOUR_\") ||\n  stage.startsWith(\"YOUR_\")\n)\n  throw Error(\"Configure Zendesk subdomain, initial Unix start time, pipeline and stage\");\nconst s = $getWorkflowStaticData(\"global\");\nconst q = s.cursor ? \"cursor=\" + encodeURIComponent(s.cursor) : \"start_time=\" + startTime;\nreturn [\n  {\n    json: {\n      subdomain,\n      pipeline,\n      stage,\n      url: \"https://\" + subdomain + \".zendesk.com/api/v2/incremental/tickets/cursor.json?\" + q,\n    },\n  },\n];\n"
+      },
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "id": "sync-zendesk-tickets-to-hubspot-2",
+      "name": "Read changed tickets",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.url }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "position": [
+        480,
+        300
+      ]
+    },
+    {
+      "id": "sync-zendesk-tickets-to-hubspot-3",
+      "name": "Prepare page",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const p = $json;\nif (!Array.isArray(p.tickets) || !p.after_cursor) throw Error(\"Invalid export page\");\nreturn [{ json: { tickets: p.tickets, cursor: p.after_cursor, hasTickets: p.tickets.length > 0 } }];\n"
+      },
+      "position": [
+        720,
+        300
+      ]
+    },
+    {
+      "id": "sync-zendesk-tickets-to-hubspot-4",
+      "name": "Page has tickets?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "yes",
+              "leftValue": "={{ $json.hasTickets }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "position": [
+        960,
+        300
+      ]
+    },
+    {
+      "id": "sync-zendesk-tickets-to-hubspot-5",
+      "name": "Expand tickets",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return $json.tickets.map((t) => ({ json: t, pairedItem: { item: 0 } }));\n"
+      },
+      "position": [
+        1200,
+        300
+      ]
+    },
+    {
+      "id": "sync-zendesk-tickets-to-hubspot-6",
+      "name": "Loop tickets",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "position": [
+        1440,
+        300
+      ]
+    },
+    {
+      "id": "sync-zendesk-tickets-to-hubspot-7",
+      "name": "Prepare ticket",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const t = $json;\nif (!t.id || !t.updated_at) throw Error(\"Ticket ID and updated_at required\");\nreturn [{ json: { ...t, key: String(t.id) + \"|\" + t.updated_at }, pairedItem: { item: 0 } }];\n"
+      },
+      "position": [
+        1680,
+        300
+      ]
+    },
+    {
+      "id": "sync-zendesk-tickets-to-hubspot-8",
+      "name": "Pending ticket?",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "operation": "rowExists",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "ticket_key",
+              "condition": "eq",
+              "keyValue": "={{ $('Prepare ticket').item.json.key }}"
+            },
+            {
+              "keyName": "status",
+              "condition": "eq",
+              "keyValue": "pending"
+            }
+          ]
+        }
+      },
+      "position": [
+        1920,
+        300
+      ]
+    },
+    {
+      "id": "sync-zendesk-tickets-to-hubspot-9",
+      "name": "Completed ticket?",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "operation": "rowExists",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "ticket_key",
+              "condition": "eq",
+              "keyValue": "={{ $('Prepare ticket').item.json.key }}"
+            },
+            {
+              "keyName": "status",
+              "condition": "eq",
+              "keyValue": "done"
+            }
+          ]
+        }
+      },
+      "position": [
+        2160,
+        300
+      ]
+    },
+    {
+      "id": "sync-zendesk-tickets-to-hubspot-10",
+      "name": "New ticket?",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "operation": "rowNotExists",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "ticket_key",
+              "condition": "eq",
+              "keyValue": "={{ $('Prepare ticket').item.json.key }}"
+            }
+          ]
+        }
+      },
+      "position": [
+        2400,
+        300
+      ]
+    },
+    {
+      "id": "sync-zendesk-tickets-to-hubspot-11",
+      "name": "Stop for reconciliation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "throw Error(\n  \"A ticket write is pending. Inspect both services and resolve the Data Table row before retrying.\",\n);\n"
+      },
+      "position": [
+        2640,
+        300
+      ]
+    },
+    {
+      "id": "sync-zendesk-tickets-to-hubspot-12",
+      "name": "Mark ticket pending",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "ticket_key": "={{ $('Prepare ticket').item.json.key }}",
+            "status": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "position": [
+        2880,
+        300
+      ]
+    },
+    {
+      "id": "sync-zendesk-tickets-to-hubspot-13",
+      "name": "Already linked?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "yes",
+              "leftValue": "={{ Boolean($('Prepare ticket').item.json.external_id) }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "position": [
+        3120,
+        300
+      ]
+    },
+    {
+      "id": "sync-zendesk-tickets-to-hubspot-14",
+      "name": "Update HubSpot ticket",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ 'https://api.hubapi.com/crm/v3/objects/tickets/'+encodeURIComponent($('Prepare ticket').item.json.external_id) }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({properties:{subject:($('Prepare ticket').item.json.raw_subject ?? $('Prepare ticket').item.json.subject ?? ''),content:($('Prepare ticket').item.json.description ?? '')}}) }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "position": [
+        3360,
+        300
+      ]
+    },
+    {
+      "id": "sync-zendesk-tickets-to-hubspot-15",
+      "name": "Read Zendesk requester",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ 'https://'+$('Configure export').first().json.subdomain+'.zendesk.com/api/v2/users/'+encodeURIComponent($('Prepare ticket').item.json.requester_id)+'.json' }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "position": [
+        3600,
+        300
+      ]
+    },
+    {
+      "id": "sync-zendesk-tickets-to-hubspot-16",
+      "name": "Upsert HubSpot contact",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.hubapi.com/crm/v3/objects/contacts/batch/upsert",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({inputs:[{id:$json.user.email,idProperty:'email',properties:{email:$json.user.email}}]}) }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "position": [
+        3840,
+        300
+      ]
+    },
+    {
+      "id": "sync-zendesk-tickets-to-hubspot-17",
+      "name": "Confirm contact",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const id = $json.results?.[0]?.id;\nif (!id) throw Error(\"Contact upsert did not confirm an ID\");\nreturn [{ json: { contactId: String(id) }, pairedItem: { item: 0 } }];\n"
+      },
+      "position": [
+        4080,
+        300
+      ]
+    },
+    {
+      "id": "sync-zendesk-tickets-to-hubspot-18",
+      "name": "Store contact ID in Zendesk",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ 'https://'+$('Configure export').first().json.subdomain+'.zendesk.com/api/v2/users/'+encodeURIComponent($('Prepare ticket').item.json.requester_id)+'.json' }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({user:{external_id:$('Confirm contact').item.json.contactId}}) }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "position": [
+        4320,
+        300
+      ]
+    },
+    {
+      "id": "sync-zendesk-tickets-to-hubspot-19",
+      "name": "Create HubSpot ticket",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.hubapi.com/crm/v3/objects/tickets",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({properties:{subject:($('Prepare ticket').item.json.raw_subject ?? $('Prepare ticket').item.json.subject ?? ''),content:($('Prepare ticket').item.json.description ?? ''),hs_pipeline:$('Configure export').first().json.pipeline,hs_pipeline_stage:$('Configure export').first().json.stage}}) }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "position": [
+        4560,
+        300
+      ]
+    },
+    {
+      "id": "sync-zendesk-tickets-to-hubspot-20",
+      "name": "Confirm created ticket",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "if (!$json.id) throw Error(\"Ticket creation did not confirm an ID\");\nreturn [{ json: { ticketId: String($json.id) }, pairedItem: { item: 0 } }];\n"
+      },
+      "position": [
+        4800,
+        300
+      ]
+    },
+    {
+      "id": "sync-zendesk-tickets-to-hubspot-21",
+      "name": "Associate HubSpot contact",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ 'https://api.hubapi.com/crm/v4/objects/tickets/'+encodeURIComponent($('Confirm created ticket').item.json.ticketId)+'/associations/default/contacts/'+encodeURIComponent($('Confirm contact').item.json.contactId) }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "position": [
+        5040,
+        300
+      ]
+    },
+    {
+      "id": "sync-zendesk-tickets-to-hubspot-22",
+      "name": "Store ticket ID in Zendesk",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ 'https://'+$('Configure export').first().json.subdomain+'.zendesk.com/api/v2/tickets/'+encodeURIComponent($('Prepare ticket').item.json.id)+'.json' }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ticket:{external_id:$('Confirm created ticket').item.json.ticketId}}) }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "position": [
+        5280,
+        300
+      ]
+    },
+    {
+      "id": "sync-zendesk-tickets-to-hubspot-23",
+      "name": "Mark ticket done",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "operation": "update",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Mark ticket pending').item.json.id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "done"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "position": [
+        5520,
+        300
+      ]
+    },
+    {
+      "id": "sync-zendesk-tickets-to-hubspot-24",
+      "name": "Commit export cursor",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const cursor = $(\"Prepare page\").first().json.cursor;\nif (!cursor) throw Error(\"Missing cursor\");\n$getWorkflowStaticData(\"global\").cursor = cursor;\nreturn [{ json: { cursorCommitted: true } }];\n"
+      },
+      "position": [
+        5760,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Every five minutes": {
+      "main": [
+        [
+          {
+            "node": "Configure export",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configure export": {
+      "main": [
+        [
+          {
+            "node": "Read changed tickets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read changed tickets": {
+      "main": [
+        [
+          {
+            "node": "Prepare page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare page": {
+      "main": [
+        [
+          {
+            "node": "Page has tickets?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Page has tickets?": {
+      "main": [
+        [
+          {
+            "node": "Expand tickets",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Commit export cursor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Expand tickets": {
+      "main": [
+        [
+          {
+            "node": "Loop tickets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop tickets": {
+      "main": [
+        [
+          {
+            "node": "Commit export cursor",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare ticket",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare ticket": {
+      "main": [
+        [
+          {
+            "node": "Pending ticket?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Completed ticket?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "New ticket?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pending ticket?": {
+      "main": [
+        [
+          {
+            "node": "Stop for reconciliation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Completed ticket?": {
+      "main": [
+        [
+          {
+            "node": "Loop tickets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "New ticket?": {
+      "main": [
+        [
+          {
+            "node": "Mark ticket pending",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark ticket pending": {
+      "main": [
+        [
+          {
+            "node": "Already linked?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Already linked?": {
+      "main": [
+        [
+          {
+            "node": "Update HubSpot ticket",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Read Zendesk requester",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update HubSpot ticket": {
+      "main": [
+        [
+          {
+            "node": "Mark ticket done",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Zendesk requester": {
+      "main": [
+        [
+          {
+            "node": "Upsert HubSpot contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upsert HubSpot contact": {
+      "main": [
+        [
+          {
+            "node": "Confirm contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm contact": {
+      "main": [
+        [
+          {
+            "node": "Store contact ID in Zendesk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Store contact ID in Zendesk": {
+      "main": [
+        [
+          {
+            "node": "Create HubSpot ticket",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create HubSpot ticket": {
+      "main": [
+        [
+          {
+            "node": "Confirm created ticket",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm created ticket": {
+      "main": [
+        [
+          {
+            "node": "Associate HubSpot contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Associate HubSpot contact": {
+      "main": [
+        [
+          {
+            "node": "Store ticket ID in Zendesk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Store ticket ID in Zendesk": {
+      "main": [
+        [
+          {
+            "node": "Mark ticket done",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark ticket done": {
+      "main": [
+        [
+          {
+            "node": "Loop tickets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Sync Zendesk Tickets to HubSpot",
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC"
+  },
+  "pinData": {}
+}
