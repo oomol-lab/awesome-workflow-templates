@@ -129,6 +129,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Verify Keap Contact Mailing Address](workflows/verify-keap-contact-mailing-address/) - Verify Keap contact mailing addresses and apply deliverability tags.
 - [Remind Calendly Meeting Feedback](workflows/remind-calendly-meeting-feedback/) - Create a Pipedrive call activity and ask for meeting notes in Slack after a Calendly meeting.
 - [Sync Postgres Leads to Google Sheets](workflows/postgres-updates-to-qualified-leads-sheet/) - Filter updated Postgres users and upsert qualified leads in Google Sheets.
+- [Sync Captured Stripe Spend to HubSpot](workflows/sync-captured-stripe-spend-to-hubspot/) - Sum captured Stripe charges by customer email and update a HubSpot contact property.
 
 ## Operations
 
