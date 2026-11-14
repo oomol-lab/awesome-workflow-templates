@@ -128,6 +128,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Verify Groundhogg Contact Mailing Address](workflows/verify-groundhogg-contact-mailing-address/) - Verify a Groundhogg contact’s US mailing address and send a deliverability tag to its webhook listener.
 - [Verify Keap Contact Mailing Address](workflows/verify-keap-contact-mailing-address/) - Verify Keap contact mailing addresses and apply deliverability tags.
 - [Remind Calendly Meeting Feedback](workflows/remind-calendly-meeting-feedback/) - Create a Pipedrive call activity and ask for meeting notes in Slack after a Calendly meeting.
+- [Sync Postgres Leads to Google Sheets](workflows/postgres-updates-to-qualified-leads-sheet/) - Filter updated Postgres users and upsert qualified leads in Google Sheets.
 
 ## Operations
 
