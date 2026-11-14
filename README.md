@@ -849,6 +849,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Download Webhook Rows as Excel](workflows/download-webhook-rows-as-excel/) - Convert a JSON array of row objects into a downloadable Excel workbook.
 - [Export a Postgres Table to CSV](workflows/export-postgres-table-to-csv/) - Read a PostgreSQL table and export its rows as a CSV file.
 - [Extract PDF Pages from a URL](workflows/extract-pdf-pages-from-url/) - Download a PDF and extract a selected page range into a new PDF.
+- [Query NetSuite with a SuiteQL Webhook](workflows/query-netsuite-with-suiteql-webhook/) - Run a SuiteQL query supplied to a webhook and return matching NetSuite records.
 
 ## Communications
 

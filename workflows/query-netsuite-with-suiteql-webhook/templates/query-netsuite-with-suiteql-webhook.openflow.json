@@ -1,0 +1,137 @@
+{
+  "kind": "open-flow-workflow",
+  "version": 1,
+  "name": "Query NetSuite with a SuiteQL Webhook",
+  "content": {
+    "modelVersion": 15,
+    "document": {
+      "bindings": {},
+      "graph": {
+        "nodes": {
+          "n_03061a7e546fba50": {
+            "name": "Receive SuiteQL query",
+            "kind": "webhook",
+            "bodyFields": [],
+            "method": "GET",
+            "options": {
+              "responseBody": {
+                "kind": "workflow-outputs",
+                "output": "rows",
+                "timeoutMs": 60000
+              },
+              "responseStatusCode": 200
+            }
+          },
+          "n_0d7f2e311eba330f": {
+            "inputs": {
+              "query": {
+                "kind": "sources",
+                "sources": [
+                  {
+                    "kind": "node",
+                    "nodeId": "n_03061a7e546fba50",
+                    "output": "query"
+                  }
+                ]
+              }
+            },
+            "name": "Run SuiteQL",
+            "kind": "task",
+            "task": {
+              "inputs": [
+                {
+                  "jsonSchema": {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  "nullable": false,
+                  "handle": "query"
+                }
+              ],
+              "outputs": [
+                {
+                  "jsonSchema": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": true
+                    }
+                  },
+                  "nullable": false,
+                  "handle": "rows"
+                }
+              ],
+              "name": "Run SuiteQL",
+              "moduleId": "n_1828040eac8cade2",
+              "capabilities": [
+                {
+                  "kind": "connector",
+                  "mode": "independent",
+                  "actions": [
+                    {
+                      "action": "netsuite.run_suiteql"
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          "n_25b786367c609ae0": {
+            "name": "Return query results",
+            "kind": "outputs",
+            "outputDefs": [
+              {
+                "jsonSchema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": true
+                  }
+                },
+                "nullable": false,
+                "handle": "rows"
+              }
+            ],
+            "outputMappings": {
+              "rows": {
+                "kind": "sources",
+                "sources": [
+                  {
+                    "kind": "node",
+                    "nodeId": "n_0d7f2e311eba330f",
+                    "output": "rows"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "edges": [
+          {
+            "source": "n_03061a7e546fba50",
+            "target": "n_0d7f2e311eba330f"
+          },
+          {
+            "source": "n_0d7f2e311eba330f",
+            "target": "n_25b786367c609ae0"
+          }
+        ]
+      }
+    },
+    "modules": {
+      "n_1828040eac8cade2": {
+        "name": "Run SuiteQL",
+        "imports": [],
+        "source": "export default async function suiteql({ query }, context) {\n  const sql = query?.suiteql;\n  if (typeof sql !== \"string\" || !sql.trim()) throw Error(\"Provide the suiteql query parameter\");\n  let rows = [],\n    offset = 0;\n  while (rows.length < 100) {\n    const { result } = await context.actions.call(\"netsuite.run_suiteql\", {\n      query: sql,\n      limit: 100 - rows.length,\n      offset,\n    });\n    if (!result || !Array.isArray(result.items)) throw Error(\"Invalid SuiteQL response\");\n    rows.push(...result.items.slice(0, 100 - rows.length));\n    if (!result.hasMore || rows.length >= 100) break;\n    if (!result.items.length) throw Error(\"SuiteQL pagination did not advance\");\n    offset += result.items.length;\n  }\n  return { rows };\n}\n"
+      }
+    }
+  },
+  "presentation": {
+    "designer": {
+      "version": 1,
+      "flow": {
+        "direction": "vertical"
+      }
+    }
+  }
+}
