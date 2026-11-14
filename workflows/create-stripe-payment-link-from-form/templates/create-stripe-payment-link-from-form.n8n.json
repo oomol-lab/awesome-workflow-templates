@@ -1,0 +1,351 @@
+{
+  "nodes": [
+    {
+      "id": "create-stripe-payment-link-from-form-0",
+      "name": "Creation Form",
+      "type": "n8n-nodes-base.formTrigger",
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {
+        "path": "create-stripe-payment-link",
+        "formTitle": "Create a payment link",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "title",
+              "requiredField": true
+            },
+            {
+              "fieldType": "number",
+              "fieldLabel": "price",
+              "requiredField": true
+            }
+          ]
+        },
+        "responseMode": "responseNode"
+      },
+      "typeVersion": 2
+    },
+    {
+      "name": "Choose delivery mode",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const mode = \"direct\";\nif (![\"direct\", \"relay\"].includes(mode)) throw Error(\"Choose direct or relay\");\nreturn { json: { mode, form: $json } };\n"
+      },
+      "id": "create-stripe-payment-link-from-form-1",
+      "position": [
+        250,
+        300
+      ]
+    },
+    {
+      "name": "Route delivery mode",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "parameters": {
+        "mode": "expression",
+        "numberOutputs": 2,
+        "output": "={{ $json.mode === 'direct' ? 0 : 1 }}",
+        "options": {}
+      },
+      "id": "create-stripe-payment-link-from-form-2",
+      "position": [
+        500,
+        300
+      ]
+    },
+    {
+      "name": "Validate the EUR price",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function prepare({ body }) {\n  const title = body?.title,\n    price = body?.price;\n  if (\n    typeof title !== \"string\" ||\n    !title.trim() ||\n    typeof price !== \"number\" ||\n    !Number.isFinite(price) ||\n    price <= 0\n  )\n    throw Error(\"Provide title and a positive EUR price\");\n  const cents = Math.round(price * 100);\n  if (cents < 1 || !Number.isSafeInteger(cents) || Math.abs(price * 100 - cents) > 1e-7)\n    throw Error(\"Price must be in whole euro cents\");\n  return {\n    product: {\n      name: title.trim(),\n      \"default_price_data[unit_amount]\": cents,\n      \"default_price_data[currency]\": \"eur\",\n    },\n  };\n}\n\nreturn { json: prepare({ body: $json.form }).product };\n"
+      },
+      "id": "create-stripe-payment-link-from-form-3",
+      "position": [
+        750,
+        300
+      ]
+    },
+    {
+      "id": "create-stripe-payment-link-from-form-4",
+      "name": "Create Stripe Product",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        1000,
+        300
+      ],
+      "parameters": {
+        "url": "https://api.stripe.com/v1/products",
+        "method": "POST",
+        "options": {},
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "authentication": "predefinedCredentialType",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "name",
+              "value": "={{ $json.name }}"
+            },
+            {
+              "name": "default_price_data[unit_amount]",
+              "value": "={{ $json['default_price_data[unit_amount]'] }}"
+            },
+            {
+              "name": "default_price_data[currency]",
+              "value": "eur"
+            }
+          ]
+        },
+        "nodeCredentialType": "stripeApi",
+        "specifyBody": "keypair"
+      },
+      "typeVersion": 4.1
+    },
+    {
+      "name": "Read the created price",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function product({ response }) {\n  if (\n    typeof response?.id !== \"string\" ||\n    !response.id.startsWith(\"prod_\") ||\n    typeof response.default_price !== \"string\" ||\n    !response.default_price.startsWith(\"price_\")\n  )\n    throw Error(\"Stripe did not confirm product and default price\");\n  return { link: { \"line_items[0][price]\": response.default_price, \"line_items[0][quantity]\": 1 } };\n}\n\nreturn { json: product({ response: $json }).link };\n"
+      },
+      "id": "create-stripe-payment-link-from-form-5",
+      "position": [
+        1250,
+        300
+      ]
+    },
+    {
+      "id": "create-stripe-payment-link-from-form-6",
+      "name": "Create payment link",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        1500,
+        300
+      ],
+      "parameters": {
+        "url": "https://api.stripe.com/v1/payment_links",
+        "method": "POST",
+        "options": {},
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "authentication": "predefinedCredentialType",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "line_items[0][price]",
+              "value": "={{ $json['line_items[0][price]'] }}"
+            },
+            {
+              "name": "line_items[0][quantity]",
+              "value": 1
+            }
+          ]
+        },
+        "nodeCredentialType": "stripeApi",
+        "specifyBody": "keypair"
+      },
+      "typeVersion": 4.1
+    },
+    {
+      "name": "Validate payment link",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if (\n  typeof $json.id !== \"string\" ||\n  !$json.id.startsWith(\"plink_\") ||\n  typeof $json.url !== \"string\" ||\n  !/^https:\\/\\/[^\\s/?#]+(?:[/?#]|$)/i.test($json.url)\n)\n  throw Error(\"Invalid payment link\");\nreturn { json: { location: $json.url } };\n"
+      },
+      "id": "create-stripe-payment-link-from-form-7",
+      "position": [
+        1750,
+        300
+      ]
+    },
+    {
+      "name": "Forward to Open Flow",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "YOUR_OPENFLOW_WEBHOOK_URL",
+        "authentication": "none",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.form }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "create-stripe-payment-link-from-form-8",
+      "position": [
+        2000,
+        300
+      ]
+    },
+    {
+      "name": "Validate relayed link",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if (typeof $json.url !== \"string\" || !/^https:\\/\\/[^\\s/?#]+(?:[/?#]|$)/i.test($json.url))\n  throw Error(\"Invalid payment link\");\nreturn { json: { location: $json.url } };\n"
+      },
+      "id": "create-stripe-payment-link-from-form-9",
+      "position": [
+        2250,
+        300
+      ]
+    },
+    {
+      "id": "create-stripe-payment-link-from-form-10",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        2500,
+        300
+      ],
+      "parameters": {
+        "options": {},
+        "redirectURL": "={{ $json.location }}",
+        "respondWith": "redirect"
+      },
+      "typeVersion": 1
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Creation Form": {
+      "main": [
+        [
+          {
+            "node": "Choose delivery mode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Choose delivery mode": {
+      "main": [
+        [
+          {
+            "node": "Route delivery mode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate the EUR price": {
+      "main": [
+        [
+          {
+            "node": "Create Stripe Product",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Stripe Product": {
+      "main": [
+        [
+          {
+            "node": "Read the created price",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the created price": {
+      "main": [
+        [
+          {
+            "node": "Create payment link",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create payment link": {
+      "main": [
+        [
+          {
+            "node": "Validate payment link",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate payment link": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Forward to Open Flow": {
+      "main": [
+        [
+          {
+            "node": "Validate relayed link",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate relayed link": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route delivery mode": {
+      "main": [
+        [
+          {
+            "node": "Validate the EUR price",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Forward to Open Flow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Create a Stripe Payment Link from a Form",
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
