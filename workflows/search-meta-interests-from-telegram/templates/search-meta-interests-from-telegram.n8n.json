@@ -1,0 +1,411 @@
+{
+  "nodes": [
+    {
+      "id": "search-meta-interests-from-telegram-0",
+      "name": "No Operation, do nothing",
+      "type": "n8n-nodes-base.noOp",
+      "position": [
+        440,
+        840
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "search-meta-interests-from-telegram-1",
+      "name": "Get interest name",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "position": [
+        100,
+        660
+      ],
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "search-meta-interests-from-telegram-2",
+      "name": "Check message contents",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        280,
+        660
+      ],
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $json.message.chat.id }}",
+              "value2": 0,
+              "operation": "equal"
+            }
+          ],
+          "string": [
+            {
+              "value1": "={{ $json.message.text }}",
+              "value2": "#interest",
+              "operation": "startsWith"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "search-meta-interests-from-telegram-3",
+      "name": "Extract message",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        460,
+        460
+      ],
+      "parameters": {
+        "jsCode": "let inputData = items[0].json; // get the input data\nlet message = inputData.message; // replace 'message' with the correct field name\n\nlet messageContent = \"\";\n\nif (message && message.text) {\n  messageContent = message.text;\n}\n\nreturn [\n  {\n    json: {\n      messageContent: messageContent,\n    },\n  },\n];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "search-meta-interests-from-telegram-4",
+      "name": "Split Message",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        660,
+        460
+      ],
+      "parameters": {
+        "jsCode": "let inputData = items[0].json; // get the input data\nlet variableContent = String(inputData.messageContent || \"\"); // replace 'variable' with the correct field name, convert to string and assign empty string if undefined\n\nlet regex = /#(\\w+)\\b(.*)/; // regex to match hashtag word and rest of the content\nlet matches = regex.exec(variableContent);\n\nlet extractedContent = \"\";\nlet remainingContent = \"\";\n\nif (matches !== null) {\n  extractedContent = matches[1];\n  remainingContent = matches[2].trim();\n} else {\n  remainingContent = variableContent.trim();\n}\n\nreturn [\n  {\n    json: {\n      extractedContent: extractedContent,\n      remainingContent: remainingContent,\n    },\n  },\n];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "search-meta-interests-from-telegram-5",
+      "name": "Connect to Graph API",
+      "type": "n8n-nodes-base.facebookGraphApi",
+      "position": [
+        840,
+        460
+      ],
+      "parameters": {
+        "edge": "",
+        "node": "search",
+        "options": {
+          "queryParameters": {
+            "parameter": [
+              {
+                "name": "type",
+                "value": "adinterest"
+              },
+              {
+                "name": "q",
+                "value": "={{ $json.remainingContent }}"
+              },
+              {
+                "name": "limit",
+                "value": "1000000"
+              },
+              {
+                "name": "locale",
+                "value": "en_US"
+              }
+            ]
+          }
+        },
+        "graphApiVersion": "v27.0"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "search-meta-interests-from-telegram-6",
+      "name": "Split Interests into a Table",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1020,
+        460
+      ],
+      "parameters": {
+        "jsCode": "const data = $json.data;\nif (!Array.isArray(data)) throw Error(\"Invalid Meta response\");\nreturn data.map((v) => ({ json: { Value: v } }));\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "search-meta-interests-from-telegram-7",
+      "name": "Get variables",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1200,
+        460
+      ],
+      "parameters": {
+        "jsCode": "let outputData = items.map((item) => {\n  let data = item.json.Value;\n\n  return {\n    json: {\n      name: data.name,\n      audience_size_lower_bound: data.audience_size_lower_bound,\n      audience_size_upper_bound: data.audience_size_upper_bound,\n      path: data.path,\n      description: data.description,\n      topic: data.topic,\n    },\n  };\n});\n\nreturn outputData;\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "search-meta-interests-from-telegram-8",
+      "name": "Create a Spreadsheet",
+      "type": "n8n-nodes-base.spreadsheetFile",
+      "position": [
+        1380,
+        460
+      ],
+      "parameters": {
+        "options": {},
+        "operation": "toFile",
+        "fileFormat": "csv"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "search-meta-interests-from-telegram-9",
+      "name": "Send the Spreadsheet file",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        1560,
+        460
+      ],
+      "parameters": {
+        "chatId": "={{ $(\"Get interest name\").first().json.message.chat.id }}",
+        "operation": "sendDocument",
+        "binaryData": true,
+        "additionalFields": {
+          "fileName": "report.csv"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "search-meta-interests-from-telegram-10",
+      "name": "CSV delivery webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "search-meta-interests-csv",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "position": [
+        2500,
+        600
+      ],
+      "disabled": true
+    },
+    {
+      "id": "search-meta-interests-from-telegram-11",
+      "name": "Prepare CSV rows",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const b = $json.body;\nif (!b || !Array.isArray(b.rows) || !b.rows.length || !/^[-]?\\d+$/.test(String(b.chatId)))\n  throw Error(\"Invalid CSV relay body\");\nreturn b.rows.map((row) => ({ json: row }));\n"
+      },
+      "position": [
+        2750,
+        600
+      ],
+      "disabled": false
+    },
+    {
+      "id": "search-meta-interests-from-telegram-relay-sheet",
+      "name": "Create relay CSV",
+      "type": "n8n-nodes-base.spreadsheetFile",
+      "position": [
+        3000,
+        600
+      ],
+      "parameters": {
+        "options": {},
+        "operation": "toFile",
+        "fileFormat": "csv"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "search-meta-interests-from-telegram-relay-send",
+      "name": "Send relay CSV",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        3250,
+        600
+      ],
+      "parameters": {
+        "chatId": "={{ $('CSV delivery webhook').first().json.body.chatId }}",
+        "operation": "sendDocument",
+        "binaryData": true,
+        "additionalFields": {
+          "fileName": "report.csv"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "search-meta-interests-from-telegram-14",
+      "name": "Confirm CSV document",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\"ok\":true}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "position": [
+        3500,
+        600
+      ],
+      "disabled": false
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Get variables": {
+      "main": [
+        [
+          {
+            "node": "Create a Spreadsheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Message": {
+      "main": [
+        [
+          {
+            "node": "Connect to Graph API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract message": {
+      "main": [
+        [
+          {
+            "node": "Split Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get interest name": {
+      "main": [
+        [
+          {
+            "node": "Check message contents",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Connect to Graph API": {
+      "main": [
+        [
+          {
+            "node": "Split Interests into a Table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a Spreadsheet": {
+      "main": [
+        [
+          {
+            "node": "Send the Spreadsheet file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check message contents": {
+      "main": [
+        [
+          {
+            "node": "Extract message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Operation, do nothing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Interests into a Table": {
+      "main": [
+        [
+          {
+            "node": "Get variables",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CSV delivery webhook": {
+      "main": [
+        [
+          {
+            "node": "Prepare CSV rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare CSV rows": {
+      "main": [
+        [
+          {
+            "node": "Create relay CSV",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create relay CSV": {
+      "main": [
+        [
+          {
+            "node": "Send relay CSV",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send relay CSV": {
+      "main": [
+        [
+          {
+            "node": "Confirm CSV document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Search Meta Interests from Telegram",
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
