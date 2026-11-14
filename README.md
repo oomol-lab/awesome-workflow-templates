@@ -720,6 +720,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Cache an Access Token for One Minute](workflows/cache-an-access-token-for-one-minute/) - Demonstrate a one-minute access token cache with a scheduled or webhook trigger.
 - [Generate Structured State and City Data](workflows/generate-structured-state-and-city-data/) - Generate a structured example of US states, cities and populations.
 - [Rotate n8n Workflow Backups in Google Drive](workflows/rotate-n8n-workflow-backups-in-google-drive/) - Move previous workflow backups to an old folder and save current n8n workflows in Google Drive.
+- [Browse n8n Workflows with Mermaid](workflows/browse-n8n-workflows-with-mermaid/) - Browse an n8n instance’s workflows and render their node connections as Mermaid diagrams.
 
 ## Communication
 

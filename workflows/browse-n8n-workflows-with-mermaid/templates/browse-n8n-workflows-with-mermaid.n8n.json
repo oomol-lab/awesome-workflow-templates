@@ -1,0 +1,335 @@
+{
+  "name": "Browse n8n Workflows with Mermaid",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "browse-n8n-workflows-with-mermaid-0",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "path": "browse-n8n-workflows-with-mermaid",
+        "options": {
+          "allowedOrigins": "*"
+        },
+        "responseMode": "responseNode"
+      },
+      "typeVersion": 2
+    },
+    {
+      "name": "Workflow selected?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.query.wfid || \"\" }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ]
+        }
+      },
+      "id": "browse-n8n-workflows-with-mermaid-1",
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "id": "browse-n8n-workflows-with-mermaid-2",
+      "name": "List workflows",
+      "type": "n8n-nodes-base.n8n",
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "resource": "workflow",
+        "operation": "getAll",
+        "returnAll": true,
+        "filters": {},
+        "requestOptions": {}
+      },
+      "typeVersion": 1,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "browse-n8n-workflows-with-mermaid-3",
+      "name": "Single workflow",
+      "type": "n8n-nodes-base.n8n",
+      "position": [
+        660,
+        0
+      ],
+      "parameters": {
+        "operation": "get",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.query.wfid }}"
+        },
+        "requestOptions": {}
+      },
+      "typeVersion": 1
+    },
+    {
+      "name": "Render dashboard",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function render({ detail, state, workflow, baseUrl }) {\n  if (detail) {\n    const w = workflow,\n      nodes = w.nodes.filter((x) => x.type !== \"n8n-nodes-base.stickyNote\"),\n      ids = new Map(nodes.map((x, i) => [x.name, \"N\" + i])),\n      labels = new Map(\n        nodes.map((x) => [\n          x.name,\n          String(x.name ?? \"\").replace(/[^\\w\\s-]/g, (c) => \"#\" + c.codePointAt(0) + \";\"),\n        ]),\n      ),\n      byName = new Map(nodes.map((x) => [x.name, x])),\n      shape = (name) => {\n        const id = ids.get(name),\n          label = '\\\"' + labels.get(name) + '\\\"',\n          type = byName.get(name)?.type;\n        return type === \"n8n-nodes-base.if\" || type === \"n8n-nodes-base.switch\"\n          ? id + \"{\" + label + \"}\"\n          : type === \"n8n-nodes-base.code\" || type === \"n8n-nodes-base.executeWorkflow\"\n            ? id + \"[[\" + label + \"]]\"\n            : type === \"n8n-nodes-base.wait\"\n              ? id + \"(\" + label + \")\"\n              : id + \"[\" + label + \"]\";\n      },\n      lines = [],\n      used = new Set();\n    for (const [from, groups] of Object.entries(w.connections ?? {})) {\n      if (!ids.has(from)) continue;\n      for (const [kind, outs] of Object.entries(groups ?? {}))\n        for (const edges of outs ?? [])\n          for (const e of edges ?? []) {\n            if (!ids.has(e.node)) continue;\n            lines.push(\n              shape(from) +\n                \" \" +\n                (kind === \"main\" ? \"-->\" : \"-.->|\" + String(kind).replace(/[^\\w-]/g, \"\") + \"|\") +\n                \" \" +\n                shape(e.node),\n            );\n            used.add(from);\n            used.add(e.node);\n          }\n    }\n    for (const n of nodes) if (!used.has(n.name)) lines.push(shape(n.name));\n    for (const n of nodes) if (n.disabled) lines.push(\"class \" + ids.get(n.name) + \" disabled\");\n    if (nodes.some((n) => n.disabled))\n      lines.push(\"classDef disabled stroke-dasharray: 5 5,opacity:0.5\");\n    return { body: \"flowchart LR\\n\" + lines.join(\"\\n\"), contentType: \"text/plain; charset=utf-8\" };\n  }\n  if (typeof baseUrl !== \"string\" || !/^https:\\/\\//.test(baseUrl) || baseUrl.includes(\"YOUR_\"))\n    throw Error(\"Configure n8n instance URL\");\n  const base = JSON.stringify(baseUrl.replace(/\\/+$/, \"\"))\n    .replace(/</g, \"\\\\u003c\")\n    .replace(/&/g, \"\\\\u0026\");\n  const data = JSON.stringify(state.items).replace(/</g, \"\\\\u003c\").replace(/&/g, \"\\\\u0026\");\n  return {\n    body: `<!doctype html><html><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>n8n workflows</title><script src=\"https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js\"></script><style>body{font:16px system-ui;max-width:960px;margin:3rem auto;padding:0 1rem}article{border:1px solid #ddd;border-radius:8px;margin:1rem 0;padding:1rem}button{padding:.5rem}</style></head><body><h1>n8n workflows</h1><main id=\"workflows\"></main><script>const workflows=${data},instanceUrl=${base};mermaid.initialize({startOnLoad:false,securityLevel:'strict'});const root=document.getElementById('workflows');for(const workflow of workflows){const card=document.createElement('article'),title=document.createElement('h2'),link=document.createElement('a'),button=document.createElement('button'),diagram=document.createElement('div');link.textContent=workflow.name;link.href=instanceUrl+'/workflow/'+encodeURIComponent(workflow.id);link.target='_blank';link.rel='noopener noreferrer';title.append(link);button.textContent='Show workflow';button.onclick=async()=>{if(diagram.dataset.loaded){diagram.hidden=!diagram.hidden;return}const url=new URL(location.href);url.search='';url.searchParams.set('wfid',workflow.id);const r=await fetch(url);if(!r.ok){diagram.textContent='Unable to load workflow';return}diagram.className='mermaid';diagram.textContent=await r.text();await mermaid.run({nodes:[diagram]});diagram.dataset.loaded='1'};card.append(title,button,diagram);root.append(card)}</script></body></html>`,\n    contentType: \"text/html; charset=utf-8\",\n  };\n}\n\nreturn [\n  {\n    json: render({\n      detail: false,\n      state: {\n        items: $input\n          .all()\n          .filter((x) => x.json.id != null)\n          .map((x) => ({ id: String(x.json.id), name: String(x.json.name ?? \"\") })),\n      },\n      workflow: null,\n      baseUrl: \"https://YOUR_N8N_HOST\",\n    }),\n  },\n];\n"
+      },
+      "id": "browse-n8n-workflows-with-mermaid-4",
+      "position": [
+        880,
+        0
+      ]
+    },
+    {
+      "name": "Render Mermaid diagram",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function render({ detail, state, workflow, baseUrl }) {\n  if (detail) {\n    const w = workflow,\n      nodes = w.nodes.filter((x) => x.type !== \"n8n-nodes-base.stickyNote\"),\n      ids = new Map(nodes.map((x, i) => [x.name, \"N\" + i])),\n      labels = new Map(\n        nodes.map((x) => [\n          x.name,\n          String(x.name ?? \"\").replace(/[^\\w\\s-]/g, (c) => \"#\" + c.codePointAt(0) + \";\"),\n        ]),\n      ),\n      byName = new Map(nodes.map((x) => [x.name, x])),\n      shape = (name) => {\n        const id = ids.get(name),\n          label = '\\\"' + labels.get(name) + '\\\"',\n          type = byName.get(name)?.type;\n        return type === \"n8n-nodes-base.if\" || type === \"n8n-nodes-base.switch\"\n          ? id + \"{\" + label + \"}\"\n          : type === \"n8n-nodes-base.code\" || type === \"n8n-nodes-base.executeWorkflow\"\n            ? id + \"[[\" + label + \"]]\"\n            : type === \"n8n-nodes-base.wait\"\n              ? id + \"(\" + label + \")\"\n              : id + \"[\" + label + \"]\";\n      },\n      lines = [],\n      used = new Set();\n    for (const [from, groups] of Object.entries(w.connections ?? {})) {\n      if (!ids.has(from)) continue;\n      for (const [kind, outs] of Object.entries(groups ?? {}))\n        for (const edges of outs ?? [])\n          for (const e of edges ?? []) {\n            if (!ids.has(e.node)) continue;\n            lines.push(\n              shape(from) +\n                \" \" +\n                (kind === \"main\" ? \"-->\" : \"-.->|\" + String(kind).replace(/[^\\w-]/g, \"\") + \"|\") +\n                \" \" +\n                shape(e.node),\n            );\n            used.add(from);\n            used.add(e.node);\n          }\n    }\n    for (const n of nodes) if (!used.has(n.name)) lines.push(shape(n.name));\n    for (const n of nodes) if (n.disabled) lines.push(\"class \" + ids.get(n.name) + \" disabled\");\n    if (nodes.some((n) => n.disabled))\n      lines.push(\"classDef disabled stroke-dasharray: 5 5,opacity:0.5\");\n    return { body: \"flowchart LR\\n\" + lines.join(\"\\n\"), contentType: \"text/plain; charset=utf-8\" };\n  }\n  if (typeof baseUrl !== \"string\" || !/^https:\\/\\//.test(baseUrl) || baseUrl.includes(\"YOUR_\"))\n    throw Error(\"Configure n8n instance URL\");\n  const base = JSON.stringify(baseUrl.replace(/\\/+$/, \"\"))\n    .replace(/</g, \"\\\\u003c\")\n    .replace(/&/g, \"\\\\u0026\");\n  const data = JSON.stringify(state.items).replace(/</g, \"\\\\u003c\").replace(/&/g, \"\\\\u0026\");\n  return {\n    body: `<!doctype html><html><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>n8n workflows</title><script src=\"https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js\"></script><style>body{font:16px system-ui;max-width:960px;margin:3rem auto;padding:0 1rem}article{border:1px solid #ddd;border-radius:8px;margin:1rem 0;padding:1rem}button{padding:.5rem}</style></head><body><h1>n8n workflows</h1><main id=\"workflows\"></main><script>const workflows=${data},instanceUrl=${base};mermaid.initialize({startOnLoad:false,securityLevel:'strict'});const root=document.getElementById('workflows');for(const workflow of workflows){const card=document.createElement('article'),title=document.createElement('h2'),link=document.createElement('a'),button=document.createElement('button'),diagram=document.createElement('div');link.textContent=workflow.name;link.href=instanceUrl+'/workflow/'+encodeURIComponent(workflow.id);link.target='_blank';link.rel='noopener noreferrer';title.append(link);button.textContent='Show workflow';button.onclick=async()=>{if(diagram.dataset.loaded){diagram.hidden=!diagram.hidden;return}const url=new URL(location.href);url.search='';url.searchParams.set('wfid',workflow.id);const r=await fetch(url);if(!r.ok){diagram.textContent='Unable to load workflow';return}diagram.className='mermaid';diagram.textContent=await r.text();await mermaid.run({nodes:[diagram]});diagram.dataset.loaded='1'};card.append(title,button,diagram);root.append(card)}</script></body></html>`,\n    contentType: \"text/html; charset=utf-8\",\n  };\n}\n\nreturn [\n  { json: render({ detail: true, state: null, workflow: $input.first().json, baseUrl: \"\" }) },\n];\n"
+      },
+      "id": "browse-n8n-workflows-with-mermaid-5",
+      "position": [
+        1100,
+        0
+      ]
+    },
+    {
+      "id": "browse-n8n-workflows-with-mermaid-6",
+      "name": "Send Page",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        1320,
+        0
+      ],
+      "parameters": {
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "text/html; charset=utf-8"
+              }
+            ]
+          }
+        },
+        "respondWith": "text",
+        "responseBody": "={{ $json.body }}"
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "browse-n8n-workflows-with-mermaid-7",
+      "name": "Respond with Mermaid",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        1540,
+        0
+      ],
+      "parameters": {
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "text/plain; charset=utf-8"
+              }
+            ]
+          }
+        },
+        "respondWith": "text",
+        "responseBody": "={{ $json.body }}"
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "name": "Open Flow dashboard webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "disabled": true,
+      "parameters": {
+        "path": "browse-n8n-workflows-with-mermaid-openflow",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "id": "browse-n8n-workflows-with-mermaid-8",
+      "position": [
+        1760,
+        0
+      ]
+    },
+    {
+      "name": "Fetch Open Flow response",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ 'YOUR_OPEN_FLOW_WEBHOOK_URL' + ($json.query.wfid ? '?wfid=' + encodeURIComponent($json.query.wfid) : '') }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "id": "browse-n8n-workflows-with-mermaid-9",
+      "position": [
+        1980,
+        0
+      ]
+    },
+    {
+      "name": "Return Open Flow dashboard",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.data }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "={{ $('Open Flow dashboard webhook').item.json.query.wfid ? 'text/plain; charset=utf-8' : 'text/html; charset=utf-8' }}"
+              }
+            ]
+          }
+        }
+      },
+      "id": "browse-n8n-workflows-with-mermaid-10",
+      "position": [
+        2200,
+        0
+      ]
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "callerPolicy": "workflowsFromSameOwner",
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "saveDataSuccessExecution": "all"
+  },
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Workflow selected?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Workflow selected?": {
+      "main": [
+        [
+          {
+            "node": "Single workflow",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "List workflows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List workflows": {
+      "main": [
+        [
+          {
+            "node": "Render dashboard",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Render dashboard": {
+      "main": [
+        [
+          {
+            "node": "Send Page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Single workflow": {
+      "main": [
+        [
+          {
+            "node": "Render Mermaid diagram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Render Mermaid diagram": {
+      "main": [
+        [
+          {
+            "node": "Respond with Mermaid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Open Flow dashboard webhook": {
+      "main": [
+        [
+          {
+            "node": "Fetch Open Flow response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Open Flow response": {
+      "main": [
+        [
+          {
+            "node": "Return Open Flow dashboard",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
