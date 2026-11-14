@@ -1,0 +1,285 @@
+{
+  "nodes": [
+    {
+      "name": "Function",
+      "type": "n8n-nodes-base.function",
+      "position": [
+        -280,
+        -80
+      ],
+      "parameters": {
+        "functionCode": "// Code here will run only once, no matter how many input items there are.\n// More info and help: https://docs.n8n.io/nodes/n8n-nodes-base.function\n\n// Loop over inputs and add a new field called 'myNewField' to the JSON of each one\nc_id = items[0].json.headers[\"x-adobesign-clientid\"];\n\nfor (item of items) {\n  item.json.myNewField = 1;\n  item.json.clientID = c_id;\n}\n\nreturn items;\n"
+      },
+      "typeVersion": 1,
+      "id": "receive-adobe-sign-agreement-events-0"
+    },
+    {
+      "name": "POST",
+      "type": "n8n-nodes-base.webhook",
+      "position": [
+        -540,
+        -160
+      ],
+      "parameters": {
+        "path": "adobe-sign-agreement-events",
+        "options": {},
+        "httpMethod": [
+          "GET",
+          "POST"
+        ],
+        "responseMode": "responseNode",
+        "multipleMethods": true
+      },
+      "typeVersion": 2.1,
+      "id": "receive-adobe-sign-agreement-events-1"
+    },
+    {
+      "name": "webhook-response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        -100,
+        -80
+      ],
+      "parameters": {
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "x-adobesign-clientid",
+                "value": "={{$node[\"Function\"].json[\"clientID\"]}}"
+              }
+            ]
+          }
+        }
+      },
+      "typeVersion": 1,
+      "id": "receive-adobe-sign-agreement-events-3"
+    },
+    {
+      "name": "SetWebhookData",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        60,
+        -80
+      ],
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "webhookData",
+              "value": "={{ $item(\"0\").$node[\"webhook-response\"].json[\"body\"] }}"
+            },
+            {
+              "name": "agreement_ID",
+              "value": "={{ $item(\"0\").$node[\"webhook-response\"].json[\"body\"][\"agreement\"][\"id\"] }}"
+            },
+            {
+              "name": "all_participants",
+              "value": "={{ $item(\"0\").$node[\"webhook-response\"].json[\"body\"][\"agreement\"][\"participantSetsInfo\"] }}"
+            },
+            {
+              "name": "agreement_status",
+              "value": "={{ $item(\"0\").$node[\"webhook-response\"].json[\"body\"][\"agreement\"][\"status\"] }}"
+            }
+          ]
+        },
+        "options": {},
+        "keepOnlySet": true
+      },
+      "typeVersion": 1,
+      "id": "receive-adobe-sign-agreement-events-4"
+    },
+    {
+      "id": "receive-adobe-sign-agreement-events-has-agreement",
+      "name": "Agreement notification?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        600,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "agreement",
+              "leftValue": "={{ $json.body?.agreement?.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "receive-adobe-sign-agreement-events-mode",
+      "name": "Choose delivery mode",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1000,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return [{ json: { ...$input.first().json, deliveryMode: \"direct\" } }];\n"
+      }
+    },
+    {
+      "id": "receive-adobe-sign-agreement-events-relay?",
+      "name": "Relay selected?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "mode",
+              "leftValue": "={{ $json.deliveryMode }}",
+              "rightValue": "relay",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "receive-adobe-sign-agreement-events-relay",
+      "name": "Forward agreement to Open Flow",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1400,
+        -100
+      ],
+      "parameters": {
+        "authentication": "none",
+        "method": "POST",
+        "url": "https://YOUR_OPEN_FLOW_HOST/v1/webhooks/YOUR_ENDPOINT",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {event: $(\"webhook-response\").first().json.body} }}",
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "POST": {
+      "main": [
+        [
+          {
+            "node": "Function",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Function",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Function": {
+      "main": [
+        [
+          {
+            "node": "webhook-response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "webhook-response": {
+      "main": [
+        [
+          {
+            "node": "Agreement notification?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agreement notification?": {
+      "main": [
+        [
+          {
+            "node": "SetWebhookData",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "SetWebhookData": {
+      "main": [
+        [
+          {
+            "node": "Choose delivery mode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Choose delivery mode": {
+      "main": [
+        [
+          {
+            "node": "Relay selected?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Relay selected?": {
+      "main": [
+        [
+          {
+            "node": "Forward agreement to Open Flow",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    }
+  },
+  "name": "Receive Adobe Sign Agreement Events",
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}

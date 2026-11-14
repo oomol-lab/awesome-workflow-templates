@@ -524,6 +524,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Email News Before Company Meetings](workflows/email-news-before-company-meetings/) - Email recent company news for today’s matching calendar meetings.
 - [Save Luma Video Callback to Airtable](workflows/save-luma-video-callback-to-airtable/) - Save completed Luma video and thumbnail URLs to the matching Airtable generation record.
 - [Calculate Cylinder Mass and Speed](workflows/calculate-cylinder-mass-and-speed/) - Run cylinder, mass and speed calculations with CalcsLive and email the mass result.
+- [Receive Adobe Sign Agreement Events](workflows/receive-adobe-sign-agreement-events/) - Receive Adobe Sign agreement notifications and expose agreement details.
 
 ## Content
 
