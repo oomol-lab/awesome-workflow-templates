@@ -295,6 +295,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Sync Calendly Guests with KlickTipp](workflows/sync-calendly-guests-with-klicktipp/) - Synchronize Calendly invitees and guests with KlickTipp on bookings and cancellations.
 - [Generate an Event Banner for Discord](workflows/generate-event-banner-for-discord/) - Generate an event poster from a prompt and share it as a Discord attachment.
 - [Create Event Posters for Discord](workflows/create-event-posters-for-discord/) - Generate an event poster from a prompt and share it as a Discord attachment.
+- [Create Campaign Links and Email Analytics Reports](workflows/create-campaign-links-and-email-analytics-report/) - Create a tracked campaign URL and QR code, and email a scheduled AI summary of Google Analytics traffic.
 
 ## Support
 
