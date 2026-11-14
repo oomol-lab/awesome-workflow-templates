@@ -537,6 +537,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Notify Slack for Matching Webhook Emails](workflows/notify-slack-for-n8n-webhook-email/) - Send a Slack message when a GET webhook email contains @n8n.
 - [Import Notion To-Dos into Linear](workflows/import-notion-todos-into-linear/) - Create Linear issues from unchecked Notion to-dos, including their nested contents, and add issue links back.
 - [Summarize Google Search and Notify](workflows/summarize-google-search-and-notify/) - Extract and summarize Google search results and send them to a webhook.
+- [Qualify and Approve Appointment Requests](workflows/qualify-and-approve-appointment-requests/) - Qualify an enquiry, request an administrator decision and create an appointment or send a rejection.
 
 ## Content
 
