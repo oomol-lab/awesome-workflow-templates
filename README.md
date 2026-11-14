@@ -522,6 +522,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Convert Baserow Video Descriptions to HTML](workflows/convert-baserow-video-descriptions-to-html/) - Convert one or all Baserow video descriptions from Markdown to HTML.
 - [Email News Before Company Meetings](workflows/email-news-before-company-meetings/) - Email recent company news for today’s matching calendar meetings.
 - [Save Luma Video Callback to Airtable](workflows/save-luma-video-callback-to-airtable/) - Save completed Luma video and thumbnail URLs to the matching Airtable generation record.
+- [Calculate Cylinder Mass and Speed](workflows/calculate-cylinder-mass-and-speed/) - Run cylinder, mass and speed calculations with CalcsLive and email the mass result.
 
 ## Content
 
