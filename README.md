@@ -627,6 +627,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Caption an Image with Gemini](workflows/caption-an-image-with-gemini/) - Generate a caption for an image and overlay it on the picture.
 - [Sync Notion Blog Posts to Webflow](workflows/sync-notion-blog-posts-to-webflow/) - Sync selected Notion posts as Webflow drafts and notify Slack.
 - [Analyze CV and Record Candidate](workflows/analyze-cv-and-record-candidate/) - Extract CV details, summarize the candidate and record the extracted facts in Google Sheets.
+- [Reply to Gmail and Record Feedback](workflows/draft-gmail-replies-with-sheet-feedback/) - Draft replies to selected Gmail messages and record recipient feedback in Google Sheets.
 
 ## Content
 
