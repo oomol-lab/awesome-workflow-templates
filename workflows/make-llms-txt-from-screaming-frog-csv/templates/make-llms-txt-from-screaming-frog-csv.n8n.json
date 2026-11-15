@@ -1,0 +1,261 @@
+{
+  "name": "Make llms.txt from Screaming Frog CSV",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "make-llms-txt-from-screaming-frog-csv-0",
+      "name": "Form - Screaming frog internal_html.csv upload",
+      "type": "n8n-nodes-base.formTrigger",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "options": {
+          "buttonLabel": "Get the llms.txt file"
+        },
+        "formTitle": "Generate llms.txt from a crawl CSV",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "What is the name of your website?",
+              "placeholder": "Website name",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Can you provide a short description of your website? (in the language of the website)",
+              "placeholder": "Short description",
+              "requiredField": true
+            },
+            {
+              "fieldType": "file",
+              "fieldLabel": "screaming_frog_export",
+              "multipleFiles": false,
+              "requiredField": true,
+              "acceptFileTypes": ".csv"
+            }
+          ]
+        },
+        "responseMode": "lastNode",
+        "formDescription": "Upload a Screaming Frog internal HTML CSV export."
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "make-llms-txt-from-screaming-frog-csv-1",
+      "name": "Extract data from Screaming Frog file",
+      "type": "n8n-nodes-base.extractFromFile",
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "operation": "csv",
+        "binaryPropertyName": "screaming_frog_export"
+      },
+      "typeVersion": 1,
+      "alwaysOutputData": true
+    },
+    {
+      "name": "Collect crawl rows",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const form = $(\"Form - Screaming frog internal_html.csv upload\").first().json;\nreturn [\n  {\n    json: {\n      name: String(form[\"What is the name of your website?\"] ?? \"\"),\n      description: String(\n        form[\n          \"Can you provide a short description of your website? (in the language of the website)\"\n        ] ?? \"\",\n      ),\n      rows: $input.all().map((x) => x.json),\n      mode: \"direct\",\n    },\n  },\n];\n"
+      },
+      "id": "make-llms-txt-from-screaming-frog-csv-2",
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "name": "Choose generation mode",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.mode === 'relay' }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        }
+      },
+      "id": "make-llms-txt-from-screaming-frog-csv-3",
+      "position": [
+        660,
+        0
+      ]
+    },
+    {
+      "name": "Forward crawl rows",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "YOUR_OPEN_FLOW_WEBHOOK_URL",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {name:$json.name,description:$json.description,rows:$json.rows} }}",
+        "options": {}
+      },
+      "id": "make-llms-txt-from-screaming-frog-csv-4",
+      "position": [
+        880,
+        0
+      ]
+    },
+    {
+      "name": "Generate file content",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function generate({ body }) {\n  const { name, description, rows } = body;\n  if (\n    typeof name !== \"string\" ||\n    !name.trim() ||\n    typeof description !== \"string\" ||\n    !Array.isArray(rows)\n  )\n    throw Error(\"Expected site name, description and CSV rows\");\n  const pick = (r, keys) =>\n    keys.map((k) => r[k]).find((x) => x !== undefined && x !== null && String(x).trim() !== \"\") ??\n    \"\";\n  const lines = [];\n  for (const r of rows) {\n    const url = String(pick(r, [\"Address\", \"Adresse\", \"Dirección\", \"Indirizzo\"])),\n      title = String(pick(r, [\"Title 1\", \"Titre 1\", \"Titolo 1\", \"Título 1\", \"Titel 1\"])),\n      desc = String(pick(r, [\"Meta Description 1\", \"Meta description 1\"])),\n      status = Number(\n        pick(r, [\n          \"Status Code\",\n          \"Code HTTP\",\n          \"Status-Code\",\n          \"Código de respuesta\",\n          \"Codice di stato\",\n        ]),\n      ),\n      index = String(\n        pick(r, [\n          \"Indexability\",\n          \"Indexabilité\",\n          \"Indicizzabilità\",\n          \"Indexabilidad\",\n          \"Indexierbarkeit\",\n        ]),\n      ),\n      type = String(\n        pick(r, [\n          \"Content Type\",\n          \"Type de contenu\",\n          \"Tipo di contenuto\",\n          \"Tipo de contenido\",\n          \"Inhaltstyp\",\n        ]),\n      );\n    if (\n      status !== 200 ||\n      ![\"Indexable\", \"Indicizzabile\", \"Indexierbar\"].includes(index) ||\n      !type.includes(\"text/html\") ||\n      !url\n    )\n      continue;\n    const clean = (x) => x.replace(/[\\r\\n]+/g, \" \").trim();\n    lines.push(\"- [\" + clean(title) + \"](\" + clean(url) + \")\" + (desc ? \": \" + clean(desc) : \"\"));\n  }\n  return {\n    content: \"# \" + name.trim() + \"\\n> \" + description.trim() + \"\\n\\n\" + lines.join(\"\\n\"),\n    count: lines.length,\n  };\n}\n\nreturn { json: generate({ body: $json }) };\n"
+      },
+      "id": "make-llms-txt-from-screaming-frog-csv-5",
+      "position": [
+        1100,
+        0
+      ]
+    },
+    {
+      "name": "Read Open Flow result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if (typeof $json.content !== \"string\") throw Error(\"Missing generated content\");\nreturn { json: { content: $json.content } };\n"
+      },
+      "id": "make-llms-txt-from-screaming-frog-csv-6",
+      "position": [
+        1320,
+        0
+      ]
+    },
+    {
+      "id": "make-llms-txt-from-screaming-frog-csv-7",
+      "name": "Generate llms.txt file",
+      "type": "n8n-nodes-base.convertToFile",
+      "position": [
+        1540,
+        0
+      ],
+      "parameters": {
+        "options": {
+          "encoding": "utf8",
+          "fileName": "llms.txt"
+        },
+        "operation": "toText",
+        "sourceProperty": "content"
+      },
+      "typeVersion": 1.1
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Form - Screaming frog internal_html.csv upload": {
+      "main": [
+        [
+          {
+            "node": "Extract data from Screaming Frog file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract data from Screaming Frog file": {
+      "main": [
+        [
+          {
+            "node": "Collect crawl rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect crawl rows": {
+      "main": [
+        [
+          {
+            "node": "Choose generation mode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Forward crawl rows": {
+      "main": [
+        [
+          {
+            "node": "Read Open Flow result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Open Flow result": {
+      "main": [
+        [
+          {
+            "node": "Generate llms.txt file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate file content": {
+      "main": [
+        [
+          {
+            "node": "Generate llms.txt file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Choose generation mode": {
+      "main": [
+        [
+          {
+            "node": "Forward crawl rows",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Generate file content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
