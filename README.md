@@ -377,6 +377,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Analyze Daily Papers in Notion](workflows/analyze-daily-papers-in-notion/) - Analyze daily paper abstracts and save new papers to a Notion data source.
 - [Summarize Three Essays](workflows/summarize-three-essays/) - Read the first three essay links from Paul Graham’s article index and summarize each page.
 - [Research a Topic into HTML](workflows/research-topic-to-html/) - Research a topic with Perplexity and return an HTML article.
+- [Detect Unusual Crop Images](workflows/detect-unusual-crop-images/) - Compare a crop image with prepared class centers and thresholds in Qdrant.
 
 ## Productivity
 
