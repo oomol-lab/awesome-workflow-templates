@@ -1047,6 +1047,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Create an OpenAI Fine-Tuning Job from Drive](workflows/create-openai-fine-tuning-job-from-drive/) - Upload a JSONL training file from Google Drive and create an OpenAI fine-tuning job.
 - [Contextualize Drive Sections for Pinecone](workflows/contextualize-drive-sections-for-pinecone/) - Add whole-document context to each Google Doc section and index its embedding in Pinecone.
 - [Explore AI HTTP Tools](workflows/explore-ai-http-tools/) - Explore model-selected web scraping and activity search tools.
+- [Crawl Company Social Profiles](workflows/crawl-company-social-profiles/) - Find company social profiles by exploring their websites and save the results to Supabase.
 
 ## E-commerce
 
