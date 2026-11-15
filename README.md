@@ -570,6 +570,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Extract Resumes and Invoice Model Usage](workflows/extract-resumes-and-invoice-model-usage/) - Extract resume data, log model token usage, and email a monthly client invoice.
 - [Export Keep Expense Notes to Sheets](workflows/export-keep-expense-notes-to-sheets/) - Extract euro amounts from selected Google Keep exports and upsert the notes in Google Sheets.
 - [Classify Outlook Mail with Custom Folders](workflows/classify-outlook-mail-with-custom-folders/) - Classify an unflagged Outlook message and move it to a matching folder.
+- [Index Notion Pages in Supabase Vectors](workflows/index-notion-pages-in-supabase-vectors/) - Embed new Notion page text and store the vectors and page metadata in Supabase.
 
 ## Content
 

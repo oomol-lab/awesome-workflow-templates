@@ -1,0 +1,674 @@
+{
+  "name": "Index Notion Pages in Supabase Vectors",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "index-notion-pages-in-supabase-vectors-0",
+      "name": "Notion - Page Added Trigger",
+      "type": "n8n-nodes-base.notionTrigger",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "simple": false,
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "databaseId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_NOTION_DATABASE_ID"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "name": "One page at a time",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "index-notion-pages-in-supabase-vectors-1",
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "id": "index-notion-pages-in-supabase-vectors-2",
+      "name": "Notion - Retrieve Page Content",
+      "type": "n8n-nodes-base.notion",
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "blockId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('One page at a time').item.json.id }}"
+        },
+        "resource": "block",
+        "operation": "getAll",
+        "returnAll": true,
+        "simplifyOutput": true,
+        "fetchNestedBlocks": false
+      },
+      "typeVersion": 2.2,
+      "alwaysOutputData": true
+    },
+    {
+      "name": "Prepare page text",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const p = $(\"One page at a time\").item.json,\n  blocks = $input.all().map((x) => x.json),\n  text = blocks\n    .filter((b) => b.type !== \"image\" && b.type !== \"video\")\n    .map((b) =>\n      typeof b.content === \"string\"\n        ? b.content\n        : (b[b.type]?.rich_text ?? b[b.type]?.text ?? [])\n            .map((t) => t.plain_text ?? t.text?.content ?? \"\")\n            .join(\"\"),\n    )\n    .filter(Boolean)\n    .join(\"\\n\");\nconst title =\n  p.properties?.Page?.title?.map((x) => x.plain_text ?? x.text?.content ?? \"\").join(\"\") ?? \"\";\nif (!p.id || !p.created_time) throw Error(\"Missing page metadata\");\nreturn [{ json: { pageId: p.id, createdTime: p.created_time, pageTitle: title, text } }];\n"
+      },
+      "id": "index-notion-pages-in-supabase-vectors-3",
+      "position": [
+        660,
+        0
+      ]
+    },
+    {
+      "name": "Has page text?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.text.trim().length > 0 }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        }
+      },
+      "id": "index-notion-pages-in-supabase-vectors-4",
+      "position": [
+        880,
+        0
+      ]
+    },
+    {
+      "name": "Page not indexed",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "rowNotExists",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'notion-vector:' + $('Prepare page text').item.json.pageId }}"
+            }
+          ]
+        }
+      },
+      "id": "index-notion-pages-in-supabase-vectors-5",
+      "position": [
+        1100,
+        0
+      ]
+    },
+    {
+      "name": "Page already indexed",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "rowExists",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'notion-vector:' + $('Prepare page text').item.json.pageId }}"
+            },
+            {
+              "keyName": "status",
+              "condition": "eq",
+              "keyValue": "done"
+            }
+          ]
+        }
+      },
+      "id": "index-notion-pages-in-supabase-vectors-6",
+      "position": [
+        1320,
+        0
+      ]
+    },
+    {
+      "name": "Page has pending vectors",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "rowExists",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'notion-vector:' + $('Prepare page text').item.json.pageId }}"
+            },
+            {
+              "keyName": "status",
+              "condition": "eq",
+              "keyValue": "pending"
+            }
+          ]
+        }
+      },
+      "id": "index-notion-pages-in-supabase-vectors-7",
+      "position": [
+        1540,
+        0
+      ]
+    },
+    {
+      "name": "Stop for vector review",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "throw Error(\"Inspect pending page vectors before retrying\");\n"
+      },
+      "id": "index-notion-pages-in-supabase-vectors-8",
+      "position": [
+        1760,
+        0
+      ]
+    },
+    {
+      "name": "Reserve page vectors",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "item_key": "={{ 'notion-vector:' + $('Prepare page text').item.json.pageId }}",
+            "status": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "index-notion-pages-in-supabase-vectors-9",
+      "position": [
+        1980,
+        0
+      ]
+    },
+    {
+      "name": "Choose indexing mode",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return { json: { mode: \"direct\" } };\n"
+      },
+      "id": "index-notion-pages-in-supabase-vectors-10",
+      "position": [
+        2200,
+        0
+      ]
+    },
+    {
+      "name": "Relay mode?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.mode === 'relay' }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        }
+      },
+      "id": "index-notion-pages-in-supabase-vectors-11",
+      "position": [
+        2420,
+        0
+      ]
+    },
+    {
+      "name": "Forward page text",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "YOUR_OPEN_FLOW_WEBHOOK_URL",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $('Prepare page text').item.json }}",
+        "options": {}
+      },
+      "id": "index-notion-pages-in-supabase-vectors-12",
+      "position": [
+        2640,
+        0
+      ]
+    },
+    {
+      "name": "Verify relay receipt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if ($json.status !== \"completed\") throw Error(\"Unknown relay result\");\nreturn { json: { ok: true } };\n"
+      },
+      "id": "index-notion-pages-in-supabase-vectors-13",
+      "position": [
+        2860,
+        0
+      ]
+    },
+    {
+      "id": "index-notion-pages-in-supabase-vectors-14",
+      "name": "Supabase Vector Store",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "position": [
+        3080,
+        0
+      ],
+      "parameters": {
+        "mode": "insert",
+        "options": {},
+        "tableName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "documents"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "index-notion-pages-in-supabase-vectors-15",
+      "name": "Create metadata and load content",
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "position": [
+        3300,
+        0
+      ],
+      "parameters": {
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "pageId",
+                "value": "={{ $('Prepare page text').item.json.pageId }}"
+              },
+              {
+                "name": "createdTime",
+                "value": "={{ $('Prepare page text').item.json.createdTime }}"
+              },
+              {
+                "name": "pageTitle",
+                "value": "={{ $('Prepare page text').item.json.pageTitle }}"
+              }
+            ]
+          }
+        },
+        "jsonData": "={{ $('Prepare page text').item.json.text }}",
+        "jsonMode": "expressionData"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "index-notion-pages-in-supabase-vectors-16",
+      "name": "Token Splitter",
+      "type": "@n8n/n8n-nodes-langchain.textSplitterTokenSplitter",
+      "position": [
+        3520,
+        0
+      ],
+      "parameters": {
+        "chunkSize": 256,
+        "chunkOverlap": 30
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "index-notion-pages-in-supabase-vectors-17",
+      "name": "Embeddings OpenAI",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "position": [
+        3740,
+        0
+      ],
+      "parameters": {
+        "options": {}
+      },
+      "typeVersion": 1
+    },
+    {
+      "name": "Confirm page vectors",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Reserve page vectors').item.json.id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "done"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "index-notion-pages-in-supabase-vectors-18",
+      "position": [
+        3960,
+        0
+      ]
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Notion - Page Added Trigger": {
+      "main": [
+        [
+          {
+            "node": "One page at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notion - Retrieve Page Content": {
+      "main": [
+        [
+          {
+            "node": "Prepare page text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare page text": {
+      "main": [
+        [
+          {
+            "node": "Has page text?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Page not indexed": {
+      "main": [
+        [
+          {
+            "node": "Reserve page vectors",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Page already indexed": {
+      "main": [
+        [
+          {
+            "node": "One page at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Page has pending vectors": {
+      "main": [
+        [
+          {
+            "node": "Stop for vector review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve page vectors": {
+      "main": [
+        [
+          {
+            "node": "Choose indexing mode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Choose indexing mode": {
+      "main": [
+        [
+          {
+            "node": "Relay mode?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Forward page text": {
+      "main": [
+        [
+          {
+            "node": "Verify relay receipt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify relay receipt": {
+      "main": [
+        [
+          {
+            "node": "Confirm page vectors",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase Vector Store": {
+      "main": [
+        [
+          {
+            "node": "Confirm page vectors",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm page vectors": {
+      "main": [
+        [
+          {
+            "node": "One page at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "One page at a time": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Notion - Retrieve Page Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has page text?": {
+      "main": [
+        [
+          {
+            "node": "Page not indexed",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Page already indexed",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Page has pending vectors",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "One page at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Relay mode?": {
+      "main": [
+        [
+          {
+            "node": "Forward page text",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create metadata and load content": {
+      "ai_document": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Token Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Create metadata and load content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
