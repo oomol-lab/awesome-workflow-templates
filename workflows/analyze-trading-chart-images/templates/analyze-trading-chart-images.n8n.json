@@ -1,0 +1,439 @@
+{
+  "name": "Analyze Trading Chart Images",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "analyze-trading-chart-images-0",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "path": "analyze-trading-chart-images",
+        "options": {},
+        "httpMethod": "POST",
+        "responseMode": "responseNode"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "analyze-trading-chart-images-1",
+      "name": "OpenAI",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "text": "You are an expert financial analyst tasked with providing an advanced technical analyses of a stock or crypto currency chart provided. Your analysis will be based on various technical indicators and will provide simple insights for novice traders. Just explain to traders were you expect the market is moving. Also warn them this is not a binding advice. Make sure to explain everything in infant language.",
+        "modelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "options": {},
+        "resource": "image",
+        "inputType": "base64",
+        "operation": "analyze"
+      },
+      "typeVersion": 1.7
+    },
+    {
+      "id": "analyze-trading-chart-images-2",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "respondWith": "text",
+        "responseBody": "={{ $json.content }}"
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "name": "Open Flow chart frontend",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "analyze-trading-chart-images-openflow",
+        "responseMode": "responseNode",
+        "authentication": "headerAuth",
+        "options": {}
+      },
+      "position": [
+        660,
+        0
+      ],
+      "disabled": true,
+      "id": "analyze-trading-chart-images-3"
+    },
+    {
+      "name": "Tag chart upload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if (!$binary?.data) throw Error(\"Send an image as binary.data\");\nconst id = $json.headers?.[\"x-request-id\"];\nif (typeof id !== \"string\" || !id.trim()) throw Error(\"Set a unique X-Request-ID header\");\nreturn { json: { submissionId: id.trim() }, binary: $binary };\n"
+      },
+      "position": [
+        880,
+        0
+      ],
+      "id": "analyze-trading-chart-images-4"
+    },
+    {
+      "name": "Chart not uploaded",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "rowNotExists",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ \"chart-image:\"+$(\"Tag chart upload\").first().json.submissionId }}"
+            }
+          ]
+        }
+      },
+      "position": [
+        1100,
+        0
+      ],
+      "id": "analyze-trading-chart-images-5"
+    },
+    {
+      "name": "Reserve chart upload",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "item_key": "={{ \"chart-image:\"+$(\"Tag chart upload\").first().json.submissionId }}",
+            "status": "pending-upload"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "position": [
+        1320,
+        0
+      ],
+      "id": "analyze-trading-chart-images-6"
+    },
+    {
+      "name": "Restore chart binary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const item = $(\"Tag chart upload\").first();\nif (!item.binary?.data) throw Error(\"Missing chart\");\nreturn { json: {}, binary: { data: item.binary.data } };\n"
+      },
+      "position": [
+        1540,
+        0
+      ],
+      "id": "analyze-trading-chart-images-7"
+    },
+    {
+      "name": "Upload chart to OpenAI Files",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/files",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "purpose",
+              "value": "vision"
+            },
+            {
+              "parameterType": "formBinaryData",
+              "name": "file",
+              "inputDataFieldName": "data"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "position": [
+        1760,
+        0
+      ],
+      "id": "analyze-trading-chart-images-8"
+    },
+    {
+      "name": "Verify chart file ID",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if (!/^file-[A-Za-z0-9_-]+$/.test($json.id ?? \"\")) throw Error(\"Unknown image upload\");\nreturn { json: { fileId: $json.id } };\n"
+      },
+      "position": [
+        1980,
+        0
+      ],
+      "id": "analyze-trading-chart-images-9"
+    },
+    {
+      "name": "Analyze chart with Open Flow",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "YOUR_OPEN_FLOW_WEBHOOK_URL",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {fileId:$json.fileId} }}",
+        "options": {
+          "timeout": 65000,
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "position": [
+        2200,
+        0
+      ],
+      "id": "analyze-trading-chart-images-10"
+    },
+    {
+      "name": "Verify chart analysis",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if (typeof $json.text !== \"string\" || !$json.text.trim()) throw Error(\"Missing chart analysis\");\nreturn { json: { text: $json.text } };\n"
+      },
+      "position": [
+        2420,
+        0
+      ],
+      "id": "analyze-trading-chart-images-11"
+    },
+    {
+      "name": "Confirm chart analysis",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $(\"Reserve chart upload\").first().json.id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "done"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "position": [
+        2640,
+        0
+      ],
+      "id": "analyze-trading-chart-images-12"
+    },
+    {
+      "name": "Return chart analysis",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $(\"Verify chart analysis\").first().json.text }}",
+        "options": {}
+      },
+      "position": [
+        2860,
+        0
+      ],
+      "id": "analyze-trading-chart-images-13"
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "OpenAI": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "OpenAI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Open Flow chart frontend": {
+      "main": [
+        [
+          {
+            "node": "Tag chart upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tag chart upload": {
+      "main": [
+        [
+          {
+            "node": "Chart not uploaded",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chart not uploaded": {
+      "main": [
+        [
+          {
+            "node": "Reserve chart upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve chart upload": {
+      "main": [
+        [
+          {
+            "node": "Restore chart binary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore chart binary": {
+      "main": [
+        [
+          {
+            "node": "Upload chart to OpenAI Files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload chart to OpenAI Files": {
+      "main": [
+        [
+          {
+            "node": "Verify chart file ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify chart file ID": {
+      "main": [
+        [
+          {
+            "node": "Analyze chart with Open Flow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze chart with Open Flow": {
+      "main": [
+        [
+          {
+            "node": "Verify chart analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify chart analysis": {
+      "main": [
+        [
+          {
+            "node": "Confirm chart analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm chart analysis": {
+      "main": [
+        [
+          {
+            "node": "Return chart analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

@@ -871,6 +871,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Extract Bank Transactions to Drive CSV](workflows/extract-bank-transactions-to-drive-csv/) - Extract and categorize bank statement transactions from PDFs or images, then save CSV files to Google Drive.
 - [Archive Gmail Invoices in Drive and Sheets](workflows/archive-gmail-invoices-in-drive-and-sheets/) - Save unread email PDF invoices to Drive and append extracted invoice details to a reconciliation sheet.
 - [Extract Statement Transactions to Drive CSV](workflows/extract-statement-transactions-to-drive-csv/) - Extract and categorize bank statement transactions from PDFs or images, then save CSV files to Google Drive.
+- [Analyze Trading Chart Images](workflows/analyze-trading-chart-images/) - Analyze a submitted market chart image and return a plain-language explanation.
 
 ## Community
 
