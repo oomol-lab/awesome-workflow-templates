@@ -1,0 +1,1001 @@
+{
+  "name": "Route and Log eCommerce Inquiries",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "route-and-log-ecommerce-inquiries-0",
+      "name": "On form submission",
+      "type": "n8n-nodes-base.formTrigger",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "formTitle": "Contacts",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Name",
+              "placeholder": "Name",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Email",
+              "placeholder": "Email",
+              "requiredField": true
+            },
+            {
+              "fieldType": "textarea",
+              "fieldLabel": "Message",
+              "placeholder": "Message",
+              "requiredField": true
+            }
+          ]
+        },
+        "responseMode": "lastNode",
+        "formDescription": "Basic Contact Form"
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "name": "Prepare contact",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return {\n  json: {\n    submissionId: $execution.id,\n    name: $json.Name,\n    email: $json.Email,\n    message: $json.Message,\n    submittedAt: $json.submittedAt,\n    mode: \"direct\",\n  },\n};\n"
+      },
+      "id": "route-and-log-ecommerce-inquiries-1",
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "name": "Check submission",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "rowNotExists",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'contact:' + $('Prepare contact').first().json.submissionId + ':submission' }}"
+            }
+          ]
+        }
+      },
+      "id": "route-and-log-ecommerce-inquiries-2",
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "name": "Reserve submission",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "item_key": "={{ 'contact:' + $('Prepare contact').first().json.submissionId + ':submission' }}",
+            "status": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "route-and-log-ecommerce-inquiries-3",
+      "position": [
+        660,
+        0
+      ]
+    },
+    {
+      "name": "Relay mode?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $('Prepare contact').first().json.mode === 'relay' }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        }
+      },
+      "id": "route-and-log-ecommerce-inquiries-4",
+      "position": [
+        880,
+        0
+      ]
+    },
+    {
+      "name": "Forward contact",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "YOUR_OPEN_FLOW_WEBHOOK_URL",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $('Prepare contact').first().json }}",
+        "options": {}
+      },
+      "id": "route-and-log-ecommerce-inquiries-5",
+      "position": [
+        1100,
+        0
+      ]
+    },
+    {
+      "name": "Verify relay",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if ($json.status !== \"completed\") throw Error(\"Unknown relay result\");\nreturn { json: { ok: true } };\n"
+      },
+      "id": "route-and-log-ecommerce-inquiries-6",
+      "position": [
+        1320,
+        0
+      ]
+    },
+    {
+      "id": "route-and-log-ecommerce-inquiries-7",
+      "name": "Text Classifier",
+      "type": "@n8n/n8n-nodes-langchain.textClassifier",
+      "position": [
+        1540,
+        0
+      ],
+      "parameters": {
+        "options": {
+          "fallback": "other",
+          "systemPromptTemplate": "=Please classify the text provided by the user into one of the following categories: {categories}, and use the provided formatting instructions below. Don't explain, and only output the json with the selected {categories}."
+        },
+        "inputText": "={{ $('Prepare contact').first().json.message }}",
+        "categories": {
+          "categories": [
+            {
+              "category": "Request Quote",
+              "description": "Request for quote"
+            },
+            {
+              "category": "Product info",
+              "description": "General information about a product"
+            },
+            {
+              "category": "General problem",
+              "description": "General problems about a product"
+            },
+            {
+              "category": "Order",
+              "description": "Information about an order placed"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "route-and-log-ecommerce-inquiries-8",
+      "name": "OpenAI",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "position": [
+        1760,
+        0
+      ],
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "name": "Select Request Quote",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return { json: { category: \"Request Quote\" } };\n"
+      },
+      "id": "route-and-log-ecommerce-inquiries-9",
+      "position": [
+        1980,
+        0
+      ]
+    },
+    {
+      "name": "Select Product info",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return { json: { category: \"Product info\" } };\n"
+      },
+      "id": "route-and-log-ecommerce-inquiries-10",
+      "position": [
+        2200,
+        0
+      ]
+    },
+    {
+      "name": "Select General problem",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return { json: { category: \"General problem\" } };\n"
+      },
+      "id": "route-and-log-ecommerce-inquiries-11",
+      "position": [
+        2420,
+        0
+      ]
+    },
+    {
+      "name": "Select Order",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return { json: { category: \"Order\" } };\n"
+      },
+      "id": "route-and-log-ecommerce-inquiries-12",
+      "position": [
+        2640,
+        0
+      ]
+    },
+    {
+      "name": "Select Other",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return { json: { category: \"Other\" } };\n"
+      },
+      "id": "route-and-log-ecommerce-inquiries-13",
+      "position": [
+        2860,
+        0
+      ]
+    },
+    {
+      "name": "Prepare routing",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const routes = {\n    \"Request Quote\": \"YOUR_QUOTE_EMAIL\",\n    \"Product info\": \"YOUR_PRODUCT_EMAIL\",\n    \"General problem\": \"YOUR_GENERAL_EMAIL\",\n    Order: \"YOUR_ORDER_EMAIL\",\n    Other: \"YOUR_OTHER_EMAIL\",\n  },\n  category = $json.category,\n  to = routes[category];\nif (!to || to.startsWith(\"YOUR_\")) throw Error(\"Configure recipient\");\nreturn { json: { category, to } };\n"
+      },
+      "id": "route-and-log-ecommerce-inquiries-14",
+      "position": [
+        3080,
+        0
+      ]
+    },
+    {
+      "name": "Check email",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "rowNotExists",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'contact:' + $('Prepare contact').first().json.submissionId + ':email' }}"
+            }
+          ]
+        }
+      },
+      "id": "route-and-log-ecommerce-inquiries-15",
+      "position": [
+        3300,
+        0
+      ]
+    },
+    {
+      "name": "Reserve email",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "item_key": "={{ 'contact:' + $('Prepare contact').first().json.submissionId + ':email' }}",
+            "status": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "route-and-log-ecommerce-inquiries-16",
+      "position": [
+        3520,
+        0
+      ]
+    },
+    {
+      "id": "route-and-log-ecommerce-inquiries-17",
+      "name": "Email department",
+      "type": "n8n-nodes-base.emailSend",
+      "position": [
+        3740,
+        0
+      ],
+      "parameters": {
+        "fromEmail": "YOUR_SENDER_EMAIL",
+        "toEmail": "={{ $('Prepare routing').first().json.to }}",
+        "subject": "={{ 'Contact form ' + $('Prepare routing').first().json.category }}",
+        "emailFormat": "text",
+        "text": "={{ 'Name: ' + $('Prepare contact').first().json.name + '\\nEmail: ' + $('Prepare contact').first().json.email + '\\n\\nMessage:\\n' + $('Prepare contact').first().json.message }}",
+        "options": {
+          "replyTo": "={{ $('Prepare contact').first().json.email }}"
+        }
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "name": "Verify email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if (!$json.messageId && !$json.envelope?.to?.length) throw Error(\"Unknown SMTP delivery\");\nreturn { json: { ok: true } };\n"
+      },
+      "id": "route-and-log-ecommerce-inquiries-18",
+      "position": [
+        3960,
+        0
+      ]
+    },
+    {
+      "name": "Confirm email",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Reserve email').first().json.id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "done"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "route-and-log-ecommerce-inquiries-19",
+      "position": [
+        4180,
+        0
+      ]
+    },
+    {
+      "name": "Check sheet",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "rowNotExists",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'contact:' + $('Prepare contact').first().json.submissionId + ':sheet' }}"
+            }
+          ]
+        }
+      },
+      "id": "route-and-log-ecommerce-inquiries-20",
+      "position": [
+        4400,
+        0
+      ]
+    },
+    {
+      "name": "Reserve sheet",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "item_key": "={{ 'contact:' + $('Prepare contact').first().json.submissionId + ':sheet' }}",
+            "status": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "route-and-log-ecommerce-inquiries-21",
+      "position": [
+        4620,
+        0
+      ]
+    },
+    {
+      "id": "route-and-log-ecommerce-inquiries-22",
+      "name": "Append contact",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        4840,
+        0
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "TO": "={{ $('Prepare routing').first().json.to }}",
+            "DATA": "={{ $('Prepare contact').first().json.submittedAt }}",
+            "NOME": "={{ $('Prepare contact').first().json.name }}",
+            "EMAIL": "={{ $('Prepare contact').first().json.email }}",
+            "CATEGORIA": "={{ $('Prepare routing').first().json.category }}",
+            "RICHIESTA": "={{ $('Prepare contact').first().json.message }}"
+          },
+          "schema": [
+            {
+              "id": "DATA",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "DATA",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "NOME",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "NOME",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "EMAIL",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "EMAIL",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "RICHIESTA",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "RICHIESTA",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "CATEGORIA",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "CATEGORIA",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "TO",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "TO",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {},
+        "operation": "append",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Sheet1"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_SPREADSHEET_ID"
+        }
+      },
+      "typeVersion": 4.5
+    },
+    {
+      "name": "Verify sheet",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if ($json.EMAIL !== $(\"Prepare contact\").first().json.email) throw Error(\"Unknown sheet result\");\nreturn { json: { ok: true } };\n"
+      },
+      "id": "route-and-log-ecommerce-inquiries-23",
+      "position": [
+        5060,
+        0
+      ]
+    },
+    {
+      "name": "Confirm sheet",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Reserve sheet').first().json.id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "done"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "route-and-log-ecommerce-inquiries-24",
+      "position": [
+        5280,
+        0
+      ]
+    },
+    {
+      "name": "Confirm submission",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Reserve submission').first().json.id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "done"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "route-and-log-ecommerce-inquiries-25",
+      "position": [
+        5500,
+        0
+      ]
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "Prepare contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare contact": {
+      "main": [
+        [
+          {
+            "node": "Check submission",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check submission": {
+      "main": [
+        [
+          {
+            "node": "Reserve submission",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve submission": {
+      "main": [
+        [
+          {
+            "node": "Relay mode?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Forward contact": {
+      "main": [
+        [
+          {
+            "node": "Verify relay",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify relay": {
+      "main": [
+        [
+          {
+            "node": "Confirm submission",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare routing": {
+      "main": [
+        [
+          {
+            "node": "Check email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check email": {
+      "main": [
+        [
+          {
+            "node": "Reserve email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve email": {
+      "main": [
+        [
+          {
+            "node": "Email department",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email department": {
+      "main": [
+        [
+          {
+            "node": "Verify email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify email": {
+      "main": [
+        [
+          {
+            "node": "Confirm email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm email": {
+      "main": [
+        [
+          {
+            "node": "Check sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check sheet": {
+      "main": [
+        [
+          {
+            "node": "Reserve sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve sheet": {
+      "main": [
+        [
+          {
+            "node": "Append contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append contact": {
+      "main": [
+        [
+          {
+            "node": "Verify sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify sheet": {
+      "main": [
+        [
+          {
+            "node": "Confirm sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm sheet": {
+      "main": [
+        [
+          {
+            "node": "Confirm submission",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select Request Quote": {
+      "main": [
+        [
+          {
+            "node": "Prepare routing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select Product info": {
+      "main": [
+        [
+          {
+            "node": "Prepare routing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select General problem": {
+      "main": [
+        [
+          {
+            "node": "Prepare routing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select Order": {
+      "main": [
+        [
+          {
+            "node": "Prepare routing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select Other": {
+      "main": [
+        [
+          {
+            "node": "Prepare routing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Relay mode?": {
+      "main": [
+        [
+          {
+            "node": "Forward contact",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Text Classifier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Text Classifier": {
+      "main": [
+        [
+          {
+            "node": "Select Request Quote",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Select Product info",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Select General problem",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Select Order",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Select Other",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Text Classifier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

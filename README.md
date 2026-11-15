@@ -813,6 +813,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Sync Zendesk Tickets to HubSpot](workflows/sync-zendesk-tickets-to-hubspot/) - Create or update HubSpot tickets from changed Zendesk tickets and link new tickets to their requester.
 - [Export Zammad Administration to XLSX](workflows/export-zammad-administration-to-xlsx/) - Export Zammad users, organizations, roles and groups to four Excel workbooks.
 - [Classify and Route eCommerce Contacts](workflows/classify-and-route-ecommerce-contacts/) - Classify contact messages, email the right department, and log each request.
+- [Route and Log eCommerce Inquiries](workflows/route-and-log-ecommerce-inquiries/) - Classify contact messages, email the right department, and log each request.
 
 ## Finance
 
