@@ -894,6 +894,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Extract Statement Transactions to Drive CSV](workflows/extract-statement-transactions-to-drive-csv/) - Extract and categorize bank statement transactions from PDFs or images, then save CSV files to Google Drive.
 - [Analyze Trading Chart Images](workflows/analyze-trading-chart-images/) - Analyze a submitted market chart image and return a plain-language explanation.
 - [Analyze Earnings PDFs with Pinecone](workflows/analyze-earnings-pdfs-with-pinecone/) - Index earnings PDFs from Google Drive and append a grounded comparison report to Google Docs.
+- [Compare Alphabet Quarterly Earnings](workflows/compare-alphabet-quarterly-earnings/) - Index earnings PDFs from Google Drive and append a grounded comparison report to Google Docs.
 
 ## Community
 
