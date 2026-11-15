@@ -626,6 +626,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Track AI Grants and Send a Digest](workflows/track-ai-grants-and-send-digest/) - Track new AI grant opportunities and email a digest of eligible listings.
 - [Caption an Image with Gemini](workflows/caption-an-image-with-gemini/) - Generate a caption for an image and overlay it on the picture.
 - [Sync Notion Blog Posts to Webflow](workflows/sync-notion-blog-posts-to-webflow/) - Sync selected Notion posts as Webflow drafts and notify Slack.
+- [Analyze CV and Record Candidate](workflows/analyze-cv-and-record-candidate/) - Extract CV details, summarize the candidate and record the extracted facts in Google Sheets.
 
 ## Content
 
