@@ -1,0 +1,540 @@
+{
+  "name": "Publish Selected Social Media Upload",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "publish-selected-social-media-upload-0",
+      "name": "On form submission",
+      "type": "n8n-nodes-base.formTrigger",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "formTitle": "Post Publisher",
+        "formFields": {
+          "values": [
+            {
+              "fieldType": "dropdown",
+              "fieldLabel": "Platform",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "instagram"
+                  },
+                  {
+                    "option": "linkedin"
+                  },
+                  {
+                    "option": "facebook"
+                  },
+                  {
+                    "option": "x"
+                  },
+                  {
+                    "option": "tiktok"
+                  },
+                  {
+                    "option": "threads"
+                  }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Account",
+              "placeholder": "User Profile name set on Upload-post.com",
+              "requiredField": true
+            },
+            {
+              "fieldType": "textarea",
+              "fieldLabel": "Caption",
+              "requiredField": true
+            },
+            {
+              "fieldType": "file",
+              "fieldLabel": "Upload",
+              "multipleFiles": false,
+              "requiredField": false,
+              "acceptFileTypes": ".jpg,.mp4"
+            },
+            {
+              "fieldLabel": "Facebook Id",
+              "placeholder": "Facebook page Id (eg. 00000111122222)"
+            },
+            {
+              "fieldLabel": "Public media URL",
+              "placeholder": "Open Flow relay only"
+            },
+            {
+              "fieldType": "dropdown",
+              "fieldLabel": "Media MIME",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "image/jpeg"
+                  },
+                  {
+                    "option": "video/mp4"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "name": "Prepare upload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const mode = \"direct\",\n  mime = mode === \"relay\" ? $json[\"Media MIME\"] : $binary?.Upload?.mimeType;\nif (![\"image/jpeg\", \"video/mp4\"].includes(mime)) throw Error(\"Choose JPG or MP4\");\nif (mode === \"direct\" && !$binary?.Upload) throw Error(\"Missing file\");\nif (mode === \"relay\" && !/^https:\\/\\//i.test($json[\"Public media URL\"] || \"\"))\n  throw Error(\"Missing public HTTPS URL\");\nreturn {\n  json: {\n    submissionId: $execution.id,\n    platform: $json.Platform,\n    account: $json.Account,\n    caption: $json.Caption,\n    facebookPageId: $json[\"Facebook Id\"] || \"\",\n    mediaUrl: $json[\"Public media URL\"] || \"\",\n    mime,\n    mode,\n  },\n  binary: $binary,\n};\n"
+      },
+      "id": "publish-selected-social-media-upload-1",
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "name": "Relay mode?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $('Prepare upload').first().json.mode === 'relay' }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        }
+      },
+      "id": "publish-selected-social-media-upload-2",
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "name": "Forward media URL",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "YOUR_OPEN_FLOW_WEBHOOK_URL",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $('Prepare upload').first().json }}",
+        "options": {}
+      },
+      "id": "publish-selected-social-media-upload-3",
+      "position": [
+        660,
+        0
+      ]
+    },
+    {
+      "name": "Read relay result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if (![\"published\", \"processing\", \"failed\"].includes($json.status))\n  throw Error(\"Unknown relay result\");\nreturn { json: { message: $json.status + ($json.requestId ? \" request \" + $json.requestId : \"\") } };\n"
+      },
+      "id": "publish-selected-social-media-upload-4",
+      "position": [
+        880,
+        0
+      ]
+    },
+    {
+      "name": "Publication not attempted",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "rowNotExists",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'social:' + $('Prepare upload').first().json.submissionId }}"
+            }
+          ]
+        }
+      },
+      "id": "publish-selected-social-media-upload-5",
+      "position": [
+        1100,
+        0
+      ]
+    },
+    {
+      "name": "Reserve publication",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "item_key": "={{ 'social:' + $('Prepare upload').first().json.submissionId }}",
+            "status": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "publish-selected-social-media-upload-6",
+      "position": [
+        1320,
+        0
+      ]
+    },
+    {
+      "name": "Restore upload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return $(\"Prepare upload\").first();\n"
+      },
+      "id": "publish-selected-social-media-upload-7",
+      "position": [
+        1540,
+        0
+      ]
+    },
+    {
+      "name": "Photo?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $('Prepare upload').first().json.mime === 'image/jpeg' }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        }
+      },
+      "id": "publish-selected-social-media-upload-8",
+      "position": [
+        1760,
+        0
+      ]
+    },
+    {
+      "id": "publish-selected-social-media-upload-9",
+      "name": "Post photo",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        1980,
+        0
+      ],
+      "parameters": {
+        "url": "https://api.upload-post.com/api/upload_photos",
+        "method": "POST",
+        "options": {},
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "authentication": "genericCredentialType",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "title",
+              "value": "={{ $('Prepare upload').first().json.caption }}"
+            },
+            {
+              "name": "user",
+              "value": "={{ $('Prepare upload').first().json.account }}"
+            },
+            {
+              "name": "platform[]",
+              "value": "={{ $('Prepare upload').first().json.platform }}"
+            },
+            {
+              "name": "photos[]",
+              "parameterType": "formBinaryData",
+              "inputDataFieldName": "Upload"
+            },
+            {
+              "name": "facebook_page_id",
+              "value": "={{ $('Prepare upload').first().json.facebookPageId }}"
+            }
+          ]
+        },
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "publish-selected-social-media-upload-10",
+      "name": "Post video",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        2200,
+        0
+      ],
+      "parameters": {
+        "url": "https://api.upload-post.com/api/upload",
+        "method": "POST",
+        "options": {},
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "authentication": "genericCredentialType",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "title",
+              "value": "={{ $('Prepare upload').first().json.caption }}"
+            },
+            {
+              "name": "user",
+              "value": "={{ $('Prepare upload').first().json.account }}"
+            },
+            {
+              "name": "platform[]",
+              "value": "={{ $('Prepare upload').first().json.platform }}"
+            },
+            {
+              "name": "video",
+              "parameterType": "formBinaryData",
+              "inputDataFieldName": "Upload"
+            },
+            {
+              "name": "facebook_page_id",
+              "value": "={{ $('Prepare upload').first().json.facebookPageId }}"
+            }
+          ]
+        },
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "name": "Read publication result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const platform = $(\"Prepare upload\").first().json.platform,\n  entry = $json.results?.[platform];\nif (entry?.success === true)\n  return { json: { status: \"published\", message: \"Published on \" + platform } };\nif ($json.request_id)\n  return {\n    json: {\n      status: \"processing\",\n      message: \"Processing; check Upload-Post request \" + $json.request_id,\n    },\n  };\nif (entry?.success === false)\n  return {\n    json: { status: \"failed\", message: \"Provider reported failure; inspect before retrying\" },\n  };\nthrow Error(\"Unknown publication result; inspect Upload-Post\");\n"
+      },
+      "id": "publish-selected-social-media-upload-11",
+      "position": [
+        2420,
+        0
+      ]
+    },
+    {
+      "id": "publish-selected-social-media-upload-12",
+      "name": "Show publication status",
+      "type": "n8n-nodes-base.form",
+      "position": [
+        2640,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "operation": "completion",
+        "completionTitle": "Publication status",
+        "completionMessage": "={{ $json.message }}"
+      },
+      "typeVersion": 1
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "Prepare upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare upload": {
+      "main": [
+        [
+          {
+            "node": "Relay mode?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Forward media URL": {
+      "main": [
+        [
+          {
+            "node": "Read relay result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read relay result": {
+      "main": [
+        [
+          {
+            "node": "Show publication status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Publication not attempted": {
+      "main": [
+        [
+          {
+            "node": "Reserve publication",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve publication": {
+      "main": [
+        [
+          {
+            "node": "Restore upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore upload": {
+      "main": [
+        [
+          {
+            "node": "Photo?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Post photo": {
+      "main": [
+        [
+          {
+            "node": "Read publication result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Post video": {
+      "main": [
+        [
+          {
+            "node": "Read publication result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read publication result": {
+      "main": [
+        [
+          {
+            "node": "Show publication status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Relay mode?": {
+      "main": [
+        [
+          {
+            "node": "Forward media URL",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Publication not attempted",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Photo?": {
+      "main": [
+        [
+          {
+            "node": "Post photo",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Post video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
