@@ -571,6 +571,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Export Keep Expense Notes to Sheets](workflows/export-keep-expense-notes-to-sheets/) - Extract euro amounts from selected Google Keep exports and upsert the notes in Google Sheets.
 - [Classify Outlook Mail with Custom Folders](workflows/classify-outlook-mail-with-custom-folders/) - Classify an unflagged Outlook message and move it to a matching folder.
 - [Index Notion Pages in Supabase Vectors](workflows/index-notion-pages-in-supabase-vectors/) - Embed new Notion page text and store the vectors and page metadata in Supabase.
+- [Index Notion Pages in Pinecone 768](workflows/index-notion-pages-in-pinecone-768/) - Embed new Notion page text and store the vectors and page metadata in Pinecone.
 
 ## Content
 
