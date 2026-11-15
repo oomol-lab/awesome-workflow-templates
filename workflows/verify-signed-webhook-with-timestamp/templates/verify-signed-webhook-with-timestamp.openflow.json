@@ -1,0 +1,162 @@
+{
+  "kind": "open-flow-workflow",
+  "version": 1,
+  "name": "Verify a Signed Webhook with Timestamp",
+  "content": {
+    "modelVersion": 15,
+    "document": {
+      "bindings": {},
+      "graph": {
+        "nodes": {
+          "n_38f51dd9c52dc886": {
+            "name": "Receive raw-body relay",
+            "kind": "webhook",
+            "bodyFields": [
+              {
+                "jsonSchema": {
+                  "type": "string"
+                },
+                "nullable": false,
+                "handle": "raw"
+              },
+              {
+                "jsonSchema": {
+                  "type": "string"
+                },
+                "nullable": false,
+                "handle": "signature"
+              },
+              {
+                "jsonSchema": {
+                  "type": "string"
+                },
+                "nullable": false,
+                "handle": "contentType"
+              }
+            ],
+            "method": "POST",
+            "options": {
+              "responseBody": {
+                "kind": "workflow-outputs",
+                "output": "result",
+                "timeoutMs": 60000
+              },
+              "responseHeaders": {
+                "Content-Type": "application/json"
+              },
+              "responseStatusCode": 200
+            }
+          },
+          "n_10fa7de778f3292b": {
+            "inputs": {
+              "body": {
+                "kind": "sources",
+                "sources": [
+                  {
+                    "kind": "node",
+                    "nodeId": "n_38f51dd9c52dc886",
+                    "output": "body"
+                  }
+                ]
+              },
+              "secret": {
+                "kind": "unset"
+              }
+            },
+            "name": "Verify signature and timestamp",
+            "kind": "task",
+            "task": {
+              "inputs": [
+                {
+                  "jsonSchema": {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  "nullable": false,
+                  "handle": "body"
+                },
+                {
+                  "jsonSchema": {
+                    "type": "string"
+                  },
+                  "nullable": false,
+                  "handle": "secret"
+                }
+              ],
+              "outputs": [
+                {
+                  "jsonSchema": {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  "nullable": false,
+                  "handle": "result"
+                }
+              ],
+              "name": "Verify signature and timestamp",
+              "moduleId": "n_383d12377bb4d952",
+              "capabilities": [
+                {
+                  "kind": "connector",
+                  "mode": "independent",
+                  "actions": []
+                }
+              ]
+            }
+          },
+          "n_7578485b95e0f33b": {
+            "name": "Return verification result",
+            "kind": "outputs",
+            "outputDefs": [
+              {
+                "jsonSchema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "nullable": false,
+                "handle": "result"
+              }
+            ],
+            "outputMappings": {
+              "result": {
+                "kind": "sources",
+                "sources": [
+                  {
+                    "kind": "node",
+                    "nodeId": "n_10fa7de778f3292b",
+                    "output": "result"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "edges": [
+          {
+            "source": "n_38f51dd9c52dc886",
+            "target": "n_10fa7de778f3292b"
+          },
+          {
+            "source": "n_10fa7de778f3292b",
+            "target": "n_7578485b95e0f33b"
+          }
+        ]
+      }
+    },
+    "modules": {
+      "n_383d12377bb4d952": {
+        "name": "Verify signature and timestamp",
+        "imports": [],
+        "source": "import { createHmac } from \"node:crypto\";\nexport default function verify({ body, secret }) {\n  if (typeof secret !== \"string\" || !secret) throw Error(\"Configure the shared signing secret\");\n  const raw = String(body?.raw || \"\"),\n    signature = String(body?.signature || \"\")\n      .trim()\n      .toLowerCase(),\n    contentType = String(body?.contentType || \"\").toLowerCase();\n  let accepted = false,\n    id = null;\n  try {\n    if (!/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(raw))\n      throw Error(\"Invalid encoding\");\n    const bytes = Buffer.from(raw, \"base64\");\n    if (bytes.toString(\"base64\") !== raw) throw Error(\"Invalid encoding\");\n    const payload = JSON.parse(bytes.toString(\"utf8\")),\n      expected = createHmac(\"sha256\", secret).update(bytes).digest(\"hex\"),\n      match = /^sha256=([a-f0-9]{64})$/.exec(signature);\n    let diff = 0;\n    if (match) for (let i = 0; i < 64; i++) diff |= expected.charCodeAt(i) ^ match[1].charCodeAt(i);\n    const valid = !!match && diff === 0,\n      now = Math.floor(Date.now() / 1000),\n      fresh =\n        Number.isInteger(payload.sent_at) &&\n        payload.sent_at >= now - 300 &&\n        payload.sent_at <= now + 60;\n    id =\n      typeof payload.event_id === \"string\" && /^evt_[A-Za-z0-9-]{8,64}$/.test(payload.event_id)\n        ? payload.event_id\n        : null;\n    accepted = valid && fresh && !!id && contentType.startsWith(\"application/json\");\n  } catch {}\n  return {\n    result: accepted\n      ? {\n          ok: true,\n          status: \"accepted\",\n          authenticated: true,\n          event_id: id,\n          replay_window_seconds: 300,\n        }\n      : { ok: false, status: \"rejected\", reason: \"invalid_or_stale_signature\" },\n  };\n}\n"
+      }
+    }
+  },
+  "presentation": {
+    "designer": {
+      "version": 1,
+      "flow": {
+        "direction": "vertical"
+      }
+    }
+  }
+}

@@ -1,0 +1,403 @@
+{
+  "name": "Verify a Signed Webhook with Timestamp",
+  "description": "Verifies an HMAC-SHA256 signature against the exact raw JSON webhook body, checks a signed timestamp window and event ID, and returns a generic 401 before any business logic runs.",
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "verify-signed-webhook-with-timestamp",
+        "authentication": "none",
+        "responseMode": "responseNode",
+        "options": {
+          "rawBody": true
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "verify-signed-webhook-with-timestamp-0",
+      "name": "Receive Signed Webhook"
+    },
+    {
+      "parameters": {
+        "action": "hmac",
+        "binaryData": true,
+        "binaryPropertyName": "data",
+        "type": "SHA256",
+        "dataPropertyName": "expected_signature",
+        "encoding": "hex"
+      },
+      "type": "n8n-nodes-base.crypto",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "id": "verify-signed-webhook-with-timestamp-1",
+      "name": "Compute Body HMAC"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nconst headers = input.headers ?? {};\nconst received =\n  typeof headers[\"x-automation-signature\"] === \"string\"\n    ? headers[\"x-automation-signature\"].trim().toLowerCase()\n    : \"\";\nconst digest =\n  typeof input.expected_signature === \"string\" ? input.expected_signature.toLowerCase() : \"\";\nconst expected = `sha256=${digest}`;\nconst signatureFormatValid =\n  /^sha256=[a-f0-9]{64}$/.test(received) && /^sha256=[a-f0-9]{64}$/.test(expected);\nlet signatureMismatch = 1;\nif (signatureFormatValid) {\n  signatureMismatch = 0;\n  for (let index = 0; index < expected.length; index += 1) {\n    signatureMismatch |= expected.charCodeAt(index) ^ received.charCodeAt(index);\n  }\n}\nconst body = input.body ?? {};\nconst sentAt = body.sent_at;\nconst now = Math.floor(Date.now() / 1000);\nconst timestampValid = Number.isInteger(sentAt) && sentAt >= now - 300 && sentAt <= now + 60;\nconst eventId = typeof body.event_id === \"string\" ? body.event_id : \"\";\nconst eventIdValid = /^evt_[A-Za-z0-9-]{8,64}$/.test(eventId);\nconst contentType =\n  typeof headers[\"content-type\"] === \"string\" ? headers[\"content-type\"].toLowerCase() : \"\";\nconst contentTypeValid = contentType.startsWith(\"application/json\");\nconst signatureValid = signatureFormatValid && signatureMismatch === 0;\nreturn [\n  {\n    json: {\n      accepted: signatureValid && timestampValid && eventIdValid && contentTypeValid,\n      event_id: eventIdValid ? eventId : null,\n      authenticated: signatureValid,\n      fresh: timestampValid,\n      age_seconds: Number.isInteger(sentAt) ? now - sentAt : null,\n      replay_window_seconds: 300,\n    },\n  },\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        0
+      ],
+      "id": "verify-signed-webhook-with-timestamp-2",
+      "name": "Validate Signature and Timestamp"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.accepted }}",
+              "operation": "equal",
+              "value2": true
+            }
+          ]
+        },
+        "combineOperation": "all"
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        660,
+        0
+      ],
+      "id": "verify-signed-webhook-with-timestamp-3",
+      "name": "Is Request Authentic and Fresh"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok: true, status: 'accepted', authenticated: true, event_id: $json.event_id, replay_window_seconds: $json.replay_window_seconds } }}",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Cache-Control",
+                "value": "no-store"
+              },
+              {
+                "name": "X-Content-Type-Options",
+                "value": "nosniff"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        880,
+        0
+      ],
+      "id": "verify-signed-webhook-with-timestamp-4",
+      "name": "Accept Authenticated Request"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok: false, status: 'rejected', reason: 'invalid_or_stale_signature' } }}",
+        "options": {
+          "responseCode": 401,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Cache-Control",
+                "value": "no-store"
+              },
+              {
+                "name": "X-Content-Type-Options",
+                "value": "nosniff"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1100,
+        0
+      ],
+      "id": "verify-signed-webhook-with-timestamp-5",
+      "name": "Reject Invalid or Stale Request"
+    },
+    {
+      "name": "Receive Open Flow mode",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "verify-signed-webhook-with-timestamp-openflow",
+        "authentication": "none",
+        "responseMode": "responseNode",
+        "options": {
+          "rawBody": true
+        }
+      },
+      "position": [
+        1320,
+        0
+      ],
+      "disabled": true,
+      "id": "verify-signed-webhook-with-timestamp-6"
+    },
+    {
+      "name": "Encode exact request bytes",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if (!$binary?.data) throw Error(\"Missing raw request bytes\");\nconst b = await helpers.getBinaryDataBuffer($itemIndex, \"data\");\nreturn {\n  json: {\n    raw: b.toString(\"base64\"),\n    signature: String($json.headers?.[\"x-automation-signature\"] || \"\"),\n    contentType: String($json.headers?.[\"content-type\"] || \"\"),\n  },\n};\n"
+      },
+      "position": [
+        1540,
+        0
+      ],
+      "id": "verify-signed-webhook-with-timestamp-7"
+    },
+    {
+      "name": "Verify with Open Flow",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "YOUR_OPEN_FLOW_WEBHOOK_URL",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {
+          "timeout": 65000,
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "position": [
+        1760,
+        0
+      ],
+      "id": "verify-signed-webhook-with-timestamp-8"
+    },
+    {
+      "name": "Open Flow accepted?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "position": [
+        1980,
+        0
+      ],
+      "id": "verify-signed-webhook-with-timestamp-9"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok: true, status: 'accepted', authenticated: true, event_id: $json.event_id, replay_window_seconds: $json.replay_window_seconds } }}",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Cache-Control",
+                "value": "no-store"
+              },
+              {
+                "name": "X-Content-Type-Options",
+                "value": "nosniff"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        2200,
+        0
+      ],
+      "id": "verify-signed-webhook-with-timestamp-10",
+      "name": "Accept Open Flow request"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok: false, status: 'rejected', reason: 'invalid_or_stale_signature' } }}",
+        "options": {
+          "responseCode": 401,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Cache-Control",
+                "value": "no-store"
+              },
+              {
+                "name": "X-Content-Type-Options",
+                "value": "nosniff"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        2420,
+        0
+      ],
+      "id": "verify-signed-webhook-with-timestamp-11",
+      "name": "Reject Open Flow request"
+    }
+  ],
+  "connections": {
+    "Receive Signed Webhook": {
+      "main": [
+        [
+          {
+            "node": "Compute Body HMAC",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compute Body HMAC": {
+      "main": [
+        [
+          {
+            "node": "Validate Signature and Timestamp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Signature and Timestamp": {
+      "main": [
+        [
+          {
+            "node": "Is Request Authentic and Fresh",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Request Authentic and Fresh": {
+      "main": [
+        [
+          {
+            "node": "Accept Authenticated Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reject Invalid or Stale Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Receive Open Flow mode": {
+      "main": [
+        [
+          {
+            "node": "Encode exact request bytes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Encode exact request bytes": {
+      "main": [
+        [
+          {
+            "node": "Verify with Open Flow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify with Open Flow": {
+      "main": [
+        [
+          {
+            "node": "Open Flow accepted?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Open Flow accepted?": {
+      "main": [
+        [
+          {
+            "node": "Accept Open Flow request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reject Open Flow request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "nodeGroups": [],
+  "pinData": {},
+  "activeVersionId": "023c2355-740c-4b7c-823e-971e62ab3206",
+  "sourceWorkflowId": null,
+  "tags": [],
+  "versionMetadata": {
+    "name": null,
+    "description": null
+  }
+}
