@@ -1,0 +1,1022 @@
+{
+  "name": "Email Quiz Certificates from Slides",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "email-quiz-certificates-from-slides-0",
+      "name": "Google Sheets Trigger",
+      "type": "n8n-nodes-base.googleSheetsTrigger",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "event": "rowAdded",
+        "options": {},
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Form Responses 1"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_SPREADSHEET_ID"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "name": "Resume submission",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "email-quiz-certificates-from-slides-resume",
+        "authentication": "headerAuth",
+        "options": {}
+      },
+      "id": "email-quiz-certificates-from-slides-1",
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "name": "One response at a time",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "parameters": {
+        "options": {}
+      },
+      "id": "email-quiz-certificates-from-slides-2",
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "name": "Prepare response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const r = $json.body || $json,\n  id = r[\"Submission ID\"] || r.submissionId,\n  name = r.Name || r.name,\n  email = r.Email || r.email,\n  raw = r.Score ?? r.score,\n  score = Number(raw);\nif (!id || !name || !email || raw === \"\" || !Number.isFinite(score))\n  throw Error(\"Submission ID, name, email and numeric score required\");\nreturn {\n  json: {\n    submissionId: String(id),\n    name: String(name),\n    email: String(email),\n    score,\n    mode: \"direct\",\n  },\n};\n"
+      },
+      "id": "email-quiz-certificates-from-slides-3",
+      "position": [
+        660,
+        0
+      ]
+    },
+    {
+      "name": "Passed quiz?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.score }}",
+              "rightValue": 3,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "email-quiz-certificates-from-slides-4",
+      "position": [
+        880,
+        0
+      ]
+    },
+    {
+      "name": "Use Open Flow?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.mode }}",
+              "rightValue": "relay",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "email-quiz-certificates-from-slides-5",
+      "position": [
+        1100,
+        0
+      ]
+    },
+    {
+      "name": "Forward quiz response",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "YOUR_OPEN_FLOW_WEBHOOK_URL",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $('Prepare response').item.json }}",
+        "options": {}
+      },
+      "id": "email-quiz-certificates-from-slides-6",
+      "position": [
+        1320,
+        0
+      ]
+    },
+    {
+      "name": "Verify relay result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if ($json.status !== \"done\") throw Error(\"Certificate not confirmed\");\nreturn $input.item;\n"
+      },
+      "id": "email-quiz-certificates-from-slides-7",
+      "position": [
+        1540,
+        0
+      ]
+    },
+    {
+      "name": "Load certificate state",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "alwaysOutputData": true,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'certificate:'+$('Prepare response').item.json.submissionId }}"
+            }
+          ]
+        },
+        "operation": "get",
+        "returnAll": true
+      },
+      "id": "email-quiz-certificates-from-slides-8",
+      "position": [
+        1760,
+        0
+      ]
+    },
+    {
+      "name": "Choose certificate step",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const rows = $input\n    .all()\n    .map((x) => x.json)\n    .filter((x) => x.item_key),\n  input = $(\"Prepare response\").item.json;\nif (rows.length > 1) throw Error(\"Duplicate submission\");\nif (!rows.length) return [{ json: { step: \"new\", payload: input } }];\nconst row = rows[0],\n  s = JSON.parse(row.payload);\nfor (const k of [\"submissionId\", \"name\", \"email\", \"score\"])\n  if (s[k] !== input[k]) throw Error(\"Submission changed\");\nif (row.status.startsWith(\"pending-\")) throw Error(\"Inspect pending certificate write\");\nif (![\"ready-replace\", \"ready-email\", \"done\"].includes(row.status)) throw Error(\"Invalid state\");\nreturn [{ json: { step: row.status, payload: s } }];\n"
+      },
+      "id": "email-quiz-certificates-from-slides-9",
+      "position": [
+        1980,
+        0
+      ]
+    },
+    {
+      "name": "Route certificate step",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.step }}",
+                    "rightValue": "new",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "new"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.step }}",
+                    "rightValue": "ready-replace",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "ready-replace"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.step }}",
+                    "rightValue": "ready-email",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "ready-email"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.step }}",
+                    "rightValue": "done",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "done"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "email-quiz-certificates-from-slides-10",
+      "position": [
+        2200,
+        0
+      ]
+    },
+    {
+      "name": "Reserve template copy",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "item_key": "={{ 'certificate:'+$('Prepare response').item.json.submissionId }}",
+            "status": "pending-copy",
+            "payload": "={{ JSON.stringify($('Choose certificate step').item.json.payload) }}"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "email-quiz-certificates-from-slides-11",
+      "position": [
+        2420,
+        0
+      ]
+    },
+    {
+      "id": "email-quiz-certificates-from-slides-12",
+      "name": "Copy from your template",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [
+        2640,
+        0
+      ],
+      "parameters": {
+        "name": "={{ $('Choose certificate step').item.json.payload.name + ' Certificate' }}",
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_SLIDES_TEMPLATE_ID"
+        },
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "options": {},
+        "folderId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DRIVE_FOLDER_ID"
+        },
+        "operation": "copy",
+        "sameFolder": false
+      },
+      "typeVersion": 3
+    },
+    {
+      "name": "Verify template copy",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if (!$json.id) throw Error(\"Unknown copy result\");\nreturn $input.item;\n"
+      },
+      "id": "email-quiz-certificates-from-slides-13",
+      "position": [
+        2860,
+        0
+      ]
+    },
+    {
+      "name": "Confirm template copy",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'certificate:'+$('Prepare response').item.json.submissionId }}"
+            }
+          ]
+        },
+        "operation": "update",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "ready-replace",
+            "payload": "={{ JSON.stringify({...$('Choose certificate step').item.json.payload,fileId:$('Verify template copy').item.json.id}) }}"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "email-quiz-certificates-from-slides-14",
+      "position": [
+        3080,
+        0
+      ]
+    },
+    {
+      "name": "Reserve name replacement",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'certificate:'+$('Prepare response').item.json.submissionId }}"
+            }
+          ]
+        },
+        "operation": "update",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "pending-replace",
+            "payload": "={{ JSON.stringify($('Choose certificate step').item.json.payload) }}"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "email-quiz-certificates-from-slides-15",
+      "position": [
+        3300,
+        0
+      ]
+    },
+    {
+      "id": "email-quiz-certificates-from-slides-16",
+      "name": "Replace text",
+      "type": "n8n-nodes-base.googleSlides",
+      "position": [
+        3520,
+        0
+      ],
+      "parameters": {
+        "textUi": {
+          "textValues": [
+            {
+              "text": "[ NAME ]",
+              "replaceText": "={{ $('Choose certificate step').item.json.payload.name }}",
+              "pageObjectIds": [
+                "p"
+              ]
+            }
+          ]
+        },
+        "options": {},
+        "operation": "replaceText",
+        "presentationId": "={{ $('Choose certificate step').item.json.payload.fileId }}"
+      },
+      "typeVersion": 2
+    },
+    {
+      "name": "Verify name replacement",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if (\n  $json.presentationId !== $(\"Choose certificate step\").item.json.payload.fileId ||\n  !Number.isInteger($json.replies?.[0]?.replaceAllText?.occurrencesChanged) ||\n  $json.replies[0].replaceAllText.occurrencesChanged < 1\n)\n  throw Error(\"Name placeholder not replaced\");\nreturn $input.item;\n"
+      },
+      "id": "email-quiz-certificates-from-slides-17",
+      "position": [
+        3740,
+        0
+      ]
+    },
+    {
+      "name": "Confirm name replacement",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'certificate:'+$('Prepare response').item.json.submissionId }}"
+            }
+          ]
+        },
+        "operation": "update",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "ready-email",
+            "payload": "={{ JSON.stringify($('Choose certificate step').item.json.payload) }}"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "email-quiz-certificates-from-slides-18",
+      "position": [
+        3960,
+        0
+      ]
+    },
+    {
+      "id": "email-quiz-certificates-from-slides-19",
+      "name": "Convert to PDF",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [
+        4180,
+        0
+      ],
+      "parameters": {
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Choose certificate step').item.json.payload.fileId }}"
+        },
+        "options": {
+          "fileName": "={{ $('Choose certificate step').item.json.payload.name + ' Certificate.pdf' }}",
+          "googleFileConversion": {
+            "conversion": {
+              "slidesToFormat": "application/pdf"
+            }
+          }
+        },
+        "operation": "download"
+      },
+      "typeVersion": 3,
+      "alwaysOutputData": false
+    },
+    {
+      "name": "Reserve certificate email",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'certificate:'+$('Prepare response').item.json.submissionId }}"
+            }
+          ]
+        },
+        "operation": "update",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "pending-email",
+            "payload": "={{ JSON.stringify($('Choose certificate step').item.json.payload) }}"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "email-quiz-certificates-from-slides-20",
+      "position": [
+        4400,
+        0
+      ]
+    },
+    {
+      "name": "Restore PDF attachment",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return $(\"Convert to PDF\").item;\n"
+      },
+      "id": "email-quiz-certificates-from-slides-21",
+      "position": [
+        4620,
+        0
+      ]
+    },
+    {
+      "id": "email-quiz-certificates-from-slides-22",
+      "name": "Send to user's email",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        4840,
+        0
+      ],
+      "parameters": {
+        "sendTo": "={{ $('Choose certificate step').item.json.payload.email }}",
+        "message": "=Congratulations on passing the quiz! Attached is your certificate.",
+        "options": {
+          "attachmentsUi": {
+            "attachmentsBinary": [
+              {
+                "property": "data"
+              }
+            ]
+          },
+          "appendAttribution": false
+        },
+        "subject": "Here's your certificate!!"
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "name": "Verify certificate email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if (!$json.id) throw Error(\"Unknown email result\");\nreturn $input.item;\n"
+      },
+      "id": "email-quiz-certificates-from-slides-23",
+      "position": [
+        5060,
+        0
+      ]
+    },
+    {
+      "name": "Confirm certificate email",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'certificate:'+$('Prepare response').item.json.submissionId }}"
+            }
+          ]
+        },
+        "operation": "update",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "done",
+            "payload": "={{ JSON.stringify($('Choose certificate step').item.json.payload) }}"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "email-quiz-certificates-from-slides-24",
+      "position": [
+        5280,
+        0
+      ]
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Google Sheets Trigger": {
+      "main": [
+        [
+          {
+            "node": "One response at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resume submission": {
+      "main": [
+        [
+          {
+            "node": "One response at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare response": {
+      "main": [
+        [
+          {
+            "node": "Passed quiz?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Forward quiz response": {
+      "main": [
+        [
+          {
+            "node": "Verify relay result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify relay result": {
+      "main": [
+        [
+          {
+            "node": "One response at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load certificate state": {
+      "main": [
+        [
+          {
+            "node": "Choose certificate step",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Choose certificate step": {
+      "main": [
+        [
+          {
+            "node": "Route certificate step",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve template copy": {
+      "main": [
+        [
+          {
+            "node": "Copy from your template",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Copy from your template": {
+      "main": [
+        [
+          {
+            "node": "Verify template copy",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify template copy": {
+      "main": [
+        [
+          {
+            "node": "Confirm template copy",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm template copy": {
+      "main": [
+        [
+          {
+            "node": "Load certificate state",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve name replacement": {
+      "main": [
+        [
+          {
+            "node": "Replace text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Replace text": {
+      "main": [
+        [
+          {
+            "node": "Verify name replacement",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify name replacement": {
+      "main": [
+        [
+          {
+            "node": "Confirm name replacement",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm name replacement": {
+      "main": [
+        [
+          {
+            "node": "Load certificate state",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to PDF": {
+      "main": [
+        [
+          {
+            "node": "Reserve certificate email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve certificate email": {
+      "main": [
+        [
+          {
+            "node": "Restore PDF attachment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore PDF attachment": {
+      "main": [
+        [
+          {
+            "node": "Send to user's email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send to user's email": {
+      "main": [
+        [
+          {
+            "node": "Verify certificate email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify certificate email": {
+      "main": [
+        [
+          {
+            "node": "Confirm certificate email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm certificate email": {
+      "main": [
+        [
+          {
+            "node": "One response at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "One response at a time": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Prepare response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Passed quiz?": {
+      "main": [
+        [
+          {
+            "node": "Use Open Flow?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "One response at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Use Open Flow?": {
+      "main": [
+        [
+          {
+            "node": "Forward quiz response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Load certificate state",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route certificate step": {
+      "main": [
+        [
+          {
+            "node": "Reserve template copy",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reserve name replacement",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Convert to PDF",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "One response at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

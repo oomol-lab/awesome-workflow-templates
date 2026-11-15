@@ -971,6 +971,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Enroll Webhook Signups in the Current Notion Semester](workflows/enroll-webhook-signups-in-current-notion-semester/) - Find or create a Notion user and add the current semester without removing existing relations.
 - [Create a Notion Project and Enroll a Team](workflows/create-notion-project-and-enroll-team/) - Create a semester project and connect each team member to the project and current semester in Notion.
 - [Generate Exam Questions from Google Docs](workflows/generate-exam-questions-from-google-docs/) - Index a Google Doc, generate open and multiple-choice questions, and write grounded answers to two sheets.
+- [Email Quiz Certificates from Slides](workflows/email-quiz-certificates-from-slides/) - Create a personalized PDF certificate for each passing quiz response and email it to the respondent.
 
 ## Data
 
