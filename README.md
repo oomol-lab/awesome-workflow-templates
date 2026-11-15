@@ -381,6 +381,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Research a Topic into HTML](workflows/research-topic-to-html/) - Research a topic with Perplexity and return an HTML article.
 - [Detect Unusual Crop Images](workflows/detect-unusual-crop-images/) - Compare a crop image with prepared class centers and thresholds in Qdrant.
 - [Extract Data from a Webpage](workflows/extract-data-from-a-webpage/) - Extract requested fields and a structured summary from a webpage.
+- [Learn with Hacker News Recommendations](workflows/learn-with-hacker-news-recommendations/) - Find learning resources in Ask HN comments and email a categorized summary.
 
 ## Productivity
 
