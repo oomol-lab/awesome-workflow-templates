@@ -569,6 +569,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Catalog Tools from Logo Sheets](workflows/catalog-tools-from-logo-sheets/) - Extract tools and relationships from a logo sheet and update linked Airtable records.
 - [Extract Resumes and Invoice Model Usage](workflows/extract-resumes-and-invoice-model-usage/) - Extract resume data, log model token usage, and email a monthly client invoice.
 - [Export Keep Expense Notes to Sheets](workflows/export-keep-expense-notes-to-sheets/) - Extract euro amounts from selected Google Keep exports and upsert the notes in Google Sheets.
+- [Classify Outlook Mail with Custom Folders](workflows/classify-outlook-mail-with-custom-folders/) - Classify an unflagged Outlook message and move it to a matching folder.
 
 ## Content
 
