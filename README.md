@@ -811,6 +811,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Send Scheduled Discord Messages](workflows/send-scheduled-discord-messages/) - Send three messages to a Discord webhook on separate schedules.
 - [Reply to Gmail and Record Feedback](workflows/reply-to-gmail-and-record-feedback/) - Generate a reply to an incoming email, log it and record linked feedback.
 - [Reply to Telegram Profanity](workflows/reply-to-telegram-profanity/) - Score Telegram text with Perspective and reply to messages with a profanity score above 0.7.
+- [Draft Labeled Gmail Thread Replies](workflows/draft-labeled-gmail-thread-replies/) - Draft a reply to the latest message in each labeled Gmail conversation and remove the processing label.
 
 ## Customer Support
 
