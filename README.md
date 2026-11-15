@@ -1049,6 +1049,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Generate Speech with ElevenLabs](workflows/generate-speech-with-elevenlabs/) - Generate an audio response from text and an ElevenLabs voice ID.
 - [ElevenLabs Voice Generation Webhook](workflows/elevenlabs-voice-generation-webhook/) - Generate an audio response from text and an ElevenLabs voice ID.
 - [Caption and Overlay a Remote Image](workflows/caption-and-overlay-remote-image/) - Generate a caption for a remote image and overlay it on the original.
+- [Generate Speech with ElevenLabs](workflows/generate-elevenlabs-speech-from-webhook/) - Generate speech from text and return the audio bytes.
 
 ## Files
 
