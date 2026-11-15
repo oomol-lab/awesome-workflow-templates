@@ -598,6 +598,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Classify Todoist Inbox Priorities](workflows/classify-todoist-inbox-priorities/) - Classify top-level Todoist inbox tasks and set their priority from a configured category map.
 - [Review Appointment Requests with Google Calendar](workflows/review-appointment-requests-with-calendar/) - Qualify appointment requests, obtain a human decision and create a calendar meeting or send a rejection.
 - [Review Form Appointment Requests with Google Calendar](workflows/review-form-appointment-requests-with-calendar/) - Qualify appointment requests, obtain a human decision and create a calendar meeting or send a rejection.
+- [Reply to Unread Meeting Requests with Availability](workflows/reply-to-unread-meeting-requests-with-availability/) - Identify appointment requests, check calendar availability and reply with suggested times.
 
 ## Content
 
