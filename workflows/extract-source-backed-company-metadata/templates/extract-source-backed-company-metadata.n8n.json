@@ -1,0 +1,311 @@
+{
+  "name": "Extract Source-Backed Company Metadata",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "extract-source-backed-company-metadata-0",
+      "name": "Run manually"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "dff8a003-3e79-4cc8-8d11-11ade1f76b28",
+              "name": "domain",
+              "value": "YOUR_COMPANY_DOMAIN",
+              "type": "string"
+            },
+            {
+              "id": "request",
+              "name": "requestId",
+              "type": "string",
+              "value": "YOUR_UNIQUE_REQUEST_ID"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        220,
+        0
+      ],
+      "id": "extract-source-backed-company-metadata-1",
+      "name": "Set company domain"
+    },
+    {
+      "parameters": {
+        "jsCode": "const domain = String($json.domain || \"\")\n  .trim()\n  .toLowerCase();\nif (\n  domain.length > 253 ||\n  !domain.includes(\".\") ||\n  domain.includes(\"://\") ||\n  domain.includes(\"/\") ||\n  domain.includes(\":\") ||\n  domain.includes(\" \") ||\n  domain.startsWith(\".\") ||\n  domain.endsWith(\".\") ||\n  domain.includes(\"..\")\n) {\n  throw new Error(\"Use one bare company domain, for example example.com\");\n}\nconst labels = domain.split(\".\");\nconst labelPattern = /^[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?$/;\nif (\n  labels.some((label) => label.length < 1 || label.length > 63 || !labelPattern.test(label)) ||\n  !/^[A-Za-z]{2,63}$/.test(labels.at(-1))\n) {\n  throw new Error(\"The company domain is invalid\");\n}\nif (!$json.requestId || $json.requestId.startsWith(\"YOUR_\")) throw Error(\"Configure request ID\");\nreturn [{ json: { domain, integrationSource: \"n8n-github-c9\", requestId: $json.requestId } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        0
+      ],
+      "id": "extract-source-backed-company-metadata-2",
+      "name": "Validate domain"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apify.com/v2/acts/vivid_astronaut~company-enrichment/run-sync-get-dataset-items",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "maxItems",
+              "value": "1"
+            },
+            {
+              "name": "maxTotalChargeUsd",
+              "value": "0.02"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({domain:$(\"Validate domain\").first().json.domain,integrationSource:\"n8n-github-c9\"}) }}",
+        "options": {
+          "timeout": 150000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        660,
+        0
+      ],
+      "id": "extract-source-backed-company-metadata-3",
+      "name": "Extract metadata on Apify"
+    },
+    {
+      "parameters": {
+        "jsCode": "const expectedDomain = $(\"Validate domain\").first().json.domain;\nconst rows = $input.all().flatMap((item) => (Array.isArray(item.json) ? item.json : [item.json]));\nif (rows.length !== 1) {\n  throw new Error(\"Expected exactly one company metadata result\");\n}\nconst row = rows[0];\nif (\n  row.success !== true ||\n  row.domain !== expectedDomain ||\n  row.integrationSource !== \"n8n-github-c9\" ||\n  row.provenance?.method !== \"website_metadata_scrape\"\n) {\n  throw new Error(\"The Actor response failed semantic validation\");\n}\nreturn [{ json: row }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        0
+      ],
+      "id": "extract-source-backed-company-metadata-4",
+      "name": "Validate metadata result"
+    },
+    {
+      "name": "Run not attempted",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "rowNotExists",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ \"company-metadata:\"+$(\"Validate domain\").first().json.requestId }}"
+            }
+          ]
+        }
+      },
+      "position": [
+        1100,
+        0
+      ],
+      "id": "extract-source-backed-company-metadata-5"
+    },
+    {
+      "name": "Reserve Actor run",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "item_key": "={{ \"company-metadata:\"+$(\"Validate domain\").first().json.requestId }}",
+            "status": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "position": [
+        1320,
+        0
+      ],
+      "id": "extract-source-backed-company-metadata-6"
+    },
+    {
+      "name": "Confirm Actor result",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ \"company-metadata:\"+$(\"Validate domain\").first().json.requestId }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "done"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "position": [
+        1540,
+        0
+      ],
+      "id": "extract-source-backed-company-metadata-7"
+    },
+    {
+      "name": "Return metadata candidate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return $(\"Validate metadata result\").all();\n"
+      },
+      "position": [
+        1760,
+        0
+      ],
+      "id": "extract-source-backed-company-metadata-8"
+    }
+  ],
+  "connections": {
+    "Run manually": {
+      "main": [
+        [
+          {
+            "node": "Set company domain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set company domain": {
+      "main": [
+        [
+          {
+            "node": "Validate domain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate domain": {
+      "main": [
+        [
+          {
+            "node": "Run not attempted",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract metadata on Apify": {
+      "main": [
+        [
+          {
+            "node": "Validate metadata result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run not attempted": {
+      "main": [
+        [
+          {
+            "node": "Reserve Actor run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve Actor run": {
+      "main": [
+        [
+          {
+            "node": "Extract metadata on Apify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate metadata result": {
+      "main": [
+        [
+          {
+            "node": "Confirm Actor result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm Actor result": {
+      "main": [
+        [
+          {
+            "node": "Return metadata candidate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": []
+}
