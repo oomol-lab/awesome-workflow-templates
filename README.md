@@ -739,6 +739,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Generate Structured State and City Data](workflows/generate-structured-state-and-city-data/) - Generate a structured example of US states, cities and populations.
 - [Rotate n8n Workflow Backups in Google Drive](workflows/rotate-n8n-workflow-backups-in-google-drive/) - Move previous workflow backups to an old folder and save current n8n workflows in Google Drive.
 - [Browse n8n Workflows with Mermaid](workflows/browse-n8n-workflows-with-mermaid/) - Browse an n8n instance’s workflows and render their node connections as Mermaid diagrams.
+- [Route Linear Bugs to Teams](workflows/triage-linear-bugs-by-team-responsibility/) - Classify eligible Linear bugs and route them to a responsible team or notify Slack.
 
 ## Communication
 
