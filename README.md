@@ -592,6 +592,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Review Unread Spam Email Drafts](workflows/review-unread-spam-email-drafts/) - Classify incoming email and prepare review-only replies for messages classified as spam.
 - [Create Fireflies Project Follow-ups in Airtable](workflows/fireflies-project-follow-ups-to-airtable/) - Turn project meeting transcripts into personal tasks, participant updates and follow-up meetings.
 - [Classify Todoist Inbox Priorities](workflows/classify-todoist-inbox-priorities/) - Classify top-level Todoist inbox tasks and set their priority from a configured category map.
+- [Review Appointment Requests with Google Calendar](workflows/review-appointment-requests-with-calendar/) - Qualify appointment requests, obtain a human decision and create a calendar meeting or send a rejection.
 
 ## Content
 
