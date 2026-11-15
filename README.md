@@ -62,6 +62,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Shopping](#shopping)
 - [Documents](#documents)
 - [Events](#events)
+- [Ecommerce](#ecommerce)
 - [Contribute](#contribute)
 - [Licensing](#licensing)
 
@@ -1106,6 +1107,10 @@ A growing collection of automation workflows for connecting apps and getting rep
 ## Events
 
 - [Register Event Attendees and Invite to Channels](workflows/register-event-attendees-and-invite-to-channels/) - Record a registration, invite the attendee to selected session channels and add them to calendar events.
+
+## Ecommerce
+
+- [Draft and Approve Printify Product Copy](workflows/draft-and-approve-printify-product-copy/) - Generate three product copy options in Sheets and apply an approved option to its Printify shop.
 
 ## Contribute
 
