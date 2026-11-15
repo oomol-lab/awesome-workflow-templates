@@ -624,6 +624,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Reply to Meeting Requests with Calendar Availability](workflows/reply-to-meeting-requests-with-calendar-availability/) - Reply to meeting requests with suggested times based on Google Calendar.
 - [Center a Logo on an Image](workflows/center-a-logo-on-an-image/) - Center a transparent logo over a background image.
 - [Track AI Grants and Send a Digest](workflows/track-ai-grants-and-send-digest/) - Track new AI grant opportunities and email a digest of eligible listings.
+- [Caption an Image with Gemini](workflows/caption-an-image-with-gemini/) - Generate a caption for an image and overlay it on the picture.
 
 ## Content
 
