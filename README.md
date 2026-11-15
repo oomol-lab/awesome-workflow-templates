@@ -60,6 +60,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Human Resources](#human-resources)
 - [Project Management](#project-management)
 - [Shopping](#shopping)
+- [Documents](#documents)
 - [Contribute](#contribute)
 - [Licensing](#licensing)
 
@@ -1032,6 +1033,10 @@ A growing collection of automation workflows for connecting apps and getting rep
 ## Shopping
 
 - [Email MediaMarkt Deals by Category](workflows/email-mediamarkt-deals-by-category/) - Find MediaMarkt Spain deals in selected categories and email the source links.
+
+## Documents
+
+- [Render Branded Markdown PDF](workflows/render-branded-markdown-pdf/) - Render Markdown as a branded PDF with a cover and numbered contents.
 
 ## Contribute
 
