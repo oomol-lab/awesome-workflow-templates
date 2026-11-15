@@ -1,0 +1,541 @@
+{
+  "name": "Read Front Car License Plate from Image",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "read-front-car-license-plate-from-image-0",
+      "name": "FromTrigger",
+      "type": "n8n-nodes-base.formTrigger",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "formTitle": "Read license plate",
+        "formFields": {
+          "values": [
+            {
+              "fieldType": "file",
+              "fieldLabel": "Image",
+              "requiredField": true,
+              "acceptFileTypes": ".jpg, .png"
+            }
+          ]
+        },
+        "responseMode": "lastNode",
+        "formDescription": "Upload a JPG or PNG image."
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "read-front-car-license-plate-from-image-1",
+      "name": "Settings",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1b8381dc-5b9a-42a2-8a67-cc706b433180",
+              "name": "model",
+              "type": "string",
+              "value": "openai/gpt-4o"
+            },
+            {
+              "id": "72aec130-ab56-4e61-b60b-9a31dd8d02e6",
+              "name": "prompt",
+              "type": "string",
+              "value": "Extract the number of the license plate on the front-most car depicted in the attached image and return only the extracted characters without any other text or structure."
+            }
+          ]
+        },
+        "includeOtherFields": true
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "name": "Choose vision mode",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const mode = \"direct\";\nif (!$binary?.Image) throw Error(\"Missing image\");\nreturn { json: { ...$json, mode, submissionId: $execution.id }, binary: $binary };\n"
+      },
+      "id": "read-front-car-license-plate-from-image-2",
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "name": "Relay mode?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.mode === 'relay' }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        }
+      },
+      "id": "read-front-car-license-plate-from-image-3",
+      "position": [
+        660,
+        0
+      ]
+    },
+    {
+      "id": "read-front-car-license-plate-from-image-4",
+      "name": "Basic LLM Chain",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "position": [
+        880,
+        0
+      ],
+      "parameters": {
+        "text": "={{ $json.prompt }}",
+        "messages": {
+          "messageValues": [
+            {
+              "type": "HumanMessagePromptTemplate",
+              "messageType": "imageBinary",
+              "binaryImageDataKey": "Image"
+            }
+          ]
+        },
+        "promptType": "define"
+      },
+      "typeVersion": 1.5
+    },
+    {
+      "id": "read-front-car-license-plate-from-image-5",
+      "name": "OpenRouter LLM",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "position": [
+        1100,
+        0
+      ],
+      "parameters": {
+        "model": "={{ $json.model }}",
+        "options": {}
+      },
+      "typeVersion": 1
+    },
+    {
+      "name": "Image not uploaded",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "rowNotExists",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'plate-image:' + $('Choose vision mode').first().json.submissionId }}"
+            }
+          ]
+        }
+      },
+      "id": "read-front-car-license-plate-from-image-6",
+      "position": [
+        1320,
+        0
+      ]
+    },
+    {
+      "name": "Reserve image upload",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "item_key": "={{ 'plate-image:' + $('Choose vision mode').first().json.submissionId }}",
+            "status": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "read-front-car-license-plate-from-image-7",
+      "position": [
+        1540,
+        0
+      ]
+    },
+    {
+      "name": "Restore image binary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const item = $(\"Choose vision mode\").first();\nif (!item.binary?.Image) throw Error(\"Missing image\");\nreturn { json: {}, binary: { Image: item.binary.Image } };\n"
+      },
+      "id": "read-front-car-license-plate-from-image-8",
+      "position": [
+        1760,
+        0
+      ]
+    },
+    {
+      "name": "Upload image artifact",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/files",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "purpose",
+              "value": "vision"
+            },
+            {
+              "parameterType": "formBinaryData",
+              "name": "file",
+              "inputDataFieldName": "Image"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "read-front-car-license-plate-from-image-9",
+      "position": [
+        1980,
+        0
+      ]
+    },
+    {
+      "name": "Verify image artifact",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if (!/^file-[A-Za-z0-9_-]+$/.test($json.id ?? \"\")) throw Error(\"Unknown image upload\");\nreturn { json: { fileId: $json.id } };\n"
+      },
+      "id": "read-front-car-license-plate-from-image-10",
+      "position": [
+        2200,
+        0
+      ]
+    },
+    {
+      "name": "Forward image file ID",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "YOUR_OPEN_FLOW_WEBHOOK_URL",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {fileId:$json.fileId} }}",
+        "options": {}
+      },
+      "id": "read-front-car-license-plate-from-image-11",
+      "position": [
+        2420,
+        0
+      ]
+    },
+    {
+      "name": "Verify relay result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if (typeof $json.text !== \"string\" || !$json.text.trim()) throw Error(\"Missing vision result\");\nreturn { json: { text: $json.text } };\n"
+      },
+      "id": "read-front-car-license-plate-from-image-12",
+      "position": [
+        2640,
+        0
+      ]
+    },
+    {
+      "name": "Confirm image processing",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Reserve image upload').first().json.id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "done"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "read-front-car-license-plate-from-image-13",
+      "position": [
+        2860,
+        0
+      ]
+    },
+    {
+      "name": "Show relay result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return { json: { text: $(\"Verify relay result\").first().json.text } };\n"
+      },
+      "id": "read-front-car-license-plate-from-image-14",
+      "position": [
+        3080,
+        0
+      ]
+    },
+    {
+      "id": "read-front-car-license-plate-from-image-15",
+      "name": "FormResultPage",
+      "type": "n8n-nodes-base.form",
+      "position": [
+        3300,
+        0
+      ],
+      "parameters": {
+        "options": {
+          "formTitle": ""
+        },
+        "operation": "completion",
+        "completionTitle": "Extracted information",
+        "completionMessage": "={{ $json.text }}"
+      },
+      "typeVersion": 1
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "FromTrigger": {
+      "main": [
+        [
+          {
+            "node": "Settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Settings": {
+      "main": [
+        [
+          {
+            "node": "Choose vision mode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Choose vision mode": {
+      "main": [
+        [
+          {
+            "node": "Relay mode?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "FormResultPage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Image not uploaded": {
+      "main": [
+        [
+          {
+            "node": "Reserve image upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve image upload": {
+      "main": [
+        [
+          {
+            "node": "Restore image binary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore image binary": {
+      "main": [
+        [
+          {
+            "node": "Upload image artifact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload image artifact": {
+      "main": [
+        [
+          {
+            "node": "Verify image artifact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify image artifact": {
+      "main": [
+        [
+          {
+            "node": "Forward image file ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Forward image file ID": {
+      "main": [
+        [
+          {
+            "node": "Verify relay result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify relay result": {
+      "main": [
+        [
+          {
+            "node": "Confirm image processing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm image processing": {
+      "main": [
+        [
+          {
+            "node": "Show relay result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Show relay result": {
+      "main": [
+        [
+          {
+            "node": "FormResultPage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Relay mode?": {
+      "main": [
+        [
+          {
+            "node": "Image not uploaded",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter LLM": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
