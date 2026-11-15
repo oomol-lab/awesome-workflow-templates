@@ -1,0 +1,282 @@
+{
+  "name": "Summarize Today’s Meetings in Slack",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "summarize-todays-meetings-in-slack-0",
+      "name": "Send response back to slack channel",
+      "type": "n8n-nodes-base.slack",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "text": "={{ \"Gemini : \" + $(\"Calendar AI Agent\").first().json.output.removeMarkdown() }}",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_SLACK_CHANNEL_ID"
+        },
+        "otherOptions": {
+          "mrkdwn": true,
+          "includeLinkToWorkflow": false
+        }
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "id": "summarize-todays-meetings-in-slack-1",
+      "name": "Google Calendar - Get Events",
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "options": {
+          "timeMax": "={{ $fromAI('end_date') }}",
+          "timeMin": "={{ $fromAI('start_date') }}"
+        },
+        "calendar": {
+          "__rl": true,
+          "mode": "id",
+          "value": "primary"
+        },
+        "operation": "getAll",
+        "descriptionType": "manual",
+        "toolDescription": "Use this tool when you’re asked to retrieve events data."
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "summarize-todays-meetings-in-slack-2",
+      "name": "Calendar AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "text": "=summarize today's meetings.\nstartdate = {{ $now.format('yyyy-MM-dd 00:00:00') }}\nenddate = {{ $now.format('yyyy-MM-dd 23:59:59') }}",
+        "options": {
+          "systemMessage": "=You are a Google Calendar assistant.\nYour primary goal is to assist the user in managing their calendar effectively using Event Retrieval tool. \nAlways base your responses on the current date: \n{{ DateTime.local().toFormat('cccc d LLLL yyyy') }}.\nGeneral Guidelines:\nAlways mention all meetings attendees\nTool: Event Retrieval\nFormat the date range:\nstart_date: Start date and time in YYYY-MM-DD HH:mm:ss.\nend_date: End date and time in YYYY-MM-DD HH:mm:ss.\n"
+        },
+        "promptType": "define"
+      },
+      "typeVersion": 1.7
+    },
+    {
+      "id": "summarize-todays-meetings-in-slack-3",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        660,
+        0
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 9
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "summarize-todays-meetings-in-slack-4",
+      "name": "Google Gemini Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "position": [
+        880,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "modelName": "models/gemini-2.5-flash"
+      },
+      "typeVersion": 1
+    },
+    {
+      "name": "Digest not pending",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "rowNotExists",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ \"meeting-digest:\" + $now.toUTC().toFormat(\"yyyy-MM-dd\") }}"
+            }
+          ]
+        }
+      },
+      "id": "summarize-todays-meetings-in-slack-5",
+      "position": [
+        1100,
+        0
+      ]
+    },
+    {
+      "name": "Reserve Slack post",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "item_key": "={{ \"meeting-digest:\" + $now.toUTC().toFormat(\"yyyy-MM-dd\") }}",
+            "status": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "summarize-todays-meetings-in-slack-6",
+      "position": [
+        1320,
+        0
+      ]
+    },
+    {
+      "name": "Confirm Slack post",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $(\"Reserve Slack post\").first().json.id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "done"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "summarize-todays-meetings-in-slack-7",
+      "position": [
+        1540,
+        0
+      ]
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC"
+  },
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Calendar AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calendar AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Digest not pending",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Calendar AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Calendar - Get Events": {
+      "ai_tool": [
+        [
+          {
+            "node": "Calendar AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Digest not pending": {
+      "main": [
+        [
+          {
+            "node": "Reserve Slack post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve Slack post": {
+      "main": [
+        [
+          {
+            "node": "Send response back to slack channel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send response back to slack channel": {
+      "main": [
+        [
+          {
+            "node": "Confirm Slack post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

@@ -605,6 +605,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Review Form Appointment Requests with Google Calendar](workflows/review-form-appointment-requests-with-calendar/) - Qualify appointment requests, obtain a human decision and create a calendar meeting or send a rejection.
 - [Reply to Unread Meeting Requests with Availability](workflows/reply-to-unread-meeting-requests-with-availability/) - Identify appointment requests, check calendar availability and reply with suggested times.
 - [Create Calendar Appointments from a Webhook](workflows/create-calendar-appointments-from-webhook/) - Convert a requested date and create a one-hour Calendar appointment.
+- [Summarize Today’s Meetings in Slack](workflows/summarize-todays-meetings-in-slack/) - Summarize today’s calendar meetings and attendees in Slack.
 
 ## Content
 
