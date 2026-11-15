@@ -758,6 +758,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Archive n8n Workflows to Nextcloud](workflows/archive-n8n-workflows-to-nextcloud/) - Back up n8n workflows as JSON files in a Nextcloud folder.
 - [GitHub Issue MCP Tools](workflows/github-issue-mcp-tools/) - Expose latest issues, issue comments and comment creation as repository-scoped MCP tools.
 - [Back Up n8n Workflows by ID to GitLab](workflows/back-up-n8n-workflows-by-id-to-gitlab/) - Back up n8n workflows to GitLab by ID, writing only new or changed files.
+- [Review GitLab Merge Requests and Notify](workflows/review-gitlab-merge-requests-and-notify/) - Review GitLab merge request changes and send the findings to the merge request and team.
 
 ## Communication
 
