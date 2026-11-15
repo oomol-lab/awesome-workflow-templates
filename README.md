@@ -606,6 +606,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Reply to Unread Meeting Requests with Availability](workflows/reply-to-unread-meeting-requests-with-availability/) - Identify appointment requests, check calendar availability and reply with suggested times.
 - [Create Calendar Appointments from a Webhook](workflows/create-calendar-appointments-from-webhook/) - Convert a requested date and create a one-hour Calendar appointment.
 - [Summarize Today’s Meetings in Slack](workflows/summarize-todays-meetings-in-slack/) - Summarize today’s calendar meetings and attendees in Slack.
+- [Queue Regulated Browser Operations](workflows/queue-regulated-browser-operations/) - Queue a saved Komos browser operations task and review its run.
 
 ## Content
 

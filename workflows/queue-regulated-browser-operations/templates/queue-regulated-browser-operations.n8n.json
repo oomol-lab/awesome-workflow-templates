@@ -1,0 +1,393 @@
+{
+  "name": "Queue Regulated Browser Operations",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "queue-regulated-browser-operations-0",
+      "name": "When clicking 'Test workflow'",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "task-id",
+              "name": "task_id",
+              "value": "YOUR_KOMOS_TASK_ID",
+              "type": "string"
+            },
+            {
+              "id": "case-id",
+              "name": "case_id",
+              "value": "YOUR_CASE_ID",
+              "type": "string"
+            },
+            {
+              "id": "workflow-type",
+              "name": "workflow_type",
+              "value": "background_screening_portal_check",
+              "type": "string"
+            },
+            {
+              "id": "industry",
+              "name": "industry",
+              "value": "background_screening",
+              "type": "string"
+            },
+            {
+              "id": "applicant-name",
+              "name": "applicant_name",
+              "value": "YOUR_APPLICANT_NAME",
+              "type": "string"
+            },
+            {
+              "id": "portal-url",
+              "name": "portal_url",
+              "value": "https://YOUR_PORTAL_HOST/case",
+              "type": "string"
+            },
+            {
+              "id": "review-required",
+              "name": "review_required",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "request-id",
+              "name": "request_id",
+              "value": "YOUR_UNIQUE_REQUEST_ID",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "queue-regulated-browser-operations-1",
+      "name": "Build Regulated Ops Payload",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ \"https://api.komos.ai/public/v1/tasks/\" + encodeURIComponent($(\"Build Regulated Ops Payload\").first().json.task_id) + \"/runs\" }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {clientRequestId:$(\"Build Regulated Ops Payload\").first().json.request_id,inputs:{case_id:$(\"Build Regulated Ops Payload\").first().json.case_id,workflow_type:$(\"Build Regulated Ops Payload\").first().json.workflow_type,applicant_name:$(\"Build Regulated Ops Payload\").first().json.applicant_name,portal_url:$(\"Build Regulated Ops Payload\").first().json.portal_url,review_required:true},metadata:{source:\"n8n\",use_case:\"regulated_browser_operations\",industry:$(\"Build Regulated Ops Payload\").first().json.industry}} }}",
+        "options": {},
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth"
+      },
+      "id": "queue-regulated-browser-operations-2",
+      "name": "Queue Komos Task Run",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "status",
+              "name": "status",
+              "value": "queued",
+              "type": "string"
+            },
+            {
+              "id": "komos_response",
+              "name": "komos_response",
+              "value": "={{ $json }}",
+              "type": "object"
+            },
+            {
+              "id": "next-step",
+              "name": "next_step",
+              "value": "Review the Komos run history for browser actions, logs, and any human approval checkpoint.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "queue-regulated-browser-operations-3",
+      "name": "Format Queue Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        660,
+        0
+      ]
+    },
+    {
+      "name": "Validate task details",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "for (const k of [\n  \"task_id\",\n  \"request_id\",\n  \"case_id\",\n  \"workflow_type\",\n  \"industry\",\n  \"applicant_name\",\n  \"portal_url\",\n])\n  if (typeof $json[k] !== \"string\" || !$json[k].trim() || $json[k].startsWith(\"YOUR_\"))\n    throw Error(\"Configure task and case details\");\nreturn { json: $json };\n"
+      },
+      "id": "queue-regulated-browser-operations-4",
+      "position": [
+        880,
+        0
+      ]
+    },
+    {
+      "name": "Validate queued run",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if (typeof $json.id !== \"string\" || !$json.id)\n  throw Error(\"Unknown Komos result; inspect run history\");\nreturn { json: $json };\n"
+      },
+      "id": "queue-regulated-browser-operations-5",
+      "position": [
+        1100,
+        0
+      ]
+    },
+    {
+      "name": "Task not pending",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "rowNotExists",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ \"komos:\" + $(\"Build Regulated Ops Payload\").first().json.task_id + \":\" + $(\"Build Regulated Ops Payload\").first().json.request_id }}"
+            }
+          ]
+        }
+      },
+      "id": "queue-regulated-browser-operations-6",
+      "position": [
+        1320,
+        0
+      ]
+    },
+    {
+      "name": "Reserve task submission",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "item_key": "={{ \"komos:\" + $(\"Build Regulated Ops Payload\").first().json.task_id + \":\" + $(\"Build Regulated Ops Payload\").first().json.request_id }}",
+            "status": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "queue-regulated-browser-operations-7",
+      "position": [
+        1540,
+        0
+      ]
+    },
+    {
+      "name": "Confirm task submission",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $(\"Reserve task submission\").first().json.id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "done"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "queue-regulated-browser-operations-8",
+      "position": [
+        1760,
+        0
+      ]
+    },
+    {
+      "name": "Return queue result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return { json: $(\"Format Queue Response\").first().json };\n"
+      },
+      "id": "queue-regulated-browser-operations-9",
+      "position": [
+        1980,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "When clicking 'Test workflow'": {
+      "main": [
+        [
+          {
+            "node": "Build Regulated Ops Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Regulated Ops Payload": {
+      "main": [
+        [
+          {
+            "node": "Validate task details",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Queue Komos Task Run": {
+      "main": [
+        [
+          {
+            "node": "Validate queued run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate task details": {
+      "main": [
+        [
+          {
+            "node": "Task not pending",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Task not pending": {
+      "main": [
+        [
+          {
+            "node": "Reserve task submission",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve task submission": {
+      "main": [
+        [
+          {
+            "node": "Queue Komos Task Run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate queued run": {
+      "main": [
+        [
+          {
+            "node": "Format Queue Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Queue Response": {
+      "main": [
+        [
+          {
+            "node": "Confirm task submission",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm task submission": {
+      "main": [
+        [
+          {
+            "node": "Return queue result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true
+  },
+  "tags": [
+    {
+      "name": "Komos",
+      "id": "komos"
+    },
+    {
+      "name": "Regulated Ops",
+      "id": "regulated-ops"
+    },
+    {
+      "name": "Browser Automation",
+      "id": "browser-automation"
+    }
+  ],
+  "active": false,
+  "pinData": {}
+}
