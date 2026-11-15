@@ -1,0 +1,418 @@
+{
+  "nodes": [
+    {
+      "name": "Run image indexing",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "parameters": {},
+      "id": "index-detected-image-objects-0",
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "name": "Configure image",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "url",
+              "name": "imageUrl",
+              "type": "string",
+              "value": "https://YOUR_IMAGE_URL"
+            },
+            {
+              "id": "cloud",
+              "name": "cloudName",
+              "type": "string",
+              "value": "YOUR_CLOUD_NAME"
+            },
+            {
+              "id": "preset",
+              "name": "preset",
+              "type": "string",
+              "value": "YOUR_UNSIGNED_PRESET"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "index-detected-image-objects-1",
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "name": "No prior image write",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "rowNotExists",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'object-image:' + $('Configure image').first().json.imageUrl }}"
+            }
+          ]
+        }
+      },
+      "id": "index-detected-image-objects-2",
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "name": "Reserve image write",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "item_key": "={{ 'object-image:' + $('Configure image').first().json.imageUrl }}",
+            "status": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "index-detected-image-objects-3",
+      "position": [
+        660,
+        0
+      ]
+    },
+    {
+      "name": "Upload source image",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'https://api.cloudinary.com/v1_1/' + $('Configure image').first().json.cloudName + '/image/upload' }}",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "file",
+              "value": "={{ $('Configure image').first().json.imageUrl }}"
+            },
+            {
+              "name": "upload_preset",
+              "value": "={{ $('Configure image').first().json.preset }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "index-detected-image-objects-4",
+      "position": [
+        880,
+        0
+      ]
+    },
+    {
+      "name": "Fetch uploaded image",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "url": "={{ $json.secure_url }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "id": "index-detected-image-objects-5",
+      "position": [
+        1100,
+        0
+      ]
+    },
+    {
+      "name": "Detect objects",
+      "type": "n8n-nodes-base.awsRekognition",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "image",
+        "operation": "analyze",
+        "type": "detectLabels",
+        "binaryData": true,
+        "binaryPropertyName": "data",
+        "additionalFields": {
+          "minConfidence": 90
+        }
+      },
+      "id": "index-detected-image-objects-6",
+      "position": [
+        1320,
+        0
+      ]
+    },
+    {
+      "name": "Prepare cropped objects",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const asset = $(\"Upload source image\").first().json,\n  source = $(\"Configure image\").first().json.imageUrl,\n  labels = $input.first().json.Labels;\nif (!Array.isArray(labels) || !asset.secure_url || !asset.width || !asset.height)\n  throw Error(\"Invalid detection or asset\");\nconst rows = [];\nfor (const l of labels)\n  for (const v of l.Instances ?? []) {\n    const b = v.BoundingBox;\n    if (v.Confidence < 90 || !b) continue;\n    const x = Math.round(b.Left * asset.width),\n      y = Math.round(b.Top * asset.height),\n      width = Math.round(b.Width * asset.width),\n      height = Math.round(b.Height * asset.height);\n    if (\n      width < 1 ||\n      height < 1 ||\n      x < 0 ||\n      y < 0 ||\n      x + width > asset.width ||\n      y + height > asset.height\n    )\n      throw Error(\"Invalid crop\");\n    rows.push({\n      json: {\n        image_url: asset.secure_url.replace(\n          \"/upload/\",\n          `/upload/c_crop,x_${x},y_${y},w_${width},h_${height}/`,\n        ),\n        source_image_url: source,\n        label: l.Name,\n        metadata: JSON.stringify({ confidence: v.Confidence, box: b }),\n      },\n    });\n  }\nreturn rows.length ? rows : [{ json: { empty: true } }];\n"
+      },
+      "id": "index-detected-image-objects-7",
+      "position": [
+        1540,
+        0
+      ]
+    },
+    {
+      "name": "Has detected objects?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.empty !== true }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        }
+      },
+      "id": "index-detected-image-objects-8",
+      "position": [
+        1760,
+        0
+      ]
+    },
+    {
+      "name": "Create object document",
+      "type": "n8n-nodes-base.elasticsearch",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "document",
+        "operation": "create",
+        "dataToSend": "defineBelow",
+        "indexId": "YOUR_INDEX",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "image_url",
+              "fieldValue": "={{ $json.image_url }}"
+            },
+            {
+              "fieldId": "source_image_url",
+              "fieldValue": "={{ $json.source_image_url }}"
+            },
+            {
+              "fieldId": "label",
+              "fieldValue": "={{ $json.label }}"
+            },
+            {
+              "fieldId": "metadata",
+              "fieldValue": "={{ $json.metadata }}"
+            }
+          ]
+        },
+        "additionalFields": {},
+        "options": {}
+      },
+      "id": "index-detected-image-objects-9",
+      "position": [
+        1980,
+        0
+      ]
+    },
+    {
+      "name": "Confirm image indexing",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'object-image:' + $('Configure image').first().json.imageUrl }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "done"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "index-detected-image-objects-10",
+      "position": [
+        2200,
+        0
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Run image indexing": {
+      "main": [
+        [
+          {
+            "node": "Configure image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configure image": {
+      "main": [
+        [
+          {
+            "node": "No prior image write",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "No prior image write": {
+      "main": [
+        [
+          {
+            "node": "Reserve image write",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve image write": {
+      "main": [
+        [
+          {
+            "node": "Upload source image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload source image": {
+      "main": [
+        [
+          {
+            "node": "Fetch uploaded image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch uploaded image": {
+      "main": [
+        [
+          {
+            "node": "Detect objects",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Detect objects": {
+      "main": [
+        [
+          {
+            "node": "Prepare cropped objects",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare cropped objects": {
+      "main": [
+        [
+          {
+            "node": "Has detected objects?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create object document": {
+      "main": [
+        [
+          {
+            "node": "Confirm image indexing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has detected objects?": {
+      "main": [
+        [
+          {
+            "node": "Create object document",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Confirm image indexing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Index Detected Image Objects",
+  "active": false
+}
