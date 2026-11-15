@@ -1,0 +1,570 @@
+{
+  "name": "Summarize a Podcast with Wikipedia Research",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "summarize-podcast-with-wikipedia-research-0",
+      "name": "When clicking \"Execute Workflow\"",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "summarize-podcast-with-wikipedia-research-1",
+      "name": "Podcast Episode Transcript",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "jsCode": "return {\n  json: {\n    transcript: \"Replace this with your podcast transcript.\",\n    requestId: \"YOUR_UNIQUE_REQUEST_ID\",\n  },\n};\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "summarize-podcast-with-wikipedia-research-2",
+      "name": "Workflow Input to JSON Document",
+      "type": "@n8n/n8n-nodes-langchain.documentJsonInputLoader",
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "pointers": "/transcript"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "summarize-podcast-with-wikipedia-research-3",
+      "name": "Recursive Character Text Splitter",
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "position": [
+        660,
+        0
+      ],
+      "parameters": {
+        "chunkSize": 6000,
+        "chunkOverlap": 1000
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "summarize-podcast-with-wikipedia-research-4",
+      "name": "Topics",
+      "type": "n8n-nodes-base.itemLists",
+      "position": [
+        880,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "fieldToSplitOut": "topics"
+      },
+      "typeVersion": 3
+    },
+    {
+      "id": "summarize-podcast-with-wikipedia-research-5",
+      "name": "Summarize Transcript",
+      "type": "@n8n/n8n-nodes-langchain.chainSummarization",
+      "position": [
+        1100,
+        0
+      ],
+      "parameters": {
+        "type": "refine"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "summarize-podcast-with-wikipedia-research-6",
+      "name": "GPT 4 - Extract",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "position": [
+        1320,
+        0
+      ],
+      "parameters": {
+        "model": "gpt-5.4-mini",
+        "options": {}
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "summarize-podcast-with-wikipedia-research-7",
+      "name": "Wikipedia1",
+      "type": "@n8n/n8n-nodes-langchain.toolWikipedia",
+      "position": [
+        1540,
+        0
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "summarize-podcast-with-wikipedia-research-8",
+      "name": "Send Digest",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        1760,
+        0
+      ],
+      "parameters": {
+        "sendTo": "YOUR_RECIPIENT_EMAIL",
+        "message": "=<p>Greetings, here is your podcast digest.</p><h2>🎙 Episode Summary</h2>{{ $json.summary }}<h2>💡 Topics Discussed</h2>{{ $json.topics.join(\"\n\") }}<h2>❓ Questions to Ponder</h2>{{ $json.questions.join(\"\n\") }}",
+        "options": {},
+        "subject": "Podcast Digest",
+        "emailType": "html"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "summarize-podcast-with-wikipedia-research-9",
+      "name": "Format topic text & title",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1980,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const esc = (s) =>\n  String(s ?? \"\")\n    .replace(/&/g, \"&amp;\")\n    .replace(/</g, \"&lt;\")\n    .replace(/>/g, \"&gt;\")\n    .replace(/\"/g, \"&quot;\");\nconst input = $input.all(),\n  summary = $(\"Summarize Transcript\").first().json.response.output_text,\n  topics = input.map(\n    (item, i) =>\n      \"<h3>\" +\n      esc($(\"Topics\").itemMatching(i).json.topic) +\n      \"</h3><p>\" +\n      esc(item.json.output) +\n      \"</p>\",\n  ),\n  questions = $(\"Extract Topics & Questions\")\n    .first()\n    .json.questions.map((q) => \"<h3>\" + esc(q.question) + \"</h3><p>\" + esc(q.why) + \"</p>\");\nreturn { json: { summary: esc(summary), topics, questions } };\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "summarize-podcast-with-wikipedia-research-10",
+      "name": "Structured Output Parser",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "position": [
+        2200,
+        0
+      ],
+      "parameters": {
+        "jsonSchema": "{\n \"$schema\": \"http://json-schema.org/draft-07/schema#\",\n \"title\": \"Generated schema for Root\",\n \"type\": \"object\",\n \"properties\": {\n \"questions\": {\n \"type\": \"array\",\n \"items\": {\n \"type\": \"object\",\n \"properties\": {\n \"question\": {\n \"type\": \"string\"\n },\n \"why\": {\n \"type\": \"string\",\n \"description\": \"Explanation of why this question is relevant for the context\"\n }\n },\n \"required\": [\n \"question\",\n \"why\"\n ]\n }\n },\n \"topics\": {\n \"type\": \"array\",\n \"items\": {\n \"type\": \"object\",\n \"properties\": {\n \"topic\": {\n \"type\": \"string\"\n },\n \"why\": {\n \"type\": \"string\",\n \"description\": \"A few sentences explanation of why this topic is relevant for the context\"\n }\n },\n \"required\": [\n \"topic\",\n \"why\"\n ]\n }\n }\n },\n \"required\": [\n \"questions\",\n \"topics\"\n ]\n}"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "summarize-podcast-with-wikipedia-research-11",
+      "name": "Extract Topics & Questions",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "position": [
+        2420,
+        0
+      ],
+      "parameters": {
+        "prompt": "=Come up with a list of questions and further topics to explore that are relevant for the context. Make sure questions are relevant to the topics but not verbatim. Think hard about what the appropriate questions should be and how it relates to the summarization.\nPodcast Summary: {{ $json.response.output_text }}"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "summarize-podcast-with-wikipedia-research-12",
+      "name": "GPT3.5 - Research",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "position": [
+        2640,
+        0
+      ],
+      "parameters": {
+        "model": "gpt-5.4-mini",
+        "options": {}
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "summarize-podcast-with-wikipedia-research-13",
+      "name": "GPT3.5 - Summarize",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "position": [
+        2860,
+        0
+      ],
+      "parameters": {
+        "model": "gpt-5.4-mini",
+        "options": {}
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "summarize-podcast-with-wikipedia-research-14",
+      "name": "Research & Explain Topics",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        3080,
+        0
+      ],
+      "parameters": {
+        "text": "=Topic: {{ $json.topic }}\n\nContext: {{ $('Summarize Transcript').item.json.response.output_text }}\n",
+        "agent": "openAiFunctionsAgent"
+      },
+      "typeVersion": 1
+    },
+    {
+      "name": "No previous digest",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "rowNotExists",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ \"podcast-digest:\" + $(\"Podcast Episode Transcript\").first().json.requestId }}"
+            }
+          ]
+        }
+      },
+      "position": [
+        3300,
+        0
+      ],
+      "id": "summarize-podcast-with-wikipedia-research-15"
+    },
+    {
+      "name": "Reserve digest",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "item_key": "={{ \"podcast-digest:\" + $(\"Podcast Episode Transcript\").first().json.requestId }}",
+            "status": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "position": [
+        3520,
+        0
+      ],
+      "id": "summarize-podcast-with-wikipedia-research-16"
+    },
+    {
+      "name": "Restore digest",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const id = $(\"Podcast Episode Transcript\").first().json.requestId;\nif (!id || id.startsWith(\"YOUR_\")) throw Error(\"Provide a unique request ID\");\nreturn { json: $(\"Format topic text & title\").first().json };\n"
+      },
+      "position": [
+        3740,
+        0
+      ],
+      "id": "summarize-podcast-with-wikipedia-research-17"
+    },
+    {
+      "name": "Verify email receipt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if (!$json.id) throw Error(\"Unknown email outcome\");\nreturn { json: $json };\n"
+      },
+      "position": [
+        3960,
+        0
+      ],
+      "id": "summarize-podcast-with-wikipedia-research-18"
+    },
+    {
+      "name": "Confirm digest",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ \"podcast-digest:\" + $(\"Podcast Episode Transcript\").first().json.requestId }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "done"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "position": [
+        4180,
+        0
+      ],
+      "id": "summarize-podcast-with-wikipedia-research-19"
+    },
+    {
+      "name": "Validate digest request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const id = $(\"Podcast Episode Transcript\").first().json.requestId;\nif (!id || id.startsWith(\"YOUR_\")) throw Error(\"Provide a unique request ID\");\nreturn { json: $json };\n"
+      },
+      "position": [
+        4400,
+        0
+      ],
+      "id": "summarize-podcast-with-wikipedia-research-20"
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Topics": {
+      "main": [
+        [
+          {
+            "node": "Research & Explain Topics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wikipedia1": {
+      "ai_tool": [
+        [
+          {
+            "node": "Research & Explain Topics",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GPT 4 - Extract": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Extract Topics & Questions",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GPT3.5 - Research": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Research & Explain Topics",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GPT3.5 - Summarize": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Summarize Transcript",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Summarize Transcript": {
+      "main": [
+        [
+          {
+            "node": "Extract Topics & Questions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Extract Topics & Questions",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format topic text & title": {
+      "main": [
+        [
+          {
+            "node": "Validate digest request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Research & Explain Topics": {
+      "main": [
+        [
+          {
+            "node": "Format topic text & title",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Topics & Questions": {
+      "main": [
+        [
+          {
+            "node": "Topics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Podcast Episode Transcript": {
+      "main": [
+        [
+          {
+            "node": "Summarize Transcript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Workflow Input to JSON Document": {
+      "ai_document": [
+        [
+          {
+            "node": "Summarize Transcript",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking \"Execute Workflow\"": {
+      "main": [
+        [
+          {
+            "node": "Podcast Episode Transcript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recursive Character Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Workflow Input to JSON Document",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate digest request": {
+      "main": [
+        [
+          {
+            "node": "No previous digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "No previous digest": {
+      "main": [
+        [
+          {
+            "node": "Reserve digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve digest": {
+      "main": [
+        [
+          {
+            "node": "Restore digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore digest": {
+      "main": [
+        [
+          {
+            "node": "Send Digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Digest": {
+      "main": [
+        [
+          {
+            "node": "Verify email receipt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify email receipt": {
+      "main": [
+        [
+          {
+            "node": "Confirm digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

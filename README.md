@@ -389,6 +389,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Learn with Hacker News Recommendations](workflows/learn-with-hacker-news-recommendations/) - Find learning resources in Ask HN comments and email a categorized summary.
 - [Summarize Colt News in NocoDB](workflows/summarize-colt-news-in-nocodb/) - Summarize recent Colt news and save summaries and keywords to NocoDB.
 - [Extract Source-Backed Company Metadata](workflows/extract-source-backed-company-metadata/) - Extract website metadata candidates for one company domain with provenance.
+- [Summarize a Podcast with Wikipedia Research](workflows/summarize-podcast-with-wikipedia-research/) - Summarize a transcript, research its topics using Wikipedia and email a digest.
 
 ## Productivity
 
