@@ -633,6 +633,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Record Recall Transcript Notes](workflows/record-recall-transcript-notes/) - Save verified live transcript segments and create meeting notes when a keyword is spoken.
 - [Fill Airtable Fields from PDF Prompts](workflows/fill-airtable-fields-from-pdf-prompts/) - Use Airtable field descriptions as prompts to extract values from attached PDF files.
 - [Capture Job Applications](workflows/capture-job-applications/) - Receive application details and save a CV link for human review.
+- [Archive Threads Posts to Notion](workflows/archive-threads-posts-to-notion/) - Archive recent Threads posts and your replies as Notion pages.
 
 ## Content
 

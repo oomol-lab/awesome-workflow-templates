@@ -1,0 +1,654 @@
+{
+  "nodes": [
+    {
+      "id": "threads-archive-0",
+      "name": "Get Posts Schedule",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {}
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "name": "Window",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return [{ json: { since: new Date(Date.now() - 86400000).toISOString().slice(0, 10) } }];\n"
+      },
+      "id": "threads-archive-1",
+      "position": [
+        240,
+        0
+      ]
+    },
+    {
+      "id": "threads-archive-2",
+      "name": "Get Post",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        480,
+        0
+      ],
+      "parameters": {
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "url": "={{ 'https://graph.threads.net/v1.0/YOUR_THREADS_USER_ID/threads?fields=id,media_type,permalink,timestamp&limit=100&since='+encodeURIComponent($json.since) }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "pagination": {
+            "pagination": {
+              "paginationMode": "responseContainsNextURL",
+              "nextURL": "={{ 'https://graph.threads.net/v1.0/YOUR_THREADS_USER_ID/threads?fields=id,media_type,permalink,timestamp&limit=100&since='+encodeURIComponent($('Window').first().json.since)+($pageCount ? '&after='+encodeURIComponent($response.body.paging.cursors.after) : '') }}",
+              "paginationCompleteWhen": "other",
+              "completeExpression": "={{ !$response?.body?.paging?.next }}",
+              "limitPagesFetched": false
+            }
+          }
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "name": "Unpack post pages",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const out = [];\nfor (const item of $input.all()) {\n  if (!Array.isArray(item.json.data)) throw Error(\"Invalid post page\");\n  for (const post of item.json.data) {\n    if (!/^\\d+$/.test(String(post.id))) throw Error(\"Invalid post ID\");\n    out.push({ json: post, pairedItem: { item: 0 } });\n  }\n}\nreturn out;\n"
+      },
+      "id": "threads-archive-3",
+      "position": [
+        720,
+        0
+      ]
+    },
+    {
+      "id": "threads-archive-4",
+      "name": "Loop Over Items",
+      "type": "n8n-nodes-base.splitInBatches",
+      "position": [
+        960,
+        0
+      ],
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "typeVersion": 3
+    },
+    {
+      "id": "threads-archive-5",
+      "name": "Threads / Root",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        1200,
+        0
+      ],
+      "parameters": {
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "url": "={{ 'https://graph.threads.net/v1.0/'+$json.id+'?fields=id,media_type,media_url,children{media_url},permalink,username,text,timestamp' }}",
+        "options": {}
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "threads-archive-6",
+      "name": "Threads / Comments",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        1440,
+        0
+      ],
+      "parameters": {
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "url": "={{ 'https://graph.threads.net/v1.0/'+$json.id+'/conversation?fields=id,text,username,timestamp,media_type,media_url,children{media_url}&limit=100&reverse=false' }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "pagination": {
+            "pagination": {
+              "paginationMode": "responseContainsNextURL",
+              "nextURL": "={{ 'https://graph.threads.net/v1.0/'+$('Threads / Root').item.json.id+'/conversation?fields=id,text,username,timestamp,media_type,media_url,children{media_url}&limit=100&reverse=false'+($pageCount ? '&after='+encodeURIComponent($response.body.paging.cursors.after) : '') }}",
+              "paginationCompleteWhen": "other",
+              "completeExpression": "={{ !$response?.body?.paging?.next }}",
+              "limitPagesFetched": false
+            }
+          }
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "name": "Combine post and replies",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const root = $(\"Threads / Root\").item.json;\nconst replies = [];\nfor (const item of $input.all()) {\n  if (!Array.isArray(item.json.data)) throw Error(\"Invalid reply page\");\n  replies.push(...item.json.data.filter((x) => x.username === \"YOUR_THREADS_USERNAME\"));\n}\nconst children = [];\nfor (const p of [root, ...replies]) {\n  if (p.text)\n    for (let i = 0; i < p.text.length; i += 1900)\n      children.push({\n        object: \"block\",\n        type: \"paragraph\",\n        paragraph: { rich_text: [{ type: \"text\", text: { content: p.text.slice(i, i + 1900) } }] },\n      });\n  const urls =\n    p.children?.data?.map((x) => x.media_url).filter(Boolean) ?? (p.media_url ? [p.media_url] : []);\n  for (const u of urls) {\n    if (!/^https:\\/\\//.test(u)) throw Error(\"Invalid media URL\");\n    children.push({ object: \"block\", type: \"embed\", embed: { url: u } });\n  }\n}\nif (children.length > 100) throw Error(\"Post exceeds one request\");\nif (!root.id || !root.permalink || !root.timestamp) throw Error(\"Missing identity\");\nreturn [{ json: { ...root, children }, pairedItem: { item: 0 } }];\n"
+      },
+      "id": "threads-archive-7",
+      "position": [
+        1680,
+        0
+      ]
+    },
+    {
+      "id": "threads-archive-8",
+      "name": "Threads ID",
+      "type": "n8n-nodes-base.notion",
+      "position": [
+        1920,
+        0
+      ],
+      "parameters": {
+        "simple": false,
+        "options": {},
+        "resource": "databasePage",
+        "operation": "getAll",
+        "returnAll": true,
+        "databaseId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "YOUR_NOTION_DATABASE_ID",
+          "cachedResultName": ""
+        }
+      },
+      "typeVersion": 2.2,
+      "alwaysOutputData": true
+    },
+    {
+      "name": "Match existing post",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const p = $(\"Combine post and replies\").item.json;\nconst matches = $input\n  .all()\n  .filter(\n    (x) =>\n      (x.json.properties?.[\"Threads ID\"]?.rich_text ?? [])\n        .map((t) => t.plain_text ?? t.text?.content ?? \"\")\n        .join(\"\") === String(p.id),\n  );\nif (matches.length > 1) throw Error(\"Duplicate Notion pages\");\nreturn [{ json: { exists: matches.length === 1 }, pairedItem: { item: 0 } }];\n"
+      },
+      "id": "threads-archive-9",
+      "position": [
+        2160,
+        0
+      ]
+    },
+    {
+      "name": "Already archived?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.exists }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "threads-archive-10",
+      "position": [
+        2400,
+        0
+      ]
+    },
+    {
+      "name": "Read archive checkpoint",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'threads-archive:' + $('Combine post and replies').item.json.id }}"
+            }
+          ]
+        },
+        "operation": "get"
+      },
+      "alwaysOutputData": true,
+      "id": "threads-archive-11",
+      "position": [
+        2640,
+        0
+      ]
+    },
+    {
+      "name": "Check pending archive",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const rows = $input.all();\nif (rows.length !== 1) throw Error(\"Duplicate checkpoint\");\nif (rows[0].json.status === \"pending\") throw Error(\"Inspect pending archive\");\nreturn [{ json: { done: rows[0].json.status === \"done\" }, pairedItem: { item: 0 } }];\n"
+      },
+      "id": "threads-archive-12",
+      "position": [
+        2880,
+        0
+      ]
+    },
+    {
+      "name": "Previously confirmed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.done }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "threads-archive-13",
+      "position": [
+        3120,
+        0
+      ]
+    },
+    {
+      "name": "Reserve archive",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "item_key": "={{ 'threads-archive:' + $('Combine post and replies').item.json.id }}",
+            "status": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "threads-archive-14",
+      "position": [
+        3360,
+        0
+      ]
+    },
+    {
+      "name": "Prepare Notion page",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const p = $(\"Combine post and replies\").item.json,\n  id = String(p.id);\nreturn {\n  json: {\n    parent: { type: \"data_source_id\", data_source_id: \"YOUR_NOTION_DATA_SOURCE_ID\" },\n    properties: {\n      Name: { title: [{ text: { content: p.permalink } }] },\n      \"Threads ID\": { rich_text: [{ text: { content: id } }] },\n      \"Post Date\": { date: { start: p.timestamp } },\n      Source: { multi_select: [{ name: \"Threads\" }] },\n      \"Import Check\": { checkbox: false },\n      Username: { rich_text: [{ text: { content: p.username ?? \"\" } }] },\n    },\n    children: p.children,\n  },\n  pairedItem: { item: $itemIndex },\n};\n"
+      },
+      "id": "threads-archive-15",
+      "position": [
+        3600,
+        0
+      ]
+    },
+    {
+      "name": "Create Notion archive",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.notion.com/v1/pages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Notion-Version",
+              "value": "2025-09-03"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "threads-archive-16",
+      "position": [
+        3840,
+        0
+      ]
+    },
+    {
+      "name": "Verify archive creation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if (!/^[-a-f0-9]{32,36}$/i.test($json.id ?? \"\")) throw Error(\"Unknown Notion creation\");\nreturn { json: $json, pairedItem: { item: $itemIndex } };\n"
+      },
+      "id": "threads-archive-17",
+      "position": [
+        4080,
+        0
+      ]
+    },
+    {
+      "name": "Confirm archive",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'threads-archive:' + $('Combine post and replies').item.json.id }}"
+            }
+          ]
+        },
+        "operation": "update",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "done"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "threads-archive-18",
+      "position": [
+        4320,
+        0
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Get Posts Schedule": {
+      "main": [
+        [
+          {
+            "node": "Window",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Window": {
+      "main": [
+        [
+          {
+            "node": "Get Post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Post": {
+      "main": [
+        [
+          {
+            "node": "Unpack post pages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Unpack post pages": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Threads / Root": {
+      "main": [
+        [
+          {
+            "node": "Threads / Comments",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Threads / Comments": {
+      "main": [
+        [
+          {
+            "node": "Combine post and replies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combine post and replies": {
+      "main": [
+        [
+          {
+            "node": "Read archive checkpoint",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read archive checkpoint": {
+      "main": [
+        [
+          {
+            "node": "Check pending archive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check pending archive": {
+      "main": [
+        [
+          {
+            "node": "Previously confirmed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Threads ID": {
+      "main": [
+        [
+          {
+            "node": "Match existing post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Match existing post": {
+      "main": [
+        [
+          {
+            "node": "Already archived?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve archive": {
+      "main": [
+        [
+          {
+            "node": "Prepare Notion page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Notion page": {
+      "main": [
+        [
+          {
+            "node": "Create Notion archive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Notion archive": {
+      "main": [
+        [
+          {
+            "node": "Verify archive creation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify archive creation": {
+      "main": [
+        [
+          {
+            "node": "Confirm archive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm archive": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Threads / Root",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Already archived?": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reserve archive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Previously confirmed?": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Threads ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Archive Threads Posts to Notion",
+  "active": false
+}
