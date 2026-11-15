@@ -142,6 +142,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Enrich Kit Subscribers in HubSpot](workflows/enrich-kit-subscribers-in-hubspot/) - Enrich Kit subscribers and their companies in HubSpot.
 - [Score and Route Demo Leads](workflows/score-and-route-demo-leads/) - Score inbound demo leads, record their context, and route follow-up alerts.
 - [Send Churn Risk Win-Back Offers](workflows/send-churn-risk-winback-offers/) - Generate Turkish win-back offers for high-risk customers and record confirmed emails.
+- [Route Client Feedback and Log HubSpot Meeting](workflows/route-client-feedback-and-log-hubspot-meeting/) - Summarize client feedback, log it against a HubSpot contact and email the relevant department.
 
 ## Operations
 
