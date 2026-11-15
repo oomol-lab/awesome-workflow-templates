@@ -1010,6 +1010,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Review Resumes for an Automation Expert](workflows/review-resumes-for-automation-expert/) - Collect PDF resumes, summarize candidate information, and record a role-fit assessment for human review.
 - [Review CV for a Full-Stack Role](workflows/review-cv-for-full-stack-role/) - Collect PDF resumes, summarize candidate information, and record a role-fit assessment for human review.
 - [Review Software Engineer CV and Notify](workflows/review-software-engineer-cv-and-notify/) - Collect a PDF application, prepare an advisory assessment for HR, and send a receipt to the applicant.
+- [Review Software Engineer Applications](workflows/review-software-engineer-applications/) - Collect a PDF application, prepare an advisory assessment for HR, and send a receipt to the applicant.
 
 ## Project Management
 
