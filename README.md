@@ -574,6 +574,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Index Notion Pages in Pinecone 768](workflows/index-notion-pages-in-pinecone-768/) - Embed new Notion page text and store the vectors and page metadata in Pinecone.
 - [Embed Notion Pages to Supabase Store](workflows/embed-notion-pages-to-supabase-store/) - Embed new Notion page text and store the vectors and page metadata in Supabase.
 - [Verify Waitlist Signups in Sheets](workflows/verify-waitlist-signups-in-sheets/) - Collect waitlist registrations, verify email and save intended use in Google Sheets.
+- [Capture Newsletter Signups and Surveys](workflows/capture-newsletter-signups-and-surveys/) - Record newsletter signups, notify Slack and save an optional survey to the same row.
 
 ## Content
 

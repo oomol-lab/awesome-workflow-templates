@@ -1,0 +1,1122 @@
+{
+  "nodes": [
+    {
+      "id": "capture-newsletter-signups-and-surveys-0",
+      "name": "Sign Up Form",
+      "type": "n8n-nodes-base.formTrigger",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "path": "capture-newsletter-signups-and-surveys",
+        "options": {
+          "buttonLabel": "Sign Up to Newsletter",
+          "appendAttribution": true,
+          "useWorkflowTimezone": true
+        },
+        "formTitle": "Sign Up for My Newsletter",
+        "formFields": {
+          "values": [
+            {
+              "fieldType": "email",
+              "fieldLabel": "Email",
+              "placeholder": "eg. jim@example.com",
+              "requiredField": true
+            }
+          ]
+        },
+        "responseMode": "lastNode",
+        "formDescription": "Sign up for the newsletter; the following survey is optional."
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "name": "Prepare signup",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const email = String($json.Email ?? \"\")\n  .trim()\n  .toLowerCase();\nif (!email) throw Error(\"Missing email\");\nreturn {\n  json: {\n    submissionId: $execution.id,\n    email,\n    date: String($json.submittedAt ?? new Date().toISOString()),\n    mode: \"direct\",\n  },\n};\n"
+      },
+      "id": "capture-newsletter-signups-and-surveys-1",
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "name": "Signup not processed",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "rowNotExists",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'newsletter:' + $('Prepare signup').first().json.submissionId }}"
+            }
+          ]
+        }
+      },
+      "id": "capture-newsletter-signups-and-surveys-2",
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "name": "Reserve signup",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "item_key": "={{ 'newsletter:' + $('Prepare signup').first().json.submissionId }}",
+            "status": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "capture-newsletter-signups-and-surveys-3",
+      "position": [
+        660,
+        0
+      ]
+    },
+    {
+      "name": "Relay signup?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $('Prepare signup').first().json.mode === 'relay' }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        }
+      },
+      "id": "capture-newsletter-signups-and-surveys-4",
+      "position": [
+        880,
+        0
+      ]
+    },
+    {
+      "name": "Forward signup",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "YOUR_OPEN_FLOW_WEBHOOK_URL",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {submissionId:$('Prepare signup').first().json.submissionId,email:$('Prepare signup').first().json.email,date:$('Prepare signup').first().json.date,stage:'signup',survey:{}} }}",
+        "options": {}
+      },
+      "id": "capture-newsletter-signups-and-surveys-5",
+      "position": [
+        1100,
+        0
+      ]
+    },
+    {
+      "name": "Confirm signup relay",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if ($json.status !== \"completed\") throw Error(\"Unknown relay result\");\nreturn { json: { ok: true } };\n"
+      },
+      "id": "capture-newsletter-signups-and-surveys-6",
+      "position": [
+        1320,
+        0
+      ]
+    },
+    {
+      "id": "capture-newsletter-signups-and-surveys-7",
+      "name": "Capture Email",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        1540,
+        0
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "execution_id": "={{ $('Prepare signup').first().json.submissionId }}",
+            "date": "={{ $('Prepare signup').first().json.date }}",
+            "email": "={{ $('Prepare signup').first().json.email }}"
+          },
+          "schema": [
+            {
+              "id": "execution_id",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "execution_id",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "date",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "date",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "email",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "email",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "first_name",
+              "type": "string",
+              "display": true,
+              "removed": true,
+              "required": false,
+              "displayName": "first_name",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "last_name",
+              "type": "string",
+              "display": true,
+              "removed": true,
+              "required": false,
+              "displayName": "last_name",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "job_level",
+              "type": "string",
+              "display": true,
+              "removed": true,
+              "required": false,
+              "displayName": "job_level",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "job_function",
+              "type": "string",
+              "display": true,
+              "removed": true,
+              "required": false,
+              "displayName": "job_function",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "country_region",
+              "type": "string",
+              "display": true,
+              "removed": true,
+              "required": false,
+              "displayName": "country_region",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "product_experience",
+              "type": "string",
+              "display": true,
+              "removed": true,
+              "required": false,
+              "displayName": "product_experience",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "product_goals",
+              "type": "string",
+              "display": true,
+              "removed": true,
+              "required": false,
+              "displayName": "product_goals",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "enrol_betatesters",
+              "type": "string",
+              "display": true,
+              "removed": true,
+              "required": false,
+              "displayName": "enrol_betatesters",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": []
+        },
+        "options": {},
+        "operation": "append",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Sheet1"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_SPREADSHEET_ID"
+        }
+      },
+      "typeVersion": 4.5
+    },
+    {
+      "id": "capture-newsletter-signups-and-surveys-8",
+      "name": "Notify New Signup!",
+      "type": "n8n-nodes-base.slack",
+      "position": [
+        1760,
+        0
+      ],
+      "parameters": {
+        "text": "={{ $('Prepare signup').first().json.email + ' just signed up to the newsletter!' }}",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_SLACK_CHANNEL_ID"
+        },
+        "messageType": "text",
+        "otherOptions": {}
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "name": "Confirm direct Slack",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if (!$json.ts && !$json.message?.ts) throw Error(\"Unknown Slack result\");\nreturn { json: { ok: true } };\n"
+      },
+      "id": "capture-newsletter-signups-and-surveys-9",
+      "position": [
+        1980,
+        0
+      ]
+    },
+    {
+      "name": "Mark signup ready",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Reserve signup').first().json.id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "awaiting_survey"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "capture-newsletter-signups-and-surveys-10",
+      "position": [
+        2200,
+        0
+      ]
+    },
+    {
+      "id": "capture-newsletter-signups-and-surveys-11",
+      "name": "About You",
+      "type": "n8n-nodes-base.form",
+      "position": [
+        2420,
+        0
+      ],
+      "parameters": {
+        "options": {
+          "formTitle": "Thanks For Signing Up!",
+          "buttonLabel": "Continue (1 of 3)",
+          "formDescription": "Before you go, we'd love to know more about you and why you're interested in our service. Complete the following questions for a nice treat at the end!\n\n* This survey is optional."
+        },
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "First Name",
+              "placeholder": "eg. Mark",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Last Name",
+              "placeholder": "eg. Zuckerberg",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Country/Region"
+            },
+            {
+              "fieldType": "dropdown",
+              "fieldLabel": "Job Level",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "CEO"
+                  },
+                  {
+                    "option": "VP"
+                  },
+                  {
+                    "option": "Director"
+                  },
+                  {
+                    "option": "Manager"
+                  },
+                  {
+                    "option": "Non-manager"
+                  },
+                  {
+                    "option": "Student or Intern"
+                  },
+                  {
+                    "option": "Other"
+                  }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldType": "dropdown",
+              "fieldLabel": "Job Function",
+              "multiselect": true,
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Accounting/Finance"
+                  },
+                  {
+                    "option": "Admin/Office"
+                  },
+                  {
+                    "option": "Customer Service"
+                  },
+                  {
+                    "option": "Design"
+                  },
+                  {
+                    "option": "Engineering/Software"
+                  },
+                  {
+                    "option": "HR/Operations"
+                  },
+                  {
+                    "option": "Leadership/Management"
+                  },
+                  {
+                    "option": "Legal"
+                  },
+                  {
+                    "option": "Other"
+                  }
+                ]
+              },
+              "requiredField": true
+            }
+          ]
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "capture-newsletter-signups-and-surveys-12",
+      "name": "Your Interests",
+      "type": "n8n-nodes-base.form",
+      "position": [
+        2640,
+        0
+      ],
+      "parameters": {
+        "options": {
+          "formTitle": "What Brings You Here?",
+          "buttonLabel": "Continue (2 of 3)",
+          "formDescription": "Thanks <name>!\nPlease tell us why you are interested in our product? It'll help us tailor your onboarding and communication journeys to better suit your needs."
+        },
+        "formFields": {
+          "values": [
+            {
+              "fieldType": "dropdown",
+              "fieldLabel": "How familiar are you with no-code automation?",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "I've Just started or exploring no-code automation tools"
+                  },
+                  {
+                    "option": "I've tried tools like Zapier to automate small tasks"
+                  },
+                  {
+                    "option": "I've built several no-code automations and workflows already"
+                  }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldType": "textarea",
+              "fieldLabel": "Describe briefly what you'd like to get out of our product?",
+              "placeholder": "Eg. short term pain points and long term solutions...",
+              "requiredField": true
+            }
+          ]
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "capture-newsletter-signups-and-surveys-13",
+      "name": "Join Beta Testers",
+      "type": "n8n-nodes-base.form",
+      "position": [
+        2860,
+        0
+      ],
+      "parameters": {
+        "options": {
+          "formTitle": "Join Our Beta Testers List",
+          "buttonLabel": "Finish (3 of 3)",
+          "formDescription": "Finally, we're always looking for Beta testers to try out our latest features and help us figure out what works. Beta testers join on a voluntary basis but we often send little tokens of appreciation such as increased usage limits and sometimes brand merchandise!"
+        },
+        "formFields": {
+          "values": [
+            {
+              "fieldType": "dropdown",
+              "fieldLabel": "Would you like to be considered for our beta testers list?",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Yes"
+                  },
+                  {
+                    "option": "No"
+                  },
+                  {
+                    "option": "Maybe"
+                  }
+                ]
+              },
+              "requiredField": true
+            }
+          ]
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "name": "Reserve survey update",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Reserve signup').first().json.id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "capture-newsletter-signups-and-surveys-14",
+      "position": [
+        3080,
+        0
+      ]
+    },
+    {
+      "name": "Relay survey?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $('Prepare signup').first().json.mode === 'relay' }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        }
+      },
+      "id": "capture-newsletter-signups-and-surveys-15",
+      "position": [
+        3300,
+        0
+      ]
+    },
+    {
+      "name": "Forward survey",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "YOUR_OPEN_FLOW_WEBHOOK_URL",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {submissionId:$('Prepare signup').first().json.submissionId,email:$('Prepare signup').first().json.email,date:$('Prepare signup').first().json.date,stage:'survey',survey:{first_name:$('About You').first().json['First Name'],last_name:$('About You').first().json['Last Name'],job_level:$('About You').first().json['Job Level'],job_function:$('About You').first().json['Job Function'].join(', '),country_region:$('About You').first().json['Country/Region']??'',product_experience:$('Your Interests').first().json['How familiar are you with no-code automation?'],product_goals:$('Your Interests').first().json[\"Describe briefly what you'd like to get out of our product?\"],enrol_betatesters:$('Join Beta Testers').first().json['Would you like to be considered for our beta testers list?']}} }}",
+        "options": {}
+      },
+      "id": "capture-newsletter-signups-and-surveys-16",
+      "position": [
+        3520,
+        0
+      ]
+    },
+    {
+      "name": "Confirm survey relay",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if ($json.status !== \"completed\") throw Error(\"Unknown relay result\");\nreturn { json: { ok: true } };\n"
+      },
+      "id": "capture-newsletter-signups-and-surveys-17",
+      "position": [
+        3740,
+        0
+      ]
+    },
+    {
+      "id": "capture-newsletter-signups-and-surveys-18",
+      "name": "Capture More Info",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        3960,
+        0
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "job_level": "={{ $('About You').first().json['Job Level'] }}",
+            "last_name": "={{ $('About You').first().json['Last Name'] }}",
+            "first_name": "={{ $('About You').first().json['First Name'] }}",
+            "execution_id": "={{ $('Prepare signup').first().json.submissionId }}",
+            "job_function": "={{ $('About You').first().json['Job Function'].join(', ') }}",
+            "product_goals": "={{ $('Your Interests').first().json['Describe briefly what you\\'d like to get out of our product?'] }}",
+            "country_region": "={{ $('About You').first().json['Country/Region'] }}",
+            "enrol_betatesters": "={{ $('Join Beta Testers').first().json['Would you like to be considered for our beta testers list?'] }}",
+            "product_experience": "={{ $('Your Interests').first().json['How familiar are you with no-code automation?'] }}"
+          },
+          "schema": [
+            {
+              "id": "execution_id",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "execution_id",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "date",
+              "type": "string",
+              "display": true,
+              "removed": true,
+              "required": false,
+              "displayName": "date",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "email",
+              "type": "string",
+              "display": true,
+              "removed": true,
+              "required": false,
+              "displayName": "email",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "first_name",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "first_name",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "last_name",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "last_name",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "job_level",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "job_level",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "job_function",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "job_function",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "country_region",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "country_region",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "product_experience",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "product_experience",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "product_goals",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "product_goals",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "enrol_betatesters",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "enrol_betatesters",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "type": "string",
+              "display": true,
+              "removed": true,
+              "readOnly": true,
+              "required": false,
+              "displayName": "row_number",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": [
+            "execution_id"
+          ]
+        },
+        "options": {},
+        "operation": "update",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Sheet1"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_SPREADSHEET_ID"
+        }
+      },
+      "typeVersion": 4.5
+    },
+    {
+      "name": "Confirm signup complete",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Reserve signup').first().json.id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "done"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "capture-newsletter-signups-and-surveys-19",
+      "position": [
+        4180,
+        0
+      ]
+    },
+    {
+      "id": "capture-newsletter-signups-and-surveys-20",
+      "name": "Show Completion Screen",
+      "type": "n8n-nodes-base.form",
+      "position": [
+        4400,
+        0
+      ],
+      "parameters": {
+        "options": {
+          "formTitle": "NewsLetter Signup Short Survey Complete"
+        },
+        "operation": "completion",
+        "completionTitle": "Thank you!",
+        "completionMessage": "Thank you for completing the survey."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Sign Up Form": {
+      "main": [
+        [
+          {
+            "node": "Prepare signup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare signup": {
+      "main": [
+        [
+          {
+            "node": "Signup not processed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Signup not processed": {
+      "main": [
+        [
+          {
+            "node": "Reserve signup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve signup": {
+      "main": [
+        [
+          {
+            "node": "Relay signup?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Forward signup": {
+      "main": [
+        [
+          {
+            "node": "Confirm signup relay",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm signup relay": {
+      "main": [
+        [
+          {
+            "node": "Mark signup ready",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Capture Email": {
+      "main": [
+        [
+          {
+            "node": "Notify New Signup!",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify New Signup!": {
+      "main": [
+        [
+          {
+            "node": "Confirm direct Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm direct Slack": {
+      "main": [
+        [
+          {
+            "node": "Mark signup ready",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark signup ready": {
+      "main": [
+        [
+          {
+            "node": "About You",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "About You": {
+      "main": [
+        [
+          {
+            "node": "Your Interests",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Your Interests": {
+      "main": [
+        [
+          {
+            "node": "Join Beta Testers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Join Beta Testers": {
+      "main": [
+        [
+          {
+            "node": "Reserve survey update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve survey update": {
+      "main": [
+        [
+          {
+            "node": "Relay survey?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Forward survey": {
+      "main": [
+        [
+          {
+            "node": "Confirm survey relay",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm survey relay": {
+      "main": [
+        [
+          {
+            "node": "Confirm signup complete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Capture More Info": {
+      "main": [
+        [
+          {
+            "node": "Confirm signup complete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm signup complete": {
+      "main": [
+        [
+          {
+            "node": "Show Completion Screen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Relay signup?": {
+      "main": [
+        [
+          {
+            "node": "Forward signup",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Capture Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Relay survey?": {
+      "main": [
+        [
+          {
+            "node": "Forward survey",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Capture More Info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Capture Newsletter Signups and Surveys",
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
