@@ -1,0 +1,170 @@
+{
+  "name": "Fetch Webpage as Markdown",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "fetch-webpage-markdown-0",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "name": "Parse request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function parse({ query }) {\n  const error = \"INVALID action_input. Supply ?url=ENCODED_URL&method=full or simplified\";\n  if (typeof query !== \"string\")\n    return { ok: false, error, url: \"\", method: \"full\", maxlimit: 70000 };\n  let data = {};\n  try {\n    for (const p of query.slice(query.indexOf(\"?\") + 1).split(\"&\")) {\n      const i = p.indexOf(\"=\");\n      if (i >= 0) data[decodeURIComponent(p.slice(0, i))] = decodeURIComponent(p.slice(i + 1));\n    }\n  } catch {\n    return { ok: false, error, url: \"\", method: \"full\", maxlimit: 70000 };\n  }\n  const url = data.url ?? \"\",\n    method = data.method ?? \"full\",\n    maxlimit = data.maxlimit === undefined ? 70000 : Number(data.maxlimit);\n  if (\n    !/^https?:\\/\\//i.test(url) ||\n    ![\"full\", \"simplified\"].includes(method) ||\n    !Number.isFinite(maxlimit) ||\n    maxlimit < 1\n  )\n    return { ok: false, error, url: \"\", method: \"full\", maxlimit: 70000 };\n  return { ok: true, error: \"\", url, method, maxlimit };\n}\n\nreturn { json: parse({ query: $json.query }) };\n"
+      },
+      "id": "fetch-webpage-markdown-1",
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "name": "Valid request?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "fetch-webpage-markdown-2",
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "name": "Fetch Firecrawl Markdown",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.firecrawl.dev/v2/scrape",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {url:$json.url,formats:[\"markdown\"],onlyMainContent:false,excludeTags:[\"script\",\"style\",\"noscript\",\"iframe\",\"object\",\"embed\",\"video\",\"audio\",\"svg\"]} }}",
+        "options": {}
+      },
+      "onError": "continueRegularOutput",
+      "id": "fetch-webpage-markdown-3",
+      "position": [
+        660,
+        0
+      ]
+    },
+    {
+      "name": "Format page",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function format({ body, method, maxlimit }) {\n  if (!body || body.success !== true || typeof body.data?.markdown !== \"string\")\n    return {\n      page_content: \"ERROR: \" + String(body?.error ?? \"Page content unavailable\"),\n      page_length: 0,\n    };\n  let text = body.data.markdown;\n  if (method === \"simplified\")\n    text = text\n      .replace(/!\\[([^\\]]*)\\]\\([^)]*\\)/g, \"![$1](NOIMG)\")\n      .replace(/(?<!!)\\[([^\\]]*)\\]\\([^)]*\\)/g, \"[$1](NOURL)\");\n  return {\n    page_content: text.length < maxlimit ? text : \"ERROR: PAGE CONTENT TOO LONG\",\n    page_length: text.length,\n  };\n}\n\nconst q = $(\"Parse request\").item.json;\nreturn { json: format({ body: $json, method: q.method, maxlimit: q.maxlimit }) };\n"
+      },
+      "id": "fetch-webpage-markdown-4",
+      "position": [
+        880,
+        0
+      ]
+    },
+    {
+      "name": "Return invalid request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return { json: { page_content: $json.error, page_length: 0 } };\n"
+      },
+      "id": "fetch-webpage-markdown-5",
+      "position": [
+        1100,
+        0
+      ]
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Parse request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse request": {
+      "main": [
+        [
+          {
+            "node": "Valid request?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Valid request?": {
+      "main": [
+        [
+          {
+            "node": "Fetch Firecrawl Markdown",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Return invalid request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Firecrawl Markdown": {
+      "main": [
+        [
+          {
+            "node": "Format page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
