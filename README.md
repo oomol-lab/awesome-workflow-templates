@@ -990,6 +990,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Route Matching Gmail PDFs to Drive](workflows/route-matching-gmail-pdfs-to-drive/) - Classify PDF attachments from Gmail by their content and upload matching files to Google Drive.
 - [Upload Multiple Files to a Named Drive Folder](workflows/upload-multiple-files-to-named-drive-folder/) - Upload multiple form files to a named Google Drive folder, creating it when needed.
 - [Read Front Car License Plate from Image](workflows/read-front-car-license-plate-from-image/) - Extract the front-most vehicle license plate from an uploaded image.
+- [Extract Front Vehicle License Plate](workflows/extract-front-vehicle-license-plate/) - Extract the front-most vehicle license plate from an uploaded image.
 
 ## Entertainment
 
