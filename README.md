@@ -812,6 +812,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Classify Customer Feedback to Google Sheets](workflows/classify-customer-feedback-to-google-sheets/) - Classify customer feedback sentiment and save the feedback with the result in Google Sheets.
 - [Sync Zendesk Tickets to HubSpot](workflows/sync-zendesk-tickets-to-hubspot/) - Create or update HubSpot tickets from changed Zendesk tickets and link new tickets to their requester.
 - [Export Zammad Administration to XLSX](workflows/export-zammad-administration-to-xlsx/) - Export Zammad users, organizations, roles and groups to four Excel workbooks.
+- [Classify and Route eCommerce Contacts](workflows/classify-and-route-ecommerce-contacts/) - Classify contact messages, email the right department, and log each request.
 
 ## Finance
 
