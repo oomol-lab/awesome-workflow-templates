@@ -673,6 +673,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Analyze SerpBear Rankings to Baserow](workflows/analyze-serpbear-rankings-to-baserow/) - Analyze a domain’s SerpBear keyword rankings and save a report to Baserow.
 - [Save Weekly Analytics Insights to Baserow](workflows/save-weekly-analytics-insights-to-baserow/) - Compare weekly page engagement, search performance and country views with AI and save the insights to Baserow.
 - [Capture a PostHog Event from a Webhook](workflows/capture-posthog-event-from-webhook/) - Capture a named PostHog event when a webhook is requested.
+- [Compare Weekly GA4 SEO Insights in Baserow](workflows/compare-weekly-ga4-seo-insights-in-baserow/) - Compare weekly page engagement, search performance and country views with AI and save the insights to Baserow.
 
 ## Lifestyle
 
