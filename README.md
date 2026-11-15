@@ -1060,6 +1060,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Read Front Car License Plate from Image](workflows/read-front-car-license-plate-from-image/) - Extract the front-most vehicle license plate from an uploaded image.
 - [Extract Front Vehicle License Plate](workflows/extract-front-vehicle-license-plate/) - Extract the front-most vehicle license plate from an uploaded image.
 - [Check Drive Passport Photo Guidance](workflows/check-drive-passport-photo-guidance/) - Check Google Drive portraits against digital passport photo guidance and review the results.
+- [Search and Read Drive Files with MCP](workflows/search-and-read-drive-files-mcp/) - Search Drive files and read PDF, CSV, image or audio content through MCP tools.
 
 ## Entertainment
 
