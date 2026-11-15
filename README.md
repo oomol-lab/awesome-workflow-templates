@@ -607,6 +607,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Create Calendar Appointments from a Webhook](workflows/create-calendar-appointments-from-webhook/) - Convert a requested date and create a one-hour Calendar appointment.
 - [Summarize Today’s Meetings in Slack](workflows/summarize-todays-meetings-in-slack/) - Summarize today’s calendar meetings and attendees in Slack.
 - [Queue Regulated Browser Operations](workflows/queue-regulated-browser-operations/) - Queue a saved Komos browser operations task and review its run.
+- [Issue Verifiable Certificates](workflows/issue-verifiable-certificates/) - Issue verifiable certificates for a course and its recipients.
 
 ## Content
 

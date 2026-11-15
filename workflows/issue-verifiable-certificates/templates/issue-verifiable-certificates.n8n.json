@@ -1,0 +1,311 @@
+{
+  "name": "Issue Verifiable Certificates",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "issue-verifiable-certificates-0",
+      "name": "When clicking 'Execute workflow'"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://attestify.novadyne.ai/cert/issue",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {issuer:$(\"Enter certificate details\").first().json.issuer,course:$(\"Enter certificate details\").first().json.course,recipients:$(\"Enter certificate details\").first().json.recipients} }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        220,
+        0
+      ],
+      "id": "issue-verifiable-certificates-1",
+      "name": "Issue certificate (Attestify)"
+    },
+    {
+      "name": "Enter certificate details",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "issuer",
+              "name": "issuer",
+              "type": "string",
+              "value": "YOUR_ISSUER"
+            },
+            {
+              "id": "course",
+              "name": "course",
+              "type": "string",
+              "value": "YOUR_COURSE"
+            },
+            {
+              "id": "recipients",
+              "name": "recipients",
+              "type": "array",
+              "value": [
+                {
+                  "name": "YOUR_RECIPIENT_NAME",
+                  "email": "recipient@example.com"
+                }
+              ]
+            },
+            {
+              "id": "request",
+              "name": "request_id",
+              "type": "string",
+              "value": "YOUR_UNIQUE_REQUEST_ID"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "issue-verifiable-certificates-2",
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "name": "Validate certificate batch",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const x = $json;\nif (\n  !x.issuer ||\n  !x.course ||\n  !x.request_id ||\n  x.request_id.startsWith(\"YOUR_\") ||\n  !Array.isArray(x.recipients) ||\n  !x.recipients.length ||\n  x.recipients.some((r) => !r.name || r.name.startsWith(\"YOUR_\"))\n)\n  throw Error(\"Configure the certificate batch\");\nreturn { json: x };\n"
+      },
+      "id": "issue-verifiable-certificates-3",
+      "position": [
+        660,
+        0
+      ]
+    },
+    {
+      "name": "Batch not pending",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "rowNotExists",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ \"attestify:\" + $(\"Enter certificate details\").first().json.request_id }}"
+            }
+          ]
+        }
+      },
+      "id": "issue-verifiable-certificates-4",
+      "position": [
+        880,
+        0
+      ]
+    },
+    {
+      "name": "Reserve certificate issuance",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "item_key": "={{ \"attestify:\" + $(\"Enter certificate details\").first().json.request_id }}",
+            "status": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "issue-verifiable-certificates-5",
+      "position": [
+        1100,
+        0
+      ]
+    },
+    {
+      "name": "Validate issuance response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const rows = $input.all().map((x) => x.json);\nif (!rows.length || rows.some((x) => !x || typeof x !== \"object\" || !Object.keys(x).length))\n  throw Error(\"Unknown issuance result; inspect Attestify\");\nreturn [{ json: { rows } }];\n"
+      },
+      "id": "issue-verifiable-certificates-6",
+      "position": [
+        1320,
+        0
+      ]
+    },
+    {
+      "name": "Confirm issuance",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $(\"Reserve certificate issuance\").first().json.id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "done"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "issue-verifiable-certificates-7",
+      "position": [
+        1540,
+        0
+      ]
+    },
+    {
+      "name": "Return issued certificates",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return $(\"Validate issuance response\")\n  .first()\n  .json.rows.map((json) => ({ json }));\n"
+      },
+      "id": "issue-verifiable-certificates-8",
+      "position": [
+        1760,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "When clicking 'Execute workflow'": {
+      "main": [
+        [
+          {
+            "node": "Enter certificate details",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enter certificate details": {
+      "main": [
+        [
+          {
+            "node": "Validate certificate batch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate certificate batch": {
+      "main": [
+        [
+          {
+            "node": "Batch not pending",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Batch not pending": {
+      "main": [
+        [
+          {
+            "node": "Reserve certificate issuance",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve certificate issuance": {
+      "main": [
+        [
+          {
+            "node": "Issue certificate (Attestify)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Issue certificate (Attestify)": {
+      "main": [
+        [
+          {
+            "node": "Validate issuance response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate issuance response": {
+      "main": [
+        [
+          {
+            "node": "Confirm issuance",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm issuance": {
+      "main": [
+        [
+          {
+            "node": "Return issued certificates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}
