@@ -1,0 +1,1607 @@
+{
+  "name": "Create Lead Presentations from CSV",
+  "tags": [
+    {
+      "id": "fSDcaaN3w5sV5e3S",
+      "name": "Templates",
+      "createdAt": "2025-02-23T15:20:47.262Z",
+      "updatedAt": "2025-02-23T15:20:47.262Z"
+    },
+    {
+      "id": "iMiiPG3ObM1yILch",
+      "name": "SD - Sales",
+      "createdAt": "2025-02-23T15:27:45.789Z",
+      "updatedAt": "2025-02-23T15:28:28.561Z"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "create-lead-presentations-from-csv-0",
+      "name": "New Leads Arrived",
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "event": "fileCreated",
+        "options": {},
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "triggerOn": "specificFolder",
+        "folderToWatch": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_INPUT_FOLDER_ID"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "name": "Resume lead file",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "create-lead-presentations-from-csv-resume",
+        "authentication": "headerAuth",
+        "options": {}
+      },
+      "id": "create-lead-presentations-from-csv-1",
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "name": "Restore source file",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const r = $json.body || $json;\nif (!r.fileId) throw Error(\"Provide original CSV fileId\");\nreturn { json: { id: r.fileId, mimeType: \"text/csv\" } };\n"
+      },
+      "id": "create-lead-presentations-from-csv-2",
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "name": "One file at a time",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "parameters": {
+        "options": {}
+      },
+      "id": "create-lead-presentations-from-csv-3",
+      "position": [
+        660,
+        0
+      ]
+    },
+    {
+      "name": "CSV file?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.mimeType }}",
+              "rightValue": "text/csv",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "create-lead-presentations-from-csv-4",
+      "position": [
+        880,
+        0
+      ]
+    },
+    {
+      "id": "create-lead-presentations-from-csv-5",
+      "name": "Download by ID",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [
+        1100,
+        0
+      ],
+      "parameters": {
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.id }}"
+        },
+        "options": {},
+        "operation": "download"
+      },
+      "typeVersion": 3
+    },
+    {
+      "id": "create-lead-presentations-from-csv-6",
+      "name": "Extract Information from CSV file",
+      "type": "n8n-nodes-base.extractFromFile",
+      "position": [
+        1320,
+        0
+      ],
+      "parameters": {
+        "options": {
+          "encoding": "utf-8",
+          "delimiter": ",",
+          "headerRow": true
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "name": "Collect lead rows",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const leads = $input.all().map((x) => x.json);\nif (\n  !leads.length ||\n  leads.some((r) => !r[\"First Name\"] || !r[\"Full Name\"] || !r.Email || !r.Company)\n)\n  throw Error(\"CSV requires First Name, Full Name, Email and Company\");\nreturn [{ json: { fileId: $(\"One file at a time\").item.json.id, leads } }];\n"
+      },
+      "id": "create-lead-presentations-from-csv-7",
+      "position": [
+        1540,
+        0
+      ]
+    },
+    {
+      "name": "Use Open Flow?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "direct",
+              "rightValue": "relay",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "create-lead-presentations-from-csv-8",
+      "position": [
+        1760,
+        0
+      ]
+    },
+    {
+      "name": "Forward lead file",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "YOUR_OPEN_FLOW_WEBHOOK_URL",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $('Collect lead rows').item.json }}",
+        "options": {}
+      },
+      "id": "create-lead-presentations-from-csv-9",
+      "position": [
+        1980,
+        0
+      ]
+    },
+    {
+      "name": "Verify relay completion",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if ($json.status !== \"done\") throw Error(\"Lead file not completed\");\nreturn $input.item;\n"
+      },
+      "id": "create-lead-presentations-from-csv-10",
+      "position": [
+        2200,
+        0
+      ]
+    },
+    {
+      "name": "Load file state",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "alwaysOutputData": true,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'leads:'+$('Collect lead rows').item.json.fileId }}"
+            }
+          ]
+        },
+        "operation": "get",
+        "returnAll": true
+      },
+      "id": "create-lead-presentations-from-csv-11",
+      "position": [
+        2420,
+        0
+      ]
+    },
+    {
+      "name": "Choose lead step",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const rows = $input\n    .all()\n    .map((x) => x.json)\n    .filter((x) => x.item_key),\n  input = $(\"Collect lead rows\").item.json;\nif (rows.length > 1) throw Error(\"Duplicate file state\");\nif (!rows.length) return [{ json: { step: \"new\", payload: { ...input, index: 0 } } }];\nconst row = rows[0],\n  s = JSON.parse(row.payload);\nif (JSON.stringify({ fileId: s.fileId, leads: s.leads }) !== JSON.stringify(input))\n  throw Error(\"CSV changed\");\nif (row.status.startsWith(\"pending-\")) throw Error(\"Inspect pending write \" + row.status);\nif (\n  ![\"ready-move\", \"ready-fill\", \"ready-copy\", \"ready-replace\", \"ready-update\", \"done\"].includes(\n    row.status,\n  )\n)\n  throw Error(\"Invalid state\");\nreturn [{ json: { step: row.status, payload: s } }];\n"
+      },
+      "id": "create-lead-presentations-from-csv-12",
+      "position": [
+        2640,
+        0
+      ]
+    },
+    {
+      "name": "Route lead step",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.step }}",
+                    "rightValue": "new",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "new"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.step }}",
+                    "rightValue": "ready-move",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "ready-move"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.step }}",
+                    "rightValue": "ready-fill",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "ready-fill"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.step }}",
+                    "rightValue": "ready-copy",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "ready-copy"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.step }}",
+                    "rightValue": "ready-replace",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "ready-replace"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.step }}",
+                    "rightValue": "ready-update",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "ready-update"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.step }}",
+                    "rightValue": "done",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "done"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "create-lead-presentations-from-csv-13",
+      "position": [
+        2860,
+        0
+      ]
+    },
+    {
+      "name": "Reserve spreadsheet",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "item_key": "={{ 'leads:'+$('Collect lead rows').item.json.fileId }}",
+            "status": "pending-create",
+            "payload": "={{ JSON.stringify($('Choose lead step').item.json.payload) }}"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "create-lead-presentations-from-csv-14",
+      "position": [
+        3080,
+        0
+      ]
+    },
+    {
+      "id": "create-lead-presentations-from-csv-15",
+      "name": "Create new Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        3300,
+        0
+      ],
+      "parameters": {
+        "title": "={{ 'Leads_'+$('Choose lead step').item.json.payload.fileId }}",
+        "options": {},
+        "resource": "spreadsheet",
+        "sheetsUi": {
+          "sheetValues": [
+            {
+              "title": "sample_data"
+            }
+          ]
+        }
+      },
+      "typeVersion": 4.5
+    },
+    {
+      "name": "Verify spreadsheet",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if (!$json.spreadsheetId) throw Error(\"Unknown spreadsheet create\");\nreturn $input.item;\n"
+      },
+      "id": "create-lead-presentations-from-csv-16",
+      "position": [
+        3520,
+        0
+      ]
+    },
+    {
+      "name": "Confirm spreadsheet",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'leads:'+$('Collect lead rows').item.json.fileId }}"
+            }
+          ]
+        },
+        "operation": "update",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "ready-move",
+            "payload": "={{ JSON.stringify({...$('Choose lead step').item.json.payload,sheetId:$('Verify spreadsheet').item.json.spreadsheetId}) }}"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "create-lead-presentations-from-csv-17",
+      "position": [
+        3740,
+        0
+      ]
+    },
+    {
+      "name": "Reserve spreadsheet move",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'leads:'+$('Collect lead rows').item.json.fileId }}"
+            }
+          ]
+        },
+        "operation": "update",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "pending-move",
+            "payload": "={{ JSON.stringify($('Choose lead step').item.json.payload) }}"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "create-lead-presentations-from-csv-18",
+      "position": [
+        3960,
+        0
+      ]
+    },
+    {
+      "id": "create-lead-presentations-from-csv-19",
+      "name": "MoveToLeadListFolder",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [
+        4180,
+        0
+      ],
+      "parameters": {
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Choose lead step').item.json.payload.sheetId }}"
+        },
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_SHEET_FOLDER_ID"
+        },
+        "operation": "move"
+      },
+      "typeVersion": 3
+    },
+    {
+      "name": "Verify spreadsheet move",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if ($json.id !== $(\"Choose lead step\").item.json.payload.sheetId)\n  throw Error(\"Unknown spreadsheet move\");\nreturn $input.item;\n"
+      },
+      "id": "create-lead-presentations-from-csv-20",
+      "position": [
+        4400,
+        0
+      ]
+    },
+    {
+      "name": "Confirm spreadsheet move",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'leads:'+$('Collect lead rows').item.json.fileId }}"
+            }
+          ]
+        },
+        "operation": "update",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "ready-fill",
+            "payload": "={{ JSON.stringify($('Choose lead step').item.json.payload) }}"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "create-lead-presentations-from-csv-21",
+      "position": [
+        4620,
+        0
+      ]
+    },
+    {
+      "name": "Reserve rows",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'leads:'+$('Collect lead rows').item.json.fileId }}"
+            }
+          ]
+        },
+        "operation": "update",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "pending-fill",
+            "payload": "={{ JSON.stringify($('Choose lead step').item.json.payload) }}"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "create-lead-presentations-from-csv-22",
+      "position": [
+        4840,
+        0
+      ]
+    },
+    {
+      "name": "Write lead rows",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ 'https://sheets.googleapis.com/v4/spreadsheets/'+encodeURIComponent($('Choose lead step').item.json.payload.sheetId)+'/values/'+encodeURIComponent('A1:O'+($('Choose lead step').item.json.payload.leads.length+1))+'?valueInputOption=RAW' }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({majorDimension:'ROWS',values:[['First Name','Last Name','Full Name','Title','Email','Company','Contact Location','Employees','Phone','Industry','Country','State','City','Keywords'].concat('PresentationID'),...$('Choose lead step').item.json.payload.leads.map(r=>['First Name','Last Name','Full Name','Title','Email','Company','Contact Location','Employees','Phone','Industry','Country','State','City','Keywords'].map(k=>String(r[k]??'')).concat(''))]}) }}",
+        "options": {}
+      },
+      "id": "create-lead-presentations-from-csv-23",
+      "position": [
+        5060,
+        0
+      ]
+    },
+    {
+      "name": "Verify lead rows",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if ($json.spreadsheetId !== $(\"Choose lead step\").item.json.payload.sheetId)\n  throw Error(\"Unknown row write\");\nreturn $input.item;\n"
+      },
+      "id": "create-lead-presentations-from-csv-24",
+      "position": [
+        5280,
+        0
+      ]
+    },
+    {
+      "name": "Confirm rows",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'leads:'+$('Collect lead rows').item.json.fileId }}"
+            }
+          ]
+        },
+        "operation": "update",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "ready-copy",
+            "payload": "={{ JSON.stringify($('Choose lead step').item.json.payload) }}"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "create-lead-presentations-from-csv-25",
+      "position": [
+        5500,
+        0
+      ]
+    },
+    {
+      "name": "Reserve presentation",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'leads:'+$('Collect lead rows').item.json.fileId }}"
+            }
+          ]
+        },
+        "operation": "update",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "pending-copy",
+            "payload": "={{ JSON.stringify($('Choose lead step').item.json.payload) }}"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "create-lead-presentations-from-csv-26",
+      "position": [
+        5720,
+        0
+      ]
+    },
+    {
+      "id": "create-lead-presentations-from-csv-27",
+      "name": "Copy Presentation Template",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [
+        5940,
+        0
+      ],
+      "parameters": {
+        "name": "={{ $('Choose lead step').item.json.payload.leads[$('Choose lead step').item.json.payload.index].Company + ' X MYCOMPANYNAME' }}",
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_TEMPLATE_ID"
+        },
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "options": {},
+        "folderId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_PRESENTATION_FOLDER_ID"
+        },
+        "operation": "copy",
+        "sameFolder": false
+      },
+      "typeVersion": 3
+    },
+    {
+      "name": "Verify presentation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if (!$json.id) throw Error(\"Unknown presentation copy\");\nreturn $input.item;\n"
+      },
+      "id": "create-lead-presentations-from-csv-28",
+      "position": [
+        6160,
+        0
+      ]
+    },
+    {
+      "name": "Confirm presentation",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'leads:'+$('Collect lead rows').item.json.fileId }}"
+            }
+          ]
+        },
+        "operation": "update",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "ready-replace",
+            "payload": "={{ JSON.stringify({...$('Choose lead step').item.json.payload,presentationId:$('Verify presentation').item.json.id}) }}"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "create-lead-presentations-from-csv-29",
+      "position": [
+        6380,
+        0
+      ]
+    },
+    {
+      "name": "Reserve personalization",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'leads:'+$('Collect lead rows').item.json.fileId }}"
+            }
+          ]
+        },
+        "operation": "update",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "pending-replace",
+            "payload": "={{ JSON.stringify($('Choose lead step').item.json.payload) }}"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "create-lead-presentations-from-csv-30",
+      "position": [
+        6600,
+        0
+      ]
+    },
+    {
+      "id": "create-lead-presentations-from-csv-31",
+      "name": "Create Custom Presentation",
+      "type": "n8n-nodes-base.googleSlides",
+      "position": [
+        6820,
+        0
+      ],
+      "parameters": {
+        "textUi": {
+          "textValues": [
+            {
+              "text": "{COMPANYNAME}",
+              "replaceText": "={{ $('Choose lead step').item.json.payload.leads[$('Choose lead step').item.json.payload.index][\"Company\"] }}"
+            },
+            {
+              "text": "{Testdurchgestrichen}",
+              "replaceText": "={{ $('Choose lead step').item.json.payload.leads[$('Choose lead step').item.json.payload.index][\"Full Name\"] }}"
+            },
+            {
+              "text": "{nichtdurchgestrichen}",
+              "replaceText": "={{ $('Choose lead step').item.json.payload.leads[$('Choose lead step').item.json.payload.index][\"First Name\"] }}"
+            }
+          ]
+        },
+        "options": {},
+        "operation": "replaceText",
+        "presentationId": "={{ $('Choose lead step').item.json.payload.presentationId }}"
+      },
+      "typeVersion": 2
+    },
+    {
+      "name": "Verify personalization",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if ($json.presentationId !== $(\"Choose lead step\").item.json.payload.presentationId)\n  throw Error(\"Unknown personalization\");\nreturn $input.item;\n"
+      },
+      "id": "create-lead-presentations-from-csv-32",
+      "position": [
+        7040,
+        0
+      ]
+    },
+    {
+      "name": "Confirm personalization",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'leads:'+$('Collect lead rows').item.json.fileId }}"
+            }
+          ]
+        },
+        "operation": "update",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "ready-update",
+            "payload": "={{ JSON.stringify($('Choose lead step').item.json.payload) }}"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "create-lead-presentations-from-csv-33",
+      "position": [
+        7260,
+        0
+      ]
+    },
+    {
+      "name": "Reserve presentation ID",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'leads:'+$('Collect lead rows').item.json.fileId }}"
+            }
+          ]
+        },
+        "operation": "update",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "pending-update",
+            "payload": "={{ JSON.stringify($('Choose lead step').item.json.payload) }}"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "create-lead-presentations-from-csv-34",
+      "position": [
+        7480,
+        0
+      ]
+    },
+    {
+      "name": "Record presentation ID",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ 'https://sheets.googleapis.com/v4/spreadsheets/'+encodeURIComponent($('Choose lead step').item.json.payload.sheetId)+'/values/'+encodeURIComponent('O'+($('Choose lead step').item.json.payload.index+2))+'?valueInputOption=RAW' }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({majorDimension:'ROWS',values:[[$('Choose lead step').item.json.payload.presentationId]]}) }}",
+        "options": {}
+      },
+      "id": "create-lead-presentations-from-csv-35",
+      "position": [
+        7700,
+        0
+      ]
+    },
+    {
+      "name": "Verify presentation ID",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if ($json.spreadsheetId !== $(\"Choose lead step\").item.json.payload.sheetId)\n  throw Error(\"Unknown ID write\");\nreturn $input.item;\n"
+      },
+      "id": "create-lead-presentations-from-csv-36",
+      "position": [
+        7920,
+        0
+      ]
+    },
+    {
+      "name": "Confirm presentation ID",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'leads:'+$('Collect lead rows').item.json.fileId }}"
+            }
+          ]
+        },
+        "operation": "update",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "={{ $('Choose lead step').item.json.payload.index+1 >= $('Choose lead step').item.json.payload.leads.length ? 'done' : 'ready-copy' }}",
+            "payload": "={{ JSON.stringify({...$('Choose lead step').item.json.payload,index:$('Choose lead step').item.json.payload.index+1,presentationId:''}) }}"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "create-lead-presentations-from-csv-37",
+      "position": [
+        8140,
+        0
+      ]
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "New Leads Arrived": {
+      "main": [
+        [
+          {
+            "node": "One file at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resume lead file": {
+      "main": [
+        [
+          {
+            "node": "Restore source file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore source file": {
+      "main": [
+        [
+          {
+            "node": "One file at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download by ID": {
+      "main": [
+        [
+          {
+            "node": "Extract Information from CSV file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Information from CSV file": {
+      "main": [
+        [
+          {
+            "node": "Collect lead rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect lead rows": {
+      "main": [
+        [
+          {
+            "node": "Use Open Flow?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Forward lead file": {
+      "main": [
+        [
+          {
+            "node": "Verify relay completion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify relay completion": {
+      "main": [
+        [
+          {
+            "node": "One file at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load file state": {
+      "main": [
+        [
+          {
+            "node": "Choose lead step",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Choose lead step": {
+      "main": [
+        [
+          {
+            "node": "Route lead step",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve spreadsheet": {
+      "main": [
+        [
+          {
+            "node": "Create new Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create new Sheet": {
+      "main": [
+        [
+          {
+            "node": "Verify spreadsheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify spreadsheet": {
+      "main": [
+        [
+          {
+            "node": "Confirm spreadsheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm spreadsheet": {
+      "main": [
+        [
+          {
+            "node": "Load file state",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve spreadsheet move": {
+      "main": [
+        [
+          {
+            "node": "MoveToLeadListFolder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MoveToLeadListFolder": {
+      "main": [
+        [
+          {
+            "node": "Verify spreadsheet move",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify spreadsheet move": {
+      "main": [
+        [
+          {
+            "node": "Confirm spreadsheet move",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm spreadsheet move": {
+      "main": [
+        [
+          {
+            "node": "Load file state",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve rows": {
+      "main": [
+        [
+          {
+            "node": "Write lead rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write lead rows": {
+      "main": [
+        [
+          {
+            "node": "Verify lead rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify lead rows": {
+      "main": [
+        [
+          {
+            "node": "Confirm rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm rows": {
+      "main": [
+        [
+          {
+            "node": "Load file state",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve presentation": {
+      "main": [
+        [
+          {
+            "node": "Copy Presentation Template",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Copy Presentation Template": {
+      "main": [
+        [
+          {
+            "node": "Verify presentation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify presentation": {
+      "main": [
+        [
+          {
+            "node": "Confirm presentation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm presentation": {
+      "main": [
+        [
+          {
+            "node": "Load file state",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve personalization": {
+      "main": [
+        [
+          {
+            "node": "Create Custom Presentation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Custom Presentation": {
+      "main": [
+        [
+          {
+            "node": "Verify personalization",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify personalization": {
+      "main": [
+        [
+          {
+            "node": "Confirm personalization",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm personalization": {
+      "main": [
+        [
+          {
+            "node": "Load file state",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve presentation ID": {
+      "main": [
+        [
+          {
+            "node": "Record presentation ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record presentation ID": {
+      "main": [
+        [
+          {
+            "node": "Verify presentation ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify presentation ID": {
+      "main": [
+        [
+          {
+            "node": "Confirm presentation ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm presentation ID": {
+      "main": [
+        [
+          {
+            "node": "Load file state",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "One file at a time": {
+      "main": [
+        [],
+        [
+          {
+            "node": "CSV file?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CSV file?": {
+      "main": [
+        [
+          {
+            "node": "Download by ID",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "One file at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Use Open Flow?": {
+      "main": [
+        [
+          {
+            "node": "Forward lead file",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Load file state",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route lead step": {
+      "main": [
+        [
+          {
+            "node": "Reserve spreadsheet",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reserve spreadsheet move",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reserve rows",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reserve presentation",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reserve personalization",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reserve presentation ID",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "One file at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
