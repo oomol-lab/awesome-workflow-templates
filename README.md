@@ -617,6 +617,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Create and Enrich a Humantic Profile](workflows/create-and-enrich-humantic-profile/) - Create a profile, enrich it with a resume, and retrieve its hiring persona for review.
 - [Summarize New Google Docs to a Sheet](workflows/summarize-new-google-docs-to-sheet/) - Summarize each new Google Doc and append its last modifier and summary to a sheet.
 - [Extract Baserow PDF Fields with Dynamic Prompts](workflows/extract-baserow-pdf-fields-with-dynamic-prompts/) - Extract Baserow field values from row PDFs using field descriptions as prompts.
+- [Extract Airtable PDF Fields with Dynamic Prompts](workflows/extract-airtable-pdf-fields-with-dynamic-prompts/) - Extract Airtable field values from record PDFs using field descriptions as prompts.
 
 ## Content
 
