@@ -825,6 +825,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 ## Content Creation
 
 - [Vancine Seedance Video](workflows/vancine-seedance-video/) - Submit one Seedance text-to-video task to Vancine, poll its status with a bounded wait loop and return the completed video URL.
+- [Generate YouTube Video Chapters](workflows/generate-youtube-video-chapters/) - Generate chapter timestamps from a video caption track and append them to its description.
 
 ## Recruiting
 
