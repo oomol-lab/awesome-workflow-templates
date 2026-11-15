@@ -1,0 +1,357 @@
+{
+  "nodes": [
+    {
+      "id": "weekly-notion-task-deadline-digest-0",
+      "name": "When clicking ‘Test workflow’",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "weekly-notion-task-deadline-digest-1",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "weeksInterval": 1,
+              "triggerAtDay": [
+                1
+              ],
+              "triggerAtHour": 9,
+              "triggerAtMinute": 0
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "name": "Configure digest",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return [\n  {\n    json: {\n      sourceId: \"YOUR_NOTION_DATA_SOURCE_ID\",\n      boardUrl: \"https://YOUR_NOTION_BOARD_URL\",\n      to: \"YOUR_EMAIL\",\n      pushoverUser: \"YOUR_PUSHOVER_USER_KEY\",\n    },\n  },\n];\n"
+      },
+      "id": "weekly-notion-task-deadline-digest-2",
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "name": "Read all Notion tasks",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'https://api.notion.com/v1/data_sources/'+$('Configure digest').first().json.sourceId+'/query' }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Notion-Version",
+              "value": "2026-03-11"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ {page_size:100} }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          },
+          "pagination": {
+            "pagination": {
+              "paginationMode": "updateAParameterInEachRequest",
+              "parameters": {
+                "parameters": [
+                  {
+                    "type": "body",
+                    "name": "start_cursor",
+                    "value": "={{ $response?.body?.next_cursor }}"
+                  }
+                ]
+              },
+              "paginationCompleteWhen": "other",
+              "completeExpression": "={{ !$response.body.has_more }}",
+              "limitPagesFetched": false
+            }
+          }
+        }
+      },
+      "id": "weekly-notion-task-deadline-digest-3",
+      "position": [
+        660,
+        0
+      ]
+    },
+    {
+      "name": "Group tasks by deadline",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function renderTasks(rows, boardUrl, now) {\n  const esc = (x) =>\n    String(x ?? \"\").replace(\n      /[&<>\"']/g,\n      (c) => ({ \"&\": \"&amp;\", \"<\": \"&lt;\", \">\": \"&gt;\", '\"': \"&quot;\", \"'\": \"&#39;\" })[c],\n    );\n  if (!/^https:\\/\\//.test(boardUrl)) throw Error(\"Configure HTTPS Notion board URL\");\n  const tasks = [];\n  for (const p of rows) {\n    const props = p.properties || {},\n      d = props.deadline?.date?.start;\n    if (!d) continue;\n    const time = Date.parse(d);\n    if (!Number.isFinite(time)) throw Error(\"Invalid deadline\");\n    const title =\n        Object.values(props)\n          .find((x) => x.type === \"title\")\n          ?.title?.map((x) => x.plain_text || \"\")\n          .join(\"\") || \"Untitled\",\n      field = (k) => {\n        const v = props[k];\n        return (\n          v?.select?.name ?? v?.status?.name ?? v?.multi_select?.map((x) => x.name).join(\", \") ?? \"\"\n        );\n      };\n    if (!/^https:\\/\\/[^\\s]+$/.test(p.url || \"\")) throw Error(\"Invalid task URL\");\n    tasks.push({\n      id: p.id,\n      title,\n      date: d,\n      time,\n      url: p.url,\n      priority: field(\"prio\"),\n      status: field(\"status\"),\n      tags: field(\"tags\"),\n    });\n  }\n  tasks.sort((a, b) => a.time - b.time);\n  const group = (label, items) =>\n    \"<h2>\" +\n    label +\n    \"</h2>\" +\n    items\n      .map(\n        (x) =>\n          '<div><h3><a href=\"' +\n          esc(x.url) +\n          '\">' +\n          esc(x.title) +\n          \"</a></h3><p>Deadline: \" +\n          esc(x.date) +\n          \"<br>Prio: \" +\n          esc(x.priority) +\n          \"<br>Status: \" +\n          esc(x.status) +\n          \"<br>Tags: \" +\n          esc(x.tags) +\n          \"</p></div>\",\n      )\n      .join(\"\");\n  return (\n    '<h1>Weekly Update about Notion Tasks</h1><p><a href=\"' +\n    esc(boardUrl) +\n    '\">To the Task Board in Notion</a></p>' +\n    group(\n      \"Tasks which are already overdue\",\n      tasks.filter((x) => x.time <= now),\n    ) +\n    group(\n      \"Tasks with an upcoming deadline\",\n      tasks.filter((x) => x.time > now),\n    )\n  );\n}\n\nconst rows = $input.all().flatMap((x) => x.json.body.results);\nreturn [\n  { json: { html: renderTasks(rows, $(\"Configure digest\").first().json.boardUrl, Date.now()) } },\n];\n"
+      },
+      "id": "weekly-notion-task-deadline-digest-4",
+      "position": [
+        880,
+        0
+      ]
+    },
+    {
+      "name": "Week not processed",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "rowNotExists",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'notion-week:' + $now.startOf('week').toISODate() }}"
+            }
+          ]
+        }
+      },
+      "id": "weekly-notion-task-deadline-digest-5",
+      "position": [
+        1100,
+        0
+      ]
+    },
+    {
+      "name": "Reserve weekly digest",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "item_key": "={{ 'notion-week:' + $now.startOf('week').toISODate() }}",
+            "status": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "weekly-notion-task-deadline-digest-6",
+      "position": [
+        1320,
+        0
+      ]
+    },
+    {
+      "id": "weekly-notion-task-deadline-digest-7",
+      "name": "Send Email",
+      "type": "n8n-nodes-base.emailSend",
+      "position": [
+        1540,
+        0
+      ],
+      "parameters": {
+        "html": "={{ $('Group tasks by deadline').first().json.html }}",
+        "options": {},
+        "subject": "Weekly Update about Notion Tasks",
+        "toEmail": "={{ $('Configure digest').first().json.to }}",
+        "fromEmail": "YOUR_SENDER_EMAIL"
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "id": "weekly-notion-task-deadline-digest-8",
+      "name": "Pushover",
+      "type": "n8n-nodes-base.pushover",
+      "position": [
+        1760,
+        0
+      ],
+      "parameters": {
+        "message": "You received a weekly update about your Notion Tasks. Check your mails!",
+        "userKey": "={{ $('Configure digest').first().json.pushoverUser }}",
+        "priority": 1,
+        "additionalFields": {}
+      },
+      "typeVersion": 1
+    },
+    {
+      "name": "Confirm weekly digest",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Reserve weekly digest').item.json.id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "done"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "weekly-notion-task-deadline-digest-9",
+      "position": [
+        1980,
+        0
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Test workflow’": {
+      "main": [
+        [
+          {
+            "node": "Configure digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Configure digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configure digest": {
+      "main": [
+        [
+          {
+            "node": "Read all Notion tasks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read all Notion tasks": {
+      "main": [
+        [
+          {
+            "node": "Group tasks by deadline",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Group tasks by deadline": {
+      "main": [
+        [
+          {
+            "node": "Week not processed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Week not processed": {
+      "main": [
+        [
+          {
+            "node": "Reserve weekly digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve weekly digest": {
+      "main": [
+        [
+          {
+            "node": "Send Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Email": {
+      "main": [
+        [
+          {
+            "node": "Pushover",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pushover": {
+      "main": [
+        [
+          {
+            "node": "Confirm weekly digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Weekly Notion Task Deadline Digest",
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC"
+  }
+}

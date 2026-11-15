@@ -562,6 +562,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Summarize Daily Calendar Meetings in Slack](workflows/summarize-daily-calendar-meetings-in-slack/) - Summarize today’s calendar meetings and attendees with AI, then post the summary in Slack.
 - [Append MySQL Books to Google Sheets Weekly](workflows/append-mysql-books-to-google-sheets-weekly/) - Read the books table from MySQL each week and append matching columns to Google Sheets.
 - [Check CSRD XHTML Reports by Email](workflows/check-csrd-xhtml-reports-by-email/) - Check selected XHTML report tags and draft an email reply with the findings.
+- [Weekly Notion Task Deadline Digest](workflows/weekly-notion-task-deadline-digest/) - Email overdue and upcoming Notion tasks and send a Pushover notification each week.
 
 ## Content
 
