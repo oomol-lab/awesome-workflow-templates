@@ -980,6 +980,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 
 - [Repair Structured State Data with AI](workflows/repair-structured-state-data-with-ai/) - Ask a model for state and city data and repair an answer that does not match the required JSON format.
 - [Create an OpenAI Fine-Tuning Job from Drive](workflows/create-openai-fine-tuning-job-from-drive/) - Upload a JSONL training file from Google Drive and create an OpenAI fine-tuning job.
+- [Contextualize Drive Sections for Pinecone](workflows/contextualize-drive-sections-for-pinecone/) - Add whole-document context to each Google Doc section and index its embedding in Pinecone.
 
 ## E-commerce
 
