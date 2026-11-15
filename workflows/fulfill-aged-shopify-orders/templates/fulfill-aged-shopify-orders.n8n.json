@@ -1,0 +1,443 @@
+{
+  "name": "Fulfill Aged Shopify Orders",
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC"
+  },
+  "nodes": [
+    {
+      "name": "Run manually",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "parameters": {},
+      "id": "fulfill-aged-shopify-orders-0",
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "name": "Daily UTC",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "daysInterval": 1,
+              "triggerAtHour": 9,
+              "triggerAtMinute": 0
+            }
+          ]
+        }
+      },
+      "id": "fulfill-aged-shopify-orders-1",
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "name": "Configure Shopify",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "name": "store",
+              "type": "string",
+              "value": "your-store"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fulfill-aged-shopify-orders-2",
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "name": "Read unfulfilled orders",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'https://' + $('Configure Shopify').first().json.store + '.myshopify.com/admin/api/2026-07/graphql.json' }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "{\"query\":\"query Orders { orders(first:100,after:null,query:\\\"status:open (fulfillment_status:unfulfilled OR fulfillment_status:partial)\\\"){edges{node{id createdAt fulfillmentOrders(first:1){edges{node{id status}}}}} pageInfo{hasNextPage endCursor}} }\"}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          },
+          "pagination": {
+            "pagination": {
+              "paginationMode": "updateAParameterInEachRequest",
+              "parameters": {
+                "parameters": [
+                  {
+                    "type": "body",
+                    "name": "query",
+                    "value": "={{ \"query Orders { orders(first:100,after:CURSOR,query:\\\"status:open (fulfillment_status:unfulfilled OR fulfillment_status:partial)\\\"){edges{node{id createdAt fulfillmentOrders(first:1){edges{node{id status}}}}} pageInfo{hasNextPage endCursor}} }\".replace(\"CURSOR\", JSON.stringify($response.body?.data?.orders?.pageInfo?.endCursor ?? null)) }}"
+                  }
+                ]
+              },
+              "paginationCompleteWhen": "other",
+              "completeExpression": "={{ !$response.body.data.orders.pageInfo.hasNextPage }}",
+              "limitPagesFetched": false
+            }
+          }
+        }
+      },
+      "id": "fulfill-aged-shopify-orders-3",
+      "position": [
+        660,
+        0
+      ]
+    },
+    {
+      "name": "Select eligible fulfillment orders",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const all = $input.all(),\n  out = [];\nfor (const item of all) {\n  const b = item.json.body;\n  if (b.errors?.length || !b.data?.orders?.edges) throw Error(\"Shopify order query failed\");\n  for (const { node: o } of b.data.orders.edges) {\n    if (!o.id || !Number.isFinite(Date.parse(o.createdAt))) throw Error(\"Invalid order\");\n    if (Date.now() - Date.parse(o.createdAt) <= 86400000) continue;\n    const fo = o.fulfillmentOrders?.edges?.[0]?.node;\n    if (!fo) continue;\n    if (!fo.id) throw Error(\"Missing fulfillment order ID\");\n    out.push({ json: { orderId: o.id, fulfillmentOrderId: fo.id } });\n  }\n}\nreturn out;\n"
+      },
+      "id": "fulfill-aged-shopify-orders-4",
+      "position": [
+        880,
+        0
+      ]
+    },
+    {
+      "name": "Loop orders",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "parameters": {
+        "options": {}
+      },
+      "id": "fulfill-aged-shopify-orders-5",
+      "position": [
+        1100,
+        0
+      ]
+    },
+    {
+      "name": "Fulfillment not processed",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "rowNotExists",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'fulfillment:' + $('Select eligible fulfillment orders').item.json.fulfillmentOrderId }}"
+            }
+          ]
+        }
+      },
+      "id": "fulfill-aged-shopify-orders-6",
+      "position": [
+        1320,
+        0
+      ]
+    },
+    {
+      "name": "Fulfillment already recorded",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "rowExists",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'fulfillment:' + $('Select eligible fulfillment orders').item.json.fulfillmentOrderId }}"
+            }
+          ]
+        }
+      },
+      "id": "fulfill-aged-shopify-orders-7",
+      "position": [
+        1540,
+        0
+      ]
+    },
+    {
+      "name": "Reserve fulfillment",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "item_key": "={{ 'fulfillment:' + $('Select eligible fulfillment orders').item.json.fulfillmentOrderId }}",
+            "status": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "fulfill-aged-shopify-orders-8",
+      "position": [
+        1760,
+        0
+      ]
+    },
+    {
+      "name": "Create Shopify fulfillment",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'https://' + $('Configure Shopify').first().json.store + '.myshopify.com/admin/api/2026-07/graphql.json' }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ {query:\"mutation Fulfill($fulfillment:FulfillmentInput!){fulfillmentCreate(fulfillment:$fulfillment){fulfillment{id} userErrors{field message}}}\",variables:{fulfillment:{lineItemsByFulfillmentOrder:[{fulfillmentOrderId:$(\"Select eligible fulfillment orders\").item.json.fulfillmentOrderId}],notifyCustomer:true}}} }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "fulfill-aged-shopify-orders-9",
+      "position": [
+        1980,
+        0
+      ]
+    },
+    {
+      "name": "Validate fulfillment receipt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const b = $json.body,\n  p = b?.data?.fulfillmentCreate;\nif (\n  $json.statusCode !== 200 ||\n  b?.errors?.length ||\n  !p ||\n  p.userErrors?.length ||\n  !p.fulfillment?.id\n)\n  throw Error(\"Fulfillment result unknown or rejected; inspect Shopify\");\nreturn $input.item;\n"
+      },
+      "id": "fulfill-aged-shopify-orders-10",
+      "position": [
+        2200,
+        0
+      ]
+    },
+    {
+      "name": "Confirm fulfillment",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Reserve fulfillment').item.json.id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "done"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "fulfill-aged-shopify-orders-11",
+      "position": [
+        2420,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Run manually": {
+      "main": [
+        [
+          {
+            "node": "Configure Shopify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Daily UTC": {
+      "main": [
+        [
+          {
+            "node": "Configure Shopify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configure Shopify": {
+      "main": [
+        [
+          {
+            "node": "Read unfulfilled orders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read unfulfilled orders": {
+      "main": [
+        [
+          {
+            "node": "Select eligible fulfillment orders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select eligible fulfillment orders": {
+      "main": [
+        [
+          {
+            "node": "Loop orders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fulfillment not processed": {
+      "main": [
+        [
+          {
+            "node": "Reserve fulfillment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve fulfillment": {
+      "main": [
+        [
+          {
+            "node": "Create Shopify fulfillment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Shopify fulfillment": {
+      "main": [
+        [
+          {
+            "node": "Validate fulfillment receipt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate fulfillment receipt": {
+      "main": [
+        [
+          {
+            "node": "Confirm fulfillment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm fulfillment": {
+      "main": [
+        [
+          {
+            "node": "Loop orders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fulfillment already recorded": {
+      "main": [
+        [
+          {
+            "node": "Loop orders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop orders": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Fulfillment not processed",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fulfillment already recorded",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
