@@ -1,0 +1,941 @@
+{
+  "nodes": [
+    {
+      "id": "assign-zendesk-tickets-to-pipedrive-owners-0",
+      "name": "Every five minutes",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "mode": "everyX",
+              "unit": "minutes",
+              "value": 5
+            }
+          ]
+        }
+      },
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "id": "assign-zendesk-tickets-to-pipedrive-owners-1",
+      "name": "Configure export",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const zendesk = \"YOUR_ZENDESK_SUBDOMAIN\",\n  pipedrive = \"YOUR_PIPEDRIVE_DOMAIN\",\n  startTime = 0;\nif (\n  !/^[a-z0-9-]+$/.test(zendesk) ||\n  zendesk.startsWith(\"YOUR\") ||\n  !pipedrive.endsWith(\".pipedrive.com\") ||\n  !Number.isInteger(startTime) ||\n  startTime <= 0 ||\n  startTime >= Date.now() / 1000 - 60\n)\n  throw Error(\"Configure domains and initial time at least one minute ago\");\nconst s = $getWorkflowStaticData(\"global\");\nreturn [\n  {\n    json: {\n      zendesk,\n      pipedrive,\n      startTime,\n      url:\n        \"https://\" +\n        zendesk +\n        \".zendesk.com/api/v2/incremental/tickets/cursor.json?\" +\n        (s.cursor ? \"cursor=\" + encodeURIComponent(s.cursor) : \"start_time=\" + startTime),\n    },\n  },\n];\n"
+      },
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "id": "assign-zendesk-tickets-to-pipedrive-owners-2",
+      "name": "Read Zendesk ticket page",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.url }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "id": "assign-zendesk-tickets-to-pipedrive-owners-3",
+      "name": "Prepare page",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "if (\n  !Array.isArray($json.tickets) ||\n  !$json.after_cursor ||\n  typeof $json.end_of_stream !== \"boolean\"\n)\n  throw Error(\"Invalid page\");\nconst start = $(\"Configure export\").first().json.startTime,\n  old = $getWorkflowStaticData(\"global\").cursor;\nif (!$json.end_of_stream && old === $json.after_cursor) throw Error(\"Repeated cursor\");\nfor (const t of $json.tickets)\n  if (\n    !Number.isSafeInteger(t.id) ||\n    !Number.isSafeInteger(t.requester_id) ||\n    !Number.isFinite(Date.parse(t.created_at))\n  )\n    throw Error(\"Invalid ticket\");\nreturn [\n  {\n    json: {\n      cursor: $json.after_cursor,\n      tickets: $json.tickets.filter((t) => Date.parse(t.created_at) >= start * 1000),\n    },\n  },\n];\n"
+      },
+      "position": [
+        660,
+        0
+      ]
+    },
+    {
+      "id": "assign-zendesk-tickets-to-pipedrive-owners-4",
+      "name": "Page has new tickets?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "yes",
+              "leftValue": "={{ $json.tickets.length > 0 }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "position": [
+        880,
+        0
+      ]
+    },
+    {
+      "id": "assign-zendesk-tickets-to-pipedrive-owners-5",
+      "name": "Expand tickets",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return $json.tickets.map((t) => ({ json: t, pairedItem: { item: 0 } }));\n"
+      },
+      "position": [
+        1100,
+        0
+      ]
+    },
+    {
+      "id": "assign-zendesk-tickets-to-pipedrive-owners-6",
+      "name": "One ticket at a time",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "position": [
+        1320,
+        0
+      ]
+    },
+    {
+      "id": "assign-zendesk-tickets-to-pipedrive-owners-7",
+      "name": "Prepare ticket",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "if (!Number.isSafeInteger($json.id) || !Number.isSafeInteger($json.requester_id))\n  throw Error(\"Invalid ticket\");\nreturn [{ json: $json, pairedItem: { item: 0 } }];\n"
+      },
+      "position": [
+        1540,
+        0
+      ]
+    },
+    {
+      "id": "assign-zendesk-tickets-to-pipedrive-owners-8",
+      "name": "Ticket pending",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "rowExists",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'zendesk-owner-ticket:' + $('Prepare ticket').item.json.id }}"
+            },
+            {
+              "keyName": "status",
+              "condition": "eq",
+              "keyValue": "pending"
+            }
+          ]
+        }
+      },
+      "position": [
+        1760,
+        0
+      ]
+    },
+    {
+      "id": "assign-zendesk-tickets-to-pipedrive-owners-9",
+      "name": "Ticket already handled",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "rowExists",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'zendesk-owner-ticket:' + $('Prepare ticket').item.json.id }}"
+            },
+            {
+              "keyName": "status",
+              "condition": "eq",
+              "keyValue": "done"
+            }
+          ]
+        }
+      },
+      "position": [
+        1980,
+        0
+      ]
+    },
+    {
+      "id": "assign-zendesk-tickets-to-pipedrive-owners-10",
+      "name": "Ticket not handled",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "rowNotExists",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'zendesk-owner-ticket:' + $('Prepare ticket').item.json.id }}"
+            }
+          ]
+        }
+      },
+      "position": [
+        2200,
+        0
+      ]
+    },
+    {
+      "id": "assign-zendesk-tickets-to-pipedrive-owners-11",
+      "name": "Stop for pending update",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "throw Error(\"Inspect Zendesk pending update before retry\");\n"
+      },
+      "position": [
+        2420,
+        0
+      ]
+    },
+    {
+      "id": "assign-zendesk-tickets-to-pipedrive-owners-12",
+      "name": "Read requester",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ 'https://'+$('Configure export').first().json.zendesk+'.zendesk.com/api/v2/users/'+$('Prepare ticket').item.json.requester_id+'.json' }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "position": [
+        2640,
+        0
+      ]
+    },
+    {
+      "id": "assign-zendesk-tickets-to-pipedrive-owners-13",
+      "name": "Validate requester",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "if (!$json.user?.email || $json.user.id !== $(\"Prepare ticket\").item.json.requester_id)\n  throw Error(\"Missing requester email\");\nreturn [{ json: { email: $json.user.email }, pairedItem: { item: 0 } }];\n"
+      },
+      "position": [
+        2860,
+        0
+      ]
+    },
+    {
+      "id": "assign-zendesk-tickets-to-pipedrive-owners-14",
+      "name": "Search Pipedrive contact",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ 'https://'+$('Configure export').first().json.pipedrive+'/api/v2/persons/search?fields=email&exact_match=true&limit=2&term='+encodeURIComponent($json.email) }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "position": [
+        3080,
+        0
+      ]
+    },
+    {
+      "id": "assign-zendesk-tickets-to-pipedrive-owners-15",
+      "name": "Check contact",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const hits = $json.data?.items;\nif (!Array.isArray(hits) || hits.length > 1 || $json.additional_data?.next_cursor)\n  throw Error(\"Invalid or ambiguous contact\");\nif (!hits.length) return [{ json: { found: false }, pairedItem: { item: 0 } }];\nconst p = hits[0].item,\n  e = $(\"Validate requester\").item.json.email;\nif (!p.emails?.some((x) => x.toLowerCase() === e.toLowerCase()) || !p.owner?.id)\n  throw Error(\"Invalid contact\");\nreturn [{ json: { found: true, ownerId: p.owner.id }, pairedItem: { item: 0 } }];\n"
+      },
+      "position": [
+        3300,
+        0
+      ]
+    },
+    {
+      "id": "assign-zendesk-tickets-to-pipedrive-owners-16",
+      "name": "Contact found?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "yes",
+              "leftValue": "={{ $json.found }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "position": [
+        3520,
+        0
+      ]
+    },
+    {
+      "id": "assign-zendesk-tickets-to-pipedrive-owners-17",
+      "name": "Read Pipedrive owner",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ 'https://'+$('Configure export').first().json.pipedrive+'/api/v1/users/'+$('Check contact').item.json.ownerId }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "position": [
+        3740,
+        0
+      ]
+    },
+    {
+      "id": "assign-zendesk-tickets-to-pipedrive-owners-18",
+      "name": "Validate owner",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "if ($json.data?.id !== $(\"Check contact\").item.json.ownerId || !$json.data.email)\n  throw Error(\"Invalid owner\");\nreturn [{ json: { email: $json.data.email }, pairedItem: { item: 0 } }];\n"
+      },
+      "position": [
+        3960,
+        0
+      ]
+    },
+    {
+      "id": "assign-zendesk-tickets-to-pipedrive-owners-19",
+      "name": "Find Zendesk agent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ 'https://'+$('Configure export').first().json.zendesk+'.zendesk.com/api/v2/users/search.json?query='+encodeURIComponent('email:'+ $json.email) }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "position": [
+        4180,
+        0
+      ]
+    },
+    {
+      "id": "assign-zendesk-tickets-to-pipedrive-owners-20",
+      "name": "Choose ticket update",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const e = $(\"Validate owner\").item.json.email,\n  users = $json.users;\nif (!Array.isArray(users) || $json.next_page) throw Error(\"Invalid agent page\");\nconst found = users.filter(\n  (x) =>\n    x.email?.toLowerCase() === e.toLowerCase() &&\n    [\"agent\", \"admin\"].includes(x.role) &&\n    x.active !== false,\n);\nif (found.length > 1) throw Error(\"Ambiguous agent\");\nreturn [\n  {\n    json: {\n      ticket: found.length\n        ? { assignee_id: found[0].id }\n        : { comment: { body: \"Requester or owner agent not found\", public: false } },\n    },\n    pairedItem: { item: 0 },\n  },\n];\n"
+      },
+      "position": [
+        4400,
+        0
+      ]
+    },
+    {
+      "id": "assign-zendesk-tickets-to-pipedrive-owners-21",
+      "name": "Prepare missing contact note",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return [\n  {\n    json: { ticket: { comment: { body: \"Requester or owner agent not found\", public: false } } },\n    pairedItem: { item: 0 },\n  },\n];\n"
+      },
+      "position": [
+        4620,
+        0
+      ]
+    },
+    {
+      "id": "assign-zendesk-tickets-to-pipedrive-owners-22",
+      "name": "Prepare ticket update",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return $input.all();\n"
+      },
+      "position": [
+        4840,
+        0
+      ]
+    },
+    {
+      "id": "assign-zendesk-tickets-to-pipedrive-owners-23",
+      "name": "Reserve Zendesk update",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "item_key": "={{ 'zendesk-owner-ticket:' + $('Prepare ticket').item.json.id }}",
+            "status": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "position": [
+        5060,
+        0
+      ]
+    },
+    {
+      "id": "assign-zendesk-tickets-to-pipedrive-owners-24",
+      "name": "Restore ticket update",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return [$(\"Prepare ticket update\").item];\n"
+      },
+      "position": [
+        5280,
+        0
+      ]
+    },
+    {
+      "id": "assign-zendesk-tickets-to-pipedrive-owners-25",
+      "name": "Update Zendesk ticket",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ 'https://'+$('Configure export').first().json.zendesk+'.zendesk.com/api/v2/tickets/'+$('Prepare ticket').item.json.id+'.json' }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ticket:$json.ticket}) }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "position": [
+        5500,
+        0
+      ]
+    },
+    {
+      "id": "assign-zendesk-tickets-to-pipedrive-owners-26",
+      "name": "Verify Zendesk update",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "if ($json.ticket?.id !== $(\"Prepare ticket\").item.json.id) throw Error(\"Unknown Zendesk result\");\nreturn [{ json: { ok: true }, pairedItem: { item: 0 } }];\n"
+      },
+      "position": [
+        5720,
+        0
+      ]
+    },
+    {
+      "id": "assign-zendesk-tickets-to-pipedrive-owners-27",
+      "name": "Confirm ticket update",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Reserve Zendesk update').item.json.id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "done"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "position": [
+        5940,
+        0
+      ]
+    },
+    {
+      "id": "assign-zendesk-tickets-to-pipedrive-owners-28",
+      "name": "Save export cursor",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const cursor = $(\"Prepare page\").first().json.cursor;\nif (!cursor) throw Error(\"Missing cursor\");\n$getWorkflowStaticData(\"global\").cursor = cursor;\nreturn [{ json: { ok: true } }];\n"
+      },
+      "position": [
+        6160,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Every five minutes": {
+      "main": [
+        [
+          {
+            "node": "Configure export",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configure export": {
+      "main": [
+        [
+          {
+            "node": "Read Zendesk ticket page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Zendesk ticket page": {
+      "main": [
+        [
+          {
+            "node": "Prepare page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare page": {
+      "main": [
+        [
+          {
+            "node": "Page has new tickets?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Expand tickets": {
+      "main": [
+        [
+          {
+            "node": "One ticket at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare ticket": {
+      "main": [
+        [
+          {
+            "node": "Ticket pending",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Ticket already handled",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Ticket not handled",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ticket pending": {
+      "main": [
+        [
+          {
+            "node": "Stop for pending update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ticket already handled": {
+      "main": [
+        [
+          {
+            "node": "One ticket at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ticket not handled": {
+      "main": [
+        [
+          {
+            "node": "Read requester",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read requester": {
+      "main": [
+        [
+          {
+            "node": "Validate requester",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate requester": {
+      "main": [
+        [
+          {
+            "node": "Search Pipedrive contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Pipedrive contact": {
+      "main": [
+        [
+          {
+            "node": "Check contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check contact": {
+      "main": [
+        [
+          {
+            "node": "Contact found?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Pipedrive owner": {
+      "main": [
+        [
+          {
+            "node": "Validate owner",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate owner": {
+      "main": [
+        [
+          {
+            "node": "Find Zendesk agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Zendesk agent": {
+      "main": [
+        [
+          {
+            "node": "Choose ticket update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Choose ticket update": {
+      "main": [
+        [
+          {
+            "node": "Prepare ticket update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare missing contact note": {
+      "main": [
+        [
+          {
+            "node": "Prepare ticket update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare ticket update": {
+      "main": [
+        [
+          {
+            "node": "Reserve Zendesk update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve Zendesk update": {
+      "main": [
+        [
+          {
+            "node": "Restore ticket update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore ticket update": {
+      "main": [
+        [
+          {
+            "node": "Update Zendesk ticket",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Zendesk ticket": {
+      "main": [
+        [
+          {
+            "node": "Verify Zendesk update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify Zendesk update": {
+      "main": [
+        [
+          {
+            "node": "Confirm ticket update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm ticket update": {
+      "main": [
+        [
+          {
+            "node": "One ticket at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Page has new tickets?": {
+      "main": [
+        [
+          {
+            "node": "Expand tickets",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Save export cursor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "One ticket at a time": {
+      "main": [
+        [
+          {
+            "node": "Save export cursor",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare ticket",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Contact found?": {
+      "main": [
+        [
+          {
+            "node": "Read Pipedrive owner",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare missing contact note",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Assign Zendesk Tickets to Pipedrive Owners",
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC"
+  }
+}
