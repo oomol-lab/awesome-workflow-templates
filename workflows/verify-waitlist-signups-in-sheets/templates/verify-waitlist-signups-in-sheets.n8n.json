@@ -1,0 +1,1174 @@
+{
+  "nodes": [
+    {
+      "id": "verify-waitlist-signups-in-sheets-0",
+      "name": "Waitlist Form",
+      "type": "n8n-nodes-base.formTrigger",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "options": {
+          "path": "verify-waitlist-signups-in-sheets"
+        },
+        "formTitle": "Waitlist Form",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Firstname",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Lastname",
+              "requiredField": true
+            },
+            {
+              "fieldType": "email",
+              "fieldLabel": "Email",
+              "placeholder": "name@my-company.com",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Company Website",
+              "placeholder": "https://my-company.com"
+            }
+          ]
+        },
+        "responseMode": "lastNode",
+        "formDescription": "Thank you for the interest in our Service!\nJoin our waitlist to be one of the first users getting access to our service!"
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "verify-waitlist-signups-in-sheets-1",
+      "name": "Clean and Standardize",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f17a256a-f7cc-444b-9a10-29ab471c0510",
+              "name": "Email",
+              "type": "string",
+              "value": "={{ $json.Email.trim().toLowerCase() }}"
+            },
+            {
+              "id": "7c84b1f2-518b-4966-8dd1-594123a54e6e",
+              "name": "Company Website",
+              "type": "string",
+              "value": "={{ $json['Company Website'] ? 'https://' + $json['Company Website'].trim().toLowerCase().replace(/^https?:\\/\\//,'').replace(/\\/+$/,'') : '' }}"
+            }
+          ]
+        },
+        "includeOtherFields": true
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "verify-waitlist-signups-in-sheets-2",
+      "name": "Generate Random Verification Code",
+      "type": "n8n-nodes-base.crypto",
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "action": "generate",
+        "encodingType": "hex",
+        "stringLength": 6,
+        "dataPropertyName": "code"
+      },
+      "typeVersion": 1
+    },
+    {
+      "name": "Prepare registration",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const v = $json;\nif (!v.Firstname || !v.Lastname || !v.Email || !v.code) throw Error(\"Missing registration fields\");\nreturn {\n  json: {\n    submissionId: $execution.id,\n    firstName: String(v.Firstname),\n    lastName: String(v.Lastname),\n    email: String(v.Email).trim().toLowerCase(),\n    company: String(v[\"Company Website\"] ?? \"\"),\n    code: String(v.code),\n    startedAt: Date.now(),\n    mode: \"direct\",\n  },\n};\n"
+      },
+      "id": "verify-waitlist-signups-in-sheets-3",
+      "position": [
+        660,
+        0
+      ]
+    },
+    {
+      "name": "Submission not processed",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "rowNotExists",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'waitlist:' + $('Prepare registration').first().json.submissionId }}"
+            }
+          ]
+        }
+      },
+      "id": "verify-waitlist-signups-in-sheets-4",
+      "position": [
+        880,
+        0
+      ]
+    },
+    {
+      "name": "Reserve registration",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "item_key": "={{ 'waitlist:' + $('Prepare registration').first().json.submissionId }}",
+            "status": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "verify-waitlist-signups-in-sheets-5",
+      "position": [
+        1100,
+        0
+      ]
+    },
+    {
+      "name": "Relay initial registration?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $('Prepare registration').first().json.mode === 'relay' }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        }
+      },
+      "id": "verify-waitlist-signups-in-sheets-6",
+      "position": [
+        1320,
+        0
+      ]
+    },
+    {
+      "name": "Forward initial registration",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "YOUR_OPEN_FLOW_WEBHOOK_URL",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {submissionId:$('Prepare registration').first().json.submissionId,stage:'start',firstName:$('Prepare registration').first().json.firstName,lastName:$('Prepare registration').first().json.lastName,email:$('Prepare registration').first().json.email,company:$('Prepare registration').first().json.company,useCase:''} }}",
+        "options": {}
+      },
+      "id": "verify-waitlist-signups-in-sheets-7",
+      "position": [
+        1540,
+        0
+      ]
+    },
+    {
+      "name": "Confirm initial relay",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if ($json.status !== \"completed\") throw Error(\"Unknown relay result\");\nreturn { json: { ok: true } };\n"
+      },
+      "id": "verify-waitlist-signups-in-sheets-8",
+      "position": [
+        1760,
+        0
+      ]
+    },
+    {
+      "id": "verify-waitlist-signups-in-sheets-9",
+      "name": "Add  to Waitlist Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        1980,
+        0
+      ],
+      "parameters": {
+        "columns": {
+          "mappingMode": "defineBelow",
+          "matchingColumns": [
+            "Submission ID"
+          ],
+          "schema": [
+            {
+              "id": "Submission ID",
+              "displayName": "Submission ID",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "defaultMatch": true,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Firstname",
+              "displayName": "Firstname",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Lastname",
+              "displayName": "Lastname",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Company",
+              "displayName": "Company",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Verified",
+              "displayName": "Verified",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Intended Use",
+              "displayName": "Intended Use",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "value": {
+            "Submission ID": "={{ $('Prepare registration').first().json.submissionId }}",
+            "Firstname": "={{ $('Prepare registration').first().json.firstName }}",
+            "Lastname": "={{ $('Prepare registration').first().json.lastName }}",
+            "Email": "={{ $('Prepare registration').first().json.email }}",
+            "Company": "={{ $('Prepare registration').first().json.company }}",
+            "Verified": "false",
+            "Intended Use": ""
+          }
+        },
+        "options": {},
+        "operation": "appendOrUpdate",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Sheet1"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_SPREADSHEET_ID"
+        }
+      },
+      "typeVersion": 4.5
+    },
+    {
+      "id": "verify-waitlist-signups-in-sheets-10",
+      "name": "Send Verification Email",
+      "type": "n8n-nodes-base.emailSend",
+      "position": [
+        2200,
+        0
+      ],
+      "parameters": {
+        "html": "={{ 'Your waitlist verification code is: ' + $('Prepare registration').first().json.code + '. It expires in ten minutes.' }}",
+        "options": {},
+        "subject": "Your Waitlist Verification Code",
+        "toEmail": "={{ $('Prepare registration').first().json.email }}",
+        "fromEmail": "YOUR_SENDER_EMAIL"
+      },
+      "typeVersion": 2.1,
+      "alwaysOutputData": false
+    },
+    {
+      "id": "verify-waitlist-signups-in-sheets-11",
+      "name": "Validate with Verification Code",
+      "type": "n8n-nodes-base.form",
+      "position": [
+        2420,
+        0
+      ],
+      "parameters": {
+        "options": {
+          "formTitle": "Validate your Email",
+          "buttonLabel": "Verify",
+          "formDescription": "You should have received an Email with a Verification Code."
+        },
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Verification Code",
+              "requiredField": true
+            }
+          ]
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "name": "First code valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ String($('Validate with Verification Code').first().json['Verification Code'] ?? '') === $('Prepare registration').first().json.code && Date.now() - $('Prepare registration').first().json.startedAt <= 600000 }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        }
+      },
+      "id": "verify-waitlist-signups-in-sheets-12",
+      "position": [
+        2640,
+        0
+      ]
+    },
+    {
+      "id": "verify-waitlist-signups-in-sheets-13",
+      "name": "Let the User Reenter Code",
+      "type": "n8n-nodes-base.form",
+      "position": [
+        2860,
+        0
+      ],
+      "parameters": {
+        "options": {
+          "formTitle": "Code was not valid",
+          "buttonLabel": "Verify",
+          "formDescription": "Please enter your Verification Code and try again."
+        },
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Verification Code",
+              "requiredField": true
+            }
+          ]
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "name": "Second code valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ String($('Let the User Reenter Code').first().json['Verification Code'] ?? '') === $('Prepare registration').first().json.code && Date.now() - $('Prepare registration').first().json.startedAt <= 600000 }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        }
+      },
+      "id": "verify-waitlist-signups-in-sheets-14",
+      "position": [
+        3080,
+        0
+      ]
+    },
+    {
+      "name": "Relay verification?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $('Prepare registration').first().json.mode === 'relay' }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        }
+      },
+      "id": "verify-waitlist-signups-in-sheets-15",
+      "position": [
+        3300,
+        0
+      ]
+    },
+    {
+      "name": "Forward verification",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "YOUR_OPEN_FLOW_WEBHOOK_URL",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {submissionId:$('Prepare registration').first().json.submissionId,stage:'verified',firstName:$('Prepare registration').first().json.firstName,lastName:$('Prepare registration').first().json.lastName,email:$('Prepare registration').first().json.email,company:$('Prepare registration').first().json.company,useCase:''} }}",
+        "options": {}
+      },
+      "id": "verify-waitlist-signups-in-sheets-16",
+      "position": [
+        3520,
+        0
+      ]
+    },
+    {
+      "name": "Confirm verification relay",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if ($json.status !== \"completed\") throw Error(\"Unknown relay result\");\nreturn { json: { ok: true } };\n"
+      },
+      "id": "verify-waitlist-signups-in-sheets-17",
+      "position": [
+        3740,
+        0
+      ]
+    },
+    {
+      "id": "verify-waitlist-signups-in-sheets-18",
+      "name": "Save as Verified",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        3960,
+        0
+      ],
+      "parameters": {
+        "columns": {
+          "mappingMode": "defineBelow",
+          "matchingColumns": [
+            "Submission ID"
+          ],
+          "schema": [
+            {
+              "id": "Submission ID",
+              "displayName": "Submission ID",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "defaultMatch": true,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Firstname",
+              "displayName": "Firstname",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Lastname",
+              "displayName": "Lastname",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Company",
+              "displayName": "Company",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Verified",
+              "displayName": "Verified",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Intended Use",
+              "displayName": "Intended Use",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "value": {
+            "Submission ID": "={{ $('Prepare registration').first().json.submissionId }}",
+            "Verified": "true"
+          }
+        },
+        "options": {},
+        "operation": "appendOrUpdate",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Sheet1"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_SPREADSHEET_ID"
+        }
+      },
+      "typeVersion": 4.5
+    },
+    {
+      "id": "verify-waitlist-signups-in-sheets-19",
+      "name": "Additional Data for the Sheet",
+      "type": "n8n-nodes-base.form",
+      "position": [
+        4180,
+        0
+      ],
+      "parameters": {
+        "options": {
+          "formTitle": "Intended Use",
+          "buttonLabel": "Submit",
+          "formDescription": "What are you planing to Build with our Software?"
+        },
+        "formFields": {
+          "values": [
+            {
+              "fieldType": "textarea",
+              "fieldLabel": "Use Case"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "name": "Relay intended use?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $('Prepare registration').first().json.mode === 'relay' }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        }
+      },
+      "id": "verify-waitlist-signups-in-sheets-20",
+      "position": [
+        4400,
+        0
+      ]
+    },
+    {
+      "name": "Forward intended use",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "YOUR_OPEN_FLOW_WEBHOOK_URL",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {submissionId:$('Prepare registration').first().json.submissionId,stage:'use',firstName:$('Prepare registration').first().json.firstName,lastName:$('Prepare registration').first().json.lastName,email:$('Prepare registration').first().json.email,company:$('Prepare registration').first().json.company,useCase:$('Additional Data for the Sheet').first().json['Use Case'] ?? ''} }}",
+        "options": {}
+      },
+      "id": "verify-waitlist-signups-in-sheets-21",
+      "position": [
+        4620,
+        0
+      ]
+    },
+    {
+      "name": "Confirm use relay",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if ($json.status !== \"completed\") throw Error(\"Unknown relay result\");\nreturn { json: { ok: true } };\n"
+      },
+      "id": "verify-waitlist-signups-in-sheets-22",
+      "position": [
+        4840,
+        0
+      ]
+    },
+    {
+      "id": "verify-waitlist-signups-in-sheets-23",
+      "name": "Save Intend to List",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        5060,
+        0
+      ],
+      "parameters": {
+        "columns": {
+          "mappingMode": "defineBelow",
+          "matchingColumns": [
+            "Submission ID"
+          ],
+          "schema": [
+            {
+              "id": "Submission ID",
+              "displayName": "Submission ID",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "defaultMatch": true,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Firstname",
+              "displayName": "Firstname",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Lastname",
+              "displayName": "Lastname",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Company",
+              "displayName": "Company",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Verified",
+              "displayName": "Verified",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Intended Use",
+              "displayName": "Intended Use",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "value": {
+            "Submission ID": "={{ $('Prepare registration').first().json.submissionId }}",
+            "Intended Use": "={{ $('Additional Data for the Sheet').first().json['Use Case'] ?? '' }}"
+          }
+        },
+        "options": {},
+        "operation": "appendOrUpdate",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Sheet1"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_SPREADSHEET_ID"
+        }
+      },
+      "typeVersion": 4.5
+    },
+    {
+      "name": "Verification failed",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "parameters": {},
+      "id": "verify-waitlist-signups-in-sheets-24",
+      "position": [
+        5280,
+        0
+      ]
+    },
+    {
+      "name": "Confirm registration complete",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Reserve registration').first().json.id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "done"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "verify-waitlist-signups-in-sheets-25",
+      "position": [
+        5500,
+        0
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Waitlist Form": {
+      "main": [
+        [
+          {
+            "node": "Clean and Standardize",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clean and Standardize": {
+      "main": [
+        [
+          {
+            "node": "Generate Random Verification Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Random Verification Code": {
+      "main": [
+        [
+          {
+            "node": "Prepare registration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare registration": {
+      "main": [
+        [
+          {
+            "node": "Submission not processed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Submission not processed": {
+      "main": [
+        [
+          {
+            "node": "Reserve registration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve registration": {
+      "main": [
+        [
+          {
+            "node": "Relay initial registration?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Forward initial registration": {
+      "main": [
+        [
+          {
+            "node": "Confirm initial relay",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm initial relay": {
+      "main": [
+        [
+          {
+            "node": "Send Verification Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add  to Waitlist Sheet": {
+      "main": [
+        [
+          {
+            "node": "Send Verification Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Verification Email": {
+      "main": [
+        [
+          {
+            "node": "Validate with Verification Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate with Verification Code": {
+      "main": [
+        [
+          {
+            "node": "First code valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Let the User Reenter Code": {
+      "main": [
+        [
+          {
+            "node": "Second code valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Forward verification": {
+      "main": [
+        [
+          {
+            "node": "Confirm verification relay",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm verification relay": {
+      "main": [
+        [
+          {
+            "node": "Additional Data for the Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save as Verified": {
+      "main": [
+        [
+          {
+            "node": "Additional Data for the Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Additional Data for the Sheet": {
+      "main": [
+        [
+          {
+            "node": "Relay intended use?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Forward intended use": {
+      "main": [
+        [
+          {
+            "node": "Confirm use relay",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm use relay": {
+      "main": [
+        [
+          {
+            "node": "Confirm registration complete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Intend to List": {
+      "main": [
+        [
+          {
+            "node": "Confirm registration complete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verification failed": {
+      "main": [
+        [
+          {
+            "node": "Confirm registration complete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Relay initial registration?": {
+      "main": [
+        [
+          {
+            "node": "Forward initial registration",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Add  to Waitlist Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "First code valid?": {
+      "main": [
+        [
+          {
+            "node": "Relay verification?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Let the User Reenter Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Second code valid?": {
+      "main": [
+        [
+          {
+            "node": "Relay verification?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Verification failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Relay verification?": {
+      "main": [
+        [
+          {
+            "node": "Forward verification",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Save as Verified",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Relay intended use?": {
+      "main": [
+        [
+          {
+            "node": "Forward intended use",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Save Intend to List",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Verify Waitlist Signups in Sheets",
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC"
+  }
+}
