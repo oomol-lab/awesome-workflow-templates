@@ -622,6 +622,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Extract Airtable PDF Fields with Dynamic Prompts](workflows/extract-airtable-pdf-fields-with-dynamic-prompts/) - Extract Airtable field values from record PDFs using field descriptions as prompts.
 - [Save Matching Gmail PDFs to Drive](workflows/save-matching-gmail-pdfs-to-drive/) - Classify email PDF attachments by text and save matching originals to Google Drive.
 - [Reply to Meeting Requests with Calendar Availability](workflows/reply-to-meeting-requests-with-calendar-availability/) - Reply to meeting requests with suggested times based on Google Calendar.
+- [Center a Logo on an Image](workflows/center-a-logo-on-an-image/) - Center a transparent logo over a background image.
 
 ## Content
 
