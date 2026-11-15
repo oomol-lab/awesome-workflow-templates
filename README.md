@@ -899,6 +899,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Analyze Trading Chart Images](workflows/analyze-trading-chart-images/) - Analyze a submitted market chart image and return a plain-language explanation.
 - [Analyze Earnings PDFs with Pinecone](workflows/analyze-earnings-pdfs-with-pinecone/) - Index earnings PDFs from Google Drive and append a grounded comparison report to Google Docs.
 - [Compare Alphabet Quarterly Earnings](workflows/compare-alphabet-quarterly-earnings/) - Index earnings PDFs from Google Drive and append a grounded comparison report to Google Docs.
+- [Record Receipt Emails in Google Sheets](workflows/record-receipt-emails-in-google-sheets/) - Extract the first receipt attachment from matching emails and record its fields in a sheet.
 
 ## Community
 

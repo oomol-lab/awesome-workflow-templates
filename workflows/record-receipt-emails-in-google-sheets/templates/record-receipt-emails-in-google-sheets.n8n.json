@@ -1,0 +1,1168 @@
+{
+  "name": "Record Receipt Emails in Google Sheets",
+  "nodes": [
+    {
+      "name": "Check inbox",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 1
+            }
+          ]
+        }
+      },
+      "id": "record-receipt-emails-in-google-sheets-0",
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "name": "Find unread email",
+      "type": "n8n-nodes-imap.imap",
+      "typeVersion": 1,
+      "parameters": {
+        "authentication": "coreImapAccount",
+        "resource": "email",
+        "operation": "getEmailsList",
+        "mailboxPath": {
+          "__rl": true,
+          "mode": "path",
+          "value": "INBOX"
+        },
+        "emailDateRange": {},
+        "emailFlags": {
+          "seen": false
+        },
+        "emailSearchFilters": {},
+        "limit": 100,
+        "includeParts": []
+      },
+      "id": "record-receipt-emails-in-google-sheets-1",
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "name": "One email at a time",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "parameters": {
+        "options": {}
+      },
+      "id": "record-receipt-emails-in-google-sheets-2",
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "name": "Download original email",
+      "type": "n8n-nodes-imap.imap",
+      "typeVersion": 1,
+      "parameters": {
+        "authentication": "coreImapAccount",
+        "resource": "email",
+        "operation": "downloadEml",
+        "mailboxPath": {
+          "__rl": true,
+          "mode": "path",
+          "value": "INBOX"
+        },
+        "emailUid": "={{ String($('One email at a time').item.json.uid) }}",
+        "outputToBinary": true,
+        "binaryPropertyName": "data"
+      },
+      "id": "record-receipt-emails-in-google-sheets-3",
+      "position": [
+        660,
+        0
+      ]
+    },
+    {
+      "name": "Prepare receipt email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const { simpleParser } = require(\"mailparser\"),\n  uid = $json.uid;\nif (!Number.isSafeInteger(Number(uid)) || Number(uid) < 1) throw Error(\"Invalid UID\");\nconst m = await simpleParser(await helpers.getBinaryDataBuffer(0, \"data\")),\n  subject = typeof m.subject === \"string\" ? m.subject : \"\",\n  match = /(expenses|reciept|receipt)/i.test(subject),\n  a = m.attachments?.[0];\nif (match && !a) throw Error(\"Matching email has no attachment\");\nconst binary = a\n  ? {\n      attachment_0: await helpers.prepareBinaryData(\n        a.content,\n        a.filename || \"receipt\",\n        a.contentType,\n      ),\n    }\n  : {};\nreturn { json: { uid: String(uid), subject, match }, binary };\n"
+      },
+      "id": "record-receipt-emails-in-google-sheets-4",
+      "position": [
+        880,
+        0
+      ]
+    },
+    {
+      "name": "Load receipt state",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "alwaysOutputData": true,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'receipt-email:YOUR_MAILBOX_KEY:'+$('Prepare receipt email').item.json.uid }}"
+            }
+          ]
+        },
+        "operation": "get",
+        "returnAll": true
+      },
+      "id": "record-receipt-emails-in-google-sheets-5",
+      "position": [
+        1100,
+        0
+      ]
+    },
+    {
+      "name": "Choose receipt step",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const rows = $input\n  .all()\n  .map((x) => x.json)\n  .filter((x) => x.item_key);\nif (rows.length > 1) throw Error(\"Duplicate receipt state\");\nif (!rows.length)\n  return [\n    {\n      json: {\n        step: $(\"Prepare receipt email\").item.json.match ? \"new-match\" : \"new-skip\",\n        jobId: \"\",\n      },\n    },\n  ];\nconst r = rows[0];\nif (r.status.startsWith(\"pending-\")) throw Error(\"Inspect pending receipt operation\");\nif ([\"done\", \"ready-mark\"].includes(r.status)) return [{ json: { step: r.status, jobId: \"\" } }];\nif (r.status !== \"ready-poll\") throw Error(\"Invalid receipt state\");\nconst p = JSON.parse(r.payload || \"{}\");\nif (!/^[0-9a-f-]{36}$/i.test(p.jobId || \"\")) throw Error(\"Missing job ID\");\nreturn [{ json: { step: \"ready-poll\", jobId: p.jobId } }];\n"
+      },
+      "id": "record-receipt-emails-in-google-sheets-6",
+      "position": [
+        1320,
+        0
+      ]
+    },
+    {
+      "name": "Route receipt step",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.step }}",
+                    "rightValue": "new-match",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "new-match"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.step }}",
+                    "rightValue": "new-skip",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "new-skip"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.step }}",
+                    "rightValue": "ready-poll",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "ready-poll"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.step }}",
+                    "rightValue": "ready-mark",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "ready-mark"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.step }}",
+                    "rightValue": "done",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "done"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "record-receipt-emails-in-google-sheets-7",
+      "position": [
+        1540,
+        0
+      ]
+    },
+    {
+      "name": "Reserve Mindee job",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "item_key": "={{ 'receipt-email:YOUR_MAILBOX_KEY:'+$('Prepare receipt email').item.json.uid }}",
+            "status": "pending-job",
+            "payload": "{}"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "record-receipt-emails-in-google-sheets-8",
+      "position": [
+        1760,
+        0
+      ]
+    },
+    {
+      "name": "Record unmatched email",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "item_key": "={{ 'receipt-email:YOUR_MAILBOX_KEY:'+$('Prepare receipt email').item.json.uid }}",
+            "status": "ready-mark",
+            "payload": "{}"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "record-receipt-emails-in-google-sheets-9",
+      "position": [
+        1980,
+        0
+      ]
+    },
+    {
+      "name": "Restore attachment",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return $(\"Prepare receipt email\").item;\n"
+      },
+      "id": "record-receipt-emails-in-google-sheets-10",
+      "position": [
+        2200,
+        0
+      ]
+    },
+    {
+      "name": "Submit the receipt to Mindee",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://api-v2.mindee.net/v2/products/extraction/enqueue",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model_id",
+              "value": "YOUR_MINDEE_MODEL_ID"
+            },
+            {
+              "name": "file",
+              "parameterType": "formBinaryData",
+              "inputDataFieldName": "attachment_0"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "record-receipt-emails-in-google-sheets-11",
+      "position": [
+        2420,
+        0
+      ]
+    },
+    {
+      "name": "Validate the receipt job",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if (\n  !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(\n    $json.job?.id || \"\",\n  )\n)\n  throw Error(\"Mindee returned an invalid job ID\");\nreturn { json: { jobId: $json.job.id } };\n"
+      },
+      "id": "record-receipt-emails-in-google-sheets-12",
+      "position": [
+        2640,
+        0
+      ]
+    },
+    {
+      "name": "Confirm Mindee job",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'receipt-email:YOUR_MAILBOX_KEY:'+$('Prepare receipt email').item.json.uid }}"
+            }
+          ]
+        },
+        "operation": "update",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "ready-poll",
+            "payload": "={{ JSON.stringify({jobId:$('Validate the receipt job').item.json.jobId}) }}"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "record-receipt-emails-in-google-sheets-13",
+      "position": [
+        2860,
+        0
+      ]
+    },
+    {
+      "name": "Wait for receipt processing",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "parameters": {
+        "amount": 3,
+        "unit": "seconds"
+      },
+      "id": "record-receipt-emails-in-google-sheets-14",
+      "position": [
+        3080,
+        0
+      ]
+    },
+    {
+      "name": "Check the receipt job",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ 'https://api-v2.mindee.net/v2/jobs/'+$('Choose receipt step').item.json.jobId+'?redirect=false' }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "record-receipt-emails-in-google-sheets-15",
+      "position": [
+        3300,
+        0
+      ]
+    },
+    {
+      "name": "Check the job status",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const job = $json.job;\nconst expected = $(\"Choose receipt step\").item.json.jobId;\nif (\n  !job ||\n  job.id !== expected ||\n  job.status === \"Failed\" ||\n  (job.status === \"Processing\" && $runIndex >= 199)\n)\n  throw Error(\"Mindee job failed or timed out\");\nif (job.status !== \"Processing\" && job.status !== \"Processed\") throw Error(\"Invalid Mindee status\");\nif (\n  job.status === \"Processed\" &&\n  !/^https:\\/\\/api-v2\\.mindee\\.net\\/v2\\/products\\/extraction\\/results\\/[0-9a-f-]{36}$/i.test(\n    job.result_url || \"\",\n  )\n)\n  throw Error(\"Invalid result URL\");\nreturn { json: { ready: job.status === \"Processed\", resultUrl: job.result_url } };\n"
+      },
+      "id": "record-receipt-emails-in-google-sheets-16",
+      "position": [
+        3520,
+        0
+      ]
+    },
+    {
+      "name": "Is the receipt ready?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "ready",
+              "leftValue": "={{ $json.ready }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "record-receipt-emails-in-google-sheets-17",
+      "position": [
+        3740,
+        0
+      ]
+    },
+    {
+      "name": "Read the receipt result",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.resultUrl }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "record-receipt-emails-in-google-sheets-18",
+      "position": [
+        3960,
+        0
+      ]
+    },
+    {
+      "name": "Map receipt fields",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const job = $(\"Choose receipt step\").item.json.jobId,\n  f = $json?.inference?.result?.fields,\n  subject = $(\"Prepare receipt email\").item.json.subject;\nif ($json?.inference?.job?.id !== job || !f) throw Error(\"Wrong Mindee result\");\nconst v = (x) => x?.value ?? \"\",\n  amount = v(f.total_amount),\n  date = v(f.date),\n  category = v(f.purchase_category),\n  currency = v(f.locale?.fields?.currency);\nif (amount !== \"\" && (typeof amount !== \"number\" || !Number.isFinite(amount)))\n  throw Error(\"Invalid total\");\nif ([date, category, currency].some((x) => typeof x !== \"string\"))\n  throw Error(\"Invalid receipt fields\");\nreturn {\n  json: {\n    Date: date,\n    Description: subject.split(\"-\")[1] || \"\",\n    Category: category,\n    Currency: currency,\n    Amount: amount,\n  },\n};\n"
+      },
+      "id": "record-receipt-emails-in-google-sheets-19",
+      "position": [
+        4180,
+        0
+      ]
+    },
+    {
+      "name": "Reserve receipt row",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'receipt-email:YOUR_MAILBOX_KEY:'+$('Prepare receipt email').item.json.uid }}"
+            }
+          ]
+        },
+        "operation": "update",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "pending-sheet"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "record-receipt-emails-in-google-sheets-20",
+      "position": [
+        4400,
+        0
+      ]
+    },
+    {
+      "name": "Add to Google Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        4620,
+        0
+      ],
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_SPREADSHEET_ID"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Receipts"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Date": "={{ $('Map receipt fields').item.json.Date }}",
+            "Description": "={{ $('Map receipt fields').item.json.Description }}",
+            "Category": "={{ $('Map receipt fields').item.json.Category }}",
+            "Currency": "={{ $('Map receipt fields').item.json.Currency }}",
+            "Amount": "={{ $('Map receipt fields').item.json.Amount }}"
+          },
+          "schema": [
+            {
+              "id": "Date",
+              "displayName": "Date",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Description",
+              "displayName": "Description",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Category",
+              "displayName": "Category",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Currency",
+              "displayName": "Currency",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Amount",
+              "displayName": "Amount",
+              "type": "number",
+              "display": true,
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ]
+        },
+        "options": {
+          "useAppend": true
+        }
+      },
+      "typeVersion": 4.5,
+      "id": "record-receipt-emails-in-google-sheets-21"
+    },
+    {
+      "name": "Verify receipt row",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const row = $(\"Map receipt fields\").item.json;\nfor (const k of [\"Date\", \"Description\", \"Category\", \"Currency\", \"Amount\"])\n  if ($json[k] !== row[k]) throw Error(\"Unknown receipt append\");\nreturn $input.item;\n"
+      },
+      "id": "record-receipt-emails-in-google-sheets-22",
+      "position": [
+        4840,
+        0
+      ]
+    },
+    {
+      "name": "Confirm receipt row",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'receipt-email:YOUR_MAILBOX_KEY:'+$('Prepare receipt email').item.json.uid }}"
+            }
+          ]
+        },
+        "operation": "update",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "ready-mark"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "record-receipt-emails-in-google-sheets-23",
+      "position": [
+        5060,
+        0
+      ]
+    },
+    {
+      "name": "Reserve read flag",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'receipt-email:YOUR_MAILBOX_KEY:'+$('Prepare receipt email').item.json.uid }}"
+            }
+          ]
+        },
+        "operation": "update",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "pending-mark"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "record-receipt-emails-in-google-sheets-24",
+      "position": [
+        5280,
+        0
+      ]
+    },
+    {
+      "name": "Mark email read",
+      "type": "n8n-nodes-imap.imap",
+      "typeVersion": 1,
+      "parameters": {
+        "authentication": "coreImapAccount",
+        "resource": "email",
+        "operation": "setEmailFlags",
+        "mailboxPath": {
+          "__rl": true,
+          "mode": "path",
+          "value": "INBOX"
+        },
+        "emailUid": "={{ String($('Prepare receipt email').item.json.uid) }}",
+        "flags": {
+          "\\Seen": true
+        }
+      },
+      "id": "record-receipt-emails-in-google-sheets-25",
+      "position": [
+        5500,
+        0
+      ]
+    },
+    {
+      "name": "Verify read flag",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if (String($json.uid) !== String($(\"Prepare receipt email\").item.json.uid))\n  throw Error(\"Unknown read flag\");\nreturn $input.item;\n"
+      },
+      "id": "record-receipt-emails-in-google-sheets-26",
+      "position": [
+        5720,
+        0
+      ]
+    },
+    {
+      "name": "Confirm read flag",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'receipt-email:YOUR_MAILBOX_KEY:'+$('Prepare receipt email').item.json.uid }}"
+            }
+          ]
+        },
+        "operation": "update",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "done"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "record-receipt-emails-in-google-sheets-27",
+      "position": [
+        5940,
+        0
+      ]
+    }
+  ],
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Check inbox": {
+      "main": [
+        [
+          {
+            "node": "Find unread email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find unread email": {
+      "main": [
+        [
+          {
+            "node": "One email at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download original email": {
+      "main": [
+        [
+          {
+            "node": "Prepare receipt email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare receipt email": {
+      "main": [
+        [
+          {
+            "node": "Load receipt state",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load receipt state": {
+      "main": [
+        [
+          {
+            "node": "Choose receipt step",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Choose receipt step": {
+      "main": [
+        [
+          {
+            "node": "Route receipt step",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve Mindee job": {
+      "main": [
+        [
+          {
+            "node": "Restore attachment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore attachment": {
+      "main": [
+        [
+          {
+            "node": "Submit the receipt to Mindee",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Submit the receipt to Mindee": {
+      "main": [
+        [
+          {
+            "node": "Validate the receipt job",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate the receipt job": {
+      "main": [
+        [
+          {
+            "node": "Confirm Mindee job",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm Mindee job": {
+      "main": [
+        [
+          {
+            "node": "Load receipt state",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record unmatched email": {
+      "main": [
+        [
+          {
+            "node": "Load receipt state",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for receipt processing": {
+      "main": [
+        [
+          {
+            "node": "Check the receipt job",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check the receipt job": {
+      "main": [
+        [
+          {
+            "node": "Check the job status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check the job status": {
+      "main": [
+        [
+          {
+            "node": "Is the receipt ready?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the receipt result": {
+      "main": [
+        [
+          {
+            "node": "Map receipt fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Map receipt fields": {
+      "main": [
+        [
+          {
+            "node": "Reserve receipt row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve receipt row": {
+      "main": [
+        [
+          {
+            "node": "Add to Google Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add to Google Sheet": {
+      "main": [
+        [
+          {
+            "node": "Verify receipt row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify receipt row": {
+      "main": [
+        [
+          {
+            "node": "Confirm receipt row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm receipt row": {
+      "main": [
+        [
+          {
+            "node": "Load receipt state",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve read flag": {
+      "main": [
+        [
+          {
+            "node": "Mark email read",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark email read": {
+      "main": [
+        [
+          {
+            "node": "Verify read flag",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify read flag": {
+      "main": [
+        [
+          {
+            "node": "Confirm read flag",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm read flag": {
+      "main": [
+        [
+          {
+            "node": "One email at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "One email at a time": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Download original email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route receipt step": {
+      "main": [
+        [
+          {
+            "node": "Reserve Mindee job",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Record unmatched email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait for receipt processing",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reserve read flag",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "One email at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is the receipt ready?": {
+      "main": [
+        [
+          {
+            "node": "Read the receipt result",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait for receipt processing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {}
+}
