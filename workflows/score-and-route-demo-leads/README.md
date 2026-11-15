@@ -11,7 +11,7 @@ Score inbound demo leads, record their context, and route follow-up alerts.
 
 ## Setup and use
 
-Connect Gmail and Google Sheets, set the spreadsheet ID and create a Leads sheet with columns received_at, priority, lead_score, sla_minutes, owner_team, intent_tags, page_signal_tags, dedupe_key, email, company and message. Set the four recipient addresses in Prepare audit and routing. Import the n8n workflow and configure its Gmail and Sheets credentials.
+Connect Gmail and Google Sheets, set the spreadsheet ID and create a Leads sheet with columns received_at, priority, lead_score, sla_minutes, owner_team, intent_tags, page_signal_tags, dedupe_key, email, company, message, name, phone, role, budget, timeline, page_url, source, utm_campaign, needs_exec_escalation, missing_contact, page_title and page_description. Set the four recipient addresses in Prepare audit and routing. Import the n8n workflow and configure its Gmail and Sheets credentials.
 
 Choose one intake: enable Lead Intake Webhook for n8n mode, or disable it and enable Open Flow relay webhook for Open Flow mode. In relay mode set the deployed Open Flow webhook URL in Forward lead, set the Page context relay URL in Open Flow and activate n8n. Neither intake nor the page context relay authenticates callers; restrict access to trusted senders.
 
