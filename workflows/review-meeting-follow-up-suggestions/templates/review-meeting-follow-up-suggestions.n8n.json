@@ -1,0 +1,1211 @@
+{
+  "nodes": [
+    {
+      "id": "review-meeting-follow-up-suggestions-0",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        -460,
+        0
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 6
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2,
+      "disabled": true
+    },
+    {
+      "id": "review-meeting-follow-up-suggestions-1",
+      "name": "Get Past Events",
+      "type": "n8n-nodes-base.googleCalendar",
+      "position": [
+        -280,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "timeMax": "={{ $now.minus({ day: 2 }) }}",
+        "timeMin": "={{ $now.minus({ day: 4 }) }}",
+        "calendar": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_CALENDAR_ID"
+        },
+        "operation": "getAll"
+      },
+      "typeVersion": 1.3
+    },
+    {
+      "id": "review-meeting-follow-up-suggestions-2",
+      "name": "Loop Over Items",
+      "type": "n8n-nodes-base.splitInBatches",
+      "position": [
+        200,
+        40
+      ],
+      "parameters": {
+        "options": {}
+      },
+      "typeVersion": 3
+    },
+    {
+      "id": "review-meeting-follow-up-suggestions-3",
+      "name": "Get Emails Since",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        400,
+        200
+      ],
+      "parameters": {
+        "limit": 1,
+        "filters": {
+          "q": "=(from:{{ $json.attendees.find(attendee => !attendee.self)?.email }} OR to:{{ $json.attendees.find(attendee => !attendee.self)?.email }})",
+          "receivedAfter": "={{ $json.end.dateTime }}"
+        },
+        "resource": "thread"
+      },
+      "typeVersion": 2.1,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "review-meeting-follow-up-suggestions-4",
+      "name": "Flag to Follow Up",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        580,
+        200
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const item = $(\"Loop Over Items\").item;\nreturn [\n  {\n    json: { ...item.json, followUp: Object.keys($input.first().json).length === 0 },\n    pairedItem: { item: 0 },\n  },\n];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "review-meeting-follow-up-suggestions-5",
+      "name": "Only Follow Ups",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        400,
+        40
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.followUp }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "review-meeting-follow-up-suggestions-6",
+      "name": "Meeting Availability Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        920,
+        40
+      ],
+      "parameters": {
+        "text": "=### Details of the previous call as following\ntitle: {{ $json.summary }}\ndate: {{ $json.start.dateTime }} {{ $json.start.timeZone }}\nduration: {{ DateTime.fromISO($json.end.dateTime).diff(DateTime.fromISO($json.start.dateTime), 'minutes').minutes }} minutes",
+        "options": {
+          "systemMessage": "=You are a calendar availability assistant. Analyse the previous meeting and help me find a similar available slot for the next meeting.\n* take into consideration the day, time of day and duration of the previous meeting and try to set the same or similar for the next\n* next meeting should be in the future.\n* return a list of available slots so that I can forward them to the user.\n\nToday's date is {{ $now }}."
+        },
+        "promptType": "define",
+        "hasOutputParser": true
+      },
+      "typeVersion": 1.7
+    },
+    {
+      "id": "review-meeting-follow-up-suggestions-7",
+      "name": "Availability",
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "position": [
+        1020,
+        220
+      ],
+      "parameters": {
+        "options": {
+          "timezone": {
+            "__rl": true,
+            "mode": "id",
+            "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Timezone', ``, 'string') }}",
+            "__regex": "([-+/_a-zA-Z0-9]*)"
+          }
+        },
+        "timeMax": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('End_Time', ``, 'string') }}",
+        "timeMin": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Start_Time', ``, 'string') }}",
+        "calendar": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_CALENDAR_ID"
+        },
+        "resource": "calendar"
+      },
+      "typeVersion": 1.3
+    },
+    {
+      "id": "review-meeting-follow-up-suggestions-8",
+      "name": "Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "position": [
+        900,
+        220
+      ],
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "review-meeting-follow-up-suggestions-9",
+      "name": "Output",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "position": [
+        1140,
+        220
+      ],
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"slots\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"start\": { \"type\": \"string\" },\n          \"end\": { \"type\": \"string\" }\n        }\n      }\n    }\n  }\n}"
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "review-meeting-follow-up-suggestions-10",
+      "name": "Generate Message",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1260,
+        40
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const zone = $(\"Loop Over Items\").item.json.start.timeZone || \"UTC\",\n  slots = ($json.output.slots || []).filter(\n    (s) =>\n      Number.isFinite(Date.parse(s.start)) &&\n      ![\"Sat\", \"Sun\"].includes(\n        new Intl.DateTimeFormat(\"en-US\", { weekday: \"short\", timeZone: zone }).format(\n          new Date(s.start),\n        ),\n      ),\n  );\nif (!slots.length) throw Error(\"No weekday slots\");\nreturn [\n  {\n    json: {\n      message:\n        \"Please choose a follow-up time or dismiss.\\n\" +\n        slots.map((s) => s.start + \" to \" + s.end).join(\"\\n\"),\n    },\n  },\n];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "name": "Approval not requested",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "rowNotExists",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'followup:' + $('Loop Over Items').item.json.id }}"
+            }
+          ]
+        }
+      },
+      "id": "review-meeting-follow-up-suggestions-11"
+    },
+    {
+      "name": "Approval already resolved",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "rowExists",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'followup:' + $('Loop Over Items').item.json.id }}"
+            },
+            {
+              "keyName": "status",
+              "condition": "eq",
+              "keyValue": "done"
+            }
+          ]
+        }
+      },
+      "id": "review-meeting-follow-up-suggestions-12"
+    },
+    {
+      "name": "Approval pending",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "rowExists",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'followup:' + $('Loop Over Items').item.json.id }}"
+            },
+            {
+              "keyName": "status",
+              "condition": "eq",
+              "keyValue": "pending"
+            }
+          ]
+        }
+      },
+      "id": "review-meeting-follow-up-suggestions-13"
+    },
+    {
+      "name": "Booking pending",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "rowExists",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'followup:' + $('Loop Over Items').item.json.id + ':booking' }}"
+            },
+            {
+              "keyName": "status",
+              "condition": "eq",
+              "keyValue": "pending"
+            }
+          ]
+        }
+      },
+      "id": "review-meeting-follow-up-suggestions-14"
+    },
+    {
+      "name": "No pending booking",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "rowNotExists",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'followup:' + $('Loop Over Items').item.json.id + ':booking' }}"
+            },
+            {
+              "keyName": "status",
+              "condition": "eq",
+              "keyValue": "pending"
+            }
+          ]
+        }
+      },
+      "id": "review-meeting-follow-up-suggestions-15"
+    },
+    {
+      "name": "Inspect pending write",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "throw Error(\"Inspect the pending approval or calendar write before retry\");\n"
+      },
+      "id": "review-meeting-follow-up-suggestions-16"
+    },
+    {
+      "name": "Reserve approval email",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "item_key": "={{ 'followup:' + $('Loop Over Items').item.json.id }}",
+            "status": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "review-meeting-follow-up-suggestions-17"
+    },
+    {
+      "id": "review-meeting-follow-up-suggestions-18",
+      "name": "Send for Human Approval",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        1660,
+        80
+      ],
+      "parameters": {
+        "sendTo": "YOUR_ADMIN_EMAIL",
+        "message": "={{ $('Generate Message').item.json.message }}",
+        "options": {},
+        "subject": "=Book a follow-up meeting with {{ $('Only Follow Ups').item.json.attendees.find(x => !x.self).email }}?",
+        "operation": "sendAndWait",
+        "responseType": "freeText"
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "name": "Confirm approval response",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'followup:' + $('Loop Over Items').item.json.id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "done"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "review-meeting-follow-up-suggestions-19"
+    },
+    {
+      "name": "Restore human response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return [$(\"Send for Human Approval\").first()];\n"
+      },
+      "id": "review-meeting-follow-up-suggestions-20"
+    },
+    {
+      "id": "review-meeting-follow-up-suggestions-21",
+      "name": "Meeting Booking Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        2180,
+        60
+      ],
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.data.text }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "Interpret the human response. Set choice to book only for an explicitly chosen start and end, dismiss for a decline, otherwise unclear. Return RFC3339 timestamps with offsets. The suggested slots are: {{ $(\"Generate Message\").item.json.message }}"
+        }
+      },
+      "typeVersion": 1.7
+    },
+    {
+      "id": "review-meeting-follow-up-suggestions-22",
+      "name": "Model1",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "position": [
+        2180,
+        240
+      ],
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "name": "Require booking decision",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\"type\":\"object\",\"properties\":{\"choice\":{\"type\":\"string\",\"enum\":[\"book\",\"dismiss\",\"unclear\"]},\"start\":{\"type\":\"string\"},\"end\":{\"type\":\"string\"}},\"required\":[\"choice\",\"start\",\"end\"],\"additionalProperties\":false}"
+      },
+      "id": "review-meeting-follow-up-suggestions-23"
+    },
+    {
+      "name": "Validate human decision",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const v = $json.output;\nif (!v || ![\"book\", \"dismiss\", \"unclear\"].includes(v.choice)) throw Error(\"Invalid decision\");\nif (v.choice === \"unclear\") throw Error(\"Ask the administrator to clarify\");\nif (\n  v.choice === \"book\" &&\n  (!Number.isFinite(Date.parse(v.start)) ||\n    !Number.isFinite(Date.parse(v.end)) ||\n    Date.parse(v.start) <= Date.now() ||\n    Date.parse(v.end) <= Date.parse(v.start))\n)\n  throw Error(\"Invalid time\");\nreturn [{ json: v }];\n"
+      },
+      "id": "review-meeting-follow-up-suggestions-24"
+    },
+    {
+      "name": "Book confirmed slot?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.choice }}",
+              "rightValue": "book",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "review-meeting-follow-up-suggestions-25"
+    },
+    {
+      "name": "Meeting not booked",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "rowNotExists",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'followup:' + $('Loop Over Items').item.json.id + ':booking' }}"
+            }
+          ]
+        }
+      },
+      "id": "review-meeting-follow-up-suggestions-26"
+    },
+    {
+      "name": "Reserve meeting",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "item_key": "={{ 'followup:' + $('Loop Over Items').item.json.id + ':booking' }}",
+            "status": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "review-meeting-follow-up-suggestions-27"
+    },
+    {
+      "name": "Create follow-up meeting",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "parameters": {
+        "resource": "event",
+        "operation": "create",
+        "calendar": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_CALENDAR_ID"
+        },
+        "start": "={{ $(\"Validate human decision\").item.json.start }}",
+        "end": "={{ $(\"Validate human decision\").item.json.end }}",
+        "additionalFields": {
+          "summary": "={{ \"Follow-up: \" + $(\"Loop Over Items\").item.json.summary }}",
+          "description": "={{ \"Follow-up with \" + $(\"Loop Over Items\").item.json.attendees.find(a=>!a.self).email }}"
+        }
+      },
+      "id": "review-meeting-follow-up-suggestions-28"
+    },
+    {
+      "name": "Confirm meeting",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'followup:' + $('Loop Over Items').item.json.id + ':booking' }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "done"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "review-meeting-follow-up-suggestions-29"
+    },
+    {
+      "name": "Approval request webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "followup-approval",
+        "authentication": "headerAuth",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "disabled": true,
+      "id": "review-meeting-follow-up-suggestions-30"
+    },
+    {
+      "name": "Prepare approval request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const b = $json.body;\nif (!b?.eventId || !b?.contact || !Array.isArray(b.slots) || !b.slots.length)\n  throw Error(\"Invalid request\");\nreturn [\n  {\n    json: {\n      ...b,\n      message:\n        \"Please choose a follow-up time or dismiss.\\n\" +\n        b.slots.map((s) => s.start + \" to \" + s.end).join(\"\\n\"),\n    },\n  },\n];\n"
+      },
+      "id": "review-meeting-follow-up-suggestions-31"
+    },
+    {
+      "name": "Relay approval not requested",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "rowNotExists",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'followup-relay:' + $('Prepare approval request').item.json.eventId }}"
+            }
+          ]
+        }
+      },
+      "id": "review-meeting-follow-up-suggestions-32"
+    },
+    {
+      "name": "Reserve relay approval",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "item_key": "={{ 'followup-relay:' + $('Prepare approval request').item.json.eventId }}",
+            "status": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "review-meeting-follow-up-suggestions-33"
+    },
+    {
+      "id": "review-meeting-follow-up-suggestions-34",
+      "name": "Wait for relay approval",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        1660,
+        80
+      ],
+      "parameters": {
+        "sendTo": "YOUR_ADMIN_EMAIL",
+        "message": "={{ $('Prepare approval request').item.json.message }}",
+        "options": {},
+        "subject": "={{ 'Book a follow-up with ' + $('Prepare approval request').item.json.contact + '?' }}",
+        "operation": "sendAndWait",
+        "responseType": "freeText"
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "name": "Send decision to Open Flow",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "YOUR_OPEN_FLOW_CALLBACK_URL",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {eventId:$('Prepare approval request').item.json.eventId,text:$json.data.text} }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "review-meeting-follow-up-suggestions-35"
+    },
+    {
+      "name": "Confirm relay approval",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'followup-relay:' + $('Prepare approval request').item.json.eventId }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "done"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "review-meeting-follow-up-suggestions-36"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get Past Events",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Past Events": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Emails Since": {
+      "main": [
+        [
+          {
+            "node": "Flag to Follow Up",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Flag to Follow Up": {
+      "main": [
+        [
+          {
+            "node": "Only Follow Ups",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Meeting Availability Agent": {
+      "main": [
+        [
+          {
+            "node": "Generate Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Approval not requested": {
+      "main": [
+        [
+          {
+            "node": "Reserve approval email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve approval email": {
+      "main": [
+        [
+          {
+            "node": "Send for Human Approval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send for Human Approval": {
+      "main": [
+        [
+          {
+            "node": "Confirm approval response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm approval response": {
+      "main": [
+        [
+          {
+            "node": "Restore human response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore human response": {
+      "main": [
+        [
+          {
+            "node": "Meeting Booking Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Meeting Booking Agent": {
+      "main": [
+        [
+          {
+            "node": "Validate human decision",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate human decision": {
+      "main": [
+        [
+          {
+            "node": "Book confirmed slot?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Meeting not booked": {
+      "main": [
+        [
+          {
+            "node": "Reserve meeting",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve meeting": {
+      "main": [
+        [
+          {
+            "node": "Create follow-up meeting",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create follow-up meeting": {
+      "main": [
+        [
+          {
+            "node": "Confirm meeting",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm meeting": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Approval request webhook": {
+      "main": [
+        [
+          {
+            "node": "Prepare approval request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare approval request": {
+      "main": [
+        [
+          {
+            "node": "Relay approval not requested",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Relay approval not requested": {
+      "main": [
+        [
+          {
+            "node": "Reserve relay approval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve relay approval": {
+      "main": [
+        [
+          {
+            "node": "Wait for relay approval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for relay approval": {
+      "main": [
+        [
+          {
+            "node": "Send decision to Open Flow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send decision to Open Flow": {
+      "main": [
+        [
+          {
+            "node": "Confirm relay approval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Message": {
+      "main": [
+        [
+          {
+            "node": "Approval not requested",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Approval already resolved",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Approval pending",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Approval already resolved": {
+      "main": [
+        [
+          {
+            "node": "Booking pending",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "No pending booking",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Approval pending": {
+      "main": [
+        [
+          {
+            "node": "Inspect pending write",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Booking pending": {
+      "main": [
+        [
+          {
+            "node": "Inspect pending write",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "No pending booking": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Get Emails Since",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Only Follow Ups": {
+      "main": [
+        [
+          {
+            "node": "Meeting Availability Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Book confirmed slot?": {
+      "main": [
+        [
+          {
+            "node": "Meeting not booked",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Meeting Availability Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Availability": {
+      "ai_tool": [
+        [
+          {
+            "node": "Meeting Availability Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Output": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Meeting Availability Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Meeting Booking Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Require booking decision": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Meeting Booking Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Review Meeting Follow-up Suggestions",
+  "active": false,
+  "settings": {
+    "timezone": "UTC",
+    "executionOrder": "v1"
+  }
+}

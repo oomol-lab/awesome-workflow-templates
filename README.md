@@ -146,6 +146,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Route Client Feedback and Log HubSpot Meeting](workflows/route-client-feedback-and-log-hubspot-meeting/) - Summarize client feedback, log it against a HubSpot contact and email the relevant department.
 - [Create Stripe Products from Pipedrive](workflows/create-stripe-products-from-pipedrive/) - Create a Stripe product and its prices when a Pipedrive product is added.
 - [Email Customer Invoice Examples and Summary](workflows/email-customer-invoice-and-summary/) - Generate an example invoice for each customer and one customer summary email.
+- [Review Meeting Follow-up Suggestions](workflows/review-meeting-follow-up-suggestions/) - Find meetings without subsequent email, suggest available slots and book only after a human response.
 
 ## Operations
 
