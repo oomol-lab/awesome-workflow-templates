@@ -1,0 +1,611 @@
+{
+  "name": "Reply to Meeting Requests with Calendar Availability",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "reply-to-meeting-requests-with-calendar-availability-0",
+      "name": "Gmail Trigger",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "filters": {
+          "readStatus": "unread",
+          "includeSpamTrash": false
+        },
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "maxResults": 10
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "reply-to-meeting-requests-with-calendar-availability-1",
+      "name": "Chat OpenAI",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "model": "gpt-5.4-mini",
+        "options": {}
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "reply-to-meeting-requests-with-calendar-availability-2",
+      "name": "Workflow Tool",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "name": "Calendar_Availability",
+        "workflowId": "={{ $workflow.id }}",
+        "description": "Call this tool to get my calendar availability as stringified JSON array."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "reply-to-meeting-requests-with-calendar-availability-3",
+      "name": "Chat OpenAI1",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "position": [
+        660,
+        0
+      ],
+      "parameters": {
+        "model": "gpt-5.4-mini",
+        "options": {}
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "reply-to-meeting-requests-with-calendar-availability-4",
+      "name": "Google Calendar",
+      "type": "n8n-nodes-base.googleCalendar",
+      "position": [
+        880,
+        0
+      ],
+      "parameters": {
+        "options": {
+          "timeMax": "={{ $now.plus(1, 'month').toISO() }}",
+          "timeMin": "={{ $now.minus(1, 'day').toISO() }}",
+          "singleEvents": true
+        },
+        "calendar": {
+          "__rl": true,
+          "mode": "id",
+          "value": "primary"
+        },
+        "operation": "getAll",
+        "returnAll": true
+      },
+      "typeVersion": 1,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "reply-to-meeting-requests-with-calendar-availability-5",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "position": [
+        1100,
+        0
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "reply-to-meeting-requests-with-calendar-availability-6",
+      "name": "Is appointment request",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1320,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.is_appointment }}",
+              "value2": "true"
+            }
+          ],
+          "boolean": [
+            {
+              "value1": "={{ $json.is_appointment }}",
+              "value2": true
+            }
+          ]
+        },
+        "combineOperation": "any"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "reply-to-meeting-requests-with-calendar-availability-7",
+      "name": "Classify appointment",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "position": [
+        1540,
+        0
+      ],
+      "parameters": {
+        "prompt": "=Please evaluate the following email to determine if it suggests scheduling a meeting or a call:\nSubject: {{ encodeURI($json.Subject) }}\nSnippet: {{ encodeURI($json.snippet) }}\nIndicate your assessment by responding with \"true\" if it suggests a meeting or call, or \"false\" otherwise. Use lowercase for your response.\n"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "reply-to-meeting-requests-with-calendar-availability-8",
+      "name": "Structured Output Parser",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "position": [
+        1760,
+        0
+      ],
+      "parameters": {
+        "jsonSchema": "{\n \"type\": \"object\",\n \"properties\": {\n \"is_appointment\": {\n \"type\": \"boolean\"\n }\n }\n}"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "reply-to-meeting-requests-with-calendar-availability-9",
+      "name": "Mark as read",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        1980,
+        0
+      ],
+      "parameters": {
+        "messageId": "={{ $('Gmail Trigger').item.json.id }}",
+        "operation": "markAsRead"
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "id": "reply-to-meeting-requests-with-calendar-availability-10",
+      "name": "Send Reply",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        2200,
+        0
+      ],
+      "parameters": {
+        "message": "={{ $json.output }}",
+        "options": {
+          "replyToSenderOnly": true
+        },
+        "messageId": "={{ $('Gmail Trigger').item.json.id }}",
+        "operation": "reply"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "reply-to-meeting-requests-with-calendar-availability-11",
+      "name": "Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        2420,
+        0
+      ],
+      "parameters": {
+        "text": "=Sender: {{ $('Gmail Trigger').item.json.From }}\\nSubject: {{ $('Gmail Trigger').item.json.Subject }}\\nEmail Text: {{ $('Gmail Trigger').item.json.snippet }}",
+        "options": {
+          "systemMessage": "=You are an email scheduling assistant. Based on the received email, check my availability and propose an appropriate response. \nAim to get a specific time, rather than just a day. When checking my availability, make sure that there's enough time in between meetings.\nIf I'm not available, ALWAYS propose a new time based on my availability. When proposing a new time, always leave 15 minutes buffer from previous meeting.\nToday date and time is: {{ $now.toISO() }}."
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "name": "Calendar events JSON",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const events = $input\n  .all()\n  .map((x) => x.json)\n  .filter((e) => e.status === \"confirmed\" && e.start?.dateTime && e.end?.dateTime)\n  .map((e) => ({ start: e.start.dateTime, end: e.end.dateTime, name: e.summary || \"\" }))\n  .sort((a, b) => Date.parse(a.start) - Date.parse(b.start));\nreturn [{ json: { response: JSON.stringify(events) } }];\n"
+      },
+      "position": [
+        2640,
+        0
+      ],
+      "id": "reply-to-meeting-requests-with-calendar-availability-12"
+    },
+    {
+      "name": "Validate suggested reply",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if (typeof $json.output !== \"string\" || !$json.output.trim()) throw Error(\"Empty reply\");\nreturn { json: $json };\n"
+      },
+      "position": [
+        2860,
+        0
+      ],
+      "id": "reply-to-meeting-requests-with-calendar-availability-13"
+    },
+    {
+      "name": "No previous reply",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "rowNotExists",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ \"meeting-reply:\" + $(\"Gmail Trigger\").item.json.id }}"
+            }
+          ]
+        }
+      },
+      "position": [
+        3080,
+        0
+      ],
+      "id": "reply-to-meeting-requests-with-calendar-availability-14"
+    },
+    {
+      "name": "Reserve reply",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "item_key": "={{ \"meeting-reply:\" + $(\"Gmail Trigger\").item.json.id }}",
+            "status": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "position": [
+        3300,
+        0
+      ],
+      "id": "reply-to-meeting-requests-with-calendar-availability-15"
+    },
+    {
+      "name": "Restore reply",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return { json: $(\"Validate suggested reply\").item.json };\n"
+      },
+      "position": [
+        3520,
+        0
+      ],
+      "id": "reply-to-meeting-requests-with-calendar-availability-16"
+    },
+    {
+      "name": "Verify reply receipt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if (!$json.id) throw Error(\"Unknown reply outcome\");\nreturn { json: $json };\n"
+      },
+      "position": [
+        3740,
+        0
+      ],
+      "id": "reply-to-meeting-requests-with-calendar-availability-17"
+    },
+    {
+      "name": "No previous read",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "rowNotExists",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ \"meeting-read:\" + $(\"Gmail Trigger\").item.json.id }}"
+            }
+          ]
+        }
+      },
+      "position": [
+        3960,
+        0
+      ],
+      "id": "reply-to-meeting-requests-with-calendar-availability-18"
+    },
+    {
+      "name": "Reserve read",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "item_key": "={{ \"meeting-read:\" + $(\"Gmail Trigger\").item.json.id }}",
+            "status": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "position": [
+        4180,
+        0
+      ],
+      "id": "reply-to-meeting-requests-with-calendar-availability-19"
+    },
+    {
+      "name": "Restore read",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return { json: $(\"Verify reply receipt\").item.json };\n"
+      },
+      "position": [
+        4400,
+        0
+      ],
+      "id": "reply-to-meeting-requests-with-calendar-availability-20"
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC"
+  },
+  "connections": {
+    "Agent": {
+      "main": [
+        [
+          {
+            "node": "Validate suggested reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chat OpenAI": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Classify appointment",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chat OpenAI1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Classify appointment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Workflow Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Calendar": {
+      "main": [
+        [
+          {
+            "node": "Calendar events JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classify appointment": {
+      "main": [
+        [
+          {
+            "node": "Is appointment request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is appointment request": {
+      "main": [
+        [
+          {
+            "node": "Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Google Calendar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Classify appointment",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate suggested reply": {
+      "main": [
+        [
+          {
+            "node": "No previous reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "No previous reply": {
+      "main": [
+        [
+          {
+            "node": "Reserve reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve reply": {
+      "main": [
+        [
+          {
+            "node": "Restore reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore reply": {
+      "main": [
+        [
+          {
+            "node": "Send Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Reply": {
+      "main": [
+        [
+          {
+            "node": "Verify reply receipt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify reply receipt": {
+      "main": [
+        [
+          {
+            "node": "No previous read",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "No previous read": {
+      "main": [
+        [
+          {
+            "node": "Reserve read",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve read": {
+      "main": [
+        [
+          {
+            "node": "Restore read",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore read": {
+      "main": [
+        [
+          {
+            "node": "Mark as read",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
