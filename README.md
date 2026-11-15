@@ -943,6 +943,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 ## AI
 
 - [Repair Structured State Data with AI](workflows/repair-structured-state-data-with-ai/) - Ask a model for state and city data and repair an answer that does not match the required JSON format.
+- [Create an OpenAI Fine-Tuning Job from Drive](workflows/create-openai-fine-tuning-job-from-drive/) - Upload a JSONL training file from Google Drive and create an OpenAI fine-tuning job.
 
 ## E-commerce
 
