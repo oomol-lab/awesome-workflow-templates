@@ -1062,6 +1062,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Analyze Qdrant Review Clusters](workflows/analyze-qdrant-review-clusters/) - Cluster stored review vectors and append customer insights to a spreadsheet.
 - [Enrich Property Inventory from Images](workflows/enrich-property-inventory-from-images/) - Analyze inventory photos and enrich Airtable records with product attributes.
 - [Index Notion Pages in Supabase](workflows/index-notion-pages-in-supabase/) - Embed newly added Notion page text and store chunks in a Supabase vector table.
+- [Index Policy PDF Vectors](workflows/index-policy-pdf-vectors/) - Extract a policy PDF and index its text chunks in a vector table.
 
 ## E-commerce
 

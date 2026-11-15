@@ -1,0 +1,515 @@
+{
+  "name": "Index Policy PDF Vectors",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "index-policy-pdf-vectors-0",
+      "name": "When clicking ‘Test workflow’",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "index-policy-pdf-vectors-1",
+      "name": "HTTP Request",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "url": "={{ $(\"Policy settings\").item.json.pdfUrl }}",
+        "options": {}
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "index-policy-pdf-vectors-2",
+      "name": "Extract from File",
+      "type": "n8n-nodes-base.extractFromFile",
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "operation": "pdf"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "index-policy-pdf-vectors-3",
+      "name": "Create HR Policies",
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePGVector",
+      "position": [
+        660,
+        0
+      ],
+      "parameters": {
+        "mode": "insert",
+        "options": {
+          "columnNames": {
+            "values": {
+              "idColumnName": "id",
+              "vectorColumnName": "embedding",
+              "contentColumnName": "content",
+              "metadataColumnName": "metadata"
+            }
+          }
+        },
+        "tableName": {
+          "__rl": true,
+          "mode": "id",
+          "value": "documents"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "index-policy-pdf-vectors-4",
+      "name": "Embeddings OpenAI",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "position": [
+        880,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "model": "text-embedding-3-small"
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "index-policy-pdf-vectors-5",
+      "name": "Default Data Loader",
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "position": [
+        1100,
+        0
+      ],
+      "parameters": {
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "pdfUrl",
+                "value": "={{ $(\"Policy settings\").item.json.pdfUrl }}"
+              },
+              {
+                "name": "version",
+                "value": "={{ $(\"Policy settings\").item.json.version }}"
+              }
+            ]
+          }
+        },
+        "jsonData": "={{ $('Extract from File').item.json.text }}",
+        "jsonMode": "expressionData"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "index-policy-pdf-vectors-6",
+      "name": "Recursive Character Text Splitter",
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "position": [
+        1320,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "chunkSize": 2000
+      },
+      "typeVersion": 1
+    },
+    {
+      "name": "Check extracted text",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if (typeof $json.text !== \"string\" || !$json.text.trim())\n  throw Error(\"PDF extraction returned no text\");\nreturn { json: $json };\n"
+      },
+      "id": "index-policy-pdf-vectors-7",
+      "position": [
+        1540,
+        0
+      ]
+    },
+    {
+      "name": "Policy settings",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "url",
+              "name": "pdfUrl",
+              "type": "string",
+              "value": "https://example.com/policy.pdf"
+            },
+            {
+              "id": "version",
+              "name": "version",
+              "type": "string",
+              "value": "v1"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "index-policy-pdf-vectors-8",
+      "position": [
+        1760,
+        0
+      ]
+    },
+    {
+      "name": "Find prior index",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "alwaysOutputData": true,
+      "parameters": {
+        "resource": "row",
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ \"policy:\" + $(\"Policy settings\").item.json.pdfUrl + \"#\" + $(\"Policy settings\").item.json.version }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "index-policy-pdf-vectors-9",
+      "position": [
+        1980,
+        0
+      ]
+    },
+    {
+      "name": "Check index status",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if ($json.status === \"pending\") throw Error(\"Inspect PostgreSQL before retry\");\nreturn { json: { skip: $json.status === \"done\" } };\n"
+      },
+      "id": "index-policy-pdf-vectors-10",
+      "position": [
+        2200,
+        0
+      ]
+    },
+    {
+      "name": "Already indexed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.skip }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "index-policy-pdf-vectors-11",
+      "position": [
+        2420,
+        0
+      ]
+    },
+    {
+      "name": "Reserve policy index",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "item_key": "={{ \"policy:\" + $(\"Policy settings\").item.json.pdfUrl + \"#\" + $(\"Policy settings\").item.json.version }}",
+            "status": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "index-policy-pdf-vectors-12",
+      "position": [
+        2640,
+        0
+      ]
+    },
+    {
+      "name": "Restore extracted text",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return { json: $(\"Extract from File\").item.json };\n"
+      },
+      "id": "index-policy-pdf-vectors-13",
+      "position": [
+        2860,
+        0
+      ]
+    },
+    {
+      "name": "Check vector result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "if (!$input.all().length) throw Error(\"Unknown index outcome\");\nreturn [{ json: { ok: true }, pairedItem: { item: 0 } }];\n"
+      },
+      "id": "index-policy-pdf-vectors-14",
+      "position": [
+        3080,
+        0
+      ]
+    },
+    {
+      "name": "Confirm policy index",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $(\"Reserve policy index\").item.json.id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "done"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "index-policy-pdf-vectors-15",
+      "position": [
+        3300,
+        0
+      ]
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Create HR Policies",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Check extracted text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Create HR Policies",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recursive Character Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Default Data Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Test workflow’": {
+      "main": [
+        [
+          {
+            "node": "Policy settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Policy settings": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check extracted text": {
+      "main": [
+        [
+          {
+            "node": "Find prior index",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find prior index": {
+      "main": [
+        [
+          {
+            "node": "Check index status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check index status": {
+      "main": [
+        [
+          {
+            "node": "Already indexed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Already indexed?": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Reserve policy index",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve policy index": {
+      "main": [
+        [
+          {
+            "node": "Restore extracted text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore extracted text": {
+      "main": [
+        [
+          {
+            "node": "Create HR Policies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create HR Policies": {
+      "main": [
+        [
+          {
+            "node": "Check vector result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check vector result": {
+      "main": [
+        [
+          {
+            "node": "Confirm policy index",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
