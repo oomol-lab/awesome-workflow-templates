@@ -1,0 +1,937 @@
+{
+  "nodes": [
+    {
+      "id": "enrich-property-inventory-from-images-0",
+      "name": "When clicking \"Test workflow\"",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "enrich-property-inventory-from-images-1",
+      "name": "OpenAI Chat Model1",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "model": "gpt-5.4-mini",
+        "options": {
+          "temperature": 0
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "enrich-property-inventory-from-images-2",
+      "name": "Get Applicable Rows",
+      "type": "n8n-nodes-base.airtable",
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "base": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_BASE_ID"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_TABLE_ID"
+        },
+        "options": {},
+        "operation": "search",
+        "returnAll": true,
+        "filterByFormula": "AND(Image!=\"\", AI_status=FALSE())"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "enrich-property-inventory-from-images-3",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "position": [
+        660,
+        0
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "enrich-property-inventory-from-images-4",
+      "name": "Edit Fields",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        880,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "7263764b-8409-4cea-8db3-3278dd7ef9d8",
+              "name": "route",
+              "type": "string",
+              "value": "={{ $json.route }}"
+            },
+            {
+              "id": "55c3b207-2e98-4137-8413-f72cbff17986",
+              "name": "query",
+              "type": "string",
+              "value": "={{ $json.query }}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.3
+    },
+    {
+      "id": "enrich-property-inventory-from-images-5",
+      "name": "Fallback Response",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        1100,
+        0
+      ],
+      "parameters": {
+        "mode": "raw",
+        "options": {},
+        "jsonOutput": "{\n \"response\": {\n \"ok\": false,\n \"error\": \"The requested tool was not found or the service may be unavailable. Do not retry.\"\n }\n}\n"
+      },
+      "typeVersion": 3.3
+    },
+    {
+      "id": "enrich-property-inventory-from-images-6",
+      "name": "SERP Google Reverse Image API",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        1320,
+        0
+      ],
+      "parameters": {
+        "url": "https://serpapi.com/search.json",
+        "options": {},
+        "sendQuery": true,
+        "authentication": "predefinedCredentialType",
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "engine",
+              "value": "google_reverse_image"
+            },
+            {
+              "name": "image_url",
+              "value": "={{ $json.query }}"
+            }
+          ]
+        },
+        "nodeCredentialType": "serpApi"
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "enrich-property-inventory-from-images-7",
+      "name": "Reverse Image Search Response",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        1540,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "de99a504-713f-4c78-8679-08139b2def31",
+              "name": "response",
+              "type": "string",
+              "value": "={{ JSON.stringify($json.image_results.map(x => ({ position: x.position, title: x.title, link: x.link, description: x.snippet }))) }}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.3
+    },
+    {
+      "id": "enrich-property-inventory-from-images-8",
+      "name": "Reverse Image Search Tool",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "position": [
+        1760,
+        0
+      ],
+      "parameters": {
+        "name": "reverse_image_search",
+        "fields": {
+          "values": [
+            {
+              "name": "route",
+              "stringValue": "serp.google_reverse_image",
+              "type": "stringValue"
+            }
+          ]
+        },
+        "workflowId": "={{ $workflow.id }}",
+        "description": "Provide one absolute HTTPS image URL as a plain string. Returns matching product links.",
+        "specifyInputSchema": false
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "enrich-property-inventory-from-images-9",
+      "name": "Firecrawl Scrape API",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        1980,
+        0
+      ],
+      "parameters": {
+        "url": "https://api.firecrawl.dev/v2/scrape",
+        "method": "POST",
+        "options": {},
+        "sendBody": true,
+        "sendHeaders": true,
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ {url:$json.query,formats:[\"markdown\"],onlyMainContent:true} }}"
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "enrich-property-inventory-from-images-10",
+      "name": "Scrape Success?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        2200,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "a15a164f-d0c5-478f-8b27-f3d51746c214",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.success }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "enrich-property-inventory-from-images-11",
+      "name": "Firecrawl Scrape Success Response",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        2420,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "7db5c81f-de90-40e1-8086-3f13d40451c7",
+              "name": "response",
+              "type": "string",
+              "value": "={{ $json.data.markdown.substring(0, 3000) }}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.3
+    },
+    {
+      "id": "enrich-property-inventory-from-images-12",
+      "name": "Firecrawl scrape Error Response",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        2640,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e691d86a-d366-44a2-baa6-3dba42527f6e",
+              "name": "response",
+              "type": "string",
+              "value": "{ error: \"Unable to scrape website due to unknown error. Do not retry.\" }"
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.3
+    },
+    {
+      "id": "enrich-property-inventory-from-images-13",
+      "name": "Firecrawl Web Scaper Tool",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "position": [
+        2860,
+        0
+      ],
+      "parameters": {
+        "name": "webpage_url_scraper_tool",
+        "fields": {
+          "values": [
+            {
+              "name": "route",
+              "stringValue": "firecrawl.scrape",
+              "type": "stringValue"
+            }
+          ]
+        },
+        "workflowId": "={{ $workflow.id }}",
+        "description": "Provide one absolute HTTPS product page URL as a plain string. Returns page content.",
+        "specifyInputSchema": false
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "enrich-property-inventory-from-images-14",
+      "name": "Structured Output Parser",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "position": [
+        3080,
+        0
+      ],
+      "parameters": {
+        "jsonSchema": "{\n \"type\": \"object\",\n \"properties\": {\n \"title\": { \"type\": \"string\" },\n \"description\": { \"type\": \"string\" },\n \"model\": { \"type\": \"string\" },\n \"material\": { \"type\": \"string\" },\n \"color\": { \"type\": \"string\" },\n \"condition\": { \"type\": \"string\" }\n }\n}"
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "enrich-property-inventory-from-images-15",
+      "name": "Enrich Product Rows",
+      "type": "n8n-nodes-base.airtable",
+      "position": [
+        3300,
+        0
+      ],
+      "parameters": {
+        "base": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_BASE_ID"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_TABLE_ID"
+        },
+        "columns": {
+          "value": {
+            "id": "={{ $('Get Applicable Rows').item.json.id }}",
+            "Color": "={{ $json.output.output.color }}",
+            "Model": "={{ $json.output.output.model }}",
+            "Title": "={{ $json.output.output.title }}",
+            "Material": "={{ $json.output.output.material }}",
+            "AI_status": true,
+            "Condition": "={{ $json.output.output.condition }}",
+            "Description": "={{ $json.output.output.description }}"
+          },
+          "schema": [
+            {
+              "id": "id",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "readOnly": true,
+              "required": false,
+              "displayName": "id",
+              "defaultMatch": true
+            },
+            {
+              "id": "Title",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "Title",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Image",
+              "type": "array",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "Image",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Description",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "Description",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Model",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "Model",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Material",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "Material",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Color",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "Color",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Condition",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "Condition",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "AI_status",
+              "type": "boolean",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "AI_status",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": [
+            "id"
+          ]
+        },
+        "options": {},
+        "operation": "update"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "enrich-property-inventory-from-images-16",
+      "name": "Analyse Image",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "position": [
+        3520,
+        0
+      ],
+      "parameters": {
+        "text": "=Focus on the {{ $json.Title }} in the image - we'll refer to this as the \"object\". Identify the following attributes of the object. If you cannot determine confidently, then leave blank and move to next attribute.\n* Decription of the object.\n* The model/make of the object.\n* The material(s) used in the construction of the object.\n* The color(s) of the object\n* The condition of the object. Use one of poor, good, excellent.\n",
+        "options": {},
+        "resource": "image",
+        "imageUrls": "={{ $json.Image[0].url }}",
+        "operation": "analyze",
+        "modelId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "gpt-5.4-mini"
+        }
+      },
+      "typeVersion": 1.4
+    },
+    {
+      "id": "enrich-property-inventory-from-images-17",
+      "name": "Object Identifier Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        3740,
+        0
+      ],
+      "parameters": {
+        "text": "=system: Your role is to help an building surveyor perform a object classification and data collection task whereby the surveyor will take photos of various objects and your job is to try and identify accurately certain product attributes of the objects as detailed below.\n\nThe surveyor has given you the following:\n1) photo url ```{{ $('Get Applicable Rows').item.json.Image[0].url }}```.\n2) photo description ```{{ $json.content }}```.\n\nFor each product attribute the surveyor is unable to determine, you may:\n1) use the reverse image search tool to search the product on the internet via the provided image url.\n2) use the web scraper tool to read webpages on the internet which may be relevant to the product.\n3) If after using these tools, you are still unable to determine the required product attributes then leave the data blank.\n\nUse all the information provided and gathered, to extract the following product attributes: title, description, model, material, color and condition.",
+        "agent": "openAiFunctionsAgent",
+        "options": {},
+        "promptType": "define",
+        "hasOutputParser": true
+      },
+      "typeVersion": 1.5
+    },
+    {
+      "id": "enrich-property-inventory-from-images-18",
+      "name": "Actions Router",
+      "type": "n8n-nodes-base.switch",
+      "position": [
+        3960,
+        0
+      ],
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "outputKey": "serp.google_reverse_image",
+              "conditions": {
+                "options": {
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.route }}",
+                    "rightValue": "serp.google_reverse_image"
+                  }
+                ]
+              },
+              "renameOutput": true
+            },
+            {
+              "outputKey": "firecrawl.scrape",
+              "conditions": {
+                "options": {
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "0a1f54ae-39f1-468d-ba6e-1376d13e4ee8",
+                    "operator": {
+                      "name": "filter.operator.equals",
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.route }}",
+                    "rightValue": "firecrawl.scrape"
+                  }
+                ]
+              },
+              "renameOutput": true
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "typeVersion": 3
+    },
+    {
+      "name": "No prior inventory update",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "rowNotExists",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'inventory:' + $('Get Applicable Rows').item.json.id }}"
+            }
+          ]
+        }
+      },
+      "id": "enrich-property-inventory-from-images-19",
+      "position": [
+        4180,
+        0
+      ]
+    },
+    {
+      "name": "Reserve inventory update",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "item_key": "={{ 'inventory:' + $('Get Applicable Rows').item.json.id }}",
+            "status": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "enrich-property-inventory-from-images-20",
+      "position": [
+        4400,
+        0
+      ]
+    },
+    {
+      "name": "Restore inventory analysis",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return { json: $(\"Object Identifier Agent\").item.json };\n"
+      },
+      "id": "enrich-property-inventory-from-images-21",
+      "position": [
+        4620,
+        0
+      ]
+    },
+    {
+      "name": "Confirm inventory update",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $(\"Reserve inventory update\").item.json.id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "done"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "enrich-property-inventory-from-images-22",
+      "position": [
+        4840,
+        0
+      ]
+    },
+    {
+      "name": "Verify inventory receipt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if (!$json.id || $json.id !== $(\"Get Applicable Rows\").item.json.id)\n  throw Error(\"Unknown Airtable outcome\");\nreturn { json: $json };\n"
+      },
+      "id": "enrich-property-inventory-from-images-23",
+      "position": [
+        5060,
+        0
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Actions Router",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyse Image": {
+      "main": [
+        [
+          {
+            "node": "Object Identifier Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Actions Router": {
+      "main": [
+        [
+          {
+            "node": "SERP Google Reverse Image API",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Firecrawl Scrape API",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fallback Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scrape Success?": {
+      "main": [
+        [
+          {
+            "node": "Firecrawl Scrape Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Firecrawl scrape Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Object Identifier Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Applicable Rows": {
+      "main": [
+        [
+          {
+            "node": "Analyse Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Firecrawl Scrape API": {
+      "main": [
+        [
+          {
+            "node": "Scrape Success?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Object Identifier Agent": {
+      "main": [
+        [
+          {
+            "node": "No prior inventory update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Object Identifier Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Firecrawl Web Scaper Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "Object Identifier Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reverse Image Search Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "Object Identifier Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SERP Google Reverse Image API": {
+      "main": [
+        [
+          {
+            "node": "Reverse Image Search Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking \"Test workflow\"": {
+      "main": [
+        [
+          {
+            "node": "Get Applicable Rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "No prior inventory update": {
+      "main": [
+        [
+          {
+            "node": "Reserve inventory update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve inventory update": {
+      "main": [
+        [
+          {
+            "node": "Restore inventory analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore inventory analysis": {
+      "main": [
+        [
+          {
+            "node": "Enrich Product Rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enrich Product Rows": {
+      "main": [
+        [
+          {
+            "node": "Verify inventory receipt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify inventory receipt": {
+      "main": [
+        [
+          {
+            "node": "Confirm inventory update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Enrich Property Inventory from Images",
+  "active": false
+}

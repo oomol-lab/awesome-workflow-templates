@@ -1053,6 +1053,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Crawl Company Social Profiles](workflows/crawl-company-social-profiles/) - Find company social profiles by exploring their websites and save the results to Supabase.
 - [Index Detected Image Objects](workflows/index-detected-image-objects/) - Detect and crop objects in an image, then index their URLs and labels.
 - [Analyze Qdrant Review Clusters](workflows/analyze-qdrant-review-clusters/) - Cluster stored review vectors and append customer insights to a spreadsheet.
+- [Enrich Property Inventory from Images](workflows/enrich-property-inventory-from-images/) - Analyze inventory photos and enrich Airtable records with product attributes.
 
 ## E-commerce
 
