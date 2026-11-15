@@ -310,6 +310,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Author and Publish Scheduled Blog Posts](workflows/author-and-publish-scheduled-blog-posts/) - Generate blog content from scheduled spreadsheet rows and publish due posts to WordPress.
 - [KlickTipp WhatsApp Offers and Opt-Outs](workflows/klicktipp-whatsapp-offers-and-opt-outs/) - Send personalized WhatsApp templates from KlickTipp events and route incoming replies or opt-outs.
 - [Email Landing Page SEO Audit](workflows/email-landing-page-seo-audit/) - Audit a landing page for technical SEO and content improvements and email the findings.
+- [Make Social Event Banners for Discord](workflows/make-social-event-banners-for-discord/) - Generate an event poster from a prompt and share it as a Discord attachment.
 
 ## Support
 
