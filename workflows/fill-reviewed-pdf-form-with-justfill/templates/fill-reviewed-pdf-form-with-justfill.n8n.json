@@ -1,0 +1,934 @@
+{
+  "name": "Fill a Reviewed PDF Form with JustFill",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "Fill a PDF with JustFill",
+        "formDescription": "Upload a PDF that has a saved JustFill template and provide the values as JSON.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "PDF",
+              "fieldType": "file",
+              "acceptFileTypes": ".pdf",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Data JSON",
+              "fieldType": "textarea",
+              "placeholder": "{\"age_score\": \"1\", \"total_score\": \"5\"}",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Request ID",
+              "fieldType": "text",
+              "requiredField": true
+            }
+          ]
+        },
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "fill-reviewed-pdf-form-with-justfill-0",
+      "name": "On form submission",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://justfill.app/api/mcp",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json, text/event-stream"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"method\": \"tools/call\", \"params\": {\"name\": \"request_file_upload\", \"arguments\": {}}}",
+        "options": {},
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "id": "fill-reviewed-pdf-form-with-justfill-1",
+      "name": "Mint upload slot",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const rpc = $input.first().json;\nif (rpc.error) throw new Error(\"MCP transport error: \" + JSON.stringify(rpc.error));\nif (rpc.result && rpc.result.isError)\n  throw new Error(\n    \"MCP tool error: \" +\n      ((rpc.result.content && rpc.result.content[0] && rpc.result.content[0].text) || \"unknown\"),\n  );\n// The slot JSON arrives as text inside the MCP tool result.\nconst slot = JSON.parse(rpc.result.content[0].text);\nif (slot.error) throw new Error(\"request_file_upload: \" + slot.error);\nconst trigger = $(\"On form submission\").first();\nconst binKey = Object.keys(trigger.binary || {})[0];\nif (!binKey) throw new Error(\"No file arrived from the form.\");\n// Ready-made JSON-RPC body for the Open PDF node (building it here avoids\n// n8n's expression parser tripping on `}}` inside inline object literals).\nslot.openBody = {\n  jsonrpc: \"2.0\",\n  id: 2,\n  method: \"tools/call\",\n  params: { name: \"open_pdf\", arguments: { upload_token: slot.upload_token } },\n};\nreturn [{ json: slot, binary: { file: trigger.binary[binKey] } }];\n"
+      },
+      "id": "fill-reviewed-pdf-form-with-justfill-2",
+      "name": "Prepare upload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "notes": "Parses the MCP upload-slot response and preserves the submitted PDF as binary for the one-time upload.",
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.post_url }}",
+        "contentType": "multipart-form-data",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "file",
+              "inputDataFieldName": "file"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fill-reviewed-pdf-form-with-justfill-3",
+      "name": "Upload PDF",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        660,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://justfill.app/api/mcp",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json, text/event-stream"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($('Prepare upload').item.json.openBody) }}",
+        "options": {
+          "timeout": 180000
+        },
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "id": "fill-reviewed-pdf-form-with-justfill-4",
+      "name": "Open PDF",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        880,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const rpc = $input.first().json;\nif (rpc.error) throw new Error(\"MCP transport error: \" + JSON.stringify(rpc.error));\nif (rpc.result && rpc.result.isError)\n  throw new Error(\n    \"MCP tool error: \" +\n      ((rpc.result.content && rpc.result.content[0] && rpc.result.content[0].text) || \"unknown\"),\n  );\nconst ws = JSON.parse(rpc.result.content[0].text);\nif (ws.error) throw new Error(\"open_pdf: \" + ws.error);\nif (!Array.isArray(ws.fields) || !ws.summary?.workspace_id)\n  throw new Error(\"open_pdf returned no usable field list or workspace.\");\n\nconst raw = $(\"On form submission\").first().json[\"Data JSON\"];\nlet data;\ntry {\n  data = JSON.parse(raw);\n} catch {\n  throw new Error(\"Data JSON must be a JSON object keyed by reviewed PDF field names.\");\n}\nif (!data || Array.isArray(data) || typeof data !== \"object\" || !Object.keys(data).length) {\n  throw new Error(\"Data JSON must be a non-empty object, not a list, null or a scalar.\");\n}\n\n// Exact normalized names only. Keep Unicode; never guess using substrings.\nconst norm = (s) =>\n  String(s ?? \"\")\n    .normalize(\"NFC\")\n    .toLowerCase()\n    .replace(/[^\\p{L}\\p{M}\\p{N}]+/gu, \"\");\nconst values = Object.create(null),\n  unmatched = [],\n  usedIds = new Set();\nfor (const [k, v] of Object.entries(data)) {\n  const nk = norm(k);\n  if (!nk) throw new Error(\"Every JSON key must contain a letter or number.\");\n  if (v !== null && (typeof v === \"object\" || (typeof v === \"number\" && !Number.isFinite(v)))) {\n    throw new Error(\n      \"Field values must be text, finite numbers, booleans or null; nested values are not supported.\",\n    );\n  }\n  const matches = ws.fields.filter((f) => norm(f.name) === nk);\n  if (!matches.length) {\n    unmatched.push(k);\n    continue;\n  }\n  if (matches.length !== 1)\n    throw new Error(\"Ambiguous PDF field name: \" + k + \". Give each field a unique reviewed name.\");\n  const f = matches[0];\n  if (typeof f.id !== \"string\" || !f.id) throw new Error(\"A matched PDF field has no valid ID.\");\n  if (usedIds.has(f.id))\n    throw new Error(\"Two JSON keys map to the same PDF field. Use one key per field.\");\n  usedIds.add(f.id);\n  values[f.id] = v === null ? \"\" : String(v);\n}\nif (unmatched.length) {\n  throw new Error(\n    \"Unmatched JSON keys: \" +\n      unmatched.join(\", \") +\n      \". Rename the keys or review and save the PDF field names; no PDF was filled.\",\n  );\n}\nif (!Object.keys(values).length) throw new Error(\"No data keys matched the template fields.\");\n\nreturn [\n  {\n    json: {\n      workspace_id: ws.summary.workspace_id,\n      source: ws.summary.source,\n      matched: Object.keys(values).length,\n      unmatched,\n      values,\n      fillBody: {\n        jsonrpc: \"2.0\",\n        id: 3,\n        method: \"tools/call\",\n        params: { name: \"fill_pdf\", arguments: { workspace_id: ws.summary.workspace_id, values } },\n      },\n    },\n  },\n];\n"
+      },
+      "id": "fill-reviewed-pdf-form-with-justfill-5",
+      "name": "Map values to fields",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "notes": "Maps submitted JSON keys to the stable field IDs from the previously reviewed JustFill template.",
+      "position": [
+        1100,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://justfill.app/api/mcp",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json, text/event-stream"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.fillBody) }}",
+        "options": {},
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "id": "fill-reviewed-pdf-form-with-justfill-6",
+      "name": "Fill PDF",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1320,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const rpc = $input.first().json;\nif (rpc.error) throw new Error(\"MCP transport error: \" + JSON.stringify(rpc.error));\nif (rpc.result && rpc.result.isError)\n  throw new Error(\n    \"MCP tool error: \" +\n      ((rpc.result.content && rpc.result.content[0] && rpc.result.content[0].text) || \"unknown\"),\n  );\nconst out = JSON.parse(rpc.result.content[0].text);\nif (out.error) throw new Error(\"fill_pdf: \" + out.error);\nif (typeof out.download_url !== \"string\" || !/^https:\\/\\//.test(out.download_url))\n  throw Error(\"Missing PDF download URL\");\n// download_url: plain GET, no auth, valid until the workspace expires (~24h).\nreturn [\n  {\n    json: {\n      download_url: out.download_url,\n      output_mode: out.output_mode,\n      filled_fields: out.filled_fields,\n      link_expires_at: out.link_expires_at,\n      warnings: out.warnings || null,\n    },\n  },\n];\n"
+      },
+      "id": "fill-reviewed-pdf-form-with-justfill-7",
+      "name": "Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "notes": "Shapes the JustFill response into the temporary download contract used by the final redirect node.",
+      "position": [
+        1540,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "completion",
+        "respondWith": "redirect",
+        "redirectUrl": "={{ $json.download_url }}",
+        "options": {}
+      },
+      "id": "fill-reviewed-pdf-form-with-justfill-8",
+      "name": "Redirect to filled PDF",
+      "type": "n8n-nodes-base.form",
+      "typeVersion": 1,
+      "position": [
+        1760,
+        0
+      ]
+    },
+    {
+      "name": "Validate request ID",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const x = String($json[\"Request ID\"] || \"\").trim();\nif (!x) throw Error(\"Provide a unique request ID\");\nreturn { json: $json, binary: $binary };\n"
+      },
+      "position": [
+        1980,
+        0
+      ],
+      "id": "fill-reviewed-pdf-form-with-justfill-9"
+    },
+    {
+      "name": "Submission not attempted",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "rowNotExists",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ \"justfill:\"+$(\"On form submission\").first().json[\"Request ID\"] }}"
+            }
+          ]
+        }
+      },
+      "position": [
+        2200,
+        0
+      ],
+      "id": "fill-reviewed-pdf-form-with-justfill-10"
+    },
+    {
+      "name": "Reserve PDF submission",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "item_key": "={{ \"justfill:\"+$(\"On form submission\").first().json[\"Request ID\"] }}",
+            "status": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "position": [
+        2420,
+        0
+      ],
+      "id": "fill-reviewed-pdf-form-with-justfill-11"
+    },
+    {
+      "name": "Confirm PDF generation",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ \"justfill:\"+$(\"On form submission\").first().json[\"Request ID\"] }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "done"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "position": [
+        2640,
+        0
+      ],
+      "id": "fill-reviewed-pdf-form-with-justfill-12"
+    },
+    {
+      "name": "Restore PDF result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return $(\"Result\").all();\n"
+      },
+      "position": [
+        2860,
+        0
+      ],
+      "id": "fill-reviewed-pdf-form-with-justfill-13"
+    },
+    {
+      "parameters": {
+        "formTitle": "Fill a PDF with JustFill",
+        "formDescription": "Upload a PDF that has a saved JustFill template and provide the values as JSON.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "PDF",
+              "fieldType": "file",
+              "acceptFileTypes": ".pdf",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Data JSON",
+              "fieldType": "textarea",
+              "placeholder": "{\"age_score\": \"1\", \"total_score\": \"5\"}",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Request ID",
+              "fieldType": "text",
+              "requiredField": true
+            }
+          ]
+        },
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "fill-reviewed-pdf-form-with-justfill-14",
+      "name": "Open Flow form submission",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [
+        3080,
+        0
+      ],
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://justfill.app/api/mcp",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json, text/event-stream"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"method\": \"tools/call\", \"params\": {\"name\": \"request_file_upload\", \"arguments\": {}}}",
+        "options": {},
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "id": "fill-reviewed-pdf-form-with-justfill-15",
+      "name": "Open Flow Mint upload slot",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3300,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const rpc = $input.first().json;\nif (rpc.error) throw new Error(\"MCP transport error: \" + JSON.stringify(rpc.error));\nif (rpc.result && rpc.result.isError)\n  throw new Error(\n    \"MCP tool error: \" +\n      ((rpc.result.content && rpc.result.content[0] && rpc.result.content[0].text) || \"unknown\"),\n  );\n// The slot JSON arrives as text inside the MCP tool result.\nconst slot = JSON.parse(rpc.result.content[0].text);\nif (slot.error) throw new Error(\"request_file_upload: \" + slot.error);\nconst trigger = $(\"Open Flow form submission\").first();\nconst binKey = Object.keys(trigger.binary || {})[0];\nif (!binKey) throw new Error(\"No file arrived from the form.\");\n// Ready-made JSON-RPC body for the Open PDF node (building it here avoids\n// n8n's expression parser tripping on `}}` inside inline object literals).\nslot.openBody = {\n  jsonrpc: \"2.0\",\n  id: 2,\n  method: \"tools/call\",\n  params: { name: \"open_pdf\", arguments: { upload_token: slot.upload_token } },\n};\nreturn [{ json: slot, binary: { file: trigger.binary[binKey] } }];\n"
+      },
+      "id": "fill-reviewed-pdf-form-with-justfill-16",
+      "name": "Open Flow Prepare upload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "notes": "Parses the MCP upload-slot response and preserves the submitted PDF as binary for the one-time upload.",
+      "position": [
+        3520,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.post_url }}",
+        "contentType": "multipart-form-data",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "file",
+              "inputDataFieldName": "file"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fill-reviewed-pdf-form-with-justfill-17",
+      "name": "Open Flow Upload PDF",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3740,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://justfill.app/api/mcp",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json, text/event-stream"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($('Open Flow Prepare upload').item.json.openBody) }}",
+        "options": {
+          "timeout": 180000
+        },
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "id": "fill-reviewed-pdf-form-with-justfill-18",
+      "name": "Open Flow Open PDF",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3960,
+        0
+      ]
+    },
+    {
+      "name": "Open Flow Validate request ID",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const x = String($json[\"Request ID\"] || \"\").trim();\nif (!x) throw Error(\"Provide a unique request ID\");\nreturn { json: $json, binary: $binary };\n"
+      },
+      "position": [
+        4180,
+        0
+      ],
+      "id": "fill-reviewed-pdf-form-with-justfill-19"
+    },
+    {
+      "name": "Open Flow Submission not attempted",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "rowNotExists",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ \"justfill:\"+$(\"Open Flow form submission\").first().json[\"Request ID\"] }}"
+            }
+          ]
+        }
+      },
+      "position": [
+        4400,
+        0
+      ],
+      "id": "fill-reviewed-pdf-form-with-justfill-20"
+    },
+    {
+      "name": "Open Flow Reserve PDF submission",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "item_key": "={{ \"justfill:\"+$(\"Open Flow form submission\").first().json[\"Request ID\"] }}",
+            "status": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "position": [
+        4620,
+        0
+      ],
+      "id": "fill-reviewed-pdf-form-with-justfill-21"
+    },
+    {
+      "name": "Open Flow Confirm PDF generation",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ \"justfill:\"+$(\"Open Flow form submission\").first().json[\"Request ID\"] }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "done"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "position": [
+        4840,
+        0
+      ],
+      "id": "fill-reviewed-pdf-form-with-justfill-22"
+    },
+    {
+      "name": "Fill with Open Flow",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "YOUR_OPEN_FLOW_WEBHOOK_URL",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {rpc:$json,raw:$(\"Open Flow form submission\").first().json[\"Data JSON\"],requestId:$(\"Open Flow form submission\").first().json[\"Request ID\"]} }}",
+        "options": {
+          "timeout": 65000,
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "position": [
+        5060,
+        0
+      ],
+      "id": "fill-reviewed-pdf-form-with-justfill-23"
+    },
+    {
+      "name": "Validate Open Flow PDF result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if (typeof $json.download_url !== \"string\" || !/^https:\\/\\//.test($json.download_url))\n  throw Error(\"Missing PDF download URL\");\nreturn { json: $json };\n"
+      },
+      "position": [
+        5280,
+        0
+      ],
+      "id": "fill-reviewed-pdf-form-with-justfill-24"
+    },
+    {
+      "name": "Restore Open Flow PDF result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return $(\"Validate Open Flow PDF result\").all();\n"
+      },
+      "position": [
+        5500,
+        0
+      ],
+      "id": "fill-reviewed-pdf-form-with-justfill-25"
+    },
+    {
+      "parameters": {
+        "operation": "completion",
+        "respondWith": "redirect",
+        "redirectUrl": "={{ $json.download_url }}",
+        "options": {}
+      },
+      "id": "fill-reviewed-pdf-form-with-justfill-26",
+      "name": "Redirect to Open Flow PDF",
+      "type": "n8n-nodes-base.form",
+      "typeVersion": 1,
+      "position": [
+        5720,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "Validate request ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mint upload slot": {
+      "main": [
+        [
+          {
+            "node": "Prepare upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare upload": {
+      "main": [
+        [
+          {
+            "node": "Upload PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload PDF": {
+      "main": [
+        [
+          {
+            "node": "Open PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Open PDF": {
+      "main": [
+        [
+          {
+            "node": "Map values to fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Map values to fields": {
+      "main": [
+        [
+          {
+            "node": "Fill PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fill PDF": {
+      "main": [
+        [
+          {
+            "node": "Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Result": {
+      "main": [
+        [
+          {
+            "node": "Confirm PDF generation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate request ID": {
+      "main": [
+        [
+          {
+            "node": "Submission not attempted",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Submission not attempted": {
+      "main": [
+        [
+          {
+            "node": "Reserve PDF submission",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve PDF submission": {
+      "main": [
+        [
+          {
+            "node": "Mint upload slot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm PDF generation": {
+      "main": [
+        [
+          {
+            "node": "Restore PDF result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore PDF result": {
+      "main": [
+        [
+          {
+            "node": "Redirect to filled PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Open Flow form submission": {
+      "main": [
+        [
+          {
+            "node": "Open Flow Validate request ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Open Flow Validate request ID": {
+      "main": [
+        [
+          {
+            "node": "Open Flow Submission not attempted",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Open Flow Submission not attempted": {
+      "main": [
+        [
+          {
+            "node": "Open Flow Reserve PDF submission",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Open Flow Reserve PDF submission": {
+      "main": [
+        [
+          {
+            "node": "Open Flow Mint upload slot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Open Flow Mint upload slot": {
+      "main": [
+        [
+          {
+            "node": "Open Flow Prepare upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Open Flow Prepare upload": {
+      "main": [
+        [
+          {
+            "node": "Open Flow Upload PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Open Flow Upload PDF": {
+      "main": [
+        [
+          {
+            "node": "Open Flow Open PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Open Flow Open PDF": {
+      "main": [
+        [
+          {
+            "node": "Fill with Open Flow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fill with Open Flow": {
+      "main": [
+        [
+          {
+            "node": "Validate Open Flow PDF result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Open Flow PDF result": {
+      "main": [
+        [
+          {
+            "node": "Open Flow Confirm PDF generation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Open Flow Confirm PDF generation": {
+      "main": [
+        [
+          {
+            "node": "Restore Open Flow PDF result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore Open Flow PDF result": {
+      "main": [
+        [
+          {
+            "node": "Redirect to Open Flow PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "active": false
+}
