@@ -1005,6 +1005,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Upload Multiple Files to a Named Drive Folder](workflows/upload-multiple-files-to-named-drive-folder/) - Upload multiple form files to a named Google Drive folder, creating it when needed.
 - [Read Front Car License Plate from Image](workflows/read-front-car-license-plate-from-image/) - Extract the front-most vehicle license plate from an uploaded image.
 - [Extract Front Vehicle License Plate](workflows/extract-front-vehicle-license-plate/) - Extract the front-most vehicle license plate from an uploaded image.
+- [Check Drive Passport Photo Guidance](workflows/check-drive-passport-photo-guidance/) - Check Google Drive portraits against digital passport photo guidance and review the results.
 
 ## Entertainment
 
