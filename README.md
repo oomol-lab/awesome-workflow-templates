@@ -632,6 +632,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Action Meeting Transcript Follow-ups](workflows/action-meeting-transcript-follow-ups/) - Summarize a Google Meet transcript and schedule agreed follow-up meetings.
 - [Record Recall Transcript Notes](workflows/record-recall-transcript-notes/) - Save verified live transcript segments and create meeting notes when a keyword is spoken.
 - [Fill Airtable Fields from PDF Prompts](workflows/fill-airtable-fields-from-pdf-prompts/) - Use Airtable field descriptions as prompts to extract values from attached PDF files.
+- [Capture Job Applications](workflows/capture-job-applications/) - Receive application details and save a CV link for human review.
 
 ## Content
 
