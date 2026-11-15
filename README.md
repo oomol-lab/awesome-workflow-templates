@@ -148,6 +148,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Create Stripe Products from Pipedrive](workflows/create-stripe-products-from-pipedrive/) - Create a Stripe product and its prices when a Pipedrive product is added.
 - [Email Customer Invoice Examples and Summary](workflows/email-customer-invoice-and-summary/) - Generate an example invoice for each customer and one customer summary email.
 - [Review Meeting Follow-up Suggestions](workflows/review-meeting-follow-up-suggestions/) - Find meetings without subsequent email, suggest available slots and book only after a human response.
+- [Draft a Website-Grounded Cold Email](workflows/draft-website-grounded-cold-email/) - Draft a personalized cold email grounded in a lead’s website.
 
 ## Operations
 
