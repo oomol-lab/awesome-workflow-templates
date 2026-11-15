@@ -11,7 +11,7 @@ Draft replies to selected Gmail messages and record recipient feedback in Google
 
 ## Setup
 
-Connect Gmail, Google Sheets and an AI model. Create a sheet named Database with columns ID, Initial message, Generated reply and Good response?. Enter its ID in all three Sheets nodes, configure sender addresses in **Select allowed sender**, and set the public feedback webhook URL in **Reserve next email action**. Enable persistent State and use one format at a time. In n8n configure Gmail, OpenAI, Google Sheets, the matching spreadsheet and sheet IDs, the allowed senders and the feedback URL. Select the same Data Table in all checkpoint nodes, with text columns item_key, status, token, initial and draft.
+Connect Gmail, Google Sheets and Gemini. Create a sheet named Database with columns ID, Initial message, Generated reply and Good response?. Enter its ID in all three Sheets nodes, configure sender addresses in **Select allowed sender**, and set the public feedback webhook URL in **Reserve next email action**. Enable persistent State and use one format at a time. In n8n configure Gmail, Gemini, Google Sheets, the matching spreadsheet and sheet IDs, the allowed senders and the feedback URL. Select the same Data Table in all checkpoint nodes, with text columns item_key, status, token, initial and draft.
 
 ## Behavior
 
