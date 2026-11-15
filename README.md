@@ -609,6 +609,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Queue Regulated Browser Operations](workflows/queue-regulated-browser-operations/) - Queue a saved Komos browser operations task and review its run.
 - [Issue Verifiable Certificates](workflows/issue-verifiable-certificates/) - Issue verifiable certificates for a course and its recipients.
 - [Categorize Outlook Email with AI](workflows/categorize-outlook-email-with-ai/) - Classify an unflagged Outlook message and move it to a matching folder.
+- [Send an Urgent Daily Email Digest](workflows/send-urgent-daily-email-digest/) - Summarize the past day of email and notify when a thread needs action.
 
 ## Content
 
