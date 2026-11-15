@@ -1,0 +1,613 @@
+{
+  "name": "Report Shodan Unexpected Ports to TheHive",
+  "tags": [
+    {
+      "id": "GCHVocImoXoEVnzP",
+      "name": "🛠️ In progress",
+      "createdAt": "2023-10-31T02:17:21.618Z",
+      "updatedAt": "2023-10-31T02:17:21.618Z"
+    },
+    {
+      "id": "QPJKatvLSxxtrE8U",
+      "name": "Secops",
+      "createdAt": "2023-10-31T02:15:11.396Z",
+      "updatedAt": "2023-10-31T02:15:11.396Z"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "report-shodan-unexpected-ports-to-thehive-0",
+      "name": "Every Monday",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtDay": [
+                1
+              ],
+              "triggerAtHour": 5
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "report-shodan-unexpected-ports-to-thehive-1",
+      "name": "Get watched IPs & Ports",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "url": "YOUR_WATCHLIST_ENDPOINT",
+        "options": {}
+      },
+      "typeVersion": 4.1
+    },
+    {
+      "id": "report-shodan-unexpected-ports-to-thehive-2",
+      "name": "For each IP",
+      "type": "n8n-nodes-base.splitInBatches",
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "typeVersion": 3
+    },
+    {
+      "name": "Validate watched IP",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const { ip, ports } = $json;\nif (\n  typeof ip !== \"string\" ||\n  !ip ||\n  !/^[0-9a-fA-F:.]+$/.test(ip) ||\n  !Array.isArray(ports) ||\n  ports.some((p) => !Number.isInteger(p) || p < 1 || p > 65535)\n)\n  throw Error(\"Invalid watched IP or allowed ports\");\nreturn { json: { ip, ports, week: $now.startOf(\"week\").toISODate(), mode: \"direct\" } };\n"
+      },
+      "id": "report-shodan-unexpected-ports-to-thehive-3",
+      "position": [
+        660,
+        0
+      ]
+    },
+    {
+      "name": "IP not processed",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "rowNotExists",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'shodan:' + $('Validate watched IP').item.json.week + ':' + $('Validate watched IP').item.json.ip }}"
+            }
+          ]
+        }
+      },
+      "id": "report-shodan-unexpected-ports-to-thehive-4",
+      "position": [
+        880,
+        0
+      ]
+    },
+    {
+      "name": "IP already processed",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "rowExists",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'shodan:' + $('Validate watched IP').item.json.week + ':' + $('Validate watched IP').item.json.ip }}"
+            },
+            {
+              "keyName": "status",
+              "condition": "eq",
+              "keyValue": "done"
+            }
+          ]
+        }
+      },
+      "id": "report-shodan-unexpected-ports-to-thehive-5",
+      "position": [
+        1100,
+        0
+      ]
+    },
+    {
+      "name": "IP has pending alert",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "rowExists",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'shodan:' + $('Validate watched IP').item.json.week + ':' + $('Validate watched IP').item.json.ip }}"
+            },
+            {
+              "keyName": "status",
+              "condition": "eq",
+              "keyValue": "pending"
+            }
+          ]
+        }
+      },
+      "id": "report-shodan-unexpected-ports-to-thehive-6",
+      "position": [
+        1320,
+        0
+      ]
+    },
+    {
+      "name": "Stop for alert review",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "throw Error(\"Inspect pending TheHive alert before retrying\");\n"
+      },
+      "id": "report-shodan-unexpected-ports-to-thehive-7",
+      "position": [
+        1540,
+        0
+      ]
+    },
+    {
+      "name": "Reserve IP report",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "item_key": "={{ 'shodan:' + $('Validate watched IP').item.json.week + ':' + $('Validate watched IP').item.json.ip }}",
+            "status": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "report-shodan-unexpected-ports-to-thehive-8",
+      "position": [
+        1760,
+        0
+      ]
+    },
+    {
+      "name": "Relay mode?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $('Validate watched IP').item.json.mode === 'relay' }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        }
+      },
+      "id": "report-shodan-unexpected-ports-to-thehive-9",
+      "position": [
+        1980,
+        0
+      ]
+    },
+    {
+      "name": "Forward watched IP",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "YOUR_OPEN_FLOW_WEBHOOK_URL",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $('Validate watched IP').item.json }}",
+        "options": {}
+      },
+      "id": "report-shodan-unexpected-ports-to-thehive-10",
+      "position": [
+        2200,
+        0
+      ]
+    },
+    {
+      "id": "report-shodan-unexpected-ports-to-thehive-11",
+      "name": "Scan each IP",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        2420,
+        0
+      ],
+      "parameters": {
+        "url": "={{ 'https://api.shodan.io/shodan/host/' + encodeURIComponent($('Validate watched IP').item.json.ip) }}",
+        "options": {},
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth"
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "name": "Prepare incident",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const p = $(\"Validate watched IP\").item.json;\nif ($json.ip_str !== p.ip) throw Error(\"Shodan host does not match requested IP\");\nif (!Array.isArray($json.data)) throw Error(\"Shodan response lacks services\");\nconst bad = $json.data.filter((s) => Number.isInteger(s.port) && !p.ports.includes(s.port));\nreturn {\n  json: {\n    has: bad.length > 0,\n    title: \"Unexpected ports for \" + p.ip,\n    reference: p.ip + \":\" + p.week,\n    description:\n      \"Unexpected open ports:\\n\\n\" +\n      bad\n        .map(\n          (s) =>\n            \"- port \" +\n            s.port +\n            \"; hostnames \" +\n            (s.hostnames ?? $json.hostnames ?? []).join(\", \") +\n            \"; \" +\n            String(s.description ?? \"\") +\n            \" \" +\n            String(s.data ?? \"\"),\n        )\n        .join(\"\\n\"),\n  },\n};\n"
+      },
+      "id": "report-shodan-unexpected-ports-to-thehive-12",
+      "position": [
+        2640,
+        0
+      ]
+    },
+    {
+      "name": "Unexpected ports found?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.has }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        }
+      },
+      "id": "report-shodan-unexpected-ports-to-thehive-13",
+      "position": [
+        2860,
+        0
+      ]
+    },
+    {
+      "id": "report-shodan-unexpected-ports-to-thehive-14",
+      "name": "Create TheHive alert",
+      "type": "n8n-nodes-base.theHive",
+      "position": [
+        3080,
+        0
+      ],
+      "parameters": {
+        "date": "={{$now}}",
+        "tags": "={{ $('Validate watched IP').item.json.ip }}",
+        "type": "Unexpected open port",
+        "title": "={{ $('Prepare incident').item.json.title }}",
+        "source": "n8n",
+        "sourceRef": "={{ $('Prepare incident').item.json.reference }}",
+        "description": "={{ $('Prepare incident').item.json.description }}",
+        "additionalFields": {}
+      },
+      "typeVersion": 1
+    },
+    {
+      "name": "Verify alert or relay",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if (!$json._id && !$json.id && $json.status !== \"completed\") throw Error(\"Unknown alert result\");\nreturn { json: { ok: true } };\n"
+      },
+      "id": "report-shodan-unexpected-ports-to-thehive-15",
+      "position": [
+        3300,
+        0
+      ]
+    },
+    {
+      "name": "Confirm IP report",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Reserve IP report').item.json.id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "done"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "report-shodan-unexpected-ports-to-thehive-16",
+      "position": [
+        3520,
+        0
+      ]
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC"
+  },
+  "connections": {
+    "Every Monday": {
+      "main": [
+        [
+          {
+            "node": "Get watched IPs & Ports",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get watched IPs & Ports": {
+      "main": [
+        [
+          {
+            "node": "For each IP",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "For each IP": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Validate watched IP",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IP not processed": {
+      "main": [
+        [
+          {
+            "node": "Reserve IP report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IP already processed": {
+      "main": [
+        [
+          {
+            "node": "For each IP",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IP has pending alert": {
+      "main": [
+        [
+          {
+            "node": "Stop for alert review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve IP report": {
+      "main": [
+        [
+          {
+            "node": "Relay mode?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Forward watched IP": {
+      "main": [
+        [
+          {
+            "node": "Verify alert or relay",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scan each IP": {
+      "main": [
+        [
+          {
+            "node": "Prepare incident",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare incident": {
+      "main": [
+        [
+          {
+            "node": "Unexpected ports found?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create TheHive alert": {
+      "main": [
+        [
+          {
+            "node": "Verify alert or relay",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify alert or relay": {
+      "main": [
+        [
+          {
+            "node": "Confirm IP report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm IP report": {
+      "main": [
+        [
+          {
+            "node": "For each IP",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate watched IP": {
+      "main": [
+        [
+          {
+            "node": "IP not processed",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "IP already processed",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "IP has pending alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Relay mode?": {
+      "main": [
+        [
+          {
+            "node": "Forward watched IP",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Scan each IP",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Unexpected ports found?": {
+      "main": [
+        [
+          {
+            "node": "Create TheHive alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Confirm IP report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
