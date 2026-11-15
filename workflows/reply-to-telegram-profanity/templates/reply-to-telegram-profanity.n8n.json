@@ -1,0 +1,151 @@
+{
+  "nodes": [
+    {
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "updates": [
+          "message",
+          "edited_message",
+          "channel_post",
+          "edited_channel_post"
+        ],
+        "additionalFields": {}
+      },
+      "typeVersion": 1,
+      "id": "reply-to-telegram-profanity-0"
+    },
+    {
+      "name": "Select original message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return $input.all().flatMap((x, i) => {\n  const b = x.json,\n    m = b.message ?? b.edited_message ?? b.channel_post ?? b.edited_channel_post;\n  if (\n    !m ||\n    typeof m.text !== \"string\" ||\n    !m.text ||\n    !Number.isSafeInteger(m.chat?.id) ||\n    !Number.isSafeInteger(m.message_id)\n  )\n    return [];\n  return [\n    { json: { text: m.text, chatId: m.chat.id, messageId: m.message_id }, pairedItem: { item: i } },\n  ];\n});\n"
+      },
+      "id": "reply-to-telegram-profanity-1",
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "name": "Google Perspective",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://commentanalyzer.googleapis.com/v1alpha1/comments:analyze",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googlePerspectiveOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {comment:{type:\"PLAIN_TEXT\",text:$json.text},languages:[\"en\"],requestedAttributes:{IDENTITY_ATTACK:{},THREAT:{},PROFANITY:{}}} }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "typeVersion": 4.2,
+      "id": "reply-to-telegram-profanity-2"
+    },
+    {
+      "name": "IF",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        660,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{$json[\"attributeScores\"][\"PROFANITY\"][\"summaryScore\"][\"value\"]}}",
+              "value2": 0.7,
+              "operation": "larger"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1,
+      "id": "reply-to-telegram-profanity-3"
+    },
+    {
+      "name": "Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        880,
+        0
+      ],
+      "parameters": {
+        "text": "I don't tolerate toxic language!",
+        "chatId": "={{ $(\"Select original message\").item.json.chatId }}",
+        "additionalFields": {
+          "reply_to_message_id": "={{ $(\"Select original message\").item.json.messageId }}"
+        }
+      },
+      "typeVersion": 1,
+      "id": "reply-to-telegram-profanity-4"
+    }
+  ],
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Select original message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select original message": {
+      "main": [
+        [
+          {
+            "node": "Google Perspective",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Perspective": {
+      "main": [
+        [
+          {
+            "node": "IF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF": {
+      "main": [
+        [
+          {
+            "node": "Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    }
+  },
+  "name": "Reply to Telegram Profanity",
+  "active": false,
+  "pinData": {}
+}
