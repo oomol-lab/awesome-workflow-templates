@@ -1,0 +1,690 @@
+{
+  "nodes": [
+    {
+      "id": "route-linear-bugs-to-teams-0",
+      "name": "Linear Trigger",
+      "type": "n8n-nodes-base.linearTrigger",
+      "position": [
+        420,
+        360
+      ],
+      "parameters": {
+        "teamId": "YOUR_LINEAR_SOURCE_TEAM_ID",
+        "resources": [
+          "issue"
+        ],
+        "authentication": "oAuth2"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "route-linear-bugs-to-teams-1",
+      "name": "Set me up",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        700,
+        360
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a56f24c8-0a28-4dd2-885a-cb6a081a5bf4",
+              "name": "teams",
+              "type": "string",
+              "value": "- [Adore][Is responsible for every persona that is not Enterprise. This includes signup journeys, trials, n8n Cloud, the Canvas building experience and more, the nodes detail view (NDV), the nodes panel, the workflows list and the executions view] \n- [Payday][Is responsible for the Enterprise persona. This includes making sure n8n is performant, the enterprise features SSO, LDAP, SAML, Log streaming, environments, queue mode, version control, external storage. Additionally the team looks out for the execution logic in n8n and how branching works] \n- [Nodes][This team is responsible for everything that is related to a specific node in n8n] \n- [Other][This is a placeholder if you don't know to which team something belongs]"
+            },
+            {
+              "id": "d672cb59-72be-4fc8-9327-2623795f225d",
+              "name": "slackChannel",
+              "type": "string",
+              "value": "YOUR_SLACK_CHANNEL_ID"
+            },
+            {
+              "id": "linear-config-sourceTeamId",
+              "name": "sourceTeamId",
+              "type": "string",
+              "value": "YOUR_LINEAR_SOURCE_TEAM_ID"
+            },
+            {
+              "id": "linear-config-triageStateId",
+              "name": "triageStateId",
+              "type": "string",
+              "value": "YOUR_LINEAR_TRIAGE_STATE_ID"
+            },
+            {
+              "id": "linear-config-bugLabelId",
+              "name": "bugLabelId",
+              "type": "string",
+              "value": "YOUR_LINEAR_BUG_LABEL_ID"
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.3
+    },
+    {
+      "id": "route-linear-bugs-to-teams-2",
+      "name": "Prepare complete Linear event",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        850,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "if (typeof $(\"Linear Trigger\").first().json.webhookTimestamp !== \"number\")\n  throw Error(\"Missing webhook timestamp\");\nfunction linearBugMessages(event, teams) {\n  return [\n    {\n      role: \"system\",\n      content: \"I need you to classify a bug ticket and tell me which team should work on it\",\n    },\n    {\n      role: \"system\",\n      content:\n        \"All possible teams will be described in the following format: [Teamname][Areas of responsibility] \",\n    },\n    { role: \"system\", content: \"The possible teams are the following:\\n \" + teams },\n    {\n      role: \"system\",\n      content:\n        \"This is the bug that we're trying to classify:\\nTitle: \" +\n        event.title +\n        \"\\nDescription: \" +\n        event.description,\n    },\n    { role: \"user\", content: \"Which team should work on this bug?\" },\n    {\n      role: \"system\",\n      content:\n        \"Do not respond with anything else than the name of the team from the list you were given\",\n    },\n  ];\n}\n\nfunction prepareLinearBug({ body, sourceTeamId, triageStateId, bugLabelId, teams, slackChannel }) {\n  for (const [name, value] of Object.entries({\n    sourceTeamId,\n    triageStateId,\n    bugLabelId,\n    teams,\n    slackChannel,\n  }))\n    if (typeof value !== \"string\" || !value.trim()) throw new Error(\"Configure \" + name + \".\");\n  if (\n    !body ||\n    typeof body !== \"object\" ||\n    Array.isArray(body) ||\n    body.type !== \"Issue\" ||\n    !body.data ||\n    typeof body.data !== \"object\" ||\n    Array.isArray(body.data)\n  )\n    throw new Error(\"A Linear Issue event is required.\");\n  if (typeof body.webhookTimestamp === \"number\") {\n    const timestamp = Math.floor(body.webhookTimestamp),\n      seconds = timestamp > 1e10 ? Math.floor(timestamp / 1000) : timestamp;\n    if (!Number.isFinite(seconds) || Math.abs(Math.floor(Date.now() / 1000) - seconds) > 60)\n      throw new Error(\"The Linear event timestamp is outside the source one-minute window.\");\n  }\n  const data = body.data,\n    teamId = data.team?.id ?? data.teamId,\n    stateId = data.state?.id ?? data.stateId,\n    labelIds = Array.isArray(data.labels)\n      ? data.labels.map((x) => x?.id)\n      : Array.isArray(data.labelIds)\n        ? data.labelIds\n        : [];\n  const eligible =\n    teamId === sourceTeamId &&\n    typeof data.description === \"string\" &&\n    !data.description.includes(\"Add a description here\") &&\n    stateId === triageStateId &&\n    labelIds.includes(bugLabelId);\n  if (eligible && (typeof data.id !== \"string\" || !data.id || typeof data.title !== \"string\"))\n    throw new Error(\"The selected bug lacks its issue ID or title.\");\n  const messages = eligible ? linearBugMessages(data, teams) : [];\n  return {\n    eligible,\n    event: body,\n    slackChannel,\n    messages,\n    prompt: messages.map((m) => m.role.toUpperCase() + \":\\n\" + m.content).join(\"\\n\\n\"),\n  };\n}\n\nreturn [\n  {\n    json: prepareLinearBug({ body: $(\"Linear Trigger\").first().json, ...$input.first().json }),\n    pairedItem: { item: 0 },\n  },\n];\n"
+      }
+    },
+    {
+      "id": "route-linear-bugs-to-teams-3",
+      "name": "Only tickets that need to be classified",
+      "type": "n8n-nodes-base.filter",
+      "position": [
+        1000,
+        360
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "selected",
+              "leftValue": "={{ $json.eligible }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "route-linear-bugs-to-teams-4",
+      "name": "OpenAI",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "position": [
+        1220,
+        360
+      ],
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "gpt-4o-mini"
+        },
+        "options": {},
+        "messages": {
+          "values": [
+            {
+              "role": "system",
+              "content": "I need you to classify a bug ticket and tell me which team should work on it"
+            },
+            {
+              "role": "system",
+              "content": "All possible teams will be described in the following format: [Teamname][Areas of responsibility] "
+            },
+            {
+              "role": "system",
+              "content": "=The possible teams are the following:\n {{ $('Set me up').first().json.teams }}"
+            },
+            {
+              "role": "system",
+              "content": "=This is the bug that we're trying to classify:\nTitle: {{ $('Linear Trigger').first().json.data.title }}\nDescription: {{ $('Linear Trigger').first().json.data.description }}"
+            },
+            {
+              "content": "Which team should work on this bug?"
+            },
+            {
+              "role": "system",
+              "content": "Do not respond with anything else than the name of the team from the list you were given"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "route-linear-bugs-to-teams-5",
+      "name": "Initialize complete team scan",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1500,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function collectLinearTeams({ previousState, response }) {\n  const state = previousState\n    ? { teams: [...previousState.teams], cursors: [...previousState.cursors] }\n    : { teams: [], cursors: [] };\n  if (response !== undefined && response !== null) {\n    if (Array.isArray(response.errors) && response.errors.length)\n      throw new Error(\"Linear team query failed.\");\n    const connection = response.data?.teams,\n      info = connection?.pageInfo;\n    if (\n      !connection ||\n      !Array.isArray(connection.nodes) ||\n      connection.nodes.some(\n        (t) => !t || typeof t.id !== \"string\" || !t.id || typeof t.name !== \"string\",\n      ) ||\n      !info ||\n      typeof info.hasNextPage !== \"boolean\"\n    )\n      throw new Error(\"Invalid Linear team page.\");\n    state.teams.push(...connection.nodes);\n    if (!info.hasNextPage) return { state, more: false, after: null };\n    if (\n      typeof info.endCursor !== \"string\" ||\n      !info.endCursor ||\n      state.cursors.includes(info.endCursor)\n    )\n      throw new Error(\"Linear team pagination did not advance.\");\n    state.cursors.push(info.endCursor);\n    return { state, more: true, after: info.endCursor };\n  }\n  if (previousState) throw new Error(\"Missing next Linear team page.\");\n  return { state, more: true, after: null };\n}\n\nreturn [{ json: collectLinearTeams({}), pairedItem: { item: 0 } }];\n"
+      }
+    },
+    {
+      "id": "route-linear-bugs-to-teams-6",
+      "name": "More teams to read",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1720,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "more",
+              "leftValue": "={{ $json.more }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "route-linear-bugs-to-teams-7",
+      "name": "Get all linear teams",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        1940,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.linear.app/graphql",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "linearOAuth2Api",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ ({query:\"query ListTeams($after: String) { teams(first: 100, after: $after, includeArchived: false) { nodes { id name } pageInfo { hasNextPage endCursor } } }\",variables:{after:$json.after}}) }}",
+        "options": {}
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "route-linear-bugs-to-teams-8",
+      "name": "Collect complete Linear team pages",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2160,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function collectLinearTeams({ previousState, response }) {\n  const state = previousState\n    ? { teams: [...previousState.teams], cursors: [...previousState.cursors] }\n    : { teams: [], cursors: [] };\n  if (response !== undefined && response !== null) {\n    if (Array.isArray(response.errors) && response.errors.length)\n      throw new Error(\"Linear team query failed.\");\n    const connection = response.data?.teams,\n      info = connection?.pageInfo;\n    if (\n      !connection ||\n      !Array.isArray(connection.nodes) ||\n      connection.nodes.some(\n        (t) => !t || typeof t.id !== \"string\" || !t.id || typeof t.name !== \"string\",\n      ) ||\n      !info ||\n      typeof info.hasNextPage !== \"boolean\"\n    )\n      throw new Error(\"Invalid Linear team page.\");\n    state.teams.push(...connection.nodes);\n    if (!info.hasNextPage) return { state, more: false, after: null };\n    if (\n      typeof info.endCursor !== \"string\" ||\n      !info.endCursor ||\n      state.cursors.includes(info.endCursor)\n    )\n      throw new Error(\"Linear team pagination did not advance.\");\n    state.cursors.push(info.endCursor);\n    return { state, more: true, after: info.endCursor };\n  }\n  if (previousState) throw new Error(\"Missing next Linear team page.\");\n  return { state, more: true, after: null };\n}\n\nreturn [\n  {\n    json: collectLinearTeams({\n      previousState: $(\"More teams to read\").item.json.state,\n      response: $input.first().json,\n    }),\n    pairedItem: { item: 0 },\n  },\n];\n"
+      }
+    },
+    {
+      "id": "route-linear-bugs-to-teams-9",
+      "name": "Resolve exact team name",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2380,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function planLinearBugTeam({ classification, teams, event }) {\n  if (typeof classification !== \"string\" || !classification.trim())\n    throw new Error(\"The model did not return a team name.\");\n  if (\n    !Array.isArray(teams) ||\n    teams.some(\n      (team) => !team || typeof team.id !== \"string\" || !team.id || typeof team.name !== \"string\",\n    )\n  )\n    throw new Error(\"Linear did not return a complete team list.\");\n  const issueId = event?.data?.id;\n  if (typeof issueId !== \"string\" || !issueId) throw new Error(\"Missing source issue ID.\");\n  if (classification === \"Other\") return { route: \"notify\", issueId, teamId: null, classification };\n  const selected = teams.find((team) => team.name === classification);\n  if (!selected) throw new Error(\"The exact returned team name was not found in Linear.\");\n  return { route: \"move\", issueId, teamId: selected.id, classification };\n}\n\nreturn [\n  {\n    json: planLinearBugTeam({\n      classification: $(\"OpenAI\").first().json.message.content,\n      teams: $input.first().json.state.teams,\n      event: $(\"Prepare complete Linear event\").first().json.event,\n    }),\n    pairedItem: { item: 0 },\n  },\n];\n"
+      }
+    },
+    {
+      "id": "route-linear-bugs-to-teams-10",
+      "name": "Check if AI was able to find a team",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        2600,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "route",
+              "leftValue": "={{ $json.route }}",
+              "rightValue": "move",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "route-linear-bugs-to-teams-11",
+      "name": "Update team",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        2820,
+        -180
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.linear.app/graphql",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "linearApi",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ ({query:\"mutation IssueUpdate (\\n\\t\\t$issueId: String!,\\n\\t\\t$title: String,\\n\\t\\t$teamId: String,\\n\\t\\t$description: String,\\n\\t\\t$assigneeId: String,\\n\\t\\t$priorityId: Int,\\n\\t\\t$stateId: String){\\n\\t\\tissueUpdate(\\n\\t\\t\\tid: $issueId,\\n\\t\\t\\tinput: {\\n\\t\\t\\t\\ttitle: $title\\n\\t\\t\\t\\tdescription: $description\\n\\t\\t\\t\\tteamId: $teamId\\n\\t\\t\\t\\tassigneeId: $assigneeId\\n\\t\\t\\t\\tpriority: $priorityId\\n\\t\\t\\t\\tstateId: $stateId\\n\\t\\t\\t}\\n\\t\\t) {\\n\\t\\t\\tsuccess\\n\\t\\t\\t\\tissue {\\n\\t\\t\\t\\t\\tid,\\n\\t\\t\\t\\t\\tidentifier,\\n\\t\\t\\t\\t\\ttitle,\\n\\t\\t\\t\\t\\tpriority\\n\\t\\t\\t\\t\\tarchivedAt\\n\\t\\t\\t\\t\\tassignee {\\n\\t\\t\\t\\t\\t\\tid\\n\\t\\t\\t\\t\\t\\tdisplayName\\n\\t\\t\\t\\t\\t\\temail\\n\\t\\t\\t\\t\\t}\\n\\t\\t\\t\\t\\tstate {\\n\\t\\t\\t\\t\\t\\tid\\n\\t\\t\\t\\t\\t\\tname\\n\\t\\t\\t\\t\\t}\\n\\t\\t\\t\\t\\tcreatedAt\\n\\t\\t\\t\\t\\tcreator {\\n\\t\\t\\t\\t\\t\\tid\\n\\t\\t\\t\\t\\t\\tdisplayName\\n\\t\\t\\t\\t\\t\\temail\\n\\t\\t\\t\\t\\t}\\n\\t\\t\\t\\t\\tteam {\\n\\t\\t\\t\\t\\t\\tid\\n\\t\\t\\t\\t\\t\\tname\\n\\t\\t\\t\\t\\t}\\n\\t\\t\\t\\t\\tdescription\\n\\t\\t\\t\\t\\tdueDate\\n\\t\\t\\t\\t\\tcycle {\\n\\t\\t\\t\\t\\t\\tid\\n\\t\\t\\t\\t\\t\\tname\\n\\t\\t\\t\\t\\t}\\n\\t\\t\\t\\t}\\n\\t\\t\\t}\\n\\t\\t}\",variables:{issueId:$json.issueId,teamId:$json.teamId}}) }}",
+        "options": {}
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "route-linear-bugs-to-teams-12",
+      "name": "Confirm team move",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3040,
+        -180
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function confirmedLinearMove({ issue, issueId, teamId, classification }) {\n  if (!issue || issue.id !== issueId || issue.team?.id !== teamId)\n    throw new Error(\n      \"Linear did not confirm the requested team move; inspect the issue before replay.\",\n    );\n  return { result: { status: \"moved\", issueId, teamId, classification, issue } };\n}\nfunction confirmedLinearFallback({ ts, channelId, expectedChannelId, issueId, classification }) {\n  if (typeof ts !== \"string\" || !ts || channelId !== expectedChannelId)\n    throw new Error(\n      \"Slack did not confirm the fallback notification; inspect the channel before replay.\",\n    );\n  return {\n    result: { status: \"notified\", issueId, classification, notification: { ts, channelId } },\n  };\n}\n\nconst response = $input.first().json,\n  payload = response.data?.issueUpdate;\nif (response.errors?.length || payload?.success !== true)\n  throw new Error(\"Linear did not confirm the team update; inspect before replay.\");\nreturn [\n  {\n    json: confirmedLinearMove({\n      issue: payload.issue,\n      ...$(\"Resolve exact team name\").first().json,\n    }),\n    pairedItem: { item: 0 },\n  },\n];\n"
+      }
+    },
+    {
+      "id": "route-linear-bugs-to-teams-13",
+      "name": "Notify in Slack",
+      "type": "n8n-nodes-base.slack",
+      "position": [
+        2820,
+        180
+      ],
+      "parameters": {
+        "text": "The AI was not able to identify a fitting team for a bug",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $(\"Set me up\").first().json.slackChannel }}"
+        },
+        "otherOptions": {}
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "id": "route-linear-bugs-to-teams-14",
+      "name": "Confirm fallback notice",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3040,
+        180
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function confirmedLinearMove({ issue, issueId, teamId, classification }) {\n  if (!issue || issue.id !== issueId || issue.team?.id !== teamId)\n    throw new Error(\n      \"Linear did not confirm the requested team move; inspect the issue before replay.\",\n    );\n  return { result: { status: \"moved\", issueId, teamId, classification, issue } };\n}\nfunction confirmedLinearFallback({ ts, channelId, expectedChannelId, issueId, classification }) {\n  if (typeof ts !== \"string\" || !ts || channelId !== expectedChannelId)\n    throw new Error(\n      \"Slack did not confirm the fallback notification; inspect the channel before replay.\",\n    );\n  return {\n    result: { status: \"notified\", issueId, classification, notification: { ts, channelId } },\n  };\n}\n\nconst receipt = $input.first().json,\n  plan = $(\"Resolve exact team name\").first().json;\nreturn [\n  {\n    json: confirmedLinearFallback({\n      ts: receipt.ts,\n      channelId: receipt.channel ?? receipt.channelId,\n      expectedChannelId: $(\"Set me up\").first().json.slackChannel,\n      ...plan,\n    }),\n    pairedItem: { item: 0 },\n  },\n];\n"
+      }
+    },
+    {
+      "id": "route-linear-bugs-to-teams-15",
+      "name": "Nonmatching issue event",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        400
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return [\n  {\n    json: {\n      result: { status: \"skipped\", event: $(\"Prepare complete Linear event\").first().json.event },\n    },\n    pairedItem: { item: 0 },\n  },\n];\n"
+      }
+    },
+    {
+      "name": "Event not processed",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "rowNotExists",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'triage:' + $('Linear Trigger').item.json.data.id + ':' + $('Linear Trigger').item.json.webhookTimestamp }}"
+            }
+          ]
+        }
+      },
+      "id": "route-linear-bugs-to-teams-16"
+    },
+    {
+      "name": "Reserve triage action",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "item_key": "={{ 'triage:' + $('Linear Trigger').item.json.data.id + ':' + $('Linear Trigger').item.json.webhookTimestamp }}",
+            "status": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "route-linear-bugs-to-teams-17"
+    },
+    {
+      "name": "Restore triage plan",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return { json: $(\"Resolve exact team name\").item.json };\n"
+      },
+      "id": "route-linear-bugs-to-teams-18"
+    },
+    {
+      "name": "Confirm triage action",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Reserve triage action').item.json.id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "done"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "route-linear-bugs-to-teams-19"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Linear Trigger": {
+      "main": [
+        [
+          {
+            "node": "Set me up",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set me up": {
+      "main": [
+        [
+          {
+            "node": "Prepare complete Linear event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare complete Linear event": {
+      "main": [
+        [
+          {
+            "node": "Only tickets that need to be classified",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Only tickets that need to be classified": {
+      "main": [
+        [
+          {
+            "node": "OpenAI",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Nonmatching issue event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI": {
+      "main": [
+        [
+          {
+            "node": "Initialize complete team scan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Initialize complete team scan": {
+      "main": [
+        [
+          {
+            "node": "More teams to read",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "More teams to read": {
+      "main": [
+        [
+          {
+            "node": "Get all linear teams",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Resolve exact team name",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get all linear teams": {
+      "main": [
+        [
+          {
+            "node": "Collect complete Linear team pages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect complete Linear team pages": {
+      "main": [
+        [
+          {
+            "node": "More teams to read",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resolve exact team name": {
+      "main": [
+        [
+          {
+            "node": "Event not processed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check if AI was able to find a team": {
+      "main": [
+        [
+          {
+            "node": "Update team",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Notify in Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update team": {
+      "main": [
+        [
+          {
+            "node": "Confirm team move",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify in Slack": {
+      "main": [
+        [
+          {
+            "node": "Confirm fallback notice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Event not processed": {
+      "main": [
+        [
+          {
+            "node": "Reserve triage action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve triage action": {
+      "main": [
+        [
+          {
+            "node": "Restore triage plan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore triage plan": {
+      "main": [
+        [
+          {
+            "node": "Check if AI was able to find a team",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm team move": {
+      "main": [
+        [
+          {
+            "node": "Confirm triage action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm fallback notice": {
+      "main": [
+        [
+          {
+            "node": "Confirm triage action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Route Linear Bugs to Teams",
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false
+}

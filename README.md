@@ -58,6 +58,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Entertainment](#entertainment)
 - [Creative](#creative)
 - [Human Resources](#human-resources)
+- [Project Management](#project-management)
 - [Contribute](#contribute)
 - [Licensing](#licensing)
 
@@ -983,6 +984,10 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Collect Two-Step CV Applications](workflows/collect-two-step-cv-applications/) - Extract a PDF CV into an editable application form and store the confirmed application with its PDF.
 - [Review Resumes for an Automation Expert](workflows/review-resumes-for-automation-expert/) - Collect PDF resumes, summarize candidate information, and record a role-fit assessment for human review.
 - [Review CV for a Full-Stack Role](workflows/review-cv-for-full-stack-role/) - Collect PDF resumes, summarize candidate information, and record a role-fit assessment for human review.
+
+## Project Management
+
+- [Route Linear Bugs to Teams](workflows/route-linear-bugs-to-teams/) - Classify selected Linear bugs, move them to a matching team, or notify Slack when no team fits.
 
 ## Contribute
 
