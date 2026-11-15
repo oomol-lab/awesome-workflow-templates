@@ -140,6 +140,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Qualify Contact Form Leads with Clearbit](workflows/qualify-contact-form-leads-with-clearbit/) - Enrich business contacts and email those at B2B companies with at least 500 employees.
 - [Enrich Kit Subscribers in HubSpot](workflows/enrich-kit-subscribers-in-hubspot/) - Enrich Kit subscribers and their companies in HubSpot.
 - [Score and Route Demo Leads](workflows/score-and-route-demo-leads/) - Score inbound demo leads, record their context, and route follow-up alerts.
+- [Send Churn Risk Win-Back Offers](workflows/send-churn-risk-winback-offers/) - Generate Turkish win-back offers for high-risk customers and record confirmed emails.
 
 ## Operations
 
