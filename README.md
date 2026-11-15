@@ -610,6 +610,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Issue Verifiable Certificates](workflows/issue-verifiable-certificates/) - Issue verifiable certificates for a course and its recipients.
 - [Categorize Outlook Email with AI](workflows/categorize-outlook-email-with-ai/) - Classify an unflagged Outlook message and move it to a matching folder.
 - [Send an Urgent Daily Email Digest](workflows/send-urgent-daily-email-digest/) - Summarize the past day of email and notify when a thread needs action.
+- [Create and Enrich a Humantic Profile](workflows/create-and-enrich-humantic-profile/) - Create a profile, enrich it with a resume, and retrieve its hiring persona for review.
 
 ## Content
 

@@ -1,0 +1,674 @@
+{
+  "name": "Create and Enrich a Humantic Profile",
+  "nodes": [
+    {
+      "name": "Run native mode",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "parameters": {},
+      "position": [
+        0,
+        0
+      ],
+      "id": "create-and-enrich-humantic-profile-0"
+    },
+    {
+      "name": "Enter profile and resume",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "id",
+              "name": "id",
+              "type": "string",
+              "value": "YOUR_LINKEDIN_PROFILE_URL"
+            },
+            {
+              "id": "resume",
+              "name": "resumeUrl",
+              "type": "string",
+              "value": "YOUR_HTTPS_RESUME_URL"
+            },
+            {
+              "id": "request",
+              "name": "requestId",
+              "type": "string",
+              "value": "YOUR_UNIQUE_REQUEST_ID"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "position": [
+        220,
+        0
+      ],
+      "id": "create-and-enrich-humantic-profile-1"
+    },
+    {
+      "name": "Validate profile inputs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if (\n  !/^https:\\/\\/www\\.linkedin\\.com\\/in\\/[^/?#]+\\/?$/i.test($json.id) ||\n  !/^https:\\/\\//i.test($json.resumeUrl) ||\n  !$json.requestId ||\n  $json.requestId.startsWith(\"YOUR_\")\n)\n  throw Error(\"Configure inputs\");\nreturn { json: $json };\n"
+      },
+      "position": [
+        440,
+        0
+      ],
+      "id": "create-and-enrich-humantic-profile-2"
+    },
+    {
+      "name": "Request not attempted",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "rowNotExists",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ \"humantic:\"+$(\"Enter profile and resume\").first().json.requestId }}"
+            }
+          ]
+        }
+      },
+      "position": [
+        660,
+        0
+      ],
+      "id": "create-and-enrich-humantic-profile-3"
+    },
+    {
+      "name": "Reserve profile creation",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "item_key": "={{ \"humantic:\"+$(\"Enter profile and resume\").first().json.requestId }}",
+            "status": "create-pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "position": [
+        880,
+        0
+      ],
+      "id": "create-and-enrich-humantic-profile-4"
+    },
+    {
+      "name": "Create profile",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.humantic.ai/v1/user-profile/create",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "id",
+              "value": "={{ $(\"Enter profile and resume\").first().json.id }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "position": [
+        1100,
+        0
+      ],
+      "id": "create-and-enrich-humantic-profile-5"
+    },
+    {
+      "name": "Validate create response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const id = $(\"Enter profile and resume\").first().json.id;\nif (\n  !$json.metadata ||\n  $json.metadata.status === \"ERROR\" ||\n  ($json.results?.userid && $json.results.userid !== id)\n)\n  throw Error(\"Unknown or mismatched create outcome\");\nreturn { json: $json };\n"
+      },
+      "position": [
+        1320,
+        0
+      ],
+      "id": "create-and-enrich-humantic-profile-6"
+    },
+    {
+      "name": "Reserve resume update",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ \"humantic:\"+$(\"Enter profile and resume\").first().json.requestId }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "update-pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "position": [
+        1540,
+        0
+      ],
+      "id": "create-and-enrich-humantic-profile-7"
+    },
+    {
+      "name": "Download resume",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "url": "={{ $(\"Enter profile and resume\").first().json.resumeUrl }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "outputPropertyName": "data"
+            }
+          }
+        }
+      },
+      "position": [
+        1760,
+        0
+      ],
+      "id": "create-and-enrich-humantic-profile-8"
+    },
+    {
+      "name": "Upload resume",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.humantic.ai/v1/user-profile/create",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "id",
+              "value": "={{ $(\"Enter profile and resume\").first().json.id }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        },
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "document",
+              "inputDataFieldName": "data"
+            }
+          ]
+        }
+      },
+      "position": [
+        1980,
+        0
+      ],
+      "id": "create-and-enrich-humantic-profile-9"
+    },
+    {
+      "name": "Validate update response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if (!$json.metadata || $json.metadata.status === \"ERROR\")\n  throw Error(\"Unknown provider outcome; inspect before retry\");\nreturn { json: $json };\n"
+      },
+      "position": [
+        2200,
+        0
+      ],
+      "id": "create-and-enrich-humantic-profile-10"
+    },
+    {
+      "name": "Confirm resume update",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ \"humantic:\"+$(\"Enter profile and resume\").first().json.requestId }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "updated"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "position": [
+        2420,
+        0
+      ],
+      "id": "create-and-enrich-humantic-profile-11"
+    },
+    {
+      "name": "Read hiring persona",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.humantic.ai/v1/user-profile",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "id",
+              "value": "={{ $(\"Enter profile and resume\").first().json.id }}"
+            },
+            {
+              "name": "persona",
+              "value": "hiring"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "position": [
+        2640,
+        0
+      ],
+      "id": "create-and-enrich-humantic-profile-12"
+    },
+    {
+      "name": "Resume update relay",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "create-and-enrich-humantic-profile-relay",
+        "responseMode": "responseNode",
+        "authentication": "headerAuth",
+        "options": {}
+      },
+      "position": [
+        2860,
+        0
+      ],
+      "disabled": true,
+      "id": "create-and-enrich-humantic-profile-13"
+    },
+    {
+      "name": "Validate relay request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const b = $json.body;\nif (\n  !b ||\n  !/^https:\\/\\/www\\.linkedin\\.com\\/in\\/[^/?#]+\\/?$/i.test(b.id) ||\n  !/^https:\\/\\//i.test(b.resumeUrl)\n)\n  throw Error(\"Invalid relay input\");\nreturn { json: b };\n"
+      },
+      "position": [
+        3080,
+        0
+      ],
+      "id": "create-and-enrich-humantic-profile-14"
+    },
+    {
+      "name": "Download relay resume",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "url": "={{ $json.resumeUrl }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "outputPropertyName": "data"
+            }
+          }
+        }
+      },
+      "position": [
+        3300,
+        0
+      ],
+      "id": "create-and-enrich-humantic-profile-15"
+    },
+    {
+      "name": "Update relay profile",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.humantic.ai/v1/user-profile/create",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "id",
+              "value": "={{ $(\"Validate relay request\").first().json.id }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        },
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "document",
+              "inputDataFieldName": "data"
+            }
+          ]
+        }
+      },
+      "position": [
+        3520,
+        0
+      ],
+      "id": "create-and-enrich-humantic-profile-16"
+    },
+    {
+      "name": "Validate relay update",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if (!$json.metadata || $json.metadata.status === \"ERROR\") throw Error(\"Unknown update outcome\");\nreturn { json: { id: $(\"Validate relay request\").first().json.id, response: $json } };\n"
+      },
+      "position": [
+        3740,
+        0
+      ],
+      "id": "create-and-enrich-humantic-profile-17"
+    },
+    {
+      "name": "Return relay result",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "position": [
+        3960,
+        0
+      ],
+      "id": "create-and-enrich-humantic-profile-18"
+    }
+  ],
+  "active": false,
+  "settings": {},
+  "connections": {
+    "Run native mode": {
+      "main": [
+        [
+          {
+            "node": "Enter profile and resume",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enter profile and resume": {
+      "main": [
+        [
+          {
+            "node": "Validate profile inputs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate profile inputs": {
+      "main": [
+        [
+          {
+            "node": "Request not attempted",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Request not attempted": {
+      "main": [
+        [
+          {
+            "node": "Reserve profile creation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve profile creation": {
+      "main": [
+        [
+          {
+            "node": "Create profile",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create profile": {
+      "main": [
+        [
+          {
+            "node": "Validate create response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate create response": {
+      "main": [
+        [
+          {
+            "node": "Reserve resume update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve resume update": {
+      "main": [
+        [
+          {
+            "node": "Download resume",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download resume": {
+      "main": [
+        [
+          {
+            "node": "Upload resume",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload resume": {
+      "main": [
+        [
+          {
+            "node": "Validate update response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate update response": {
+      "main": [
+        [
+          {
+            "node": "Confirm resume update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm resume update": {
+      "main": [
+        [
+          {
+            "node": "Read hiring persona",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resume update relay": {
+      "main": [
+        [
+          {
+            "node": "Validate relay request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate relay request": {
+      "main": [
+        [
+          {
+            "node": "Download relay resume",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download relay resume": {
+      "main": [
+        [
+          {
+            "node": "Update relay profile",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update relay profile": {
+      "main": [
+        [
+          {
+            "node": "Validate relay update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate relay update": {
+      "main": [
+        [
+          {
+            "node": "Return relay result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {}
+}
