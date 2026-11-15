@@ -1,0 +1,866 @@
+{
+  "nodes": [
+    {
+      "id": "copy-zendesk-comments-to-pipedrive-notes-0",
+      "name": "Daily at 09:00 UTC",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "mode": "everyDay",
+              "hour": 9,
+              "minute": 0
+            }
+          ]
+        }
+      },
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "id": "copy-zendesk-comments-to-pipedrive-notes-1",
+      "name": "Configure export",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const zendesk = \"YOUR_ZENDESK_SUBDOMAIN\",\n  pipedrive = \"YOUR_PIPEDRIVE_DOMAIN\",\n  startTime = 0;\nif (\n  !/^[a-z0-9-]+$/.test(zendesk) ||\n  zendesk.startsWith(\"YOUR\") ||\n  !pipedrive.endsWith(\".pipedrive.com\") ||\n  !Number.isInteger(startTime) ||\n  startTime <= 0 ||\n  startTime >= Date.now() / 1000 - 60\n)\n  throw Error(\"Configure domains and initial time at least one minute ago\");\nconst s = $getWorkflowStaticData(\"global\");\nreturn [\n  {\n    json: {\n      zendesk,\n      pipedrive,\n      startTime,\n      url:\n        \"https://\" +\n        zendesk +\n        \".zendesk.com/api/v2/incremental/tickets/cursor.json?\" +\n        (s.cursor ? \"cursor=\" + encodeURIComponent(s.cursor) : \"start_time=\" + startTime),\n    },\n  },\n];\n"
+      },
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "id": "copy-zendesk-comments-to-pipedrive-notes-2",
+      "name": "Read Zendesk ticket page",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.url }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "id": "copy-zendesk-comments-to-pipedrive-notes-3",
+      "name": "Prepare ticket page",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "if (\n  !Array.isArray($json.tickets) ||\n  !$json.after_cursor ||\n  typeof $json.end_of_stream !== \"boolean\"\n)\n  throw Error(\"Invalid ticket page\");\nconst old = $getWorkflowStaticData(\"global\").cursor;\nif (!$json.end_of_stream && old === $json.after_cursor) throw Error(\"Repeated ticket cursor\");\nfor (const t of $json.tickets) if (!Number.isSafeInteger(t.id)) throw Error(\"Invalid ticket\");\nreturn [\n  {\n    json: {\n      cursor: $json.after_cursor,\n      tickets: $json.tickets.filter((t) => t.via?.channel === \"email\"),\n    },\n  },\n];\n"
+      },
+      "position": [
+        660,
+        0
+      ]
+    },
+    {
+      "id": "copy-zendesk-comments-to-pipedrive-notes-4",
+      "name": "Page has email tickets?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "yes",
+              "leftValue": "={{ $json.tickets.length>0 }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "position": [
+        880,
+        0
+      ]
+    },
+    {
+      "id": "copy-zendesk-comments-to-pipedrive-notes-5",
+      "name": "Expand tickets",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return $json.tickets.map((t) => ({ json: t, pairedItem: { item: 0 } }));\n"
+      },
+      "position": [
+        1100,
+        0
+      ]
+    },
+    {
+      "id": "copy-zendesk-comments-to-pipedrive-notes-6",
+      "name": "One ticket at a time",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "position": [
+        1320,
+        0
+      ]
+    },
+    {
+      "id": "copy-zendesk-comments-to-pipedrive-notes-7",
+      "name": "Validate email ticket",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const email = $json.via?.source?.from?.address;\nif (!email) throw Error(\"Email ticket missing sender\");\nreturn [{ json: { ticketId: $json.id, email }, pairedItem: { item: 0 } }];\n"
+      },
+      "position": [
+        1540,
+        0
+      ]
+    },
+    {
+      "id": "copy-zendesk-comments-to-pipedrive-notes-8",
+      "name": "Find Pipedrive contact",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ 'https://'+$('Configure export').first().json.pipedrive+'/api/v2/persons/search?fields=email&exact_match=true&limit=2&term='+encodeURIComponent($json.email) }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "position": [
+        1760,
+        0
+      ]
+    },
+    {
+      "id": "copy-zendesk-comments-to-pipedrive-notes-9",
+      "name": "Check contact match",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const items = $json.data?.items,\n  e = $(\"Validate email ticket\").item.json.email;\nif (!Array.isArray(items) || items.length > 1 || $json.additional_data?.next_cursor)\n  throw Error(\"Invalid or ambiguous contact\");\nif (!items.length) return [{ json: { found: false, personId: 1 }, pairedItem: { item: 0 } }];\nconst p = items[0].item;\nif (!p.emails?.some((x) => x.toLowerCase() === e.toLowerCase()) || !p.id)\n  throw Error(\"Invalid contact\");\nreturn [{ json: { found: true, personId: p.id }, pairedItem: { item: 0 } }];\n"
+      },
+      "position": [
+        1980,
+        0
+      ]
+    },
+    {
+      "id": "copy-zendesk-comments-to-pipedrive-notes-10",
+      "name": "Contact found?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "yes",
+              "leftValue": "={{ $json.found }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "position": [
+        2200,
+        0
+      ]
+    },
+    {
+      "id": "copy-zendesk-comments-to-pipedrive-notes-11",
+      "name": "Read Zendesk comment pages",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ 'https://'+$('Configure export').first().json.zendesk+'.zendesk.com/api/v2/tickets/'+$('Validate email ticket').item.json.ticketId+'/comments.json?page%5Bsize%5D=100' }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          },
+          "pagination": {
+            "pagination": {
+              "paginationMode": "responseContainsNextURL",
+              "nextURL": "={{ 'https://'+$('Configure export').first().json.zendesk+'.zendesk.com/api/v2/tickets/'+$('Validate email ticket').item.json.ticketId+'/comments.json?page%5Bsize%5D=100'+($pageCount===0?'':'&page%5Bafter%5D='+encodeURIComponent($response.body.meta.after_cursor)) }}",
+              "paginationCompleteWhen": "other",
+              "completeExpression": "={{ (() => { const m=$response.body.meta;if(!m||typeof m.has_more!=='boolean'||(m.has_more&&!m.after_cursor))throw Error('Invalid comment cursor');return !m.has_more; })() }}",
+              "limitPagesFetched": false
+            }
+          }
+        }
+      },
+      "position": [
+        2420,
+        0
+      ]
+    },
+    {
+      "id": "copy-zendesk-comments-to-pipedrive-notes-12",
+      "name": "Collect new comments",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const since = $(\"Configure export\").first().json.startTime,\n  out = [];\nfor (const [i, x] of $input.all().entries()) {\n  if (!Array.isArray(x.json.body?.comments)) throw Error(\"Invalid comment page\");\n  for (const a of x.json.body.comments) {\n    if (!a.id || !Number.isFinite(Date.parse(a.created_at)) || typeof a.body !== \"string\")\n      throw Error(\"Invalid comment\");\n    if (Date.parse(a.created_at) >= since * 1000) out.push({ json: a, pairedItem: { item: i } });\n  }\n}\nreturn out.length ? out : [{ json: { noComments: true }, pairedItem: { item: 0 } }];\n"
+      },
+      "position": [
+        2640,
+        0
+      ]
+    },
+    {
+      "id": "copy-zendesk-comments-to-pipedrive-notes-13",
+      "name": "New comments?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "yes",
+              "leftValue": "={{ !$json.noComments }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "position": [
+        2860,
+        0
+      ]
+    },
+    {
+      "id": "copy-zendesk-comments-to-pipedrive-notes-14",
+      "name": "One comment at a time",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "position": [
+        3080,
+        0
+      ]
+    },
+    {
+      "id": "copy-zendesk-comments-to-pipedrive-notes-15",
+      "name": "Note pending",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "rowExists",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'zendesk-note:' + $('Validate email ticket').item.json.ticketId + ':' + $('One comment at a time').item.json.id }}"
+            },
+            {
+              "keyName": "status",
+              "condition": "eq",
+              "keyValue": "pending"
+            }
+          ]
+        }
+      },
+      "position": [
+        3300,
+        0
+      ]
+    },
+    {
+      "id": "copy-zendesk-comments-to-pipedrive-notes-16",
+      "name": "Note already copied",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "rowExists",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'zendesk-note:' + $('Validate email ticket').item.json.ticketId + ':' + $('One comment at a time').item.json.id }}"
+            },
+            {
+              "keyName": "status",
+              "condition": "eq",
+              "keyValue": "done"
+            }
+          ]
+        }
+      },
+      "position": [
+        3520,
+        0
+      ]
+    },
+    {
+      "id": "copy-zendesk-comments-to-pipedrive-notes-17",
+      "name": "Note not copied",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "rowNotExists",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'zendesk-note:' + $('Validate email ticket').item.json.ticketId + ':' + $('One comment at a time').item.json.id }}"
+            }
+          ]
+        }
+      },
+      "position": [
+        3740,
+        0
+      ]
+    },
+    {
+      "id": "copy-zendesk-comments-to-pipedrive-notes-18",
+      "name": "Stop for pending note",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "throw Error(\"Inspect pending Pipedrive note before replay\");\n"
+      },
+      "position": [
+        3960,
+        0
+      ]
+    },
+    {
+      "id": "copy-zendesk-comments-to-pipedrive-notes-19",
+      "name": "Reserve note",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "item_key": "={{ 'zendesk-note:' + $('Validate email ticket').item.json.ticketId + ':' + $('One comment at a time').item.json.id }}",
+            "status": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "position": [
+        4180,
+        0
+      ]
+    },
+    {
+      "id": "copy-zendesk-comments-to-pipedrive-notes-20",
+      "name": "Prepare note",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const x = $(\"One comment at a time\").item.json,\n  esc = (s) =>\n    String(s)\n      .replaceAll(\"&\", \"&amp;\")\n      .replaceAll(\"<\", \"&lt;\")\n      .replaceAll(\">\", \"&gt;\")\n      .replaceAll('\\\"', \"&quot;\")\n      .replaceAll(\"'\", \"&#39;\");\nreturn [\n  {\n    json: {\n      ticketId: $(\"Validate email ticket\").item.json.ticketId,\n      commentId: x.id,\n      personId: $(\"Check contact match\").item.json.personId,\n      content:\n        \"Message imported from Zendesk<br>From \" +\n        esc(x.via?.source?.from?.name ?? \"Zendesk user\") +\n        \"<br>\" +\n        esc(x.body).replaceAll(\"\\n\", \"<br>\"),\n    },\n    pairedItem: { item: 0 },\n  },\n];\n"
+      },
+      "position": [
+        4400,
+        0
+      ]
+    },
+    {
+      "id": "copy-zendesk-comments-to-pipedrive-notes-21",
+      "name": "Create Pipedrive note",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'https://'+$('Configure export').first().json.pipedrive+'/api/v1/notes' }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({person_id:$json.personId,content:$json.content}) }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "position": [
+        4620,
+        0
+      ]
+    },
+    {
+      "id": "copy-zendesk-comments-to-pipedrive-notes-22",
+      "name": "Verify note",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "if (!$json.data?.id || $json.data.person_id !== $(\"Check contact match\").item.json.personId)\n  throw Error(\"Unknown note result\");\nreturn [{ json: { ok: true }, pairedItem: { item: 0 } }];\n"
+      },
+      "position": [
+        4840,
+        0
+      ]
+    },
+    {
+      "id": "copy-zendesk-comments-to-pipedrive-notes-23",
+      "name": "Confirm note",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Reserve note').item.json.id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "done"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "position": [
+        5060,
+        0
+      ]
+    },
+    {
+      "id": "copy-zendesk-comments-to-pipedrive-notes-24",
+      "name": "Save ticket cursor",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const cursor = $(\"Prepare ticket page\").first().json.cursor;\nif (!cursor) throw Error(\"Missing cursor\");\n$getWorkflowStaticData(\"global\").cursor = cursor;\nreturn [{ json: { ok: true } }];\n"
+      },
+      "position": [
+        5280,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Daily at 09:00 UTC": {
+      "main": [
+        [
+          {
+            "node": "Configure export",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configure export": {
+      "main": [
+        [
+          {
+            "node": "Read Zendesk ticket page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Zendesk ticket page": {
+      "main": [
+        [
+          {
+            "node": "Prepare ticket page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare ticket page": {
+      "main": [
+        [
+          {
+            "node": "Page has email tickets?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Expand tickets": {
+      "main": [
+        [
+          {
+            "node": "One ticket at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate email ticket": {
+      "main": [
+        [
+          {
+            "node": "Find Pipedrive contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Pipedrive contact": {
+      "main": [
+        [
+          {
+            "node": "Check contact match",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check contact match": {
+      "main": [
+        [
+          {
+            "node": "Contact found?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Zendesk comment pages": {
+      "main": [
+        [
+          {
+            "node": "Collect new comments",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect new comments": {
+      "main": [
+        [
+          {
+            "node": "New comments?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Note pending": {
+      "main": [
+        [
+          {
+            "node": "Stop for pending note",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Note already copied": {
+      "main": [
+        [
+          {
+            "node": "One comment at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Note not copied": {
+      "main": [
+        [
+          {
+            "node": "Reserve note",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve note": {
+      "main": [
+        [
+          {
+            "node": "Prepare note",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare note": {
+      "main": [
+        [
+          {
+            "node": "Create Pipedrive note",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Pipedrive note": {
+      "main": [
+        [
+          {
+            "node": "Verify note",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify note": {
+      "main": [
+        [
+          {
+            "node": "Confirm note",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm note": {
+      "main": [
+        [
+          {
+            "node": "One comment at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Page has email tickets?": {
+      "main": [
+        [
+          {
+            "node": "Expand tickets",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Save ticket cursor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "One ticket at a time": {
+      "main": [
+        [
+          {
+            "node": "Save ticket cursor",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Validate email ticket",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Contact found?": {
+      "main": [
+        [
+          {
+            "node": "Read Zendesk comment pages",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "One ticket at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "New comments?": {
+      "main": [
+        [
+          {
+            "node": "One comment at a time",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "One ticket at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "One comment at a time": {
+      "main": [
+        [
+          {
+            "node": "One ticket at a time",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Note pending",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Note already copied",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Note not copied",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Copy Zendesk Comments to Pipedrive Notes",
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC"
+  }
+}

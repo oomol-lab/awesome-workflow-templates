@@ -821,6 +821,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Classify and Route eCommerce Contacts](workflows/classify-and-route-ecommerce-contacts/) - Classify contact messages, email the right department, and log each request.
 - [Route and Log eCommerce Inquiries](workflows/route-and-log-ecommerce-inquiries/) - Classify contact messages, email the right department, and log each request.
 - [Assign Zendesk Tickets to Pipedrive Owners](workflows/assign-zendesk-tickets-to-pipedrive-owners/) - Assign new Zendesk tickets to the requester’s Pipedrive owner when that owner is a Zendesk agent.
+- [Copy Zendesk Comments to Pipedrive Notes](workflows/copy-zendesk-comments-to-pipedrive-notes/) - Copy new comments from email-channel Zendesk tickets to matching Pipedrive contacts.
 
 ## Finance
 
