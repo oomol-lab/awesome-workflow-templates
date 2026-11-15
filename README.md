@@ -307,6 +307,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Create Campaign Links and Email Analytics Reports](workflows/create-campaign-links-and-email-analytics-report/) - Create a tracked campaign URL and QR code, and email a scheduled AI summary of Google Analytics traffic.
 - [Author and Publish Scheduled Blog Posts](workflows/author-and-publish-scheduled-blog-posts/) - Generate blog content from scheduled spreadsheet rows and publish due posts to WordPress.
 - [KlickTipp WhatsApp Offers and Opt-Outs](workflows/klicktipp-whatsapp-offers-and-opt-outs/) - Send personalized WhatsApp templates from KlickTipp events and route incoming replies or opt-outs.
+- [Email Landing Page SEO Audit](workflows/email-landing-page-seo-audit/) - Audit a landing page for technical SEO and content improvements and email the findings.
 
 ## Support
 
