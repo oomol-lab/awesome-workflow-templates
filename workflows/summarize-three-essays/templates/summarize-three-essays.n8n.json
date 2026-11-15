@@ -1,0 +1,619 @@
+{
+  "nodes": [
+    {
+      "id": "summarize-three-essays-0",
+      "name": "When clicking \"Execute Workflow\"",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "summarize-three-essays-1",
+      "name": "Fetch essay list",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "url": "https://www.paulgraham.com/articles.html",
+        "options": {}
+      },
+      "typeVersion": 4.1
+    },
+    {
+      "id": "summarize-three-essays-2",
+      "name": "Extract essay names",
+      "type": "n8n-nodes-base.html",
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "operation": "extractHtmlContent",
+        "dataPropertyName": "data",
+        "extractionValues": {
+          "values": [
+            {
+              "key": "essay",
+              "attribute": "href",
+              "cssSelector": "table table a",
+              "returnArray": true,
+              "returnValue": "attribute"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "summarize-three-essays-3",
+      "name": "Split out into items",
+      "type": "n8n-nodes-base.splitOut",
+      "position": [
+        660,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "fieldToSplitOut": "essay"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "summarize-three-essays-4",
+      "name": "Limit to first 3",
+      "type": "n8n-nodes-base.limit",
+      "position": [
+        880,
+        0
+      ],
+      "parameters": {
+        "maxItems": 3
+      },
+      "typeVersion": 1
+    },
+    {
+      "name": "Normalize essay URL",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "let p = $json.essay;\nif (typeof p !== \"string\" || !p) throw Error(\"Invalid link\");\nif (/^https?:\\/\\/www\\.paulgraham\\.com\\//i.test(p))\n  p = p.replace(/^https?:\\/\\/www\\.paulgraham\\.com\\//i, \"\");\nelse if (p.startsWith(\"/\")) p = p.slice(1);\nif (!/^[a-z0-9_./-]+$/i.test(p) || p.includes(\"..\") || p.startsWith(\"/\"))\n  throw Error(\"Unexpected link\");\nreturn { json: { url: \"https://www.paulgraham.com/\" + p } };\n"
+      },
+      "id": "summarize-three-essays-5",
+      "position": [
+        1100,
+        0
+      ]
+    },
+    {
+      "name": "Process one essay",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "summarize-three-essays-6",
+      "position": [
+        1320,
+        0
+      ]
+    },
+    {
+      "id": "summarize-three-essays-7",
+      "name": "Fetch essay texts",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        1540,
+        0
+      ],
+      "parameters": {
+        "url": "={{ $(\"Process one essay\").item.json.url }}",
+        "options": {}
+      },
+      "typeVersion": 4.1
+    },
+    {
+      "id": "summarize-three-essays-8",
+      "name": "Extract title",
+      "type": "n8n-nodes-base.html",
+      "position": [
+        1760,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "operation": "extractHtmlContent",
+        "extractionValues": {
+          "values": [
+            {
+              "key": "title",
+              "cssSelector": "title"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "name": "Restore essay content",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return { json: { data: $(\"Fetch essay texts\").item.json.data, title: $json.title } };\n"
+      },
+      "id": "summarize-three-essays-9",
+      "position": [
+        1980,
+        0
+      ]
+    },
+    {
+      "id": "summarize-three-essays-10",
+      "name": "Summarization Chain",
+      "type": "@n8n/n8n-nodes-langchain.chainSummarization",
+      "position": [
+        2200,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "operationMode": "documentLoader"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "summarize-three-essays-11",
+      "name": "Default Data Loader",
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "position": [
+        2420,
+        0
+      ],
+      "parameters": {
+        "options": {}
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "summarize-three-essays-12",
+      "name": "Recursive Character Text Splitter",
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "position": [
+        2640,
+        0
+      ],
+      "parameters": {
+        "options": {}
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "summarize-three-essays-13",
+      "name": "OpenAI Chat Model1",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "position": [
+        2860,
+        0
+      ],
+      "parameters": {
+        "model": "gpt-4o-mini",
+        "options": {}
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "summarize-three-essays-14",
+      "name": "Clean up",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        3080,
+        0
+      ],
+      "parameters": {
+        "fields": {
+          "values": [
+            {
+              "name": "title",
+              "stringValue": "={{ $(\"Extract title\").item.json.title }}"
+            },
+            {
+              "name": "summary",
+              "stringValue": "={{ $json.response.text }}"
+            },
+            {
+              "name": "url",
+              "stringValue": "={{ $(\"Process one essay\").item.json.url }}"
+            }
+          ]
+        },
+        "include": "none",
+        "options": {}
+      },
+      "typeVersion": 3
+    },
+    {
+      "name": "HTML parsing relay",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "disabled": true,
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "YOUR_HTML_RELAY",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "summarize-three-essays-15",
+      "position": [
+        3300,
+        0
+      ]
+    },
+    {
+      "name": "Read relay request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const { kind, html } = $json.body || {};\nif (![\"index\", \"title\"].includes(kind) || typeof html !== \"string\")\n  throw Error(\"Invalid parse request\");\nreturn { json: { kind, html } };\n"
+      },
+      "id": "summarize-three-essays-16",
+      "position": [
+        3520,
+        0
+      ]
+    },
+    {
+      "name": "Parse index?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.kind }}",
+              "rightValue": "index",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "summarize-three-essays-17",
+      "position": [
+        3740,
+        0
+      ]
+    },
+    {
+      "id": "summarize-three-essays-18",
+      "name": "Extract relay links",
+      "type": "n8n-nodes-base.html",
+      "position": [
+        3960,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "operation": "extractHtmlContent",
+        "dataPropertyName": "html",
+        "extractionValues": {
+          "values": [
+            {
+              "key": "essay",
+              "attribute": "href",
+              "cssSelector": "table table a",
+              "returnArray": true,
+              "returnValue": "attribute"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "summarize-three-essays-19",
+      "name": "Extract relay title",
+      "type": "n8n-nodes-base.html",
+      "position": [
+        4180,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "operation": "extractHtmlContent",
+        "extractionValues": {
+          "values": [
+            {
+              "key": "title",
+              "cssSelector": "title"
+            }
+          ]
+        },
+        "dataPropertyName": "html"
+      },
+      "typeVersion": 1
+    },
+    {
+      "name": "Return links",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {hrefs:$json.essay} }}",
+        "options": {}
+      },
+      "id": "summarize-three-essays-20",
+      "position": [
+        4400,
+        0
+      ]
+    },
+    {
+      "name": "Return title",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {title:$json.title} }}",
+        "options": {}
+      },
+      "id": "summarize-three-essays-21",
+      "position": [
+        4620,
+        0
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking \"Execute Workflow\"": {
+      "main": [
+        [
+          {
+            "node": "Fetch essay list",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch essay list": {
+      "main": [
+        [
+          {
+            "node": "Extract essay names",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract essay names": {
+      "main": [
+        [
+          {
+            "node": "Split out into items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split out into items": {
+      "main": [
+        [
+          {
+            "node": "Limit to first 3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limit to first 3": {
+      "main": [
+        [
+          {
+            "node": "Normalize essay URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize essay URL": {
+      "main": [
+        [
+          {
+            "node": "Process one essay",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract title": {
+      "main": [
+        [
+          {
+            "node": "Restore essay content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore essay content": {
+      "main": [
+        [
+          {
+            "node": "Summarization Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Summarization Chain": {
+      "main": [
+        [
+          {
+            "node": "Clean up",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clean up": {
+      "main": [
+        [
+          {
+            "node": "Process one essay",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTML parsing relay": {
+      "main": [
+        [
+          {
+            "node": "Read relay request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read relay request": {
+      "main": [
+        [
+          {
+            "node": "Parse index?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract relay links": {
+      "main": [
+        [
+          {
+            "node": "Return links",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract relay title": {
+      "main": [
+        [
+          {
+            "node": "Return title",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process one essay": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Fetch essay texts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch essay texts": {
+      "main": [
+        [
+          {
+            "node": "Extract title",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse index?": {
+      "main": [
+        [
+          {
+            "node": "Extract relay links",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Extract relay title",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Summarization Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Summarization Chain",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recursive Character Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Default Data Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Summarize Three Essays",
+  "active": false
+}

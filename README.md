@@ -375,6 +375,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Classify Website Domains in Google Sheets](workflows/classify-website-domains-in-google-sheets/) - Read website domains from a sheet, classify each site and update the matching row.
 - [Extract Products from Page Screenshots](workflows/extract-products-from-page-screenshots/) - Read page URLs from Google Sheets, extract product details from screenshots and append the results.
 - [Analyze Daily Papers in Notion](workflows/analyze-daily-papers-in-notion/) - Analyze daily paper abstracts and save new papers to a Notion data source.
+- [Summarize Three Essays](workflows/summarize-three-essays/) - Read the first three essay links from Paul Graham’s article index and summarize each page.
 
 ## Productivity
 
