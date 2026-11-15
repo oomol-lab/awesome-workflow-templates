@@ -392,6 +392,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Extract Source-Backed Company Metadata](workflows/extract-source-backed-company-metadata/) - Extract website metadata candidates for one company domain with provenance.
 - [Summarize a Podcast with Wikipedia Research](workflows/summarize-podcast-with-wikipedia-research/) - Summarize a transcript, research its topics using Wikipedia and email a digest.
 - [Fetch Webpage as Markdown](workflows/fetch-webpage-markdown/) - Fetch a webpage and return its Markdown content, optionally replacing links and image URLs.
+- [Research Competitors into Notion](workflows/research-competitors-into-notion/) - Find competitors and research their company, products, and reviews in Notion.
 
 ## Productivity
 
