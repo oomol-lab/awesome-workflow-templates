@@ -380,6 +380,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Summarize Three Essays](workflows/summarize-three-essays/) - Read the first three essay links from Paul Graham’s article index and summarize each page.
 - [Research a Topic into HTML](workflows/research-topic-to-html/) - Research a topic with Perplexity and return an HTML article.
 - [Detect Unusual Crop Images](workflows/detect-unusual-crop-images/) - Compare a crop image with prepared class centers and thresholds in Qdrant.
+- [Extract Data from a Webpage](workflows/extract-data-from-a-webpage/) - Extract requested fields and a structured summary from a webpage.
 
 ## Productivity
 

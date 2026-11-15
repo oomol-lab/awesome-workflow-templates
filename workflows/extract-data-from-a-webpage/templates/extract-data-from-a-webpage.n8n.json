@@ -1,0 +1,334 @@
+{
+  "name": "Extract Data from a Webpage",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "extract-data-from-a-webpage",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "extract-data-from-a-webpage-0",
+      "name": "Scrape URL",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "try {\n  const b = $input.first().json.body || $input.first().json;\n  if (!b.url) throw new Error(\"URL is required.\");\n  return [\n    {\n      json: {\n        url: b.url,\n        extractFields: b.extract_fields || \"price,features,description\",\n        name: b.name || \"\",\n      },\n    },\n  ];\n} catch (e) {\n  throw new Error(\"Invalid input: \" + e.message);\n}\n"
+      },
+      "id": "extract-data-from-a-webpage-1",
+      "name": "Validate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (compatible; DataForge/1.0)"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 20000
+        }
+      },
+      "id": "extract-data-from-a-webpage-2",
+      "name": "Fetch Page",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 2
+    },
+    {
+      "parameters": {
+        "jsCode": "try {\n  const url = $(\"Validate\").first().json;\n  const r = $input.first().json;\n  const html = typeof r === \"string\" ? r : r.data || r.body || JSON.stringify(r);\n  const text = html\n    .replace(/<script[^>]*>[\\s\\S]*?<\\/script>/gi, \"\")\n    .replace(/<style[^>]*>[\\s\\S]*?<\\/style>/gi, \"\")\n    .replace(/<[^>]+>/g, \" \")\n    .replace(/\\s+/g, \" \")\n    .trim()\n    .substring(0, 4000);\n  return [{ json: { ...url, pageText: text } }];\n} catch (e) {\n  throw new Error(\"Extract failed: \" + e.message);\n}\n"
+      },
+      "id": "extract-data-from-a-webpage-3",
+      "name": "Extract Text",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini"
+        },
+        "messages": {
+          "values": [
+            {
+              "role": "system",
+              "content": "=Extract the requested fields, title, description, statistics and sentiment as JSON. Requested fields: {{ $json.extractFields }}"
+            },
+            {
+              "role": "user",
+              "content": "=URL: {{ $json.url }}\nContent: {{ $json.pageText }}"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "options": {
+          "temperature": 0.2,
+          "maxTokens": 800
+        }
+      },
+      "id": "extract-data-from-a-webpage-4",
+      "name": "AI: Extract Data",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        880,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $input.first().json.message?.content || $input.first().json.content || '{}' }}"
+      },
+      "id": "extract-data-from-a-webpage-5",
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1100,
+        0
+      ]
+    },
+    {
+      "name": "Fetch relay",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "extract-data-from-a-webpage-fetch",
+        "responseMode": "responseNode",
+        "authentication": "headerAuth",
+        "options": {}
+      },
+      "position": [
+        1320,
+        0
+      ],
+      "disabled": true,
+      "id": "extract-data-from-a-webpage-6"
+    },
+    {
+      "name": "Validate relay URL",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "jsCode": "const url = $json.body?.url;\nif (typeof url !== \"string\" || !/^https?:\\/\\//i.test(url)) throw Error(\"Invalid URL\");\nreturn { json: { url } };\n"
+      },
+      "position": [
+        1540,
+        0
+      ],
+      "id": "extract-data-from-a-webpage-7"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (compatible; DataForge/1.0)"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 20000
+        }
+      },
+      "id": "extract-data-from-a-webpage-8",
+      "name": "Fetch relay page",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1760,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 2
+    },
+    {
+      "name": "Extract relay text",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "jsCode": "const r = $input.first().json;\nconst html = typeof r === \"string\" ? r : r.data || r.body || \"\";\nif (typeof html !== \"string\") throw Error(\"Invalid page\");\nconst text = html\n  .replace(/<script[^>]*>[\\s\\S]*?<\\/script>/gi, \"\")\n  .replace(/<style[^>]*>[\\s\\S]*?<\\/style>/gi, \"\")\n  .replace(/<[^>]+>/g, \" \")\n  .replace(/\\s+/g, \" \")\n  .trim()\n  .substring(0, 4000);\nif (!text) throw Error(\"Empty page\");\nreturn { json: { text } };\n"
+      },
+      "position": [
+        1980,
+        0
+      ],
+      "id": "extract-data-from-a-webpage-9"
+    },
+    {
+      "name": "Return relay text",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {text:$json.text} }}",
+        "options": {}
+      },
+      "position": [
+        2200,
+        0
+      ],
+      "id": "extract-data-from-a-webpage-10"
+    }
+  ],
+  "connections": {
+    "Scrape URL": {
+      "main": [
+        [
+          {
+            "node": "Validate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate": {
+      "main": [
+        [
+          {
+            "node": "Fetch Page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Page": {
+      "main": [
+        [
+          {
+            "node": "Extract Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Text": {
+      "main": [
+        [
+          {
+            "node": "AI: Extract Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI: Extract Data": {
+      "main": [
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch relay": {
+      "main": [
+        [
+          {
+            "node": "Validate relay URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate relay URL": {
+      "main": [
+        [
+          {
+            "node": "Fetch relay page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch relay page": {
+      "main": [
+        [
+          {
+            "node": "Extract relay text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract relay text": {
+      "main": [
+        [
+          {
+            "node": "Return relay text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true
+  },
+  "tags": [
+    {
+      "name": "DataForge",
+      "id": "dataforge"
+    },
+    {
+      "name": "AutoFlow",
+      "id": "autoflow"
+    },
+    {
+      "name": "Lite",
+      "id": "lite"
+    }
+  ],
+  "active": false,
+  "pinData": {}
+}
