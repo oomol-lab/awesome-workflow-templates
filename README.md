@@ -901,6 +901,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 
 - [Publish a Reddit Post and Comment](workflows/publish-reddit-post-and-comment/) - Publish a text post to a subreddit, verify it and add a comment to the same post.
 - [Post New Strava Activities to X](workflows/post-new-strava-activities-to-x/) - Post the distance and name of new Strava activities to X.
+- [Post to X with an Airtop Profile](workflows/post-to-x-with-airtop-profile/) - Use an authenticated Airtop browser profile to submit text to X.
 
 ## Education
 
