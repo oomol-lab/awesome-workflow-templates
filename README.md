@@ -150,6 +150,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Review Meeting Follow-up Suggestions](workflows/review-meeting-follow-up-suggestions/) - Find meetings without subsequent email, suggest available slots and book only after a human response.
 - [Draft a Website-Grounded Cold Email](workflows/draft-website-grounded-cold-email/) - Draft a personalized cold email grounded in a lead’s website.
 - [Answer RFP Questions with Company Files](workflows/answer-rfp-questions-with-company-files/) - Extract RFP questions, draft answers from company files, and notify the team.
+- [Draft RFP Responses with Company Knowledge](workflows/draft-rfp-responses-with-company-knowledge/) - Extract RFP questions, draft answers from company files, and notify the team.
 
 ## Operations
 
