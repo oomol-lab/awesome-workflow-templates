@@ -313,6 +313,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Email Landing Page SEO Audit](workflows/email-landing-page-seo-audit/) - Audit a landing page for technical SEO and content improvements and email the findings.
 - [Make Social Event Banners for Discord](workflows/make-social-event-banners-for-discord/) - Generate an event poster from a prompt and share it as a Discord attachment.
 - [Publish Notion Posts to LinkedIn](workflows/publish-notion-posts-to-linkedin/) - Format scheduled Notion posts, publish their images on LinkedIn and mark the matching page done.
+- [Draft WordPress Articles from Notion Updates](workflows/draft-wordpress-articles-from-notion-updates/) - Draft an SEO article from a Notion page update, email its link and update the page.
 
 ## Support
 
