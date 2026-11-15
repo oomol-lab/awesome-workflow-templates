@@ -1,0 +1,1425 @@
+{
+  "nodes": [
+    {
+      "id": "publish-drive-reels-to-instagram-0",
+      "name": "Post File Upload in Google Drive Folder  Trigger",
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "event": "fileCreated",
+        "options": {},
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "triggerOn": "specificFolder",
+        "folderToWatch": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DRIVE_FOLDER_ID"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "name": "Resume video",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "publish-drive-reels-to-instagram-resume",
+        "authentication": "headerAuth",
+        "options": {}
+      },
+      "id": "publish-drive-reels-to-instagram-1",
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "name": "One video at a time",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "parameters": {
+        "options": {}
+      },
+      "id": "publish-drive-reels-to-instagram-2",
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "name": "Select file ID",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const id = $json.id || $json.body?.fileId;\nif (!id) throw Error(\"Missing file ID\");\nreturn { json: { id } };\n"
+      },
+      "id": "publish-drive-reels-to-instagram-3",
+      "position": [
+        660,
+        0
+      ]
+    },
+    {
+      "name": "Get video metadata",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "url": "={{ 'https://www.googleapis.com/drive/v3/files/'+encodeURIComponent($json.id) }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "fields",
+              "value": "id,name,mimeType,webContentLink,thumbnailLink"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "publish-drive-reels-to-instagram-4",
+      "position": [
+        880,
+        0
+      ]
+    },
+    {
+      "id": "publish-drive-reels-to-instagram-5",
+      "name": "Post File Download in N8N (Google Drive Node)",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [
+        1100,
+        0
+      ],
+      "parameters": {
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Get video metadata').item.json.id }}"
+        },
+        "options": {},
+        "operation": "download"
+      },
+      "typeVersion": 3
+    },
+    {
+      "name": "Hash original video",
+      "type": "n8n-nodes-base.crypto",
+      "typeVersion": 1,
+      "parameters": {
+        "action": "hash",
+        "type": "SHA256",
+        "binaryData": true,
+        "binaryPropertyName": "data",
+        "dataPropertyName": "originalHash",
+        "encoding": "hex"
+      },
+      "id": "publish-drive-reels-to-instagram-6",
+      "position": [
+        1320,
+        0
+      ]
+    },
+    {
+      "name": "Fetch public video",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "url": "={{ $('Get video metadata').item.json.webContentLink }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "outputPropertyName": "data"
+            }
+          }
+        }
+      },
+      "id": "publish-drive-reels-to-instagram-7",
+      "position": [
+        1540,
+        0
+      ]
+    },
+    {
+      "name": "Hash public video",
+      "type": "n8n-nodes-base.crypto",
+      "typeVersion": 1,
+      "parameters": {
+        "action": "hash",
+        "type": "SHA256",
+        "binaryData": true,
+        "binaryPropertyName": "data",
+        "dataPropertyName": "publicHash",
+        "encoding": "hex"
+      },
+      "id": "publish-drive-reels-to-instagram-8",
+      "position": [
+        1760,
+        0
+      ]
+    },
+    {
+      "name": "Verify public video",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const m = $(\"Get video metadata\").item.json,\n  hash = $(\"Hash original video\").item.json.originalHash;\nif (\n  !m.id ||\n  !m.name ||\n  !/^video\\//.test(m.mimeType || \"\") ||\n  !/^https:\\/\\//.test(m.webContentLink || \"\") ||\n  !hash ||\n  hash !== $json.publicHash ||\n  !/^video\\//.test($(\"Fetch public video\").item.binary?.data?.mimeType || \"\")\n)\n  throw Error(\"Public video bytes unavailable or differ from Drive original\");\nreturn {\n  json: {\n    fileId: m.id,\n    fileName: m.name,\n    videoUrl: m.webContentLink,\n    thumbnailUrl: m.thumbnailLink || \"\",\n  },\n};\n"
+      },
+      "id": "publish-drive-reels-to-instagram-9",
+      "position": [
+        1980,
+        0
+      ]
+    },
+    {
+      "id": "publish-drive-reels-to-instagram-10",
+      "name": "AI Caption generated by OpenAI",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "position": [
+        2200,
+        0
+      ],
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "options": {},
+        "messages": {
+          "values": [
+            {
+              "content": "=Generate a clear Instagram caption under 150 characters with a call to action and relevant hashtags for this video filename: {{ $('Verify public video').item.json.fileName }}"
+            }
+          ]
+        },
+        "simplify": false
+      },
+      "typeVersion": 1.8
+    },
+    {
+      "name": "Prepare Reel",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const v = $(\"Verify public video\").item.json,\n  c = $json.choices?.[0]?.message?.content;\nif (!c) throw Error(\"Missing caption\");\nreturn { json: { ...v, caption: c, mode: \"direct\" } };\n"
+      },
+      "id": "publish-drive-reels-to-instagram-11",
+      "position": [
+        2420,
+        0
+      ]
+    },
+    {
+      "name": "Use Open Flow?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.mode }}",
+              "rightValue": "relay",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "publish-drive-reels-to-instagram-12",
+      "position": [
+        2640,
+        0
+      ]
+    },
+    {
+      "name": "Forward video to Open Flow",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "YOUR_OPEN_FLOW_WEBHOOK_URL",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $('Prepare Reel').item.json }}",
+        "options": {}
+      },
+      "id": "publish-drive-reels-to-instagram-13",
+      "position": [
+        2860,
+        0
+      ]
+    },
+    {
+      "name": "Verify relay publication",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if ($json.status !== \"published\") throw Error(\"Publication not confirmed\");\nreturn $input.item;\n"
+      },
+      "id": "publish-drive-reels-to-instagram-14",
+      "position": [
+        3080,
+        0
+      ]
+    },
+    {
+      "name": "Load Reel state",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "alwaysOutputData": true,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'reel:'+$('Verify public video').item.json.fileId }}"
+            }
+          ]
+        },
+        "operation": "get",
+        "returnAll": true
+      },
+      "id": "publish-drive-reels-to-instagram-15",
+      "position": [
+        3300,
+        0
+      ]
+    },
+    {
+      "name": "Choose Reel step",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const rows = $input\n  .all()\n  .map((i) => i.json)\n  .filter((x) => x.item_key);\nif (rows.length > 1) throw Error(\"Duplicate state\");\nconst v = $(\"Prepare Reel\").first().json;\nlet s = rows.length ? JSON.parse(rows[0].payload) : v,\n  stage = rows.length ? rows[0].status : \"new\";\nif (s.fileId !== v.fileId || s.videoUrl !== v.videoUrl || s.fileName !== v.fileName)\n  throw Error(\"Video details changed\");\nif (stage.startsWith(\"pending-\")) throw Error(\"Inspect pending write\");\nreturn [{ json: { stage, payload: s } }];\n"
+      },
+      "id": "publish-drive-reels-to-instagram-16",
+      "position": [
+        3520,
+        0
+      ]
+    },
+    {
+      "name": "Route Reel step",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.stage }}",
+                    "rightValue": "new",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "new"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.stage }}",
+                    "rightValue": "ready-sheet",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "ready-sheet"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.stage }}",
+                    "rightValue": "ready-create",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "ready-create"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.stage }}",
+                    "rightValue": "ready-status",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "ready-status"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.stage }}",
+                    "rightValue": "ready-publish",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "ready-publish"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.stage }}",
+                    "rightValue": "done",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "done"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "publish-drive-reels-to-instagram-17",
+      "position": [
+        3740,
+        0
+      ]
+    },
+    {
+      "name": "Reserve new tracker row",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "item_key": "={{ 'reel:'+$('Verify public video').item.json.fileId }}",
+            "status": "pending-sheet",
+            "payload": "={{ JSON.stringify($('Choose Reel step').item.json.payload) }}"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "publish-drive-reels-to-instagram-18",
+      "position": [
+        3960,
+        0
+      ]
+    },
+    {
+      "name": "Reserve tracker update",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'reel:'+$('Verify public video').item.json.fileId }}"
+            }
+          ]
+        },
+        "operation": "update",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "pending-sheet",
+            "payload": "={{ JSON.stringify($('Choose Reel step').item.json.payload) }}"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "publish-drive-reels-to-instagram-19",
+      "position": [
+        4180,
+        0
+      ]
+    },
+    {
+      "id": "publish-drive-reels-to-instagram-20",
+      "name": "Post File Save in Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        4400,
+        0
+      ],
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_SPREADSHEET_ID"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Posts"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "matchingColumns": [
+            "File ID"
+          ],
+          "value": {
+            "File ID": "={{ $('Choose Reel step').item.json.payload.fileId }}",
+            "Name": "={{ $('Choose Reel step').item.json.payload.fileName }}",
+            "Caption": "={{ $('Choose Reel step').item.json.payload.caption }}",
+            "Video URL": "={{ $('Choose Reel step').item.json.payload.videoUrl }}",
+            "Thumbnail": "={{ $('Choose Reel step').item.json.payload.thumbnailUrl }}"
+          },
+          "schema": [
+            {
+              "id": "File ID",
+              "displayName": "File ID",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Caption",
+              "displayName": "Caption",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Video URL",
+              "displayName": "Video URL",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Thumbnail",
+              "displayName": "Thumbnail",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ]
+        },
+        "options": {
+          "useAppend": true
+        }
+      },
+      "typeVersion": 4.5
+    },
+    {
+      "name": "Verify tracker row",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if ($json[\"File ID\"] !== $(\"Choose Reel step\").item.json.payload.fileId)\n  throw Error(\"Unknown tracker result\");\nreturn $input.item;\n"
+      },
+      "id": "publish-drive-reels-to-instagram-21",
+      "position": [
+        4620,
+        0
+      ]
+    },
+    {
+      "name": "Confirm tracker update",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'reel:'+$('Verify public video').item.json.fileId }}"
+            }
+          ]
+        },
+        "operation": "update",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "ready-create",
+            "payload": "={{ JSON.stringify($('Choose Reel step').item.json.payload) }}"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "publish-drive-reels-to-instagram-22",
+      "position": [
+        4840,
+        0
+      ]
+    },
+    {
+      "name": "Reserve container creation",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'reel:'+$('Verify public video').item.json.fileId }}"
+            }
+          ]
+        },
+        "operation": "update",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "pending-create",
+            "payload": "={{ JSON.stringify($('Choose Reel step').item.json.payload) }}"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "publish-drive-reels-to-instagram-23",
+      "position": [
+        5060,
+        0
+      ]
+    },
+    {
+      "id": "publish-drive-reels-to-instagram-24",
+      "name": "Connect Facebook API for Publishing Instagram Post using N8N",
+      "type": "n8n-nodes-base.facebookGraphApi",
+      "position": [
+        5280,
+        0
+      ],
+      "parameters": {
+        "edge": "media",
+        "node": "YOUR_INSTAGRAM_ACCOUNT_ID",
+        "options": {
+          "queryParameters": {
+            "parameter": [
+              {
+                "name": "media_type",
+                "value": "REELS"
+              },
+              {
+                "name": "video_url",
+                "value": "={{ $('Choose Reel step').item.json.payload.videoUrl }}"
+              },
+              {
+                "name": "caption",
+                "value": "={{ $('Choose Reel step').item.json.payload.caption }}"
+              }
+            ]
+          }
+        },
+        "graphApiVersion": "v22.0",
+        "httpRequestMethod": "POST",
+        "hostUrl": "graph.facebook.com"
+      },
+      "typeVersion": 1
+    },
+    {
+      "name": "Verify container",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if (!/^\\d+$/.test($json.id || \"\")) throw Error(\"Unknown container result\");\nreturn $input.item;\n"
+      },
+      "id": "publish-drive-reels-to-instagram-25",
+      "position": [
+        5500,
+        0
+      ]
+    },
+    {
+      "name": "Confirm container",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'reel:'+$('Verify public video').item.json.fileId }}"
+            }
+          ]
+        },
+        "operation": "update",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "ready-status",
+            "payload": "={{ JSON.stringify({...$('Choose Reel step').item.json.payload,containerId:$('Verify container').item.json.id}) }}"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "publish-drive-reels-to-instagram-26",
+      "position": [
+        5720,
+        0
+      ]
+    },
+    {
+      "name": "Check container status",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "url": "={{ 'https://graph.facebook.com/v22.0/'+$('Choose Reel step').item.json.payload.containerId }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "fields",
+              "value": "status_code,status"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "publish-drive-reels-to-instagram-27",
+      "position": [
+        5940,
+        0
+      ]
+    },
+    {
+      "name": "Verify ready container",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if (\n  $json.id !== $(\"Choose Reel step\").item.json.payload.containerId ||\n  $json.status_code !== \"FINISHED\"\n)\n  throw Error(\"Container not ready; inspect and retry later\");\nreturn $input.item;\n"
+      },
+      "id": "publish-drive-reels-to-instagram-28",
+      "position": [
+        6160,
+        0
+      ]
+    },
+    {
+      "name": "Confirm container readiness",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'reel:'+$('Verify public video').item.json.fileId }}"
+            }
+          ]
+        },
+        "operation": "update",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "ready-publish",
+            "payload": "={{ JSON.stringify($('Choose Reel step').item.json.payload) }}"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "publish-drive-reels-to-instagram-29",
+      "position": [
+        6380,
+        0
+      ]
+    },
+    {
+      "name": "Reserve publication",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'reel:'+$('Verify public video').item.json.fileId }}"
+            }
+          ]
+        },
+        "operation": "update",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "pending-publish",
+            "payload": "={{ JSON.stringify($('Choose Reel step').item.json.payload) }}"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "publish-drive-reels-to-instagram-30",
+      "position": [
+        6600,
+        0
+      ]
+    },
+    {
+      "id": "publish-drive-reels-to-instagram-31",
+      "name": "Finally Post to Instagram",
+      "type": "n8n-nodes-base.facebookGraphApi",
+      "position": [
+        6820,
+        0
+      ],
+      "parameters": {
+        "edge": "media_publish",
+        "node": "YOUR_INSTAGRAM_ACCOUNT_ID",
+        "hostUrl": "graph.facebook.com",
+        "options": {
+          "queryParameters": {
+            "parameter": [
+              {
+                "name": "creation_id",
+                "value": "={{ $('Choose Reel step').item.json.payload.containerId }}"
+              }
+            ]
+          }
+        },
+        "graphApiVersion": "v22.0",
+        "httpRequestMethod": "POST"
+      },
+      "typeVersion": 1
+    },
+    {
+      "name": "Verify publication",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if (!/^\\d+$/.test($json.id || \"\")) throw Error(\"Unknown publication result\");\nreturn $input.item;\n"
+      },
+      "id": "publish-drive-reels-to-instagram-32",
+      "position": [
+        7040,
+        0
+      ]
+    },
+    {
+      "name": "Confirm publication",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'reel:'+$('Verify public video').item.json.fileId }}"
+            }
+          ]
+        },
+        "operation": "update",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "done",
+            "payload": "={{ JSON.stringify({...$('Choose Reel step').item.json.payload,mediaId:$('Verify publication').item.json.id}) }}"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "publish-drive-reels-to-instagram-33",
+      "position": [
+        7260,
+        0
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Post File Upload in Google Drive Folder  Trigger": {
+      "main": [
+        [
+          {
+            "node": "One video at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resume video": {
+      "main": [
+        [
+          {
+            "node": "One video at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select file ID": {
+      "main": [
+        [
+          {
+            "node": "Get video metadata",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get video metadata": {
+      "main": [
+        [
+          {
+            "node": "Post File Download in N8N (Google Drive Node)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Post File Download in N8N (Google Drive Node)": {
+      "main": [
+        [
+          {
+            "node": "Hash original video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hash original video": {
+      "main": [
+        [
+          {
+            "node": "Fetch public video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch public video": {
+      "main": [
+        [
+          {
+            "node": "Hash public video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hash public video": {
+      "main": [
+        [
+          {
+            "node": "Verify public video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify public video": {
+      "main": [
+        [
+          {
+            "node": "AI Caption generated by OpenAI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Caption generated by OpenAI": {
+      "main": [
+        [
+          {
+            "node": "Prepare Reel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Reel": {
+      "main": [
+        [
+          {
+            "node": "Use Open Flow?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Forward video to Open Flow": {
+      "main": [
+        [
+          {
+            "node": "Verify relay publication",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify relay publication": {
+      "main": [
+        [
+          {
+            "node": "One video at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Reel state": {
+      "main": [
+        [
+          {
+            "node": "Choose Reel step",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Choose Reel step": {
+      "main": [
+        [
+          {
+            "node": "Route Reel step",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve new tracker row": {
+      "main": [
+        [
+          {
+            "node": "Post File Save in Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve tracker update": {
+      "main": [
+        [
+          {
+            "node": "Post File Save in Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Post File Save in Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Verify tracker row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify tracker row": {
+      "main": [
+        [
+          {
+            "node": "Confirm tracker update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm tracker update": {
+      "main": [
+        [
+          {
+            "node": "Load Reel state",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve container creation": {
+      "main": [
+        [
+          {
+            "node": "Connect Facebook API for Publishing Instagram Post using N8N",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Connect Facebook API for Publishing Instagram Post using N8N": {
+      "main": [
+        [
+          {
+            "node": "Verify container",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify container": {
+      "main": [
+        [
+          {
+            "node": "Confirm container",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm container": {
+      "main": [
+        [
+          {
+            "node": "Load Reel state",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check container status": {
+      "main": [
+        [
+          {
+            "node": "Verify ready container",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify ready container": {
+      "main": [
+        [
+          {
+            "node": "Confirm container readiness",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm container readiness": {
+      "main": [
+        [
+          {
+            "node": "Load Reel state",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve publication": {
+      "main": [
+        [
+          {
+            "node": "Finally Post to Instagram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Finally Post to Instagram": {
+      "main": [
+        [
+          {
+            "node": "Verify publication",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify publication": {
+      "main": [
+        [
+          {
+            "node": "Confirm publication",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm publication": {
+      "main": [
+        [
+          {
+            "node": "Load Reel state",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "One video at a time": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Select file ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Use Open Flow?": {
+      "main": [
+        [
+          {
+            "node": "Forward video to Open Flow",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Load Reel state",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Reel step": {
+      "main": [
+        [
+          {
+            "node": "Reserve new tracker row",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reserve tracker update",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reserve container creation",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Check container status",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reserve publication",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "One video at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Publish Drive Reels to Instagram",
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
