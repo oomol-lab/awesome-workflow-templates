@@ -1,0 +1,830 @@
+{
+  "name": "Publish Notion Posts to LinkedIn",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "publish-notion-posts-to-linkedin-0",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 15
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "publish-notion-posts-to-linkedin-1",
+      "name": "query entries from Notion table for today",
+      "type": "n8n-nodes-base.notion",
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "filters": {
+          "conditions": [
+            {
+              "key": "Date|date",
+              "date": "={{ $now.toFormat(\"yyyy-MM-dd\") }}",
+              "condition": "equals"
+            },
+            {
+              "key": "Status|status",
+              "condition": "does_not_equal",
+              "statusValue": "Done"
+            }
+          ]
+        },
+        "options": {},
+        "resource": "databasePage",
+        "operation": "getAll",
+        "databaseId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_NOTION_DATABASE_ID"
+        },
+        "filterType": "manual",
+        "returnAll": true,
+        "matchType": "allFilters"
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "name": "Process one post",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "publish-notion-posts-to-linkedin-2",
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "id": "publish-notion-posts-to-linkedin-3",
+      "name": "get all content from post page",
+      "type": "n8n-nodes-base.notion",
+      "position": [
+        660,
+        0
+      ],
+      "parameters": {
+        "blockId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Process one post').item.json.id }}"
+        },
+        "resource": "block",
+        "operation": "getAll",
+        "returnAll": true
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "publish-notion-posts-to-linkedin-4",
+      "name": "Pull together all text blocks + image",
+      "type": "n8n-nodes-base.aggregate",
+      "position": [
+        880,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "fieldsToAggregate": {
+          "fieldToAggregate": [
+            {
+              "fieldToAggregate": "content"
+            },
+            {
+              "fieldToAggregate": "image.file.url"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "name": "Format LinkedIn text",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ \"Format for LinkedIn with paragraph breaks and lists. Preserve meaning, do not invent facts: \" + $(\"Pull together all text blocks + image\").item.json.content.join(\" \") }}",
+        "options": {}
+      },
+      "id": "publish-notion-posts-to-linkedin-5",
+      "position": [
+        1100,
+        0
+      ]
+    },
+    {
+      "name": "OpenAI model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "id": "publish-notion-posts-to-linkedin-6",
+      "position": [
+        1320,
+        0
+      ]
+    },
+    {
+      "id": "publish-notion-posts-to-linkedin-7",
+      "name": "Initialize image upload",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1540,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.linkedin.com/rest/images?action=initializeUpload",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "linkedInOAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "LinkedIn-Version",
+              "value": "202605"
+            },
+            {
+              "name": "X-Restli-Protocol-Version",
+              "value": "2.0.0"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"initializeUploadRequest\":{\"owner\":\"urn:li:person:YOUR_LINKEDIN_PERSON_ID\"}}",
+        "options": {
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "publish-notion-posts-to-linkedin-8",
+      "name": "Check upload address",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1760,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const v = $json.value;\nif (\n  !v ||\n  typeof v.image !== \"string\" ||\n  !/^urn:li:image:/.test(v.image) ||\n  typeof v.uploadUrl !== \"string\" ||\n  !v.uploadUrl.startsWith(\"https://www.linkedin.com/dms-uploads/\")\n)\n  throw new Error(\"Unexpected LinkedIn upload response\");\nreturn { json: { image: v.image, uploadUrl: v.uploadUrl } };\n"
+      }
+    },
+    {
+      "id": "publish-notion-posts-to-linkedin-9",
+      "name": "Download image",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1980,
+        0
+      ],
+      "parameters": {
+        "url": "={{ $('Pull together all text blocks + image').item.json.url[0] }}",
+        "options": {
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "outputPropertyName": "data"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "publish-notion-posts-to-linkedin-10",
+      "name": "Upload image",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2200,
+        0
+      ],
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ $(\"Check upload address\").item.json.uploadUrl }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "linkedInOAuth2Api",
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "data",
+        "options": {
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Post not pending",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "rowNotExists",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'linkedin-notion:' + $('Process one post').item.json.id }}"
+            }
+          ]
+        }
+      },
+      "id": "publish-notion-posts-to-linkedin-11",
+      "position": [
+        2420,
+        0
+      ]
+    },
+    {
+      "name": "Reserve post",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "item_key": "={{ 'linkedin-notion:' + $('Process one post').item.json.id }}",
+            "status": "pending-post"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "publish-notion-posts-to-linkedin-12",
+      "position": [
+        2640,
+        0
+      ]
+    },
+    {
+      "id": "publish-notion-posts-to-linkedin-13",
+      "name": "Publish image post",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2860,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.linkedin.com/rest/posts",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "linkedInOAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "LinkedIn-Version",
+              "value": "202605"
+            },
+            {
+              "name": "X-Restli-Protocol-Version",
+              "value": "2.0.0"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {author:\"urn:li:person:YOUR_LINKEDIN_PERSON_ID\",commentary:$(\"Format LinkedIn text\").item.json.output,visibility:\"PUBLIC\",distribution:{feedDistribution:\"MAIN_FEED\",targetEntities:[],thirdPartyDistributionChannels:[]},content:{media:{id:$(\"Check upload address\").item.json.image}},lifecycleState:\"PUBLISHED\",isReshareDisabledByAuthor:false} }}",
+        "options": {
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "responseFormat": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Verify LinkedIn receipt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const h = $json.headers || {};\nif ($json.statusCode < 200 || $json.statusCode >= 300 || !h[\"x-restli-id\"])\n  throw Error(\"Unknown LinkedIn post result\");\nreturn { json: { ok: true } };\n"
+      },
+      "id": "publish-notion-posts-to-linkedin-14",
+      "position": [
+        3080,
+        0
+      ]
+    },
+    {
+      "name": "Reserve Notion status",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Reserve post').item.json.id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "pending-status"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "publish-notion-posts-to-linkedin-15",
+      "position": [
+        3300,
+        0
+      ]
+    },
+    {
+      "id": "publish-notion-posts-to-linkedin-16",
+      "name": "Set post status to \"Done\"",
+      "type": "n8n-nodes-base.notion",
+      "position": [
+        3520,
+        0
+      ],
+      "parameters": {
+        "pageId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Process one post').item.json.id }}"
+        },
+        "options": {},
+        "resource": "databasePage",
+        "operation": "update",
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Status|status",
+              "statusValue": "Done"
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "name": "Confirm post and status",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Reserve post').item.json.id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "done"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "publish-notion-posts-to-linkedin-17",
+      "position": [
+        3740,
+        0
+      ]
+    },
+    {
+      "name": "Binary upload relay",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "disabled": true,
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "YOUR_UPLOAD_RELAY",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "publish-notion-posts-to-linkedin-18",
+      "position": [
+        3960,
+        0
+      ]
+    },
+    {
+      "name": "Validate relay URLs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const { imageUrl, uploadUrl } = $json.body || {};\nif (\n  typeof imageUrl !== \"string\" ||\n  !/^https:\\/\\/[a-z0-9.-]+(?::443)?(?:[/?#]|$)/i.test(imageUrl) ||\n  typeof uploadUrl !== \"string\" ||\n  !uploadUrl.startsWith(\"https://www.linkedin.com/dms-uploads/\")\n)\n  throw Error(\"Invalid relay URLs\");\nreturn { json: { imageUrl, uploadUrl } };\n"
+      },
+      "id": "publish-notion-posts-to-linkedin-19",
+      "position": [
+        4180,
+        0
+      ]
+    },
+    {
+      "id": "publish-notion-posts-to-linkedin-20",
+      "name": "Download relay image",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4400,
+        0
+      ],
+      "parameters": {
+        "url": "={{ $(\"Validate relay URLs\").item.json.imageUrl }}",
+        "options": {
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "outputPropertyName": "data"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "publish-notion-posts-to-linkedin-21",
+      "name": "Upload relay image",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4620,
+        0
+      ],
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ $(\"Validate relay URLs\").item.json.uploadUrl }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "linkedInOAuth2Api",
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "data",
+        "options": {
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Confirm binary relay",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {ok:true} }}",
+        "options": {}
+      },
+      "id": "publish-notion-posts-to-linkedin-22",
+      "position": [
+        4840,
+        0
+      ]
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC"
+  },
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "query entries from Notion table for today",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "query entries from Notion table for today": {
+      "main": [
+        [
+          {
+            "node": "Process one post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get all content from post page": {
+      "main": [
+        [
+          {
+            "node": "Pull together all text blocks + image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pull together all text blocks + image": {
+      "main": [
+        [
+          {
+            "node": "Format LinkedIn text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format LinkedIn text": {
+      "main": [
+        [
+          {
+            "node": "Initialize image upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Initialize image upload": {
+      "main": [
+        [
+          {
+            "node": "Check upload address",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check upload address": {
+      "main": [
+        [
+          {
+            "node": "Download image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download image": {
+      "main": [
+        [
+          {
+            "node": "Upload image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload image": {
+      "main": [
+        [
+          {
+            "node": "Post not pending",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Post not pending": {
+      "main": [
+        [
+          {
+            "node": "Reserve post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve post": {
+      "main": [
+        [
+          {
+            "node": "Publish image post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Publish image post": {
+      "main": [
+        [
+          {
+            "node": "Verify LinkedIn receipt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify LinkedIn receipt": {
+      "main": [
+        [
+          {
+            "node": "Reserve Notion status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve Notion status": {
+      "main": [
+        [
+          {
+            "node": "Set post status to \"Done\"",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set post status to \"Done\"": {
+      "main": [
+        [
+          {
+            "node": "Confirm post and status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm post and status": {
+      "main": [
+        [
+          {
+            "node": "Process one post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Binary upload relay": {
+      "main": [
+        [
+          {
+            "node": "Validate relay URLs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate relay URLs": {
+      "main": [
+        [
+          {
+            "node": "Download relay image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download relay image": {
+      "main": [
+        [
+          {
+            "node": "Upload relay image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload relay image": {
+      "main": [
+        [
+          {
+            "node": "Confirm binary relay",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process one post": {
+      "main": [
+        [],
+        [
+          {
+            "node": "get all content from post page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Format LinkedIn text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
