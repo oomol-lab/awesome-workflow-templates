@@ -757,6 +757,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Archive n8n Workflow JSON to Drive](workflows/archive-n8n-workflow-json-to-drive/) - Back up n8n workflows as JSON files in a Google Drive folder.
 - [Archive n8n Workflows to Nextcloud](workflows/archive-n8n-workflows-to-nextcloud/) - Back up n8n workflows as JSON files in a Nextcloud folder.
 - [GitHub Issue MCP Tools](workflows/github-issue-mcp-tools/) - Expose latest issues, issue comments and comment creation as repository-scoped MCP tools.
+- [Back Up n8n Workflows by ID to GitLab](workflows/back-up-n8n-workflows-by-id-to-gitlab/) - Back up n8n workflows to GitLab by ID, writing only new or changed files.
 
 ## Communication
 
