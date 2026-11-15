@@ -1051,6 +1051,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Explore AI HTTP Tools](workflows/explore-ai-http-tools/) - Explore model-selected web scraping and activity search tools.
 - [Crawl Company Social Profiles](workflows/crawl-company-social-profiles/) - Find company social profiles by exploring their websites and save the results to Supabase.
 - [Index Detected Image Objects](workflows/index-detected-image-objects/) - Detect and crop objects in an image, then index their URLs and labels.
+- [Analyze Qdrant Review Clusters](workflows/analyze-qdrant-review-clusters/) - Cluster stored review vectors and append customer insights to a spreadsheet.
 
 ## E-commerce
 

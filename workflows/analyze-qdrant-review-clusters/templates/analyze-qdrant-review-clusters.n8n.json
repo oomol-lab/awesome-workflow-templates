@@ -1,0 +1,589 @@
+{
+  "nodes": [
+    {
+      "id": "analyze-qdrant-review-clusters-0",
+      "name": "Get Payload of Points",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "url": "https://YOUR_QDRANT_HOST/collections/trustpilot_reviews/points",
+        "method": "POST",
+        "options": {},
+        "jsonBody": "={{\n {\n \"ids\": $json.points,\n \"with_payload\": true\n }\n}}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "qdrantApi"
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "analyze-qdrant-review-clusters-1",
+      "name": "Clusters To List",
+      "type": "n8n-nodes-base.splitOut",
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "fieldToSplitOut": "output"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "analyze-qdrant-review-clusters-2",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "model": "gpt-5.4-mini",
+        "options": {}
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "analyze-qdrant-review-clusters-3",
+      "name": "Only Clusters With 3+ points",
+      "type": "n8n-nodes-base.filter",
+      "position": [
+        660,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "328f806c-0792-4d90-9bee-a1e10049e78f",
+              "operator": {
+                "type": "array",
+                "operation": "lengthGt",
+                "rightType": "number"
+              },
+              "leftValue": "={{ $json.points }}",
+              "rightValue": 2
+            }
+          ]
+        }
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "analyze-qdrant-review-clusters-4",
+      "name": "Set Variables1",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        880,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2e58a9fa-a14d-4a6c-8cc8-8ec947c791fb",
+              "name": "companyId",
+              "type": "string",
+              "value": "={{ $json.companyId }}"
+            },
+            {
+              "id": "37cf8af2-6f0f-40b1-b822-c9bd6a620a3c",
+              "name": "review_date_from",
+              "type": "string",
+              "value": "={{ $today.startOf('month').toISO() }}"
+            },
+            {
+              "id": "8d72f739-f832-4c25-b62a-2ae70ad2b1e7",
+              "name": "review_date_to",
+              "type": "string",
+              "value": "={{ $today.startOf('month').plus({months:1}).toISO() }}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "analyze-qdrant-review-clusters-5",
+      "name": "Find Reviews",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        1100,
+        0
+      ],
+      "parameters": {
+        "url": "https://YOUR_QDRANT_HOST/collections/trustpilot_reviews/points/scroll",
+        "method": "POST",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          }
+        },
+        "jsonBody": "={{ {limit:500,filter:{must:[{key:'metadata.company_id',match:{value:$('Set Variables1').first().json.companyId}},{key:'metadata.review_date',range:{gte:$('Set Variables1').first().json.review_date_from,lt:$('Set Variables1').first().json.review_date_to}}]},with_vector:true,with_payload:false} }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "qdrantApi"
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "analyze-qdrant-review-clusters-6",
+      "name": "Prep Output For Export",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        1320,
+        0
+      ],
+      "parameters": {
+        "mode": "raw",
+        "options": {},
+        "jsonOutput": "={{ {\n ...$json.output,\n \"CompanyID\": $('Set Variables1').first().json.companyId,\n \"From\": $('Set Variables1').first().json.review_date_from,\n \"To\": $('Set Variables1').first().json.review_date_to,\n \"Number of Responses\": $('Get Payload of Points').item.json.result.length,\n \"Raw Responses\": $('Get Payload of Points').item.json.result.map(item =>\n [\n item.payload.metadata.review_date,\n item.payload.metadata.review_author,\n item.payload.metadata.review_rating,\n item.payload.content.replaceAll('\"', '\\\"').replaceAll('\\n', ' '),\n item.payload.metadata.review_url,\n ]\n ).join('\\n')\n} }}\n"
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "analyze-qdrant-review-clusters-7",
+      "name": "Export To Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        1540,
+        0
+      ],
+      "parameters": {
+        "columns": {
+          "value": {},
+          "schema": [
+            {
+              "id": "CompanyID",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "CompanyID",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "From",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "From",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "To",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "To",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Insight",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Insight",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Sentiment",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Sentiment",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Suggested Improvements",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Suggested Improvements",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Number of Responses",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Number of Responses",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Raw Responses",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Raw Responses",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "autoMapInputData",
+          "matchingColumns": []
+        },
+        "options": {
+          "cellFormat": "RAW",
+          "useAppend": true
+        },
+        "operation": "append",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Sheet1"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_SPREADSHEET_ID"
+        }
+      },
+      "typeVersion": 4.4
+    },
+    {
+      "id": "analyze-qdrant-review-clusters-8",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "position": [
+        1760,
+        0
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "analyze-qdrant-review-clusters-9",
+      "name": "Apply K-means Clustering Algorithm",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1980,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function cluster({ points }) {\n  if (!Array.isArray(points)) throw Error(\"Expected review vectors\");\n  if (!points.length) return { clusters: [] };\n  const ids = new Set(),\n    n = points[0]?.vector?.length;\n  if (!Number.isInteger(n) || n < 1) throw Error(\"Missing vector\");\n  for (const p of points) {\n    if (\n      !p.id ||\n      ids.has(String(p.id)) ||\n      !Array.isArray(p.vector) ||\n      p.vector.length !== n ||\n      p.vector.some((x) => !Number.isFinite(x))\n    )\n      throw Error(\"Invalid review vector or ID\");\n    ids.add(String(p.id));\n  }\n  const k = Math.min(5, points.length),\n    centers = points.slice(0, k).map((p) => p.vector.slice()),\n    dist = (a, b) => a.reduce((s, x, i) => s + (x - b[i]) ** 2, 0);\n  let labels = [];\n  for (let pass = 0; pass < 100; pass++) {\n    const next = points.map((p) =>\n      centers.reduce(\n        (best, c, i) => (dist(p.vector, c) < dist(p.vector, centers[best]) ? i : best),\n        0,\n      ),\n    );\n    if (next.every((x, i) => x === labels[i])) break;\n    labels = next;\n    for (let i = 0; i < k; i++) {\n      const group = points.filter((_, j) => labels[j] === i);\n      if (group.length)\n        centers[i] = centers[i].map(\n          (_, j) => group.reduce((sum, p) => sum + p.vector[j], 0) / group.length,\n        );\n    }\n  }\n  return {\n    clusters: centers\n      .map((_, i) => ({\n        id: \"Cluster \" + i,\n        points: points.filter((_, j) => labels[j] === i).map((p) => p.id),\n      }))\n      .filter((c) => c.points.length >= 3),\n  };\n}\n\nconst points = $input.all().flatMap((x) => x.json.body.result.points);\nreturn [{ json: { output: cluster({ points }).clusters } }];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "analyze-qdrant-review-clusters-10",
+      "name": "Customer Insights Agent",
+      "type": "@n8n/n8n-nodes-langchain.informationExtractor",
+      "position": [
+        2200,
+        0
+      ],
+      "parameters": {
+        "text": "=The {{ $json.result.length }} reviews were:\n{{\n$json.result.map(item =>\n`* ${item.payload.metadata.review_author} gave ${item.payload.metadata.review_rating} stars: \"${item.payload.content.replaceAll('\"', '\\\"').replaceAll('\\n', ' ')}\"`\n).join('\\n')\n}}",
+        "options": {
+          "systemPromptTemplate": "=You help summarise a selection of trustpilot reviews for a company called \"{{ $json.result[0].payload.metadata.company_id }}\".\nThe {{ $json.result.length }} reviews were selected because their contents were similar in context.\n\nYour task is to: \n* summarise the given reviews into a short paragraph. Provide an insight from this summary and what we could learn from the reviews.\n* determine if the overall sentiment of all the listed responses to be either strongly negative, negative, neutral, positive or strongly positive."
+        },
+        "schemaType": "fromJson",
+        "jsonSchemaExample": "{\n\t\"Insight\": \"\",\n \"Sentiment\": \"\",\n \"Suggested Improvements\": \"\"\n}"
+      },
+      "typeVersion": 1
+    },
+    {
+      "name": "No prior insight",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "rowNotExists",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'review-cluster:' + $('Set Variables1').first().json.companyId + ':' + $('Set Variables1').first().json.review_date_from + ':' + $('Clusters To List').item.json.points.map(String).sort().join(',') }}"
+            }
+          ]
+        }
+      },
+      "id": "analyze-qdrant-review-clusters-11",
+      "position": [
+        2420,
+        0
+      ]
+    },
+    {
+      "name": "Reserve insight",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "item_key": "={{ 'review-cluster:' + $('Set Variables1').first().json.companyId + ':' + $('Set Variables1').first().json.review_date_from + ':' + $('Clusters To List').item.json.points.map(String).sort().join(',') }}",
+            "status": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "analyze-qdrant-review-clusters-12",
+      "position": [
+        2640,
+        0
+      ]
+    },
+    {
+      "name": "Restore insight",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return { json: $(\"Prep Output For Export\").item.json };\n"
+      },
+      "id": "analyze-qdrant-review-clusters-13",
+      "position": [
+        2860,
+        0
+      ]
+    },
+    {
+      "name": "Confirm insight",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $(\"Reserve insight\").item.json.id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "done"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "analyze-qdrant-review-clusters-14",
+      "position": [
+        3080,
+        0
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Find Reviews": {
+      "main": [
+        [
+          {
+            "node": "Apply K-means Clustering Algorithm",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Variables1": {
+      "main": [
+        [
+          {
+            "node": "Find Reviews",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clusters To List": {
+      "main": [
+        [
+          {
+            "node": "Only Clusters With 3+ points",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Customer Insights Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Payload of Points": {
+      "main": [
+        [
+          {
+            "node": "Customer Insights Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prep Output For Export": {
+      "main": [
+        [
+          {
+            "node": "No prior insight",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Customer Insights Agent": {
+      "main": [
+        [
+          {
+            "node": "Prep Output For Export",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Set Variables1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Only Clusters With 3+ points": {
+      "main": [
+        [
+          {
+            "node": "Get Payload of Points",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apply K-means Clustering Algorithm": {
+      "main": [
+        [
+          {
+            "node": "Clusters To List",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "No prior insight": {
+      "main": [
+        [
+          {
+            "node": "Reserve insight",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve insight": {
+      "main": [
+        [
+          {
+            "node": "Restore insight",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore insight": {
+      "main": [
+        [
+          {
+            "node": "Export To Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Export To Sheets": {
+      "main": [
+        [
+          {
+            "node": "Confirm insight",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Analyze Qdrant Review Clusters",
+  "active": false,
+  "settings": {
+    "timezone": "UTC"
+  }
+}
