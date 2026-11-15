@@ -565,6 +565,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Weekly Notion Task Deadline Digest](workflows/weekly-notion-task-deadline-digest/) - Email overdue and upcoming Notion tasks and send a Pushover notification each week.
 - [Categorize and Route Outlook Mail](workflows/categorize-and-route-outlook-mail/) - Classify an unflagged Outlook message and move it to a matching folder.
 - [Catalog Tools from Logo Sheets](workflows/catalog-tools-from-logo-sheets/) - Extract tools and relationships from a logo sheet and update linked Airtable records.
+- [Extract Resumes and Invoice Model Usage](workflows/extract-resumes-and-invoice-model-usage/) - Extract resume data, log model token usage, and email a monthly client invoice.
 
 ## Content
 
