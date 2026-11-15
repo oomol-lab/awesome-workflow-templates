@@ -586,6 +586,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Capture Newsletter Signups and Surveys](workflows/capture-newsletter-signups-and-surveys/) - Record newsletter signups, notify Slack and save an optional survey to the same row.
 - [Capture Webpage Screenshots to Dropbox and Email](workflows/capture-webpage-screenshots-to-dropbox-and-email/) - Capture standard and full-page screenshots, save them to Dropbox, and email the images.
 - [Reply to Appointment Emails with Calendar Availability](workflows/reply-to-appointment-emails-with-calendar-availability/) - Identify appointment requests, check calendar availability and reply with suggested times.
+- [Turn Fireflies Project Meetings into Tasks](workflows/turn-fireflies-project-meetings-into-tasks/) - Turn project meeting transcripts into personal tasks, participant updates and follow-up meetings.
 
 ## Content
 
