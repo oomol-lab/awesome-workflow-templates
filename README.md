@@ -138,6 +138,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Route New HubSpot Deals to Sales Tools](workflows/route-new-hubspot-deals-to-sales-tools/) - Create a HubSpot ticket for each new deal and route its stage to Slack, Google Slides or Airtable.
 - [Qualify Contact Form Leads with Clearbit](workflows/qualify-contact-form-leads-with-clearbit/) - Enrich business contacts and email those at B2B companies with at least 500 employees.
 - [Enrich Kit Subscribers in HubSpot](workflows/enrich-kit-subscribers-in-hubspot/) - Enrich Kit subscribers and their companies in HubSpot.
+- [Score and Route Demo Leads](workflows/score-and-route-demo-leads/) - Score inbound demo leads, record their context, and route follow-up alerts.
 
 ## Operations
 

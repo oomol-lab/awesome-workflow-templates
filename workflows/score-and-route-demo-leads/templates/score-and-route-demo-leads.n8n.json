@@ -1,0 +1,1055 @@
+{
+  "name": "Score and Route Demo Leads",
+  "nodes": [
+    {
+      "id": "score-and-route-demo-leads-0",
+      "name": "Lead Intake Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -540,
+        0
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "score-and-route-demo-leads",
+        "responseMode": "responseNode",
+        "options": {}
+      }
+    },
+    {
+      "id": "score-and-route-demo-leads-1",
+      "name": "Normalize, Score, and Assign Owner",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -300,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const body = $json.body || $json;\nconst pick = (...keys) => {\n  for (const key of keys) {\n    const value = body[key] ?? $json[key];\n    if (value !== undefined && value !== null && String(value).trim() !== \"\")\n      return String(value).trim();\n  }\n  return \"\";\n};\nconst lead = {\n  received_at: new Date().toISOString(),\n  name: pick(\"name\", \"full_name\", \"contact_name\"),\n  email: pick(\"email\", \"work_email\", \"business_email\").toLowerCase(),\n  phone: pick(\"phone\", \"mobile\", \"tel\"),\n  company: pick(\"company\", \"organization\", \"account\"),\n  role: pick(\"role\", \"job_title\", \"title\"),\n  message: pick(\"message\", \"details\", \"project\", \"notes\"),\n  budget: pick(\"budget\", \"estimated_budget\"),\n  timeline: pick(\"timeline\", \"requested_timeline\", \"deadline\"),\n  page_url: pick(\"page_url\", \"url\", \"landing_page\", \"referrer\"),\n  source: pick(\"source\", \"utm_source\") || \"website\",\n  utm_campaign: pick(\"utm_campaign\"),\n};\nconst text = `${lead.message} ${lead.budget} ${lead.timeline} ${lead.page_url}`.toLowerCase();\nconst tags = [];\nconst tagIf = (condition, tag) => {\n  if (condition) tags.push(tag);\n};\ntagIf(/demo|book|call|meeting|trial/.test(text), \"demo_request\");\ntagIf(/pricing|quote|proposal|budget|cost|estimate/.test(text), \"commercial_intent\");\ntagIf(/urgent|asap|today|tomorrow|this week|deadline/.test(text), \"time_sensitive\");\ntagIf(\n  /integration|api|crm|hubspot|salesforce|zapier|make|n8n|workflow|automation/.test(text),\n  \"integration_need\",\n);\ntagIf(/migration|broken|not working|failed|stuck|error/.test(text), \"rescue_need\");\ntagIf(/enterprise|security|compliance|sso|soc2|procurement/.test(text), \"enterprise_process\");\nconst contactScore = lead.email.includes(\"@\") ? 20 : lead.phone.length >= 7 ? 12 : 0;\nconst companyScore = lead.company ? 10 : 0;\nconst roleScore = /founder|owner|ceo|cto|vp|director|head|ops|operations|revops|sales/i.test(\n  lead.role,\n)\n  ? 10\n  : 0;\nconst budgetScore = lead.budget ? (/\\$|£|€|k|budget|approved/i.test(lead.budget) ? 18 : 8) : 0;\nconst tagScore = Math.min(42, tags.length * 7);\nconst score = Math.min(\n  100,\n  contactScore + companyScore + roleScore + budgetScore + tagScore + (lead.page_url ? 5 : 0),\n);\nlead.intent_tags = tags.join(\", \") || \"general_inquiry\";\nlead.lead_score = score;\nlead.priority = score >= 72 ? \"hot\" : score >= 42 ? \"review\" : \"normal\";\nlead.sla_minutes = score >= 72 ? 15 : score >= 42 ? 240 : 1440;\nlead.owner_team = /integration|api|workflow|automation|crm|hubspot|salesforce|make|n8n/.test(text)\n  ? \"automation_ops\"\n  : \"sales\";\nlead.needs_exec_escalation = score >= 82 || /enterprise|procurement|security|sso|soc2/.test(text);\nlead.dedupe_key =\n  `${lead.email || lead.phone || \"unknown\"}:${lead.company || \"no-company\"}:${lead.page_url || lead.source}`\n    .toLowerCase()\n    .replace(/\\s+/g, \"-\");\nlead.missing_contact = !(lead.email.includes(\"@\") || lead.phone.length >= 7);\nreturn [{ json: lead }];\n"
+      }
+    },
+    {
+      "id": "score-and-route-demo-leads-2",
+      "name": "Has Usable Contact?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -60,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.missing_contact === false }}",
+              "value2": true
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "score-and-route-demo-leads-3",
+      "name": "Build Missing Contact Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        180,
+        260
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ok",
+              "name": "ok",
+              "type": "boolean",
+              "value": "={{ false }}"
+            },
+            {
+              "id": "status",
+              "name": "status",
+              "type": "string",
+              "value": "needs_contact"
+            },
+            {
+              "id": "message",
+              "name": "response_message",
+              "type": "string",
+              "value": "Please include a work email or phone number so the team can follow up."
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      }
+    },
+    {
+      "id": "score-and-route-demo-leads-4",
+      "name": "Respond Missing Contact",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        420,
+        260
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok: $json.ok, status: $json.status, message: $json.response_message } }}",
+        "options": {
+          "responseCode": 400
+        }
+      }
+    },
+    {
+      "id": "score-and-route-demo-leads-5",
+      "name": "Fetch Submitted Page Context",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        180,
+        -100
+      ],
+      "parameters": {
+        "url": "={{ $json.page_url || \"https://example.com\" }}",
+        "options": {
+          "timeout": 8000,
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "id": "score-and-route-demo-leads-6",
+      "name": "Extract Page Signals",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        420,
+        -100
+      ],
+      "parameters": {
+        "jsCode": "const lead = $(\"Normalize, Score, and Assign Owner\").item.json;\nconst html = String($json.body || $json.data || \"\");\nconst title = (html.match(/<title[^>]*>([^<]+)<\\/title>/i)?.[1] || \"\").replace(/\\s+/g, \" \").trim();\nconst desc = (html.match(/<meta[^>]+name=[\"']description[\"'][^>]+content=[\"']([^\"']+)/i)?.[1] || \"\")\n  .replace(/\\s+/g, \" \")\n  .trim();\nconst pageText = `${title} ${desc}`.toLowerCase();\nconst pageTags = [];\nfor (const [term, tag] of [\n  [\"pricing\", \"pricing_page\"],\n  [\"demo\", \"demo_page\"],\n  [\"case study\", \"proof_page\"],\n  [\"integration\", \"integration_page\"],\n  [\"contact\", \"contact_page\"],\n]) {\n  if (pageText.includes(term)) pageTags.push(tag);\n}\nconst pageBoost =\n  pageTags.includes(\"pricing_page\") || pageTags.includes(\"demo_page\") ? 8 : pageTags.length ? 3 : 0;\nconst score = Math.min(100, Number(lead.lead_score || 0) + pageBoost);\nreturn [\n  {\n    json: {\n      ...lead,\n      page_title: title,\n      page_description: desc,\n      page_signal_tags: pageTags.join(\", \"),\n      lead_score: score,\n      priority: score >= 72 ? \"hot\" : score >= 42 ? \"review\" : \"normal\",\n      sla_minutes: score >= 72 ? 15 : score >= 42 ? 240 : 1440,\n    },\n  },\n];\n"
+      }
+    },
+    {
+      "id": "score-and-route-demo-leads-7",
+      "name": "Build Audit Row",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        660,
+        -100
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "received",
+              "name": "received_at",
+              "type": "string",
+              "value": "={{ $json.received_at }}"
+            },
+            {
+              "id": "priority",
+              "name": "priority",
+              "type": "string",
+              "value": "={{ $json.priority }}"
+            },
+            {
+              "id": "score",
+              "name": "lead_score",
+              "type": "number",
+              "value": "={{ $json.lead_score }}"
+            },
+            {
+              "id": "sla",
+              "name": "sla_minutes",
+              "type": "number",
+              "value": "={{ $json.sla_minutes }}"
+            },
+            {
+              "id": "owner",
+              "name": "owner_team",
+              "type": "string",
+              "value": "={{ $json.owner_team }}"
+            },
+            {
+              "id": "tags",
+              "name": "intent_tags",
+              "type": "string",
+              "value": "={{ $json.intent_tags }}"
+            },
+            {
+              "id": "page_tags",
+              "name": "page_signal_tags",
+              "type": "string",
+              "value": "={{ $json.page_signal_tags }}"
+            },
+            {
+              "id": "dedupe",
+              "name": "dedupe_key",
+              "type": "string",
+              "value": "={{ $json.dedupe_key }}"
+            },
+            {
+              "id": "email",
+              "name": "email",
+              "type": "string",
+              "value": "={{ $json.email }}"
+            },
+            {
+              "id": "company",
+              "name": "company",
+              "type": "string",
+              "value": "={{ $json.company }}"
+            },
+            {
+              "id": "message",
+              "name": "message",
+              "type": "string",
+              "value": "={{ $json.message }}"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      }
+    },
+    {
+      "id": "score-and-route-demo-leads-8",
+      "name": "Append Lead Audit Row",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        900,
+        -100
+      ],
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "REPLACE_WITH_SPREADSHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Leads",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {}
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "score-and-route-demo-leads-9",
+      "name": "Route by Priority",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [
+        1140,
+        -100
+      ],
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.priority }}",
+                    "rightValue": "hot",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "conditions": {
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.priority }}",
+                    "rightValue": "review",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      }
+    },
+    {
+      "id": "score-and-route-demo-leads-10",
+      "name": "Build Hot Lead Alert",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1380,
+        -280
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "subject",
+              "name": "email_subject",
+              "type": "string",
+              "value": "={{ `[HOT ${$json.lead_score}] ${$json.company || $json.name || $json.email} - ${$json.intent_tags}` }}"
+            },
+            {
+              "id": "body",
+              "name": "email_body",
+              "type": "string",
+              "value": "={{ `SLA: ${$json.sla_minutes} minutes\\nOwner: ${$json.owner_team}\\nTags: ${$json.intent_tags}\\nPage: ${$json.page_url}\\nPage signals: ${$json.page_signal_tags}\\nBudget: ${$json.budget}\\nTimeline: ${$json.timeline}\\nMessage: ${$json.message}\\nDedupe: ${$json.dedupe_key}` }}"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      }
+    },
+    {
+      "id": "score-and-route-demo-leads-11",
+      "name": "Send Hot Lead Gmail Alert",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1620,
+        -280
+      ],
+      "parameters": {
+        "sendTo": "YOUR_SEND_HOT_LEAD_GMAIL_ALERT_RECIPIENT",
+        "subject": "={{ $json.email_subject }}",
+        "message": "={{ $json.email_body }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "score-and-route-demo-leads-12",
+      "name": "Build Review Queue Alert",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1380,
+        -80
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "subject",
+              "name": "email_subject",
+              "type": "string",
+              "value": "={{ `[REVIEW ${$json.lead_score}] ${$json.company || $json.name || $json.email}` }}"
+            },
+            {
+              "id": "body",
+              "name": "email_body",
+              "type": "string",
+              "value": "={{ `Review today. Tags: ${$json.intent_tags}\\nOwner: ${$json.owner_team}\\nMessage: ${$json.message}\\nDedupe: ${$json.dedupe_key}` }}"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      }
+    },
+    {
+      "id": "score-and-route-demo-leads-13",
+      "name": "Send Review Queue Gmail Alert",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1620,
+        -80
+      ],
+      "parameters": {
+        "sendTo": "YOUR_SEND_REVIEW_QUEUE_GMAIL_ALERT_RECIPIENT",
+        "subject": "={{ $json.email_subject }}",
+        "message": "={{ $json.email_body }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "score-and-route-demo-leads-14",
+      "name": "Build Normal Lead Note",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1380,
+        120
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "subject",
+              "name": "email_subject",
+              "type": "string",
+              "value": "={{ `[NORMAL ${$json.lead_score}] ${$json.company || $json.email}` }}"
+            },
+            {
+              "id": "body",
+              "name": "email_body",
+              "type": "string",
+              "value": "={{ `Next business day follow-up. Tags: ${$json.intent_tags}\\nMessage: ${$json.message}` }}"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      }
+    },
+    {
+      "id": "score-and-route-demo-leads-15",
+      "name": "Send Normal Lead Gmail Alert",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1620,
+        120
+      ],
+      "parameters": {
+        "sendTo": "YOUR_SEND_NORMAL_LEAD_GMAIL_ALERT_RECIPIENT",
+        "subject": "={{ $json.email_subject }}",
+        "message": "={{ $json.email_body }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "score-and-route-demo-leads-16",
+      "name": "Needs Executive Escalation?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1860,
+        -280
+      ],
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ Boolean($json.needs_exec_escalation) }}",
+              "value2": true
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "score-and-route-demo-leads-17",
+      "name": "Send Executive Escalation",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        2100,
+        -380
+      ],
+      "parameters": {
+        "sendTo": "YOUR_SEND_EXECUTIVE_ESCALATION_RECIPIENT",
+        "subject": "={{ `[EXEC ESCALATION] ${$json.company || $json.email} - score ${$json.lead_score}` }}",
+        "message": "={{ `Enterprise/high-score lead needs fast review.\\nOwner: ${$json.owner_team}\\nTags: ${$json.intent_tags}\\nBudget: ${$json.budget}\\nTimeline: ${$json.timeline}\\nMessage: ${$json.message}` }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "score-and-route-demo-leads-18",
+      "name": "Build Success Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2100,
+        -80
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ok",
+              "name": "ok",
+              "type": "boolean",
+              "value": "={{ true }}"
+            },
+            {
+              "id": "status",
+              "name": "status",
+              "type": "string",
+              "value": "={{ $json.priority }}"
+            },
+            {
+              "id": "score",
+              "name": "score",
+              "type": "number",
+              "value": "={{ $json.lead_score }}"
+            },
+            {
+              "id": "sla",
+              "name": "sla_minutes",
+              "type": "number",
+              "value": "={{ $json.sla_minutes }}"
+            },
+            {
+              "id": "owner",
+              "name": "owner_team",
+              "type": "string",
+              "value": "={{ $json.owner_team }}"
+            },
+            {
+              "id": "dedupe",
+              "name": "dedupe_key",
+              "type": "string",
+              "value": "={{ $json.dedupe_key }}"
+            }
+          ]
+        },
+        "includeOtherFields": false,
+        "options": {}
+      }
+    },
+    {
+      "id": "score-and-route-demo-leads-19",
+      "name": "Respond Success",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        2340,
+        -80
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok: $json.ok, status: $json.status, score: $json.score, sla_minutes: $json.sla_minutes, owner_team: $json.owner_team, dedupe_key: $json.dedupe_key } }}",
+        "options": {
+          "responseCode": 200
+        }
+      }
+    },
+    {
+      "id": "score-and-route-demo-leads-relay",
+      "name": "Open Flow relay webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "disabled": true,
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "score-and-route-demo-leads-relay",
+        "responseMode": "responseNode",
+        "options": {}
+      }
+    },
+    {
+      "id": "score-and-route-demo-leads-forward",
+      "name": "Forward lead",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://YOUR_OPENFLOW_HOST/webhook/YOUR_FLOW",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {event: JSON.stringify($json.body)} }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "score-and-route-demo-leads-response",
+      "name": "Return lead response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json.body }}",
+        "options": {
+          "responseCode": "={{ $json.statusCode }}"
+        }
+      }
+    },
+    {
+      "id": "score-and-route-demo-leads-page-hook",
+      "name": "Page context relay",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "score-and-route-demo-leads-page",
+        "responseMode": "responseNode",
+        "options": {}
+      }
+    },
+    {
+      "id": "score-and-route-demo-leads-5-relay",
+      "name": "Fetch relayed page",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        180,
+        -100
+      ],
+      "parameters": {
+        "url": "={{ $(\"Page context relay\").item.json.body.url || \"https://example.com\" }}",
+        "options": {
+          "timeout": 8000,
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "id": "score-and-route-demo-leads-page-output",
+      "name": "Return page context",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {html: String($json.body || $json.data || \"\")} }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "score-and-route-demo-leads-restore-append-lead-audit-row",
+      "name": "Restore lead after Append Lead Audit Row",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return { json: $(\"Extract Page Signals\").item.json };\n"
+      }
+    },
+    {
+      "id": "score-and-route-demo-leads-restore-send-hot-lead-gmail-alert",
+      "name": "Restore lead after Send Hot Lead Gmail Alert",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return { json: $(\"Extract Page Signals\").item.json };\n"
+      }
+    },
+    {
+      "id": "score-and-route-demo-leads-restore-send-review-queue-gmail-alert",
+      "name": "Restore lead after Send Review Queue Gmail Alert",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return { json: $(\"Extract Page Signals\").item.json };\n"
+      }
+    },
+    {
+      "id": "score-and-route-demo-leads-restore-send-normal-lead-gmail-alert",
+      "name": "Restore lead after Send Normal Lead Gmail Alert",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return { json: $(\"Extract Page Signals\").item.json };\n"
+      }
+    },
+    {
+      "id": "score-and-route-demo-leads-restore-send-executive-escalation",
+      "name": "Restore lead after Send Executive Escalation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return { json: $(\"Extract Page Signals\").item.json };\n"
+      }
+    }
+  ],
+  "connections": {
+    "Lead Intake Webhook": {
+      "main": [
+        [
+          {
+            "node": "Normalize, Score, and Assign Owner",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize, Score, and Assign Owner": {
+      "main": [
+        [
+          {
+            "node": "Has Usable Contact?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Usable Contact?": {
+      "main": [
+        [
+          {
+            "node": "Fetch Submitted Page Context",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Missing Contact Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Missing Contact Response": {
+      "main": [
+        [
+          {
+            "node": "Respond Missing Contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Submitted Page Context": {
+      "main": [
+        [
+          {
+            "node": "Extract Page Signals",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Page Signals": {
+      "main": [
+        [
+          {
+            "node": "Build Audit Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Audit Row": {
+      "main": [
+        [
+          {
+            "node": "Append Lead Audit Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append Lead Audit Row": {
+      "main": [
+        [
+          {
+            "node": "Restore lead after Append Lead Audit Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by Priority": {
+      "main": [
+        [
+          {
+            "node": "Build Hot Lead Alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Review Queue Alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Normal Lead Note",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Hot Lead Alert": {
+      "main": [
+        [
+          {
+            "node": "Send Hot Lead Gmail Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Hot Lead Gmail Alert": {
+      "main": [
+        [
+          {
+            "node": "Restore lead after Send Hot Lead Gmail Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Needs Executive Escalation?": {
+      "main": [
+        [
+          {
+            "node": "Send Executive Escalation",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Executive Escalation": {
+      "main": [
+        [
+          {
+            "node": "Restore lead after Send Executive Escalation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Review Queue Alert": {
+      "main": [
+        [
+          {
+            "node": "Send Review Queue Gmail Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Review Queue Gmail Alert": {
+      "main": [
+        [
+          {
+            "node": "Restore lead after Send Review Queue Gmail Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Normal Lead Note": {
+      "main": [
+        [
+          {
+            "node": "Send Normal Lead Gmail Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Normal Lead Gmail Alert": {
+      "main": [
+        [
+          {
+            "node": "Restore lead after Send Normal Lead Gmail Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Success Response": {
+      "main": [
+        [
+          {
+            "node": "Respond Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Open Flow relay webhook": {
+      "main": [
+        [
+          {
+            "node": "Forward lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Forward lead": {
+      "main": [
+        [
+          {
+            "node": "Return lead response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Page context relay": {
+      "main": [
+        [
+          {
+            "node": "Fetch relayed page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch relayed page": {
+      "main": [
+        [
+          {
+            "node": "Return page context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore lead after Append Lead Audit Row": {
+      "main": [
+        [
+          {
+            "node": "Route by Priority",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore lead after Send Hot Lead Gmail Alert": {
+      "main": [
+        [
+          {
+            "node": "Needs Executive Escalation?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore lead after Send Review Queue Gmail Alert": {
+      "main": [
+        [
+          {
+            "node": "Build Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore lead after Send Normal Lead Gmail Alert": {
+      "main": [
+        [
+          {
+            "node": "Build Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore lead after Send Executive Escalation": {
+      "main": [
+        [
+          {
+            "node": "Build Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "active": false
+}
