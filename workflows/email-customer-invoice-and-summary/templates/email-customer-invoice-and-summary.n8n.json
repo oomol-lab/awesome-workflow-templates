@@ -1,0 +1,695 @@
+{
+  "nodes": [
+    {
+      "id": "email-customer-invoice-and-summary-0",
+      "name": "On clicking 'execute'",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "name": "Configure customers",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const runId = \"YOUR_RUN_ID\",\n  customers = [];\nif (!runId || runId.startsWith(\"YOUR_\")) throw Error(\"Configure a unique run ID and customers\");\nif (!customers.length) throw Error(\"Provide at least one customer\");\nif (\n  customers.some((c) => !c.id || !c.name || !c.email || !c.created) ||\n  new Set(customers.map((c) => c.id)).size !== customers.length\n)\n  throw Error(\"Each customer needs unique id, name, email and created\");\ncustomers.sort((a, b) => a.name.localeCompare(b.name));\nreturn customers.map((c) => ({ json: { ...c, runId } }));\n"
+      },
+      "id": "email-customer-invoice-and-summary-1",
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "name": "One customer at a time",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "email-customer-invoice-and-summary-2",
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "name": "Invoice not attempted",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "rowNotExists",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'invoice-demo:' + $('One customer at a time').item.json.runId + ':invoice:' + $('One customer at a time').item.json.id }}"
+            }
+          ]
+        }
+      },
+      "id": "email-customer-invoice-and-summary-3",
+      "position": [
+        660,
+        0
+      ]
+    },
+    {
+      "name": "Invoice already sent",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "rowExists",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'invoice-demo:' + $('One customer at a time').item.json.runId + ':invoice:' + $('One customer at a time').item.json.id }}"
+            },
+            {
+              "keyName": "status",
+              "condition": "eq",
+              "keyValue": "done"
+            }
+          ]
+        }
+      },
+      "id": "email-customer-invoice-and-summary-4",
+      "position": [
+        880,
+        0
+      ]
+    },
+    {
+      "name": "Invoice pending",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "rowExists",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'invoice-demo:' + $('One customer at a time').item.json.runId + ':invoice:' + $('One customer at a time').item.json.id }}"
+            },
+            {
+              "keyName": "status",
+              "condition": "eq",
+              "keyValue": "pending"
+            }
+          ]
+        }
+      },
+      "id": "email-customer-invoice-and-summary-5",
+      "position": [
+        1100,
+        0
+      ]
+    },
+    {
+      "name": "Reserve invoice",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "item_key": "={{ 'invoice-demo:' + $('One customer at a time').item.json.runId + ':invoice:' + $('One customer at a time').item.json.id }}",
+            "status": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "email-customer-invoice-and-summary-6",
+      "position": [
+        1320,
+        0
+      ]
+    },
+    {
+      "name": "Render invoice",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const c = $(\"One customer at a time\").item.json;\nreturn {\n  json: {\n    subject: \"Invoice for \" + c.name,\n    text: `Date: ${c.created}\\nTo: ${c.name} <${c.email}>\\nAddress: ${c.country || \"\"}\\nDetails:\\n- Design of HTML banners x 1 = 22.00€ + 4.62€ = 26.62€\\n- Design of PNG banners x 1 = 33.00€ + 6.93€ = 39.93€\\nTotal invoice: 66.55€`,\n  },\n};\n"
+      },
+      "id": "email-customer-invoice-and-summary-7",
+      "position": [
+        1540,
+        0
+      ]
+    },
+    {
+      "id": "email-customer-invoice-and-summary-8",
+      "name": "Send one TEXT email per item",
+      "type": "n8n-nodes-base.emailSend",
+      "position": [
+        1760,
+        0
+      ],
+      "parameters": {
+        "fromEmail": "YOUR_SENDER_EMAIL",
+        "toEmail": "YOUR_INTERNAL_EMAIL",
+        "subject": "={{ $('Render invoice').item.json.subject }}",
+        "emailFormat": "text",
+        "text": "={{ $('Render invoice').item.json.text }}",
+        "options": {}
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "name": "Verify invoice delivery",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if (!$json.messageId && !$json.id) throw Error(\"Unknown email result\");\nreturn { json: { ok: true } };\n"
+      },
+      "id": "email-customer-invoice-and-summary-9",
+      "position": [
+        1980,
+        0
+      ]
+    },
+    {
+      "name": "Confirm invoice",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Reserve invoice').item.json.id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "done"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "email-customer-invoice-and-summary-10",
+      "position": [
+        2200,
+        0
+      ]
+    },
+    {
+      "name": "Stop for pending email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "throw Error(\"Inspect pending email before replay\");\n"
+      },
+      "id": "email-customer-invoice-and-summary-11",
+      "position": [
+        2420,
+        0
+      ]
+    },
+    {
+      "name": "Summary not attempted",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "rowNotExists",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'invoice-demo:' + $('Configure customers').first().json.runId + ':summary' }}"
+            }
+          ]
+        }
+      },
+      "id": "email-customer-invoice-and-summary-12",
+      "position": [
+        2640,
+        0
+      ]
+    },
+    {
+      "name": "Summary already sent",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "rowExists",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'invoice-demo:' + $('Configure customers').first().json.runId + ':summary' }}"
+            },
+            {
+              "keyName": "status",
+              "condition": "eq",
+              "keyValue": "done"
+            }
+          ]
+        }
+      },
+      "id": "email-customer-invoice-and-summary-13",
+      "position": [
+        2860,
+        0
+      ]
+    },
+    {
+      "name": "Summary pending",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "rowExists",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'invoice-demo:' + $('Configure customers').first().json.runId + ':summary' }}"
+            },
+            {
+              "keyName": "status",
+              "condition": "eq",
+              "keyValue": "pending"
+            }
+          ]
+        }
+      },
+      "id": "email-customer-invoice-and-summary-14",
+      "position": [
+        3080,
+        0
+      ]
+    },
+    {
+      "name": "Reserve summary",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "item_key": "={{ 'invoice-demo:' + $('Configure customers').first().json.runId + ':summary' }}",
+            "status": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "email-customer-invoice-and-summary-15",
+      "position": [
+        3300,
+        0
+      ]
+    },
+    {
+      "name": "Render summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const esc = (s) =>\n  String(s)\n    .replaceAll(\"&\", \"&amp;\")\n    .replaceAll(\"<\", \"&lt;\")\n    .replaceAll(\">\", \"&gt;\")\n    .replaceAll('\\\"', \"&quot;\")\n    .replaceAll(\"'\", \"&#39;\");\nconst cs = $(\"Configure customers\")\n  .all()\n  .map((x) => x.json);\nreturn {\n  json: {\n    html:\n      \"<p>Customers:</p><ul>\" +\n      cs.map((c) => \"<li>\" + esc(c.name) + \": \" + esc(c.email) + \"</li>\").join(\"\") +\n      \"</ul>\",\n  },\n};\n"
+      },
+      "id": "email-customer-invoice-and-summary-16",
+      "position": [
+        3520,
+        0
+      ]
+    },
+    {
+      "id": "email-customer-invoice-and-summary-17",
+      "name": "Send one HTML Email per list",
+      "type": "n8n-nodes-base.emailSend",
+      "position": [
+        3740,
+        0
+      ],
+      "parameters": {
+        "fromEmail": "YOUR_SENDER_EMAIL",
+        "toEmail": "YOUR_INTERNAL_EMAIL",
+        "subject": "New customers",
+        "emailFormat": "html",
+        "html": "={{ $('Render summary').item.json.html }}",
+        "options": {}
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "name": "Verify summary delivery",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if (!$json.messageId && !$json.id) throw Error(\"Unknown email result\");\nreturn { json: { ok: true } };\n"
+      },
+      "id": "email-customer-invoice-and-summary-18",
+      "position": [
+        3960,
+        0
+      ]
+    },
+    {
+      "name": "Confirm summary",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Reserve summary').item.json.id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "done"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "email-customer-invoice-and-summary-19",
+      "position": [
+        4180,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "On clicking 'execute'": {
+      "main": [
+        [
+          {
+            "node": "Configure customers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configure customers": {
+      "main": [
+        [
+          {
+            "node": "One customer at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Invoice not attempted": {
+      "main": [
+        [
+          {
+            "node": "Reserve invoice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve invoice": {
+      "main": [
+        [
+          {
+            "node": "Render invoice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Render invoice": {
+      "main": [
+        [
+          {
+            "node": "Send one TEXT email per item",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send one TEXT email per item": {
+      "main": [
+        [
+          {
+            "node": "Verify invoice delivery",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify invoice delivery": {
+      "main": [
+        [
+          {
+            "node": "Confirm invoice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm invoice": {
+      "main": [
+        [
+          {
+            "node": "One customer at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Invoice already sent": {
+      "main": [
+        [
+          {
+            "node": "One customer at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Invoice pending": {
+      "main": [
+        [
+          {
+            "node": "Stop for pending email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Summary not attempted": {
+      "main": [
+        [
+          {
+            "node": "Reserve summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve summary": {
+      "main": [
+        [
+          {
+            "node": "Render summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Render summary": {
+      "main": [
+        [
+          {
+            "node": "Send one HTML Email per list",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send one HTML Email per list": {
+      "main": [
+        [
+          {
+            "node": "Verify summary delivery",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify summary delivery": {
+      "main": [
+        [
+          {
+            "node": "Confirm summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Summary pending": {
+      "main": [
+        [
+          {
+            "node": "Stop for pending email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "One customer at a time": {
+      "main": [
+        [
+          {
+            "node": "Summary not attempted",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Summary already sent",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Summary pending",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Invoice not attempted",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Invoice already sent",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Invoice pending",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Email Customer Invoice Examples and Summary",
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
