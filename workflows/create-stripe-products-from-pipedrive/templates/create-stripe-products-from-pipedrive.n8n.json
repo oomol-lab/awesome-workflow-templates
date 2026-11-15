@@ -1,0 +1,725 @@
+{
+  "nodes": [
+    {
+      "id": "create-stripe-products-from-pipedrive-0",
+      "name": "On product created",
+      "type": "n8n-nodes-base.pipedriveTrigger",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "action": "added",
+        "object": "product"
+      },
+      "typeVersion": 1
+    },
+    {
+      "name": "Prepare product",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const p = $json.current;\nif (\"YOUR_COMPANY_ID\".includes(\"YOUR_\")) throw Error(\"Configure company ID\");\nif (!p || !Number.isSafeInteger(p.id) || !p.name || !Array.isArray(p.prices) || !p.prices.length)\n  throw Error(\"Missing product or prices\");\nfor (const x of p.prices)\n  if (\n    !/^[A-Za-z]{3}$/.test(x.currency) ||\n    typeof x.price !== \"number\" ||\n    Math.abs(x.price * 100 - Math.round(x.price * 100)) > 1e-6\n  )\n    throw Error(\"Invalid price\");\nreturn { json: { ...p, stripeId: \"pipedrive_YOUR_COMPANY_ID_\" + p.id } };\n"
+      },
+      "id": "create-stripe-products-from-pipedrive-1",
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "name": "Product not attempted",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "rowNotExists",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'product:' + $('Prepare product').first().json.id }}"
+            }
+          ]
+        }
+      },
+      "id": "create-stripe-products-from-pipedrive-2",
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "name": "Product already confirmed",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "rowExists",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'product:' + $('Prepare product').first().json.id }}"
+            },
+            {
+              "keyName": "status",
+              "condition": "eq",
+              "keyValue": "done"
+            }
+          ]
+        }
+      },
+      "id": "create-stripe-products-from-pipedrive-3",
+      "position": [
+        660,
+        0
+      ]
+    },
+    {
+      "name": "Product pending",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "rowExists",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'product:' + $('Prepare product').first().json.id }}"
+            },
+            {
+              "keyName": "status",
+              "condition": "eq",
+              "keyValue": "pending"
+            }
+          ]
+        }
+      },
+      "id": "create-stripe-products-from-pipedrive-4",
+      "position": [
+        880,
+        0
+      ]
+    },
+    {
+      "name": "Reserve product",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "item_key": "={{ 'product:' + $('Prepare product').first().json.id }}",
+            "status": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "create-stripe-products-from-pipedrive-5",
+      "position": [
+        1100,
+        0
+      ]
+    },
+    {
+      "id": "create-stripe-products-from-pipedrive-6",
+      "name": "Create product in Stripe",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        1320,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.stripe.com/v1/products",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "stripeApi",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "specifyBody": "keypair",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "id",
+              "value": "={{ $('Prepare product').first().json.stripeId }}"
+            },
+            {
+              "name": "name",
+              "value": "={{ $('Prepare product').first().json.name }}"
+            },
+            {
+              "name": "description",
+              "value": "={{ $('Prepare product').first().json.description || ' ' }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "name": "Verify product",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if ($json.id !== $(\"Prepare product\").first().json.stripeId) throw Error(\"Unknown product result\");\nreturn { json: { ok: true } };\n"
+      },
+      "id": "create-stripe-products-from-pipedrive-7",
+      "position": [
+        1540,
+        0
+      ]
+    },
+    {
+      "name": "Confirm product",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Reserve product').item.json.id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "done"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "create-stripe-products-from-pipedrive-8",
+      "position": [
+        1760,
+        0
+      ]
+    },
+    {
+      "name": "Stop for pending write",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "throw Error(\"Inspect the pending Stripe write before retrying\");\n"
+      },
+      "id": "create-stripe-products-from-pipedrive-9",
+      "position": [
+        1980,
+        0
+      ]
+    },
+    {
+      "name": "Expand prices",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return $(\"Prepare product\")\n  .first()\n  .json.prices.map((p) => ({ json: p }));\n"
+      },
+      "id": "create-stripe-products-from-pipedrive-10",
+      "position": [
+        2200,
+        0
+      ]
+    },
+    {
+      "name": "One price at a time",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "create-stripe-products-from-pipedrive-11",
+      "position": [
+        2420,
+        0
+      ]
+    },
+    {
+      "name": "Price not attempted",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "rowNotExists",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'price:' + $('Prepare product').first().json.id + ':' + $('One price at a time').item.json.currency.toLowerCase() }}"
+            }
+          ]
+        }
+      },
+      "id": "create-stripe-products-from-pipedrive-12",
+      "position": [
+        2640,
+        0
+      ]
+    },
+    {
+      "name": "Price already confirmed",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "rowExists",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'price:' + $('Prepare product').first().json.id + ':' + $('One price at a time').item.json.currency.toLowerCase() }}"
+            },
+            {
+              "keyName": "status",
+              "condition": "eq",
+              "keyValue": "done"
+            }
+          ]
+        }
+      },
+      "id": "create-stripe-products-from-pipedrive-13",
+      "position": [
+        2860,
+        0
+      ]
+    },
+    {
+      "name": "Price pending",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "rowExists",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'price:' + $('Prepare product').first().json.id + ':' + $('One price at a time').item.json.currency.toLowerCase() }}"
+            },
+            {
+              "keyName": "status",
+              "condition": "eq",
+              "keyValue": "pending"
+            }
+          ]
+        }
+      },
+      "id": "create-stripe-products-from-pipedrive-14",
+      "position": [
+        3080,
+        0
+      ]
+    },
+    {
+      "name": "Reserve price",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "item_key": "={{ 'price:' + $('Prepare product').first().json.id + ':' + $('One price at a time').item.json.currency.toLowerCase() }}",
+            "status": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "create-stripe-products-from-pipedrive-15",
+      "position": [
+        3300,
+        0
+      ]
+    },
+    {
+      "id": "create-stripe-products-from-pipedrive-16",
+      "name": "Create price records in Stripe",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        3520,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.stripe.com/v1/prices",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "stripeApi",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "specifyBody": "keypair",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "product",
+              "value": "={{ $('Prepare product').first().json.stripeId }}"
+            },
+            {
+              "name": "currency",
+              "value": "={{ $('One price at a time').item.json.currency.toLowerCase() }}"
+            },
+            {
+              "name": "unit_amount",
+              "value": "={{ Math.round($('One price at a time').item.json.price * 100) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "name": "Verify price",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if (!$json.id || $json.product !== $(\"Prepare product\").first().json.stripeId)\n  throw Error(\"Unknown price result\");\nreturn { json: { ok: true } };\n"
+      },
+      "id": "create-stripe-products-from-pipedrive-17",
+      "position": [
+        3740,
+        0
+      ]
+    },
+    {
+      "name": "Confirm price",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Reserve price').item.json.id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "done"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "create-stripe-products-from-pipedrive-18",
+      "position": [
+        3960,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "On product created": {
+      "main": [
+        [
+          {
+            "node": "Prepare product",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Product not attempted": {
+      "main": [
+        [
+          {
+            "node": "Reserve product",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve product": {
+      "main": [
+        [
+          {
+            "node": "Create product in Stripe",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create product in Stripe": {
+      "main": [
+        [
+          {
+            "node": "Verify product",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify product": {
+      "main": [
+        [
+          {
+            "node": "Confirm product",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm product": {
+      "main": [
+        [
+          {
+            "node": "Expand prices",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Product already confirmed": {
+      "main": [
+        [
+          {
+            "node": "Expand prices",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Product pending": {
+      "main": [
+        [
+          {
+            "node": "Stop for pending write",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Expand prices": {
+      "main": [
+        [
+          {
+            "node": "One price at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Price not attempted": {
+      "main": [
+        [
+          {
+            "node": "Reserve price",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve price": {
+      "main": [
+        [
+          {
+            "node": "Create price records in Stripe",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create price records in Stripe": {
+      "main": [
+        [
+          {
+            "node": "Verify price",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify price": {
+      "main": [
+        [
+          {
+            "node": "Confirm price",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm price": {
+      "main": [
+        [
+          {
+            "node": "One price at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Price already confirmed": {
+      "main": [
+        [
+          {
+            "node": "One price at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Price pending": {
+      "main": [
+        [
+          {
+            "node": "Stop for pending write",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare product": {
+      "main": [
+        [
+          {
+            "node": "Product not attempted",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Product already confirmed",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Product pending",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "One price at a time": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Price not attempted",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Price already confirmed",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Price pending",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Create Stripe Products from Pipedrive",
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
