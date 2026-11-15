@@ -1,0 +1,1199 @@
+{
+  "nodes": [
+    {
+      "name": "Attendee Registrations",
+      "type": "n8n-nodes-base.typeformTrigger",
+      "position": [
+        400,
+        300
+      ],
+      "parameters": {
+        "formId": "YOUR_TYPEFORM_FORM_ID",
+        "onlyAnswers": false,
+        "simplifyAnswers": true
+      },
+      "typeVersion": 1,
+      "disabled": true,
+      "id": "register-event-attendees-and-invite-to-channels-0"
+    },
+    {
+      "name": "Normalize registration",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const r = $json.form_response,\n  a = r?.answers,\n  n = a?.[\"Great, can we get your full name?\"],\n  e = a?.[\"And what's your email address?\"],\n  s = a?.[\"Which sessions would you like to attend?\"];\nif (!r?.token || !n || !e || !Array.isArray(s) || !s.length || new Set(s).size !== s.length)\n  throw Error(\"Invalid registration\");\nreturn [\n  { json: { id: r.token, name: n, email: e, sessions: s, submittedAt: r.submitted_at || \"\" } },\n];\n"
+      },
+      "id": "register-event-attendees-and-invite-to-channels-1"
+    },
+    {
+      "name": "Read session mappings",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ 'https://sheets.googleapis.com/v4/spreadsheets/'+encodeURIComponent('YOUR_SPREADSHEET_ID')+'/values/'+encodeURIComponent('Sessions!A:F') }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "register-event-attendees-and-invite-to-channels-2"
+    },
+    {
+      "name": "Match selected sessions",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const r = $(\"Normalize registration\").item.json,\n  rows = $json.values;\nif (!Array.isArray(rows) || !rows.length) throw Error(\"Missing Sessions table\");\nconst h = rows[0],\n  si = h.indexOf(\"Session\"),\n  ci = h.indexOf(\"Mattermost Channel ID\"),\n  ei = h.indexOf(\"Google Calendar Event ID\");\nif ([si, ci, ei].some((i) => i < 0)) throw Error(\"Missing Sessions column\");\nconst selected = r.sessions.map((name) => {\n  const m = rows.slice(1).filter((x) => x[si] === name);\n  if (m.length !== 1 || !m[0][ci] || !m[0][ei]) throw Error(\"Invalid session mapping: \" + name);\n  return { name, channelId: String(m[0][ci]), eventId: String(m[0][ei]) };\n});\nreturn [{ json: { ...r, selected } }];\n"
+      },
+      "id": "register-event-attendees-and-invite-to-channels-3"
+    },
+    {
+      "name": "Append registration",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'https://sheets.googleapis.com/v4/spreadsheets/'+encodeURIComponent('YOUR_SPREADSHEET_ID')+'/values/'+encodeURIComponent('Attendees!A:F')+':append' }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {values:[[$('Match selected sessions').first().json.name,$('Match selected sessions').first().json.email,$('Match selected sessions').first().json.sessions.join(', '),$('Match selected sessions').first().json.submittedAt,$('Match selected sessions').first().json.id,'']]} }}",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "valueInputOption",
+              "value": "RAW"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "register-event-attendees-and-invite-to-channels-4"
+    },
+    {
+      "name": "Check registration row",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "if ($json.updates?.updatedRows !== 1) throw Error(\"Unknown sheet result\");\nreturn $input.all();\n"
+      },
+      "id": "register-event-attendees-and-invite-to-channels-5"
+    },
+    {
+      "name": "Invite attendee to channels",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://YOUR_MATTERMOST_HOST/api/v4/teams/YOUR_TEAM_ID/invite/email?graceful=true",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "mattermostApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {emails:[$('Match selected sessions').first().json.email],channelIds:[...new Set($('Match selected sessions').first().json.selected.map(x=>x.channelId))]} }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "register-event-attendees-and-invite-to-channels-6"
+    },
+    {
+      "name": "Check invitation result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const a = $input.all().map((x) => x.json),\n  email = $(\"Match selected sessions\").first().json.email.toLowerCase();\nif (\n  !a.length ||\n  a.some((x) => x.error || x.Error) ||\n  !a.some((x) => String(x.email ?? x.Email ?? \"\").toLowerCase() === email)\n)\n  throw Error(\"Unknown or failed invitation\");\nreturn [{ json: { ok: true }, pairedItem: { item: 0 } }];\n"
+      },
+      "id": "register-event-attendees-and-invite-to-channels-7"
+    },
+    {
+      "name": "Expand selected sessions",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return $(\"Match selected sessions\")\n  .first()\n  .json.selected.map((x, i) => ({ json: x, pairedItem: { item: 0 } }));\n"
+      },
+      "id": "register-event-attendees-and-invite-to-channels-8"
+    },
+    {
+      "name": "One session at a time",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "parameters": {
+        "options": {}
+      },
+      "id": "register-event-attendees-and-invite-to-channels-9"
+    },
+    {
+      "name": "Read session event",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ 'https://www.googleapis.com/calendar/v3/calendars/'+encodeURIComponent('YOUR_CALENDAR_ID')+'/events/'+encodeURIComponent($('One session at a time').item.json.eventId) }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleCalendarOAuth2Api",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "register-event-attendees-and-invite-to-channels-10"
+    },
+    {
+      "name": "Preserve existing attendees",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const e = $input.first().json,\n  email = $(\"Match selected sessions\").first().json.email,\n  items = Array.isArray(e.attendees) ? e.attendees : [];\nif (!e.id) throw Error(\"Missing event\");\nreturn [\n  {\n    json: {\n      eventId: e.id,\n      attendees: items.some((x) => x.email?.toLowerCase() === email.toLowerCase())\n        ? items\n        : [...items, { email }],\n      already: items.some((x) => x.email?.toLowerCase() === email.toLowerCase()),\n    },\n  },\n];\n"
+      },
+      "id": "register-event-attendees-and-invite-to-channels-11"
+    },
+    {
+      "name": "Already invited?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.already }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "register-event-attendees-and-invite-to-channels-12"
+    },
+    {
+      "name": "Add attendee to session",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ 'https://www.googleapis.com/calendar/v3/calendars/'+encodeURIComponent('YOUR_CALENDAR_ID')+'/events/'+encodeURIComponent($('Preserve existing attendees').item.json.eventId) }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleCalendarOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {attendees:$('Preserve existing attendees').item.json.attendees} }}",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "sendUpdates",
+              "value": "all"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "register-event-attendees-and-invite-to-channels-13"
+    },
+    {
+      "name": "Check event update",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "if ($json.id !== $(\"One session at a time\").item.json.eventId)\n  throw Error(\"Unknown Calendar result\");\nreturn $input.all();\n"
+      },
+      "id": "register-event-attendees-and-invite-to-channels-14"
+    },
+    {
+      "name": "Send registration confirmation",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "sendTo": "={{ $('Match selected sessions').first().json.email }}",
+        "subject": "Event registration received",
+        "message": "={{ 'Dear '+$('Match selected sessions').first().json.name+',\\n\\nYour registration includes:\\n'+$('Match selected sessions').first().json.sessions.map(x=>'- '+x).join('\\n')+'\\n\\nYou will receive a Mattermost invitation. Follow it to join the team and selected channels. Calendar invitations will be sent separately.' }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "register-event-attendees-and-invite-to-channels-15"
+    },
+    {
+      "name": "Check confirmation email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "if (!$json.id) throw Error(\"Unknown Gmail result\");\nreturn $input.all();\n"
+      },
+      "id": "register-event-attendees-and-invite-to-channels-16"
+    },
+    {
+      "name": "Sheet checkpoint",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'registration:' + $('Match selected sessions').first().json.id + ':sheet' }}"
+            }
+          ]
+        }
+      },
+      "alwaysOutputData": true,
+      "id": "register-event-attendees-and-invite-to-channels-17"
+    },
+    {
+      "name": "Check sheet checkpoint",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const items = $input.all();\nif (items.length !== 1) throw Error(\"Duplicate checkpoint rows\");\nconst s = items[0].json.status;\nif (s && s !== \"done\") throw Error(\"Inspect the pending service write before retry\");\nreturn [{ json: { done: s === \"done\" }, pairedItem: { item: 0 } }];\n"
+      },
+      "id": "register-event-attendees-and-invite-to-channels-18"
+    },
+    {
+      "name": "Sheet confirmed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.done }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "register-event-attendees-and-invite-to-channels-19"
+    },
+    {
+      "name": "Reserve sheet",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "item_key": "={{ 'registration:' + $('Match selected sessions').first().json.id + ':sheet' }}",
+            "status": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "register-event-attendees-and-invite-to-channels-20"
+    },
+    {
+      "name": "Confirm sheet",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'registration:' + $('Match selected sessions').first().json.id + ':sheet' }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "done"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "register-event-attendees-and-invite-to-channels-21"
+    },
+    {
+      "name": "Invite checkpoint",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'registration:' + $('Match selected sessions').first().json.id + ':invite' }}"
+            }
+          ]
+        }
+      },
+      "alwaysOutputData": true,
+      "id": "register-event-attendees-and-invite-to-channels-22"
+    },
+    {
+      "name": "Check invite checkpoint",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const items = $input.all();\nif (items.length !== 1) throw Error(\"Duplicate checkpoint rows\");\nconst s = items[0].json.status;\nif (s && s !== \"done\") throw Error(\"Inspect the pending service write before retry\");\nreturn [{ json: { done: s === \"done\" }, pairedItem: { item: 0 } }];\n"
+      },
+      "id": "register-event-attendees-and-invite-to-channels-23"
+    },
+    {
+      "name": "Invite confirmed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.done }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "register-event-attendees-and-invite-to-channels-24"
+    },
+    {
+      "name": "Reserve invite",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "item_key": "={{ 'registration:' + $('Match selected sessions').first().json.id + ':invite' }}",
+            "status": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "register-event-attendees-and-invite-to-channels-25"
+    },
+    {
+      "name": "Confirm invite",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'registration:' + $('Match selected sessions').first().json.id + ':invite' }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "done"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "register-event-attendees-and-invite-to-channels-26"
+    },
+    {
+      "name": "Calendar checkpoint",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'registration:' + $('Match selected sessions').first().json.id + ':calendar:' + $('One session at a time').item.json.eventId }}"
+            }
+          ]
+        }
+      },
+      "alwaysOutputData": true,
+      "id": "register-event-attendees-and-invite-to-channels-27"
+    },
+    {
+      "name": "Check calendar checkpoint",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const items = $input.all();\nif (items.length !== 1) throw Error(\"Duplicate checkpoint rows\");\nconst s = items[0].json.status;\nif (s && s !== \"done\") throw Error(\"Inspect the pending service write before retry\");\nreturn [{ json: { done: s === \"done\" }, pairedItem: { item: 0 } }];\n"
+      },
+      "id": "register-event-attendees-and-invite-to-channels-28"
+    },
+    {
+      "name": "Calendar confirmed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.done }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "register-event-attendees-and-invite-to-channels-29"
+    },
+    {
+      "name": "Reserve calendar",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "item_key": "={{ 'registration:' + $('Match selected sessions').first().json.id + ':calendar:' + $('One session at a time').item.json.eventId }}",
+            "status": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "register-event-attendees-and-invite-to-channels-30"
+    },
+    {
+      "name": "Confirm calendar",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'registration:' + $('Match selected sessions').first().json.id + ':calendar:' + $('One session at a time').item.json.eventId }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "done"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "register-event-attendees-and-invite-to-channels-31"
+    },
+    {
+      "name": "Welcome checkpoint",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'registration:' + $('Match selected sessions').first().json.id + ':welcome' }}"
+            }
+          ]
+        }
+      },
+      "alwaysOutputData": true,
+      "id": "register-event-attendees-and-invite-to-channels-32"
+    },
+    {
+      "name": "Check welcome checkpoint",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const items = $input.all();\nif (items.length !== 1) throw Error(\"Duplicate checkpoint rows\");\nconst s = items[0].json.status;\nif (s && s !== \"done\") throw Error(\"Inspect the pending service write before retry\");\nreturn [{ json: { done: s === \"done\" }, pairedItem: { item: 0 } }];\n"
+      },
+      "id": "register-event-attendees-and-invite-to-channels-33"
+    },
+    {
+      "name": "Welcome confirmed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.done }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "register-event-attendees-and-invite-to-channels-34"
+    },
+    {
+      "name": "Reserve welcome",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "item_key": "={{ 'registration:' + $('Match selected sessions').first().json.id + ':welcome' }}",
+            "status": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "register-event-attendees-and-invite-to-channels-35"
+    },
+    {
+      "name": "Confirm welcome",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'registration:' + $('Match selected sessions').first().json.id + ':welcome' }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "done"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "register-event-attendees-and-invite-to-channels-36"
+    }
+  ],
+  "connections": {
+    "Sheet checkpoint": {
+      "main": [
+        [
+          {
+            "node": "Check sheet checkpoint",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check sheet checkpoint": {
+      "main": [
+        [
+          {
+            "node": "Sheet confirmed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Invite checkpoint": {
+      "main": [
+        [
+          {
+            "node": "Check invite checkpoint",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check invite checkpoint": {
+      "main": [
+        [
+          {
+            "node": "Invite confirmed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calendar checkpoint": {
+      "main": [
+        [
+          {
+            "node": "Check calendar checkpoint",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check calendar checkpoint": {
+      "main": [
+        [
+          {
+            "node": "Calendar confirmed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Welcome checkpoint": {
+      "main": [
+        [
+          {
+            "node": "Check welcome checkpoint",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check welcome checkpoint": {
+      "main": [
+        [
+          {
+            "node": "Welcome confirmed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Attendee Registrations": {
+      "main": [
+        [
+          {
+            "node": "Normalize registration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize registration": {
+      "main": [
+        [
+          {
+            "node": "Read session mappings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read session mappings": {
+      "main": [
+        [
+          {
+            "node": "Match selected sessions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Match selected sessions": {
+      "main": [
+        [
+          {
+            "node": "Sheet checkpoint",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve sheet": {
+      "main": [
+        [
+          {
+            "node": "Append registration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append registration": {
+      "main": [
+        [
+          {
+            "node": "Check registration row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check registration row": {
+      "main": [
+        [
+          {
+            "node": "Confirm sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm sheet": {
+      "main": [
+        [
+          {
+            "node": "Invite checkpoint",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve invite": {
+      "main": [
+        [
+          {
+            "node": "Invite attendee to channels",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Invite attendee to channels": {
+      "main": [
+        [
+          {
+            "node": "Check invitation result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check invitation result": {
+      "main": [
+        [
+          {
+            "node": "Confirm invite",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm invite": {
+      "main": [
+        [
+          {
+            "node": "Expand selected sessions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Expand selected sessions": {
+      "main": [
+        [
+          {
+            "node": "One session at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve calendar": {
+      "main": [
+        [
+          {
+            "node": "Read session event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read session event": {
+      "main": [
+        [
+          {
+            "node": "Preserve existing attendees",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preserve existing attendees": {
+      "main": [
+        [
+          {
+            "node": "Already invited?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add attendee to session": {
+      "main": [
+        [
+          {
+            "node": "Check event update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check event update": {
+      "main": [
+        [
+          {
+            "node": "Confirm calendar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm calendar": {
+      "main": [
+        [
+          {
+            "node": "One session at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve welcome": {
+      "main": [
+        [
+          {
+            "node": "Send registration confirmation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send registration confirmation": {
+      "main": [
+        [
+          {
+            "node": "Check confirmation email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check confirmation email": {
+      "main": [
+        [
+          {
+            "node": "Confirm welcome",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sheet confirmed?": {
+      "main": [
+        [
+          {
+            "node": "Invite checkpoint",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reserve sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Invite confirmed?": {
+      "main": [
+        [
+          {
+            "node": "Expand selected sessions",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reserve invite",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calendar confirmed?": {
+      "main": [
+        [
+          {
+            "node": "One session at a time",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reserve calendar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Welcome confirmed?": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Reserve welcome",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "One session at a time": {
+      "main": [
+        [
+          {
+            "node": "Welcome checkpoint",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Calendar checkpoint",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Already invited?": {
+      "main": [
+        [
+          {
+            "node": "Confirm calendar",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Add attendee to session",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Register Event Attendees and Invite to Channels",
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

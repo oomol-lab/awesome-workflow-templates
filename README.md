@@ -61,6 +61,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Project Management](#project-management)
 - [Shopping](#shopping)
 - [Documents](#documents)
+- [Events](#events)
 - [Contribute](#contribute)
 - [Licensing](#licensing)
 
@@ -1058,6 +1059,10 @@ A growing collection of automation workflows for connecting apps and getting rep
 ## Documents
 
 - [Render Branded Markdown PDF](workflows/render-branded-markdown-pdf/) - Render Markdown as a branded PDF with a cover and numbered contents.
+
+## Events
+
+- [Register Event Attendees and Invite to Channels](workflows/register-event-attendees-and-invite-to-channels/) - Record a registration, invite the attendee to selected session channels and add them to calendar events.
 
 ## Contribute
 
