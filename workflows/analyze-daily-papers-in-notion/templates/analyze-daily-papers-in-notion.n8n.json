@@ -1,0 +1,571 @@
+{
+  "name": "Analyze Daily Papers in Notion",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "analyze-daily-papers-in-notion-0",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtDay": [
+                1,
+                2,
+                3,
+                4,
+                5
+              ],
+              "triggerAtHour": 8
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "analyze-daily-papers-in-notion-1",
+      "name": "If",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "7094d6db-1fa7-4b59-91cf-6bbd5b5f067e",
+              "operator": {
+                "type": "object",
+                "operation": "empty",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "analyze-daily-papers-in-notion-2",
+      "name": "Loop Over Items",
+      "type": "n8n-nodes-base.splitInBatches",
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "options": {
+          "reset": false
+        }
+      },
+      "typeVersion": 3
+    },
+    {
+      "id": "analyze-daily-papers-in-notion-3",
+      "name": "Split Out",
+      "type": "n8n-nodes-base.noOp",
+      "position": [
+        660,
+        0
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "analyze-daily-papers-in-notion-4",
+      "name": "Request Hugging Face Paper",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        880,
+        0
+      ],
+      "parameters": {
+        "url": "https://huggingface.co/api/daily_papers",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "date",
+              "value": "={{ $now.minus({days:1}).toFormat('yyyy-MM-dd') }}"
+            },
+            {
+              "name": "limit",
+              "value": "100"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          },
+          "pagination": {
+            "pagination": {
+              "paginationMode": "updateAParameterInEachRequest",
+              "parameters": {
+                "parameters": [
+                  {
+                    "type": "qs",
+                    "name": "p",
+                    "value": "={{ $pageCount }}"
+                  }
+                ]
+              },
+              "paginationCompleteWhen": "other",
+              "completeExpression": "={{ $response.body.length < 100 }}",
+              "limitPagesFetched": false
+            }
+          }
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "analyze-daily-papers-in-notion-5",
+      "name": "Extract Hugging Face Paper",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1100,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return $input.all().flatMap((page, i) =>\n  page.json.body.map((x) => {\n    const id = (x.paper ?? x).id;\n    if (!id) throw Error(\"Missing paper ID\");\n    return { json: { url: \"/papers/\" + id, id }, pairedItem: { item: i } };\n  }),\n);\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "analyze-daily-papers-in-notion-6",
+      "name": "Check Paper URL Existed",
+      "type": "n8n-nodes-base.notion",
+      "position": [
+        1320,
+        0
+      ],
+      "parameters": {
+        "filters": {
+          "conditions": [
+            {
+              "key": "URL|url",
+              "urlValue": "={{ 'https://huggingface.co'+$json.url }}",
+              "condition": "equals"
+            }
+          ]
+        },
+        "options": {},
+        "resource": "databasePage",
+        "operation": "getAll",
+        "databaseId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_NOTION_DATABASE_ID"
+        },
+        "filterType": "manual"
+      },
+      "typeVersion": 2.2,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "analyze-daily-papers-in-notion-7",
+      "name": "Request Hugging Face Paper Detail",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        1540,
+        0
+      ],
+      "parameters": {
+        "url": "={{ 'https://huggingface.co/api/papers/'+encodeURIComponent($('Loop Over Items').item.json.id) }}",
+        "options": {}
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "analyze-daily-papers-in-notion-8",
+      "name": "OpenAI Analysis Abstract",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "position": [
+        1760,
+        0
+      ],
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "gpt-4o-mini"
+        },
+        "options": {},
+        "messages": {
+          "values": [
+            {
+              "role": "system",
+              "content": "Extract the following key details from the paper abstract:\n\nCore Introduction: Summarize the main contributions and objectives of the paper, highlighting its innovations and significance.\nKeyword Extraction: List 2-5 keywords that best represent the research direction and techniques of the paper.\nKey Data and Results: Extract important performance metrics, comparison results, and the paper's advantages over other studies.\nTechnical Details: Provide a brief overview of the methods, optimization techniques, and datasets mentioned in the paper.\nClassification: Assign an appropriate academic classification based on the content of the paper.\n\n\nOutput as json：\n{\n \"Core_Introduction\": \"PaSa is an advanced Paper Search agent powered by large language models that can autonomously perform a series of decisions (including invoking search tools, reading papers, and selecting relevant references) to provide comprehensive and accurate results for complex academic queries.\",\n \"Keywords\": [\n \"Paper Search Agent\",\n \"Large Language Models\",\n \"Reinforcement Learning\",\n \"Academic Queries\",\n \"Performance Benchmarking\"\n ],\n \"Data_and_Results\": \"PaSa outperforms existing baselines (such as Google, GPT-4, chatGPT) in tests using AutoScholarQuery (35k academic queries) and RealScholarQuery (real-world academic queries). For example, PaSa-7B exceeds Google with GPT-4o by 37.78% in recall@20 and 39.90% in recall@50.\",\n \"Technical_Details\": \"PaSa is optimized using reinforcement learning with the AutoScholarQuery synthetic dataset, demonstrating superior performance in multiple benchmarks.\",\n \"Classification\": [\n \"Artificial Intelligence (AI)\",\n \"Academic Search and Information Retrieval\",\n \"Natural Language Processing (NLP)\",\n \"Reinforcement Learning\"\n ]\n}\n```"
+            },
+            {
+              "content": "={{ $json.abstract }}"
+            }
+          ]
+        },
+        "jsonOutput": true
+      },
+      "typeVersion": 1.8
+    },
+    {
+      "id": "analyze-daily-papers-in-notion-9",
+      "name": "Store Abstract Notion",
+      "type": "n8n-nodes-base.notion",
+      "position": [
+        1980,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "resource": "databasePage",
+        "databaseId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_NOTION_DATABASE_ID"
+        },
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "URL|url",
+              "urlValue": "={{ 'https://huggingface.co'+$('Loop Over Items').item.json.url }}"
+            },
+            {
+              "key": "title|title",
+              "title": "={{ $('Extract Hugging Face Paper Abstract').item.json.title }}"
+            },
+            {
+              "key": "abstract|rich_text",
+              "textContent": "={{ $('Extract Hugging Face Paper Abstract').item.json.abstract.substring(0,2000) }}"
+            },
+            {
+              "key": "scrap-date|date",
+              "date": "={{ $today.format('yyyy-MM-dd') }}",
+              "includeTime": false
+            },
+            {
+              "key": "Classification|rich_text",
+              "textContent": "={{ $('OpenAI Analysis Abstract').item.json.message.content.Classification.join(',') }}"
+            },
+            {
+              "key": "Technical_Details|rich_text",
+              "textContent": "={{ $('OpenAI Analysis Abstract').item.json.message.content.Technical_Details }}"
+            },
+            {
+              "key": "Data_and_Results|rich_text",
+              "textContent": "={{ $('OpenAI Analysis Abstract').item.json.message.content.Data_and_Results }}"
+            },
+            {
+              "key": "keywords|rich_text",
+              "textContent": "={{ $('OpenAI Analysis Abstract').item.json.message.content.Keywords.join(',') }}"
+            },
+            {
+              "key": "Core Introduction|rich_text",
+              "textContent": "={{ $('OpenAI Analysis Abstract').item.json.message.content.Core_Introduction }}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "analyze-daily-papers-in-notion-10",
+      "name": "Extract Hugging Face Paper Abstract",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2200,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if (!$json.title || !$json.summary) throw Error(\"Paper metadata incomplete\");\nreturn { json: { title: $json.title, abstract: $json.summary } };\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "name": "Paper not pending",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "rowNotExists",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'paper:' + 'https://huggingface.co'+$('Loop Over Items').item.json.url }}"
+            }
+          ]
+        }
+      },
+      "id": "analyze-daily-papers-in-notion-11",
+      "position": [
+        2420,
+        0
+      ]
+    },
+    {
+      "name": "Reserve paper creation",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "item_key": "={{ 'paper:' + 'https://huggingface.co'+$('Loop Over Items').item.json.url }}",
+            "status": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "analyze-daily-papers-in-notion-12",
+      "position": [
+        2640,
+        0
+      ]
+    },
+    {
+      "name": "Confirm paper creation",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Reserve paper creation').item.json.id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "done"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "analyze-daily-papers-in-notion-13",
+      "position": [
+        2860,
+        0
+      ]
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC"
+  },
+  "connections": {
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Request Hugging Face Paper Detail",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Check Paper URL Existed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Request Hugging Face Paper",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Store Abstract Notion": {
+      "main": [
+        [
+          {
+            "node": "Confirm paper creation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Paper URL Existed": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Analysis Abstract": {
+      "main": [
+        [
+          {
+            "node": "Paper not pending",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Hugging Face Paper": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Request Hugging Face Paper": {
+      "main": [
+        [
+          {
+            "node": "Extract Hugging Face Paper",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Request Hugging Face Paper Detail": {
+      "main": [
+        [
+          {
+            "node": "Extract Hugging Face Paper Abstract",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Hugging Face Paper Abstract": {
+      "main": [
+        [
+          {
+            "node": "OpenAI Analysis Abstract",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Paper not pending": {
+      "main": [
+        [
+          {
+            "node": "Reserve paper creation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve paper creation": {
+      "main": [
+        [
+          {
+            "node": "Store Abstract Notion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm paper creation": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
