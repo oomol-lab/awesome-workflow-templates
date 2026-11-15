@@ -563,6 +563,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Append MySQL Books to Google Sheets Weekly](workflows/append-mysql-books-to-google-sheets-weekly/) - Read the books table from MySQL each week and append matching columns to Google Sheets.
 - [Check CSRD XHTML Reports by Email](workflows/check-csrd-xhtml-reports-by-email/) - Check selected XHTML report tags and draft an email reply with the findings.
 - [Weekly Notion Task Deadline Digest](workflows/weekly-notion-task-deadline-digest/) - Email overdue and upcoming Notion tasks and send a Pushover notification each week.
+- [Categorize and Route Outlook Mail](workflows/categorize-and-route-outlook-mail/) - Classify an unflagged Outlook message and move it to a matching folder.
 
 ## Content
 
