@@ -630,6 +630,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Analyze CV and Record Candidate](workflows/analyze-cv-and-record-candidate/) - Extract CV details, summarize the candidate and record the extracted facts in Google Sheets.
 - [Reply to Gmail and Record Feedback](workflows/draft-gmail-replies-with-sheet-feedback/) - Draft replies to selected Gmail messages and record recipient feedback in Google Sheets.
 - [Action Meeting Transcript Follow-ups](workflows/action-meeting-transcript-follow-ups/) - Summarize a Google Meet transcript and schedule agreed follow-up meetings.
+- [Record Recall Transcript Notes](workflows/record-recall-transcript-notes/) - Save verified live transcript segments and create meeting notes when a keyword is spoken.
 
 ## Content
 
