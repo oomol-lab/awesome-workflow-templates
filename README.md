@@ -319,6 +319,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Make Social Event Banners for Discord](workflows/make-social-event-banners-for-discord/) - Generate an event poster from a prompt and share it as a Discord attachment.
 - [Publish Notion Posts to LinkedIn](workflows/publish-notion-posts-to-linkedin/) - Format scheduled Notion posts, publish their images on LinkedIn and mark the matching page done.
 - [Draft WordPress Articles from Notion Updates](workflows/draft-wordpress-articles-from-notion-updates/) - Draft an SEO article from a Notion page update, email its link and update the page.
+- [Generate Airtable Editorial Captions with Background](workflows/generate-airtable-editorial-captions-with-background/) - Create Instagram captions for new Airtable editorial records using audience background.
 
 ## Support
 
