@@ -816,6 +816,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Parse Drive Invoices into Airtable](workflows/parse-drive-invoices-into-airtable/) - Parse new Google Drive invoices and create linked Airtable invoice and line-item records.
 - [Extract Bank Transactions to Drive CSV](workflows/extract-bank-transactions-to-drive-csv/) - Extract and categorize bank statement transactions from PDFs or images, then save CSV files to Google Drive.
 - [Archive Gmail Invoices in Drive and Sheets](workflows/archive-gmail-invoices-in-drive-and-sheets/) - Save unread email PDF invoices to Drive and append extracted invoice details to a reconciliation sheet.
+- [Extract Statement Transactions to Drive CSV](workflows/extract-statement-transactions-to-drive-csv/) - Extract and categorize bank statement transactions from PDFs or images, then save CSV files to Google Drive.
 
 ## Community
 
