@@ -1,0 +1,939 @@
+{
+  "name": "Extract Drive Statements to CSV",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "extract-drive-statements-to-csv-0",
+      "name": "Get PDF or Images",
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "event": "fileCreated",
+        "options": {},
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "triggerOn": "specificFolder",
+        "folderToWatch": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_INPUT_FOLDER_ID"
+        },
+        "authentication": "serviceAccount"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "extract-drive-statements-to-csv-1",
+      "name": "Route based on PDF or Image",
+      "type": "n8n-nodes-base.switch",
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "rules": {
+          "rules": [
+            {
+              "value2": "application/pdf",
+              "outputKey": "pdf"
+            },
+            {
+              "value2": "image/",
+              "operation": "contains",
+              "outputKey": "image"
+            }
+          ]
+        },
+        "value1": "={{$json.mimeType}}",
+        "dataType": "string"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "extract-drive-statements-to-csv-2",
+      "name": "Download PDF",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Get PDF or Images').item.json.id }}"
+        },
+        "options": {},
+        "operation": "download",
+        "authentication": "serviceAccount"
+      },
+      "typeVersion": 3
+    },
+    {
+      "id": "extract-drive-statements-to-csv-3",
+      "name": "Extract data from PDF",
+      "type": "n8n-nodes-base.extractFromFile",
+      "position": [
+        660,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "operation": "pdf"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "extract-drive-statements-to-csv-4",
+      "name": "Upload to Google Drive",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [
+        880,
+        0
+      ],
+      "parameters": {
+        "name": "={{ $json.name }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "root"
+        },
+        "options": {},
+        "folderId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_OUTPUT_FOLDER_ID"
+        },
+        "authentication": "serviceAccount"
+      },
+      "typeVersion": 3,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "name": "Validate CSV",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function validate({ text }) {\n  if (typeof text !== \"string\") throw Error(\"Missing CSV response\");\n  const csv = text\n    .trim()\n    .replace(/^```(?:csv)?\\s*\\n/i, \"\")\n    .replace(/\\n```\\s*$/, \"\");\n  let rows = [],\n    row = [],\n    cell = \"\",\n    quoted = false;\n  for (let i = 0; i < csv.length; i++) {\n    let c = csv[i];\n    if (quoted) {\n      if (c === '\"' && csv[i + 1] === '\"') {\n        cell += '\"';\n        i++;\n      } else if (c === '\"') quoted = false;\n      else cell += c;\n    } else if (c === '\"') {\n      if (cell) throw Error(\"Invalid CSV quoting\");\n      quoted = true;\n    } else if (c === \",\") {\n      row.push(cell);\n      cell = \"\";\n    } else if (c === \"\\n\") {\n      row.push(cell);\n      rows.push(row);\n      row = [];\n      cell = \"\";\n    } else if (c !== \"\\r\") cell += c;\n  }\n  if (quoted) throw Error(\"Unclosed CSV quote\");\n  if (cell || row.length) {\n    row.push(cell);\n    rows.push(row);\n  }\n  if (\n    !rows.length ||\n    !rows[0].some((x) => x.trim().toLowerCase() === \"category\") ||\n    rows.some((r) => r.length !== rows[0].length)\n  )\n    throw Error(\"Invalid transaction CSV\");\n  return { csv };\n}\n\nconst csv = validate({ text: $json.text }).csv,\n  source = $(\"Get PDF or Images\").item.json;\nif (!source.id) throw Error(\"Missing source file ID\");\nconst name = String(source.name || \"statement\").replace(/\\.[^.]+$/, \"\") + \"-\" + source.id + \".csv\";\nreturn {\n  json: { id: source.id, name, csv },\n  binary: {\n    data: await this.helpers.prepareBinaryData(Buffer.from(csv, \"utf8\"), name, \"text/csv\"),\n  },\n};\n"
+      },
+      "id": "extract-drive-statements-to-csv-5",
+      "position": [
+        1100,
+        0
+      ]
+    },
+    {
+      "name": "Check export checkpoint",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ \"statement-csv:\" + $(\"Validate CSV\").item.json.id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "alwaysOutputData": true,
+      "id": "extract-drive-statements-to-csv-6",
+      "position": [
+        1320,
+        0
+      ]
+    },
+    {
+      "name": "Inspect export checkpoint",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if ($json.status === \"pending\") throw Error(\"Inspect destination before retry\");\nreturn { json: { done: $json.status === \"done\" } };\n"
+      },
+      "id": "extract-drive-statements-to-csv-7",
+      "position": [
+        1540,
+        0
+      ]
+    },
+    {
+      "name": "Already exported?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.done }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "extract-drive-statements-to-csv-8",
+      "position": [
+        1760,
+        0
+      ]
+    },
+    {
+      "name": "Reserve export",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "item_key": "={{ \"statement-csv:\" + $(\"Validate CSV\").item.json.id }}",
+            "status": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "extract-drive-statements-to-csv-9",
+      "position": [
+        1980,
+        0
+      ]
+    },
+    {
+      "name": "Restore CSV",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return $(\"Validate CSV\").item;\n"
+      },
+      "id": "extract-drive-statements-to-csv-10",
+      "position": [
+        2200,
+        0
+      ]
+    },
+    {
+      "name": "Verify CSV upload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if (!$json.id || $json.error) throw Error(\"Unknown Drive upload outcome\");\nreturn { json: $json };\n"
+      },
+      "id": "extract-drive-statements-to-csv-11",
+      "position": [
+        2420,
+        0
+      ]
+    },
+    {
+      "name": "Confirm export",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $(\"Reserve export\").item.json.id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "done"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "extract-drive-statements-to-csv-12",
+      "position": [
+        2640,
+        0
+      ]
+    },
+    {
+      "name": "Stop on uncertain upload",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "parameters": {},
+      "id": "extract-drive-statements-to-csv-13",
+      "position": [
+        2860,
+        0
+      ]
+    },
+    {
+      "name": "Receive PDF request",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "statement-pdf-text",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "extract-drive-statements-to-csv-14",
+      "position": [
+        3080,
+        0
+      ]
+    },
+    {
+      "id": "extract-drive-statements-to-csv-15",
+      "name": "Download relay PDF",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [
+        3300,
+        0
+      ],
+      "parameters": {
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.body.fileId }}"
+        },
+        "options": {},
+        "operation": "download",
+        "authentication": "serviceAccount"
+      },
+      "typeVersion": 3
+    },
+    {
+      "id": "extract-drive-statements-to-csv-16",
+      "name": "Extract relay PDF text",
+      "type": "n8n-nodes-base.extractFromFile",
+      "position": [
+        3520,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "operation": "pdf"
+      },
+      "typeVersion": 1
+    },
+    {
+      "name": "Return PDF text",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {text:$json.text} }}",
+        "options": {}
+      },
+      "id": "extract-drive-statements-to-csv-17",
+      "position": [
+        3740,
+        0
+      ]
+    },
+    {
+      "name": "Generate PDF CSV",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/responses",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {model:\"gpt-5.4-mini\",store:false,input:[{role:\"user\",content:[{type:\"input_text\",text:\"Extract every transaction into CSV and add a category column. Preserve numbers, do not invent data. Return only CSV. Statement: \"+$json.text}]}]} }}",
+        "options": {}
+      },
+      "id": "extract-drive-statements-to-csv-18",
+      "position": [
+        3960,
+        0
+      ]
+    },
+    {
+      "name": "Check PDF generation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if ($json.status !== \"completed\") throw Error(\"Incomplete PDF generation\");\nconst text = ($json.output ?? [])\n  .flatMap((x) =>\n    x.type === \"message\"\n      ? (x.content ?? []).filter((p) => p.type === \"output_text\").map((p) => p.text)\n      : [],\n  )\n  .join(\"\\n\");\nreturn { json: { text } };\n"
+      },
+      "id": "extract-drive-statements-to-csv-19",
+      "position": [
+        4180,
+        0
+      ]
+    },
+    {
+      "name": "Upload source image for Gemini",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://YOUR_PRIVATE_N8N_HOST/webhook/statement-image-upload",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {fileId:$(\"Get PDF or Images\").item.json.id} }}",
+        "options": {}
+      },
+      "id": "extract-drive-statements-to-csv-20",
+      "position": [
+        4400,
+        0
+      ]
+    },
+    {
+      "name": "Generate image CSV",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {contents:[{parts:[{text:\"Extract every transaction into CSV and add a category column. Preserve numbers, do not invent data. Return only CSV.\"},{file_data:{file_uri:$json.uri,mime_type:$json.mimeType}}]}]} }}",
+        "options": {}
+      },
+      "id": "extract-drive-statements-to-csv-21",
+      "position": [
+        4620,
+        0
+      ]
+    },
+    {
+      "name": "Check image generation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const c = $json.candidates?.[0];\nif (c?.finishReason !== \"STOP\") throw Error(\"Incomplete image generation\");\nreturn { json: { text: c.content.parts.map((p) => p.text ?? \"\").join(\"\") } };\n"
+      },
+      "id": "extract-drive-statements-to-csv-22",
+      "position": [
+        4840,
+        0
+      ]
+    },
+    {
+      "name": "Receive image request",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "statement-image-upload",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "extract-drive-statements-to-csv-23",
+      "position": [
+        5060,
+        0
+      ]
+    },
+    {
+      "id": "extract-drive-statements-to-csv-24",
+      "name": "Download relay image",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [
+        5280,
+        0
+      ],
+      "parameters": {
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.body.fileId }}"
+        },
+        "options": {},
+        "operation": "download",
+        "authentication": "serviceAccount"
+      },
+      "typeVersion": 3
+    },
+    {
+      "name": "Measure relay image",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const bytes = await this.helpers.getBinaryDataBuffer(0, \"data\");\nif (!bytes.length) throw Error(\"Empty image\");\nreturn { json: { size: bytes.length, mimeType: $binary.data.mimeType }, binary: $binary };\n"
+      },
+      "id": "extract-drive-statements-to-csv-25",
+      "position": [
+        5500,
+        0
+      ]
+    },
+    {
+      "name": "Start Gemini upload",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/upload/v1beta/files",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Goog-Upload-Protocol",
+              "value": "resumable"
+            },
+            {
+              "name": "X-Goog-Upload-Command",
+              "value": "start"
+            },
+            {
+              "name": "X-Goog-Upload-Header-Content-Length",
+              "value": "={{ $json.size }}"
+            },
+            {
+              "name": "X-Goog-Upload-Header-Content-Type",
+              "value": "={{ $json.mimeType }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {file:{display_name:\"statement-image\"}} }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "extract-drive-statements-to-csv-26",
+      "position": [
+        5720,
+        0
+      ]
+    },
+    {
+      "name": "Restore relay image",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const url = $json.headers?.[\"x-goog-upload-url\"];\nif (!/^https:\\/\\/generativelanguage\\.googleapis\\.com\\//.test(url ?? \"\"))\n  throw Error(\"Invalid Gemini upload session\");\nreturn { json: { url }, binary: $(\"Measure relay image\").item.binary };\n"
+      },
+      "id": "extract-drive-statements-to-csv-27",
+      "position": [
+        5940,
+        0
+      ]
+    },
+    {
+      "name": "Send image bytes to Gemini",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Goog-Upload-Offset",
+              "value": "0"
+            },
+            {
+              "name": "X-Goog-Upload-Command",
+              "value": "upload, finalize"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "data",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "extract-drive-statements-to-csv-28",
+      "position": [
+        6160,
+        0
+      ]
+    },
+    {
+      "name": "Return Gemini image reference",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {uri:$json.file.uri,mimeType:$json.file.mimeType} }}",
+        "options": {}
+      },
+      "id": "extract-drive-statements-to-csv-29",
+      "position": [
+        6380,
+        0
+      ]
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Get PDF or Images": {
+      "main": [
+        [
+          {
+            "node": "Route based on PDF or Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download PDF": {
+      "main": [
+        [
+          {
+            "node": "Extract data from PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract data from PDF": {
+      "main": [
+        [
+          {
+            "node": "Generate PDF CSV",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate CSV": {
+      "main": [
+        [
+          {
+            "node": "Check export checkpoint",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check export checkpoint": {
+      "main": [
+        [
+          {
+            "node": "Inspect export checkpoint",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Inspect export checkpoint": {
+      "main": [
+        [
+          {
+            "node": "Already exported?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve export": {
+      "main": [
+        [
+          {
+            "node": "Restore CSV",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore CSV": {
+      "main": [
+        [
+          {
+            "node": "Upload to Google Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify CSV upload": {
+      "main": [
+        [
+          {
+            "node": "Confirm export",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Receive PDF request": {
+      "main": [
+        [
+          {
+            "node": "Download relay PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download relay PDF": {
+      "main": [
+        [
+          {
+            "node": "Extract relay PDF text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract relay PDF text": {
+      "main": [
+        [
+          {
+            "node": "Return PDF text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route based on PDF or Image": {
+      "main": [
+        [
+          {
+            "node": "Download PDF",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Upload source image for Gemini",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Already exported?": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Reserve export",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload to Google Drive": {
+      "main": [
+        [
+          {
+            "node": "Verify CSV upload",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Stop on uncertain upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate PDF CSV": {
+      "main": [
+        [
+          {
+            "node": "Check PDF generation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check PDF generation": {
+      "main": [
+        [
+          {
+            "node": "Validate CSV",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload source image for Gemini": {
+      "main": [
+        [
+          {
+            "node": "Generate image CSV",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate image CSV": {
+      "main": [
+        [
+          {
+            "node": "Check image generation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check image generation": {
+      "main": [
+        [
+          {
+            "node": "Validate CSV",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Receive image request": {
+      "main": [
+        [
+          {
+            "node": "Download relay image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download relay image": {
+      "main": [
+        [
+          {
+            "node": "Measure relay image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Measure relay image": {
+      "main": [
+        [
+          {
+            "node": "Start Gemini upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start Gemini upload": {
+      "main": [
+        [
+          {
+            "node": "Restore relay image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore relay image": {
+      "main": [
+        [
+          {
+            "node": "Send image bytes to Gemini",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send image bytes to Gemini": {
+      "main": [
+        [
+          {
+            "node": "Return Gemini image reference",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
