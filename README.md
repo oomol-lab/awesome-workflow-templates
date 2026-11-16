@@ -326,6 +326,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Generate Airtable Editorial Captions with Background](workflows/generate-airtable-editorial-captions-with-background/) - Create Instagram captions for new Airtable editorial records using audience background.
 - [Draft LinkedIn Posts from Ghost Articles](workflows/draft-linkedin-posts-from-ghost-articles/) - Draft LinkedIn promotional copy for recent Ghost posts and record it in Google Sheets.
 - [Create UTM Links and Email Analytics](workflows/create-utm-links-and-email-analytics/) - Create a campaign link and QR code, and email a scheduled analytics summary.
+- [Analyze Pinterest Pins for Content Ideas](workflows/analyze-pinterest-pins-for-content-ideas/) - Collect Pinterest pins in Airtable and email content ideas based on their metadata.
 
 ## Support
 
