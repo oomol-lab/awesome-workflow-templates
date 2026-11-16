@@ -1,0 +1,1179 @@
+{
+  "nodes": [
+    {
+      "id": "run-adobe-pdf-operations-0",
+      "name": "Create Asset",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "url": "https://pdf-services.adobe.io/assets",
+        "method": "POST",
+        "options": {
+          "redirect": {
+            "redirect": {}
+          }
+        },
+        "sendBody": true,
+        "sendHeaders": true,
+        "authentication": "genericCredentialType",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "mediaType",
+              "value": "application/pdf"
+            }
+          ]
+        },
+        "genericAuthType": "httpHeaderAuth",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.access_token }}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 4.1,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "id": "run-adobe-pdf-operations-1",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "run-adobe-pdf-operations-2",
+      "name": "Query + File + Asset information",
+      "type": "n8n-nodes-base.merge",
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "mode": "combine",
+        "options": {},
+        "combinationMode": "mergeByPosition"
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "id": "run-adobe-pdf-operations-3",
+      "name": "Process Query",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        660,
+        0
+      ],
+      "parameters": {
+        "url": "=https://pdf-services.adobe.io/operation/{{ $('Query + File + Asset information').item.json.endpoint }}",
+        "method": "POST",
+        "options": {
+          "redirect": {
+            "redirect": {}
+          },
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        },
+        "jsonBody": "={{ \n{\n...{ \"assetID\":$('Query + File + Asset information').item.json.assetID },\n...$('Query + File + Asset information').item.json.json_payload\n}\n}}",
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('Authenticartion (get token)').item.json[\"access_token\"] }}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 4.1,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "id": "run-adobe-pdf-operations-4",
+      "name": "Wait 5 second",
+      "type": "n8n-nodes-base.wait",
+      "position": [
+        880,
+        0
+      ],
+      "parameters": {
+        "unit": "seconds",
+        "amount": 5
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "run-adobe-pdf-operations-5",
+      "name": "Try to download the result",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        1100,
+        0
+      ],
+      "parameters": {
+        "url": "={{ $('Process Query').item.json[\"headers\"][\"location\"] }}",
+        "options": {},
+        "sendHeaders": true,
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('Authenticartion (get token)').item.json[\"access_token\"] }}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 4.1
+    },
+    {
+      "id": "run-adobe-pdf-operations-6",
+      "name": "Switch",
+      "type": "n8n-nodes-base.switch",
+      "position": [
+        1320,
+        0
+      ],
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "outputKey": "in progress",
+              "conditions": {
+                "options": {
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "in progress"
+                  }
+                ]
+              },
+              "renameOutput": true
+            },
+            {
+              "outputKey": "failed",
+              "conditions": {
+                "options": {
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "6d6917f6-abb9-4175-a070-a2f500d9f34f",
+                    "operator": {
+                      "name": "filter.operator.equals",
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "failed"
+                  }
+                ]
+              },
+              "renameOutput": true
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "typeVersion": 3
+    },
+    {
+      "id": "run-adobe-pdf-operations-7",
+      "name": "Forward response to origin workflow",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        1540,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": []
+        },
+        "includeOtherFields": true
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "run-adobe-pdf-operations-8",
+      "name": "Authenticartion (get token)",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        1760,
+        0
+      ],
+      "parameters": {
+        "url": "https://pdf-services.adobe.io/token",
+        "method": "POST",
+        "options": {},
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "authentication": "genericCredentialType",
+        "bodyParameters": {
+          "parameters": [
+            {}
+          ]
+        },
+        "genericAuthType": "httpCustomAuth"
+      },
+      "typeVersion": 4.1
+    },
+    {
+      "id": "run-adobe-pdf-operations-9",
+      "name": "Upload PDF File (asset)",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        1980,
+        0
+      ],
+      "parameters": {
+        "url": "={{ $json.uploadUri }}",
+        "method": "PUT",
+        "options": {
+          "redirect": {
+            "redirect": {}
+          }
+        },
+        "sendBody": true,
+        "sendQuery": true,
+        "contentType": "binaryData",
+        "queryParameters": {
+          "parameters": [
+            {}
+          ]
+        },
+        "inputDataFieldName": "data"
+      },
+      "typeVersion": 4.1
+    },
+    {
+      "name": "Validate native request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if (!/^[a-zA-Z0-9_-]{1,80}$/.test($json.requestId ?? \"\")) throw Error(\"Provide a unique requestId\");\nif (!$binary?.data) throw Error(\"Provide PDF binary data\");\nreturn { json: $json, binary: $binary };\n"
+      },
+      "id": "run-adobe-pdf-operations-10",
+      "position": [
+        2200,
+        0
+      ]
+    },
+    {
+      "name": "Check native request",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ \"adobe:\" + $(\"Validate native request\").item.json.requestId }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "alwaysOutputData": true,
+      "id": "run-adobe-pdf-operations-11",
+      "position": [
+        2420,
+        0
+      ]
+    },
+    {
+      "name": "Inspect native request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if ($json.status) throw Error(\"Request already reserved; inspect Adobe before reuse\");\nreturn { json: {} };\n"
+      },
+      "id": "run-adobe-pdf-operations-12",
+      "position": [
+        2640,
+        0
+      ]
+    },
+    {
+      "name": "Reserve native request",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "item_key": "={{ \"adobe:\" + $(\"Validate native request\").item.json.requestId }}",
+            "status": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "run-adobe-pdf-operations-13",
+      "position": [
+        2860,
+        0
+      ]
+    },
+    {
+      "name": "Confirm native request",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $(\"Reserve native request\").item.json.id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "done"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "run-adobe-pdf-operations-14",
+      "position": [
+        3080,
+        0
+      ]
+    },
+    {
+      "name": "Verify native completion",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if ($json.status !== \"done\") throw Error(\"Unknown Adobe status\");\nreturn { json: $json };\n"
+      },
+      "id": "run-adobe-pdf-operations-15",
+      "position": [
+        3300,
+        0
+      ]
+    },
+    {
+      "name": "Restore Adobe result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return $(\"Switch\").item;\n"
+      },
+      "id": "run-adobe-pdf-operations-16",
+      "position": [
+        3520,
+        0
+      ]
+    },
+    {
+      "name": "Stop uncertain native write",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "parameters": {},
+      "id": "run-adobe-pdf-operations-17",
+      "position": [
+        3740,
+        0
+      ]
+    },
+    {
+      "name": "Receive asset request",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "adobe-asset",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "run-adobe-pdf-operations-18",
+      "position": [
+        3960,
+        0
+      ]
+    },
+    {
+      "id": "run-adobe-pdf-operations-19",
+      "name": "Authenticate asset",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        4180,
+        0
+      ],
+      "parameters": {
+        "url": "https://pdf-services.adobe.io/token",
+        "method": "POST",
+        "options": {},
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "authentication": "genericCredentialType",
+        "bodyParameters": {
+          "parameters": [
+            {}
+          ]
+        },
+        "genericAuthType": "httpCustomAuth"
+      },
+      "typeVersion": 4.1
+    },
+    {
+      "id": "run-adobe-pdf-operations-20",
+      "name": "Create adapter asset",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        4400,
+        0
+      ],
+      "parameters": {
+        "url": "https://pdf-services.adobe.io/assets",
+        "method": "POST",
+        "options": {
+          "redirect": {
+            "redirect": {}
+          }
+        },
+        "sendBody": true,
+        "sendHeaders": true,
+        "authentication": "genericCredentialType",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "mediaType",
+              "value": "application/pdf"
+            }
+          ]
+        },
+        "genericAuthType": "httpHeaderAuth",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ \"Bearer \" + $(\"Authenticate asset\").item.json.access_token }}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 4.1,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "name": "Return Adobe asset",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {assetID:$json.assetID,uploadUri:$json.uploadUri} }}",
+        "options": {}
+      },
+      "id": "run-adobe-pdf-operations-21",
+      "position": [
+        4620,
+        0
+      ]
+    },
+    {
+      "name": "Receive upload request",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "adobe-upload",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "run-adobe-pdf-operations-22",
+      "position": [
+        4840,
+        0
+      ]
+    },
+    {
+      "name": "Download source PDF",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "url": "={{ $json.body.fileUrl }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "id": "run-adobe-pdf-operations-23",
+      "position": [
+        5060,
+        0
+      ]
+    },
+    {
+      "name": "Upload adapter PDF",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ $(\"Receive upload request\").item.json.body.uploadUri }}",
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "data",
+        "options": {}
+      },
+      "id": "run-adobe-pdf-operations-24",
+      "position": [
+        5280,
+        0
+      ]
+    },
+    {
+      "name": "Confirm PDF transfer",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {ok:true} }}",
+        "options": {}
+      },
+      "id": "run-adobe-pdf-operations-25",
+      "position": [
+        5500,
+        0
+      ]
+    },
+    {
+      "name": "Receive operation request",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "adobe-operation",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "run-adobe-pdf-operations-26",
+      "position": [
+        5720,
+        0
+      ]
+    },
+    {
+      "name": "Validate operation request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const b = $json.body;\nif (!/^[a-z][a-z0-9]{1,40}$/.test(b?.endpoint ?? \"\") || !b.payload?.assetID)\n  throw Error(\"Invalid operation\");\nreturn { json: b };\n"
+      },
+      "id": "run-adobe-pdf-operations-27",
+      "position": [
+        5940,
+        0
+      ]
+    },
+    {
+      "id": "run-adobe-pdf-operations-28",
+      "name": "Authenticate operation",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        6160,
+        0
+      ],
+      "parameters": {
+        "url": "https://pdf-services.adobe.io/token",
+        "method": "POST",
+        "options": {},
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "authentication": "genericCredentialType",
+        "bodyParameters": {
+          "parameters": [
+            {}
+          ]
+        },
+        "genericAuthType": "httpCustomAuth"
+      },
+      "typeVersion": 4.1
+    },
+    {
+      "id": "run-adobe-pdf-operations-29",
+      "name": "Start adapter operation",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        6380,
+        0
+      ],
+      "parameters": {
+        "url": "={{ \"https://pdf-services.adobe.io/operation/\" + $(\"Validate operation request\").item.json.endpoint }}",
+        "method": "POST",
+        "options": {
+          "redirect": {
+            "redirect": {}
+          },
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        },
+        "jsonBody": "={{ $(\"Validate operation request\").item.json.payload }}",
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ \"Bearer \" + $(\"Authenticate operation\").item.json.access_token }}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 4.1,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "name": "Return operation location",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {location:$json.headers.location} }}",
+        "options": {}
+      },
+      "id": "run-adobe-pdf-operations-30",
+      "position": [
+        6600,
+        0
+      ]
+    },
+    {
+      "name": "Receive status request",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "adobe-status",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "run-adobe-pdf-operations-31",
+      "position": [
+        6820,
+        0
+      ]
+    },
+    {
+      "name": "Validate status URL",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const url = $json.body?.url;\nif (typeof url !== \"string\" || !url.startsWith(\"https://pdf-services.adobe.io/operation/\"))\n  throw Error(\"Invalid status URL\");\nreturn { json: { url } };\n"
+      },
+      "id": "run-adobe-pdf-operations-32",
+      "position": [
+        7040,
+        0
+      ]
+    },
+    {
+      "id": "run-adobe-pdf-operations-33",
+      "name": "Authenticate status",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        7260,
+        0
+      ],
+      "parameters": {
+        "url": "https://pdf-services.adobe.io/token",
+        "method": "POST",
+        "options": {},
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "authentication": "genericCredentialType",
+        "bodyParameters": {
+          "parameters": [
+            {}
+          ]
+        },
+        "genericAuthType": "httpCustomAuth"
+      },
+      "typeVersion": 4.1
+    },
+    {
+      "id": "run-adobe-pdf-operations-34",
+      "name": "Read adapter status",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        7480,
+        0
+      ],
+      "parameters": {
+        "url": "={{ $(\"Validate status URL\").item.json.url }}",
+        "options": {},
+        "sendHeaders": true,
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ \"Bearer \" + $(\"Authenticate status\").item.json.access_token }}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 4.1
+    },
+    {
+      "name": "Return Adobe status",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "run-adobe-pdf-operations-35",
+      "position": [
+        7700,
+        0
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Validate native request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Authenticartion (get token)": {
+      "main": [
+        [
+          {
+            "node": "Create Asset",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Asset": {
+      "main": [
+        [
+          {
+            "node": "Query + File + Asset information",
+            "type": "main",
+            "index": 1
+          }
+        ],
+        [
+          {
+            "node": "Stop uncertain native write",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Query + File + Asset information": {
+      "main": [
+        [
+          {
+            "node": "Upload PDF File (asset)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload PDF File (asset)": {
+      "main": [
+        [
+          {
+            "node": "Process Query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Query": {
+      "main": [
+        [
+          {
+            "node": "Wait 5 second",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Stop uncertain native write",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 5 second": {
+      "main": [
+        [
+          {
+            "node": "Try to download the result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Try to download the result": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Wait 5 second",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Forward response to origin workflow",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Verify native completion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate native request": {
+      "main": [
+        [
+          {
+            "node": "Check native request",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Query + File + Asset information",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check native request": {
+      "main": [
+        [
+          {
+            "node": "Inspect native request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Inspect native request": {
+      "main": [
+        [
+          {
+            "node": "Reserve native request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve native request": {
+      "main": [
+        [
+          {
+            "node": "Authenticartion (get token)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify native completion": {
+      "main": [
+        [
+          {
+            "node": "Confirm native request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm native request": {
+      "main": [
+        [
+          {
+            "node": "Restore Adobe result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore Adobe result": {
+      "main": [
+        [
+          {
+            "node": "Forward response to origin workflow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Receive asset request": {
+      "main": [
+        [
+          {
+            "node": "Authenticate asset",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Authenticate asset": {
+      "main": [
+        [
+          {
+            "node": "Create adapter asset",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create adapter asset": {
+      "main": [
+        [
+          {
+            "node": "Return Adobe asset",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Receive upload request": {
+      "main": [
+        [
+          {
+            "node": "Download source PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download source PDF": {
+      "main": [
+        [
+          {
+            "node": "Upload adapter PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload adapter PDF": {
+      "main": [
+        [
+          {
+            "node": "Confirm PDF transfer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Receive operation request": {
+      "main": [
+        [
+          {
+            "node": "Validate operation request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate operation request": {
+      "main": [
+        [
+          {
+            "node": "Authenticate operation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Authenticate operation": {
+      "main": [
+        [
+          {
+            "node": "Start adapter operation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start adapter operation": {
+      "main": [
+        [
+          {
+            "node": "Return operation location",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Receive status request": {
+      "main": [
+        [
+          {
+            "node": "Validate status URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate status URL": {
+      "main": [
+        [
+          {
+            "node": "Authenticate status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Authenticate status": {
+      "main": [
+        [
+          {
+            "node": "Read adapter status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read adapter status": {
+      "main": [
+        [
+          {
+            "node": "Return Adobe status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Run Adobe PDF Operations",
+  "active": false
+}

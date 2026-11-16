@@ -670,6 +670,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Index Updated Tech Radar Documents](workflows/index-updated-radar-documents/) - Index updated documents from a Drive folder in Pinecone using Gemini embeddings.
 - [Rebuild Tech Radar MySQL from Google Sheets](workflows/rebuild-tech-radar-mysql-from-sheets/) - Replace a MySQL tech radar table with the latest Google Sheets rows each month.
 - [Index New Drive PDFs in Pinecone](workflows/index-new-drive-pdfs-in-pinecone/) - Extract and normalize new Drive PDFs, embed passages and index them in Pinecone.
+- [Run Adobe PDF Operations](workflows/run-adobe-pdf-operations/) - Run an Adobe PDF Services operation and return its completed result.
 
 ## Content
 
