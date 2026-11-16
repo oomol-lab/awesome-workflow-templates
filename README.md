@@ -876,6 +876,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Import n8n Workflows from Google Drive](workflows/import-n8n-workflows-from-google-drive/) - Import n8n workflow JSON files from a Drive folder, apply a tag and move them after success.
 - [Back Up Squarespace Code Injections to GitHub](workflows/backup-squarespace-code-injections-to-github/) - Back up Squarespace header and footer injections as HTML files in GitHub.
 - [Review GitLab Merge Request Diffs](workflows/review-gitlab-merge-request-diffs/) - Review changed merge request files when a GitLab note requests a review.
+- [Encode GitHub Contributors with GCF](workflows/encode-github-contributors-with-gcf/) - Encode GitHub contributor data as GCF, compare estimated token counts, and decode it back to JSON.
 
 ## Communication
 
