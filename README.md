@@ -648,6 +648,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Reply to Gmail with Feedback in Sheets](workflows/reply-to-gmail-with-feedback-sheet/) - Reply to selected Gmail messages and record recipient feedback in Google Sheets.
 - [Classify Gmail PDFs and Save to Drive](workflows/classify-gmail-pdfs-and-save-to-drive/) - Classify incoming PDF attachments and save matching originals to Google Drive.
 - [Transcribe Bank Statements and Extract Deposits](workflows/transcribe-bank-statements-and-extract-deposits/) - Transcribe a bank statement PDF and extract deposit rows.
+- [Tag Drive JPEGs with AI Keywords](workflows/tag-drive-jpegs-with-ai-keywords/) - Analyze new JPEG images and write descriptive XMP keywords into the original Drive files.
 
 ## Content
 
