@@ -924,6 +924,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Analyze Earnings PDFs with Pinecone](workflows/analyze-earnings-pdfs-with-pinecone/) - Index earnings PDFs from Google Drive and append a grounded comparison report to Google Docs.
 - [Compare Alphabet Quarterly Earnings](workflows/compare-alphabet-quarterly-earnings/) - Index earnings PDFs from Google Drive and append a grounded comparison report to Google Docs.
 - [Record Receipt Emails in Google Sheets](workflows/record-receipt-emails-in-google-sheets/) - Extract the first receipt attachment from matching emails and record its fields in a sheet.
+- [Update and Archive USD Exchange Rates](workflows/update-and-archive-usd-exchange-rates/) - Refresh a USD exchange rate row and append a historical snapshot in Google Sheets.
 
 ## Community
 
