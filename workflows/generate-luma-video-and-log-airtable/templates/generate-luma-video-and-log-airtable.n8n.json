@@ -1,0 +1,585 @@
+{
+  "name": "Generate a Luma Video and Log It in Airtable",
+  "tags": [
+    {
+      "id": "tUlWC9t8VhwpFaci",
+      "name": "Alex - WIP",
+      "createdAt": "2025-02-20T17:17:53.411Z",
+      "updatedAt": "2025-02-20T17:17:53.411Z"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "luma-video-0",
+      "name": "When clicking ‘Test workflow’",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "name": "Video settings",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const requestId = \"YOUR_UNIQUE_REQUEST_ID\",\n  prompt = \"A superhero flying through a volcano\",\n  aspect = \"9:16\",\n  duration = \"5s\",\n  resolution = \"720p\",\n  loop = true,\n  callback = \"\";\nif (!requestId || requestId === \"YOUR_UNIQUE_REQUEST_ID\") throw Error(\"Set a unique request ID\");\nreturn {\n  json: { requestId, prompt, aspect, duration, resolution, loop, callback },\n  pairedItem: { item: $itemIndex },\n};\n"
+      },
+      "id": "luma-video-1",
+      "position": [
+        230,
+        0
+      ]
+    },
+    {
+      "name": "Read checkpoint",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'luma-video:'+$('Video settings').item.json.requestId }}"
+            }
+          ]
+        },
+        "operation": "get"
+      },
+      "alwaysOutputData": true,
+      "id": "luma-video-2",
+      "position": [
+        460,
+        0
+      ]
+    },
+    {
+      "name": "Prepare generation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const s = $(\"Video settings\").item.json;\nconst state = $json;\nif (state.status === \"generation_pending\" || state.status === \"record_pending\")\n  throw Error(\"Inspect pending external write before resuming\");\nif (state.status === \"done\") return { json: { phase: \"done\" }, pairedItem: { item: $itemIndex } };\nif (state.status === \"generated\") {\n  const saved = JSON.parse(state.spec);\n  if (JSON.stringify(saved.settings) !== JSON.stringify(s))\n    throw Error(\"Restore original settings for this request ID\");\n  return {\n    json: { phase: \"record\", generationId: state.generation_id, spec: saved },\n    pairedItem: { item: $itemIndex },\n  };\n}\nif (state.status) throw Error(\"Unknown checkpoint state\");\nconst moves = [\n  \"slow pan left\",\n  \"slow pan right\",\n  \"slow zoom in\",\n  \"slow zoom out\",\n  \"orbit around the subject\",\n];\nconst motion = moves[Math.floor(Math.random() * moves.length)],\n  spec = { settings: s, motion };\nreturn {\n  json: {\n    phase: \"submit\",\n    spec,\n    body: {\n      model: \"ray-2\",\n      prompt: s.prompt + \", \" + motion,\n      aspect_ratio: s.aspect,\n      duration: s.duration,\n      resolution: s.resolution,\n      loop: s.loop,\n      ...(s.callback ? { callback_url: s.callback } : {}),\n    },\n  },\n  pairedItem: { item: $itemIndex },\n};\n"
+      },
+      "id": "luma-video-3",
+      "position": [
+        690,
+        0
+      ]
+    },
+    {
+      "name": "Submit new generation?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.phase === 'submit' }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "luma-video-4",
+      "position": [
+        920,
+        0
+      ]
+    },
+    {
+      "name": "Log existing generation?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.phase === 'record' }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "luma-video-5",
+      "position": [
+        1150,
+        0
+      ]
+    },
+    {
+      "name": "Reserve generation",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "item_key": "={{ 'luma-video:'+$('Video settings').item.json.requestId }}",
+            "status": "generation_pending",
+            "spec": "={{ JSON.stringify($('Prepare generation').item.json.spec) }}"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "luma-video-6",
+      "position": [
+        1380,
+        0
+      ]
+    },
+    {
+      "name": "Restore Luma request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return { json: $(\"Prepare generation\").item.json, pairedItem: { item: $itemIndex } };\n"
+      },
+      "id": "luma-video-7",
+      "position": [
+        1610,
+        0
+      ]
+    },
+    {
+      "name": "Submit Luma video",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.lumalabs.ai/dream-machine/v1/generations/video",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.body }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "luma-video-8",
+      "position": [
+        1840,
+        0
+      ]
+    },
+    {
+      "name": "Verify Luma generation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if (!/^[0-9a-f-]{36}$/i.test($json.id ?? \"\")) throw Error(\"Inspect Luma response\");\nreturn { json: { generationId: $json.id }, pairedItem: { item: $itemIndex } };\n"
+      },
+      "id": "luma-video-9",
+      "position": [
+        2070,
+        0
+      ]
+    },
+    {
+      "name": "Save generation ID",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'luma-video:'+$('Video settings').item.json.requestId }}"
+            }
+          ]
+        },
+        "operation": "update",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "generated",
+            "generation_id": "={{ $('Verify Luma generation').item.json.generationId }}"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "luma-video-10",
+      "position": [
+        2300,
+        0
+      ]
+    },
+    {
+      "name": "Reserve Airtable record",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'luma-video:'+$('Video settings').item.json.requestId }}"
+            }
+          ]
+        },
+        "operation": "update",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "record_pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "luma-video-11",
+      "position": [
+        2530,
+        0
+      ]
+    },
+    {
+      "name": "Prepare Airtable record",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const p = $(\"Prepare generation\").item.json,\n  s = p.spec.settings;\nif (!/^[0-9a-f-]{36}$/i.test(p.generationId ?? \"\")) throw Error(\"Invalid generation ID\");\nreturn {\n  json: {\n    fields: {\n      \"Generation ID\": p.generationId,\n      Status: \"In progress\",\n      Prompt: s.prompt + \", \" + p.spec.motion,\n      Aspect: s.aspect,\n      Length: s.duration,\n      Model: \"ray-2\",\n      Resolution: s.resolution,\n      \"Cluster ID\": s.requestId,\n    },\n  },\n  pairedItem: { item: $itemIndex },\n};\n"
+      },
+      "id": "luma-video-12",
+      "position": [
+        2760,
+        0
+      ]
+    },
+    {
+      "name": "Log generation in Airtable",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "parameters": {
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_AIRTABLE_BASE_ID"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_AIRTABLE_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Generation ID": "={{ $json.fields[\"Generation ID\"] }}",
+            "Status": "={{ $json.fields[\"Status\"] }}",
+            "Prompt": "={{ $json.fields[\"Prompt\"] }}",
+            "Aspect": "={{ $json.fields[\"Aspect\"] }}",
+            "Length": "={{ $json.fields[\"Length\"] }}",
+            "Model": "={{ $json.fields[\"Model\"] }}",
+            "Resolution": "={{ $json.fields[\"Resolution\"] }}",
+            "Cluster ID": "={{ $json.fields[\"Cluster ID\"] }}"
+          },
+          "schema": []
+        },
+        "options": {
+          "typecast": true
+        }
+      },
+      "id": "luma-video-13",
+      "position": [
+        2990,
+        0
+      ]
+    },
+    {
+      "name": "Verify Airtable record",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const expected = $(\"Prepare Airtable record\").item.json.fields[\"Generation ID\"];\nif (!$json.id || $json.fields?.[\"Generation ID\"] !== expected)\n  throw Error(\"Inspect Airtable result\");\nreturn { json: $json, pairedItem: { item: $itemIndex } };\n"
+      },
+      "id": "luma-video-14",
+      "position": [
+        3220,
+        0
+      ]
+    },
+    {
+      "name": "Confirm Airtable record",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'luma-video:'+$('Video settings').item.json.requestId }}"
+            }
+          ]
+        },
+        "operation": "update",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "done"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "luma-video-15",
+      "position": [
+        3450,
+        0
+      ]
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "When clicking ‘Test workflow’": {
+      "main": [
+        [
+          {
+            "node": "Video settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Video settings": {
+      "main": [
+        [
+          {
+            "node": "Read checkpoint",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read checkpoint": {
+      "main": [
+        [
+          {
+            "node": "Prepare generation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare generation": {
+      "main": [
+        [
+          {
+            "node": "Submit new generation?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve generation": {
+      "main": [
+        [
+          {
+            "node": "Restore Luma request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore Luma request": {
+      "main": [
+        [
+          {
+            "node": "Submit Luma video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Submit Luma video": {
+      "main": [
+        [
+          {
+            "node": "Verify Luma generation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify Luma generation": {
+      "main": [
+        [
+          {
+            "node": "Save generation ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save generation ID": {
+      "main": [
+        [
+          {
+            "node": "Read checkpoint",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve Airtable record": {
+      "main": [
+        [
+          {
+            "node": "Prepare Airtable record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Airtable record": {
+      "main": [
+        [
+          {
+            "node": "Log generation in Airtable",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log generation in Airtable": {
+      "main": [
+        [
+          {
+            "node": "Verify Airtable record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify Airtable record": {
+      "main": [
+        [
+          {
+            "node": "Confirm Airtable record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Submit new generation?": {
+      "main": [
+        [
+          {
+            "node": "Reserve generation",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log existing generation?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log existing generation?": {
+      "main": [
+        [
+          {
+            "node": "Reserve Airtable record",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    }
+  }
+}

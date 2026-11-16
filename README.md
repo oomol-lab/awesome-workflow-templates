@@ -1103,6 +1103,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 
 - [Generate Images from a Prompt](workflows/generate-images-from-a-prompt/) - Generate images from a prompt and return each image as a downloadable file.
 - [Generate an Image from a Form](workflows/generate-image-from-a-form/) - Generate an image from a prompt and selected size.
+- [Generate a Luma Video and Log It in Airtable](workflows/generate-luma-video-and-log-airtable/) - Submit a text-to-video request with a random camera motion and log the generation in Airtable.
 
 ## Human Resources
 
