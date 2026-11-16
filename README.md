@@ -1107,6 +1107,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Index Policy PDF Vectors](workflows/index-policy-pdf-vectors/) - Extract a policy PDF and index its text chunks in a vector table.
 - [Get n8n Creator Leaderboard Statistics](workflows/get-n8n-creator-leaderboard-statistics/) - Look up a creator and their popular workflows in the community leaderboard.
 - [Index Crop Images in Qdrant](workflows/index-crop-images-in-qdrant/) - Create image embeddings for a Cloud Storage dataset and upsert them into Qdrant.
+- [Rebuild Company Knowledge from Drive](workflows/rebuild-company-knowledge-from-drive/) - Clear and rebuild a Qdrant knowledge collection from a Google Drive folder.
 
 ## E-commerce
 

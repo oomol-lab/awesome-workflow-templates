@@ -1,0 +1,912 @@
+{
+  "name": "Rebuild Company Knowledge from Drive",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "rebuild-company-knowledge-from-drive-0",
+      "name": "When clicking ‘Test workflow’",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "rebuild-company-knowledge-from-drive-1",
+      "name": "Get folder",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "filter": {
+          "driveId": {
+            "__rl": true,
+            "mode": "list",
+            "value": "My Drive",
+            "cachedResultUrl": "https://drive.google.com/drive/my-drive",
+            "cachedResultName": "My Drive"
+          },
+          "folderId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "YOUR_FOLDER_ID"
+          }
+        },
+        "options": {},
+        "resource": "fileFolder",
+        "returnAll": true
+      },
+      "typeVersion": 3,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "rebuild-company-knowledge-from-drive-2",
+      "name": "Download Files",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.id }}"
+        },
+        "options": {
+          "googleFileConversion": {
+            "conversion": {
+              "docsToFormat": "text/plain"
+            }
+          }
+        },
+        "operation": "download"
+      },
+      "typeVersion": 3
+    },
+    {
+      "id": "rebuild-company-knowledge-from-drive-3",
+      "name": "Default Data Loader",
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "position": [
+        660,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "dataType": "binary"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "rebuild-company-knowledge-from-drive-4",
+      "name": "Token Splitter",
+      "type": "@n8n/n8n-nodes-langchain.textSplitterTokenSplitter",
+      "position": [
+        880,
+        0
+      ],
+      "parameters": {
+        "chunkSize": 300,
+        "chunkOverlap": 30
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "rebuild-company-knowledge-from-drive-5",
+      "name": "Qdrant Vector Store1",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreQdrant",
+      "position": [
+        1100,
+        0
+      ],
+      "parameters": {
+        "mode": "insert",
+        "options": {},
+        "qdrantCollection": {
+          "__rl": true,
+          "mode": "id",
+          "value": "company-knowledge"
+        }
+      },
+      "typeVersion": 1,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "id": "rebuild-company-knowledge-from-drive-6",
+      "name": "Embeddings OpenAI1",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "position": [
+        1320,
+        0
+      ],
+      "parameters": {
+        "model": "text-embedding-3-large",
+        "options": {
+          "dimensions": 1536
+        }
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "name": "Set rebuild ID",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return [{ json: { requestId: \"YOUR_UNIQUE_REBUILD_ID\" } }];\n"
+      },
+      "id": "rebuild-company-knowledge-from-drive-7",
+      "position": [
+        1540,
+        0
+      ]
+    },
+    {
+      "name": "Pack Drive files",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return [\n  {\n    json: {\n      requestId: $(\"Set rebuild ID\").first().json.requestId,\n      files: $input\n        .all()\n        .map((x) => x.json)\n        .filter((x) => x.id),\n      clear: true,\n    },\n  },\n];\n"
+      },
+      "id": "rebuild-company-knowledge-from-drive-8",
+      "position": [
+        1760,
+        0
+      ]
+    },
+    {
+      "name": "Receive extraction request",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "company-knowledge-extract",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "rebuild-company-knowledge-from-drive-9",
+      "position": [
+        1980,
+        0
+      ]
+    },
+    {
+      "id": "rebuild-company-knowledge-from-drive-10",
+      "name": "Download extraction file",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [
+        2200,
+        0
+      ],
+      "parameters": {
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.body.fileId }}"
+        },
+        "options": {
+          "googleFileConversion": {
+            "conversion": {
+              "docsToFormat": "text/plain"
+            }
+          }
+        },
+        "operation": "download"
+      },
+      "typeVersion": 3
+    },
+    {
+      "name": "Parse source document",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const { N8nBinaryLoader } = require(\"@n8n/ai-utilities\");\nconst { TokenTextSplitter } = require(\"@langchain/textsplitters\");\nconst items = $input.all(),\n  documents = [];\nfor (let i = 0; i < items.length; i++) {\n  const item = items[i];\n  const binary = item.binary?.data;\n  if (!binary?.mimeType) throw new Error(\"Missing downloaded file\");\n  const bytes = await this.helpers.getBinaryDataBuffer(i, \"data\");\n  const data = { ...binary, data: bytes.toString(\"base64\") };\n  delete data.id;\n  const context = {\n    getNode: () => ({ name: \"Parse source document\" }),\n    getInputData: () => [item],\n    getNodeParameter: (_k, _i, fallback) => fallback,\n    helpers: { assertBinaryData: () => data },\n  };\n  const loader = new N8nBinaryLoader(\n    context,\n    \"options.\",\n    \"data\",\n    new TokenTextSplitter({ chunkSize: 300, chunkOverlap: 30 }),\n  );\n  const chunks = await loader.processItemByKey(item, i, \"data\");\n  for (const chunk of chunks)\n    documents.push({ content: chunk.pageContent, metadata: chunk.metadata });\n}\nreturn [{ json: { documents } }];\n"
+      },
+      "id": "rebuild-company-knowledge-from-drive-11",
+      "position": [
+        2420,
+        0
+      ]
+    },
+    {
+      "name": "Respond with parsed chunks",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "rebuild-company-knowledge-from-drive-12",
+      "position": [
+        2640,
+        0
+      ]
+    },
+    {
+      "name": "Normalize rebuild plan",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return { json: $json };\n"
+      },
+      "id": "rebuild-company-knowledge-from-drive-13",
+      "position": [
+        2860,
+        0
+      ]
+    },
+    {
+      "name": "Check rebuild checkpoint",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ \"company-rebuild:\" + $json.requestId }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "alwaysOutputData": true,
+      "id": "rebuild-company-knowledge-from-drive-14",
+      "position": [
+        3080,
+        0
+      ]
+    },
+    {
+      "name": "Inspect rebuild checkpoint",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if ($json.status === \"pending\") throw Error(\"Inspect Qdrant before retrying pending rebuild\");\nreturn { json: { done: $json.status === \"done\" } };\n"
+      },
+      "id": "rebuild-company-knowledge-from-drive-15",
+      "position": [
+        3300,
+        0
+      ]
+    },
+    {
+      "name": "Already rebuilt?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.done }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "rebuild-company-knowledge-from-drive-16",
+      "position": [
+        3520,
+        0
+      ]
+    },
+    {
+      "name": "Reserve rebuild",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "item_key": "={{ \"company-rebuild:\" + $(\"Normalize rebuild plan\").item.json.requestId }}",
+            "status": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "rebuild-company-knowledge-from-drive-17",
+      "position": [
+        3740,
+        0
+      ]
+    },
+    {
+      "name": "Restore rebuild plan",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return { json: $(\"Normalize rebuild plan\").item.json };\n"
+      },
+      "id": "rebuild-company-knowledge-from-drive-18",
+      "position": [
+        3960,
+        0
+      ]
+    },
+    {
+      "name": "Clear collection here?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.clear }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "rebuild-company-knowledge-from-drive-19",
+      "position": [
+        4180,
+        0
+      ]
+    },
+    {
+      "name": "Clear Qdrant collection",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://YOUR_QDRANT_HOST/collections/company-knowledge/points/delete?wait=true",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"filter\":{}}",
+        "options": {}
+      },
+      "onError": "continueErrorOutput",
+      "id": "rebuild-company-knowledge-from-drive-20",
+      "position": [
+        4400,
+        0
+      ]
+    },
+    {
+      "name": "Verify deletion",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if ($json.status !== \"ok\" || $json.result?.status !== \"completed\")\n  throw Error(\"Qdrant deletion is not confirmed\");\nreturn { json: $(\"Restore rebuild plan\").item.json };\n"
+      },
+      "id": "rebuild-company-knowledge-from-drive-21",
+      "position": [
+        4620,
+        0
+      ]
+    },
+    {
+      "name": "Any files?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.files.length > 0 }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "rebuild-company-knowledge-from-drive-22",
+      "position": [
+        4840,
+        0
+      ]
+    },
+    {
+      "name": "Split files",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "parameters": {
+        "fieldToSplitOut": "files",
+        "options": {}
+      },
+      "id": "rebuild-company-knowledge-from-drive-23",
+      "position": [
+        5060,
+        0
+      ]
+    },
+    {
+      "name": "Verify index output",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const items = $input.all();\nif (\n  !items.length ||\n  items.some((x) => x.json.error || typeof x.json.pageContent !== \"string\" || !x.json.pageContent)\n)\n  throw Error(\"Index write not confirmed; inspect Qdrant\");\nreturn items;\n"
+      },
+      "id": "rebuild-company-knowledge-from-drive-24",
+      "position": [
+        5280,
+        0
+      ]
+    },
+    {
+      "name": "Confirm rebuild",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $(\"Reserve rebuild\").item.json.id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "done"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "rebuild-company-knowledge-from-drive-25",
+      "position": [
+        5500,
+        0
+      ]
+    },
+    {
+      "name": "Stop on uncertain rebuild",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "parameters": {},
+      "id": "rebuild-company-knowledge-from-drive-26",
+      "position": [
+        5720,
+        0
+      ]
+    },
+    {
+      "name": "Respond to relay",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\"status\":\"completed\"}",
+        "options": {}
+      },
+      "id": "rebuild-company-knowledge-from-drive-27",
+      "position": [
+        5940,
+        0
+      ]
+    },
+    {
+      "name": "Relay request?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $(\"Restore rebuild plan\").item.json.clear === false }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "rebuild-company-knowledge-from-drive-28",
+      "position": [
+        6160,
+        0
+      ]
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "When clicking ‘Test workflow’": {
+      "main": [
+        [
+          {
+            "node": "Set rebuild ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set rebuild ID": {
+      "main": [
+        [
+          {
+            "node": "Get folder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get folder": {
+      "main": [
+        [
+          {
+            "node": "Pack Drive files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Receive extraction request": {
+      "main": [
+        [
+          {
+            "node": "Download extraction file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download extraction file": {
+      "main": [
+        [
+          {
+            "node": "Parse source document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse source document": {
+      "main": [
+        [
+          {
+            "node": "Respond with parsed chunks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pack Drive files": {
+      "main": [
+        [
+          {
+            "node": "Normalize rebuild plan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize rebuild plan": {
+      "main": [
+        [
+          {
+            "node": "Check rebuild checkpoint",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check rebuild checkpoint": {
+      "main": [
+        [
+          {
+            "node": "Inspect rebuild checkpoint",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Inspect rebuild checkpoint": {
+      "main": [
+        [
+          {
+            "node": "Already rebuilt?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve rebuild": {
+      "main": [
+        [
+          {
+            "node": "Restore rebuild plan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore rebuild plan": {
+      "main": [
+        [
+          {
+            "node": "Clear collection here?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify deletion": {
+      "main": [
+        [
+          {
+            "node": "Any files?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split files": {
+      "main": [
+        [
+          {
+            "node": "Download Files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Files": {
+      "main": [
+        [
+          {
+            "node": "Qdrant Vector Store1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm rebuild": {
+      "main": [
+        [
+          {
+            "node": "Relay request?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Already rebuilt?": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Reserve rebuild",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clear collection here?": {
+      "main": [
+        [
+          {
+            "node": "Clear Qdrant collection",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Any files?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clear Qdrant collection": {
+      "main": [
+        [
+          {
+            "node": "Verify deletion",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Stop on uncertain rebuild",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Any files?": {
+      "main": [
+        [
+          {
+            "node": "Split files",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Confirm rebuild",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Qdrant Vector Store1": {
+      "main": [
+        [
+          {
+            "node": "Verify index output",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Stop on uncertain rebuild",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify index output": {
+      "main": [
+        [
+          {
+            "node": "Confirm rebuild",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Relay request?": {
+      "main": [
+        [
+          {
+            "node": "Respond to relay",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Embeddings OpenAI1": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Qdrant Vector Store1",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Qdrant Vector Store1",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Token Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Default Data Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
