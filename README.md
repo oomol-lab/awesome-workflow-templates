@@ -329,6 +329,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Create UTM Links and Email Analytics](workflows/create-utm-links-and-email-analytics/) - Create a campaign link and QR code, and email a scheduled analytics summary.
 - [Analyze Pinterest Pins for Content Ideas](workflows/analyze-pinterest-pins-for-content-ideas/) - Collect Pinterest pins in Airtable and email content ideas based on their metadata.
 - [Schedule Blog Writing and WordPress Publication](workflows/schedule-blog-writing-and-wordpress-publication/) - Use a Google Sheet to generate blog content by stage and publish scheduled posts to WordPress.
+- [Amplify Hacker News GitHub Projects](workflows/amplify-hacker-news-github-projects/) - Discover GitHub links on Hacker News, draft social posts and publish them after a short delay.
 
 ## Support
 
