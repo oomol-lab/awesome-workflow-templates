@@ -656,6 +656,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Find Eastern Interview Availability](workflows/find-eastern-interview-availability/) - Find available 30-minute weekday interview times in an Eastern Time calendar.
 - [Analyze Uploaded Documents and Email a Report](workflows/analyze-uploaded-documents-and-email-report/) - Parse uploaded documents, translate and analyze them, and email the report.
 - [Index Translated Document Analysis in Pinecone](workflows/index-translated-document-analysis-in-pinecone/) - Parse uploaded documents, translate and analyze them, and index both texts in Pinecone.
+- [Route Webflow Forms to Discord Channels](workflows/route-webflow-forms-to-discord-channels/) - Send Webflow form submissions to a matching Discord channel, creating the channel when needed.
 
 ## Content
 
