@@ -1,0 +1,318 @@
+{
+  "name": "Inspect Immich Dependency Stats",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "hook",
+      "name": "Receive dependency stats request",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "inspect-immich-dependent-container-stats",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      }
+    },
+    {
+      "id": "Validate and prepare container URLs",
+      "name": "Validate and prepare container URLs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const b = $json.body,\n  server = \"YOUR_SERVER_DOMAIN\",\n  engine = \"https://YOUR_DOCKER_GATEWAY\";\nif (\n  b.server_domain !== server ||\n  b.command !== \"dependent_containers_information_stats\" ||\n  !/^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,200}$/.test(b.domain)\n)\n  throw Error(\"Invalid request\");\nlet base = engine.replace(/\\/$/, \"\") + \"/v1.44/containers/\",\n  p = { domain: b.domain };\nfor (const suffix of [\"ml\", \"db\", \"redis\"]) {\n  let root = base + encodeURIComponent(b.domain + \"_\" + suffix);\n  p[suffix + \"Inspect\"] = root + \"/json\";\n  p[suffix + \"Stats\"] = root + \"/stats?stream=false\";\n}\nreturn { json: p, pairedItem: { item: $itemIndex } };\n"
+      }
+    },
+    {
+      "id": "mlInspect",
+      "name": "Read mlInspect",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $('Validate and prepare container URLs').item.json.mlInspect }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "mlStats",
+      "name": "Read mlStats",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $('Validate and prepare container URLs').item.json.mlStats }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "dbInspect",
+      "name": "Read dbInspect",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $('Validate and prepare container URLs').item.json.dbInspect }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "dbStats",
+      "name": "Read dbStats",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $('Validate and prepare container URLs').item.json.dbStats }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "redisInspect",
+      "name": "Read redisInspect",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $('Validate and prepare container URLs').item.json.redisInspect }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "redisStats",
+      "name": "Read redisStats",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $('Validate and prepare container URLs').item.json.redisStats }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "Format dependency stats",
+      "name": "Format dependency stats",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function stats({\n  domain,\n  imStatus,\n  imBody,\n  smStatus,\n  smBody,\n  idStatus,\n  idBody,\n  sdStatus,\n  sdBody,\n  irStatus,\n  irBody,\n  srStatus,\n  srBody,\n}) {\n  const size = (v, base, units, p) => {\n      v = Number(v) || 0;\n      let i = 0;\n      while (v >= base && i < units.length - 1) {\n        v /= base;\n        i++;\n      }\n      return Number(v.toPrecision(p)).toString() + units[i];\n    },\n    dec = (v) => size(v, 1000, [\"B\", \"kB\", \"MB\", \"GB\", \"TB\", \"PB\"], 3),\n    bin = (v) => size(v, 1024, [\"B\", \"KiB\", \"MiB\", \"GiB\", \"TiB\", \"PiB\"], 4),\n    pct = (v) => (Number(v) || 0).toFixed(2) + \"%\";\n  const fmt = (ins, stat, suffix) => {\n    if (ins.status === 404) return { inspect: {}, stats: {} };\n    if (ins.status !== 200 || !ins.body || typeof ins.body !== \"object\")\n      throw Error(\"Inspect container failed: \" + suffix);\n    if (stat.status === 404 || stat.status === 409 || stat.status === 500)\n      return { inspect: [ins.body], stats: {} };\n    if (stat.status !== 200 || !stat.body || typeof stat.body !== \"object\")\n      throw Error(\"Read container stats failed: \" + suffix);\n    const s = stat.body,\n      c = s.cpu_stats || {},\n      p = s.precpu_stats || {},\n      u = c.cpu_usage || {},\n      pu = p.cpu_usage || {},\n      dc = (u.total_usage || 0) - (pu.total_usage || 0),\n      ds = (c.system_cpu_usage || 0) - (p.system_cpu_usage || 0),\n      cores = c.online_cpus || u.percpu_usage?.length || 0,\n      cpu = dc > 0 && ds > 0 ? (dc / ds) * cores * 100 : 0,\n      m = s.memory_stats || {},\n      mem = m.usage || 0,\n      cache = m.stats?.total_inactive_file ?? m.stats?.inactive_file ?? 0,\n      used = cache < mem ? mem - cache : mem,\n      net = Object.values(s.networks || {}).reduce(\n        (a, v) => [a[0] + (v.rx_bytes || 0), a[1] + (v.tx_bytes || 0)],\n        [0, 0],\n      ),\n      blk = (s.blkio_stats?.io_service_bytes_recursive || []).reduce(\n        (a, v) => {\n          let op = String(v.op || \"\").toLowerCase();\n          if (op.startsWith(\"r\")) a[0] += v.value || 0;\n          if (op.startsWith(\"w\")) a[1] += v.value || 0;\n          return a;\n        },\n        [0, 0],\n      );\n    return {\n      inspect: [ins.body],\n      stats: {\n        BlockIO: dec(blk[0]) + \" / \" + dec(blk[1]),\n        CPUPerc: pct(cpu),\n        Container: domain + \"_\" + suffix,\n        ID: String(s.id || \"\").slice(0, 12),\n        MemPerc: pct(m.limit ? (used / m.limit) * 100 : 0),\n        MemUsage: bin(used) + \" / \" + bin(m.limit || 0),\n        Name: String(s.name || \"\").replace(/^\\//, \"\") || \"--\",\n        NetIO: dec(net[0]) + \" / \" + dec(net[1]),\n        PIDs: String(s.pids_stats?.current || 0),\n      },\n    };\n  };\n  const a = fmt({ status: imStatus, body: imBody }, { status: smStatus, body: smBody }, \"ml\"),\n    b = fmt({ status: idStatus, body: idBody }, { status: sdStatus, body: sdBody }, \"db\"),\n    c = fmt({ status: irStatus, body: irBody }, { status: srStatus, body: srBody }, \"redis\");\n  return {\n    result: {\n      status: \"success\",\n      message: \"\",\n      data: {\n        inspect_ml: a.inspect,\n        stats_ml: a.stats,\n        inspect_db: b.inspect,\n        stats_db: b.stats,\n        inspect_redis: c.inspect,\n        stats_redis: c.stats,\n      },\n    },\n  };\n}\n\nconst p = $(\"Validate and prepare container URLs\").item.json;\nconst get = (n) => {\n  let r = $(n).item.json;\n  return { status: r.statusCode, body: r.body };\n};\nreturn {\n  json: stats({\n    domain: p.domain,\n    ...Object.fromEntries(\n      [\n        [\"im\", \"Read mlInspect\"],\n        [\"sm\", \"Read mlStats\"],\n        [\"id\", \"Read dbInspect\"],\n        [\"sd\", \"Read dbStats\"],\n        [\"ir\", \"Read redisInspect\"],\n        [\"sr\", \"Read redisStats\"],\n      ].flatMap(([k, n]) => [\n        [k + \"Status\", get(n).status],\n        [k + \"Body\", get(n).body],\n      ]),\n    ),\n  }).result,\n  pairedItem: { item: $itemIndex },\n};\n"
+      }
+    },
+    {
+      "id": "out",
+      "name": "Return dependency stats",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      }
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "timezone": "America/Winnipeg",
+    "callerPolicy": "workflowsFromSameOwner",
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Receive dependency stats request": {
+      "main": [
+        [
+          {
+            "node": "Validate and prepare container URLs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate and prepare container URLs": {
+      "main": [
+        [
+          {
+            "node": "Read mlInspect",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read mlInspect": {
+      "main": [
+        [
+          {
+            "node": "Read mlStats",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read mlStats": {
+      "main": [
+        [
+          {
+            "node": "Read dbInspect",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read dbInspect": {
+      "main": [
+        [
+          {
+            "node": "Read dbStats",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read dbStats": {
+      "main": [
+        [
+          {
+            "node": "Read redisInspect",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read redisInspect": {
+      "main": [
+        [
+          {
+            "node": "Read redisStats",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read redisStats": {
+      "main": [
+        [
+          {
+            "node": "Format dependency stats",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format dependency stats": {
+      "main": [
+        [
+          {
+            "node": "Return dependency stats",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
