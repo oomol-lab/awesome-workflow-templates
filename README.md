@@ -335,6 +335,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Summarize Umami Analytics to Baserow](workflows/summarize-umami-analytics-to-baserow/) - Compare weekly Umami page metrics and save two AI-written reports in Baserow.
 - [Create Quote Videos for YouTube](workflows/create-quote-videos-for-youtube/) - Combine a quote with a random video and music, upload a portrait clip and update its source sheet.
 - [Reddit Trending Stories to Mattermost](workflows/reddit-trending-stories-to-mattermost/) - Analyze trending Reddit-linked news and share a ZIP of story reports.
+- [Summarize YouTube Videos in Airtable](workflows/summarize-youtube-videos-in-airtable/) - Summarize a pending YouTube video and update its Airtable record with the main idea and takeaways.
 
 ## Support
 
