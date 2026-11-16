@@ -935,6 +935,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Vancine Seedance Video](workflows/vancine-seedance-video/) - Submit one Seedance text-to-video task to Vancine, poll its status with a bounded wait loop and return the completed video URL.
 - [Generate YouTube Video Chapters](workflows/generate-youtube-video-chapters/) - Generate chapter timestamps from a video caption track and append them to its description.
 - [Generate YouTube Metadata from Transcript and Document](workflows/generate-youtube-metadata-from-transcript-and-doc/) - Generate a video title, description and tags using a transcript and channel reference document.
+- [Summarize YouTube Video and Notify](workflows/summarize-youtube-video-and-notify/) - Summarize a YouTube transcript, return the video details and notify Telegram.
 
 ## Recruiting
 
