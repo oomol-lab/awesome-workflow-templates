@@ -156,6 +156,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Summarize New Pipedrive Organizations](workflows/summarize-new-pipedrive-organizations/) - Summarize a new organization website, add a Pipedrive note and notify Slack.
 - [Create Pipedrive Deals from Interested Replies](workflows/create-pipedrive-deals-from-interested-replies/) - Check replies from campaign contacts and create a deal when the sender is interested in a meeting.
 - [Enrich Pipedrive Organization Website and Notify Slack](workflows/enrich-pipedrive-organization-website-and-notify-slack/) - Summarize a new organization website, add a Pipedrive note and notify Slack.
+- [Research Sales Accounts in Google Sheets](workflows/research-sales-accounts-in-sheets/) - Research companies on the web and update their matching spreadsheet rows.
 
 ## Operations
 
