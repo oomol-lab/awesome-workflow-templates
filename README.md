@@ -322,6 +322,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Publish Notion Posts to LinkedIn](workflows/publish-notion-posts-to-linkedin/) - Format scheduled Notion posts, publish their images on LinkedIn and mark the matching page done.
 - [Draft WordPress Articles from Notion Updates](workflows/draft-wordpress-articles-from-notion-updates/) - Draft an SEO article from a Notion page update, email its link and update the page.
 - [Generate Airtable Editorial Captions with Background](workflows/generate-airtable-editorial-captions-with-background/) - Create Instagram captions for new Airtable editorial records using audience background.
+- [Draft LinkedIn Posts from Ghost Articles](workflows/draft-linkedin-posts-from-ghost-articles/) - Draft LinkedIn promotional copy for recent Ghost posts and record it in Google Sheets.
 
 ## Support
 
