@@ -1,0 +1,232 @@
+{
+  "name": "Read InfluxDB Container Logs",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "hook",
+      "name": "Receive inspection request",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "read-influxdb-container-logs",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "position": [
+        400,
+        100
+      ]
+    },
+    {
+      "id": "validate",
+      "name": "Prepare Docker URL",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const b = $json.body,\n  server = \"YOUR_SERVER_DOMAIN\",\n  engine = \"https://YOUR_DOCKER_GATEWAY\";\nif (\n  b.server_domain !== server ||\n  b.command !== \"container_log\" ||\n  !/^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,200}$/.test(b.domain)\n)\n  throw Error(\"Invalid request\");\nreturn {\n  json: {\n    url:\n      engine.replace(/\\/$/, \"\") +\n      \"/v1.44/containers/\" +\n      encodeURIComponent(b.domain + \"_influxdb\") +\n      \"/json\",\n  },\n};\n"
+      },
+      "position": [
+        800,
+        100
+      ]
+    },
+    {
+      "id": "inspect",
+      "name": "Inspect Docker container",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.url }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "position": [
+        700,
+        100
+      ]
+    },
+    {
+      "id": "response",
+      "name": "Return inspection",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "position": [
+        800,
+        100
+      ]
+    },
+    {
+      "id": "logs-prep",
+      "name": "Prepare log request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if ($json.statusCode !== 200 || typeof $json.body?.Config?.Tty !== \"boolean\")\n  throw Error(\"Docker inspection failed\");\nreturn {\n  json: {\n    url: $(\"Prepare Docker URL\")\n      .first()\n      .json.url.replace(/\\/json$/, \"/logs?stdout=true&stderr=true&tail=1000\"),\n    tty: $json.body.Config.Tty,\n  },\n};\n"
+      }
+    },
+    {
+      "id": "logs-get",
+      "name": "Download Docker logs",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.url }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "outputPropertyName": "data"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "logs-extract",
+      "name": "Extract log bytes",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "operation": "binaryToPropery",
+        "binaryPropertyName": "data",
+        "destinationKey": "base64",
+        "options": {}
+      }
+    },
+    {
+      "id": "logs-decode",
+      "name": "Decode Docker logs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const bytes = Buffer.from($json.base64, \"base64\"),\n  tty = $(\"Prepare log request\").first().json.tty;\nlet parts = [];\nif (tty) parts = [bytes];\nelse {\n  let i = 0;\n  while (i < bytes.length) {\n    if (\n      i + 8 > bytes.length ||\n      ![1, 2].includes(bytes[i]) ||\n      bytes[i + 1] ||\n      bytes[i + 2] ||\n      bytes[i + 3]\n    )\n      throw Error(\"Invalid Docker log frame\");\n    let size = bytes.readUInt32BE(i + 4);\n    i += 8;\n    if (i + size > bytes.length) throw Error(\"Truncated Docker log frame\");\n    parts.push(bytes.subarray(i, i + size));\n    i += size;\n  }\n}\nreturn {\n  json: { status: \"success\", message: \"\", data: { logs: Buffer.concat(parts).toString(\"utf8\") } },\n};\n"
+      }
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "timezone": "America/Winnipeg",
+    "callerPolicy": "workflowsFromSameOwner",
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Receive inspection request": {
+      "main": [
+        [
+          {
+            "node": "Prepare Docker URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Docker URL": {
+      "main": [
+        [
+          {
+            "node": "Inspect Docker container",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Inspect Docker container": {
+      "main": [
+        [
+          {
+            "node": "Prepare log request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare log request": {
+      "main": [
+        [
+          {
+            "node": "Download Docker logs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Docker logs": {
+      "main": [
+        [
+          {
+            "node": "Extract log bytes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract log bytes": {
+      "main": [
+        [
+          {
+            "node": "Decode Docker logs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decode Docker logs": {
+      "main": [
+        [
+          {
+            "node": "Return inspection",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
