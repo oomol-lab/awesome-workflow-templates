@@ -820,6 +820,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Google Calendar MCP Event Tools](workflows/google-calendar-mcp-event-tools/) - Expose Calendar event search, creation, update and deletion as MCP tools.
 - [Google Calendar Six MCP Tools](workflows/google-calendar-six-mcp-tools/) - Expose event lookup, listing, availability, creation, reminders update and deletion through MCP.
 - [Verify a Signed Webhook with Timestamp](workflows/verify-signed-webhook-with-timestamp/) - Verify exact webhook bytes and a signed timestamp before accepting an event.
+- [Back Up n8n Workflows to GitHub by Tag](workflows/back-up-n8n-workflows-to-github-by-tag/) - Back up new or changed n8n workflows to GitHub, grouped by their first tag.
 
 ## Communication
 
