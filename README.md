@@ -376,6 +376,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Inspect an n8n Container](workflows/inspect-n8n-container/) - Inspect a named n8n container through an authenticated Docker Engine API.
 - [Inspect a Nextcloud Host Container](workflows/inspect-nextcloud-host-container/) - Inspect a named Nextcloud host container through an authenticated Docker Engine API.
 - [Inspect an Immich Container](workflows/inspect-immich-container/) - Inspect a named Immich container through an authenticated Docker Engine API.
+- [Read Immich Container Logs](workflows/read-immich-container-logs/) - Read the latest 1,000 lines of an Immich container through the Docker Engine API.
 
 ## Research
 
