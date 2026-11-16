@@ -365,6 +365,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Notify Telegram of a Failed Workflow](workflows/notify-telegram-of-failed-workflow/) - Send a Telegram alert identifying a failed workflow.
 - [Invoke an AWS Lambda Function](workflows/invoke-an-aws-lambda-function/) - Invoke a Lambda function synchronously and return its result.
 - [Manage GitHub Hooks and Notify Telegram](workflows/manage-github-hooks-and-notify-telegram/) - Register or delete repository webhooks and send push and pull request updates to Telegram.
+- [Inspect an InfluxDB Container](workflows/inspect-influxdb-container/) - Inspect a named InfluxDB container through an authenticated Docker Engine API.
 
 ## Research
 
