@@ -1002,6 +1002,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Report Phishing Emails to Jira](workflows/report-phishing-emails-to-jira/) - Analyze incoming email screenshots and headers for phishing indicators, then create Jira issues with screenshot attachments.
 - [Classify Phishing Emails and Attach Evidence](workflows/classify-phishing-emails-and-attach-evidence/) - Classify incoming emails for phishing risk, then attach a screenshot and text body to the corresponding Jira issue.
 - [Report Shodan Unexpected Ports to TheHive](workflows/report-shodan-unexpected-ports-to-thehive/) - Check a configured IP allowlist against Shodan and create TheHive alerts for unexpected ports.
+- [Enrich Zendesk Tickets with MITRE Context](workflows/enrich-zendesk-tickets-with-mitre-context/) - Retrieve MITRE ATT&CK context and add a private summary and technique fields to Zendesk tickets.
 
 ## Social Media
 
