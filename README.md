@@ -679,6 +679,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Review and Remove CSV Personal Columns](workflows/review-and-remove-csv-personal-columns/) - Identify likely personal-data columns in new CSV files and write a review copy without those columns.
 - [Save LINE Files to Drive and Sheet](workflows/save-line-files-to-drive-and-sheet/) - Save LINE media in Drive folders, log the file and optionally reply.
 - [Log Location Attendance to Sheets](workflows/log-location-attendance-to-sheets/) - Log check-in and check-out events from location shortcuts to a Google Sheet.
+- [Extract a License Plate from an Image](workflows/extract-license-plate-from-image/) - Upload a vehicle image and extract the front-most license plate as text.
 
 ## Content
 

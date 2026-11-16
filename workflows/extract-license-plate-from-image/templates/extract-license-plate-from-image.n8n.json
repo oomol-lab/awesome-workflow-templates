@@ -1,0 +1,323 @@
+{
+  "name": "Extract a License Plate from an Image",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "a656334a-0135-4d93-a6df-ca97222c9753",
+      "name": "Basic LLM Chain",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "position": [
+        -140,
+        -380
+      ],
+      "parameters": {
+        "text": "={{ $json.prompt }}",
+        "messages": {
+          "messageValues": [
+            {
+              "type": "HumanMessagePromptTemplate",
+              "messageType": "imageBinary",
+              "binaryImageDataKey": "Image"
+            }
+          ]
+        },
+        "promptType": "define"
+      },
+      "typeVersion": 1.5
+    },
+    {
+      "id": "41a90592-2a91-40ff-abf4-3a795733d521",
+      "name": "FormResultPage",
+      "type": "n8n-nodes-base.form",
+      "position": [
+        220,
+        -380
+      ],
+      "parameters": {
+        "options": {
+          "formTitle": ""
+        },
+        "operation": "completion",
+        "completionTitle": "Extracted information:",
+        "completionMessage": "={{ $json.text }}"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "c23b95d9-b7a2-4e9e-a019-5724a9662abd",
+      "name": "OpenRouter LLM",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "position": [
+        -60,
+        -180
+      ],
+      "parameters": {
+        "model": "={{ $json.model }}",
+        "options": {}
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "8298cd51-8c47-4bc4-af78-2c216207ef76",
+      "name": "Settings",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        -340,
+        -380
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1b8381dc-5b9a-42a2-8a67-cc706b433180",
+              "name": "model",
+              "type": "string",
+              "value": "openai/gpt-4o"
+            },
+            {
+              "id": "72aec130-ab56-4e61-b60b-9a31dd8d02e6",
+              "name": "prompt",
+              "type": "string",
+              "value": "Extract the number of the license plate on the front-most car depicted in the attached image and return only the extracted characters without any other text or structure."
+            }
+          ]
+        },
+        "includeOtherFields": true
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "fae79fc9-b510-44a4-beec-4dc26dc2a13a",
+      "name": "FromTrigger",
+      "type": "n8n-nodes-base.formTrigger",
+      "position": [
+        -560,
+        -380
+      ],
+      "parameters": {
+        "options": {},
+        "formTitle": "Analyse image",
+        "formFields": {
+          "values": [
+            {
+              "fieldType": "file",
+              "fieldLabel": "Image",
+              "requiredField": true,
+              "acceptFileTypes": ".jpg, .png"
+            }
+          ]
+        },
+        "responseMode": "lastNode",
+        "formDescription": "To analyse an image, upload it here."
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "extract-license-plate-from-image-form",
+      "name": "Open Flow image form",
+      "type": "n8n-nodes-base.formTrigger",
+      "position": [
+        -560,
+        -380
+      ],
+      "parameters": {
+        "options": {},
+        "formTitle": "Analyze image with Open Flow",
+        "formFields": {
+          "values": [
+            {
+              "fieldType": "file",
+              "fieldLabel": "Image",
+              "requiredField": true,
+              "acceptFileTypes": ".jpg, .png"
+            }
+          ]
+        },
+        "responseMode": "lastNode",
+        "formDescription": "To analyse an image, upload it here."
+      },
+      "typeVersion": 2.2,
+      "disabled": true
+    },
+    {
+      "id": "extract-license-plate-from-image-upload",
+      "name": "Upload image to OpenAI Files",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -300,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/files",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "purpose",
+              "value": "vision"
+            },
+            {
+              "name": "file",
+              "parameterType": "formBinaryData",
+              "inputDataFieldName": "Image"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "extract-license-plate-from-image-check",
+      "name": "Check uploaded image ID",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -100,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if (!/^file-[A-Za-z0-9_-]+$/.test($json.id ?? \"\")) throw Error(\"Unknown image upload\");\nreturn { json: { fileId: $json.id } };\n"
+      }
+    },
+    {
+      "id": "extract-license-plate-from-image-forward",
+      "name": "Forward image to Open Flow",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        100,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "YOUR_OPEN_FLOW_WEBHOOK_URL",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {fileId:$json.fileId} }}",
+        "options": {
+          "timeout": 65000
+        }
+      }
+    },
+    {
+      "id": "extract-license-plate-from-image-result",
+      "name": "Open Flow form result",
+      "type": "n8n-nodes-base.form",
+      "typeVersion": 1,
+      "position": [
+        300,
+        0
+      ],
+      "parameters": {
+        "operation": "completion",
+        "completionTitle": "Extracted information:",
+        "completionMessage": "={{ $json.text }}",
+        "options": {
+          "formTitle": ""
+        }
+      }
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Settings": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FromTrigger": {
+      "main": [
+        [
+          {
+            "node": "Settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter LLM": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "FormResultPage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Open Flow image form": {
+      "main": [
+        [
+          {
+            "node": "Upload image to OpenAI Files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload image to OpenAI Files": {
+      "main": [
+        [
+          {
+            "node": "Check uploaded image ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check uploaded image ID": {
+      "main": [
+        [
+          {
+            "node": "Forward image to Open Flow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Forward image to Open Flow": {
+      "main": [
+        [
+          {
+            "node": "Open Flow form result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
