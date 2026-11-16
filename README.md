@@ -672,6 +672,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Index New Drive PDFs in Pinecone](workflows/index-new-drive-pdfs-in-pinecone/) - Extract and normalize new Drive PDFs, embed passages and index them in Pinecone.
 - [Run Adobe PDF Operations](workflows/run-adobe-pdf-operations/) - Run an Adobe PDF Services operation and return its completed result.
 - [Route Aliased Emails to Notion Tasks](workflows/route-aliased-emails-to-notion-tasks/) - Route inbox messages to each user’s Notion database and create an AI task and summary.
+- [Review and Remove CSV Personal Columns](workflows/review-and-remove-csv-personal-columns/) - Identify likely personal-data columns in new CSV files and write a review copy without those columns.
 
 ## Content
 
