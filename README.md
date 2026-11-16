@@ -663,6 +663,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Index Translated Document Analysis in Pinecone](workflows/index-translated-document-analysis-in-pinecone/) - Parse uploaded documents, translate and analyze them, and index both texts in Pinecone.
 - [Route Webflow Forms to Discord Channels](workflows/route-webflow-forms-to-discord-channels/) - Send Webflow form submissions to a matching Discord channel, creating the channel when needed.
 - [Reply to Company Inquiries with Knowledge](workflows/reply-company-inquiries-with-knowledge/) - Summarize company inquiries and send knowledge-grounded replies through IMAP and SMTP.
+- [Index Updated Tech Radar Documents](workflows/index-updated-radar-documents/) - Index updated documents from a Drive folder in Pinecone using Gemini embeddings.
 
 ## Content
 

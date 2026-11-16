@@ -1,0 +1,770 @@
+{
+  "name": "Index Updated Tech Radar Documents",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "7e0c4881-be31-4883-acbc-ceee87edfa38",
+      "name": "Download Doc File From Google Drive",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [
+        1220,
+        420
+      ],
+      "parameters": {
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.id }}"
+        },
+        "options": {
+          "fileName": "={{ $json.name }}"
+        },
+        "operation": "download"
+      },
+      "typeVersion": 3
+    },
+    {
+      "id": "1cf5fb98-f00b-404f-a7cf-31905dfaedef",
+      "name": "Doc File Data Loader",
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "position": [
+        1640,
+        580
+      ],
+      "parameters": {
+        "options": {},
+        "dataType": "binary",
+        "binaryMode": "specificField",
+        "binaryDataKey": "data"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "141feafb-66dd-4b9b-bbf3-0c24f67ba111",
+      "name": "Google Drive - Doc File Updated",
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "position": [
+        960,
+        440
+      ],
+      "parameters": {
+        "event": "fileUpdated",
+        "options": {},
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "triggerOn": "specificFolder",
+        "folderToWatch": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_FOLDER_ID"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "bf93035c-3bc7-4843-b464-cec515b54876",
+      "name": "Content - Recursive Character Text Splitter",
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "position": [
+        1740,
+        760
+      ],
+      "parameters": {
+        "options": {},
+        "chunkSize": 1024,
+        "chunkOverlap": 100
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "d2536986-8946-4139-8b5e-e18a1b4e4d13",
+      "name": "Embeddings - Tech Radar Data Embedding",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsGoogleGemini",
+      "position": [
+        1400,
+        700
+      ],
+      "parameters": {
+        "modelName": "models/gemini-embedding-001"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "1f3bef6f-42f0-4460-a9c3-b4f45ae9f745",
+      "name": "Pinecone - Vector Store for Embedding Content",
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+      "position": [
+        1440,
+        420
+      ],
+      "parameters": {
+        "mode": "insert",
+        "options": {},
+        "pineconeIndex": {
+          "__rl": true,
+          "mode": "name",
+          "value": "YOUR_PINECONE_INDEX"
+        }
+      },
+      "typeVersion": 1,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "id": "radar-doc-filter",
+      "name": "Select updated documents",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return $input.all().map((x, i) => {\n  if (!x.json.id || !x.json.modifiedTime) throw Error(\"Missing file version\");\n  return { ...x, pairedItem: { item: i } };\n});\n"
+      }
+    },
+    {
+      "id": "radar-doc-check",
+      "name": "Check document index",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'radar-doc:'+$('Process one document').item.json.id+':'+$('Process one document').item.json.modifiedTime }}"
+            }
+          ]
+        },
+        "operation": "rowNotExists"
+      }
+    },
+    {
+      "id": "radar-doc-reserve",
+      "name": "Reserve document index",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "item_key": "={{ 'radar-doc:'+$('Process one document').item.json.id+':'+$('Process one document').item.json.modifiedTime }}",
+            "status": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "radar-doc-restore",
+      "name": "Restore document event",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return $(\"Process one document\").item;\n"
+      }
+    },
+    {
+      "id": "radar-doc-guard",
+      "name": "Stop on index error",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const items = $input.all();\nif (\n  !items.length ||\n  items.some((x) => x.json.error || typeof x.json.pageContent !== \"string\" || !x.json.pageContent)\n)\n  return [];\nreturn [{ json: {}, pairedItem: { item: 0 } }];\n"
+      }
+    },
+    {
+      "id": "radar-doc-clear",
+      "name": "Confirm document index",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'radar-doc:'+$('Process one document').item.json.id+':'+$('Process one document').item.json.modifiedTime }}"
+            }
+          ]
+        },
+        "operation": "deleteRows"
+      }
+    },
+    {
+      "id": "radar-doc-stop",
+      "name": "Stop on uncertain index",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "radar-doc-hook",
+      "name": "Document extraction webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "index-updated-radar-documents-text",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "disabled": true
+    },
+    {
+      "id": "radar-doc-relay-download",
+      "name": "Download relay document",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Document extraction webhook').item.json.body.fileId }}"
+        },
+        "options": {
+          "fileName": "={{ $('Document extraction webhook').item.json.body.mimeType === 'application/vnd.google-apps.document' ? $('Document extraction webhook').item.json.body.name + '.docx' : $('Document extraction webhook').item.json.body.name }}"
+        }
+      }
+    },
+    {
+      "id": "radar-doc-extract",
+      "name": "Extract document text",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "operation": "text",
+        "binaryPropertyName": "data",
+        "destinationKey": "text",
+        "options": {}
+      }
+    },
+    {
+      "id": "radar-doc-respond",
+      "name": "Return document text",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {fileId:$('Document extraction webhook').item.json.body.fileId,name:$('Document extraction webhook').item.json.body.name,text:$json.text} }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "radar-doc-relay-job",
+      "name": "Return relay parse job",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {fileId:$('Document extraction webhook').first().json.body.fileId,jobId:$json.id} }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "radar-doc-loop",
+      "name": "Process one document",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "options": {}
+      }
+    },
+    {
+      "id": "radar-doc-relay-check",
+      "name": "Check relay upload",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'radar-relay:'+$('Document extraction webhook').first().json.body.fileId+':'+$('Document extraction webhook').first().json.body.modifiedTime }}"
+            }
+          ]
+        },
+        "operation": "rowNotExists"
+      }
+    },
+    {
+      "id": "radar-doc-relay-reserve",
+      "name": "Reserve relay upload",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "item_key": "={{ 'radar-relay:'+$('Document extraction webhook').first().json.body.fileId+':'+$('Document extraction webhook').first().json.body.modifiedTime }}",
+            "status": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "radar-doc-text-route",
+      "name": "Use direct text extraction?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ !['application/pdf','text/csv','application/epub+zip','application/vnd.openxmlformats-officedocument.wordprocessingml.document','application/vnd.google-apps.document'].includes($('Document extraction webhook').first().json.body.mimeType) }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "radar-doc-relay-input",
+      "name": "Prepare relay upload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return { json: { relayUpload: true }, binary: $binary, pairedItem: { item: $itemIndex } };\n"
+      }
+    },
+    {
+      "id": "radar-doc-relay-upload",
+      "name": "Parse relay file",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.cloud.llamaindex.ai/api/v1/parsing/upload",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "file",
+              "parameterType": "formBinaryData",
+              "inputDataFieldName": "data"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "id": "radar-doc-relay-upload-guard",
+      "name": "Stop on relay upload error",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return $input\n  .all()\n  .filter((x) => !x.json.error && typeof x.json.id === \"string\" && x.json.id.length > 0);\n"
+      }
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Google Drive - Doc File Updated": {
+      "main": [
+        [
+          {
+            "node": "Select updated documents",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select updated documents": {
+      "main": [
+        [
+          {
+            "node": "Process one document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check document index": {
+      "main": [
+        [
+          {
+            "node": "Reserve document index",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve document index": {
+      "main": [
+        [
+          {
+            "node": "Restore document event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore document event": {
+      "main": [
+        [
+          {
+            "node": "Download Doc File From Google Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Doc File From Google Drive": {
+      "main": [
+        [
+          {
+            "node": "Pinecone - Vector Store for Embedding Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Stop on index error": {
+      "main": [
+        [
+          {
+            "node": "Confirm document index",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm document index": {
+      "main": [
+        [
+          {
+            "node": "Process one document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Document extraction webhook": {
+      "main": [
+        [
+          {
+            "node": "Check relay upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check relay upload": {
+      "main": [
+        [
+          {
+            "node": "Reserve relay upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve relay upload": {
+      "main": [
+        [
+          {
+            "node": "Download relay document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download relay document": {
+      "main": [
+        [
+          {
+            "node": "Use direct text extraction?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract document text": {
+      "main": [
+        [
+          {
+            "node": "Return document text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare relay upload": {
+      "main": [
+        [
+          {
+            "node": "Parse relay file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Stop on relay upload error": {
+      "main": [
+        [
+          {
+            "node": "Return relay parse job",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process one document": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Check document index",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Use direct text extraction?": {
+      "main": [
+        [
+          {
+            "node": "Extract document text",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare relay upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse relay file": {
+      "main": [
+        [
+          {
+            "node": "Stop on relay upload error",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Stop on uncertain index",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pinecone - Vector Store for Embedding Content": {
+      "main": [
+        [
+          {
+            "node": "Stop on index error",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Stop on uncertain index",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Doc File Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Pinecone - Vector Store for Embedding Content",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Content - Recursive Character Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Doc File Data Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings - Tech Radar Data Embedding": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Pinecone - Vector Store for Embedding Content",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
