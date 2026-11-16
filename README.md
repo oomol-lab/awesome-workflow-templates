@@ -1070,6 +1070,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Enrich Property Inventory from Images](workflows/enrich-property-inventory-from-images/) - Analyze inventory photos and enrich Airtable records with product attributes.
 - [Index Notion Pages in Supabase](workflows/index-notion-pages-in-supabase/) - Embed newly added Notion page text and store chunks in a Supabase vector table.
 - [Index Policy PDF Vectors](workflows/index-policy-pdf-vectors/) - Extract a policy PDF and index its text chunks in a vector table.
+- [Get n8n Creator Leaderboard Statistics](workflows/get-n8n-creator-leaderboard-statistics/) - Look up a creator and their popular workflows in the community leaderboard.
 
 ## E-commerce
 

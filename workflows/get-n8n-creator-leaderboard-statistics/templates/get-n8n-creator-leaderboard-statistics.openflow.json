@@ -1,0 +1,107 @@
+{
+  "kind": "open-flow-workflow",
+  "version": 1,
+  "name": "Get n8n Creator Leaderboard Statistics",
+  "content": {
+    "modelVersion": 15,
+    "document": {
+      "bindings": {},
+      "graph": {
+        "nodes": {
+          "n_8438ea071b72d0bd": {
+            "name": "Receive creator username",
+            "kind": "start",
+            "inputDefs": [
+              {
+                "jsonSchema": {
+                  "type": "string"
+                },
+                "nullable": false,
+                "handle": "username"
+              }
+            ]
+          },
+          "n_c13c98595f4e8782": {
+            "inputs": {
+              "username": {
+                "kind": "sources",
+                "sources": [
+                  {
+                    "kind": "node",
+                    "nodeId": "n_8438ea071b72d0bd",
+                    "output": "username"
+                  }
+                ]
+              }
+            },
+            "name": "Read and filter leaderboard",
+            "kind": "task",
+            "task": {
+              "inputs": [
+                {
+                  "jsonSchema": {
+                    "type": "string"
+                  },
+                  "nullable": false,
+                  "handle": "username"
+                }
+              ],
+              "outputs": [
+                {
+                  "jsonSchema": {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  "nullable": true,
+                  "handle": "creator"
+                },
+                {
+                  "jsonSchema": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": true
+                    }
+                  },
+                  "nullable": false,
+                  "handle": "workflows"
+                }
+              ],
+              "name": "Read and filter leaderboard",
+              "moduleId": "n_2378683923f03755",
+              "capabilities": [
+                {
+                  "kind": "http",
+                  "hosts": [
+                    "raw.githubusercontent.com"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        "edges": [
+          {
+            "source": "n_8438ea071b72d0bd",
+            "target": "n_c13c98595f4e8782"
+          }
+        ]
+      }
+    },
+    "modules": {
+      "n_2378683923f03755": {
+        "name": "Read and filter leaderboard",
+        "imports": [],
+        "source": "export default async function ({ username }, ctx) {\n  if (typeof username !== \"string\" || !username.trim()) throw Error(\"Provide a creator username\");\n  async function load(file) {\n    const chunks = [];\n    let start = 0,\n      total = 0,\n      etag;\n    do {\n      const response = await ctx.fetch(\n        \"https://raw.githubusercontent.com/teds-tech-talks/n8n-community-leaderboard/refs/heads/main/\" +\n          file +\n          \".json\",\n        {\n          headers: {\n            Range: `bytes=${start}-${start + 524287}`,\n            ...(etag ? { \"If-Range\": etag } : {}),\n          },\n        },\n      );\n      if (response.status !== 206) throw Error(\"Leaderboard range request failed\");\n      const range = /^bytes (\\d+)-(\\d+)\\/(\\d+)$/.exec(response.headers.get(\"content-range\") || \"\");\n      const tag = response.headers.get(\"etag\");\n      if (!range || +range[1] !== start || (etag && tag !== etag) || (total && +range[3] !== total))\n        throw Error(\"Leaderboard changed during download\");\n      etag = tag;\n      total = +range[3];\n      const bytes = new Uint8Array(await response.arrayBuffer());\n      if (bytes.length !== +range[2] - start + 1 || !bytes.length)\n        throw Error(\"Incomplete leaderboard range\");\n      chunks.push(bytes);\n      start += bytes.length;\n    } while (start < total);\n    const bytes = new Uint8Array(total);\n    let offset = 0;\n    for (const chunk of chunks) {\n      bytes.set(chunk, offset);\n      offset += chunk.length;\n    }\n    const data = JSON.parse(new TextDecoder().decode(bytes));\n    if (!Array.isArray(data)) throw Error(\"Invalid leaderboard data\");\n    return data;\n  }\n  const creators = await load(\"stats_aggregate_creators\"),\n    workflows = await load(\"stats_aggregate_workflows\");\n  const creator = creators\n    .sort((a, b) => (b.sum_unique_weekly_inserters || 0) - (a.sum_unique_weekly_inserters || 0))\n    .slice(0, 25)\n    .find((x) => x.user?.username === username);\n  const selected = workflows\n    .sort((a, b) => (b.unique_weekly_inserters || 0) - (a.unique_weekly_inserters || 0))\n    .slice(0, 300)\n    .filter((x) => x.user?.username === username);\n  return {\n    creator: creator || null,\n    workflows: creator\n      ? selected.map((x) => ({\n          template_url: x.template_url,\n          wf_detais: x.wf_detais,\n          unique_weekly_inserters: x.unique_weekly_inserters,\n          unique_monthly_inserters: x.unique_monthly_inserters,\n          unique_weekly_visitors: x.unique_weekly_visitors,\n          unique_monthly_visitors: x.unique_monthly_visitors,\n        }))\n      : [],\n  };\n}\n"
+      }
+    }
+  },
+  "presentation": {
+    "designer": {
+      "version": 1,
+      "flow": {
+        "direction": "vertical"
+      }
+    }
+  }
+}
