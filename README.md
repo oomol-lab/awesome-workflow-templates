@@ -659,6 +659,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Make llms.txt from Screaming Frog CSV](workflows/make-llms-txt-from-screaming-frog-csv/) - Turn a Screaming Frog crawl export into a downloadable llms.txt index.
 - [Add AI Summaries to WordPress Posts](workflows/add-ai-summaries-to-wordpress-posts/) - Add an AI summary to recent WordPress posts, log each update and notify Slack.
 - [Generate FAQ JSON for an Integration Row](workflows/generate-faq-json-for-integration-rows/) - Generate an integration FAQ JSON file and mark its source sheet row done.
+- [Scan Integration Sheets and Generate FAQs](workflows/scan-integration-sheets-and-generate-faq/) - Scan four integration sheets and generate a FAQ JSON for each unfinished row.
 
 ## Commerce
 
