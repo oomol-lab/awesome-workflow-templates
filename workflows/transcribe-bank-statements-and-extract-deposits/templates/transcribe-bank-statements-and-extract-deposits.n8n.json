@@ -1,0 +1,185 @@
+{
+  "nodes": [
+    {
+      "id": "490493d1-e9ac-458a-ac9e-a86048ce6169",
+      "name": "When clicking ‘Test workflow’",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "d62d7b0e-29eb-48a9-a471-4279e663c521",
+      "name": "Get Bank Statement",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [
+        240,
+        0
+      ],
+      "parameters": {
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DRIVE_FILE_ID"
+        },
+        "options": {},
+        "operation": "download"
+      },
+      "typeVersion": 3
+    },
+    {
+      "id": "encode-pdf",
+      "name": "Encode PDF",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        480,
+        0
+      ],
+      "parameters": {
+        "operation": "binaryToPropery",
+        "options": {}
+      }
+    },
+    {
+      "id": "transcribe-pdf",
+      "name": "Transcribe PDF",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        720,
+        0
+      ],
+      "parameters": {
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent",
+        "method": "POST",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ ({contents:[{parts:[{inline_data:{mime_type:\"application/pdf\",data:$json.data}},{text:\"Transcribe the complete PDF faithfully to Markdown in page order. Preserve headings, tables, amounts, and descriptions. Mark scanned checks as <scanned image of check>. Do not invent missing text.\"}]}]}) }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googlePalmApi",
+        "options": {}
+      }
+    },
+    {
+      "id": "check-transcript",
+      "name": "Check transcript",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        960,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const c = $json.candidates?.[0];\nif (c?.finishReason !== \"STOP\") throw Error(\"PDF transcription incomplete\");\nconst transcript = c.content?.parts\n  ?.map((p) => p.text || \"\")\n  .join(\"\")\n  .trim();\nif (!transcript) throw Error(\"Empty transcript\");\nreturn [{ json: { transcript } }];\n"
+      }
+    },
+    {
+      "id": "extract-deposits",
+      "name": "Extract deposits",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        0
+      ],
+      "parameters": {
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent",
+        "method": "POST",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ ({contents:[{parts:[{text:\"Extract only deposit rows from this bank statement transcript. Return JSON array of objects with date and description strings and amount number. Do not infer missing values. Transcript:\\n\"+$json.transcript}]}],generationConfig:{responseMimeType:\"application/json\",temperature:0}}) }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googlePalmApi",
+        "options": {}
+      }
+    },
+    {
+      "id": "check-deposits",
+      "name": "Check deposits",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1440,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const c = $json.candidates?.[0];\nif (c?.finishReason !== \"STOP\") throw Error(\"Extraction incomplete\");\nconst deposits = JSON.parse(c.content.parts.map((p) => p.text || \"\").join(\"\"));\nif (\n  !Array.isArray(deposits) ||\n  deposits.some(\n    (x) =>\n      typeof x.date !== \"string\" ||\n      typeof x.description !== \"string\" ||\n      typeof x.amount !== \"number\" ||\n      !Number.isFinite(x.amount),\n  )\n)\n  throw Error(\"Invalid deposit rows\");\nreturn [{ json: { transcript: $(\"Check transcript\").item.json.transcript, deposits } }];\n"
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Test workflow’": {
+      "main": [
+        [
+          {
+            "node": "Get Bank Statement",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Bank Statement": {
+      "main": [
+        [
+          {
+            "node": "Encode PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Encode PDF": {
+      "main": [
+        [
+          {
+            "node": "Transcribe PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcribe PDF": {
+      "main": [
+        [
+          {
+            "node": "Check transcript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check transcript": {
+      "main": [
+        [
+          {
+            "node": "Extract deposits",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract deposits": {
+      "main": [
+        [
+          {
+            "node": "Check deposits",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Transcribe Bank Statements and Extract Deposits",
+  "active": false
+}
