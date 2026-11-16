@@ -332,6 +332,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Schedule Blog Writing and WordPress Publication](workflows/schedule-blog-writing-and-wordpress-publication/) - Use a Google Sheet to generate blog content by stage and publish scheduled posts to WordPress.
 - [Amplify Hacker News GitHub Projects](workflows/amplify-hacker-news-github-projects/) - Discover GitHub links on Hacker News, draft social posts and publish them after a short delay.
 - [Turn a PDF into a Ghost Blog Post](workflows/turn-pdf-into-ghost-blog-post/) - Turn an uploaded PDF into a structured HTML blog article and create it in Ghost.
+- [Summarize Umami Analytics to Baserow](workflows/summarize-umami-analytics-to-baserow/) - Compare weekly Umami page metrics and save two AI-written reports in Baserow.
 
 ## Support
 

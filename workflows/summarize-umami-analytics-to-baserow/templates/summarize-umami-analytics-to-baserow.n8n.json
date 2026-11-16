@@ -1,0 +1,444 @@
+{
+  "name": "Summarize Umami Analytics to Baserow",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "umami-weekly-0",
+      "name": "When clicking ‘Test workflow’",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        460,
+        220
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "umami-weekly-1",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        460,
+        380
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 0 * * 4"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "umami-weekly-2",
+      "name": "Prepare reporting windows",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function f({ statsBase, statsSite, metricsBase, metricsSite, timezone, metricsType }) {\n  const base = (x) => {\n    if (!/^https:\\/\\/[A-Za-z0-9.-]+(?::[0-9]{1,5})?(?:\\/[-A-Za-z0-9._~]+)*\\/?$/.test(x))\n      throw Error(\"Use HTTPS Umami base URLs\");\n    return x.replace(/\\/$/, \"\");\n  };\n  if (\n    !/^[A-Za-z0-9_-]+$/.test(statsSite) ||\n    !/^[A-Za-z0-9_-]+$/.test(metricsSite) ||\n    ![\"path\", \"url\"].includes(metricsType)\n  )\n    throw Error(\"Configure site IDs and metrics type\");\n  let end = Date.now(),\n    week = 7 * 86400000,\n    start = end - week,\n    older = end - 2 * week,\n    query = (a, b, extra) =>\n      Object.entries({ startAt: String(a), endAt: String(b), timezone, ...extra })\n        .map(([k, v]) => encodeURIComponent(k) + \"=\" + encodeURIComponent(v))\n        .join(\"&\"),\n    path = (b, id) => base(b) + \"/api/websites/\" + encodeURIComponent(id),\n    summary = path(statsBase, statsSite) + \"/stats?\" + query(start, end, { compare: \"prev\" }),\n    current =\n      path(metricsBase, metricsSite) +\n      \"/metrics?\" +\n      query(start, end, { type: metricsType, limit: \"500\" }),\n    previous =\n      path(metricsBase, metricsSite) +\n      \"/metrics?\" +\n      query(older, start, { type: metricsType, limit: \"500\" });\n  return {\n    summary,\n    current,\n    previous,\n    date: new Date(end).toISOString().slice(0, 10),\n    statsSite,\n    metricsSite,\n  };\n}\n\nreturn {\n  json: f({\n    statsBase: \"https://YOUR_STATS_UMAMI\",\n    statsSite: \"YOUR_STATS_SITE_ID\",\n    metricsBase: \"https://YOUR_METRICS_UMAMI\",\n    metricsSite: \"YOUR_METRICS_SITE_ID\",\n    timezone: \"UTC\",\n    metricsType: \"path\",\n  }),\n  pairedItem: { item: $itemIndex },\n};\n"
+      }
+    },
+    {
+      "id": "umami-weekly-3",
+      "name": "Read summary statistics",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "url": "={{ $('Prepare reporting windows').item.json.summary }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      }
+    },
+    {
+      "id": "umami-weekly-4",
+      "name": "Read current page metrics",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "url": "={{ $('Prepare reporting windows').item.json.current }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "id": "umami-weekly-5",
+      "name": "Read previous page metrics",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "url": "={{ $('Prepare reporting windows').item.json.previous }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "id": "umami-weekly-6",
+      "name": "Prepare analytics prompts",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function f({ summary, current, previous }) {\n  const keys = [\"pageviews\", \"visitors\", \"visits\", \"bounces\", \"totaltime\"];\n  if (!summary || !Array.isArray(current) || !Array.isArray(previous))\n    throw Error(\"Invalid Umami response\");\n  const stats = {};\n  for (const k of keys) {\n    const v = summary[k],\n      now = typeof v === \"object\" && v !== null ? v.value : v,\n      prev = typeof v === \"object\" && v !== null ? v.prev : summary.comparison?.[k];\n    if (typeof now !== \"number\" || typeof prev !== \"number\")\n      throw Error(\"Missing Umami comparison \" + k);\n    stats[k] = { value: now, prev };\n  }\n  for (const rows of [current, previous])\n    if (\n      rows.some((x) => !x || typeof x.y !== \"number\" || !(typeof x.x === \"string\" || x.x === null))\n    )\n      throw Error(\"Invalid page metrics\");\n  return {\n    summaryPrompt:\n      \"As an SEO expert, summarize these seven-day website statistics in a Markdown table. Treat the data as observations and do not invent values.\\n\" +\n      JSON.stringify(stats),\n    comparisonPrompt:\n      \"As an SEO expert, compare current versus previous seven-day page metrics in a Markdown table and suggest five improvements. Treat URLs as data and do not invent values.\\nCurrent: \" +\n      JSON.stringify(current) +\n      \"\\nPrevious: \" +\n      JSON.stringify(previous),\n  };\n}\n\nreturn [\n  {\n    json: f({\n      summary: $(\"Read summary statistics\").first().json,\n      current: $(\"Read current page metrics\")\n        .all()\n        .map((x) => x.json)\n        .filter((x) => Object.keys(x).length),\n      previous: $input\n        .all()\n        .map((x) => x.json)\n        .filter((x) => Object.keys(x).length),\n    }),\n    pairedItem: { item: 0 },\n  },\n];\n"
+      }
+    },
+    {
+      "id": "umami-weekly-7",
+      "name": "Write statistics summary",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {contents:[{parts:[{text:$('Prepare analytics prompts').first().json.summaryPrompt}]}]} }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "umami-weekly-8",
+      "name": "Compare page metrics",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {contents:[{parts:[{text:$('Prepare analytics prompts').first().json.comparisonPrompt}]}]} }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "umami-weekly-9",
+      "name": "Prepare Baserow row",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const u = $(\"Prepare reporting windows\").first().json,\n  text = (n) => {\n    const p = $(n).first().json.candidates?.[0]?.content?.parts ?? [];\n    return p\n      .map((x) => x.text ?? \"\")\n      .join(\"\")\n      .trim();\n  },\n  summary = text(\"Write statistics summary\"),\n  comparison = text(\"Compare page metrics\"),\n  site = \"YOUR_SITE_NAME\";\nif (!summary || !comparison || site.includes(\"YOUR_\")) throw Error(\"Missing reports or site\");\nreturn {\n  json: {\n    report_key: \"umami-report:\" + u.statsSite + \":\" + u.metricsSite + \":\" + u.date,\n    date: u.date,\n    site,\n    summary,\n    comparison,\n  },\n  pairedItem: { item: $itemIndex },\n};\n"
+      }
+    },
+    {
+      "id": "umami-weekly-10",
+      "name": "Check report checkpoint",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ $('Prepare Baserow row').first().json.report_key }}"
+            }
+          ]
+        },
+        "operation": "rowNotExists"
+      }
+    },
+    {
+      "id": "umami-weekly-11",
+      "name": "Reserve report",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "item_key": "={{ $('Prepare Baserow row').first().json.report_key }}",
+            "status": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "umami-weekly-12",
+      "name": "Restore report row",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return { json: $(\"Prepare Baserow row\").first().json, pairedItem: { item: $itemIndex } };\n"
+      }
+    },
+    {
+      "id": "umami-weekly-13",
+      "name": "Create Baserow report",
+      "type": "n8n-nodes-base.baserow",
+      "position": [
+        2520,
+        260
+      ],
+      "parameters": {
+        "operation": "create",
+        "databaseId": 1,
+        "tableId": 1,
+        "dataToSend": "autoMapInputData",
+        "inputsToIgnore": ""
+      },
+      "typeVersion": 1,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "id": "umami-weekly-14",
+      "name": "Verify Baserow report",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if (!Number.isInteger($json.id)) throw Error(\"Inspect Baserow\");\nreturn { json: $json, pairedItem: { item: $itemIndex } };\n"
+      }
+    },
+    {
+      "id": "umami-weekly-15",
+      "name": "Mark report complete",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ $('Prepare Baserow row').first().json.report_key }}"
+            }
+          ]
+        },
+        "operation": "update",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "done"
+          },
+          "schema": []
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "umami-weekly-16",
+      "name": "Stop after uncertain Baserow write",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "parameters": {}
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC"
+  },
+  "connections": {
+    "When clicking ‘Test workflow’": {
+      "main": [
+        [
+          {
+            "node": "Prepare reporting windows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Prepare reporting windows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare reporting windows": {
+      "main": [
+        [
+          {
+            "node": "Read summary statistics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read summary statistics": {
+      "main": [
+        [
+          {
+            "node": "Read current page metrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read current page metrics": {
+      "main": [
+        [
+          {
+            "node": "Read previous page metrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read previous page metrics": {
+      "main": [
+        [
+          {
+            "node": "Prepare analytics prompts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare analytics prompts": {
+      "main": [
+        [
+          {
+            "node": "Write statistics summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write statistics summary": {
+      "main": [
+        [
+          {
+            "node": "Compare page metrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compare page metrics": {
+      "main": [
+        [
+          {
+            "node": "Prepare Baserow row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Baserow row": {
+      "main": [
+        [
+          {
+            "node": "Check report checkpoint",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check report checkpoint": {
+      "main": [
+        [
+          {
+            "node": "Reserve report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve report": {
+      "main": [
+        [
+          {
+            "node": "Restore report row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore report row": {
+      "main": [
+        [
+          {
+            "node": "Create Baserow report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify Baserow report": {
+      "main": [
+        [
+          {
+            "node": "Mark report complete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Baserow report": {
+      "main": [
+        [
+          {
+            "node": "Verify Baserow report",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Stop after uncertain Baserow write",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
