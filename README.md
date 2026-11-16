@@ -398,6 +398,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Fetch Webpage as Markdown](workflows/fetch-webpage-markdown/) - Fetch a webpage and return its Markdown content, optionally replacing links and image URLs.
 - [Research Competitors into Notion](workflows/research-competitors-into-notion/) - Find competitors and research their company, products, and reviews in Notion.
 - [Collect Daily Product Hunt Posts](workflows/collect-daily-product-hunt-posts/) - Collect up to ten Product Hunt posts for a UTC day and maintain a Google Sheets list.
+- [Summarize Colt News to NocoDB](workflows/summarize-colt-news-to-nocodb/) - Summarize recent Colt news and save each article with technical keywords.
 
 ## Productivity
 
