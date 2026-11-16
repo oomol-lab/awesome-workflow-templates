@@ -1,0 +1,573 @@
+{
+  "name": "Import multiple Manufacturers from Google Sheets to Shopware 6",
+  "tags": [
+    {
+      "id": "Bpo3iitXqy2zfvPW",
+      "name": "tutorial",
+      "createdAt": "2024-01-06T22:57:17.318Z",
+      "updatedAt": "2024-01-06T22:57:17.318Z"
+    },
+    {
+      "id": "NfcTamKf2RPwzXbo",
+      "name": "automate-everything",
+      "createdAt": "2024-02-14T20:01:44.966Z",
+      "updatedAt": "2024-02-14T20:01:44.966Z"
+    },
+    {
+      "id": "2Vgn1rq99D9L11Gq",
+      "name": "submitted",
+      "createdAt": "2024-02-15T16:09:47.798Z",
+      "updatedAt": "2024-02-15T16:09:47.798Z"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "shopware-0",
+      "name": "When clicking \"Execute Workflow\"",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        340,
+        360
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "shopware-1",
+      "name": "Settings",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        620,
+        360
+      ],
+      "parameters": {
+        "fields": {
+          "values": [
+            {
+              "name": "shopware_url",
+              "stringValue": "https://your-shopware-url.com"
+            },
+            {
+              "name": "default_language_code",
+              "stringValue": "de_DE"
+            },
+            {
+              "name": "run_id",
+              "stringValue": "REPLACE_WITH_UNIQUE_RUN_ID"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "typeVersion": 3.2
+    },
+    {
+      "id": "shopware-2",
+      "name": "Get Manufacturer from Google Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        980,
+        360
+      ],
+      "parameters": {
+        "options": {},
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Sheet1"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_SPREADSHEET_ID"
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "name": "Prepare manufacturers",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const { createHash } = require(\"crypto\"),\n  { URL } = require(\"url\");\nfunction next({ rows, previous, runId, base }) {\n  if (!/^[-A-Za-z0-9_]{8,128}$/.test(runId) || !/^https:\\/\\//.test(base))\n    throw Error(\"Invalid run ID or Shopware URL\");\n  let [head, ...input] = rows || [];\n  let data = input.filter((r) => r.some((v) => v !== \"\" && v != null));\n  if (!head?.includes(\"name\")) throw Error(\"Sheet must include name\");\n  let names = data.map((r) => String(r[head.indexOf(\"name\")] || \"\").trim());\n  if (names.some((x) => !x) || new Set(names).size !== names.length)\n    throw Error(\"Names must be unique and non-empty\");\n  let i = previous?.index ?? 0;\n  if (i >= data.length)\n    return {\n      state: { index: i },\n      more: false,\n      key: \"\",\n      url: \"\",\n      logoUrl: \"\",\n      sync: {},\n      name: \"\",\n      mediaId: \"\",\n      extension: \"\",\n    };\n  let row = Object.fromEntries(head.map((h, k) => [h, data[i][k] ?? \"\"])),\n    name = String(row.name || \"\").trim();\n  if (!name) throw Error(\"Empty manufacturer name\");\n  let id = createHash(\"md5\")\n      .update(\"manufacturer-\" + name)\n      .digest(\"hex\"),\n    mediaId = createHash(\"md5\")\n      .update(\"media-\" + name)\n      .digest(\"hex\"),\n    translations = {};\n  for (let x = 1; x <= 3; x++) {\n    let language = row[\"translation_language_code_\" + x],\n      n = row[\"translation_name_\" + x],\n      d = row[\"translation_description_\" + x];\n    if (language && (n || d))\n      translations[language] = { ...(n ? { name: n } : {}), ...(d ? { description: d } : {}) };\n  }\n  let logoUrl = String(row.logo_url || \"\"),\n    extension = \"\";\n  if (logoUrl) {\n    let u = new URL(logoUrl);\n    if (u.protocol !== \"https:\") throw Error(\"Logo URL must be HTTPS\");\n    extension = (u.pathname.match(/\\.([A-Za-z0-9]{2,5})$/) || [])[1] || \"\";\n    if (!extension) throw Error(\"Logo URL requires a file extension\");\n  }\n  let payload = {\n    id,\n    name,\n    link: row.website || \"\",\n    description: row.description || \"\",\n    ...(Object.keys(translations).length ? { translations } : {}),\n    ...(logoUrl ? { media: { id: mediaId } } : {}),\n  };\n  return {\n    state: { index: i + 1 },\n    more: true,\n    key: \"shopware:\" + runId + \":\" + id,\n    url: base.replace(/\\/$/, \"\") + \"/api/_action/sync?_response=details\",\n    logoUrl,\n    sync: {\n      \"import-manufacturer\": {\n        entity: \"product_manufacturer\",\n        action: \"upsert\",\n        payload: [payload],\n      },\n    },\n    name,\n    mediaId,\n    extension,\n  };\n}\n\nconst all = $input.all(),\n  names = all.map((x) => String(x.json.name || \"\").trim());\nif (names.some((x) => !x) || new Set(names).size !== names.length)\n  throw Error(\"Names must be unique and non-empty\");\nconst cfg = $(\"Settings\").first().json;\nreturn all.map((item, i) => {\n  let head = Object.keys(item.json),\n    r = next({\n      rows: [head, head.map((k) => item.json[k])],\n      previous: null,\n      runId: cfg.run_id,\n      base: cfg.shopware_url,\n    });\n  return { json: r, pairedItem: { item: i } };\n});\n"
+      },
+      "id": "shopware-3"
+    },
+    {
+      "id": "shopware-4",
+      "name": "Loop Over Manufacturers",
+      "type": "n8n-nodes-base.splitInBatches",
+      "position": [
+        1520,
+        360
+      ],
+      "parameters": {
+        "options": {}
+      },
+      "typeVersion": 3
+    },
+    {
+      "name": "Check manufacturer checkpoint",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ $('Loop Over Manufacturers').item.json.key }}"
+            }
+          ]
+        },
+        "operation": "get",
+        "returnAll": false,
+        "limit": 1
+      },
+      "alwaysOutputData": true,
+      "id": "shopware-5"
+    },
+    {
+      "name": "Inspect manufacturer checkpoint",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if ($json.status === \"pending\") throw Error(\"Inspect pending manufacturer import\");\nreturn { json: { skip: $json.status === \"done\" }, pairedItem: { item: $itemIndex } };\n"
+      },
+      "id": "shopware-6"
+    },
+    {
+      "name": "Already completed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.skip }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "shopware-7"
+    },
+    {
+      "name": "Reserve manufacturer",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "item_key": "={{ $('Loop Over Manufacturers').item.json.key }}",
+            "status": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "shopware-8"
+    },
+    {
+      "id": "shopware-9",
+      "name": "Upsert manufacturer",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        1800,
+        380
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Loop Over Manufacturers').item.json.url }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "oAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $('Loop Over Manufacturers').item.json.sync }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "typeVersion": 4.1,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "name": "Confirm manufacturer upsert",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if (!Number.isInteger($json.statusCode) || $json.statusCode < 200 || $json.statusCode >= 300)\n  throw Error(\"Inspect Shopware upsert\");\nreturn { json: { ok: true }, pairedItem: { item: $itemIndex } };\n"
+      },
+      "id": "shopware-10"
+    },
+    {
+      "id": "shopware-11",
+      "name": "Logo URL supplied?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        2040,
+        380
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $('Loop Over Manufacturers').item.json.logoUrl }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "typeVersion": 2
+    },
+    {
+      "name": "Prepare logo upload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function logo({ base, mediaId, name, extension, logoUrl }) {\n  return {\n    url:\n      base.replace(/\\/$/, \"\") +\n      \"/api/_action/media/\" +\n      encodeURIComponent(mediaId) +\n      \"/upload?extension=\" +\n      encodeURIComponent(extension) +\n      \"&fileName=\" +\n      encodeURIComponent(name),\n    body: { url: logoUrl },\n  };\n}\n\nconst x = $(\"Loop Over Manufacturers\").item.json;\nreturn {\n  json: logo({ base: $(\"Settings\").first().json.shopware_url, ...x }),\n  pairedItem: { item: $itemIndex },\n};\n"
+      },
+      "id": "shopware-12"
+    },
+    {
+      "id": "shopware-13",
+      "name": "Upload manufacturer logo",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        2300,
+        360
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.url }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "oAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.body }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "typeVersion": 4.1,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "name": "Confirm logo upload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if (!Number.isInteger($json.statusCode) || $json.statusCode < 200 || $json.statusCode >= 300)\n  throw Error(\"Inspect logo upload\");\nreturn { json: { ok: true }, pairedItem: { item: $itemIndex } };\n"
+      },
+      "id": "shopware-14"
+    },
+    {
+      "name": "Confirm manufacturer import",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ $('Loop Over Manufacturers').item.json.key }}"
+            }
+          ]
+        },
+        "operation": "update",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "done"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "shopware-15"
+    },
+    {
+      "name": "Stop after uncertain Shopware write",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "throw Error(\"Inspect Shopware and pending checkpoint before retry\");\n"
+      },
+      "id": "shopware-16"
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "When clicking \"Execute Workflow\"": {
+      "main": [
+        [
+          {
+            "node": "Settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Settings": {
+      "main": [
+        [
+          {
+            "node": "Get Manufacturer from Google Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Manufacturer from Google Sheet": {
+      "main": [
+        [
+          {
+            "node": "Prepare manufacturers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare manufacturers": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Manufacturers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check manufacturer checkpoint": {
+      "main": [
+        [
+          {
+            "node": "Inspect manufacturer checkpoint",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Inspect manufacturer checkpoint": {
+      "main": [
+        [
+          {
+            "node": "Already completed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve manufacturer": {
+      "main": [
+        [
+          {
+            "node": "Upsert manufacturer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upsert manufacturer": {
+      "main": [
+        [
+          {
+            "node": "Confirm manufacturer upsert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Stop after uncertain Shopware write",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm manufacturer upsert": {
+      "main": [
+        [
+          {
+            "node": "Logo URL supplied?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare logo upload": {
+      "main": [
+        [
+          {
+            "node": "Upload manufacturer logo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload manufacturer logo": {
+      "main": [
+        [
+          {
+            "node": "Confirm logo upload",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Stop after uncertain Shopware write",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm logo upload": {
+      "main": [
+        [
+          {
+            "node": "Confirm manufacturer import",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm manufacturer import": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Manufacturers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Manufacturers": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Check manufacturer checkpoint",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Already completed?": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Manufacturers",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reserve manufacturer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Logo URL supplied?": {
+      "main": [
+        [
+          {
+            "node": "Prepare logo upload",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Confirm manufacturer import",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
