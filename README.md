@@ -333,6 +333,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Amplify Hacker News GitHub Projects](workflows/amplify-hacker-news-github-projects/) - Discover GitHub links on Hacker News, draft social posts and publish them after a short delay.
 - [Turn a PDF into a Ghost Blog Post](workflows/turn-pdf-into-ghost-blog-post/) - Turn an uploaded PDF into a structured HTML blog article and create it in Ghost.
 - [Summarize Umami Analytics to Baserow](workflows/summarize-umami-analytics-to-baserow/) - Compare weekly Umami page metrics and save two AI-written reports in Baserow.
+- [Create Quote Videos for YouTube](workflows/create-quote-videos-for-youtube/) - Combine a quote with a random video and music, upload a portrait clip and update its source sheet.
 
 ## Support
 
