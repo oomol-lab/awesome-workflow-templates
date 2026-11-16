@@ -153,6 +153,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Answer RFP Questions with Company Files](workflows/answer-rfp-questions-with-company-files/) - Extract RFP questions, draft answers from company files, and notify the team.
 - [Draft RFP Responses with Company Knowledge](workflows/draft-rfp-responses-with-company-knowledge/) - Extract RFP questions, draft answers from company files, and notify the team.
 - [Create Lead Presentations from CSV](workflows/create-lead-presentations-from-csv/) - Turn a new lead CSV into a tracking sheet and a personalized presentation for each lead.
+- [Summarize New Pipedrive Organizations](workflows/summarize-new-pipedrive-organizations/) - Summarize a new organization website, add a Pipedrive note and notify Slack.
 
 ## Operations
 
