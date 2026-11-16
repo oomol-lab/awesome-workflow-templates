@@ -1,0 +1,551 @@
+{
+  "name": "Google Drive Automation",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "pdf-ingest-0",
+      "name": "Monitor Google Drive for New Files",
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "position": [
+        -520,
+        -240
+      ],
+      "parameters": {
+        "event": "fileCreated",
+        "options": {},
+        "pollTimes": {
+          "item": [
+            {}
+          ]
+        },
+        "triggerOn": "specificFolder",
+        "folderToWatch": {
+          "__rl": true,
+          "mode": "list",
+          "value": "YOUR_FOLDER_ID",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1RQvAHIw8cQbtwI9ZvdVV0k0x6TM6HZwP",
+          "cachedResultName": "RAG_Files"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "name": "Keep PDF files",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.mimeType }}",
+              "rightValue": "application/pdf",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "pdf-ingest-1"
+    },
+    {
+      "name": "Process one PDF",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "parameters": {
+        "options": {}
+      },
+      "id": "pdf-ingest-2"
+    },
+    {
+      "name": "Check PDF index checkpoint",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'pdf-ingest:'+$('Process one PDF').item.json.id+':'+$('Process one PDF').item.json.modifiedTime }}"
+            }
+          ]
+        },
+        "operation": "rowNotExists"
+      },
+      "id": "pdf-ingest-3"
+    },
+    {
+      "name": "Reserve PDF indexing",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "item_key": "={{ 'pdf-ingest:'+$('Process one PDF').item.json.id+':'+$('Process one PDF').item.json.modifiedTime }}",
+            "status": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "pdf-ingest-4"
+    },
+    {
+      "name": "Restore PDF identity",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return { json: $(\"Process one PDF\").item.json, pairedItem: { item: $itemIndex } };\n"
+      },
+      "id": "pdf-ingest-5"
+    },
+    {
+      "id": "pdf-ingest-6",
+      "name": "Download File from Google Drive",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [
+        -300,
+        -240
+      ],
+      "parameters": {
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.id }}"
+        },
+        "options": {},
+        "operation": "download"
+      },
+      "typeVersion": 3
+    },
+    {
+      "id": "pdf-ingest-7",
+      "name": "Extract PDF Content",
+      "type": "n8n-nodes-base.extractFromFile",
+      "position": [
+        -80,
+        -240
+      ],
+      "parameters": {
+        "options": {},
+        "operation": "pdf"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "pdf-ingest-8",
+      "name": "Clean and Normalize PDF Text",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        140,
+        -240
+      ],
+      "parameters": {
+        "jsCode": "const rawData = $json[\"text\"];\nconst cleanedData = rawData\n  .replace(/(\\r\\n|\\n|\\r)/gm, \" \") // remove line breaks\n  .trim() // remove extra spaces\n  .replace(/[^\\w\\s]/gi, \"\"); // remove special characters\nreturn { cleanedData };\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "pdf-ingest-9",
+      "name": "Insert Document into Pinecone Vector Store",
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+      "position": [
+        360,
+        -240
+      ],
+      "parameters": {
+        "mode": "insert",
+        "options": {},
+        "pineconeIndex": {
+          "__rl": true,
+          "mode": "list",
+          "value": "YOUR_PINECONE_INDEX",
+          "cachedResultName": "n8n-rag-demo"
+        }
+      },
+      "typeVersion": 1,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "id": "pdf-ingest-10",
+      "name": "Generate Document Embeddings (Google Gemini)",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsGoogleGemini",
+      "position": [
+        260,
+        20
+      ],
+      "parameters": {
+        "modelName": "models/gemini-embedding-001"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "pdf-ingest-11",
+      "name": "Load Document Data for Processing",
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "position": [
+        480,
+        20
+      ],
+      "parameters": {
+        "options": {},
+        "dataType": "json",
+        "jsonMode": "expressionData",
+        "jsonData": "={{ $json.cleanedData }}"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "pdf-ingest-12",
+      "name": "Split Document Text into Chunks",
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "position": [
+        380,
+        240
+      ],
+      "parameters": {
+        "options": {},
+        "chunkSize": 3000,
+        "chunkOverlap": 300
+      },
+      "typeVersion": 1
+    },
+    {
+      "name": "Verify PDF indexing",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const a = $input.all();\nif (\n  !a.length ||\n  a.some((x) => x.json.error || typeof x.json.pageContent !== \"string\" || !x.json.pageContent)\n)\n  return [];\nreturn [{ json: {}, pairedItem: { item: 0 } }];\n"
+      },
+      "id": "pdf-ingest-13"
+    },
+    {
+      "name": "Confirm PDF indexing",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'pdf-ingest:'+$('Process one PDF').item.json.id+':'+$('Process one PDF').item.json.modifiedTime }}"
+            }
+          ]
+        },
+        "operation": "update",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "done"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "pdf-ingest-14"
+    },
+    {
+      "name": "Stop after uncertain indexing",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "parameters": {},
+      "id": "pdf-ingest-15"
+    },
+    {
+      "name": "PDF extraction webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "index-new-drive-pdfs",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "disabled": true,
+      "id": "pdf-ingest-16"
+    },
+    {
+      "name": "Download relay PDF",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('PDF extraction webhook').first().json.body.fileId }}"
+        },
+        "options": {}
+      },
+      "id": "pdf-ingest-17"
+    },
+    {
+      "name": "Extract relay PDF",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "parameters": {
+        "operation": "pdf",
+        "options": {}
+      },
+      "id": "pdf-ingest-18"
+    },
+    {
+      "name": "Return PDF text",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {fileId:$('PDF extraction webhook').first().json.body.fileId,text:$json.text} }}",
+        "options": {}
+      },
+      "id": "pdf-ingest-19"
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Monitor Google Drive for New Files": {
+      "main": [
+        [
+          {
+            "node": "Keep PDF files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Keep PDF files": {
+      "main": [
+        [
+          {
+            "node": "Process one PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check PDF index checkpoint": {
+      "main": [
+        [
+          {
+            "node": "Reserve PDF indexing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve PDF indexing": {
+      "main": [
+        [
+          {
+            "node": "Restore PDF identity",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore PDF identity": {
+      "main": [
+        [
+          {
+            "node": "Download File from Google Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download File from Google Drive": {
+      "main": [
+        [
+          {
+            "node": "Extract PDF Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract PDF Content": {
+      "main": [
+        [
+          {
+            "node": "Clean and Normalize PDF Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clean and Normalize PDF Text": {
+      "main": [
+        [
+          {
+            "node": "Insert Document into Pinecone Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert Document into Pinecone Vector Store": {
+      "main": [
+        [
+          {
+            "node": "Verify PDF indexing",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Stop after uncertain indexing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify PDF indexing": {
+      "main": [
+        [
+          {
+            "node": "Confirm PDF indexing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm PDF indexing": {
+      "main": [
+        [
+          {
+            "node": "Process one PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PDF extraction webhook": {
+      "main": [
+        [
+          {
+            "node": "Download relay PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download relay PDF": {
+      "main": [
+        [
+          {
+            "node": "Extract relay PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract relay PDF": {
+      "main": [
+        [
+          {
+            "node": "Return PDF text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process one PDF": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Check PDF index checkpoint",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Document Embeddings (Google Gemini)": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Insert Document into Pinecone Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Document Data for Processing": {
+      "ai_document": [
+        [
+          {
+            "node": "Insert Document into Pinecone Vector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Document Text into Chunks": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Load Document Data for Processing",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
