@@ -1,0 +1,498 @@
+{
+  "name": "Import n8n Workflows from Google Drive",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "n8n-import-0",
+      "name": "Get Existing Workflow Tags",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -580,
+        -580
+      ],
+      "parameters": {
+        "url": "={{ $json.N8N_Instance_URL }}api/v1/tags",
+        "options": {},
+        "sendHeaders": true,
+        "authentication": "predefinedCredentialType",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "nodeCredentialType": "n8nApi"
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "n8n-import-1",
+      "name": "When clicking ‘Test workflow’",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        -1040,
+        -580
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "n8n-import-2",
+      "name": "Extract JSON object from File",
+      "type": "n8n-nodes-base.extractFromFile",
+      "position": [
+        -80,
+        -40
+      ],
+      "parameters": {
+        "options": {},
+        "operation": "fromJson"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "n8n-import-3",
+      "name": "Clean JSON file ready for import",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        140,
+        -40
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const fullWorkflow = $json.data || $json;\n\n// Build settings with only allowed fields\nconst cleanSettings = {};\nif (fullWorkflow.settings?.executionOrder) {\n  cleanSettings.executionOrder = fullWorkflow.settings.executionOrder;\n}\nif (fullWorkflow.settings?.timezone) {\n  cleanSettings.timezone = fullWorkflow.settings.timezone;\n}\n\n// Construct clean workflow object\nconst cleanWorkflow = {\n  name: fullWorkflow.name,\n  nodes: fullWorkflow.nodes,\n  connections: fullWorkflow.connections,\n  settings: cleanSettings,\n};\n\nreturn { json: cleanWorkflow };\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "n8n-import-4",
+      "name": "Set n8n API URL & Tag ID variables",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        -600,
+        -40
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "41afa23f-bacf-4c2b-9630-68483acc9fe6",
+              "name": "N8N_Instance_URL",
+              "type": "string",
+              "value": "https://YOUR_N8N_INSTANCE/"
+            },
+            {
+              "id": "c27f2d9d-ee1f-4ada-90cc-20177017b342",
+              "name": "N8N_Instance_Tag",
+              "type": "string",
+              "value": "YOUR_N8N_TAG_ID"
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "n8n-import-5",
+      "name": "Create n8n Workflow",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        360,
+        -40
+      ],
+      "parameters": {
+        "url": "={{ $('Set n8n API URL & Tag ID variables').item.json.N8N_Instance_URL }}api/v1/workflows",
+        "method": "POST",
+        "options": {},
+        "sendBody": true,
+        "sendHeaders": true,
+        "authentication": "predefinedCredentialType",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "accept",
+              "value": "application/json"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "nodeCredentialType": "n8nApi",
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}"
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "n8n-import-6",
+      "name": "Set Workflow Tag",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        600,
+        -40
+      ],
+      "parameters": {
+        "url": "={{ $('Set n8n API URL & Tag ID variables').item.json.N8N_Instance_URL }}api/v1/workflows/{{ $json.id }}/tags",
+        "method": "PUT",
+        "options": {},
+        "jsonBody": "=[\n  {\n    \"id\": \"{{ $('Set n8n API URL & Tag ID variables').item.json.N8N_Instance_Tag }}\"\n  }\n]",
+        "sendBody": true,
+        "specifyBody": "json",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "n8nApi"
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "n8n-import-7",
+      "name": "Capture Name If Fails To Create Workflow",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        600,
+        160
+      ],
+      "parameters": {
+        "jsCode": "return [\n  {\n    json: {\n      workflowName: $json.name,\n      errorMessage: $json.error.message,\n    },\n  },\n];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "n8n-import-8",
+      "name": "Move JSON file to Deployed folder",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [
+        880,
+        -40
+      ],
+      "parameters": {
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Google Drive Trigger -ToDeploy folder').item.json.id }}"
+        },
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DESTINATION_FOLDER_ID"
+        },
+        "operation": "move"
+      },
+      "typeVersion": 3
+    },
+    {
+      "id": "n8n-import-9",
+      "name": "Download n8n JSON File",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [
+        -320,
+        -40
+      ],
+      "parameters": {
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Google Drive Trigger -ToDeploy folder').item.json.id }}"
+        },
+        "options": {
+          "binaryPropertyName": "data"
+        },
+        "operation": "download"
+      },
+      "typeVersion": 3
+    },
+    {
+      "id": "n8n-import-10",
+      "name": "Set n8n URL variable",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        -820,
+        -580
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "41afa23f-bacf-4c2b-9630-68483acc9fe6",
+              "name": "N8N_Instance_URL",
+              "type": "string",
+              "value": "https://YOUR_N8N_INSTANCE/"
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "n8n-import-11",
+      "name": "Google Drive Trigger -ToDeploy folder",
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "position": [
+        -880,
+        -40
+      ],
+      "parameters": {
+        "event": "fileCreated",
+        "options": {},
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "triggerOn": "specificFolder",
+        "folderToWatch": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_SOURCE_FOLDER_ID"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "n8n-import-Check-import-checkpoint",
+      "name": "Check import checkpoint",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'n8n-import:'+$('Google Drive Trigger -ToDeploy folder').item.json.id }}"
+            }
+          ]
+        },
+        "operation": "rowNotExists"
+      }
+    },
+    {
+      "id": "n8n-import-Reserve-import",
+      "name": "Reserve import",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "item_key": "={{ 'n8n-import:'+$('Google Drive Trigger -ToDeploy folder').item.json.id }}",
+            "status": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "n8n-import-restore",
+      "name": "Restore workflow JSON",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return { json: $(\"Clean JSON file ready for import\").item.json, pairedItem: { item: $itemIndex } };\n"
+      }
+    },
+    {
+      "id": "n8n-import-Clear-import-checkpoint",
+      "name": "Clear import checkpoint",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'n8n-import:'+$('Google Drive Trigger -ToDeploy folder').item.json.id }}"
+            }
+          ]
+        },
+        "operation": "deleteRows"
+      }
+    }
+  ],
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Set Workflow Tag": {
+      "main": [
+        [
+          {
+            "node": "Move JSON file to Deployed folder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create n8n Workflow": {
+      "main": [
+        [
+          {
+            "node": "Set Workflow Tag",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set n8n URL variable": {
+      "main": [
+        [
+          {
+            "node": "Get Existing Workflow Tags",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download n8n JSON File": {
+      "main": [
+        [
+          {
+            "node": "Extract JSON object from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract JSON object from File": {
+      "main": [
+        [
+          {
+            "node": "Clean JSON file ready for import",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clean JSON file ready for import": {
+      "main": [
+        [
+          {
+            "node": "Check import checkpoint",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Test workflow’": {
+      "main": [
+        [
+          {
+            "node": "Set n8n URL variable",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set n8n API URL & Tag ID variables": {
+      "main": [
+        [
+          {
+            "node": "Download n8n JSON File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Drive Trigger -ToDeploy folder": {
+      "main": [
+        [
+          {
+            "node": "Set n8n API URL & Tag ID variables",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check import checkpoint": {
+      "main": [
+        [
+          {
+            "node": "Reserve import",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve import": {
+      "main": [
+        [
+          {
+            "node": "Restore workflow JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore workflow JSON": {
+      "main": [
+        [
+          {
+            "node": "Create n8n Workflow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Move JSON file to Deployed folder": {
+      "main": [
+        [
+          {
+            "node": "Clear import checkpoint",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {}
+}
