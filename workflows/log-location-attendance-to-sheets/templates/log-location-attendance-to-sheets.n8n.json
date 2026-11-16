@@ -1,0 +1,652 @@
+{
+  "name": "Log Location Attendance to Sheets",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "attendance-0",
+      "name": "Receive attendance event",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "location-attendance",
+        "options": {}
+      }
+    },
+    {
+      "id": "attendance-1",
+      "name": "Validate attendance event",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const crypto = require(\"crypto\"),\n  h = $json.headers || {},\n  id = h[\"request-id\"],\n  direction = h.direction,\n  secret = $env.ATTENDANCE_WEBHOOK_AUTH,\n  expected = crypto\n    .createHmac(\"sha256\", secret || \"\")\n    .update(String(id || \"\") + \"\\n\" + String(direction || \"\"))\n    .digest(\"hex\"),\n  sig = String(h[\"x-signature\"] || \"\");\nif (\n  !secret ||\n  sig.length !== expected.length ||\n  !crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected)) ||\n  !/^[-A-Za-z0-9_]{8,128}$/.test(id || \"\") ||\n  ![\"Check-In\", \"Check-Out\"].includes(direction)\n)\n  throw Error(\"Invalid attendance event\");\nconst t = new Date();\nreturn {\n  json: { id, direction, date: t.toISOString().slice(0, 10), time: t.toISOString().slice(11, 16) },\n  pairedItem: { item: $itemIndex },\n};\n"
+      }
+    },
+    {
+      "id": "attendance-2",
+      "name": "Check attendance event",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "resource": "row",
+        "operation": "rowNotExists",
+        "matchType": "allConditions",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'attendance:'+ $('Validate attendance event').item.json.id }}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "attendance-3",
+      "name": "Reserve attendance event",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "item_key": "={{ 'attendance:'+ $('Validate attendance event').item.json.id }}",
+            "status": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "attendance-4",
+      "name": "Find attendance spreadsheet",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [
+        220,
+        -220
+      ],
+      "parameters": {
+        "filter": {},
+        "options": {},
+        "resource": "fileFolder",
+        "returnAll": true,
+        "queryString": "WorkTimeTracking"
+      },
+      "executeOnce": false,
+      "typeVersion": 3,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "attendance-5",
+      "name": "Select attendance spreadsheet",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const a = $input.all().filter((x) => x.json.id && x.json.name === \"WorkTimeTracking\");\nif (a.length > 1) throw Error(\"Multiple attendance spreadsheets\");\nreturn [{ json: { exists: a.length === 1, id: a[0]?.json.id || \"\" }, pairedItem: { item: 0 } }];\n"
+      }
+    },
+    {
+      "id": "attendance-6",
+      "name": "Spreadsheet exists?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.exists }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "attendance-7",
+      "name": "Check spreadsheet creation",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "resource": "row",
+        "operation": "rowNotExists",
+        "matchType": "allConditions",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "attendance:spreadsheet"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "attendance-8",
+      "name": "Reserve spreadsheet creation",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "item_key": "attendance:spreadsheet",
+            "status": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "attendance-9",
+      "name": "Create attendance spreadsheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        800,
+        -240
+      ],
+      "parameters": {
+        "title": "WorkTimeTracking",
+        "options": {
+          "locale": ""
+        },
+        "resource": "spreadsheet",
+        "sheetsUi": {
+          "sheetValues": [
+            {
+              "title": "Worklog"
+            }
+          ]
+        }
+      },
+      "typeVersion": 4.5,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "id": "attendance-10",
+      "name": "Choose spreadsheet ID",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const id = $json.spreadsheetId;\nif (typeof id !== \"string\" || !id) throw Error(\"Inspect spreadsheet creation\");\nreturn { json: { id }, pairedItem: { item: $itemIndex } };\n"
+      }
+    },
+    {
+      "id": "attendance-11",
+      "name": "Initialize attendance headings",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ 'https://sheets.googleapis.com/v4/spreadsheets/'+encodeURIComponent($json.id)+'/values/Worklog!A1:C1?valueInputOption=RAW' }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"values\":[[\"Date\",\"Time\",\"Direction\"]]}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "id": "attendance-12",
+      "name": "Verify attendance headings",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if ($json.statusCode < 200 || $json.statusCode >= 300 || !$json.body?.spreadsheetId)\n  throw Error(\"Inspect spreadsheet headings\");\nreturn { json: { id: $json.body.spreadsheetId }, pairedItem: { item: $itemIndex } };\n"
+      }
+    },
+    {
+      "id": "attendance-13",
+      "name": "Prepare attendance row",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const e = $(\"Validate attendance event\").item.json;\nreturn {\n  json: {\n    spreadsheetId: $json.id,\n    Date: e.date,\n    Time: e.time,\n    Direction: e.direction,\n    _pending: true,\n  },\n  pairedItem: { item: $itemIndex },\n};\n"
+      }
+    },
+    {
+      "id": "attendance-14",
+      "name": "Append attendance event",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        1000,
+        20
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "Date": "={{ $json.Date }}",
+            "Time": "={{ $json.Time }}",
+            "Direction": "={{ $json.Direction }}"
+          },
+          "schema": [
+            {
+              "id": "Date",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Date",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Time",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Time",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Direction",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Direction",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": []
+        },
+        "options": {},
+        "operation": "append",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Worklog"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.spreadsheetId }}"
+        }
+      },
+      "typeVersion": 4.5,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "id": "attendance-15",
+      "name": "Verify attendance append",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if ($json._pending || !$json.Date || !$json.Time || !$json.Direction)\n  throw Error(\"Inspect attendance append\");\nreturn { json: $json, pairedItem: { item: $itemIndex } };\n"
+      }
+    },
+    {
+      "id": "attendance-16",
+      "name": "Confirm attendance event",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "matchType": "allConditions",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'attendance:'+ $('Validate attendance event').item.json.id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "done"
+          },
+          "schema": []
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "attendance-17",
+      "name": "Stop after uncertain write",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "throw Error(\"Inspect attendance checkpoint and external destination before retry\");\n"
+      }
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "timezone": "Europe/Lisbon",
+    "callerPolicy": "workflowsFromSameOwner",
+    "executionOrder": "v1",
+    "executionTimeout": -1,
+    "saveManualExecutions": true
+  },
+  "connections": {
+    "Receive attendance event": {
+      "main": [
+        [
+          {
+            "node": "Validate attendance event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate attendance event": {
+      "main": [
+        [
+          {
+            "node": "Check attendance event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check attendance event": {
+      "main": [
+        [
+          {
+            "node": "Reserve attendance event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve attendance event": {
+      "main": [
+        [
+          {
+            "node": "Find attendance spreadsheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find attendance spreadsheet": {
+      "main": [
+        [
+          {
+            "node": "Select attendance spreadsheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select attendance spreadsheet": {
+      "main": [
+        [
+          {
+            "node": "Spreadsheet exists?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check spreadsheet creation": {
+      "main": [
+        [
+          {
+            "node": "Reserve spreadsheet creation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve spreadsheet creation": {
+      "main": [
+        [
+          {
+            "node": "Create attendance spreadsheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create attendance spreadsheet": {
+      "main": [
+        [
+          {
+            "node": "Choose spreadsheet ID",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Stop after uncertain write",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Initialize attendance headings": {
+      "main": [
+        [
+          {
+            "node": "Verify attendance headings",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Stop after uncertain write",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify attendance headings": {
+      "main": [
+        [
+          {
+            "node": "Prepare attendance row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare attendance row": {
+      "main": [
+        [
+          {
+            "node": "Append attendance event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append attendance event": {
+      "main": [
+        [
+          {
+            "node": "Verify attendance append",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Stop after uncertain write",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify attendance append": {
+      "main": [
+        [
+          {
+            "node": "Confirm attendance event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Spreadsheet exists?": {
+      "main": [
+        [
+          {
+            "node": "Prepare attendance row",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Check spreadsheet creation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Choose spreadsheet ID": {
+      "main": [
+        [
+          {
+            "node": "Initialize attendance headings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

@@ -676,6 +676,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Route Aliased Emails to Notion Tasks](workflows/route-aliased-emails-to-notion-tasks/) - Route inbox messages to each user’s Notion database and create an AI task and summary.
 - [Review and Remove CSV Personal Columns](workflows/review-and-remove-csv-personal-columns/) - Identify likely personal-data columns in new CSV files and write a review copy without those columns.
 - [Save LINE Files to Drive and Sheet](workflows/save-line-files-to-drive-and-sheet/) - Save LINE media in Drive folders, log the file and optionally reply.
+- [Log Location Attendance to Sheets](workflows/log-location-attendance-to-sheets/) - Log check-in and check-out events from location shortcuts to a Google Sheet.
 
 ## Content
 
