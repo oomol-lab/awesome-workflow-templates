@@ -1,0 +1,547 @@
+{
+  "name": "Turn a PDF into a Ghost Blog Post",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "pdf-blog-0",
+      "name": "Upload PDF",
+      "type": "n8n-nodes-base.formTrigger",
+      "position": [
+        660,
+        1480
+      ],
+      "parameters": {
+        "path": "pdf",
+        "options": {},
+        "formTitle": "PDF2Blog",
+        "formFields": {
+          "values": [
+            {
+              "fieldType": "file",
+              "fieldLabel": "Upload PDF File",
+              "multipleFiles": false,
+              "requiredField": true,
+              "acceptFileTypes": ".pdf"
+            },
+            {
+              "fieldLabel": "Request ID",
+              "requiredField": true
+            }
+          ]
+        },
+        "formDescription": "Transform PDFs into captivating blog posts"
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "id": "pdf-blog-1",
+      "name": "Extract Text",
+      "type": "n8n-nodes-base.extractFromFile",
+      "position": [
+        860,
+        1480
+      ],
+      "parameters": {
+        "options": {},
+        "operation": "pdf",
+        "binaryPropertyName": "Upload_PDF_File"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "pdf-blog-2",
+      "name": "Post to Ghost",
+      "type": "n8n-nodes-base.ghost",
+      "position": [
+        2140,
+        1480
+      ],
+      "parameters": {
+        "title": "={{ $json.title }}",
+        "source": "adminApi",
+        "content": "={{ $json.content }}",
+        "operation": "create",
+        "additionalFields": {}
+      },
+      "typeVersion": 1,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "id": "pdf-blog-3",
+      "name": "gpt-4o-mini",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "position": [
+        1180,
+        1680
+      ],
+      "parameters": {
+        "modelName": "models/gemini-3.6-flash",
+        "options": {}
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "pdf-blog-4",
+      "name": "Structured Output - JSON",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "position": [
+        1400,
+        1680
+      ],
+      "parameters": {
+        "jsonSchemaExample": "{\n    \"title\": \"title\",\n    \"content\": \"content\"\n}"
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "pdf-blog-5",
+      "name": "Separate Title & Content",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1660,
+        1480
+      ],
+      "parameters": {
+        "jsCode": "try {\n  // Check if input exists and has the expected structure\n  const input = $input.all();\n  if (!input || !input.length) {\n    throw new Error(\"No input data received\");\n  }\n\n  const firstItem = input[0];\n  if (!firstItem || !firstItem.json || !firstItem.json.output || !firstItem.json.output.output) {\n    throw new Error(\"Invalid input structure: missing required properties\");\n  }\n\n  const output = firstItem.json.output.output;\n\n  // Validate title exists\n  if (!output.title) {\n    throw new Error(\"Missing title in output\");\n  }\n\n  // Validate content exists\n  if (!output.content) {\n    throw new Error(\"Missing content in output\");\n  }\n\n  const title = output.title;\n  const content = output.content.replace(/<h1>.*?<\\/h1>/s, \"\").trim();\n\n  // Validate final content is not empty after processing\n  if (!content) {\n    throw new Error(\"Content is empty after processing\");\n  }\n\n  console.log(\"Successfully processed content\");\n\n  console.log(title);\n  console.log(content);\n\n  return { title, content };\n} catch (error) {\n  // Log the error for debugging\n  console.error(\"Error processing content:\", error.message);\n\n  // Return a graceful failure object\n  return {\n    error: true,\n    message: error.message,\n    title: \"\",\n    content: \"\",\n    timestamp: new Date().toISOString(),\n  };\n}\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "pdf-blog-6",
+      "name": "Create Structured Blog Post",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        1200,
+        1480
+      ],
+      "parameters": {
+        "text": "={{ $json.text }}",
+        "agent": "conversationalAgent",
+        "options": {
+          "systemMessage": "=Analyze the provided PDF article and create a compelling blog post that will be returned in JSON format with two fields: \"title\" and \"content\". Follow these specifications:\n\n## Title Requirements\n- Create an engaging, SEO-friendly title under 10 words\n- Must not contain a colon\n- Should capture the article's essence\n- Will be formatted as an H1 in the content\n\n## Content Structure\n- Introduction (150-200 words)\n  * Compelling hook\n  * Topic context and importance\n  * Preview of main points\n\n- Main Content (6-8 chapters)\n  * Each chapter requires:\n    - Relevant H2 heading\n    - 300-400 words of unique content\n    - Specific topic focus\n    - Source material quotes/data\n    - Smooth transitions\n\n- Conclusion (200-250 words)\n  * Key takeaways\n  * Final thoughts/implications\n\n## Formatting Guidelines\n- Use proper HTML tags throughout\n- Structure with <p> tags for paragraphs\n- Include appropriate spacing\n- Use <blockquote> for direct quotes\n- Maintain consistent formatting\n- Write in clear, professional tone\n- Break up long paragraphs\n- Use engaging subheadings\n- Include transitional phrases\n\nThe content should be original, avoid direct copying, and maintain a consistent voice throughout. The final JSON response should contain only the title and content fields, with the content including all HTML formatting."
+        },
+        "promptType": "define",
+        "hasOutputParser": true
+      },
+      "retryOnFail": true,
+      "typeVersion": 1.6
+    },
+    {
+      "id": "pdf-blog-Choose-form-mode",
+      "name": "Choose form mode",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const requestId = String($json[\"Request ID\"] ?? \"\").trim(),\n  mode = \"direct\";\nif (!/^[A-Za-z0-9_-]{16,128}$/.test(requestId)) throw Error(\"Invalid Request ID\");\nreturn { json: { ...$json, requestId, mode }, binary: $binary, pairedItem: { item: $itemIndex } };\n"
+      }
+    },
+    {
+      "id": "pdf-blog-Relay-mode?",
+      "name": "Relay mode?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "mode",
+              "leftValue": "={{ $('Choose form mode').first().json.mode }}",
+              "rightValue": "relay",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "pdf-blog-Forward-PDF-text-to-Open-Flow",
+      "name": "Forward PDF text to Open Flow",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://YOUR_OPEN_FLOW_WEBHOOK",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({requestId:$('Choose form mode').first().json.requestId,text:$json.text}) }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "pdf-blog-Receive-Ghost-request",
+      "name": "Receive Ghost request",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "pdf-blog-ghost",
+        "authentication": "headerAuth",
+        "responseMode": "lastNode",
+        "options": {
+          "responseData": "firstEntryJson"
+        }
+      }
+    },
+    {
+      "id": "pdf-blog-Prepare-direct-post",
+      "name": "Prepare direct post",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const title = String($json.title ?? \"\").trim(),\n  content = String($json.content ?? \"\").trim(),\n  requestId = $(\"Choose form mode\").first().json.requestId;\nif (!title || !content) throw Error(\"Invalid generated article\");\nreturn { json: { requestId, title, content }, pairedItem: { item: $itemIndex } };\n"
+      }
+    },
+    {
+      "id": "pdf-blog-Validate-Ghost-request",
+      "name": "Validate Ghost request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const { requestId, title, content } = $json.body ?? {};\nif (\n  !/^[A-Za-z0-9_-]{16,128}$/.test(requestId ?? \"\") ||\n  typeof title !== \"string\" ||\n  !title.trim() ||\n  typeof content !== \"string\" ||\n  !content.trim()\n)\n  throw Error(\"Invalid request\");\nreturn { json: { requestId, title, content }, pairedItem: { item: $itemIndex } };\n"
+      }
+    },
+    {
+      "id": "pdf-blog-Check-Ghost-checkpoint",
+      "name": "Check Ghost checkpoint",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'pdf-blog:'+$json.requestId }}"
+            }
+          ]
+        },
+        "operation": "rowNotExists"
+      }
+    },
+    {
+      "id": "pdf-blog-Reserve-Ghost-creation",
+      "name": "Reserve Ghost creation",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "item_key": "={{ 'pdf-blog:'+$json.requestId }}",
+            "status": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "pdf-blog-Restore-article",
+      "name": "Restore article",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const i = $(\"Prepare direct post\").isExecuted\n  ? $(\"Prepare direct post\").first()\n  : $(\"Validate Ghost request\").first();\nreturn { json: i.json, pairedItem: { item: $itemIndex } };\n"
+      }
+    },
+    {
+      "id": "pdf-blog-Validate-Ghost-receipt",
+      "name": "Validate Ghost receipt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if (!$json.id) throw Error(\"Inspect Ghost before retrying\");\nreturn { json: { id: $json.id }, pairedItem: { item: $itemIndex } };\n"
+      }
+    },
+    {
+      "id": "pdf-blog-Stop-after-uncertain-Ghost-write",
+      "name": "Stop after uncertain Ghost write",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "parameters": {}
+    },
+    {
+      "id": "pdf-blog-Mark-Ghost-creation-complete",
+      "name": "Mark Ghost creation complete",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'pdf-blog:'+$('Restore article').first().json.requestId }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "done"
+          },
+          "schema": []
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "pdf-blog-Return-Ghost-receipt",
+      "name": "Return Ghost receipt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return {\n  json: { id: $(\"Validate Ghost receipt\").first().json.id },\n  pairedItem: { item: $itemIndex },\n};\n"
+      }
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Upload PDF": {
+      "main": [
+        [
+          {
+            "node": "Choose form mode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Choose form mode": {
+      "main": [
+        [
+          {
+            "node": "Extract Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Text": {
+      "main": [
+        [
+          {
+            "node": "Relay mode?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Relay mode?": {
+      "main": [
+        [
+          {
+            "node": "Forward PDF text to Open Flow",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create Structured Blog Post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Structured Blog Post": {
+      "main": [
+        [
+          {
+            "node": "Separate Title & Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Separate Title & Content": {
+      "main": [
+        [
+          {
+            "node": "Prepare direct post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare direct post": {
+      "main": [
+        [
+          {
+            "node": "Check Ghost checkpoint",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Receive Ghost request": {
+      "main": [
+        [
+          {
+            "node": "Validate Ghost request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Ghost request": {
+      "main": [
+        [
+          {
+            "node": "Check Ghost checkpoint",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Ghost checkpoint": {
+      "main": [
+        [
+          {
+            "node": "Reserve Ghost creation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve Ghost creation": {
+      "main": [
+        [
+          {
+            "node": "Restore article",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore article": {
+      "main": [
+        [
+          {
+            "node": "Post to Ghost",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Post to Ghost": {
+      "main": [
+        [
+          {
+            "node": "Validate Ghost receipt",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Stop after uncertain Ghost write",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Ghost receipt": {
+      "main": [
+        [
+          {
+            "node": "Mark Ghost creation complete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Ghost creation complete": {
+      "main": [
+        [
+          {
+            "node": "Return Ghost receipt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "gpt-4o-mini": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Create Structured Blog Post",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output - JSON": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Create Structured Blog Post",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
