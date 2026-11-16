@@ -653,6 +653,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Transcribe Bank Statements and Extract Deposits](workflows/transcribe-bank-statements-and-extract-deposits/) - Transcribe a bank statement PDF and extract deposit rows.
 - [Tag Drive JPEGs with AI Keywords](workflows/tag-drive-jpegs-with-ai-keywords/) - Analyze new JPEG images and write descriptive XMP keywords into the original Drive files.
 - [Find Eastern Interview Availability](workflows/find-eastern-interview-availability/) - Find available 30-minute weekday interview times in an Eastern Time calendar.
+- [Analyze Uploaded Documents and Email a Report](workflows/analyze-uploaded-documents-and-email-report/) - Parse uploaded documents, translate and analyze them, and email the report.
 
 ## Content
 
