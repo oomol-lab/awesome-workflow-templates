@@ -1,0 +1,1028 @@
+{
+  "name": "YT New Video Upload",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "private-video-0",
+      "name": "New Video?",
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "position": [
+        -360,
+        220
+      ],
+      "parameters": {
+        "event": "fileCreated",
+        "options": {},
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "triggerOn": "specificFolder",
+        "folderToWatch": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_FOLDER_ID"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "name": "Receive upload job",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "private-video-submit",
+        "authentication": "headerAuth",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "private-video-1"
+    },
+    {
+      "name": "Choose video request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const x = $json.body ?? $json;\nconst fileId = x.fileId ?? x.id,\n  requestId = x.requestId ?? \"drive_\" + fileId;\nif (!/^[A-Za-z0-9_-]{16,128}$/.test(requestId ?? \"\") || !fileId)\n  throw Error(\"Invalid video request\");\nreturn {\n  json: { fileId, requestId, relay: !!$json.body, title: x.title ?? x.name ?? \"New video\" },\n  pairedItem: { item: $itemIndex },\n};\n"
+      },
+      "id": "private-video-2"
+    },
+    {
+      "name": "Check upload checkpoint",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ $('Choose video request').first().json.requestId }}"
+            }
+          ]
+        },
+        "operation": "rowNotExists"
+      },
+      "id": "private-video-3"
+    },
+    {
+      "name": "Reserve private upload",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "item_key": "={{ $('Choose video request').first().json.requestId }}",
+            "status": "pending",
+            "video_id": "",
+            "file_id": "={{ $('Choose video request').first().json.fileId }}"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "private-video-4"
+    },
+    {
+      "id": "private-video-5",
+      "name": "Download New Video",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [
+        -140,
+        220
+      ],
+      "parameters": {
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Choose video request').first().json.fileId }}"
+        },
+        "options": {},
+        "operation": "download"
+      },
+      "typeVersion": 3
+    },
+    {
+      "id": "private-video-6",
+      "name": "Upload Video to Youtube",
+      "type": "n8n-nodes-base.youTube",
+      "position": [
+        140,
+        220
+      ],
+      "parameters": {
+        "title": "={{ $('Choose video request').first().json.title }}",
+        "options": {
+          "privacyStatus": "private",
+          "selfDeclaredMadeForKids": false
+        },
+        "resource": "video",
+        "operation": "upload",
+        "categoryId": "25",
+        "regionCode": "DE"
+      },
+      "typeVersion": 1,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "name": "Verify uploaded video",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if (!$json.uploadId) throw Error(\"Inspect YouTube upload\");\nreturn { json: $json, pairedItem: { item: $itemIndex } };\n"
+      },
+      "id": "private-video-7"
+    },
+    {
+      "name": "Store private upload result",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ $('Choose video request').first().json.requestId }}"
+            }
+          ]
+        },
+        "operation": "update",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "done",
+            "video_id": "={{ $json.uploadId }}"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "private-video-8"
+    },
+    {
+      "name": "Stop after uncertain upload",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "parameters": {},
+      "id": "private-video-9"
+    },
+    {
+      "name": "Receive upload status",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "private-video-status",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "private-video-10"
+    },
+    {
+      "name": "Validate status request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const requestId = $json.body?.requestId;\nif (!/^[A-Za-z0-9_-]{16,128}$/.test(requestId ?? \"\")) throw Error(\"Invalid request\");\nreturn { json: { requestId }, pairedItem: { item: $itemIndex } };\n"
+      },
+      "id": "private-video-11"
+    },
+    {
+      "name": "Read upload checkpoint",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ $('Validate status request').first().json.requestId }}"
+            }
+          ]
+        },
+        "operation": "get",
+        "returnAll": false,
+        "limit": 1
+      },
+      "alwaysOutputData": true,
+      "id": "private-video-12"
+    },
+    {
+      "name": "Prepare upload status",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return {\n  json: {\n    requestId: $(\"Validate status request\").first().json.requestId,\n    status: $json.status ?? \"pending\",\n    videoId: $json.video_id ?? \"\",\n  },\n  pairedItem: { item: $itemIndex },\n};\n"
+      },
+      "id": "private-video-13"
+    },
+    {
+      "name": "Return upload status",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "private-video-14"
+    },
+    {
+      "name": "Direct workflow?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $('Choose video request').first().json.relay }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "private-video-15"
+    },
+    {
+      "name": "Resume metadata",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "private-video-resume",
+        "authentication": "headerAuth",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "private-video-16"
+    },
+    {
+      "name": "Validate metadata resume",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const requestId = $json.body?.requestId;\nif (!/^[A-Za-z0-9_-]{16,128}$/.test(requestId ?? \"\")) throw Error(\"Invalid request\");\nreturn { json: { requestId }, pairedItem: { item: $itemIndex } };\n"
+      },
+      "id": "private-video-17"
+    },
+    {
+      "name": "Prepare metadata request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return {\n  json: { requestId: $(\"Choose video request\").first().json.requestId },\n  pairedItem: { item: $itemIndex },\n};\n"
+      },
+      "id": "private-video-18"
+    },
+    {
+      "name": "Read stored private upload",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ $json.requestId }}"
+            }
+          ]
+        },
+        "operation": "get",
+        "returnAll": false,
+        "limit": 1
+      },
+      "id": "private-video-19"
+    },
+    {
+      "name": "Select stored private video",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if ($json.status !== \"done\" || !$json.video_id) throw Error(\"Upload not confirmed\");\nreturn {\n  json: { videoId: $json.video_id, fileId: $json.file_id, requestId: $json.item_key },\n  pairedItem: { item: $itemIndex },\n};\n"
+      },
+      "id": "private-video-20"
+    },
+    {
+      "name": "List caption tracks",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "url": "https://www.googleapis.com/youtube/v3/captions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "youTubeOAuth2Api",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "part",
+              "value": "snippet"
+            },
+            {
+              "name": "videoId",
+              "value": "={{ $('Select stored private video').first().json.videoId }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "private-video-21"
+    },
+    {
+      "name": "Select caption track",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const items = $json.items ?? [];\nconst t = items.find((x) => x.id && x.snippet?.status === \"serving\");\nreturn { json: { ready: !!t, captionId: t?.id ?? \"\" }, pairedItem: { item: $itemIndex } };\n"
+      },
+      "id": "private-video-22"
+    },
+    {
+      "name": "Caption ready?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.ready }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "private-video-23"
+    },
+    {
+      "name": "Wait for captions",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "parameters": {
+        "amount": 1,
+        "unit": "minutes"
+      },
+      "id": "private-video-24"
+    },
+    {
+      "name": "Download caption",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "url": "={{ 'https://www.googleapis.com/youtube/v3/captions/'+$json.captionId+'?tfmt=vtt' }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "youTubeOAuth2Api",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "id": "private-video-25"
+    },
+    {
+      "name": "Prepare transcript prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function f({ body, videoId }) {\n  const text = String(body ?? \"\")\n    .replace(/^\\uFEFF/, \"\")\n    .replace(/\\r\\n?/g, \"\\n\");\n  const lines = text\n    .split(\"\\n\")\n    .filter(\n      (line) =>\n        line.trim() &&\n        !/^WEBVTT(?:\\s|$)/.test(line) &&\n        !/^\\d+$/.test(line.trim()) &&\n        !/-->/.test(line) &&\n        !/^NOTE(?:\\s|$)/.test(line),\n    );\n  const transcript = lines\n    .join(\" \")\n    .replace(/<[^>]*>/g, \"\")\n    .replace(/&amp;/g, \"&\")\n    .replace(/&lt;/g, \"<\")\n    .replace(/&gt;/g, \">\")\n    .replace(/\\s+/g, \" \")\n    .trim();\n  if (!videoId || !transcript) throw Error(\"No usable caption for this video\");\n  return {\n    prompt: `Return only JSON with title (max 100 characters), description in first person, and tags (array). Write a detailed concise YouTube description with 2-4 emoji and 2-5 hashtags based strictly on this transcript.\\n\\n${transcript}`,\n  };\n}\n\nreturn {\n  json: f({ body: $json.data, videoId: $(\"Select stored private video\").first().json.videoId }),\n  pairedItem: { item: $itemIndex },\n};\n"
+      },
+      "id": "private-video-26"
+    },
+    {
+      "name": "Generate metadata",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {contents:[{parts:[{text:$json.prompt}]}]} }}",
+        "options": {}
+      },
+      "id": "private-video-27"
+    },
+    {
+      "name": "Validate metadata",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function f({ text }) {\n  const source = String(text ?? \"\")\n    .replace(/^```(?:json)?\\s*|\\s*```$/g, \"\")\n    .trim();\n  const result = JSON.parse(source);\n  const title = String(result.title ?? \"\").trim(),\n    description = String(result.description ?? \"\").trim();\n  const tags = Array.isArray(result.tags)\n    ? result.tags.map((x) => String(x).trim()).filter(Boolean)\n    : [];\n  if (!title || title.length > 100 || !description || !tags.length)\n    throw Error(\"Inspect generated metadata\");\n  return { title, description, tags };\n}\n\nconst text = ($json.candidates?.[0]?.content?.parts ?? []).map((x) => x.text ?? \"\").join(\"\");\nreturn { json: f({ text }), pairedItem: { item: $itemIndex } };\n"
+      },
+      "id": "private-video-28"
+    },
+    {
+      "id": "private-video-29",
+      "name": "Update Video's Metadata",
+      "type": "n8n-nodes-base.youTube",
+      "onError": "continueErrorOutput",
+      "position": [
+        2160,
+        240
+      ],
+      "parameters": {
+        "resource": "video",
+        "operation": "update",
+        "videoId": "={{ $('Select stored private video').first().json.videoId }}",
+        "title": "={{ $json.title }}",
+        "categoryId": "25",
+        "regionCode": "DE",
+        "updateFields": {
+          "tags": "={{ $json.tags.join(\",\") }}",
+          "description": "={{ $json.description }}",
+          "privacyStatus": "private"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "name": "Configure source deletion",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return { json: { deleteSource: false }, pairedItem: { item: $itemIndex } };\n"
+      },
+      "id": "private-video-30"
+    },
+    {
+      "name": "Delete source file?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.deleteSource }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "private-video-31"
+    },
+    {
+      "name": "Reserve source deletion",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ $('Select stored private video').first().json.requestId }}"
+            }
+          ]
+        },
+        "operation": "update",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "delete_pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "private-video-32"
+    },
+    {
+      "id": "private-video-33",
+      "name": "Delete File from Upload Folder (Optional)",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [
+        2460,
+        -20
+      ],
+      "parameters": {
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Select stored private video').first().json.fileId }}"
+        },
+        "options": {},
+        "operation": "deleteFile"
+      },
+      "typeVersion": 3,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "name": "Confirm source deletion",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ $('Select stored private video').first().json.requestId }}"
+            }
+          ]
+        },
+        "operation": "update",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "done"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "private-video-34"
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "New Video?": {
+      "main": [
+        [
+          {
+            "node": "Choose video request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Receive upload job": {
+      "main": [
+        [
+          {
+            "node": "Choose video request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Choose video request": {
+      "main": [
+        [
+          {
+            "node": "Check upload checkpoint",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check upload checkpoint": {
+      "main": [
+        [
+          {
+            "node": "Reserve private upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve private upload": {
+      "main": [
+        [
+          {
+            "node": "Download New Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download New Video": {
+      "main": [
+        [
+          {
+            "node": "Upload Video to Youtube",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload Video to Youtube": {
+      "main": [
+        [
+          {
+            "node": "Verify uploaded video",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Stop after uncertain upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify uploaded video": {
+      "main": [
+        [
+          {
+            "node": "Store private upload result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Receive upload status": {
+      "main": [
+        [
+          {
+            "node": "Validate status request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate status request": {
+      "main": [
+        [
+          {
+            "node": "Read upload checkpoint",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read upload checkpoint": {
+      "main": [
+        [
+          {
+            "node": "Prepare upload status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare upload status": {
+      "main": [
+        [
+          {
+            "node": "Return upload status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Store private upload result": {
+      "main": [
+        [
+          {
+            "node": "Direct workflow?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Direct workflow?": {
+      "main": [
+        [
+          {
+            "node": "Prepare metadata request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare metadata request": {
+      "main": [
+        [
+          {
+            "node": "Read stored private upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resume metadata": {
+      "main": [
+        [
+          {
+            "node": "Validate metadata resume",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate metadata resume": {
+      "main": [
+        [
+          {
+            "node": "Read stored private upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read stored private upload": {
+      "main": [
+        [
+          {
+            "node": "Select stored private video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select stored private video": {
+      "main": [
+        [
+          {
+            "node": "List caption tracks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List caption tracks": {
+      "main": [
+        [
+          {
+            "node": "Select caption track",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select caption track": {
+      "main": [
+        [
+          {
+            "node": "Caption ready?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Caption ready?": {
+      "main": [
+        [
+          {
+            "node": "Download caption",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait for captions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for captions": {
+      "main": [
+        [
+          {
+            "node": "List caption tracks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download caption": {
+      "main": [
+        [
+          {
+            "node": "Prepare transcript prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare transcript prompt": {
+      "main": [
+        [
+          {
+            "node": "Generate metadata",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate metadata": {
+      "main": [
+        [
+          {
+            "node": "Validate metadata",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate metadata": {
+      "main": [
+        [
+          {
+            "node": "Update Video's Metadata",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Video's Metadata": {
+      "main": [
+        [
+          {
+            "node": "Configure source deletion",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Stop after uncertain upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configure source deletion": {
+      "main": [
+        [
+          {
+            "node": "Delete source file?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete source file?": {
+      "main": [
+        [
+          {
+            "node": "Reserve source deletion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve source deletion": {
+      "main": [
+        [
+          {
+            "node": "Delete File from Upload Folder (Optional)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete File from Upload Folder (Optional)": {
+      "main": [
+        [
+          {
+            "node": "Confirm source deletion",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Stop after uncertain upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

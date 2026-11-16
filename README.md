@@ -690,6 +690,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Generate FAQ JSON for an Integration Row](workflows/generate-faq-json-for-integration-rows/) - Generate an integration FAQ JSON file and mark its source sheet row done.
 - [Scan Integration Sheets and Generate FAQs](workflows/scan-integration-sheets-and-generate-faq/) - Scan four integration sheets and generate a FAQ JSON for each unfinished row.
 - [Generate Brand Scene and Thumbnail Images](workflows/generate-brand-scene-and-thumbnail-images/) - Turn a linked blog post and brand guidelines into four scene images and a thumbnail.
+- [Add Metadata to Private YouTube Videos](workflows/add-metadata-to-private-youtube-videos/) - Upload Drive videos privately and use captions to generate YouTube metadata.
 
 ## Commerce
 
