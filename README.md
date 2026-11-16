@@ -652,6 +652,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Classify Gmail PDFs and Save to Drive](workflows/classify-gmail-pdfs-and-save-to-drive/) - Classify incoming PDF attachments and save matching originals to Google Drive.
 - [Transcribe Bank Statements and Extract Deposits](workflows/transcribe-bank-statements-and-extract-deposits/) - Transcribe a bank statement PDF and extract deposit rows.
 - [Tag Drive JPEGs with AI Keywords](workflows/tag-drive-jpegs-with-ai-keywords/) - Analyze new JPEG images and write descriptive XMP keywords into the original Drive files.
+- [Find Eastern Interview Availability](workflows/find-eastern-interview-availability/) - Find available 30-minute weekday interview times in an Eastern Time calendar.
 
 ## Content
 

@@ -1,0 +1,133 @@
+{
+  "name": "Find Eastern Interview Availability",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "interview-availability-trigger",
+      "name": "Get Availability",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "interview-manual",
+      "name": "Find available times",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        180
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "interview-window",
+      "name": "Calculate time window",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        200,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function window() {\n  const now = Date.now(),\n    start = now + 86400000,\n    end = now + 7 * 86400000;\n  return {\n    timeMin: new Date(now).toISOString(),\n    timeMax: new Date(end).toISOString(),\n    start: new Date(start).toISOString(),\n    end: new Date(end).toISOString(),\n  };\n}\n\nreturn [{ json: window() }];\n"
+      }
+    },
+    {
+      "id": "interview-availability-calendar",
+      "name": "Read calendar events",
+      "type": "n8n-nodes-base.googleCalendar",
+      "position": [
+        400,
+        0
+      ],
+      "parameters": {
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_CALENDAR_ID"
+        },
+        "returnAll": true,
+        "timeMin": "={{ $('Calculate time window').first().json.timeMin }}",
+        "timeMax": "={{ $('Calculate time window').first().json.timeMax }}",
+        "options": {}
+      },
+      "typeVersion": 1.3,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "interview-slots",
+      "name": "Find free weekday slots",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        600,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function slots({ start, end, events }) {\n  const from = Date.parse(start),\n    until = Date.parse(end);\n  if (!Number.isFinite(from) || !Number.isFinite(until) || until <= from)\n    throw Error(\"Invalid time window\");\n  const busy = events\n    .filter((e) => e?.start?.dateTime && e?.end?.dateTime)\n    .map((e) => [Date.parse(e.start.dateTime), Date.parse(e.end.dateTime)]);\n  if (busy.some(([a, b]) => !Number.isFinite(a) || !Number.isFinite(b) || b <= a))\n    throw Error(\"Invalid event time\");\n  const allday = events\n    .filter((e) => e?.start?.date && e?.end?.date)\n    .map((e) => [e.start.date, e.end.date]);\n  const fmt = new Intl.DateTimeFormat(\"en-US\", {\n      timeZone: \"America/New_York\",\n      year: \"numeric\",\n      month: \"2-digit\",\n      day: \"2-digit\",\n      weekday: \"short\",\n      hour: \"2-digit\",\n      minute: \"2-digit\",\n      second: \"2-digit\",\n      hourCycle: \"h23\",\n      timeZoneName: \"shortOffset\",\n    }),\n    parts = (t) =>\n      Object.fromEntries(\n        fmt\n          .formatToParts(new Date(t))\n          .filter((x) => x.type !== \"literal\")\n          .map((x) => [x.type, x.value]),\n      ),\n    format = (t) => {\n      let p = parts(t),\n        z = p.timeZoneName.match(/^GMT([+-])(\\d{1,2})(?::(\\d\\d))?$/);\n      if (!z) throw Error(\"Cannot determine Eastern offset\");\n      return `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}:${p.second}${z[1]}${z[2].padStart(2, \"0\")}:${z[3] ?? \"00\"}`;\n    };\n  let available = [];\n  for (let t = (Math.floor(from / 1800000) + 1) * 1800000; t + 1800000 <= until; t += 1800000) {\n    const p = parts(t),\n      hour = Number(p.hour);\n    if (\n      [\"Sat\", \"Sun\"].includes(p.weekday) ||\n      hour < 9 ||\n      hour >= 17 ||\n      allday.some(\n        ([a, b]) => `${p.year}-${p.month}-${p.day}` >= a && `${p.year}-${p.month}-${p.day}` < b,\n      ) ||\n      busy.some(([a, b]) => t < b && t + 1800000 > a)\n    )\n      continue;\n    available.push(format(t) + \" - \" + format(t + 1800000));\n  }\n  return { availableSlots: available.join(\", \"), slots: available };\n}\n\nconst w = $(\"Calculate time window\").first().json,\n  events = $input\n    .all()\n    .map((x) => x.json)\n    .filter((x) => x.start && x.end);\nreturn [{ json: slots({ start: w.start, end: w.end, events }) }];\n"
+      }
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC"
+  },
+  "connections": {
+    "Get Availability": {
+      "main": [
+        [
+          {
+            "node": "Calculate time window",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find available times": {
+      "main": [
+        [
+          {
+            "node": "Calculate time window",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculate time window": {
+      "main": [
+        [
+          {
+            "node": "Read calendar events",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read calendar events": {
+      "main": [
+        [
+          {
+            "node": "Find free weekday slots",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
