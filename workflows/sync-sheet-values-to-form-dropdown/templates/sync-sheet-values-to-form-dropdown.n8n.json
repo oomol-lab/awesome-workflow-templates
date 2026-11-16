@@ -1,0 +1,512 @@
+{
+  "name": "Sync Sheet Values to a Form Dropdown",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "dynamic-form-0",
+      "name": "Google Sheets Trigger",
+      "type": "n8n-nodes-base.googleSheetsTrigger",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "YOUR_SHEET_NAME"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_SPREADSHEET_ID"
+        },
+        "includeInOutput": "both",
+        "event": "anyUpdate"
+      },
+      "typeVersion": 1
+    },
+    {
+      "name": "Sync now",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "parameters": {},
+      "id": "dynamic-form-1",
+      "position": [
+        230,
+        0
+      ]
+    },
+    {
+      "id": "dynamic-form-2",
+      "name": "Get all values",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        460,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "YOUR_SHEET_NAME"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_SPREADSHEET_ID"
+        }
+      },
+      "typeVersion": 4.5
+    },
+    {
+      "name": "Collect dropdown choices",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const options = $input\n  .all()\n  .map((x) => String(x.json.title ?? \"\").trim())\n  .filter(Boolean);\nif (!options.length || new Set(options).size !== options.length)\n  throw Error(\"Sheet must contain distinct non-empty choices\");\nreturn [{ json: { options } }];\n"
+      },
+      "id": "dynamic-form-3",
+      "position": [
+        690,
+        0
+      ]
+    },
+    {
+      "name": "Read current form",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "https://forms.googleapis.com/v1/forms/YOUR_FORM_ID",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "oAuth2Api",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "dynamic-form-4",
+      "position": [
+        920,
+        0
+      ]
+    },
+    {
+      "name": "Prepare dropdown update",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const form = $json,\n  formId = \"YOUR_FORM_ID\",\n  itemId = \"YOUR_ITEM_ID\",\n  options = $(\"Collect dropdown choices\").first().json.options;\nif (formId.includes(\"YOUR_\") || itemId.includes(\"YOUR_\") || !form.revisionId)\n  throw Error(\"Configure form and item IDs\");\nconst index = form.items?.findIndex((x) => x.itemId === itemId) ?? -1,\n  item = form.items?.[index],\n  q = item?.questionItem?.question?.choiceQuestion;\nif (index < 0 || q?.type !== \"DROP_DOWN\") throw Error(\"Expected dropdown item\");\nconst changed = JSON.stringify(q.options.map((x) => x.value)) !== JSON.stringify(options);\nq.options = options.map((value) => ({ value }));\nreturn {\n  json: {\n    changed,\n    body: {\n      requests: [\n        {\n          updateItem: {\n            item,\n            location: { index },\n            updateMask: \"questionItem.question.choiceQuestion.options\",\n          },\n        },\n      ],\n      writeControl: { requiredRevisionId: form.revisionId },\n      includeFormInResponse: true,\n    },\n  },\n  pairedItem: { item: $itemIndex },\n};\n"
+      },
+      "id": "dynamic-form-5",
+      "position": [
+        1150,
+        0
+      ]
+    },
+    {
+      "name": "Choices changed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.changed }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "dynamic-form-6",
+      "position": [
+        1380,
+        0
+      ]
+    },
+    {
+      "name": "Read update checkpoint",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "dynamic-form-update"
+            }
+          ]
+        },
+        "operation": "get"
+      },
+      "alwaysOutputData": true,
+      "id": "dynamic-form-7",
+      "position": [
+        1610,
+        0
+      ]
+    },
+    {
+      "name": "Check update checkpoint",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if ($json.item_key)\n  throw Error(\"Inspect the form and remove its pending checkpoint after reconciliation\");\nreturn { json: {}, pairedItem: { item: $itemIndex } };\n"
+      },
+      "id": "dynamic-form-8",
+      "position": [
+        1840,
+        0
+      ]
+    },
+    {
+      "name": "Reserve form update",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "item_key": "dynamic-form-update",
+            "status": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "dynamic-form-9",
+      "position": [
+        2070,
+        0
+      ]
+    },
+    {
+      "name": "Restore update request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return { json: $(\"Prepare dropdown update\").item.json, pairedItem: { item: $itemIndex } };\n"
+      },
+      "id": "dynamic-form-10",
+      "position": [
+        2300,
+        0
+      ]
+    },
+    {
+      "name": "Update form dropdown",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://forms.googleapis.com/v1/forms/YOUR_FORM_ID:batchUpdate",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "oAuth2Api",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.body }}"
+      },
+      "id": "dynamic-form-11",
+      "position": [
+        2530,
+        0
+      ]
+    },
+    {
+      "name": "Verify form update",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const request = $(\"Prepare dropdown update\").item.json.body.requests[0].updateItem.item,\n  got = $json.form?.items?.find((x) => x.itemId === request.itemId);\nif (\n  JSON.stringify(got?.questionItem?.question?.choiceQuestion?.options) !==\n  JSON.stringify(request.questionItem.question.choiceQuestion.options)\n)\n  throw Error(\"Inspect form update\");\nreturn { json: $json, pairedItem: { item: $itemIndex } };\n"
+      },
+      "id": "dynamic-form-12",
+      "position": [
+        2760,
+        0
+      ]
+    },
+    {
+      "name": "Confirm form update",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "dynamic-form-update"
+            }
+          ]
+        },
+        "operation": "deleteRows"
+      },
+      "id": "dynamic-form-13",
+      "position": [
+        2990,
+        320
+      ]
+    },
+    {
+      "id": "dynamic-form-14",
+      "name": "New form responses",
+      "type": "n8n-nodes-base.googleSheetsTrigger",
+      "position": [
+        3220,
+        320
+      ],
+      "parameters": {
+        "options": {},
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Form Responses 1"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_RESPONSE_SPREADSHEET_ID"
+        },
+        "includeInOutput": "both",
+        "event": "rowAdded"
+      },
+      "typeVersion": 1
+    },
+    {
+      "name": "Submitted form data",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "parameters": {},
+      "id": "dynamic-form-15",
+      "position": [
+        3450,
+        320
+      ]
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Google Sheets Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get all values",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sync now": {
+      "main": [
+        [
+          {
+            "node": "Get all values",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get all values": {
+      "main": [
+        [
+          {
+            "node": "Collect dropdown choices",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect dropdown choices": {
+      "main": [
+        [
+          {
+            "node": "Read current form",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read current form": {
+      "main": [
+        [
+          {
+            "node": "Prepare dropdown update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare dropdown update": {
+      "main": [
+        [
+          {
+            "node": "Choices changed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Choices changed?": {
+      "main": [
+        [
+          {
+            "node": "Read update checkpoint",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read update checkpoint": {
+      "main": [
+        [
+          {
+            "node": "Check update checkpoint",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check update checkpoint": {
+      "main": [
+        [
+          {
+            "node": "Reserve form update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve form update": {
+      "main": [
+        [
+          {
+            "node": "Restore update request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore update request": {
+      "main": [
+        [
+          {
+            "node": "Update form dropdown",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update form dropdown": {
+      "main": [
+        [
+          {
+            "node": "Verify form update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify form update": {
+      "main": [
+        [
+          {
+            "node": "Confirm form update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "New form responses": {
+      "main": [
+        [
+          {
+            "node": "Submitted form data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

@@ -641,6 +641,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Archive Threads Posts to Notion](workflows/archive-threads-posts-to-notion/) - Archive recent Threads posts and your replies as Notion pages.
 - [Route Email Tasks to Notion](workflows/route-email-tasks-to-notion/) - Route emails through user-specific Notion connections and create tasks and summaries.
 - [Email Daily Podcast Chart Summaries](workflows/email-daily-podcast-chart-summaries/) - Summarize excerpts from the daily podcast charts and email a digest.
+- [Sync Sheet Values to a Form Dropdown](workflows/sync-sheet-values-to-form-dropdown/) - Keep a form dropdown aligned with a Google Sheets column.
 
 ## Content
 
