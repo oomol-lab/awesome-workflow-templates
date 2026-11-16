@@ -375,6 +375,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Get InfluxDB Container Version](workflows/get-influxdb-container-version/) - Run influxd version in the named container through the Docker Engine API.
 - [Inspect an n8n Container](workflows/inspect-n8n-container/) - Inspect a named n8n container through an authenticated Docker Engine API.
 - [Inspect a Nextcloud Host Container](workflows/inspect-nextcloud-host-container/) - Inspect a named Nextcloud host container through an authenticated Docker Engine API.
+- [Inspect an Immich Container](workflows/inspect-immich-container/) - Inspect a named Immich container through an authenticated Docker Engine API.
 
 ## Research
 

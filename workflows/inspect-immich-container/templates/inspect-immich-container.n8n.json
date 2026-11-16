@@ -1,0 +1,145 @@
+{
+  "name": "Inspect an Immich Container",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "hook",
+      "name": "Receive inspection request",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "inspect-immich-container",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "position": [
+        400,
+        100
+      ]
+    },
+    {
+      "id": "validate",
+      "name": "Prepare Docker URL",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const b = $json.body,\n  server = \"YOUR_SERVER_DOMAIN\",\n  engine = \"https://YOUR_DOCKER_GATEWAY\";\nif (\n  b.server_domain !== server ||\n  b.command !== \"container_information_inspect\" ||\n  !/^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,200}$/.test(b.domain)\n)\n  throw Error(\"Invalid request\");\nreturn {\n  json: {\n    url:\n      engine.replace(/\\/$/, \"\") +\n      \"/v1.44/containers/\" +\n      encodeURIComponent(b.domain + \"_immich\") +\n      \"/json\",\n  },\n};\n"
+      },
+      "position": [
+        800,
+        100
+      ]
+    },
+    {
+      "id": "inspect",
+      "name": "Inspect Docker container",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.url }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "position": [
+        700,
+        100
+      ]
+    },
+    {
+      "id": "format",
+      "name": "Format inspection result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "let status = $json.statusCode,\n  body = $json.body;\nif (status === 404) return { json: { status: \"success\", message: \"\", data: { inspect: {} } } };\nif (status < 200 || status >= 300 || !body || typeof body !== \"object\")\n  return { json: { status: \"error\", message: \"Docker inspection failed\", data: \"\" } };\nreturn { json: { status: \"success\", message: \"\", data: { inspect: [body] } } };\n"
+      },
+      "position": [
+        600,
+        100
+      ]
+    },
+    {
+      "id": "response",
+      "name": "Return inspection",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "position": [
+        800,
+        100
+      ]
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "timezone": "America/Winnipeg",
+    "callerPolicy": "workflowsFromSameOwner",
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Receive inspection request": {
+      "main": [
+        [
+          {
+            "node": "Prepare Docker URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Docker URL": {
+      "main": [
+        [
+          {
+            "node": "Inspect Docker container",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Inspect Docker container": {
+      "main": [
+        [
+          {
+            "node": "Format inspection result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format inspection result": {
+      "main": [
+        [
+          {
+            "node": "Return inspection",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
