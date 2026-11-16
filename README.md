@@ -964,6 +964,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Update and Archive USD Exchange Rates](workflows/update-and-archive-usd-exchange-rates/) - Refresh a USD exchange rate row and append a historical snapshot in Google Sheets.
 - [Process Colombian Invoices from Gmail ZIP](workflows/process-colombian-invoices-from-gmail-zip/) - Extract Colombian invoice information from ZIP attachments and organize the PDF and invoice row.
 - [Extract Drive Statements to CSV](workflows/extract-drive-statements-to-csv/) - Extract and categorize statement transactions from new PDFs or images into Drive CSV files.
+- [Extract Reviewed Invoices to Google Sheets](workflows/extract-reviewed-invoices-to-sheets/) - Extract and review emailed PDF invoices in Cradl AI, then record invoice lines in Google Sheets.
 
 ## Community
 

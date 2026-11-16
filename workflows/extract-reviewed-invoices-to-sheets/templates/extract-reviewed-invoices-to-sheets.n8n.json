@@ -1,0 +1,627 @@
+{
+  "name": "Extract Reviewed Invoices to Google Sheets",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "extract-reviewed-invoices-to-sheets-0",
+      "name": "Gmail Trigger",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "simple": false,
+        "filters": {
+          "q": "has:attachment subject:invoice",
+          "readStatus": "unread"
+        },
+        "options": {
+          "downloadAttachments": true
+        },
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.3
+    },
+    {
+      "id": "extract-reviewed-invoices-to-sheets-1",
+      "name": "Filter PDF attachments",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const out = [];\nfor (const [i, item] of $input.all().entries()) {\n  const pdfs = Object.entries(item.binary ?? {}).filter(\n    ([k, b]) => (b.fileExtension ?? \"\").toLowerCase() === \"pdf\",\n  );\n  for (const [j, [key, b]] of pdfs.entries())\n    out.push({\n      json: {\n        messageId: item.json.id,\n        attachmentId: key,\n        fileName: b.fileName,\n        last: j === pdfs.length - 1,\n      },\n      binary: { data: b },\n      pairedItem: { item: i },\n    });\n}\nreturn out;\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "extract-reviewed-invoices-to-sheets-2",
+      "name": "Mark a message as read",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "messageId": "={{ $(\"Collect reviewed invoice\").item.json.messageId }}",
+        "operation": "markAsRead"
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "extract-reviewed-invoices-to-sheets-3",
+      "name": "Extract invoice details with AI",
+      "type": "@cradl/n8n-nodes-cradlai.cradlAi",
+      "position": [
+        660,
+        0
+      ],
+      "parameters": {
+        "agentId": "YOUR_CRADL_AGENT_ID",
+        "documentBinaryData": "data",
+        "waitForResults": true
+      },
+      "typeVersion": 1
+    },
+    {
+      "name": "Loop PDF attachments",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "extract-reviewed-invoices-to-sheets-4",
+      "position": [
+        880,
+        0
+      ]
+    },
+    {
+      "name": "Collect reviewed invoice",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const src = $items(\"Loop PDF attachments\", 1, $runIndex)[0]?.json,\n  lines = $json.body?.output?.invoice_lines;\nif (!src?.messageId || !src?.attachmentId || !Array.isArray(lines) || !lines.length)\n  throw Error(\"Missing source identity or invoice lines\");\nreturn { json: { ...src, lines } };\n"
+      },
+      "id": "extract-reviewed-invoices-to-sheets-5",
+      "position": [
+        1100,
+        0
+      ]
+    },
+    {
+      "name": "Select Open Flow mode",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "mode",
+              "name": "useOpenFlow",
+              "value": true,
+              "type": "boolean"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "extract-reviewed-invoices-to-sheets-6",
+      "position": [
+        1320,
+        0
+      ]
+    },
+    {
+      "name": "Use Open Flow?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.useOpenFlow }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "extract-reviewed-invoices-to-sheets-7",
+      "position": [
+        1540,
+        0
+      ]
+    },
+    {
+      "name": "Send reviewed invoice to Open Flow",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://YOUR_OPEN_FLOW_WEBHOOK_URL",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {messageId:$json.messageId,attachmentId:$json.attachmentId,fileName:$json.fileName,lines:$json.lines,last:$json.last} }}",
+        "options": {}
+      },
+      "id": "extract-reviewed-invoices-to-sheets-8",
+      "position": [
+        1760,
+        0
+      ]
+    },
+    {
+      "name": "Check invoice checkpoint",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ \"cradl:\" + $(\"Collect reviewed invoice\").item.json.messageId + \":\" + $(\"Collect reviewed invoice\").item.json.attachmentId }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "alwaysOutputData": true,
+      "id": "extract-reviewed-invoices-to-sheets-9",
+      "position": [
+        1980,
+        0
+      ]
+    },
+    {
+      "name": "Inspect invoice checkpoint",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if ($json.status === \"pending\") throw Error(\"Inspect spreadsheet before retry\");\nreturn { json: { done: $json.status === \"done\" } };\n"
+      },
+      "id": "extract-reviewed-invoices-to-sheets-10",
+      "position": [
+        2200,
+        0
+      ]
+    },
+    {
+      "name": "Already exported?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.done }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "extract-reviewed-invoices-to-sheets-11",
+      "position": [
+        2420,
+        0
+      ]
+    },
+    {
+      "name": "Reserve invoice export",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "item_key": "={{ \"cradl:\" + $(\"Collect reviewed invoice\").item.json.messageId + \":\" + $(\"Collect reviewed invoice\").item.json.attachmentId }}",
+            "status": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "extract-reviewed-invoices-to-sheets-12",
+      "position": [
+        2640,
+        0
+      ]
+    },
+    {
+      "name": "Append reviewed lines",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://sheets.googleapis.com/v4/spreadsheets/YOUR_SHEET_ID/values/Invoices!A:D:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {values:$(\"Collect reviewed invoice\").item.json.lines.map((line,i)=>[$(\"Collect reviewed invoice\").item.json.messageId,$(\"Collect reviewed invoice\").item.json.fileName,i+1,JSON.stringify(line)])} }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "onError": "continueErrorOutput",
+      "id": "extract-reviewed-invoices-to-sheets-13",
+      "position": [
+        2860,
+        0
+      ]
+    },
+    {
+      "name": "Verify invoice append",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if ($json.updates?.updatedRows !== $(\"Collect reviewed invoice\").item.json.lines.length)\n  throw Error(\"Unknown spreadsheet result\");\nreturn { json: $json };\n"
+      },
+      "id": "extract-reviewed-invoices-to-sheets-14",
+      "position": [
+        3080,
+        0
+      ]
+    },
+    {
+      "name": "Confirm invoice export",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $(\"Reserve invoice export\").item.json.id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "done"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "extract-reviewed-invoices-to-sheets-15",
+      "position": [
+        3300,
+        0
+      ]
+    },
+    {
+      "name": "Stop uncertain append",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "parameters": {},
+      "id": "extract-reviewed-invoices-to-sheets-16",
+      "position": [
+        3520,
+        0
+      ]
+    },
+    {
+      "name": "Last PDF of message?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $(\"Collect reviewed invoice\").item.json.last }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "extract-reviewed-invoices-to-sheets-17",
+      "position": [
+        3740,
+        0
+      ]
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "binaryMode": "separate",
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Filter PDF attachments",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter PDF attachments": {
+      "main": [
+        [
+          {
+            "node": "Loop PDF attachments",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract invoice details with AI": {
+      "main": [
+        [
+          {
+            "node": "Collect reviewed invoice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect reviewed invoice": {
+      "main": [
+        [
+          {
+            "node": "Select Open Flow mode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select Open Flow mode": {
+      "main": [
+        [
+          {
+            "node": "Use Open Flow?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send reviewed invoice to Open Flow": {
+      "main": [
+        [
+          {
+            "node": "Loop PDF attachments",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check invoice checkpoint": {
+      "main": [
+        [
+          {
+            "node": "Inspect invoice checkpoint",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Inspect invoice checkpoint": {
+      "main": [
+        [
+          {
+            "node": "Already exported?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve invoice export": {
+      "main": [
+        [
+          {
+            "node": "Append reviewed lines",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify invoice append": {
+      "main": [
+        [
+          {
+            "node": "Confirm invoice export",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm invoice export": {
+      "main": [
+        [
+          {
+            "node": "Last PDF of message?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark a message as read": {
+      "main": [
+        [
+          {
+            "node": "Loop PDF attachments",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop PDF attachments": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Extract invoice details with AI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Last PDF of message?": {
+      "main": [
+        [
+          {
+            "node": "Mark a message as read",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop PDF attachments",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Use Open Flow?": {
+      "main": [
+        [
+          {
+            "node": "Send reviewed invoice to Open Flow",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Check invoice checkpoint",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Already exported?": {
+      "main": [
+        [
+          {
+            "node": "Last PDF of message?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reserve invoice export",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append reviewed lines": {
+      "main": [
+        [
+          {
+            "node": "Verify invoice append",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Stop uncertain append",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
