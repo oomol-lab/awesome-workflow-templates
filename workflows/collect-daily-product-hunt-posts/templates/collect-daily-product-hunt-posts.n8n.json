@@ -1,0 +1,618 @@
+{
+  "nodes": [
+    {
+      "name": "Collect products daily",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "daysInterval": 1,
+              "triggerAtHour": 0,
+              "triggerAtMinute": 5
+            }
+          ]
+        }
+      },
+      "id": "producthunt-0",
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "name": "Collect products now",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "parameters": {},
+      "id": "producthunt-1",
+      "position": [
+        230,
+        0
+      ]
+    },
+    {
+      "name": "Select previous UTC day",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const d = new Date();\nd.setUTCDate(d.getUTCDate() - 1);\nreturn { json: { day: d.toISOString().slice(0, 10) }, pairedItem: { item: $itemIndex } };\n"
+      },
+      "id": "producthunt-2",
+      "position": [
+        460,
+        0
+      ]
+    },
+    {
+      "name": "Choose manual date",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const date = \"\";\nreturn {\n  json: { day: date || new Date().toISOString().slice(0, 10) },\n  pairedItem: { item: $itemIndex },\n};\n"
+      },
+      "id": "producthunt-3",
+      "position": [
+        690,
+        0
+      ]
+    },
+    {
+      "name": "Prepare Product Hunt query",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const namespace = \"YOUR_PRODUCTS_SHEET\",\n  day = $json.day;\nif (!/^[\\w-]{1,80}$/.test(namespace) || !/^\\d{4}-\\d{2}-\\d{2}$/.test(day))\n  throw Error(\"Configure namespace and UTC date\");\nconst after = day + \"T00:00:00Z\",\n  before = new Date(Date.parse(after) + 86400000).toISOString();\nreturn {\n  json: {\n    namespace,\n    day,\n    body: {\n      query:\n        \"query DailyPosts($after: DateTime!, $before: DateTime!) { posts(first: 10, postedAfter: $after, postedBefore: $before) { edges { node { id name tagline description website } } } }\",\n      variables: { after, before },\n    },\n  },\n  pairedItem: { item: $itemIndex },\n};\n"
+      },
+      "id": "producthunt-4",
+      "position": [
+        920,
+        0
+      ]
+    },
+    {
+      "name": "Read Product Hunt posts",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.producthunt.com/v2/api/graphql",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.body }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "producthunt-5",
+      "position": [
+        1150,
+        0
+      ]
+    },
+    {
+      "name": "Unpack posts",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const b = $input.first().json;\nif (b.errors?.length || !Array.isArray(b.data?.posts?.edges))\n  throw Error(\"Invalid Product Hunt response\");\nreturn b.data.posts.edges.map((e) => ({ json: e.node, pairedItem: { item: 0 } }));\n"
+      },
+      "id": "producthunt-6",
+      "position": [
+        1380,
+        0
+      ]
+    },
+    {
+      "name": "Process one product",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "producthunt-7",
+      "position": [
+        1610,
+        0
+      ]
+    },
+    {
+      "name": "Validate product",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if (\n  !$json.id ||\n  !$json.name ||\n  !/^https:\\/\\/(?:[\\w-]+\\.)*producthunt\\.com(?:[/:?#]|$)/i.test($json.website ?? \"\")\n)\n  throw Error(\"Invalid Product Hunt redirect\");\nreturn { json: $json, pairedItem: { item: $itemIndex } };\n"
+      },
+      "id": "producthunt-8",
+      "position": [
+        1840,
+        0
+      ]
+    },
+    {
+      "name": "Read product checkpoint",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'producthunt:'+$('Prepare Product Hunt query').item.json.namespace+':'+$('Prepare Product Hunt query').item.json.day+':'+$('Validate product').item.json.id }}"
+            }
+          ]
+        },
+        "operation": "get"
+      },
+      "alwaysOutputData": true,
+      "id": "producthunt-9",
+      "position": [
+        2070,
+        0
+      ]
+    },
+    {
+      "name": "Check product checkpoint",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if ($json.status === \"pending\") throw Error(\"Inspect pending sheet write\");\nif ($json.status && $json.status !== \"done\") throw Error(\"Invalid checkpoint\");\nreturn { json: { skip: $json.status === \"done\" }, pairedItem: { item: $itemIndex } };\n"
+      },
+      "id": "producthunt-10",
+      "position": [
+        2300,
+        0
+      ]
+    },
+    {
+      "name": "Already collected?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.skip }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "producthunt-11",
+      "position": [
+        2530,
+        0
+      ]
+    },
+    {
+      "name": "Restore product",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return { json: $(\"Validate product\").item.json, pairedItem: { item: $itemIndex } };\n"
+      },
+      "id": "producthunt-12",
+      "position": [
+        2760,
+        0
+      ]
+    },
+    {
+      "name": "Resolve product website",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "authentication": "none",
+        "url": "={{ $json.website }}",
+        "options": {
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true,
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "id": "producthunt-13",
+      "position": [
+        2990,
+        0
+      ]
+    },
+    {
+      "name": "Prepare product row",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const p = $(\"Validate product\").item.json;\nif ($json.statusCode < 200 || $json.statusCode >= 400) throw Error(\"Redirect failed\");\nlet target = $json.headers?.location || p.website;\nif (target.startsWith(\"/\")) target = p.website.match(/^https:\\/\\/[^/]+/i)[0] + target;\nif (!/^https?:\\/\\//i.test(target)) throw Error(\"Invalid website\");\ntarget = target\n  .replace(/([?&])ref=producthunt(?=&|#|$)/i, \"$1\")\n  .replace(/[?&](?=#|$)/, \"\")\n  .replace(\"?&\", \"?\");\nreturn {\n  json: {\n    id: p.id,\n    name: p.name,\n    tagline: p.tagline ?? \"\",\n    description: p.description ?? \"\",\n    next_url: target,\n  },\n  pairedItem: { item: $itemIndex },\n};\n"
+      },
+      "id": "producthunt-14",
+      "position": [
+        3220,
+        0
+      ]
+    },
+    {
+      "name": "Reserve product write",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "item_key": "={{ 'producthunt:'+$('Prepare Product Hunt query').item.json.namespace+':'+$('Prepare Product Hunt query').item.json.day+':'+$('Validate product').item.json.id }}",
+            "status": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "producthunt-15",
+      "position": [
+        3450,
+        0
+      ]
+    },
+    {
+      "name": "Restore product row",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return { json: $(\"Prepare product row\").item.json, pairedItem: { item: $itemIndex } };\n"
+      },
+      "id": "producthunt-16",
+      "position": [
+        3680,
+        0
+      ]
+    },
+    {
+      "id": "producthunt-17",
+      "name": "Save product row",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        3910,
+        0
+      ],
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_SPREADSHEET_ID"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_PRODUCTS_SHEET_ID"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": []
+        },
+        "options": {
+          "cellFormat": "RAW",
+          "handlingExtraData": "ignoreIt"
+        }
+      },
+      "typeVersion": 4.5
+    },
+    {
+      "name": "Confirm product write",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'producthunt:'+$('Prepare Product Hunt query').item.json.namespace+':'+$('Prepare Product Hunt query').item.json.day+':'+$('Validate product').item.json.id }}"
+            }
+          ]
+        },
+        "operation": "update",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "done"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "producthunt-18",
+      "position": [
+        4140,
+        0
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Collect products daily": {
+      "main": [
+        [
+          {
+            "node": "Select previous UTC day",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select previous UTC day": {
+      "main": [
+        [
+          {
+            "node": "Prepare Product Hunt query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect products now": {
+      "main": [
+        [
+          {
+            "node": "Choose manual date",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Choose manual date": {
+      "main": [
+        [
+          {
+            "node": "Prepare Product Hunt query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Product Hunt query": {
+      "main": [
+        [
+          {
+            "node": "Read Product Hunt posts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Product Hunt posts": {
+      "main": [
+        [
+          {
+            "node": "Unpack posts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Unpack posts": {
+      "main": [
+        [
+          {
+            "node": "Process one product",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate product": {
+      "main": [
+        [
+          {
+            "node": "Read product checkpoint",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read product checkpoint": {
+      "main": [
+        [
+          {
+            "node": "Check product checkpoint",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check product checkpoint": {
+      "main": [
+        [
+          {
+            "node": "Already collected?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore product": {
+      "main": [
+        [
+          {
+            "node": "Resolve product website",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resolve product website": {
+      "main": [
+        [
+          {
+            "node": "Prepare product row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare product row": {
+      "main": [
+        [
+          {
+            "node": "Reserve product write",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve product write": {
+      "main": [
+        [
+          {
+            "node": "Restore product row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore product row": {
+      "main": [
+        [
+          {
+            "node": "Save product row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save product row": {
+      "main": [
+        [
+          {
+            "node": "Confirm product write",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm product write": {
+      "main": [
+        [
+          {
+            "node": "Process one product",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process one product": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Validate product",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Already collected?": {
+      "main": [
+        [
+          {
+            "node": "Process one product",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Restore product",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Collect Daily Product Hunt Posts",
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC"
+  }
+}
