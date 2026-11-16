@@ -1,0 +1,284 @@
+{
+  "name": "Get InfluxDB Container Version",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "hook",
+      "name": "Receive inspection request",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "get-influxdb-container-version",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "position": [
+        400,
+        100
+      ]
+    },
+    {
+      "id": "validate",
+      "name": "Prepare Docker URL",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const b = $json.body,\n  server = \"YOUR_SERVER_DOMAIN\",\n  engine = \"https://YOUR_DOCKER_GATEWAY\";\nif (\n  b.server_domain !== server ||\n  b.command !== \"app_version\" ||\n  !/^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,200}$/.test(b.domain)\n)\n  throw Error(\"Invalid request\");\nreturn {\n  json: {\n    url:\n      engine.replace(/\\/$/, \"\") +\n      \"/v1.44/containers/\" +\n      encodeURIComponent(b.domain + \"_influxdb\") +\n      \"/json\",\n  },\n};\n"
+      },
+      "position": [
+        800,
+        100
+      ]
+    },
+    {
+      "id": "response",
+      "name": "Return inspection",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "position": [
+        800,
+        100
+      ]
+    },
+    {
+      "id": "exec-prep",
+      "name": "Prepare version command",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const url = $json.url;\nreturn {\n  json: {\n    base: url.split(\"/v1.44/\")[0],\n    url: url.replace(/\\/json$/, \"/exec\"),\n    body: { AttachStdout: true, AttachStderr: true, Tty: false, Cmd: [\"influxd\", \"version\"] },\n  },\n};\n"
+      }
+    },
+    {
+      "id": "exec-create",
+      "name": "Create version exec",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.url }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.body) }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "exec-start",
+      "name": "Run version exec",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Prepare version command').first().json.base + '/v1.44/exec/' + $json.Id + '/start' }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({Detach:false,Tty:false}) }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "outputPropertyName": "data"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "exec-extract",
+      "name": "Extract exec bytes",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "operation": "binaryToPropery",
+        "binaryPropertyName": "data",
+        "destinationKey": "base64",
+        "options": {}
+      }
+    },
+    {
+      "id": "exec-decode",
+      "name": "Decode exec output",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const b = Buffer.from($json.base64, \"base64\");\nlet i = 0,\n  p = [];\nwhile (i < b.length) {\n  if (i + 8 > b.length || ![1, 2].includes(b[i]) || b[i + 1] || b[i + 2] || b[i + 3])\n    throw Error(\"Invalid Docker exec frame\");\n  let size = b.readUInt32BE(i + 4);\n  i += 8;\n  if (i + size > b.length) throw Error(\"Truncated Docker exec frame\");\n  p.push(b.subarray(i, i + size));\n  i += size;\n}\nreturn { json: { text: Buffer.concat(p).toString(\"utf8\") } };\n"
+      }
+    },
+    {
+      "id": "exec-inspect",
+      "name": "Inspect exec exit",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $('Prepare version command').first().json.base + '/v1.44/exec/' + $('Create version exec').first().json.Id + '/json' }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      }
+    },
+    {
+      "id": "exec-format",
+      "name": "Format version result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const text = $(\"Decode exec output\").first().json.text;\nif ($json.Running !== false || $json.ExitCode !== 0 || !text.trim())\n  throw Error(\"Version command did not complete successfully\");\nreturn { json: { status: \"success\", message: \"\", data: { version: text.trimEnd() } } };\n"
+      }
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "timezone": "America/Winnipeg",
+    "callerPolicy": "workflowsFromSameOwner",
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Receive inspection request": {
+      "main": [
+        [
+          {
+            "node": "Prepare Docker URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Docker URL": {
+      "main": [
+        [
+          {
+            "node": "Prepare version command",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare version command": {
+      "main": [
+        [
+          {
+            "node": "Create version exec",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create version exec": {
+      "main": [
+        [
+          {
+            "node": "Run version exec",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run version exec": {
+      "main": [
+        [
+          {
+            "node": "Extract exec bytes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract exec bytes": {
+      "main": [
+        [
+          {
+            "node": "Decode exec output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decode exec output": {
+      "main": [
+        [
+          {
+            "node": "Inspect exec exit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Inspect exec exit": {
+      "main": [
+        [
+          {
+            "node": "Format version result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format version result": {
+      "main": [
+        [
+          {
+            "node": "Return inspection",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
