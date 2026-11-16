@@ -940,6 +940,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Compare Alphabet Quarterly Earnings](workflows/compare-alphabet-quarterly-earnings/) - Index earnings PDFs from Google Drive and append a grounded comparison report to Google Docs.
 - [Record Receipt Emails in Google Sheets](workflows/record-receipt-emails-in-google-sheets/) - Extract the first receipt attachment from matching emails and record its fields in a sheet.
 - [Update and Archive USD Exchange Rates](workflows/update-and-archive-usd-exchange-rates/) - Refresh a USD exchange rate row and append a historical snapshot in Google Sheets.
+- [Process Colombian Invoices from Gmail ZIP](workflows/process-colombian-invoices-from-gmail-zip/) - Extract Colombian invoice information from ZIP attachments and organize the PDF and invoice row.
 
 ## Community
 
