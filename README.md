@@ -380,6 +380,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Inspect an Immich Container](workflows/inspect-immich-container/) - Inspect a named Immich container through an authenticated Docker Engine API.
 - [Read Immich Container Logs](workflows/read-immich-container-logs/) - Read the latest 1,000 lines of an Immich container through the Docker Engine API.
 - [Inspect Immich Dependency Stats](workflows/inspect-immich-dependent-container-stats/) - Inspect Immich dependency containers and read their resource statistics.
+- [Mark Outdated n8n Workflow Nodes](workflows/mark-outdated-n8n-workflow-nodes/) - Mark outdated nodes, optionally add newer copies and email a workflow summary.
 
 ## Research
 

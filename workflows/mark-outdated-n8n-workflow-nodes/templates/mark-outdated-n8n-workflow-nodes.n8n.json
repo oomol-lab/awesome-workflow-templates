@@ -1,0 +1,886 @@
+{
+  "name": "Addon for Workflow Nodes Update Check Template",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "rename-0",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "position": [
+        860,
+        1140
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "name": "Validate request IDs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const items = $input.all(),\n  run = items[0]?.json.runId;\nif (\n  typeof run !== \"string\" ||\n  !run.trim() ||\n  items.some((x) => x.json.runId !== run || !x.json.Id) ||\n  new Set(items.map((x) => x.json.Id)).size !== items.length\n)\n  throw Error(\"Use one stable runId and unique workflow IDs\");\nreturn items;\n"
+      },
+      "id": "rename-1"
+    },
+    {
+      "id": "rename-2",
+      "name": "Settings",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        1300,
+        1140
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "99947a54-e9f9-4d04-b273-9d7eeed62775",
+              "name": "instanceBaseUrl",
+              "type": "string",
+              "value": "http://localhost:5432"
+            },
+            {
+              "id": "35a63bda-fcbb-4885-a8d6-4b52c6579206",
+              "name": "symbol",
+              "type": "string",
+              "value": "⚠️"
+            },
+            {
+              "id": "3481286b-359f-4e86-8f56-bdb267ebd6a2",
+              "name": "onlyMajorChanges",
+              "type": "boolean",
+              "value": true
+            },
+            {
+              "id": "2377c274-5501-494f-813e-0d3ebe47e375",
+              "name": "addNodesToCanvas",
+              "type": "boolean",
+              "value": true
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "name": "Process workflow records",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "parameters": {
+        "options": {}
+      },
+      "id": "rename-3"
+    },
+    {
+      "id": "rename-4",
+      "name": "Get Workflow",
+      "type": "n8n-nodes-base.n8n",
+      "position": [
+        1520,
+        1140
+      ],
+      "parameters": {
+        "operation": "get",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Process workflow records').item.json.Id }}"
+        },
+        "requestOptions": {}
+      },
+      "typeVersion": 1
+    },
+    {
+      "name": "Rename with n8n owner",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const $request = {\n  workflow: $json,\n  outdated: $(\"Process workflow records\").item.json.outdated_nodes,\n  symbol: $(\"Settings\").first().json.symbol,\n  onlyMajorChanges: $(\"Settings\").first().json.onlyMajorChanges,\n  addNodesToCanvas: $(\"Settings\").first().json.addNodesToCanvas,\n};\nconst { Workflow } = require(\"n8n-workflow\");\nconst { workflow, outdated, symbol, onlyMajorChanges, addNodesToCanvas } = $request;\nif (\n  !workflow?.id ||\n  !Array.isArray(workflow.nodes) ||\n  !workflow.connections ||\n  !workflow.settings ||\n  !Array.isArray(outdated) ||\n  typeof symbol !== \"string\" ||\n  !symbol.trim()\n)\n  throw Error(\"Invalid workflow update request\");\nconst data = JSON.parse(JSON.stringify(workflow)),\n  types = { getByNameAndVersion: () => undefined },\n  owner = new Workflow({\n    id: data.id,\n    name: data.name,\n    nodes: data.nodes,\n    connections: data.connections,\n    settings: data.settings,\n    nodeTypes: types,\n    active: false,\n  });\nlet clones = [],\n  changed = 0;\nfor (const old of outdated) {\n  if (!old || typeof old.name !== \"string\" || old.latestVersion == null || old.version == null)\n    throw Error(\"Invalid outdated node\");\n  if (\n    onlyMajorChanges &&\n    String(old.version).split(\".\")[0] === String(old.latestVersion).split(\".\")[0]\n  )\n    continue;\n  let n = owner.nodes[old.name];\n  if (!n || !n.id || n.name.startsWith(symbol)) continue;\n  const newName = symbol + \" \" + old.name;\n  if (owner.nodes[newName]) throw Error(\"Renamed node already exists\");\n  let clone = addNodesToCanvas ? JSON.parse(JSON.stringify(n)) : null;\n  owner.renameNode(old.name, newName);\n  if (clone) {\n    delete clone.id;\n    clone.typeVersion = old.latestVersion;\n    clone.position = [clone.position[0] + 40, clone.position[1] - 40];\n    clones.push(clone);\n  }\n  changed++;\n}\nreturn {\n  json: {\n    id: data.id,\n    changed,\n    body: {\n      name: data.name,\n      nodes: [...clones, ...Object.values(owner.nodes)],\n      connections: owner.connectionsBySourceNode,\n      settings: data.settings,\n    },\n  },\n  pairedItem: { item: $itemIndex },\n};\n"
+      },
+      "id": "rename-5"
+    },
+    {
+      "name": "Any nodes changed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $('Rename with n8n owner').item.json.changed > 0 }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "rename-6"
+    },
+    {
+      "name": "Read workflow checkpoint",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'node-update:' + $('Execute Workflow Trigger').first().json.runId + ':' + $('Rename with n8n owner').item.json.id }}"
+            }
+          ]
+        },
+        "operation": "get",
+        "returnAll": false,
+        "limit": 1
+      },
+      "alwaysOutputData": true,
+      "id": "rename-7"
+    },
+    {
+      "name": "Inspect workflow checkpoint",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if ($json.status === \"pending\") throw Error(\"Inspect pending workflow update\");\nreturn { json: { skip: $json.status === \"done\" }, pairedItem: { item: $itemIndex } };\n"
+      },
+      "id": "rename-8"
+    },
+    {
+      "name": "Workflow already updated?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.skip }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "rename-9"
+    },
+    {
+      "name": "Reserve workflow update",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "item_key": "={{ 'node-update:' + $('Execute Workflow Trigger').first().json.runId + ':' + $('Rename with n8n owner').item.json.id }}",
+            "status": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "rename-10"
+    },
+    {
+      "id": "rename-11",
+      "name": "Update Workflow",
+      "type": "n8n-nodes-base.n8n",
+      "position": [
+        1960,
+        1140
+      ],
+      "parameters": {
+        "operation": "update",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Rename with n8n owner').item.json.id }}"
+        },
+        "requestOptions": {},
+        "workflowObject": "={{ JSON.stringify($('Rename with n8n owner').item.json.body) }}"
+      },
+      "typeVersion": 1,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "name": "Verify workflow update",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const wanted = $(\"Rename with n8n owner\").item.json.id;\nif (typeof $json.id !== \"string\" || $json.id !== wanted || !Array.isArray($json.nodes))\n  throw Error(\"Inspect workflow update\");\nreturn { json: { id: wanted }, pairedItem: { item: $itemIndex } };\n"
+      },
+      "id": "rename-12"
+    },
+    {
+      "name": "Confirm workflow update",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'node-update:' + $('Execute Workflow Trigger').first().json.runId + ':' + $('Rename with n8n owner').item.json.id }}"
+            }
+          ]
+        },
+        "operation": "update",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "done",
+            "workflow_id": "={{ $('Rename with n8n owner').item.json.id }}",
+            "workflow_name": "={{ $('Rename with n8n owner').item.json.body.name }}"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "rename-13"
+    },
+    {
+      "name": "Read completed updates",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "status",
+              "condition": "eq",
+              "keyValue": "done"
+            }
+          ]
+        },
+        "returnAll": true
+      },
+      "alwaysOutputData": true,
+      "id": "rename-14"
+    },
+    {
+      "name": "Prepare workflow summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const prefix = \"node-update:\" + $(\"Execute Workflow Trigger\").first().json.runId + \":\";\nconst rows = $input\n  .all()\n  .map((x) => x.json)\n  .filter((x) => String(x.item_key || \"\").startsWith(prefix) && x.workflow_id && x.workflow_name)\n  .map((x) => ({ id: x.workflow_id, body: { name: x.workflow_name } }));\nconst base = $(\"Settings\").first().json.instanceBaseUrl,\n  esc = (s) =>\n    String(s)\n      .replaceAll(\"&\", \"&amp;\")\n      .replaceAll(\"<\", \"&lt;\")\n      .replaceAll(\">\", \"&gt;\")\n      .replaceAll('\\\"', \"&quot;\");\nreturn {\n  json: {\n    has: rows.length > 0,\n    body:\n      \"These workflows contain outdated nodes:<br><ul>\" +\n      rows\n        .map(\n          (x) =>\n            '<li><a href=\\\"' +\n            esc(base.replace(/\\/$/, \"\") + \"/workflow/\" + encodeURIComponent(x.id)) +\n            '\\\">' +\n            esc(x.body.name) +\n            \"</a></li>\",\n        )\n        .join(\"\") +\n      \"</ul>\",\n  },\n};\n"
+      },
+      "id": "rename-15"
+    },
+    {
+      "name": "Any updates to email?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.has }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "rename-16"
+    },
+    {
+      "name": "Read email checkpoint",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'node-update:' + $('Execute Workflow Trigger').first().json.runId + ':mail' }}"
+            }
+          ]
+        },
+        "operation": "get",
+        "returnAll": false,
+        "limit": 1
+      },
+      "alwaysOutputData": true,
+      "id": "rename-17"
+    },
+    {
+      "name": "Inspect email checkpoint",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if ($json.status === \"pending\") throw Error(\"Inspect pending summary email\");\nreturn { json: { skip: $json.status === \"done\" }, pairedItem: { item: $itemIndex } };\n"
+      },
+      "id": "rename-18"
+    },
+    {
+      "name": "Email already sent?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.skip }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "rename-19"
+    },
+    {
+      "name": "Reserve summary email",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "item_key": "={{ 'node-update:' + $('Execute Workflow Trigger').first().json.runId + ':mail' }}",
+            "status": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "rename-20"
+    },
+    {
+      "id": "rename-21",
+      "name": "Send Summary",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        2400,
+        1140
+      ],
+      "parameters": {
+        "message": "={{ $('Prepare workflow summary').first().json.body }}",
+        "options": {
+          "appendAttribution": false
+        },
+        "subject": "Outdated n8n Workflow Nodes",
+        "sendTo": "YOUR_EMAIL"
+      },
+      "typeVersion": 2.1,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "name": "Verify summary email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if (typeof $json.id !== \"string\" || !$json.id || $json.item_key || $json.status === \"pending\")\n  throw Error(\"Inspect summary email\");\nreturn { json: { id: $json.id }, pairedItem: { item: $itemIndex } };\n"
+      },
+      "id": "rename-22"
+    },
+    {
+      "name": "Confirm summary email",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'node-update:' + $('Execute Workflow Trigger').first().json.runId + ':mail' }}"
+            }
+          ]
+        },
+        "operation": "update",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "done"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "rename-23"
+    },
+    {
+      "name": "Stop after uncertain write",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "throw Error(\"Inspect pending destination before retry\");\n"
+      },
+      "id": "rename-24"
+    },
+    {
+      "name": "Receive signed rename request",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "n8n-node-rename-owner",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "rename-25"
+    },
+    {
+      "name": "Verify rename signature",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const crypto = require(\"crypto\"),\n  body = $json.body,\n  secret = $env.N8N_RENAME_RELAY_SECRET,\n  payload = String(body?.payload || \"\"),\n  signature = String(body?.signature || \"\"),\n  expected = crypto\n    .createHmac(\"sha256\", secret || \"\")\n    .update(payload)\n    .digest(\"hex\");\nif (\n  !secret ||\n  signature.length !== expected.length ||\n  !crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))\n)\n  throw Error(\"Invalid relay signature\");\nreturn {\n  json: JSON.parse(Buffer.from(payload, \"base64\").toString(\"utf8\")),\n  pairedItem: { item: $itemIndex },\n};\n"
+      },
+      "id": "rename-26"
+    },
+    {
+      "name": "Rename relay with n8n owner",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const { Workflow } = require(\"n8n-workflow\");\nconst { workflow, outdated, symbol, onlyMajorChanges, addNodesToCanvas } = $json;\nif (\n  !workflow?.id ||\n  !Array.isArray(workflow.nodes) ||\n  !workflow.connections ||\n  !workflow.settings ||\n  !Array.isArray(outdated) ||\n  typeof symbol !== \"string\" ||\n  !symbol.trim()\n)\n  throw Error(\"Invalid workflow update request\");\nconst data = JSON.parse(JSON.stringify(workflow)),\n  types = { getByNameAndVersion: () => undefined },\n  owner = new Workflow({\n    id: data.id,\n    name: data.name,\n    nodes: data.nodes,\n    connections: data.connections,\n    settings: data.settings,\n    nodeTypes: types,\n    active: false,\n  });\nlet clones = [],\n  changed = 0;\nfor (const old of outdated) {\n  if (!old || typeof old.name !== \"string\" || old.latestVersion == null || old.version == null)\n    throw Error(\"Invalid outdated node\");\n  if (\n    onlyMajorChanges &&\n    String(old.version).split(\".\")[0] === String(old.latestVersion).split(\".\")[0]\n  )\n    continue;\n  let n = owner.nodes[old.name];\n  if (!n || !n.id || n.name.startsWith(symbol)) continue;\n  const newName = symbol + \" \" + old.name;\n  if (owner.nodes[newName]) throw Error(\"Renamed node already exists\");\n  let clone = addNodesToCanvas ? JSON.parse(JSON.stringify(n)) : null;\n  owner.renameNode(old.name, newName);\n  if (clone) {\n    delete clone.id;\n    clone.typeVersion = old.latestVersion;\n    clone.position = [clone.position[0] + 40, clone.position[1] - 40];\n    clones.push(clone);\n  }\n  changed++;\n}\nreturn {\n  json: {\n    id: data.id,\n    changed,\n    body: {\n      name: data.name,\n      nodes: [...clones, ...Object.values(owner.nodes)],\n      connections: owner.connectionsBySourceNode,\n      settings: data.settings,\n    },\n  },\n  pairedItem: { item: $itemIndex },\n};\n"
+      },
+      "id": "rename-27"
+    },
+    {
+      "name": "Return rename result",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "rename-28"
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Validate request IDs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate request IDs": {
+      "main": [
+        [
+          {
+            "node": "Settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Settings": {
+      "main": [
+        [
+          {
+            "node": "Process workflow records",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Workflow": {
+      "main": [
+        [
+          {
+            "node": "Rename with n8n owner",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rename with n8n owner": {
+      "main": [
+        [
+          {
+            "node": "Any nodes changed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read workflow checkpoint": {
+      "main": [
+        [
+          {
+            "node": "Inspect workflow checkpoint",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Inspect workflow checkpoint": {
+      "main": [
+        [
+          {
+            "node": "Workflow already updated?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve workflow update": {
+      "main": [
+        [
+          {
+            "node": "Update Workflow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Workflow": {
+      "main": [
+        [
+          {
+            "node": "Verify workflow update",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Stop after uncertain write",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify workflow update": {
+      "main": [
+        [
+          {
+            "node": "Confirm workflow update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm workflow update": {
+      "main": [
+        [
+          {
+            "node": "Process workflow records",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read completed updates": {
+      "main": [
+        [
+          {
+            "node": "Prepare workflow summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare workflow summary": {
+      "main": [
+        [
+          {
+            "node": "Any updates to email?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read email checkpoint": {
+      "main": [
+        [
+          {
+            "node": "Inspect email checkpoint",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Inspect email checkpoint": {
+      "main": [
+        [
+          {
+            "node": "Email already sent?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve summary email": {
+      "main": [
+        [
+          {
+            "node": "Send Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Summary": {
+      "main": [
+        [
+          {
+            "node": "Verify summary email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Stop after uncertain write",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify summary email": {
+      "main": [
+        [
+          {
+            "node": "Confirm summary email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Receive signed rename request": {
+      "main": [
+        [
+          {
+            "node": "Verify rename signature",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify rename signature": {
+      "main": [
+        [
+          {
+            "node": "Rename relay with n8n owner",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rename relay with n8n owner": {
+      "main": [
+        [
+          {
+            "node": "Return rename result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process workflow records": {
+      "main": [
+        [
+          {
+            "node": "Read completed updates",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Workflow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Any nodes changed?": {
+      "main": [
+        [
+          {
+            "node": "Read workflow checkpoint",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Process workflow records",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Workflow already updated?": {
+      "main": [
+        [
+          {
+            "node": "Process workflow records",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reserve workflow update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Any updates to email?": {
+      "main": [
+        [
+          {
+            "node": "Read email checkpoint",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Email already sent?": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Reserve summary email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
