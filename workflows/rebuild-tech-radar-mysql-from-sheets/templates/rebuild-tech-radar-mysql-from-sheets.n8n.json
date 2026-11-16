@@ -1,0 +1,573 @@
+{
+  "name": "Rebuild Tech Radar MySQL from Google Sheets",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "radar-refresh-cron",
+      "name": "Monthly refresh",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 22 1 * *"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "radar-refresh-hook",
+      "name": "MySQL refresh relay",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "rebuild-tech-radar-mysql-from-sheets-mysql",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "disabled": true
+    },
+    {
+      "id": "e3af8196-a012-423f-80c8-840a3912e289",
+      "name": "Read radar sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        2620,
+        400
+      ],
+      "parameters": {
+        "options": {},
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Sheet1"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_SPREADSHEET_ID"
+        }
+      },
+      "typeVersion": 3,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "radar-refresh-from-sheet",
+      "name": "Collect sheet rows",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return [\n  {\n    json: {\n      runId: new Date().toISOString().slice(0, 7),\n      rows: $input\n        .all()\n        .map((x) => x.json)\n        .filter((x) => Object.keys(x).length),\n      origin: \"schedule\",\n    },\n  },\n];\n"
+      }
+    },
+    {
+      "id": "radar-refresh-from-relay",
+      "name": "Read relay request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return { json: { ...$json.body, origin: \"relay\" } };\n"
+      }
+    },
+    {
+      "id": "radar-refresh-prep",
+      "name": "Prepare refresh",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const { runId, rows, origin } = $json,\n  names = [\n    \"name\",\n    \"ring\",\n    \"quadrant\",\n    \"isStrategicDirection\",\n    \"isUsedByChildCompany1\",\n    \"isUsedByChildCompany2\",\n    \"isUsedByChildCompany3\",\n    \"isNew\",\n    \"status\",\n    \"description\",\n  ];\nif (\n  !/^\\d{4}-\\d{2}$/.test(runId) ||\n  !Array.isArray(rows) ||\n  rows.some((x) => !x || names.some((n) => !(n in x)))\n)\n  throw Error(\"Invalid refresh\");\nreturn { json: { runId, rows, origin } };\n"
+      }
+    },
+    {
+      "id": "radar-refresh-gate",
+      "name": "Check refresh checkpoint",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'radar-refresh:'+$('Prepare refresh').first().json.runId }}"
+            }
+          ]
+        },
+        "operation": "rowNotExists"
+      }
+    },
+    {
+      "id": "radar-refresh-reserve",
+      "name": "Reserve refresh",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "item_key": "={{ 'radar-refresh:'+$('Prepare refresh').first().json.runId }}",
+            "status": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "radar-refresh-truncate",
+      "name": "Clear radar table",
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.4,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "TRUNCATE TABLE `techradar`",
+        "options": {}
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "id": "radar-refresh-guard",
+      "name": "Stop if clear uncertain",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const a = $input.all();\nif (a.length !== 1 || a[0].json.success !== true) return [];\nreturn [{ json: { success: true } }];\n"
+      }
+    },
+    {
+      "id": "radar-refresh-has-rows",
+      "name": "Rows to insert?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $('Prepare refresh').first().json.rows.length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "radar-refresh-rows",
+      "name": "Prepare row inserts",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const names = [\n  \"name\",\n  \"ring\",\n  \"quadrant\",\n  \"isStrategicDirection\",\n  \"isUsedByChildCompany1\",\n  \"isUsedByChildCompany2\",\n  \"isUsedByChildCompany3\",\n  \"isNew\",\n  \"status\",\n  \"description\",\n];\nreturn $(\"Prepare refresh\")\n  .first()\n  .json.rows.map((row) => ({ json: { values: names.map((n) => row[n]) } }));\n"
+      }
+    },
+    {
+      "id": "radar-refresh-insert",
+      "name": "Insert radar rows",
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.4,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT HIGH_PRIORITY IGNORE INTO `techradar` (`name`,`ring`,`quadrant`,`isStrategicDirection`,`isUsedByChildCompany1`,`isUsedByChildCompany2`,`isUsedByChildCompany3`,`isNew`,`status`,`description`) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)",
+        "options": {
+          "queryBatching": "transaction",
+          "queryReplacement": "={{ $json.values }}"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "id": "radar-refresh-verify",
+      "name": "Stop if inserts uncertain",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const a = $input.all(),\n  rows = $(\"Prepare refresh\").first().json.rows;\nif (a.length !== rows.length || a.some((x) => x.json.success !== true)) return [];\nreturn [{ json: { success: true } }];\n"
+      }
+    },
+    {
+      "id": "radar-refresh-done",
+      "name": "Confirm refresh",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "resource": "row",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "item_key",
+              "condition": "eq",
+              "keyValue": "={{ 'radar-refresh:'+$('Prepare refresh').first().json.runId }}"
+            }
+          ]
+        },
+        "operation": "update",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "done"
+          },
+          "schema": []
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "radar-refresh-route",
+      "name": "Reply to relay?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $('Prepare refresh').first().json.origin }}",
+              "rightValue": "relay",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "radar-refresh-respond",
+      "name": "Return refresh receipt",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {runId:$('Prepare refresh').first().json.runId,status:'done'} }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "radar-refresh-stop",
+      "name": "Stop after uncertain database write",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {}
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC"
+  },
+  "connections": {
+    "Monthly refresh": {
+      "main": [
+        [
+          {
+            "node": "Read radar sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read radar sheet": {
+      "main": [
+        [
+          {
+            "node": "Collect sheet rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect sheet rows": {
+      "main": [
+        [
+          {
+            "node": "Prepare refresh",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MySQL refresh relay": {
+      "main": [
+        [
+          {
+            "node": "Read relay request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read relay request": {
+      "main": [
+        [
+          {
+            "node": "Prepare refresh",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare refresh": {
+      "main": [
+        [
+          {
+            "node": "Check refresh checkpoint",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check refresh checkpoint": {
+      "main": [
+        [
+          {
+            "node": "Reserve refresh",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve refresh": {
+      "main": [
+        [
+          {
+            "node": "Clear radar table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Stop if clear uncertain": {
+      "main": [
+        [
+          {
+            "node": "Rows to insert?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare row inserts": {
+      "main": [
+        [
+          {
+            "node": "Insert radar rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Stop if inserts uncertain": {
+      "main": [
+        [
+          {
+            "node": "Confirm refresh",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm refresh": {
+      "main": [
+        [
+          {
+            "node": "Reply to relay?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rows to insert?": {
+      "main": [
+        [
+          {
+            "node": "Prepare row inserts",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Confirm refresh",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clear radar table": {
+      "main": [
+        [
+          {
+            "node": "Stop if clear uncertain",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Stop after uncertain database write",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert radar rows": {
+      "main": [
+        [
+          {
+            "node": "Stop if inserts uncertain",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Stop after uncertain database write",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reply to relay?": {
+      "main": [
+        [
+          {
+            "node": "Return refresh receipt",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    }
+  }
+}
