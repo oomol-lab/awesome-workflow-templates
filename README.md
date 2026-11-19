@@ -339,6 +339,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Summarize YouTube Videos in Airtable](workflows/summarize-youtube-videos-in-airtable/) - Summarize a pending YouTube video and update its Airtable record with the main idea and takeaways.
 - [Generate and Resolve WordPress Tags](workflows/generate-and-resolve-wordpress-tags/) - Resolve article tags in WordPress and create a tagged draft from RSS content.
 - [Reddit Brand & Intent Radar](workflows/reddit-intent-monitor/) - Scan Reddit discussions on a schedule, filter high-intent buyer or feedback posts with AI, and send a Slack digest.
+- [Competitor Content Gap Brief](workflows/competitor-content-gap-brief/) - Fetch a competitor RSS feed, analyze recent topics for SEO content gaps, and post 3 article outlines to Slack.
 
 ## Support
 
