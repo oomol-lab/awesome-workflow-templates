@@ -989,6 +989,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Extract Reviewed Invoices to Google Sheets](workflows/extract-reviewed-invoices-to-sheets/) - Extract and review emailed PDF invoices in Cradl AI, then record invoice lines in Google Sheets.
 - [Extract Invoices with LlamaParse](workflows/extract-invoices-with-llamaparse/) - Parse emailed invoice PDFs and record structured invoice details in Google Sheets.
 - [Parse Drive Invoices to Airtable](workflows/parse-drive-invoices-to-airtable/) - Parse new PDF invoices and save linked invoice and line item records in Airtable.
+- [Refund Policy Pre-Check & Approval](workflows/refund-policy-precheck/) - Validate incoming refund requests against deterministic policy rules, score risk with AI, and post an approval summary to Slack.
 
 ## Community
 
