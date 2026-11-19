@@ -338,6 +338,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Reddit Trending Stories to Mattermost](workflows/reddit-trending-stories-to-mattermost/) - Analyze trending Reddit-linked news and share a ZIP of story reports.
 - [Summarize YouTube Videos in Airtable](workflows/summarize-youtube-videos-in-airtable/) - Summarize a pending YouTube video and update its Airtable record with the main idea and takeaways.
 - [Generate and Resolve WordPress Tags](workflows/generate-and-resolve-wordpress-tags/) - Resolve article tags in WordPress and create a tagged draft from RSS content.
+- [Reddit Brand & Intent Radar](workflows/reddit-intent-monitor/) - Scan Reddit discussions on a schedule, filter high-intent buyer or feedback posts with AI, and send a Slack digest.
 
 ## Support
 
