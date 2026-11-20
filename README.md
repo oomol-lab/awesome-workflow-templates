@@ -63,6 +63,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Documents](#documents)
 - [Events](#events)
 - [Ecommerce](#ecommerce)
+- [CRM](#crm)
 - [Contribute](#contribute)
 - [Translations](#translations)
 - [Licensing](#licensing)
@@ -1209,6 +1210,10 @@ A growing collection of automation workflows for connecting apps and getting rep
 ## Ecommerce
 
 - [Draft and Approve Printify Product Copy](workflows/draft-and-approve-printify-product-copy/) - Generate three product copy options in Sheets and apply an approved option to its Printify shop.
+
+## CRM
+
+- [Replicate HubSpot Deal Line Items](workflows/hubspot-replicate-deal-line-items/) - Copy line items from a won HubSpot deal to a newly created deal via HubSpot batch APIs and send a Slack confirmation.
 
 ## Contribute
 
