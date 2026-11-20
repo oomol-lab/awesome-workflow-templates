@@ -13,11 +13,18 @@ Generate an invoice PDF with JSReport and email it after a form submission.
 
 ## Setup
 
-Create a Typeform with required questions titled buyer name, buyer road, buyer country, Item 1 Name, Item 1 Price, Item 2 Name and Item 2 Price. Use number fields for the two prices. Connect Typeform and set the form ID. In **Prepare invoice data**, set the invoice number and seller details. Create the JSReport Online invoice-main template, set your account hostname in **Render PDF with JSReport**, and bind secret Variables JSREPORT_USERNAME and JSREPORT_PASSWORD. Set the recipient in **Render PDF with JSReport** and bind secret Variable GMAIL_ACCESS_TOKEN containing a Gmail OAuth access token with gmail.send permission. Refresh the token when it expires. In n8n use its form, set the JSReport URL and basic-auth credential, configure the seller details and Gmail recipient, and connect Gmail. Activate one format.
+Create a Typeform with required questions titled buyer name, buyer road, buyer country, Item 1 Name, Item 1 Price, Item 2 Name and Item 2 Price. Use number fields for the two prices. Connect Typeform and set the form ID. In **Prepare invoice data**, set the invoice number and seller details. Create the JSReport Online invoice-main template, set your account hostname in **Render PDF with JSReport**, and bind secret Variables JSREPORT_USERNAME and JSREPORT_PASSWORD. Set the recipient in **Render PDF with JSReport** and bind secret Variable GMAIL_ACCESS_TOKEN containing a Gmail OAuth access token with gmail.send permission. Refresh the token when it expires.
 
 ## Behavior
 
 A submission sends buyer details and two line items to JSReport, then emails the resulting PDF as an attachment. Contact and invoice data are sent to JSReport and Gmail and may be retained in execution history. Open Flow's binary encoding has a size limit: a 500 KiB PDF was verified and a 700 KiB PDF exceeded the runtime limit before email. If email delivery is uncertain, inspect the mailbox before retrying to avoid duplicates.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n use its form, set the JSReport URL and basic-auth credential, configure the seller details and Gmail recipient, and connect Gmail.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

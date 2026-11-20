@@ -13,11 +13,18 @@ Explore JSON arrays, a random Wikipedia title, and paginated GitHub stars.
 
 ## Setup and use
 
-In Open Flow, enter a public GitHub username in **Prepare the next starred page**. In n8n, set the username in **Set**. Run manually. GitHub's unauthenticated API rate limit applies.
+In Open Flow, enter a public GitHub username in **Prepare the next starred page**. Run manually. GitHub's unauthenticated API rate limit applies.
 
 ## Behavior
 
-The independent branches fetch example albums, get a random Wikipedia article title and read the GitHub user's starred repositories in pages of 15 until a short page. Inspect node outputs to see each page. Open Flow uses the MediaWiki API for a random article title; n8n extracts the heading from the random HTML page.
+The independent branches fetch example albums, get a random Wikipedia article title and read the GitHub user's starred repositories in pages of 15 until a short page. Inspect node outputs to see each page. Open Flow uses the MediaWiki API for a random article title.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, set the username in **Set**. N8n extracts the heading from the random HTML page.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

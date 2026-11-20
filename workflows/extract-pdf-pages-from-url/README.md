@@ -15,11 +15,16 @@ Download a PDF and extract a selected page range into a new PDF.
 
 Run the workflow to download the example PDF and extract pages 2–3. In Open Flow, set the PDF URL and page range in **Download and extract pages**. Add the URL's hostname to that node's allowed HTTP hosts when changing the URL. Large PDFs must support HTTP byte ranges; the server should provide an ETag or Last-Modified validator so the ranges refer to the same version. Download the resulting `output.pdf` artifact.
 
-For n8n, install the [CustomJS PDF Toolkit community node](https://www.npmjs.com/package/@custom-js/n8n-nodes-pdf-toolkit), connect a CustomJS credential and set the URL and page range in **HTTP Request** and **Extract Pages From PDF1**. The PDF is sent to CustomJS for processing. Use one format.
-
 ## Behavior
 
 The workflow copies the selected pages in their original order into a new PDF. Page numbering starts at 1. A missing PDF or an invalid range fails the run. The source URL and document contents are available to the services and execution environment involved; use documents you are permitted to process. Runtime request and artifact size limits apply.
+
+<details>
+<summary>In n8n</summary>
+
+For n8n, install the [CustomJS PDF Toolkit community node](https://www.npmjs.com/package/@custom-js/n8n-nodes-pdf-toolkit), connect a CustomJS credential and set the URL and page range in **HTTP Request** and **Extract Pages From PDF1**. The PDF is sent to CustomJS for processing. Use one format.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

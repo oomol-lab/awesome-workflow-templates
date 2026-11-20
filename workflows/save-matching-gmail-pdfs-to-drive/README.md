@@ -13,11 +13,18 @@ Classify incoming PDF attachments and save matching originals to Google Drive.
 
 ## Setup
 
-Configure the n8n Gmail trigger and Gmail/Drive credentials, the destination folder ID, a private Data Table with item_key and status text columns and a model. Set the desired document type in Configure PDF matching. Select direct mode for n8n processing. For Open Flow set relay mode, configure the Open Flow webhook and Header Auth, set PDF_EVENT_AUTH to the same Authorization header, configure the term in Authenticate PDF event, enable the authenticated Upload original PDF webhook and set its URL and bearer token in Open Flow; configure its Header Auth as Authorization: Bearer followed by that token. Use one mode only and prevent overlapping runs for the same message.
+Set the desired document type in Configure PDF matching. Use one mode only and prevent overlapping runs for the same message.
 
 Every PDF attachment is examined separately. The text must be extractable and satisfy the source estimate of at most 15,800 characters; scanned PDFs need OCR. Non-PDF and over-limit attachments are skipped. The source used length() on a string; this version uses length. The classifier may be wrong, so review the results. PDF text and filename are sent to the model.
 
-If upload is uncertain, inspect the destination before retrying. In Open Flow supply the pending key and confirmed or absent in Reserve matching PDF upload and replay the same attachment, then clear the recovery fields. In n8n mark the pending Data Table row done if uploaded or delete it only after confirming no file exists; enable the authenticated Resume email webhook and POST a JSON object with messageId set to the original Gmail message ID to resume the original email.
+If upload is uncertain, inspect the destination before retrying. In Open Flow supply the pending key and confirmed or absent in Reserve matching PDF upload and replay the same attachment, then clear the recovery fields.
+
+<details>
+<summary>In n8n</summary>
+
+Configure the n8n Gmail trigger and Gmail/Drive credentials, the destination folder ID, a private Data Table with item_key and status text columns and a model. Select direct mode for n8n processing. For Open Flow set relay mode, configure the Open Flow webhook and Header Auth, set PDF_EVENT_AUTH to the same Authorization header, configure the term in Authenticate PDF event, enable the authenticated Upload original PDF webhook and set its URL and bearer token in Open Flow; configure its Header Auth as Authorization: Bearer followed by that token. In n8n mark the pending Data Table row done if uploaded or delete it only after confirming no file exists; enable the authenticated Resume email webhook and POST a JSON object with messageId set to the original Gmail message ID to resume the original email.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

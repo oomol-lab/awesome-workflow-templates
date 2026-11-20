@@ -3,13 +3,8 @@
 Activate an n8n workflow each morning and deactivate it each evening.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/schedule-n8n-workflow-activity/) [![n8n JSON](../../assets/n8n-json.svg)](templates/schedule-n8n-workflow-activity.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/schedule-n8n-workflow-activity.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup
 

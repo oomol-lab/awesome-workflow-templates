@@ -13,9 +13,14 @@ Run an Adobe PDF Services operation and return its completed result.
 
 ## Setup and use
 
-In n8n configure HTTP Custom Auth for the token requests with form body client_id and client_secret, and HTTP Header Auth with X-API-Key set to the client ID for Adobe API requests. Protect all four adapter webhooks with an authenticated gateway or private network. Adobe access tokens can appear in n8n execution records; restrict access to those records and set a suitable retention period. Bind ADOBE_RELAY_AUTHORIZATION to the gateway credential in Open Flow and configure all four adapter URLs. The relay reads the PDF URL; it must be reachable by n8n. Provide an HTTPS PDF URL, a unique request ID, the Adobe operation name such as extractpdf or splitpdf, and its JSON options without assetID. Open Flow creates an asset, transfers the PDF via n8n, starts the requested operation and polls every five seconds until completion; the result contains Adobe's download reference.
+A prior request ID cannot be reused; inspect Adobe before clearing a pending row. Avoid overlapping runs. If asset creation or operation submission has an unknown result, inspect Adobe before clearing the pending checkpoint. Output URLs can expire.
 
-The n8n callable entry accepts the original PDF binary as data with endpoint, json_payload and a unique requestId. Select a Data Table with item_key and status columns. A prior request ID cannot be reused; inspect Adobe before clearing a pending row. Avoid overlapping runs. If asset creation or operation submission has an unknown result, inspect Adobe before clearing the pending checkpoint. Output URLs can expire.
+<details>
+<summary>In n8n</summary>
+
+In n8n configure HTTP Custom Auth for the token requests with form body client_id and client_secret, and HTTP Header Auth with X-API-Key set to the client ID for Adobe API requests. Protect all four adapter webhooks with an authenticated gateway or private network. Adobe access tokens can appear in n8n execution records; restrict access to those records and set a suitable retention period. Bind ADOBE_RELAY_AUTHORIZATION to the gateway credential in Open Flow and configure all four adapter URLs. The relay reads the PDF URL; it must be reachable by n8n. Provide an HTTPS PDF URL, a unique request ID, the Adobe operation name such as extractpdf or splitpdf, and its JSON options without assetID. Open Flow creates an asset, transfers the PDF via n8n, starts the requested operation and polls every five seconds until completion; the result contains Adobe's download reference. The n8n callable entry accepts the original PDF binary as data with endpoint, json_payload and a unique requestId. Select a Data Table with item_key and status columns.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

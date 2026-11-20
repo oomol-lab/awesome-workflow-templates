@@ -15,11 +15,18 @@ Read a Disqus forum’s public details using its short name, and return the comp
 
 Use the **Public API Key** from your Disqus API application. This is the application key sent as `api_key`, not an account-owner access token or API secret. Configure the HTTP step’s **Referer** header with a site URL registered in that application’s trusted domains, following Disqus’s public-key access rules.
 
-In Open Flow, store the key in a Variable and bind **Auth Token** (`auth.token`) in **Read public Disqus forum** to it. Run with the **Forum** short name. In n8n, choose **HTTP Query Auth** credentials with name `api_key` and your application’s Public API Key as the value. Set the registered Referer URL and forum query value in **Read public Disqus forum**. Shared files contain no key or Variable binding.
+In Open Flow, store the key in a Variable and bind **Auth Token** (`auth.token`) in **Read public Disqus forum** to it. Run with the **Forum** short name. Set the registered Referer URL and forum query value in **Read public Disqus forum**. Shared files contain no key or Variable binding.
 
 Each run makes one GET request for forum details, checks the API success code and forum ID, and retains every returned forum property. It does not read posts, moderate comments, expand related records or authenticate a Disqus user. Private user data is outside this template’s public-data access mode.
 
 Disqus application permissions, trusted-domain checks and API rate limits apply. A rejected request, nonzero API code or missing forum record stops the run. No workflow retry is configured. Open Flow’s HTTP step has a 30-second execution budget.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, choose **HTTP Query Auth** credentials with name `api_key` and your application’s Public API Key as the value.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

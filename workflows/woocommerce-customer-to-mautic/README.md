@@ -15,7 +15,7 @@ Create a missing Mautic contact or update its name when a WooCommerce customer c
 
 Connect your WooCommerce store in **Receive a customer update**. Use its HTTPS URL and a REST API consumer key/secret with **Read/Write** access; the associated user must be allowed to manage webhooks. Keep **Events** set to `customer.updated`. Deploy to a public HTTPS callback and activate the workflow to register its signed subscription. The source subscribes to customer updates only, despite its original title.
 
-Connect the same Mautic account in all three Mautic steps. In n8n, use **WooCommerce API** credentials in the trigger and **Mautic API** credentials in the search, create and update nodes. For Mautic, use a public HTTPS instance URL, username and password, enable REST API and Basic authentication, and grant contact view/create/edit permission. Configure email as a unique field. Activate one format for this sync to avoid duplicate processing.
+Connect the same Mautic account in all three Mautic steps. For Mautic, use a public HTTPS instance URL, username and password, enable REST API and Basic authentication, and grant contact view/create/edit permission. Configure email as a unique field.
 
 ## Behavior
 
@@ -25,7 +25,14 @@ The search preserves the source’s first-page limit of **30 contacts**. A full 
 
 The subscription receives future `customer.updated` events. It does not import existing customers, subscribe to customer-created events, add segments or send campaigns. Open Flow accepts webhook bodies up to **64 KiB**; large custom customer fields must fit that limit. Missing customer fields or search errors prevent writes. A create/update error or missing saved ID stops the run, with no automatic workflow retry. A write with an unknown result may already have changed Mautic; inspect the CRM before replaying. Search followed by write is not an atomic transaction.
 
-Both formats verify fresh subscriptions using WooCommerce’s body signature. Open Flow uses the delivery ID as its trigger deduplication key when present; the native n8n trigger does not add that key. This is not an exactly-once CRM-write guarantee. Webhook acknowledgment confirms receipt, not completion of the later sync.
+The workflow verify fresh subscriptions using WooCommerce’s body signature. Open Flow uses the delivery ID as its trigger deduplication key when present. This is not an exactly-once CRM-write guarantee. Webhook acknowledgment confirms receipt, not completion of the later sync.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, use **WooCommerce API** credentials in the trigger and **Mautic API** credentials in the search, create and update nodes. The native n8n trigger does not add that key.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

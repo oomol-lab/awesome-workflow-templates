@@ -13,11 +13,18 @@ Learn to collect sample workflow items into an array of people.
 
 ## Setup and use
 
-Run manually. Edit the sample people in **Collect the people** in Open Flow or **Mock Data** in n8n to try other values.
+Run manually.
 
 ## Behavior
 
-The example collects three people, Jim, Stefan and Hans, retaining their respective IDs 1, 2 and 3 in order. Open Flow outputs the array as **data_object**. n8n emits one item with the array in its **data_object** field.
+The example collects three people, Jim, Stefan and Hans, retaining their respective IDs 1, 2 and 3 in order. Open Flow outputs the array as **data_object**.
+
+<details>
+<summary>In n8n</summary>
+
+Edit the sample people in **Collect the people** in Open Flow or **Mock Data** in n8n to try other values. n8n emits one item with the array in its **data_object** field.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

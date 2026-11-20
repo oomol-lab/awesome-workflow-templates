@@ -13,13 +13,20 @@ Capture a full-page website screenshot and post the image to Telegram.
 
 ## Setup
 
-Connect Screenshotbase and Telegram. Set the website URL on **Capture the full page** and the chat ID on **Send the screenshot to Telegram**. In n8n, create a Header Auth credential with header apikey and your Screenshotbase API key, select it on **Capture the full page**, enter the website URL there, and connect Telegram and set its chat ID. Use a website you are authorized to capture. Run one format for each screenshot.
+Connect Screenshotbase and Telegram. Set the website URL on **Capture the full page** and the chat ID on **Send the screenshot to Telegram**. Use a website you are authorized to capture.
 
 ## Behavior
 
 Each run asks Screenshotbase for a full-page PNG at a 1024-pixel viewport width and sends the hosted image URL to Telegram as a photo. Screenshotbase limits synchronous full-page captures to 20,000 CSS pixels in height. The workflow reads the PNG header and stops before sending if the screenshot is 20,000 pixels tall or more, its width is not 1024 pixels, or its dimensions cannot be verified. A complete image exactly 20,000 pixels tall is also rejected. The screenshot provider visits the website and stores a public image URL; Telegram fetches that image. The page URL and screenshot may contain sensitive information. Only capture pages and send images you are comfortable sharing with both services and anyone who obtains the image URL.
 
 A failed capture, inaccessible image header, unsupported CDN host or invalid returned URL stops before sending. The header check requires a readable PNG from Screenshotbase’s cache.screenshotbase.com or cdn.screenshotbase.com. A failed or uncertain Telegram send may already have been delivered; inspect the chat before retrying. The image must meet Telegram photo limits and be accessible to Telegram.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, create a Header Auth credential with header apikey and your Screenshotbase API key, select it on **Capture the full page**, enter the website URL there, and connect Telegram and set its chat ID.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

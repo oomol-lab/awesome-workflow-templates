@@ -13,11 +13,18 @@ Retrieve up to 100 Hacker News search results from Algolia.
 
 ## Setup
 
-In Open Flow connect Hacker News and allow Proxy access, then run the workflow. In n8n activate the Hacker News node and run it manually. No search term or tag filter is configured.
+In Open Flow connect Hacker News and allow Proxy access, then run the workflow. No search term or tag filter is configured.
 
 ## Behavior
 
-One manual run requests up to 100 results from the default Algolia search and returns the hits in their received order. Open Flow returns one array; n8n emits one item per hit. Results depend on the service's default ranking and change over time. Empty results return an empty array in Open Flow. A failed request stops the run. Open Flow Code accepts inputs and outputs up to 1 MiB; a larger response fails rather than returning partial results.
+One manual run requests up to 100 results from the default Algolia search and returns the hits in their received order. Open Flow returns one array. Results depend on the service's default ranking and change over time. Empty results return an empty array in Open Flow. A failed request stops the run. Open Flow Code accepts inputs and outputs up to 1 MiB; a larger response fails rather than returning partial results.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n activate the Hacker News node and run it manually. N8n emits one item per hit.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

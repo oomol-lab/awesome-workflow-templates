@@ -15,13 +15,18 @@ Summarize today’s calendar meetings and attendees with AI, then post the summa
 
 Connect Google Calendar and Slack, configure an AI model, and enter the calendar ID in **Set today’s calendar window** and channel ID in **Prepare Slack message**. The default schedule and calendar-day boundaries use UTC; adjust the schedule and date handling together for another timezone.
 
-In n8n connect the calendar, Gemini model and Slack credentials, select a current Gemini model, configure the calendar and channel IDs, and choose a Data Table with item_key and status text columns for the checkpoint nodes. Activate only one format and prevent overlapping runs.
-
 ## Behavior
 
 At 09:00 UTC the workflow retrieves all pages of today’s events and sends their titles, times and attendees to the AI model. It posts the generated summary to Slack, including a message when there are no events. Event details and attendee information are shared with the model provider and Slack. Open Flow stops if the day has more than 5,000 events.
 
-If Slack’s outcome is unknown, inspect the channel before retrying. In **Prepare Slack message**, set acknowledge to the pending key and resolution to confirmed if posted, or absent if not, then rerun and clear both fields. In n8n inspect the pending Data Table row and mark it done if posted or delete it to retry.
+If Slack’s outcome is unknown, inspect the channel before retrying. In **Prepare Slack message**, set acknowledge to the pending key and resolution to confirmed if posted, or absent if not, then rerun and clear both fields.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n connect the calendar, Gemini model and Slack credentials, select a current Gemini model, configure the calendar and channel IDs, and choose a Data Table with item_key and status text columns for the checkpoint nodes. Activate only one format and prevent overlapping runs. In n8n inspect the pending Data Table row and mark it done if posted or delete it to retry.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

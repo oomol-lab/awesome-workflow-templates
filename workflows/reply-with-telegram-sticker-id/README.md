@@ -13,11 +13,18 @@ Reply to Telegram messages with the sticker file ID and set name.
 
 ## Setup
 
-Connect the same Telegram bot to the message trigger and reply node. Restrict the Open Flow trigger to intended chats or users if needed. In n8n, connect the bot to the trigger and both Telegram reply nodes. A bot can have only one active webhook, so enable only one format.
+Connect the same Telegram bot to the message trigger and reply node. Restrict the Open Flow trigger to intended chats or users if needed. A bot can have only one active webhook, so enable only one format.
 
 ## Behavior
 
 When a message contains a sticker, reply in the same chat with its file ID and sticker-set name. For a sticker without a set name, both formats report it as not available. A message without a sticker receives a notice. Telegram file IDs can be used by bots to refer to the sticker. If a reply fails or its result is unknown, check the chat before retrying; a reply may already have arrived.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect the bot to the trigger and both Telegram reply nodes.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

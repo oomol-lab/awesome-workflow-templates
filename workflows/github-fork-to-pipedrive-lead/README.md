@@ -13,13 +13,20 @@ Create a Pipedrive lead and GitHub profile note when a repository is forked.
 
 ## Setup
 
-Use a GitHub.com repository. Connect GitHub in **Receive fork events**, set its owner and name, and connect GitHub in **Get the sender profile**. Connect Pipedrive in **Search people by email** and the Action in **Use or create people**. Grant Pipedrive Provider API access in **Create a Pipedrive lead** and **Add the profile note**, using the same account. In n8n configure the GitHub and Pipedrive credentials and repository. Enable only one format.
+Use a GitHub.com repository. Connect GitHub in **Receive fork events**, set its owner and name, and connect GitHub in **Get the sender profile**. Connect Pipedrive in **Search people by email** and the Action in **Use or create people**. Grant Pipedrive Provider API access in **Create a Pipedrive lead** and **Add the profile note**, using the same account.
 
 ## Behavior
 
 For each fork event, the workflow reads the sender's public GitHub email and searches Pipedrive by exact, case-insensitive email. It processes up to 100 matches sequentially, completing each lead and note before starting the next. For each matching person it creates a lead and attaches a note with the sender's GitHub profile URL. If no person matches, it creates one named after the fork owner with the public email, then creates the lead and note. If no public email is available, it makes no Pipedrive changes.
 
 Each event can create new leads; there is no deduplication. Concurrent runs can both create a person for the same email. A failure stops later writes, but earlier people, leads or notes remain. An uncertain write is not retried automatically; check Pipedrive before rerunning.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure the GitHub and Pipedrive credentials and repository.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -13,13 +13,20 @@ Synchronize liked Spotify tracks to a named playlist and report additions and de
 
 ## Setup
 
-Both the Open Flow Spotify Connection and the n8n Spotify client must use Spotify Extended Quota Mode, where the legacy playlist tracks API remains supported. Development Mode uses a different API and is not supported by these nodes. Connect Spotify with permission to read liked tracks and read and modify the selected playlist, and connect Gotify. In Open Flow set the exact playlist name in **Choose the playlist**; in n8n set it in **Edit set Vars**. Use a unique playlist name and one format at a time.
+Development Mode uses a different API and is not supported by these nodes. Connect Spotify with permission to read liked tracks and read and modify the selected playlist, and connect Gotify. In Open Flow set the exact playlist name in **Choose the playlist**. Use a unique playlist name and one format at a time.
 
 ## Behavior
 
 Run manually or daily at midnight Europe/Berlin. The workflow reads liked tracks and the named playlist, adds missing track URIs and removes playlist URIs no longer liked. It reports additions and deletions separately to Gotify when each group is nonempty. The playlist can lose tracks: review its contents and make a backup before enabling synchronization.
 
 Open Flow reads every page before writing. It stops if the playlist name is missing or ambiguous, a page is invalid, or a track is missing its URI or added date. An empty liked collection causes no changes. It adds to an empty playlist, repairing a source path that did not reach the comparison on an empty input. Data must fit the workflow execution limits. As in the source, only the first occurrence of each matching URI is paired. Removing an extra duplicate by URI can remove every copy of that URI; a later run may add it again. Other clients modifying the playlist while this workflow runs can invalidate the comparison. A failed or uncertain write may have succeeded; inspect Spotify and Gotify before retrying.
+
+<details>
+<summary>In n8n</summary>
+
+Both the Open Flow Spotify Connection and the n8n Spotify client must use Spotify Extended Quota Mode, where the legacy playlist tracks API remains supported. In n8n set it in **Edit set Vars**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

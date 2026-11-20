@@ -13,13 +13,20 @@ Fetch a random cocktail and post its instructions, glass and image to a Mattermo
 
 ## Setup
 
-Connect Mattermost with permission to post in the intended channel. Deploy the webhook, then POST JSON with the target channel ID, for example `{"channel_id":"YOUR_MATTERMOST_CHANNEL_ID"}`. In n8n, select Mattermost credentials and activate the workflow.
+Connect Mattermost with permission to post in the intended channel. Deploy the webhook, then POST JSON with the target channel ID, for example `{"channel_id":"YOUR_MATTERMOST_CHANNEL_ID"}`.
 
 The webhook is unauthenticated, as in the source. Anyone who knows its URL can select a channel accessible to the connected account; protect the URL and limit the account’s permissions.
 
 ## Behavior
 
-Each accepted request fetches one random drink from TheCocktailDB and sends its name, instructions and glass in a Mattermost message, with the drink image as an attachment. A failed lookup or post stops the run; an uncertain post may already have arrived. Repeating a request may choose another drink and create another message. Open Flow checks the required response fields before posting; n8n uses the returned fields directly.
+Each accepted request fetches one random drink from TheCocktailDB and sends its name, instructions and glass in a Mattermost message, with the drink image as an attachment. A failed lookup or post stops the run; an uncertain post may already have arrived. Repeating a request may choose another drink and create another message. Open Flow checks the required response fields before posting.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, select Mattermost credentials and activate the workflow. N8n uses the returned fields directly.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

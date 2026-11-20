@@ -13,13 +13,20 @@ Create HubSpot contacts for Pipedrive people whose first email is not already pr
 
 ## Setup
 
-Connect Pipedrive in **List Pipedrive people** and HubSpot in **List HubSpot contacts** and **Create HubSpot contact**. Grant read access to people and contacts, and permission to create contacts. In n8n configure a Pipedrive HTTP Header Auth credential with name `x-api-token`, and HubSpot OAuth credentials for the two HTTP nodes. Enable only one format.
+Connect Pipedrive in **List Pipedrive people** and HubSpot in **List HubSpot contacts** and **Create HubSpot contact**. Grant read access to people and contacts, and permission to create contacts.
 
 ## Behavior
 
 Every minute the workflow reads all available Pipedrive people and HubSpot contacts, compares each person's first email case-insensitively, and creates one HubSpot contact with that email and the first name when present. It does not update existing contacts. If a Pipedrive person lacks a first email, the run stops before creating any contacts. Duplicate Pipedrive emails are created once per run.
 
-The Open Flow HubSpot search follows pages and stops without creating contacts if it reaches the 10,000-result search limit. n8n stops before creation if either list still has a next page after 100 requests, or if it reads 10,000 HubSpot contacts, even when the last page has no next cursor. Search indexing can lag, so a very recent HubSpot contact might not yet appear. Concurrent runs and uncertain create outcomes can also cause conflicts; inspect HubSpot before retrying. Earlier creates are not rolled back if a later create fails. The source used its n8n instance timezone and a stable second in each minute; Open Flow runs at minute boundaries in UTC.
+The Open Flow HubSpot search follows pages and stops without creating contacts if it reaches the 10,000-result search limit. Search indexing can lag, so a very recent HubSpot contact might not yet appear. Concurrent runs and uncertain create outcomes can also cause conflicts; inspect HubSpot before retrying. Earlier creates are not rolled back if a later create fails. Open Flow runs at minute boundaries in UTC.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure a Pipedrive HTTP Header Auth credential with name `x-api-token`, and HubSpot OAuth credentials for the two HTTP nodes. n8n stops before creation if either list still has a next page after 100 requests, or if it reads 10,000 HubSpot contacts, even when the last page has no next cursor. The source used its n8n instance timezone and a stable second in each minute.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

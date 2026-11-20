@@ -3,13 +3,8 @@
 Read all available n8n executions and convert their metadata to CSV.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/export-n8n-executions-as-csv/) [![n8n JSON](../../assets/n8n-json.svg)](templates/export-n8n-executions-as-csv.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/export-n8n-executions-as-csv.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup and use
 

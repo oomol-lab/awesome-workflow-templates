@@ -15,11 +15,9 @@ Save positive Typeform feedback in Notion and notify Slack, or create a Trello c
 
 Connect **Completed Typeform response** to Typeform and set your form ID. Select a secret Variable containing a Google Cloud API key on the **Analyze feedback sentiment** authentication input. Enable the Cloud Natural Language API and billing in that key’s Google Cloud project, and restrict the key to that API. The key is sent in the `x-goog-api-key` header.
 
-For n8n, choose a Typeform credential and form in **Typeform Trigger**, and a Google Cloud Natural Language OAuth2 credential in **Google Cloud Natural Language**. The n8n trigger keeps the full submission so the question definitions and answers can be matched by field ID.
-
 Use text questions titled **Name** and **Any suggestions for us?**. On **Save positive feedback in Notion**, set `parent.data_source_id` to a data source shared with your Notion connection. It must have a title property named `Name` and a rich-text property named `Feedback`. Select a writable Slack channel and Trello list in their action nodes.
 
-In n8n, select a database containing exactly one data source, and set its database ID and credential on **Notion**. The native n8n node uses the legacy database API, which cannot create a row in a database with multiple data sources. Open Flow selects the data source ID directly. Set the channel and credential on **Slack**, and the list and credential on **Trello**. Keep the same property names.
+Open Flow selects the data source ID directly. Set the channel and credential on **Slack**, and the list and credential on **Trello**. Keep the same property names.
 
 ## Behavior
 
@@ -28,6 +26,13 @@ A score greater than zero creates one Notion row containing the submitted name a
 Each completed form runs one sentiment analysis step against Google Cloud Natural Language v1, using plain text, automatic language detection, and UTF-16 sentence offsets. Blank answers, ambiguous question titles, or an invalid service response stop the run before a destination write. No workflow-level retries or delivery deduplication are configured. A later failed write can leave an earlier write completed; inspect the destination before rerunning the same submission.
 
 Feedback text is sent to Google for sentiment analysis. The name and feedback are sent to the chosen Notion and Slack destinations or to Trello, according to the score.
+
+<details>
+<summary>In n8n</summary>
+
+For n8n, choose a Typeform credential and form in **Typeform Trigger**, and a Google Cloud Natural Language OAuth2 credential in **Google Cloud Natural Language**. The n8n trigger keeps the full submission so the question definitions and answers can be matched by field ID. In n8n, select a database containing exactly one data source, and set its database ID and credential on **Notion**. The native n8n node uses the legacy database API, which cannot create a row in a database with multiple data sources.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

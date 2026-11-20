@@ -11,7 +11,6 @@ Review two rolling weeks of self-hosted Umami analytics. Generate a traffic summ
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
 
-
 ## Setup
 
 Use a self-hosted **Umami 3.4.1** instance. Its canonical HTTPS API base must be reachable from your execution server under that server’s outbound network rules. This template uses the self-hosted `/api` endpoints. It does not connect to Umami Cloud.
@@ -37,9 +36,7 @@ Create a Baserow Cloud table with these field names:
 
 You can run **Run analytics report** manually after configuration.
 
-### n8n
-
-Import the n8n JSON and edit the settings object in **Prepare Report Scope**. Select Header Auth credentials on the three Umami read nodes: header name `Authorization`, value `Bearer <your self-hosted API key>`.
+Select Header Auth credentials on the three Umami read nodes: header name `Authorization`, value `Bearer <your self-hosted API key>`.
 
 The two analysis HTTP nodes use OpenRouter. Select a separate Header Auth credential with `Authorization: Bearer <your OpenRouter key>` and replace `YOUR_OPENROUTER_MODEL_ID` in each JSON body with an available model. Check that model’s context limit before activation. The original model route is not assumed available.
 
@@ -55,7 +52,7 @@ The summary contains pageviews, unique visitors, visits, bounces and total visit
 
 Each page query reads one ranked response, with Umami’s default maximum of 500 rows. There is no pagination. A missing path can be outside that ranking; it does not establish zero traffic. The workflow keeps every returned row, including nullable dimensions, and adds no further first-N truncation. Both sets of rankings must fit the selected comparison model’s context window.
 
-Open Flow uses two AI Agent nodes with one model round each, text outputs, no external tools and no Code tool. n8n sends two ordinary OpenRouter completion requests with user prompts. The Agent runtime adds its own output and tool instructions; providers, model routing and generated wording can differ. Neither format sets an extra temperature or token budget. Review the generated tables and suggestions against the analytics before acting on them.
+Open Flow uses two AI Agent nodes with one model round each, text outputs, no external tools and no Code tool. The Agent runtime adds its own output and tool instructions; providers, model routing and generated wording can differ. Neither format sets an extra temperature or token budget. Review the generated tables and suggestions against the analytics before acting on them.
 
 ## Failure and repeat behavior
 
@@ -63,7 +60,14 @@ A failed HTTP or JSON request stops the workflow. Response data is checked befor
 
 There is no automatic workflow retry or cross-run deduplication. Repeating a run reads fresh data, can incur two new model calls and creates another row. If Baserow accepted a write but its response was lost, the row may already exist; inspect the table before repeating the run.
 
-Use canonical endpoints: redirects are errors. Open Flow allows 30 seconds and 4 MiB per Umami HTTP response; the n8n read timeout is also 30 seconds. A slow or oversized response stops the workflow.
+Use canonical endpoints: redirects are errors. Open Flow allows 30 seconds and 4 MiB per Umami HTTP response. A slow or oversized response stops the workflow.
+
+<details>
+<summary>In n8n</summary>
+
+### n8n Import the n8n JSON and edit the settings object in **Prepare Report Scope**. n8n sends two ordinary OpenRouter completion requests with user prompts. The n8n read timeout is also 30 seconds.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -15,13 +15,18 @@ Route inbox messages to each user’s Notion database and create an AI task and 
 
 Connect Gmail and configure processed and error label IDs. Configure an Airtable routes table and a Secret Variable AIRTABLE_TOKEN with access to it. Set the base and table IDs. Each route record ID is used as a Gmail plus alias and needs Active, Token and NotionDatabase fields. Each Notion integration must have access to its target database, which needs a Name title property. Connect Gemini and enable persistent State.
 
-In n8n use a self-hosted runtime with AIRTABLE_TOKEN available to Code nodes (set N8N_BLOCK_ENV_ACCESS_IN_NODE=false), configure Gmail and Gemini, select a Data Table with item_key and status text columns, and set the base and table IDs in the three route Code nodes.
-
 ## Behavior
 
 For each unprocessed inbox message addressed to a route alias, the workflow creates an actionable task and a detailed summary, adds a page to that route's Notion database, and labels the email. Missing routes are reported to the sender. A rejected Notion authorization deactivates the route and reports it; uncertain external writes remain pending. Email content is sent to the AI provider.
 
 Inspect the destination before reconciling a pending checkpoint. Mark an effect complete only after verifying it happened, or remove the pending state only after verifying it did not. Avoid overlapping runs. Route tokens are read privately for the request and must be protected in Airtable.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n use a self-hosted runtime with AIRTABLE_TOKEN available to Code nodes (set N8N_BLOCK_ENV_ACCESS_IN_NODE=false), configure Gmail and Gemini, select a Data Table with item_key and status text columns, and set the base and table IDs in the three route Code nodes.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

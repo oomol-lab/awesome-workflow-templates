@@ -15,15 +15,20 @@ Shuffle Matrix room members into small groups and announce them for a weekly vir
 
 In Open Flow, set your HTTPS Matrix homeserver and both room IDs in **Configure the Matrix rooms**. The greeting and member lookup use the first room; group messages use the second. They can be the same room. Create a secret Variable named `MATRIX_ACCESS_TOKEN` and bind it to all three Matrix HTTP nodes. The account must be allowed to read the member room and post in both rooms.
 
-In n8n, set the same homeserver and room IDs in **Configure the Matrix rooms**. Configure Matrix credentials on both message nodes. For **Read room membership events**, create HTTP Header Auth with name `Authorization` and value `Bearer YOUR_MATRIX_ACCESS_TOKEN` using the same account. Enable one format.
-
 ## Behavior
 
 At 10:00 each Monday the workflow posts a greeting, reads the member room's membership events, shuffles their Matrix user IDs and announces groups of three. If the final group has one person, one member moves from the previous group into it so both groups have two members. With fewer than two members, the greeting is posted and no group messages are sent.
 
-The source requested membership **Any**. This workflow also sends no membership filter, so invited, departed or banned accounts and the bot can appear in the returned membership events. Use a room whose membership state is appropriate for this activity. It does not schedule calendar invitations. The source timezone came from the n8n instance; the template starts in UTC. n8n Cron V1 chooses a fixed randomized second within the minute, while Open Flow uses the minute boundary.
+The source requested membership **Any**. This workflow also sends no membership filter, so invited, departed or banned accounts and the bot can appear in the returned membership events. Use a room whose membership state is appropriate for this activity. It does not schedule calendar invitations. Open Flow uses the minute boundary.
 
 The greeting is sent before the member lookup. If lookup or grouping fails, it remains posted. If a group post fails or its outcome is unknown, earlier posts remain and the current message may have arrived. Check the rooms before rerunning; no automatic retry or rollback is configured. Matrix transaction IDs are generated for individual posts, and rerunning creates new IDs. Large membership lists must fit runtime response and Code limits.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, set the same homeserver and room IDs in **Configure the Matrix rooms**. Configure Matrix credentials on both message nodes. For **Read room membership events**, create HTTP Header Auth with name `Authorization` and value `Bearer YOUR_MATRIX_ACCESS_TOKEN` using the same account. Enable one format. The source timezone came from the n8n instance; the template starts in UTC. n8n Cron V1 chooses a fixed randomized second within the minute.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

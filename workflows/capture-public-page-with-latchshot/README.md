@@ -15,13 +15,18 @@ Render a public web page as a PNG using a chosen viewport.
 
 Connect a Latchshot API key to **Render the page as PNG**. Set the public page URL, viewport width and height, full-page option and delay. The sample uses a 1440 × 900 viewport and waits 250 ms after navigation. The Connector deployment must have file transit configured.
 
-In n8n, select an HTTP Bearer Auth credential on **Capture public page** and configure the same inputs in **Set capture input**. Use one format for each capture.
-
 ## Behavior
 
-Run manually to request one screenshot. Latchshot accepts public HTTP or HTTPS targets subject to its URL and render limits. Open Flow returns a PNG file reference in Connector transit storage, including its MIME type and size, plus render diagnostics when provided. The transit link is publicly readable. The Connector tags the object for expiry, but deletion depends on the storage deployment’s lifecycle configuration. Treat the link as shareable and copy the artifact to durable storage if needed. The n8n output is the binary field **capture**. The Connector requires transit storage and limits the uploaded artifact to 512 MiB.
+Run manually to request one screenshot. Latchshot accepts public HTTP or HTTPS targets subject to its URL and render limits. Open Flow returns a PNG file reference in Connector transit storage, including its MIME type and size, plus render diagnostics when provided. The transit link is publicly readable. The Connector tags the object for expiry, but deletion depends on the storage deployment’s lifecycle configuration. Treat the link as shareable and copy the artifact to durable storage if needed. The Connector requires transit storage and limits the uploaded artifact to 512 MiB.
 
 A failed render or transit upload stops the workflow. A render can succeed before an upload fails; inspect the service before retrying. The workflow adds no automatic replay.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, select an HTTP Bearer Auth credential on **Capture public page** and configure the same inputs in **Set capture input**. Use one format for each capture. The n8n output is the binary field **capture**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -17,13 +17,18 @@ Configure the Typeform with the three source questions, including a multi-select
 
 The Mattermost server must support the team invite endpoint with channel IDs and graceful responses, have email invitations enabled, and grant the token account invite_user, add_user_to_team and the appropriate manage-channel-members permission for every selected channel. The server can silently remove unauthorized channels; verify those permissions before use.
 
-In n8n configure the same form, Sheets, Mattermost server and credential, team, Calendar and Gmail; select one Data Table with item_key and status text columns in every checkpoint. Enable **Attendee Registrations** only when running the n8n format. Run one format only. Avoid concurrent edits to the same Calendar events while this workflow runs.
-
 ## Behavior
 
 Each response maps each selected session to one channel and one Calendar event. It appends one registration, sends one Mattermost invitation listing those channels, adds the attendee to each corresponding event without replacing existing guests, and sends one confirmation email. The invitation is not an account or membership confirmation: the attendee must accept it. Mattermost may schedule invitation reminders. The workflow never sends a password. Registration data is stored in Sheets and execution history.
 
-If any write is uncertain, inspect the relevant service before retrying. In Open Flow enter the exact pending key and confirmed or absent in **Choose registration action**, replay the same response, then clear the fields. In n8n inspect the pending Data Table row and mark it done only if the action happened, or delete it only after verifying it did not.
+If any write is uncertain, inspect the relevant service before retrying. In Open Flow enter the exact pending key and confirmed or absent in **Choose registration action**, replay the same response, then clear the fields.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure the same form, Sheets, Mattermost server and credential, team, Calendar and Gmail; select one Data Table with item_key and status text columns in every checkpoint. Enable **Attendee Registrations** only when running the n8n format. Run one format only. Avoid concurrent edits to the same Calendar events while this workflow runs. In n8n inspect the pending Data Table row and mark it done only if the action happened, or delete it only after verifying it did not.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

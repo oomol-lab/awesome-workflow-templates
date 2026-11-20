@@ -13,13 +13,20 @@ Reply to a Telegram message with the current TRON USDT contract blacklist status
 
 ## Setup
 
-Connect the same Telegram bot to **Receive a Telegram message** and **Reply in Telegram**. In n8n, connect the bot to **Telegram Trigger** and **Telegram Send Message**. Activate one format. A bot can have only one active webhook subscription and must have access to the chat. Public group messages can expose submitted addresses to group members.
+Connect the same Telegram bot to **Receive a Telegram message** and **Reply in Telegram**. A bot can have only one active webhook subscription and must have access to the chat. Public group messages can expose submitted addresses to group members.
 
 ## Behavior
 
 Send a TRON Base58Check address as the complete message. The workflow validates its checksum through a TRON mainnet node and reads the USDT contract's `getBlackListStatus(address)` view. It replies to the original message in the same chat with the returned status. An invalid address receives a format message; an unavailable or malformed node response fails without claiming a status. This is a point-in-time contract reading, not a general fraud or sanctions check. Recheck before acting: status and node data can change.
 
 The public TronGrid endpoint applies rate limits and may require an API key depending on traffic. If needed, configure the `TRON-PRO-API-KEY` header as a secret on both HTTP nodes in the chosen format. Requests disclose the address to the node service. Each valid request makes two API calls. A failed or uncertain Telegram reply may already have been delivered; inspect the chat before retrying.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect the bot to **Telegram Trigger** and **Telegram Send Message**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

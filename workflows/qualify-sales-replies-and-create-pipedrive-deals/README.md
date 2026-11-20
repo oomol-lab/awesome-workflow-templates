@@ -13,13 +13,20 @@ Identify campaign contacts interested in a meeting and create a Pipedrive deal f
 
 ## Setup
 
-Connect two Gmail inboxes, Pipedrive and an AI model. For each mailbox configure matching Gmail connections on **Check mailbox** and **Read mailbox**, the same Pipedrive account on its search, person and deal nodes, and a model on its assessment node. For one inbox, remove the unused mailbox branch. Set the Pipedrive person single-option campaign field's 40-character key and the numeric option ID representing True in **Prepare reply** for each mailbox. Grant access to the people and deals. In n8n connect both Gmail triggers, the Pipedrive nodes and OpenAI; create the person single-option field named **in_campaign** with an option labeled **True**. Activate one format.
+Connect two Gmail inboxes, Pipedrive and an AI model. For each mailbox configure matching Gmail connections on **Check mailbox** and **Read mailbox**, the same Pipedrive account on its search, person and deal nodes, and a model on its assessment node. For one inbox, remove the unused mailbox branch. Set the Pipedrive person single-option campaign field's 40-character key and the numeric option ID representing True in **Prepare reply** for each mailbox. Grant access to the people and deals.
 
 ## Behavior
 
 Each inbox is checked every minute. For each message, the workflow searches for its sender by exact email, checks the matching person's campaign field and asks the model whether the reply expresses interest in a meeting or call. A positive classification creates a deal linked to that person. No match or a non-campaign contact is skipped. Ambiguous matches stop. The email text is sent to the configured AI model. AI can misclassify replies, so review the resulting deals.
 
 The workflow does not deduplicate deals across runs or inboxes. An uncertain create may already have succeeded; inspect Pipedrive before retrying. Earlier deals remain if a later message fails. Emails and model outputs can contain personal data, so restrict execution history.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n connect both Gmail triggers, the Pipedrive nodes and OpenAI; create the person single-option field named **in_campaign** with an option labeled **True**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

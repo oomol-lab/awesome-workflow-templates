@@ -13,11 +13,18 @@ Research inventory images and update Airtable records with product attributes.
 
 ## Setup and use
 
-Connect Airtable, OpenAI, SerpApi and Firecrawl. Set the same Airtable base and table in **Read matching records** and **Update the Airtable record**. Import the Open Flow bundle, publish **Inventory research tools**, then refresh its two tool interfaces in **Identify the object** within **Enrich inventory images**. Configure the AI model. In n8n, configure the Airtable base, table and credentials, OpenAI, SerpApi and Firecrawl credentials, and ensure the workflow tools point to this workflow.
+Connect Airtable, OpenAI, SerpApi and Firecrawl. Set the same Airtable base and table in **Read matching records** and **Update the Airtable record**. Import the Open Flow bundle, publish **Inventory research tools**, then refresh its two tool interfaces in **Identify the object** within **Enrich inventory images**. Configure the AI model.
 
 ## Behavior
 
 A manual run selects up to 100 records matching `AND(Image!="", AI_status=FALSE())`. It analyzes the first image's large thumbnail, optionally researches visually similar images and pages, then updates that same record's Title, Description, Model, Material, Color, Condition and AI_status. Uncertain attributes should be left blank. The model can be wrong; review the updated records. Each record is processed in order; if a later step fails, earlier updates remain. An unknown update may already have succeeded, so inspect Airtable before retrying.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, configure the Airtable base, table and credentials, OpenAI, SerpApi and Firecrawl credentials, and ensure the workflow tools point to this workflow.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -13,11 +13,18 @@ Invoke a Lambda function synchronously and return its result.
 
 ## Setup and use
 
-Choose a Lambda function name or ARN and its AWS region. In Open Flow, set both in **Sign the Lambda request**, bind access key ID and secret access key to secret Variables, and grant `lambda:InvokeFunction`. With temporary credentials, bind the same session token secret Variable to **Session Token** in the signing node and **X-Amz-Security-Token** in **Invoke Lambda**. Leave both unset for long-lived credentials. In n8n, configure the function and AWS credential in **AWS Lambda**. Run manually.
+Choose a Lambda function name or ARN and its AWS region. In Open Flow, set both in **Sign the Lambda request**, bind access key ID and secret access key to secret Variables, and grant `lambda:InvokeFunction`. With temporary credentials, bind the same session token secret Variable to **Session Token** in the signing node and **X-Amz-Security-Token** in **Invoke Lambda**. Leave both unset for long-lived credentials. Run manually.
 
 ## Behavior
 
 The workflow invokes `$LATEST` synchronously with an empty payload and returns the response. The example region is `ap-south-1`; use the function's actual region. Invocation and function errors stop the run. An uncertain invocation may already have executed; check the function's effects before retrying. Lambda responses are held in execution history.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, configure the function and AWS credential in **AWS Lambda**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

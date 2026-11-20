@@ -13,13 +13,20 @@ Search recent X posts and append results whose IDs are absent from Airtable.
 
 ## Setup
 
-Connect X with recent-search access and Airtable with read and write access. Set the query in **Search recent X posts** and use the same base and table in both Airtable nodes. The table needs text fields `Tweet`, `Tweet_id`, `Tweet URL`, `Author` and `Time`, plus a numeric `Likes` field. Configure the same query, base, table and credentials in n8n. Run one format for each import.
+Connect X with recent-search access and Airtable with read and write access. Set the query in **Search recent X posts** and use the same base and table in both Airtable nodes. The table needs text fields `Tweet`, `Tweet_id`, `Tweet URL`, `Author` and `Time`, plus a numeric `Likes` field.
 
 ## Behavior
 
 The workflow requests up to 100 recent X search results and reads every page of existing Airtable records. It compares post IDs against `Tweet_id`, then appends unmatched posts in batches of up to 10. Existing records are not updated. Each new row contains the post text, ID, URL, like count and creation time. As in the source, `Author` refers to the user being replied to, when present; it is not the post author's name. Missing required expanded users stop the run before writing.
 
 X recent search covers a limited time window and may require eligible API access. The original V1 mixed search is replaced with V2 recent search, so ranking and available results may differ. The workflow does not paginate past the first 100 X results. A failed or uncertain batch may already have created rows; earlier batches remain. Inspect the table before retrying, and avoid overlapping runs. Collected results and records must fit execution limits.
+
+<details>
+<summary>In n8n</summary>
+
+Configure the same query, base, table and credentials in n8n.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -13,15 +13,22 @@ Extract a PDF CV into an editable application form and store the confirmed appli
 
 ## Setup
 
-Import the n8n workflow. Configure the Airtable base and table in **Create application** and Open Flow **Prepare applicant record**, and replace the base ID in **Upload PDF attachment**. The table needs Name, Address, Email, Telephone, Education, Skills & Technologies, Years of Experience, Cover Letter and Submitted By text fields, plus a File attachment field. Connect Airtable and an AI model. Adapt the sample job posting in the extraction prompt in both formats. Select one Data Table with text columns item_key and status for the n8n checkpoint nodes. Prevent overlapping runs.
+Configure the Airtable base and table in **Create application** and Open Flow **Prepare applicant record**, and replace the base ID in **Upload PDF attachment**. The table needs Name, Address, Email, Telephone, Education, Skills & Technologies, Years of Experience, Cover Letter and Submitted By text fields, plus a File attachment field. Connect Airtable and an AI model. Adapt the sample job posting in the extraction prompt. Prevent overlapping runs.
 
-For Open Flow set **Choose processing mode** to relay and configure the same deployed webhook URL in **Extract fields with Open Flow** and **Create applicant with Open Flow**. Enable persistent State. Protect the Open Flow endpoint at your deployment boundary; it has no built-in authentication. For direct n8n leave mode direct and connect the OpenAI and Airtable credentials. Use one mode only.
+For Open Flow set **Choose processing mode** to relay and configure the same deployed webhook URL in **Extract fields with Open Flow** and **Create applicant with Open Flow**. Enable persistent State. Protect the Open Flow endpoint at your deployment boundary; it has no built-in authentication.
 
 ## Behavior
 
 The first form collects a name, consent and a PDF. The workflow classifies it as a CV, extracts candidate details and drafts a cover letter. A non-CV returns to a PDF upload form. The applicant reviews and edits the prefilled application in the same form session before a single Airtable record is created and the original PDF is attached. Model extraction and generated text can be inaccurate; the applicant should review them. PDFs must contain readable text; scanned PDFs need OCR. Complete text and enclosing data must fit the Open Flow host 1 MiB per-Code input/output limit. CVs and personal information are sent to the configured model and stored in Airtable and execution history. Protect access and configure a retention policy; this workflow does not automatically delete applications.
 
-If record creation is uncertain, inspect Airtable. In Open Flow enter its pending key in **Prepare applicant record**, set resolution to confirmed with the matching record ID or absent if no record exists, replay the same submission, then clear the fields. If attachment upload is uncertain, inspect the record's File field before retrying. In n8n reconcile the pending Data Table row and finish the missing attachment manually; mark done if complete, or delete the row only if neither record nor attachment exists.
+If record creation is uncertain, inspect Airtable. In Open Flow enter its pending key in **Prepare applicant record**, set resolution to confirmed with the matching record ID or absent if no record exists, replay the same submission, then clear the fields. If attachment upload is uncertain, inspect the record's File field before retrying.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow. Select one Data Table with text columns item_key and status for the n8n checkpoint nodes. For direct n8n leave mode direct and connect the OpenAI and Airtable credentials. In n8n reconcile the pending Data Table row and finish the missing attachment manually; mark done if complete, or delete the row only if neither record nor attachment exists.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

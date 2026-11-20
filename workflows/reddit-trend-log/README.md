@@ -20,11 +20,16 @@ Create a sheet named `Trend Log` with these headers in columns A–E:
 
 For Open Flow, connect Reddit in **Read hot Reddit posts** and change `SaaS` to your subreddit name without `r/`. Connect Google Sheets in **Save trend analysis** and replace `YOUR_SPREADSHEET_ID`. Select a configured `gpt-4o-mini` model in **Analyze Reddit trends** and confirm the schedule timezone, initially UTC.
 
-For n8n, connect Reddit in **Reddit: Fetch Posts**, OpenAI in **AI: Quick Analysis**, and Google Sheets in **Log to Sheets**. Set the subreddit, spreadsheet, and `Trend Log` tab, and confirm the workflow timezone before enabling it.
-
 The workflow uses the first 20 hot posts, keeps scores strictly greater than 3, sorts by descending score, and analyzes at most 15 posts. One model request and one sheet row are produced per successful run, including an empty eligible list. Trends and content ideas are stored as JSON text. Repeated runs append another row; there is no deduplication or post publishing.
 
-Malformed or incomplete model JSON produces empty trends and ideas with sentiment `unknown`. A failed Reddit or model request stops without writing. The configured limits are two Reddit attempts, three model attempts, and two sheet-write attempts, with intervals of five, two, and one second. Open Flow retries only failures the platform marks safe to retry; n8n retries node errors. A repeated write or request can create another log row.
+Malformed or incomplete model JSON produces empty trends and ideas with sentiment `unknown`. A failed Reddit or model request stops without writing. The configured limits are two Reddit attempts, three model attempts, and two sheet-write attempts, with intervals of five, two, and one second. Open Flow retries only failures the platform marks safe to retry. A repeated write or request can create another log row.
+
+<details>
+<summary>In n8n</summary>
+
+For n8n, connect Reddit in **Reddit: Fetch Posts**, OpenAI in **AI: Quick Analysis**, and Google Sheets in **Log to Sheets**. Set the subreddit, spreadsheet, and `Trend Log` tab, and confirm the workflow timezone before enabling it. N8n retries node errors.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -15,13 +15,18 @@ Read Google Analytics sessions by country and add the results to Airtable.
 
 Connect Google Analytics and set a GA4 property ID and inclusive start and end dates in **Read sessions by country**. Replace the example January 2025 dates. Connect Airtable in **Create Airtable record** and set the base and table. Create a text field named **Country** and a number field named **Metric**.
 
-In n8n, connect Google Analytics and an Airtable Personal Access Token, set the GA4 property and custom date range in **Google Analytics**, and select the Airtable base and table. Run one format.
-
 ## Behavior
 
 Each run requests GA4 `sessions` grouped by `country` for the chosen dates and creates one Airtable record per country. No rows means no records. A report with more than 10,000 rows, an incomplete response or invalid values stops before any writes. Runs do not deduplicate records.
 
 Open Flow creates records sequentially; a failure can leave earlier records in Airtable. An uncertain write may already have succeeded, so inspect the table before retrying. Google Analytics reporting can apply privacy thresholds or sampling; review the report in Analytics when accuracy matters.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect Google Analytics and an Airtable Personal Access Token, set the GA4 property and custom date range in **Google Analytics**, and select the Airtable base and table. Run one format.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

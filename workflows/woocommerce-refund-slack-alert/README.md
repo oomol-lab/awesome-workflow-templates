@@ -15,11 +15,16 @@ Notify Slack when an updated WooCommerce order is refunded and its order total i
 
 Connect WooCommerce in **Order Updated**. The store account must be able to create and manage webhooks. Connect Slack in **Post notification to Slack**, set the destination channel ID, and give that account access to the channel.
 
-For n8n, select WooCommerce credentials in **Order Updated** and a Slack account and channel in **Send to Slack**. Activate one format after setup; each activated workflow creates its own store subscription.
-
-Each `order.updated` event checks two conditions: status is exactly `refunded`, and the **original order total is at least 100**, including exactly 100. The threshold uses the order’s currency units without conversion. It does not measure an individual refund amount or check whether the status changed during this update. A later update to an already refunded order can post another alert. Change the threshold in **Order total at least 100** in Open Flow or **If Refund and Over 100** in n8n. Alerts show the order ID, status, original total, and store update timestamp.
+Each `order.updated` event checks two conditions: status is exactly `refunded`, and the **original order total is at least 100**, including exactly 100. The threshold uses the order’s currency units without conversion. It does not measure an individual refund amount or check whether the status changed during this update. A later update to an already refunded order can post another alert. Change the threshold in **Order total at least 100**. Alerts show the order ID, status, original total, and store update timestamp.
 
 The message keeps the source’s colored Slack attachment. Dynamic values are escaped for Slack, and timestamps retain the store’s supplied text. If the payload has no currency symbol, the total uses its ISO currency code. The workflow posts once per matching event and keeps no notification history. Duplicate event deliveries or running both formats can produce duplicate messages. A Slack error fails the run; the workflow does not automatically retry or confirm that a person has read the alert.
+
+<details>
+<summary>In n8n</summary>
+
+For n8n, select WooCommerce credentials in **Order Updated** and a Slack account and channel in **Send to Slack**. Activate one format after setup; each activated workflow creates its own store subscription. Change the threshold in **Order total at least 100** in Open Flow or **If Refund and Over 100** in n8n.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

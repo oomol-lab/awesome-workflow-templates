@@ -13,11 +13,18 @@ Find the latest recent video from a YouTube channel and write a short X post.
 
 ## Setup
 
-Connect YouTube in **Find the latest video** and set its channel ID. Configure the AI model and connect **Post on X** to an account allowed to post. In n8n select YouTube, OpenAI and X credentials and set the channel ID. Activate one format.
+Connect YouTube in **Find the latest video** and set its channel ID. Configure the AI model and connect **Post on X** to an account allowed to post.
 
 ## Behavior
 
-Every 30 minutes, search the channel for its latest video published in the preceding 30 minutes. If found, an AI model writes an X post including the video link. No video means no post. The latest-only search can miss multiple uploads; indexing delays, downtime and schedule boundaries can miss videos. There is no persistent deduplication or workflow retry. n8n OAuth2 can refresh the X token and resend once after HTTP 401. Review model output and check X before retrying a failed or uncertain post. YouTube search uses API quota. Open Flow runs at UTC half-hour boundaries; n8n's interval is phased from activation.
+Every 30 minutes, search the channel for its latest video published in the preceding 30 minutes. If found, an AI model writes an X post including the video link. No video means no post. The latest-only search can miss multiple uploads; indexing delays, downtime and schedule boundaries can miss videos. There is no persistent deduplication or workflow retry. Review model output and check X before retrying a failed or uncertain post. YouTube search uses API quota. Open Flow runs at UTC half-hour boundaries.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n select YouTube, OpenAI and X credentials and set the channel ID. n8n OAuth2 can refresh the X token and resend once after HTTP 401. N8n's interval is phased from activation.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -15,13 +15,18 @@ Archive LINE receipt images and record extracted Thai transfer details in Google
 
 Bind the LINE channel access token as Secret Variable `LINE_CHANNEL_ACCESS_TOKEN`. Connect Google Drive, OCR.space and Google Sheets; set the destination folder ID in **Archive image in Drive** and spreadsheet ID and range in **Append the receipt row**. Create the sheet with columns in this order: Transaction Type, Date & Time, Sender Name, Sender Account, Receiver Bank, Receiver Name, Receiver Account, Transaction ID, Amount, Fee. Register the Open Flow webhook with LINE. The public endpoint does not verify LINE signatures; anyone with its URL can trigger reads and writes.
 
-For n8n connect LINE header authentication, Google Drive, OCR.space header authentication (header `apikey`) and Google Sheets. Set the same folder, spreadsheet and sheet in their nodes and register the n8n webhook with LINE. Use one format for a channel.
-
 ## Behavior
 
 Each image message in the LINE event array is downloaded, archived in Drive, sent to OCR.space and parsed for the source's Thai transfer fields. Other event types are ignored. The parser is tailored to the source's Thai bank and PromptPay receipt layout; it stops without appending a row if required fields cannot be extracted. Review the resulting values against the image. Receipt images and transaction details are sensitive; control access to the Drive folder, sheet and OCR provider.
 
 The webhook acknowledges receipt before processing completes. Earlier files or rows may remain if a later step fails. An uncertain Drive upload or Sheets append may already have succeeded; inspect both destinations before replaying, and account for earlier events in the same request. No automatic deduplication or retry is added.
+
+<details>
+<summary>In n8n</summary>
+
+For n8n connect LINE header authentication, Google Drive, OCR.space header authentication (header `apikey`) and Google Sheets. Set the same folder, spreadsheet and sheet in their nodes and register the n8n webhook with LINE. Use one format for a channel.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

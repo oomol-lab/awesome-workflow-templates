@@ -15,11 +15,16 @@ Summarize labeled Gmail sales inquiries and create Odoo opportunities with the s
 
 Connect the same Gmail mailbox to **New sales emails each hour** and **Read the sales email**. Set the existing Sales label ID in the trigger. Connect Odoo CRM in **Create the Odoo opportunity** and configure the model service in **Summarize the sales inquiry**. Ensure the account may create CRM opportunities.
 
-In n8n select the same Gmail label, configure Gmail and Odoo credentials, and select an available completion model compatible with the summarization chain. The source model may no longer be available. Activate one format.
-
 ## Behavior
 
-Each new labeled message is summarized for available budget, timeline, industry and a general overview, then creates an Odoo CRM record with the email subject, sender and summary. Open Flow processes one message at a time within each poll page and uses an Agent with one model round; n8n uses its summarization chain and completion model. Long messages can exceed model or workflow limits. Open Flow excludes drafts, spam and trash; n8n retains its source filter behavior. Poll cursors and delivery do not guarantee exactly-once processing. If creating a record fails or its result is uncertain, inspect Odoo before retrying; it may already exist. In Open Flow, earlier records in the page may already have been created when a later email fails. In n8n the summarization chain processes its input page before the Odoo node starts creating records. Limit access to email bodies, model processing and execution history. AI summaries can omit or misstate information; review the opportunity.
+Each new labeled message is summarized for available budget, timeline, industry and a general overview, then creates an Odoo CRM record with the email subject, sender and summary. Open Flow processes one message at a time within each poll page and uses an Agent with one model round. Long messages can exceed model or workflow limits. Open Flow excludes drafts, spam and trash. Poll cursors and delivery do not guarantee exactly-once processing. If creating a record fails or its result is uncertain, inspect Odoo before retrying; it may already exist. In Open Flow, earlier records in the page may already have been created when a later email fails. Limit access to email bodies, model processing and execution history. AI summaries can omit or misstate information; review the opportunity.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n select the same Gmail label, configure Gmail and Odoo credentials, and select an available completion model compatible with the summarization chain. The source model may no longer be available. Activate one format. N8n uses its summarization chain and completion model. N8n retains its source filter behavior. In n8n the summarization chain processes its input page before the Odoo node starts creating records.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

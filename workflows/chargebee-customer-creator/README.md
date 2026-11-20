@@ -15,11 +15,16 @@ Create a Chargebee customer with a configured first and last name.
 
 Select your Chargebee account in **Create Chargebee customer** and replace the first and last name. The connection manages the site and API key. Run manually after setup.
 
-In n8n, replace the site in **Create Chargebee customer**’s URL and edit the `first_name` and `last_name` body fields. Select a **Basic Auth** credential with your Chargebee API key as the username and an empty password. Keep the API key in the credential.
-
-Each run makes one customer creation request. Chargebee generates the customer ID. The Open Flow result contains normalized customer fields and the full API record under `raw`; n8n returns the API response with its `customer` object. Your site’s automations and connected CRM integrations may also run when the customer is created.
+Each run makes one customer creation request. Chargebee generates the customer ID. The Open Flow result contains normalized customer fields and the full API record under `raw`. Your site’s automations and connected CRM integrations may also run when the customer is created.
 
 There is no search, upsert, duplicate detection or automatic retry. If creation fails, the workflow stops. If a request times out, check Chargebee before running it again.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, replace the site in **Create Chargebee customer**’s URL and edit the `first_name` and `last_name` body fields. Select a **Basic Auth** credential with your Chargebee API key as the username and an empty password. Keep the API key in the credential. N8n returns the API response with its `customer` object.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

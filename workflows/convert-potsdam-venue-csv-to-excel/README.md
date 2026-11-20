@@ -13,11 +13,18 @@ Download Potsdam venue data as CSV and convert it to an Excel workbook.
 
 ## Setup and use
 
-Run manually to download the public Potsdam venue dataset and produce converted_csv.xlsx. The workbook contains a sheet named csv_page. Use either Open Flow or n8n.
+Run manually to download the public Potsdam venue dataset and produce converted_csv.xlsx. The workbook contains a sheet named csv_page.
 
 ## Behavior
 
 The workflow parses semicolon-delimited CSV with a header row and writes an Excel workbook. Dataset availability and contents depend on the Potsdam open-data service.
+
+<details>
+<summary>In n8n</summary>
+
+Use either Open Flow or n8n.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -13,11 +13,18 @@ Validate example email addresses and extract their domains.
 
 ## Setup and use
 
-Run manually with ten example rows. Edit the rows in **Validate email rows** in Open Flow. In n8n, the Debug Helper generates example emails; replace it with your own data source.
+Run manually with ten example rows. Edit the rows in **Validate email rows** in Open Flow.
 
 ## Behavior
 
-Each row keeps its original fields and gains `Valid EmailIs email ` as the string `true` or `false`, plus `Extract Domain`. Invalid email addresses receive an empty domain. Open Flow uses validator.js, whose email rules are stricter than n8n's string helper for some inputs. n8n retains the source helpers and its invalid-domain behavior may differ. Validation checks syntax and does not establish that a mailbox exists.
+Each row keeps its original fields and gains `Valid EmailIs email ` as the string `true` or `false`, plus `Extract Domain`. Invalid email addresses receive an empty domain. Validation checks syntax and does not establish that a mailbox exists.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, the Debug Helper generates example emails; replace it with your own data source. Open Flow uses validator.js, whose email rules are stricter than n8n's string helper for some inputs. n8n retains the source helpers and its invalid-domain behavior may differ.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -15,13 +15,18 @@ Append the sender, subject and Gmail snippet of each new message to a Google She
 
 Connect the same Gmail mailbox to **New Gmail messages each minute** and **Fetch the message snippet**. Connect Google Sheets in **Append the message row**, set the spreadsheet ID and A1 range, and arrange the destination columns as `Sender Email`, `Subject`, `body`. The body column receives Gmail’s snippet, not the full email body.
 
-In n8n, select Gmail and Google Sheets credentials and select the spreadsheet and sheet in the Google Sheets node. Set the same three column names. Activate only one format to avoid duplicate rows.
-
 ## Behavior
 
-The poll starts from the current mailbox position and processes new messages, not existing history. Each delivered message is fetched; all rows in a poll page are appended in one request after the reads succeed. An absent Gmail snippet is written as an empty cell. The poll may emit up to 50 messages per page; further pages are handled by later polls. Both formats exclude drafts, spam, trash and outgoing-only messages. The n8n trigger also excludes scheduled messages; the Open Flow trigger does not add that filter. Open Flow uses Gmail history checkpoints while n8n uses its own time cursor and queue. The source used n8n Trigger 1.2, which could include outgoing-only messages and read only the first list page. This version uses Trigger 1.4 with a 50-message budget and a backlog queue to match the incoming-mail purpose; check its warnings if the backlog exceeds the native queue limits. These mechanisms do not guarantee exactly-once delivery or redelivery after a failed spreadsheet write.
+The poll starts from the current mailbox position and processes new messages, not existing history. Each delivered message is fetched; all rows in a poll page are appended in one request after the reads succeed. An absent Gmail snippet is written as an empty cell. The poll may emit up to 50 messages per page; further pages are handled by later polls. The workflow excludes drafts, spam, trash and outgoing-only messages. The Open Flow trigger does not add that filter. This version uses Trigger 1.4 with a 50-message budget and a backlog queue to match the incoming-mail purpose; check its warnings if the backlog exceeds the native queue limits. These mechanisms do not guarantee exactly-once delivery or redelivery after a failed spreadsheet write.
 
 A failed read stops the page before the append. A failed or uncertain batch append may already have written rows; earlier poll pages may also have completed. Inspect the sheet before replaying. Spreadsheet cells use USER_ENTERED interpretation, so values beginning with a formula marker may be interpreted by Sheets. The fetched full Gmail response and Code inputs must fit the current execution limits; oversized messages can fail before the append. Restrict mailbox, sheet and run-history access to the people who should see these messages.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, select Gmail and Google Sheets credentials and select the spreadsheet and sheet in the Google Sheets node. Set the same three column names. Activate only one format to avoid duplicate rows. The n8n trigger also excludes scheduled messages. Open Flow uses Gmail history checkpoints while n8n uses its own time cursor and queue. The source used n8n Trigger 1.2, which could include outgoing-only messages and read only the first list page.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -2,6 +2,15 @@
 
 Read invoices from Google Sheets at 08:00 on weekdays and send one Italian reminder per unpaid invoice due within three days or already overdue.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/invoice-payment-reminders/) [![n8n JSON](../../assets/n8n-json.svg)](templates/invoice-payment-reminders.n8n.json)
+<!-- template-actions:end -->
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
+  <img alt="Open Flow workflow" src="preview-light.png">
+</picture>
+
 ## Setup
 
 Create a sheet named `Invoices` with these headers:
@@ -21,11 +30,16 @@ For Open Flow, import the JSON and configure:
 | Prepare reminders | Set `timezone` to the same timezone as the schedule and edit `signature`. |
 | Send reminder | Connect Gmail for the Send Email action. |
 
-For n8n, connect Google Sheets and Gmail, configure the spreadsheet in `Leggi fatture`, and edit the company signature in `Trova scadenze imminenti`. Confirm the workflow timezone before enabling it; the template starts with UTC.
-
 Publish and enable the configured workflow. A run reads the complete configured sheet range, filters invoices, and sends reminders in sheet order. Empty results send no messages. A send failure stops later reminders. The workflow does not update invoice statuses or record delivery, so eligible invoices receive another reminder on the next weekday run. Retrying a partially completed run can resend earlier reminders.
 
 Open Flow sends each reminder through a separate Connector execution in the visible feedback loop. There is no 100-reminder total cap. The full sheet range, prepared messages and accumulated send identifiers must fit the platform's Code input and result budgets; the inspected host allows 1 MiB for each. A limit failure stops the run, and reminders already sent can repeat if you rerun it. A sent message identifier confirms Gmail accepted the request; it does not prove recipient delivery. Inspect Sent before retrying an unconfirmed send.
+
+<details>
+<summary>In n8n</summary>
+
+For n8n, connect Google Sheets and Gmail, configure the spreadsheet in `Leggi fatture`, and edit the company signature in `Trova scadenze imminenti`. Confirm the workflow timezone before enabling it; the template starts with UTC.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>
@@ -37,15 +51,6 @@ Open Flow sends each reminder through a separate Connector execution in the visi
 - Validate eligible recipients before sending any reminders.
 - Send plain-text email so the Italian message retains its paragraphs.
 - Provide the required sheet headers, spreadsheet placeholder, signature, and explicit UTC starting timezone.
-
-<!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/invoice-payment-reminders/) [![n8n JSON](../../assets/n8n-json.svg)](templates/invoice-payment-reminders.n8n.json)
-<!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 Adapted from [Automatic payment reminders from Google Sheets (Italian)](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Google_Drive_and_Google_Sheets/Automatic%20payment%20reminders%20from%20Google%20Sheets%20(Italian).json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 

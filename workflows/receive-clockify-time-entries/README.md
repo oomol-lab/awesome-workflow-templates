@@ -13,11 +13,18 @@ Poll Clockify for completed time entries.
 
 ## Setup and use
 
-Connect Clockify and select a workspace in the n8n workflow. For Open Flow, enable persistent State, set the workspace ID and bind secret Variable CLOCKIFY_API_KEY. Prevent overlapping runs and use one format.
+For Open Flow, enable persistent State, set the workspace ID and bind secret Variable CLOCKIFY_API_KEY. Prevent overlapping runs and use one format.
 
 ## Behavior
 
-The n8n trigger polls the current user's completed entries. Open Flow also polls the current user, returning complete entries and advancing the cursor only after a successful response. The first Open Flow poll has no start unless startOverride is set. Entries backdated before a saved cursor may be missed. The source reads the default first page; Open Flow stops without advancing if it receives 50 entries, so set startOverride before the first run and use endOverride to select shorter windows. For later recovery set endOverride after the saved cursor; repeat until caught up, then clear it. Full entries may appear in execution history.
+Open Flow also polls the current user, returning complete entries and advancing the cursor only after a successful response. The first Open Flow poll has no start unless startOverride is set. Entries backdated before a saved cursor may be missed. The source reads the default first page; Open Flow stops without advancing if it receives 50 entries, so set startOverride before the first run and use endOverride to select shorter windows. For later recovery set endOverride after the saved cursor; repeat until caught up, then clear it. Full entries may appear in execution history.
+
+<details>
+<summary>In n8n</summary>
+
+Connect Clockify and select a workspace in the n8n workflow. The n8n trigger polls the current user's completed entries.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

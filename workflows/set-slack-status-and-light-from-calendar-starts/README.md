@@ -13,13 +13,20 @@ Update Slack status and a light webhook when a Google Calendar event starts.
 
 ## Setup
 
-Connect Google Calendar and set its calendar ID in **Open the calendar window**. Bind a Slack user token with users.profile:write as a secret Variable to **Update Slack status**. Configure the three light webhook URLs in their HTTP nodes. In n8n connect Google Calendar and Slack, set the calendar and all three light webhook URLs. Activate one format and prevent overlapping Open Flow runs.
+Connect Google Calendar and set its calendar ID in **Open the calendar window**. Bind a Slack user token with users.profile:write as a secret Variable to **Update Slack status**. Configure the three light webhook URLs in their HTTP nodes. Activate one format and prevent overlapping Open Flow runs.
 
 ## Behavior
 
 Every five minutes, check for events that started since the previous poll. The event title becomes the Slack status and its calendar color selects the busy, personal or available light. Open Flow processes events sequentially, updates Slack before calling the light, and saves the window after all events succeed. The first Open Flow poll initializes its checkpoint when that poll runs; events that started between activation and that first poll are not backfilled.
 
 If an event fails or a write outcome is unknown, Open Flow stops future processing with that event pending. Inspect Slack and the light, finish any missing change manually, then set **Open the calendar window → acknowledgeEventId** to that event's ID to continue. No uncertain write is automatically replayed.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n connect Google Calendar and Slack, set the calendar and all three light webhook URLs.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

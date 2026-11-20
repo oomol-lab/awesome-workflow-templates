@@ -13,11 +13,18 @@ Send a Discord alert for low or sold-out Shopify inventory.
 
 ## Setup
 
-Create Shopify inventory and product read credentials and subscribe to inventory level updates at the deployed webhook URL. Configure SHOPIFY_SHOP as your myshopify.com hostname and the secret Variables SHOPIFY_TOKEN, DISCORD_LOW_WEBHOOK and DISCORD_OUT_WEBHOOK with the Admin API token and respective Discord incoming webhook URLs. In n8n set the Shopify endpoint and header credentials, and configure the two Discord HTTP nodes with your destination URLs and authentication.
+Create Shopify inventory and product read credentials and subscribe to inventory level updates at the deployed webhook URL. Configure SHOPIFY_SHOP as your myshopify.com hostname and the secret Variables SHOPIFY_TOKEN, DISCORD_LOW_WEBHOOK and DISCORD_OUT_WEBHOOK with the Admin API token and respective Discord incoming webhook URLs.
 
 ## Behavior
 
 An update with available stock between one and three sends a low-stock alert; zero sends a sold-out alert. Other quantities produce no alert. Shopify supplies the product title, variant, current total sellable quantity and optional product image. The webhook does not authenticate the sender; restrict access appropriately. Delivery may be duplicated if Shopify retries or a send has an unknown outcome; inspect Discord before retrying. The webhook acknowledges receipt before the external requests complete.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n set the Shopify endpoint and header credentials, and configure the two Discord HTTP nodes with your destination URLs and authentication.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

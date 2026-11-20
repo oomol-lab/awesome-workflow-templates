@@ -13,13 +13,20 @@ Score Telegram text with Perspective and reply to messages with a profanity scor
 
 ## Setup
 
-Connect a Telegram bot and enable persistent State. Perspective requires existing API access: new access requests closed in February 2026 and the service ends on **December 31, 2026**. In Open Flow bind an OAuth access token from an authorized Google Cloud project to the secret Variable PERSPECTIVE_ACCESS_TOKEN. In n8n connect the Perspective OAuth credential and Telegram bot. Activate only one format.
+Connect a Telegram bot and enable persistent State. Perspective requires existing API access: new access requests closed in February 2026 and the service ends on **December 31, 2026**. In Open Flow bind an OAuth access token from an authorized Google Cloud project to the secret Variable PERSPECTIVE_ACCESS_TOKEN.
 
 ## Behavior
 
 For text in a new or edited message or channel post, send the text to Perspective in English and request identity attack, threat and profanity scores. Only a profanity score strictly above 0.7 triggers the fixed reply to the same chat and message. Other scores do not trigger a reply. Scores can be mistaken; review the threshold and bot permissions before use.
 
-In Open Flow an uncertain reply remains pending in State under its Telegram update ID; inspect the chat before clearing the entry or retrying. In n8n inspect the chat before retrying an uncertain send.
+In Open Flow an uncertain reply remains pending in State under its Telegram update ID; inspect the chat before clearing the entry or retrying.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n connect the Perspective OAuth credential and Telegram bot. In n8n inspect the chat before retrying an uncertain send.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

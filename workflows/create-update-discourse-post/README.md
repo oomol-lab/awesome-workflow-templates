@@ -13,11 +13,18 @@ Create a Discourse topic, update its first post and read it back.
 
 ## Setup
 
-Connect a Discourse account allowed to create topics in the chosen category and edit its posts. The Open Flow connection requires a publicly reachable HTTPS forum; private network addresses are not supported. In Open Flow, select the account for **Create the topic**, **Update the post** and **Read the post**. Allow the create-topic Action for the first node and **Provider API** access for the two HTTP nodes. Run with the category ID, title, initial post and updated post. In n8n, connect the same Discourse credential to all three service nodes, set the forum URL in **Set topic details** to exactly match the credential’s forum URL, and enter the category ID, title and both bodies there.
+Connect a Discourse account allowed to create topics in the chosen category and edit its posts. The Open Flow connection requires a publicly reachable HTTPS forum; private network addresses are not supported. In Open Flow, select the account for **Create the topic**, **Update the post** and **Read the post**. Allow the create-topic Action for the first node and **Provider API** access for the two HTTP nodes. Run with the category ID, title, initial post and updated post.
 
 ## Behavior
 
 The workflow creates a topic, changes the first post and retrieves that same post. Both writes can notify forum members and trigger other integrations. An error stops later steps. There is no automatic retry or rollback; if a response is lost, inspect the forum before retrying to avoid duplicate topics or edits.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect the same Discourse credential to all three service nodes, set the forum URL in **Set topic details** to exactly match the credential’s forum URL, and enter the category ID, title and both bodies there.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

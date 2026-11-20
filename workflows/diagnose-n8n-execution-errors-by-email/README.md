@@ -3,13 +3,8 @@
 Analyze failed n8n executions with AI and email a diagnostic report.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/diagnose-n8n-execution-errors-by-email/) [![n8n JSON](../../assets/n8n-json.svg)](templates/diagnose-n8n-execution-errors-by-email.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/diagnose-n8n-execution-errors-by-email.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup
 

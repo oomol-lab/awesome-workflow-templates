@@ -13,11 +13,18 @@ Create or close an Opsgenie alert when Syncro reports an agent offline or resolv
 
 ## Setup and use
 
-Connect Opsgenie and configure Syncro to POST its notification JSON to the workflow webhook URL. In n8n, configure the Opsgenie header credential and webhook URL. Protect the webhook URL: the source and both templates accept requests without sender verification, and a caller can create or close an alert. Opsgenie REST APIs are scheduled to retire on April 5, 2027; consult [Atlassian's transition guidance](https://support.atlassian.com/opsgenie/docs/what-happens-when-opsgenie-is-turned-off/).
+Connect Opsgenie and configure Syncro to POST its notification JSON to the workflow webhook URL. Protect the webhook URL: the source and both templates accept requests without sender verification, and a caller can create or close an alert. Opsgenie REST APIs are scheduled to retire on April 5, 2027; consult [Atlassian's transition guidance](https://support.atlassian.com/opsgenie/docs/what-happens-when-opsgenie-is-turned-off/).
 
 ## Behavior
 
-Only agent_offline_trigger notifications are acted on. Unresolved events submit a new alert with the Syncro ID as alias; resolved events submit a close request for the same alias. Opsgenie accepts these requests asynchronously, so acceptance does not confirm the final alert state. Open Flow acknowledges the webhook upon admission; n8n returns its final node response. An uncertain create or close may have succeeded; check Opsgenie before retrying.
+Only agent_offline_trigger notifications are acted on. Unresolved events submit a new alert with the Syncro ID as alias; resolved events submit a close request for the same alias. Opsgenie accepts these requests asynchronously, so acceptance does not confirm the final alert state. Open Flow acknowledges the webhook upon admission. An uncertain create or close may have succeeded; check Opsgenie before retrying.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, configure the Opsgenie header credential and webhook URL. N8n returns its final node response.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

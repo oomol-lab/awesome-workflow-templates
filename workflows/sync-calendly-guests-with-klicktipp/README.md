@@ -13,13 +13,20 @@ Synchronize Calendly invitees and guests with KlickTipp on bookings and cancella
 
 ## Setup
 
-Create the KlickTipp list, booking and cancellation tags and custom fields. Set their IDs in **Sync invitee and guests**, then bind secret Variables KLICKTIPP_USERNAME and KLICKTIPP_PASSWORD. Enable persistent State and prevent overlapping executions. In n8n connect Calendly and KlickTipp, configure each list, tag and field, and select the same Data Table on checkpoint nodes with text columns item_key and status. For Open Flow enable **Forward to Open Flow**, set its URL, and disconnect **Event not processed** from the Calendly trigger. Use one format.
+Create the KlickTipp list, booking and cancellation tags and custom fields. Set their IDs in **Sync invitee and guests**, then bind secret Variables KLICKTIPP_USERNAME and KLICKTIPP_PASSWORD. Enable persistent State and prevent overlapping executions. For Open Flow enable **Forward to Open Flow**, set its URL, and disconnect **Event not processed** from the Calendly trigger.
 
 ## Behavior
 
 A booking updates the invitee and each guest, saving the guest addresses on the invitee. A cancellation reads those saved addresses, updates the invitee and guests, and clears the guest field unless the meeting was rescheduled. Protect webhook access and execution history containing contact details.
 
-For an unknown write, inspect the matching subscriber before replay. In **Sync invitee and guests** enter the pending key and set resolution to confirmed or absent. When confirming a cancellation invitee write, enter the saved guest addresses as a JSON array. Re-send the same event after resolving it and clear those fields. In n8n inspect all affected subscribers and the pending Data Table row; complete any remaining writes manually and mark the row done, or delete the row only when no write occurred.
+For an unknown write, inspect the matching subscriber before replay. In **Sync invitee and guests** enter the pending key and set resolution to confirmed or absent. When confirming a cancellation invitee write, enter the saved guest addresses as a JSON array. Re-send the same event after resolving it and clear those fields.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n connect Calendly and KlickTipp, configure each list, tag and field, and select the same Data Table on checkpoint nodes with text columns item_key and status. In n8n inspect all affected subscribers and the pending Data Table row; complete any remaining writes manually and mark the row done, or delete the row only when no write occurred.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

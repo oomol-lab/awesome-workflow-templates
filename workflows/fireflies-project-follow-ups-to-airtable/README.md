@@ -13,13 +13,20 @@ Turn project meeting transcripts into personal tasks, participant updates and fo
 
 ## Setup
 
-Configure Fireflies, Airtable, Gmail, Google Calendar and an AI model. Set your name and email, Airtable base/table and calendar ID. Enable persistent State and prevent overlapping runs for the same meeting. Configure the existing [Fireflies Webhooks V1](https://docs.fireflies.ai/graphql-api/webhooks) payload with meetingId; V1 is deprecated. Restrict webhook access to trusted senders. The V2 meeting_id payload and signature are not handled by this template. Use the supplied n8n workflow or Open Flow, not both. Set a Data Table with item_key, status and payload text columns in n8n. The Airtable Project field must accept a linked project name through typecast.
+Configure Fireflies, Airtable, Gmail, Google Calendar and an AI model. Set your name and email, Airtable base/table and calendar ID. Enable persistent State and prevent overlapping runs for the same meeting. Configure the existing [Fireflies Webhooks V1](https://docs.fireflies.ai/graphql-api/webhooks) payload with meetingId; V1 is deprecated. Restrict webhook access to trusted senders. The V2 meeting_id payload and signature are not handled by this template. The Airtable Project field must accept a linked project name through typecast.
 
 ## Behavior
 
 The workflow retrieves the transcript and acts only when its title contains “project”. It creates tasks for the configured person, emails each participant only their own action items and schedules a follow-up only when the transcript supplies an explicit time and participant. The AI can make mistakes; review results and the resulting tasks, messages and invitations. Transcript content is sent to the model. Code inputs and outputs must fit 1 MiB.
 
-If a write has an unknown outcome, inspect Airtable, Gmail or Calendar. In **Choose follow-up**, enter the pending key and confirmed or absent, replay the meeting and clear those fields. In n8n inspect the corresponding pending Data Table row, mark done only when confirmed or delete only after confirming no write occurred.
+If a write has an unknown outcome, inspect Airtable, Gmail or Calendar. In **Choose follow-up**, enter the pending key and confirmed or absent, replay the meeting and clear those fields.
+
+<details>
+<summary>In n8n</summary>
+
+Use the supplied n8n workflow or Open Flow, not both. Set a Data Table with item_key, status and payload text columns in n8n. In n8n inspect the corresponding pending Data Table row, mark done only when confirmed or delete only after confirming no write occurred.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

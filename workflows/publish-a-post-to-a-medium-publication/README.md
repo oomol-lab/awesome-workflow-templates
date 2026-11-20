@@ -15,11 +15,18 @@ Publish a supplied article to a Medium publication.
 
 [Medium no longer issues new API integration tokens or permits new integrations](https://help.medium.com/hc/en-us/articles/213480228-API-Importing); existing tokens continue to work. An existing token with permission to publish to the chosen publication is required. The API is no longer supported.
 
-In Open Flow, enter the publication ID, title, article content and `markdown` or `html` format in **Prepare the article**. Bind the existing token to secret Variable **MEDIUM_API_TOKEN** in **Publish the article**. In n8n, configure the Medium credential and enter the same fields in **Medium**. The title and content are initially empty.
+In Open Flow, enter the publication ID, title, article content and `markdown` or `html` format in **Prepare the article**. Bind the existing token to secret Variable **MEDIUM_API_TOKEN** in **Publish the article**. The title and content are initially empty.
 
 ## Behavior
 
-A manual run submits one article to the selected publication. The source omits publish status, so Medium defaults to **public**. Publication editors can publish publicly. Writers can only submit drafts and need an editor's approval; change the request's publishStatus to draft in Open Flow or the Medium node's additional fields in n8n. The post title must also appear in the content if it should appear on the article page. The workflow sends no tags and returns Medium's response. An uncertain request may already have created a post; check the publication before retrying.
+A manual run submits one article to the selected publication. The source omits publish status, so Medium defaults to **public**. Publication editors can publish publicly. Writers can only submit drafts and need an editor's approval; change the request's publishStatus to draft. The post title must also appear in the content if it should appear on the article page. The workflow sends no tags and returns Medium's response. An uncertain request may already have created a post; check the publication before retrying.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, configure the Medium credential and enter the same fields in **Medium**. Writers can only submit drafts and need an editor's approval; change the request's publishStatus to draft in Open Flow or the Medium node's additional fields in n8n.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

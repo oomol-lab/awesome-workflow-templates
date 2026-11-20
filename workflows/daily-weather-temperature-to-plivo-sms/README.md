@@ -13,13 +13,20 @@ Send the current city temperature by SMS every morning.
 
 ## Setup and use
 
-Connect OpenWeather and Plivo. Set the city in **Get current weather**; the example uses Berlin and metric units. Set the Plivo Auth ID, sender and destination in **Format temperature**. Bind the same Auth ID and its Auth Token to secret Variables **PLIVO_AUTH_ID** and **PLIVO_AUTH_TOKEN** in **Send Plivo SMS**. In n8n configure OpenWeather and Plivo credentials, sender and destination. Enable one format to avoid duplicate messages.
+Connect OpenWeather and Plivo. Set the city in **Get current weather**; the example uses Berlin and metric units. Set the Plivo Auth ID, sender and destination in **Format temperature**. Bind the same Auth ID and its Auth Token to secret Variables **PLIVO_AUTH_ID** and **PLIVO_AUTH_TOKEN** in **Send Plivo SMS**. Enable one format to avoid duplicate messages.
 
-The initial schedule is 09:00 UTC daily. The source used the n8n instance timezone; adjust the schedule and timezone to your preference.
+The initial schedule is 09:00 UTC daily.
 
 ## Behavior
 
 Each run reads the current temperature in Celsius and sends one SMS. If the weather read fails, no notification is sent. If the notification result is unknown, check Plivo before retrying to avoid duplicates.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure OpenWeather and Plivo credentials, sender and destination. The source used the n8n instance timezone; adjust the schedule and timezone to your preference.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

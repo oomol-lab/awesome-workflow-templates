@@ -13,11 +13,18 @@ Download example files and combine their contents into one result.
 
 ## Setup and use
 
-Run manually to download three example JPEGs. Edit the URLs in **Download and combine files** in Open Flow or **Set URLs** in n8n. Open Flow allows the example host; add the appropriate HTTP capability before using another host.
+Run manually to download three example JPEGs. Edit the URLs in **Download and combine files**. Open Flow allows the example host; add the appropriate HTTP capability before using another host.
 
 ## Behavior
 
-The files remain in input order as `data_0`, `data_1` and `data_2`. `binary_keys` contains their comma-separated names. n8n returns one item with binary properties; Open Flow returns file objects containing name, MIME type and base64 content. A failed download stops the run. Individual responses and the combined output must fit the platform execution limits.
+The files remain in input order as `data_0`, `data_1` and `data_2`. `binary_keys` contains their comma-separated names. Open Flow returns file objects containing name, MIME type and base64 content. A failed download stops the run. Individual responses and the combined output must fit the platform execution limits.
+
+<details>
+<summary>In n8n</summary>
+
+Edit the URLs in **Download and combine files** in Open Flow or **Set URLs** in n8n. n8n returns one item with binary properties.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

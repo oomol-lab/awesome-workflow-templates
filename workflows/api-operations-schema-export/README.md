@@ -33,8 +33,6 @@ In Open Flow, use Run with:
 {"service":"Example Service","url":"https://example.com/docs"}
 ```
 
-For n8n, select Google Sheets OAuth2 and Google Drive credentials on their request/upload nodes. Configure **Operations Sheet Settings** and edit **Service To Export**, then run **Run Operations Export**. The callable trigger accepts the same flat input or the source's `{"eventType":"generate","data":{"service":"Example Service","url":"https://example.com/docs"}}` shape.
-
 ## Result
 
 The exported JSON retains the source's custom structure:
@@ -67,7 +65,14 @@ Files use a sanitized service prefix, a UTC run-start timestamp and the `.json` 
 
 No matching operations return `exported: false` with null `id` and `filename`, without creating a file. Empty tables also return that result. Invalid matching rows, invalid headers, generated JSON text above 5,000,000 UTF-8 bytes, failed reads/uploads or a missing Drive acknowledgment stop the run. The complete configured tab is read without a fixed row cutoff. Blank rows are skipped and missing trailing cells become empty strings.
 
-Each successful run creates a new Drive file. There is no overwrite, duplicate-export check or workflow-level retry. Native n8n Create from Text performs the upload and a metadata update; failure after upload can leave a file behind. Check Drive before repeating an interrupted run.
+Each successful run creates a new Drive file. There is no overwrite, duplicate-export check or workflow-level retry. Check Drive before repeating an interrupted run.
+
+<details>
+<summary>In n8n</summary>
+
+For n8n, select Google Sheets OAuth2 and Google Drive credentials on their request/upload nodes. Configure **Operations Sheet Settings** and edit **Service To Export**, then run **Run Operations Export**. The callable trigger accepts the same flat input or the source's `{"eventType":"generate","data":{"service":"Example Service","url":"https://example.com/docs"}}` shape. Native n8n Create from Text performs the upload and a metadata update; failure after upload can leave a file behind.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

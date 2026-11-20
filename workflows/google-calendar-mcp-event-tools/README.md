@@ -13,13 +13,20 @@ Expose Calendar event search, creation, update and deletion as MCP tools.
 
 ## Setup
 
-Configure a Google Calendar connection and the same calendar ID in both formats. Import n8n, configure an authenticated MCP endpoint and connect the four tools. Select a Data Table with item_key, status and fingerprint text columns. Set a unique requestId for each write. Select one execution mode and prevent concurrent requests with the same ID. For Open Flow configure persistent State and set CALENDAR_MCP_RELAY_AUTH to a secret authorization header. In **Validate tool input** set mode to relay and the Open Flow URL, then configure the matching HTTP Header Auth credential in **Forward tool request**. The bundled n8n workflow provides the MCP endpoint.
+Configure a Google Calendar connection and the same calendar ID. Configure an authenticated MCP endpoint and connect the four tools. Set a unique requestId for each write. Select one execution mode and prevent concurrent requests with the same ID. For Open Flow configure persistent State and set CALENDAR_MCP_RELAY_AUTH to a secret authorization header. In **Validate tool input** set mode to relay and the Open Flow URL, then configure the matching HTTP Header Auth credential in **Forward tool request**.
 
 ## Behavior
 
 SearchEvent accepts After, Before and Limit. CreateEvent accepts Start, End, title and description; UpdateEvent additionally requires Event_ID; DeleteEvent requires Event_ID. Create and update use event_title and event_description. Each write also requires a unique requestId. These operations may create, change or delete real Calendar events. The sender must explicitly request each write.
 
-If a write has an unknown outcome, inspect the Calendar first. For Open Flow enter its pending key and confirmed or absent in **Reserve calendar write**, replay the same request, then clear the fields. In n8n mark its pending Data Table row done only if the write happened, or delete it only after verifying it did not. Use a fresh requestId for an intentional new write; a reused ID with different inputs is rejected. Open Flow treats a Calendar 404 on delete as already absent; n8n reports that as an error. Open Flow updates read and then replace the event; avoid concurrent edits to the same event. Event content can appear in execution history.
+If a write has an unknown outcome, inspect the Calendar first. For Open Flow enter its pending key and confirmed or absent in **Reserve calendar write**, replay the same request, then clear the fields. Use a fresh requestId for an intentional new write; a reused ID with different inputs is rejected. Open Flow treats a Calendar 404 on delete as already absent. Open Flow updates read and then replace the event; avoid concurrent edits to the same event. Event content can appear in execution history.
+
+<details>
+<summary>In n8n</summary>
+
+Import n8n, configure an authenticated MCP endpoint and connect the four tools. Select a Data Table with item_key, status and fingerprint text columns. The bundled n8n workflow provides the MCP endpoint. In n8n mark its pending Data Table row done only if the write happened, or delete it only after verifying it did not. N8n reports that as an error.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

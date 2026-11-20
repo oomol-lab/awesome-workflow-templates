@@ -15,13 +15,18 @@ Post a workflow failure to Mattermost and send an SMS using Twilio.
 
 In Open Flow, select the published source workflows in **Receive a workflow failure**, then publish and enable this error workflow. Connect Mattermost and Twilio, and set the channel ID and both E.164 phone numbers in **Prepare error alerts**. The Twilio sender must be able to send to the destination.
 
-In n8n, connect Mattermost and Twilio, set the destination channel and phone numbers in their nodes, and assign this workflow as the error workflow in each source workflow’s settings. Activate it before relying on the alerts.
-
 ## Behavior
 
-On an automatic run failure from a configured workflow, the workflow posts the workflow name and ID plus the failed node identifier in Mattermost. It then sends an SMS with the workflow name and ID. Open Flow reports a node ID when available; n8n uses the last executed node name. If the failure does not identify a node, the alert says it is unavailable.
+On an automatic run failure from a configured workflow, the workflow posts the workflow name and ID plus the failed node identifier in Mattermost. It then sends an SMS with the workflow name and ID. Open Flow reports a node ID when available. If the failure does not identify a node, the alert says it is unavailable.
 
 Mattermost errors stop the SMS step. A failed or uncertain message may already have been delivered; inspect the channel and phone before retrying. Avoid binding the error workflow to itself. Restrict access to workflow names and execution history.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect Mattermost and Twilio, set the destination channel and phone numbers in their nodes, and assign this workflow as the error workflow in each source workflow’s settings. Activate it before relying on the alerts. N8n uses the last executed node name.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -13,11 +13,18 @@ Capture a named PostHog event when a webhook is requested.
 
 ## Setup and use
 
-In Open Flow bind your PostHog project token to the secret Variable **POSTHOG_PROJECT_TOKEN** in **Capture the event**. Set the capture URL and the node’s HTTP host allowlist to your PostHog region or self-hosted instance. The example uses the US ingestion host. In n8n configure your PostHog credential and host. Publish or activate one format, then request the webhook URL with an `event` query parameter.
+In Open Flow bind your PostHog project token to the secret Variable **POSTHOG_PROJECT_TOKEN** in **Capture the event**. Set the capture URL and the node’s HTTP host allowlist to your PostHog region or self-hosted instance. The example uses the US ingestion host. Publish or activate one format, then request the webhook URL with an `event` query parameter.
 
 ## Behavior
 
 Each GET sends one event with the requested name and the fixed distinct ID `n8n`. The webhook acknowledges receipt immediately, before the capture result is known. A successful capture HTTP response is an acceptance rather than confirmation that the event was processed. A failed or uncertain request may already have been accepted; check PostHog before retrying. The webhook is unauthenticated, so anyone who can reach it can submit events; protect the URL or add access controls.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure your PostHog credential and host.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

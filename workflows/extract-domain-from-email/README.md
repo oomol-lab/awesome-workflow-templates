@@ -13,11 +13,18 @@ Extract the text after the last @ in an email address.
 
 ## Setup and use
 
-Run the Open Flow workflow with an email string. In n8n, enter the example in **Sample email** and run the workflow manually.
+Run the Open Flow workflow with an email string.
 
 ## Behavior
 
 The workflow returns everything after the last `@`. For example, `person@example.com` returns `example.com`. If there is no `@`, it returns the whole input; a trailing `@` produces an empty string. This example extracts text and does not validate the address or domain.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, enter the example in **Sample email** and run the workflow manually.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

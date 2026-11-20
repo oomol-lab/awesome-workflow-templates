@@ -13,13 +13,20 @@ Extract food delivery receipt details from Gmail and send them to Slack with a M
 
 ## Setup
 
-Connect Gmail and Slack and select the same mailbox for the trigger and reads. Configure the Slack channel ID in **Send receipt to Slack** and the Gmail search on both **New receipts at half past the hour** and **Read matching Gmail IDs**. In n8n, connect Gmail and Slack and set the channel. The default filter and parser target a specific Traditional Chinese Uber Eats email format; test with your own receipts before use. Activate one format.
+Connect Gmail and Slack and select the same mailbox for the trigger and reads. Configure the Slack channel ID in **Send receipt to Slack** and the Gmail search on both **New receipts at half past the hour** and **Read matching Gmail IDs**. The default filter and parser target a specific Traditional Chinese Uber Eats email format; test with your own receipts before use.
 
 ## Behavior
 
 The Gmail trigger checks for new matching mail at minute 30 of each hour. Manual execution reads all matching historical messages and can send a notification for each, including messages already sent in earlier runs. Each matching plain-text receipt supplies amount, merchant, date and optional time. The Slack message includes a Moze 3 expense link with the example account, category and project; edit those values in **Extract receipt and prepare Slack message** or **Extract Price, Shop, Date, TIme** to match your app. The link is a custom app URL and requires a compatible Moze app and Slack client.
 
-A receipt that does not match the expected format stops the run, so earlier messages may already have been sent. Failed or uncertain Slack sends may have succeeded; inspect the channel before retrying. No deduplication or automatic replay is added. Open Flow uses UTC for its schedule and processes Gmail events in batches of up to 100; n8n's poll schedule inherits its instance timezone and its version 1.2 trigger reads one Gmail list page per poll. Open Flow uses Gmail's normalized best-effort message text, which can differ from the original n8n text field.
+A receipt that does not match the expected format stops the run, so earlier messages may already have been sent. Failed or uncertain Slack sends may have succeeded; inspect the channel before retrying. No deduplication or automatic replay is added. Open Flow uses UTC for its schedule and processes Gmail events in batches of up to 100.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect Gmail and Slack and set the channel. N8n's poll schedule inherits its instance timezone and its version 1.2 trigger reads one Gmail list page per poll. Open Flow uses Gmail's normalized best-effort message text, which can differ from the original n8n text field.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

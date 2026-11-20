@@ -13,11 +13,18 @@ Create a Salesforce lead, update its city and add a note to that lead.
 
 ## Setup
 
-Connect Salesforce with permission to create and update Leads and create legacy Note records. In Open Flow select the connection for **Create lead**, **Update lead city** and **Add lead note**, and allow each node's declared Action. Run with company, last name, city and note title. In n8n, set those fields in the corresponding Salesforce nodes and connect your Salesforce credential.
+Connect Salesforce with permission to create and update Leads and create legacy Note records. In Open Flow select the connection for **Create lead**, **Update lead city** and **Add lead note**, and allow each node's declared Action. Run with company, last name, city and note title.
 
 ## Behavior
 
 Each run creates one Lead, updates that Lead's city and creates a title-only Note linked to it. The note is a Salesforce legacy Note record; no note body or lead status is set. Failure stops later steps, but earlier writes are not rolled back. A lost response may mean a write succeeded, so inspect Salesforce before retrying. No automatic retry is configured.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, set those fields in the corresponding Salesforce nodes and connect your Salesforce credential.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

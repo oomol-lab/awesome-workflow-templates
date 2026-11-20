@@ -13,11 +13,18 @@ Generate an audio response from text and an ElevenLabs voice ID.
 
 ## Setup and use
 
-Import the supplied n8n workflow. Set **Choose execution mode** to n8n for its native path or openflow to send the complete request to Open Flow. Configure ElevenLabs HTTP Header Auth in n8n with header name xi-api-key and your API key as its value. For Open Flow connect ElevenLabs and set its webhook URL in **Forward to Open Flow**. Activate n8n and POST JSON containing voice_id and text to its webhook. Use one mode.
+For Open Flow connect ElevenLabs and set its webhook URL in **Forward to Open Flow**.
 
 ## Behavior
 
-The selected path synthesizes speech and returns the audio bytes to the caller. Open Flow returns the generated transit file URL to n8n, which downloads the bytes and returns them. The Open Flow webhook waits up to 60 seconds; long requests may exceed that window and still complete. Both webhooks do not authenticate callers; restrict access because calls use ElevenLabs. The text and transit URL can appear in execution history. If a response is lost, generation may already have occurred; inspect ElevenLabs before retrying.
+The selected path synthesizes speech and returns the audio bytes to the caller. The Open Flow webhook waits up to 60 seconds; long requests may exceed that window and still complete. Both webhooks do not authenticate callers; restrict access because calls use ElevenLabs. The text and transit URL can appear in execution history. If a response is lost, generation may already have occurred; inspect ElevenLabs before retrying.
+
+<details>
+<summary>In n8n</summary>
+
+Import the supplied n8n workflow. Set **Choose execution mode** to n8n for its native path or openflow to send the complete request to Open Flow. Configure ElevenLabs HTTP Header Auth in n8n with header name xi-api-key and your API key as its value. Activate n8n and POST JSON containing voice_id and text to its webhook. Open Flow returns the generated transit file URL to n8n, which downloads the bytes and returns them.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

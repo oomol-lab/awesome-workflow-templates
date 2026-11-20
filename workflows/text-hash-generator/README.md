@@ -13,11 +13,18 @@ Generate an MD5 checksum of UTF-8 text and return its 32-character lowercase hex
 
 ## Usage
 
-In Open Flow, run with **Text**. In n8n, edit **Value** in **Crypto** and run manually. Both formats preserve the source’s MD5 algorithm and hexadecimal output.
+In Open Flow, run with **Text**. The workflow preserve the source’s MD5 algorithm and hexadecimal output.
 
 The exact text is hashed without trimming whitespace, changing line endings or normalizing Unicode. An empty string has a valid checksum. Use the result to compare text content with another MD5 checksum.
 
 The text is hashed in the workflow engine. It makes no network requests and reads no files.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, edit **Value** in **Crypto** and run manually.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

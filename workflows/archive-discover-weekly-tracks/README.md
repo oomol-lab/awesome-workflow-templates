@@ -13,13 +13,20 @@ Add tracks missing from an archive playlist from Spotify Discover Weekly.
 
 ## Setup
 
-Both the Open Flow Spotify Connection and n8n Spotify client need Spotify Extended Quota Mode, where the legacy playlist tracks API remains available. Development Mode has different endpoints and restricts access to playlists the user does not own or collaborate on. Connect Spotify with playlist read and write permissions. Save exactly one playlist named `Discover Weekly` and create exactly one editable playlist named `Discover Weekly Archive`. To use a different archive name, set **Archive Name** in **Find both playlists** in Open Flow, or edit the archive rule in **Switch** in n8n. Use one format at a time.
+The Open Flow Spotify Connection needs Spotify Extended Quota Mode, where the legacy playlist tracks API remains available. Development Mode has different endpoints and restricts access to playlists the user does not own or collaborate on. Connect Spotify with playlist read and write permissions. Save exactly one playlist named `Discover Weekly` and create exactly one editable playlist named `Discover Weekly Archive`. To use a different archive name, set **Archive Name** in **Find both playlists**.
 
 ## Behavior
 
-Every Monday at 08:30 UTC, read all playlists and both track lists, compare track URIs and append each missing Discover Weekly track to the archive. The source used the n8n instance timezone; review the explicit UTC schedule.
+Every Monday at 08:30 UTC, read all playlists and both track lists, compare track URIs and append each missing Discover Weekly track to the archive.
 
-Open Flow checks for unique playlist names and valid track URIs before writes, reads all pages, and can add to an empty archive. The original n8n path may stop on an empty input before comparing. Duplicate new track URIs are each appended; an already archived URI is skipped. Playlist data must fit workflow execution limits. Concurrent playlist edits can change the comparison. Earlier additions remain if a later request fails, and an uncertain response may mean a track was added. Check Spotify before retrying; no automatic retry or rollback is configured.
+Open Flow checks for unique playlist names and valid track URIs before writes, reads all pages, and can add to an empty archive. Duplicate new track URIs are each appended; an already archived URI is skipped. Playlist data must fit workflow execution limits. Concurrent playlist edits can change the comparison. Earlier additions remain if a later request fails, and an uncertain response may mean a track was added. Check Spotify before retrying; no automatic retry or rollback is configured.
+
+<details>
+<summary>In n8n</summary>
+
+Both the Open Flow Spotify Connection and n8n Spotify client need Spotify Extended Quota Mode, where the legacy playlist tracks API remains available. To use a different archive name, set **Archive Name** in **Find both playlists** in Open Flow, or edit the archive rule in **Switch** in n8n. The source used the n8n instance timezone; review the explicit UTC schedule. The original n8n path may stop on an empty input before comparing.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

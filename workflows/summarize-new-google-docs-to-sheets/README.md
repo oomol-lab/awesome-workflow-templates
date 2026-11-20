@@ -13,15 +13,22 @@ Summarize new Google Docs and append each summary with its last editor to Google
 
 ## Setup
 
-Connect Google Drive, Google Docs and Google Sheets. Set the watched folder ID, spreadsheet ID and range. Use columns A–C in the order Email, Name and Summary. Configure a tool-capable model and bind a Perigon connection to the Wikipedia tool in **Summarize the document**. In n8n, connect Google Drive, Google Docs, Google Sheets and OpenAI credentials, then set the same folder, spreadsheet and sheet with matching headers. Enable only one format to avoid duplicate rows.
+Connect Google Drive, Google Docs and Google Sheets. Set the watched folder ID, spreadsheet ID and range. Use columns A–C in the order Email, Name and Summary. Configure a tool-capable model and bind a Perigon connection to the Wikipedia tool in **Summarize the document**. Enable only one format to avoid duplicate rows.
 
 ## Behavior
 
 Every minute, process newly created Google Docs directly in the chosen folder. Read body text including tabs and tables, summarize it and append the last modifying user’s email and name with the summary. Missing editor details become empty cells. Headers, footnotes, images and other non-text content are not summarized. Empty or inaccessible documents stop the affected run. Non-Google-Docs files are filtered out.
 
-Open Flow uses optional Perigon Wikipedia search and JavaScript computation; n8n retains Wikipedia and Calculator tools, so results can differ. Open Flow allows up to four model rounds; n8n uses its configured tool-iteration limit. Document contents are sent to the selected model and may be used in optional tool requests. Documents may contain instructions that the model cannot be guaranteed to ignore. Review summaries for accuracy and limit access to the sheet and execution history. Large documents can exceed model or execution limits; the workflow does not intentionally truncate them.
+Open Flow uses optional Perigon Wikipedia search and JavaScript computation. Open Flow allows up to four model rounds. Document contents are sent to the selected model and may be used in optional tool requests. Documents may contain instructions that the model cannot be guaranteed to ignore. Review summaries for accuracy and limit access to the sheet and execution history. Large documents can exceed model or execution limits; the workflow does not intentionally truncate them.
 
-Open Flow handles up to 50 candidate files per page with a continuation checkpoint; n8n collects native polling pages. Open Flow starts from the current time on first activation. An n8n manual test requests one matching existing file, while scheduled polls use their creation-time checkpoint. The formats use different checkpoints and do not guarantee exactly-once delivery. A failed run may not replay automatically, and an uncertain append may already have added a row. Inspect the sheet before retrying.
+Open Flow handles up to 50 candidate files per page with a continuation checkpoint. Open Flow starts from the current time on first activation. Scheduled polls use their creation-time checkpoint. The formats use different checkpoints and do not guarantee exactly-once delivery. A failed run may not replay automatically, and an uncertain append may already have added a row. Inspect the sheet before retrying.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect Google Drive, Google Docs, Google Sheets and OpenAI credentials, then set the same folder, spreadsheet and sheet with matching headers. N8n retains Wikipedia and Calculator tools, so results can differ. N8n uses its configured tool-iteration limit. N8n collects native polling pages. An n8n manual test requests one matching existing file.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

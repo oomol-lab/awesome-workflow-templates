@@ -15,11 +15,18 @@ Archive Telegram receipt images in S3 and save extracted expense fields in Airta
 
 Connect AWS S3 and set the bucket and region in **Upload receipt to S3**. In **Analyze receipt expense**, configure the same AWS region, bind secret Variables for the IAM access key ID and secret access key, and optionally a session token. Update its allowed Textract hostname if changing region. Grant upload and Textract AnalyzeExpense permission. Connect Airtable and set the base ID and table in **Save receipt to Airtable**. Create text columns named for the Textract summary fields to save, such as `TOTAL` and `VENDOR_NAME`; list those exact names separated by commas in **Select receipt fields**.
 
-Import the n8n workflow, connect the Telegram bot and activate it. Set **Choose delivery mode** to `relay` and configure the Open Flow webhook in **Forward receipt**. For n8n-only operation choose `direct`, connect AWS and Airtable, configure the bucket and table, and select the same field names in **Airtable**. Use one mode. The source leaves the Airtable field selection empty; configuring fields is necessary to save extracted values.
+Connect the Telegram bot and activate it. The source leaves the Airtable field selection empty; configuring fields is necessary to save extracted values.
 
 ## Behavior
 
 Send the bot a receipt image or document it can download. The original file is uploaded under its Telegram filename while Textract analyzes the same bytes; the configured matching summary fields are appended to Airtable. The branches run independently, so one can succeed when the other fails. Reusing a filename can overwrite the S3 object. The webhook acknowledges before the work finishes. Check both destinations before replaying an uncertain write. Receipts and execution data may contain sensitive information. The Open Flow webhook does not authenticate callers; restrict access to trusted callers. Runtime request and file size limits apply.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow, connect the Telegram bot and activate it. Set **Choose delivery mode** to `relay` and configure the Open Flow webhook in **Forward receipt**. For n8n-only operation choose `direct`, connect AWS and Airtable, configure the bucket and table, and select the same field names in **Airtable**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

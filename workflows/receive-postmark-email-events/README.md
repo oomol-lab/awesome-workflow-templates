@@ -13,11 +13,18 @@ Receive Postmark bounce and email open events.
 
 ## Setup and use
 
-Import the n8n workflow and connect Postmark in **Postmark Trigger**. Activate it to register the webhook; its URL must be publicly reachable by Postmark. Enable open tracking in Postmark for open events. For Open Flow enter its webhook URL in **Forward to Open Flow** and enable that node; leave it disabled for n8n alone. Restrict access to the webhook endpoints.
+Connect Postmark in **Postmark Trigger**. Activate it to register the webhook; its URL must be publicly reachable by Postmark. Enable open tracking in Postmark for open events. For Open Flow enter its webhook URL in **Forward to Open Flow** and enable that node. Restrict access to the webhook endpoints.
 
 ## Behavior
 
-The trigger receives bounce and open events. Bounce content is included, as configured in the source. The optional relay forwards each event to Open Flow as workflow output. Neither endpoint authenticates the sender; restrict access and inspect n8n execution history for relay failures. Event data and bounce content may appear in execution history. Event details may appear in execution history.
+The trigger receives bounce and open events. Bounce content is included, as configured in the source. The optional relay forwards each event to Open Flow as workflow output. Neither endpoint authenticates the sender. Event data and bounce content may appear in execution history. Event details may appear in execution history.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow and connect Postmark in **Postmark Trigger**. Leave it disabled for n8n alone. Restrict access and inspect n8n execution history for relay failures.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

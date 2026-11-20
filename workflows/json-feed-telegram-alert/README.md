@@ -15,8 +15,6 @@ Poll a JSON feed every five minutes. Send entries that pass your category filter
 
 In Open Flow, replace the URL in **Read JSON feed** with your direct JSON endpoint. Configure the field names and filter values in **Select new matching entries**, connect your Telegram bot in **Send Telegram alert**, and replace the chat ID. Check the UTC schedule before publishing and enabling the workflow.
 
-In n8n, configure the same URL on **Leggi il feed JSON**, the field names/filter values in **Solo voci nuove e filtrate**, and your bot credential and chat ID on **Manda su Telegram**. Check the workflow timezone before enabling it. n8n saves workflow static data during successful active executions; manual tests do not persist this watermark.
-
 The default feed shape is:
 
 ```json
@@ -47,7 +45,14 @@ Open Flow sends each alert through a separate Connector execution in the visible
 
 The watermark advances only after every selected notification succeeds. If a later send or state save fails, earlier messages can be sent again on the next poll. Overlapping runs can also duplicate messages; delivery is not exactly once. No matches sends nothing and leaves the watermark unchanged. Changing the feed or its timestamp format requires resetting the saved watermark before reuse.
 
-Open Flow returns `sent` and `watermark` after the state save. n8n's final output is the Telegram send results; an empty batch ends before that node.
+Open Flow returns `sent` and `watermark` after the state save.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, configure the same URL on **Leggi il feed JSON**, the field names/filter values in **Solo voci nuove e filtrate**, and your bot credential and chat ID on **Manda su Telegram**. Check the workflow timezone before enabling it. n8n saves workflow static data during successful active executions; manual tests do not persist this watermark. n8n's final output is the Telegram send results; an empty batch ends before that node.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

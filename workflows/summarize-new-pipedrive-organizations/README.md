@@ -13,13 +13,20 @@ Summarize a new organization website, add a Pipedrive note and notify Slack.
 
 ## Setup
 
-Connect Pipedrive, ScrapingBee, Gemini and Slack. Set the Slack channel, Pipedrive company ID and organization website custom-field key. Enable persistent State. In n8n configure the v2 Pipedrive trigger with Basic Auth, connect Pipedrive, ScrapingBee HTTP Query Auth with parameter name api_key, Gemini and Slack, set the company ID and website custom-field key in **Validate organization**, and select a Data Table with item_key, status, summary and website text columns. For a pending note, inspect the organization notes and set status to note_done if confirmed or delete the row if absent. For a pending Slack notification, inspect the channel and set status to done if confirmed or note_done if absent. Configure the original identifiers in **Configure retry** before rerunning. Create a Pipedrive v2 webhook for organization create events pointing at **Receive organization event**. Configure HTTP Basic Authentication on the subscription and bind its full Authorization header as the secret PIPEDRIVE_WEBHOOK_AUTH.
+Connect Pipedrive, ScrapingBee, Gemini and Slack. Set the Slack channel, Pipedrive company ID and organization website custom-field key. Enable persistent State. For a pending note, inspect the organization notes and set status to note_done if confirmed or delete the row if absent. For a pending Slack notification, inspect the channel and set status to done if confirmed or note_done if absent. Configure the original identifiers in **Configure retry** before rerunning. Create a Pipedrive v2 webhook for organization create events pointing at **Receive organization event**. Configure HTTP Basic Authentication on the subscription and bind its full Authorization header as the secret PIPEDRIVE_WEBHOOK_AUTH.
 
 ## Behavior
 
 A new organization with a website custom field is scraped and summarized. A note is added to that organization and the same summary is sent to Slack. Verify AI-generated details before relying on them. Website HTML over 100,000 characters stops processing.
 
 For an unknown note or Slack write, inspect the destination, set the pending key and confirmed or absent in **Select next organization step**, and run **Retry organization** with the original company ID, organization ID, name and website. Clear recovery fields afterward. Avoid overlapping runs for the same organization.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure the v2 Pipedrive trigger with Basic Auth, connect Pipedrive, ScrapingBee HTTP Query Auth with parameter name api_key, Gemini and Slack, set the company ID and website custom-field key in **Validate organization**, and select a Data Table with item_key, status, summary and website text columns.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

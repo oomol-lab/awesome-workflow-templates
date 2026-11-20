@@ -13,13 +13,20 @@ Email the top Google Search queries from the previous seven complete Pacific Tim
 
 ## Setup
 
-Connect Google Search Console in **Read search performance** and enter the property exactly as it appears in Search Console, including its trailing slash for a URL-prefix property or the sc-domain: prefix for a domain property. Connect Gmail and set the recipient in **Email the report**. In n8n, configure a Google OAuth client with the n8n callback URL, then create a generic OAuth2 credential using Authorization Code, authorization URL https://accounts.google.com/o/oauth2/v2/auth, token URL https://oauth2.googleapis.com/token, and scope https://www.googleapis.com/auth/webmasters.readonly. Authorize an account that can read the property, set the property in **Set the reporting dates**, and connect Gmail and set the recipient in **Send Weekly Report by Email**. Activate one format.
+Connect Google Search Console in **Read search performance** and enter the property exactly as it appears in Search Console, including its trailing slash for a URL-prefix property or the sc-domain: prefix for a domain property. Connect Gmail and set the recipient in **Email the report**. Authorize an account that can read the property, set the property in **Set the reporting dates**, and connect Gmail and set the recipient in **Send Weekly Report by Email**.
 
 ## Behavior
 
-Every Monday at 07:00 UTC the workflow asks Search Console for up to ten search queries ordered by clicks during the previous seven complete Pacific Time calendar dates. The email shows clicks, impressions, CTR as a decimal rounded to two places, and average position. When no rows are returned, it emails a no-data message. Search Console omits some queries and final data can lag by days, so the report may be incomplete. Check the UTC schedule against your local time. Open Flow starts on the minute boundary; n8n Cron chooses a fixed second within that minute.
+Every Monday at 07:00 UTC the workflow asks Search Console for up to ten search queries ordered by clicks during the previous seven complete Pacific Time calendar dates. The email shows clicks, impressions, CTR as a decimal rounded to two places, and average position. When no rows are returned, it emails a no-data message. Search Console omits some queries and final data can lag by days, so the report may be incomplete. Check the UTC schedule against your local time. Open Flow starts on the minute boundary.
 
 A failed query stops before sending. A failed or uncertain Gmail send may have been accepted; inspect Sent mail before retrying. The workflow does not store a checkpoint, so reruns can send duplicate reports.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, configure a Google OAuth client with the n8n callback URL, then create a generic OAuth2 credential using Authorization Code, authorization URL https://accounts.google.com/o/oauth2/v2/auth, token URL https://oauth2.googleapis.com/token, and scope https://www.googleapis.com/auth/webmasters.readonly. N8n Cron chooses a fixed second within that minute.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

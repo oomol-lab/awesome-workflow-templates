@@ -13,11 +13,18 @@ Read holdings from Baserow, look up Tradegate bid prices and email an investment
 
 ## Setup and use
 
-Connect Baserow and SendGrid. Configure the table ID in **Prepare the holdings report**, and set a verified sender and recipient in **Email the investment report**. The Baserow table needs Name, ISIN, Count and Purchase Price fields. In n8n, connect Baserow and SendGrid, choose the table and configure sender and recipient. Activate one format.
+Connect Baserow and SendGrid. Configure the table ID in **Prepare the holdings report**, and set a verified sender and recipient in **Email the investment report**. The Baserow table needs Name, ISIN, Count and Purchase Price fields.
 
 ## Behavior
 
-Run manually or Monday through Saturday at 07:15 UTC. For each holding, retrieve the Tradegate bid for its ISIN, calculate current value, change and percentage change, then email the combined report and total. Open Flow uses the minute boundary; n8n Cron V1 runs at a fixed second within minute 15. A missing quote or invalid holding stops the Open Flow report before email. An uncertain email outcome may have succeeded; inspect sent mail before retrying. Tradegate page format and market data availability may change. Open Flow requests the current tradegatebsx.com endpoint; n8n follows the original tradegate.de redirect.
+Run manually or Monday through Saturday at 07:15 UTC. For each holding, retrieve the Tradegate bid for its ISIN, calculate current value, change and percentage change, then email the combined report and total. Open Flow uses the minute boundary. A missing quote or invalid holding stops the Open Flow report before email. An uncertain email outcome may have succeeded; inspect sent mail before retrying. Tradegate page format and market data availability may change. Open Flow requests the current tradegatebsx.com endpoint.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect Baserow and SendGrid, choose the table and configure sender and recipient. N8n Cron V1 runs at a fixed second within minute 15. N8n follows the original tradegate.de redirect.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

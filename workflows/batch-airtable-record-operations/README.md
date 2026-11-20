@@ -13,11 +13,18 @@ Insert, update or upsert Airtable records in batches of ten.
 
 ## Setup and use
 
-Bind secret Variable AIRTABLE_TOKEN with record write access. Run Open Flow with a base ID, table ID or name, mode (insert, update or upsert), mergeFields and records. Each record contains fields; update records put their Airtable record ID in fields.id. Upsert needs one to three merge field names. In n8n import the workflow, configure Airtable credentials and select the imported workflow in **Airtable Batch** before running its test path. Use one format.
+Bind secret Variable AIRTABLE_TOKEN with record write access. Run Open Flow with a base ID, table ID or name, mode (insert, update or upsert), mergeFields and records. Each record contains fields; update records put their Airtable record ID in fields.id. Upsert needs one to three merge field names.
 
 ## Behavior
 
-Requests contain up to ten records. Inserts use POST, updates and upserts use PATCH. Upserts send fieldsToMergeOn. Results combine records and the created and updated record IDs. Open Flow waits 200 ms after a successful batch and retries a 429 after five seconds up to five attempts. Other failed requests stop; earlier batches may already have been written. If a write outcome is unknown, inspect Airtable before retrying to avoid duplicate inserts. In n8n, failed requests, including 429 responses, stop without automatic retry.
+Requests contain up to ten records. Inserts use POST, updates and upserts use PATCH. Upserts send fieldsToMergeOn. Results combine records and the created and updated record IDs. Open Flow waits 200 ms after a successful batch and retries a 429 after five seconds up to five attempts. Other failed requests stop; earlier batches may already have been written. If a write outcome is unknown, inspect Airtable before retrying to avoid duplicate inserts.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n import the workflow, configure Airtable credentials and select the imported workflow in **Airtable Batch** before running its test path. In n8n, failed requests, including 429 responses, stop without automatic retry.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

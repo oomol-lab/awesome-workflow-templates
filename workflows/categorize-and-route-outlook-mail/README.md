@@ -13,13 +13,20 @@ Classify an unflagged Outlook message and move it to a matching folder.
 
 ## Setup
 
-Connect Outlook with Mail.ReadWrite access and configure a model. Set the source folder in **Read an unclassified message** and folder IDs in **Reserve category update**. Enable persistent State and avoid overlapping runs. In n8n connect Outlook and an Ollama model, set the input and destination folder IDs, and select a Data Table with item_key and status text columns. Use one format.
+Connect Outlook with Mail.ReadWrite access and configure a model. Set the source folder in **Read an unclassified message** and folder IDs in **Reserve category update**. Enable persistent State and avoid overlapping runs.
 
 ## Behavior
 
 A manual run selects up to one message that is unflagged and has no categories. The model chooses action, junk, receipt, SaaS, community, business or other, with an optional subcategory. The workflow updates its categories. Junk, receipt, SaaS and community move to their corresponding folders; action and business move to Actioned only if already read. Other stays in place. Model classifications can be wrong; review them. Email content is sent to the selected model and may appear in execution history. Open Flow Code inputs and outputs must each fit within 1 MiB.
 
-If an update or move has an unknown outcome, inspect the message and folders in Outlook and manually finish any missing action. In Open Flow enter the original message ID in **Check message and pending work** to acknowledge the completed reconciliation, run again and clear the field. In n8n inspect the pending Data Table row, complete any missing action manually, then mark the row done. Moves can change message IDs.
+If an update or move has an unknown outcome, inspect the message and folders in Outlook and manually finish any missing action. In Open Flow enter the original message ID in **Check message and pending work** to acknowledge the completed reconciliation, run again and clear the field. Moves can change message IDs.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n connect Outlook and an Ollama model, set the input and destination folder IDs, and select a Data Table with item_key and status text columns. In n8n inspect the pending Data Table row, complete any missing action manually, then mark the row done.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

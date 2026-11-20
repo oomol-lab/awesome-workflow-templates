@@ -13,13 +13,20 @@ Compare daily GA4 metrics with the same dates a year earlier and send a weekly r
 
 ## Setup
 
-Connect Google Analytics, Gmail and Telegram; configure the property ID, recipient and chat ID. Enable persistent State and configure AI models. In n8n configure GA4, OpenAI, SMTP and Telegram, set the property ID, sender, recipient and chat ID, and configure a Data Table with item_key and status text columns in both channel checkpoints. Use one format.
+Connect Google Analytics, Gmail and Telegram; configure the property ID, recipient and chat ID. Enable persistent State and configure AI models.
 
 ## Behavior
 
 Every Monday at 07:00 UTC the report compares the date seven days before the run through the run date, inclusive, against the same range one year earlier. Google Analytics interprets dates in its property timezone. Daily counts are summed, while daily ratios are averaged; summed daily users can count the same person more than once. Revenue uses the property currency. The AI report is sent as HTML email and converted to plain text for Telegram.
 
-Each channel is reserved separately before sending. If delivery is uncertain, inspect the destination and pending State or Data Table record before resolving it manually; prevent overlapping runs for the same date.
+Each channel is reserved separately before sending.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure GA4, OpenAI, SMTP and Telegram, set the property ID, sender, recipient and chat ID, and configure a Data Table with item_key and status text columns in both channel checkpoints. If delivery is uncertain, inspect the destination and pending State or Data Table record before resolving it manually; prevent overlapping runs for the same date.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

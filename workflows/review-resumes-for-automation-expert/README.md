@@ -13,15 +13,22 @@ Collect PDF resumes, summarize candidate information, and record a role-fit asse
 
 ## Setup
 
-Import the n8n workflow, connect Google Drive and configure **Upload CV** with a destination folder. The form accepts first name, last name, email and PDF. Configure a Google Sheet with columns First Name, Last Name, City, Phone number, Email, LinkedIn, Website, DOB, Education Qualification, Experience, Skills, Vote, Consideration and Applied Date in that order. Select a Data Table with text columns item_key and status in all checkpoint nodes. Prevent overlapping executions.
+Connect Google Drive and configure **Upload CV** with a destination folder. The form accepts first name, last name, email and PDF. Configure a Google Sheet with columns First Name, Last Name, City, Phone number, Email, LinkedIn, Website, DOB, Education Qualification, Experience, Skills, Vote, Consideration and Applied Date in that order. Prevent overlapping executions.
 
-For Open Flow, set **Choose processing mode** to relay, configure **Forward application to Open Flow** with the deployed webhook URL, connect Google Sheets, select an AI model, and set the spreadsheet ID and range in **Prepare candidate row**. Restrict access to the Open Flow webhook at the deployment boundary; it has no built-in authentication. Enable persistent State. For direct n8n, leave processing mode as direct and connect OpenAI and Google Sheets. Use one mode only.
+Configure **Forward application to Open Flow** with the deployed webhook URL, connect Google Sheets, select an AI model, and set the spreadsheet ID and range in **Prepare candidate row**. Restrict access to the Open Flow webhook at the deployment boundary; it has no built-in authentication. Enable persistent State.
 
 ## Behavior
 
 Each submission stores the original PDF in Drive, extracts readable text, summarizes education, work history and skills, and compares the resume with the configurable job profile. The resulting candidate details, summary, suggested 1–10 score and explanation are appended to the sheet. Review the result and make hiring decisions with human judgment; the model can omit or misinterpret details. The PDF must contain extractable text; scanned images need OCR. In Open Flow, the extracted text and its enclosing data must fit the host’s 1 MiB limit for each Code input and output. Personal data and resume text are sent to the configured model and stored in Drive, Sheets and execution histories. Protect access and apply your retention rules.
 
-If Drive upload or forwarding is uncertain, inspect Drive and the downstream execution before replaying. In n8n, inspect the pending Data Table row, complete any missing work manually, then mark it done; delete it only if no external write occurred. If the Open Flow sheet append is uncertain, inspect the sheet, replay the same submission with the pending key in **Prepare candidate row** and resolution confirmed if appended or absent if not, then clear both fields.
+If Drive upload or forwarding is uncertain, inspect Drive and the downstream execution before replaying. If the Open Flow sheet append is uncertain, inspect the sheet, replay the same submission with the pending key in **Prepare candidate row** and resolution confirmed if appended or absent if not, then clear both fields.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow, connect Google Drive and configure **Upload CV** with a destination folder. Select a Data Table with text columns item_key and status in all checkpoint nodes. For Open Flow, set **Choose processing mode** to relay, configure **Forward application to Open Flow** with the deployed webhook URL, connect Google Sheets, select an AI model, and set the spreadsheet ID and range in **Prepare candidate row**. For direct n8n, leave processing mode as direct and connect OpenAI and Google Sheets. In n8n, inspect the pending Data Table row, complete any missing work manually, then mark it done; delete it only if no external write occurred.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

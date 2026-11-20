@@ -13,13 +13,20 @@ Triage recent Outlook support messages with AI and create Jira issues.
 
 ## Setup
 
-Connect an Outlook account whose messages are all appropriate support requests. Connect Jira and set project and issue type IDs in **Create the Jira issue**. Configure five Jira priority IDs, highest through lowest, in **Prepare the Jira issue**. Configure a model and persistent workflow State. In n8n use the same Outlook mailbox and a compatible model, set the Jira project and issue type in **Create Issue**, and set the five priority IDs in the code of **Prepare the Jira issue**. Activate one format and avoid overlapping runs.
+Connect an Outlook account whose messages are all appropriate support requests. Connect Jira and set project and issue type IDs in **Create the Jira issue**. Configure five Jira priority IDs, highest through lowest, in **Prepare the Jira issue**. Configure a model and persistent workflow State. Activate one format and avoid overlapping runs.
 
 ## Behavior
 
-Every hour in UTC the workflow requests messages received since one hour earlier. Open Flow measures from the scheduled time; n8n uses its check time. It processes the first service page of up to 100 messages from the connected mailbox, which can include folders other than Inbox. It may miss messages beyond that page or during a longer interruption. Unprocessed messages are triaged by AI and create Jira issues with labels and the configured priority. Open Flow uses a single-round Agent; n8n retains the source chain and HTML-to-Markdown conversion. Open Flow starts on the minute boundary; n8n uses a fixed second within the hour.
+Every hour in UTC the workflow requests messages received since one hour earlier. Open Flow measures from the scheduled time. It processes the first service page of up to 100 messages from the connected mailbox, which can include folders other than Inbox. It may miss messages beyond that page or during a longer interruption. Unprocessed messages are triaged by AI and create Jira issues with labels and the configured priority. Open Flow uses a single-round Agent. Open Flow starts on the minute boundary.
 
-IDs are remembered after a confirmed issue; State must fit host limits. A failed or uncertain write may have created an issue. Inspect Jira before retrying; after an uncertain write a later run may create a duplicate. In n8n, a later item failure can also cause earlier successful issues to be repeated if the run state is not saved. Restrict access to email content, model processing and execution history. Review AI output for accuracy.
+IDs are remembered after a confirmed issue; State must fit host limits. A failed or uncertain write may have created an issue. Inspect Jira before retrying; after an uncertain write a later run may create a duplicate. Restrict access to email content, model processing and execution history. Review AI output for accuracy.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n use the same Outlook mailbox and a compatible model, set the Jira project and issue type in **Create Issue**, and set the five priority IDs in the code of **Prepare the Jira issue**. N8n uses its check time. N8n retains the source chain and HTML-to-Markdown conversion. N8n uses a fixed second within the hour. In n8n, a later item failure can also cause earlier successful issues to be repeated if the run state is not saved.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

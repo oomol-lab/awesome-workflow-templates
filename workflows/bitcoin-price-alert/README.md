@@ -15,9 +15,14 @@ Check Bitcoin’s USD ticker every 15 minutes. Send one Telegram message when it
 
 For Open Flow, import the JSON, connect your Telegram bot in **Send Bitcoin alert**, and replace `@YOUR_TELEGRAM_CHANNEL` with your chat ID or channel username. Confirm the UTC schedule or choose your preferred timezone. The CoinPaprika request uses its fixed public BTC ticker endpoint and needs no API key.
 
+The alert is evaluated on every poll. While a large 24-hour move continues, another message is sent every 15 minutes; there is no threshold-crossing detection or deduplication. An ordinary move sends nothing. Failed HTTP requests or missing required metrics stop without sending an alert. The workflow does not place trades.
+
+<details>
+<summary>In n8n</summary>
+
 For n8n, connect Telegram in **Send Telegram alert**, set the chat ID, and confirm the workflow timezone before enabling it. Both formats use the same 15-minute cron and inclusive +5%/−5% thresholds.
 
-The alert is evaluated on every poll. While a large 24-hour move continues, another message is sent every 15 minutes; there is no threshold-crossing detection or deduplication. An ordinary move sends nothing. Failed HTTP requests or missing required metrics stop without sending an alert. The workflow does not place trades.
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

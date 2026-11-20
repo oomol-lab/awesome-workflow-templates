@@ -13,7 +13,7 @@ Compare weekly page engagement, search performance and country views with AI and
 
 ## Setup
 
-Connect Google Analytics with access to the property and linked Search Console data. The Open Flow Baserow Connection targets Baserow Cloud; n8n can use the host configured in its Baserow credential. Set the property ID in **Prepare analytics page**. Configure the AI model, set the same blog name in **Prepare the Baserow entry** and **Reserve Baserow report**, and connect Baserow and set the table ID in **Save the insights to Baserow**. Enable persistent State and prevent overlapping executions. Create a Baserow table with fields Name, Page Views, Search Report, Country Views and Blog; Use text fields for Name and Blog, and long-text fields for the three reports. In n8n select Google Analytics credentials on all six report nodes, connect the AI model and Baserow, and configure the property, blog, Baserow table and five field IDs. Select a Data Table with item_key and status text columns; use the same blog name in the checkpoint key and row. Prevent overlapping executions. Activate only one format.
+Connect Google Analytics with access to the property and linked Search Console data. The Open Flow Baserow Connection targets Baserow Cloud. Set the property ID in **Prepare analytics page**. Configure the AI model, set the same blog name in **Prepare the Baserow entry** and **Reserve Baserow report**, and connect Baserow and set the table ID in **Save the insights to Baserow**. Enable persistent State and prevent overlapping executions. Create a Baserow table with fields Name, Page Views, Search Report, Country Views and Blog; Use text fields for Name and Blog, and long-text fields for the three reports. Prevent overlapping executions.
 
 ## Behavior
 
@@ -21,7 +21,14 @@ Every Sunday at 00:00 UTC, or when run manually, the workflow reads all six repo
 
 Three Agents independently compare each pair, each requested to produce a Markdown table and five SEO suggestions. The resulting three reports, current timestamp and blog name are saved in one Baserow row. Review the output: AI can make incorrect interpretations or recommendations. Empty analytics results are supplied as empty tables. Reports and execution data must fit platform limits; errors stop before Baserow instead of saving truncated input.
 
-An uncertain Baserow write may already have succeeded. Inspect the table before retrying; enter the exact pending key and confirmed or absent in **Reserve Baserow report**, rerun, then clear the fields. In n8n mark the matching pending Data Table row done only after confirming the entry, or delete it only if absent. Confirmed rows are skipped for the same date and blog; clear the checkpoint after review for an intentional repeat. n8n schedules at a fixed second within the minute; Open Flow starts at the minute boundary.
+An uncertain Baserow write may already have succeeded. Inspect the table before retrying; enter the exact pending key and confirmed or absent in **Reserve Baserow report**, rerun, then clear the fields. Confirmed rows are skipped for the same date and blog; clear the checkpoint after review for an intentional repeat. Open Flow starts at the minute boundary.
+
+<details>
+<summary>In n8n</summary>
+
+N8n can use the host configured in its Baserow credential. In n8n select Google Analytics credentials on all six report nodes, connect the AI model and Baserow, and configure the property, blog, Baserow table and five field IDs. Select a Data Table with item_key and status text columns; use the same blog name in the checkpoint key and row. In n8n mark the matching pending Data Table row done only after confirming the entry, or delete it only if absent. n8n schedules at a fixed second within the minute.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

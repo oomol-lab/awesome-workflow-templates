@@ -15,11 +15,16 @@ Export Zammad users, organizations, roles and groups to four Excel workbooks.
 
 In Open Flow, set the HTTPS instance URL in **Collect Zammad pages**, and bind the OAuth bearer token secret Variable ZAMMAD_OAUTH_TOKEN in **Read a Zammad page**. The account needs permission to list users, organizations, roles and groups. Run manually and download the four workbooks.
 
-In n8n, connect the Zammad API credentials to both Zammad nodes and configure Header Auth with Authorization: Bearer followed by an OAuth token in both HTTP nodes. Set the instance URL in **Basic Variables**. Run manually and download each binary output.
-
 ## Behavior
 
-Exports contain user ID, organization ID, email, first and last names, role IDs and group permissions; the other files contain ID and name. Group permissions are serialized as JSON. Open Flow requests pages until a short page and creates a workbook for each category, including an empty workbook with headers. n8n uses its Zammad nodes for users and organizations. Pagination is not a snapshot: concurrent changes may alter results. Exports contain personal data; protect execution history and downloaded files. Large lists must fit the platform execution limits.
+Exports contain user ID, organization ID, email, first and last names, role IDs and group permissions; the other files contain ID and name. Group permissions are serialized as JSON. Open Flow requests pages until a short page and creates a workbook for each category, including an empty workbook with headers. Pagination is not a snapshot: concurrent changes may alter results. Exports contain personal data; protect execution history and downloaded files. Large lists must fit the platform execution limits.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect the Zammad API credentials to both Zammad nodes and configure Header Auth with Authorization: Bearer followed by an OAuth token in both HTTP nodes. Set the instance URL in **Basic Variables**. Run manually and download each binary output. n8n uses its Zammad nodes for users and organizations.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -13,11 +13,18 @@ Create a Teams channel, rename it and send a message to the new channel.
 
 ## Setup
 
-Create a secret Variable named **GRAPH_ACCESS_TOKEN** containing a Microsoft Graph delegated access token with channel creation and channel settings write permissions. Tokens expire and must be refreshed. Connect Microsoft Teams with permission to send channel messages. Run with a team ID, initial channel name, new name and message. In n8n connect the Microsoft Teams nodes and set the team, names and message.
+Create a secret Variable named **GRAPH_ACCESS_TOKEN** containing a Microsoft Graph delegated access token with channel creation and channel settings write permissions. Tokens expire and must be refreshed. Connect Microsoft Teams with permission to send channel messages. Run with a team ID, initial channel name, new name and message.
 
 ## Behavior
 
 A manual run creates a standard channel, renames it and posts the message to that channel. If an operation fails, earlier changes remain. Check Teams before retrying after an unknown result to avoid duplicate channels or messages.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n connect the Microsoft Teams nodes and set the team, names and message.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

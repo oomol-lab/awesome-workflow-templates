@@ -13,9 +13,16 @@ Send a Slack message when a GET webhook email contains @n8n.
 
 ## Setup and use
 
-Connect Slack and choose a channel in **Send Slack message**. Deploy the Open Flow webhook or activate the n8n webhook and send a GET request with an email query parameter, for example `?email=person%40n8n.io`. Enable one format. The webhook is public and has no authentication; restrict access to its URL.
+Connect Slack and choose a channel in **Send Slack message**. The webhook is public and has no authentication; restrict access to its URL.
 
 The match is case-sensitive and checks whether the email contains `@n8n` anywhere. A match posts the original email in a Slack message; other values do not post. An uncertain Slack response may mean the message was sent; inspect the channel before retrying. The webhook acknowledges admission rather than waiting for the Slack result.
+
+<details>
+<summary>In n8n</summary>
+
+Deploy the Open Flow webhook or activate the n8n webhook and send a GET request with an email query parameter, for example `?email=person%40n8n.io`.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

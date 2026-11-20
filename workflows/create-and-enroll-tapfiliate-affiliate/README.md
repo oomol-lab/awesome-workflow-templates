@@ -13,13 +13,20 @@ Create an affiliate, set a tag and add them to a Tapfiliate program.
 
 ## Setup
 
-Connect Tapfiliate with access to create affiliates and add them to the program. In Open Flow, select the connection for **Create affiliate**, **Set affiliate tag** and **Add to program**. Allow the create-affiliate Action for the first node and **Provider API** access for the other two. Run with the affiliate's name and email, program ID and tag. In n8n, create an HTTP Header Auth credential with header name `X-Api-Key` and your Tapfiliate API key as its value, connect it to all three HTTP nodes, and edit **Set affiliate details**.
+Connect Tapfiliate with access to create affiliates and add them to the program. In Open Flow, select the connection for **Create affiliate**, **Set affiliate tag** and **Add to program**. Allow the create-affiliate Action for the first node and **Provider API** access for the other two. Run with the affiliate's name and email, program ID and tag.
 
 ## Behavior
 
 The workflow creates an affiliate, sets the metadata key **tag** and adds that same affiliate to the program. Tapfiliate controls approval and welcome-email behavior. An error stops later steps; there is no automatic retry or rollback. A lost response may mean a write succeeded, so check Tapfiliate before retrying. An affiliate created but not enrolled can remain archived.
 
-Tapfiliate may return an automatically generated affiliate password when creating the account. n8n execution data can contain that response; restrict access to execution history. Open Flow returns the affiliate ID and enrollment details, not the password.
+Tapfiliate may return an automatically generated affiliate password when creating the account. Open Flow returns the affiliate ID and enrollment details, not the password.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, create an HTTP Header Auth credential with header name `X-Api-Key` and your Tapfiliate API key as its value, connect it to all three HTTP nodes, and edit **Set affiliate details**. n8n execution data can contain that response; restrict access to execution history.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

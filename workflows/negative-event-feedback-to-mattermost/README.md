@@ -19,15 +19,20 @@ In **Sign the Comprehend request**, select secret Variables for **Access Key ID*
 
 Connect a Mattermost Personal Access Token in **Post the negative feedback**, configure the public HTTPS server, and set the actual channel ID. The token’s account must be able to post in that channel.
 
-In n8n, connect **Typeform API**, **AWS (IAM)** and **Mattermost API** credentials in the corresponding nodes. Set the form and channel IDs, AWS credential region and **Language Code** to the same values as Open Flow. Activate one format for this process to avoid duplicate alerts.
-
 ## Behavior
 
 Each completed Typeform response must contain one nonblank text answer for the configured question. The workflow sends that original text to Amazon Comprehend once. It posts only for the returned `NEGATIVE` label, including Comprehend’s `SentimentScore.Negative` value and the original feedback. No additional confidence threshold is applied. Positive, neutral and mixed feedback produce no Mattermost post.
 
-The result contains **Posted**, the complete **Assessment**, and the saved **Post** or `null`. Missing/ambiguous answers, malformed assessments, AWS errors or authentication failures stop before a notification. A Mattermost error or missing saved post ID stops the run. No workflow retry is added. Native n8n’s credential helper can resend a Mattermost request once after HTTP 401; the Open Flow Connector sends one request and surfaces the authentication failure. An unknown post result can already have sent a message, so check the channel before replaying. A successful webhook acknowledgment confirms receipt, not completion of the analysis or notification.
+The result contains **Posted**, the complete **Assessment**, and the saved **Post** or `null`. Missing/ambiguous answers, malformed assessments, AWS errors or authentication failures stop before a notification. A Mattermost error or missing saved post ID stops the run. No workflow retry is added. The Open Flow Connector sends one request and surfaces the authentication failure. An unknown post result can already have sent a message, so check the channel before replaying. A successful webhook acknowledgment confirms receipt, not completion of the analysis or notification.
 
-Open Flow uses Typeform’s response token as the trigger deduplication identity; the native n8n trigger does not add the same key. Neither format provides an exactly-once notification guarantee.
+Open Flow uses Typeform’s response token as the trigger deduplication identity. Neither format provides an exactly-once notification guarantee.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect **Typeform API**, **AWS (IAM)** and **Mattermost API** credentials in the corresponding nodes. Set the form and channel IDs, AWS credential region and **Language Code** to the same values as Open Flow. Activate one format for this process to avoid duplicate alerts. Native n8n’s credential helper can resend a Mattermost request once after HTTP 401. The native n8n trigger does not add the same key.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

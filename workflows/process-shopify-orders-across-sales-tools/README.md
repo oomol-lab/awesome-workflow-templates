@@ -15,13 +15,20 @@ Create sales records and send an order email when a Shopify order is created.
 
 Connect Trello, Gmail and Mailchimp. Set the Trello list and Mailchimp audience. Configure the Harvest account ID, client ID and User-Agent contact, and bind Secret Variables `HARVEST_TOKEN` and `ZOHO_AUTHORIZATION` (the full Zoho authorization header). Set the Zoho API URL for your account's region. Enter your own 15% coupon code and make sure the code is valid in Shopify. Enable persistent State and prevent overlapping runs.
 
-For Open Flow deploy its webhook and import the n8n workflow. Connect the Shopify Trigger, set **Choose delivery mode** to `relay`, and set the deployed webhook URL in **Forward order to Open Flow**. Restrict access to that URL; it does not authenticate the relay. For direct n8n mode, select `direct`, configure the source service credentials and IDs, and create an n8n Data Table with text column `order_id` for the checkpoint nodes. Activate one format.
+Connect the Shopify Trigger, set **Choose delivery mode** to `relay`, and set the deployed webhook URL in **Forward order to Open Flow**. Restrict access to that URL; it does not authenticate the relay.
 
 ## Behavior
 
 For each new Shopify order, create a draft Harvest invoice with the order number as purchase order, create a Trello card and attach the order status link, upsert the customer in Zoho CRM, and send an order email. Orders over 50 in the order's currency receive the coupon message and the Mailchimp `high-order` tag. Other orders receive the thank-you message. The source invoice contains no line items; add them before issuing the draft. The Mailchimp customer must already be in the configured audience.
 
-Open Flow stores order data and checkpoints in State. If a write has an unknown result, subsequent orders are queued and no writes are replayed. Inspect the pending order in each service, complete or undo partial work, then enter its Shopify GraphQL order ID in **Queue and prepare order** to acknowledge it; another order event starts the queue. In n8n a Data Table checkpoint blocks repeat processing of an order; inspect and resolve partial work before removing it. Previous writes remain if a later step fails.
+Open Flow stores order data and checkpoints in State. If a write has an unknown result, subsequent orders are queued and no writes are replayed. Inspect the pending order in each service, complete or undo partial work, then enter its Shopify GraphQL order ID in **Queue and prepare order** to acknowledge it; another order event starts the queue. Previous writes remain if a later step fails.
+
+<details>
+<summary>In n8n</summary>
+
+For Open Flow deploy its webhook and import the n8n workflow. For direct n8n mode, select `direct`, configure the source service credentials and IDs, and create an n8n Data Table with text column `order_id` for the checkpoint nodes. In n8n a Data Table checkpoint blocks repeat processing of an order; inspect and resolve partial work before removing it.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

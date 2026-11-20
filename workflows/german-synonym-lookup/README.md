@@ -13,13 +13,20 @@ Look up German synonym groups in [OpenThesaurus](https://www.openthesaurus.de/).
 
 ## Setup
 
-In Open Flow, edit **Query q** in **Look up German synonyms**. Keep the JSON format and API URL. Set the **User-Agent** header to include your project’s homepage or contact email; the default is the Open Flow homepage. In n8n, set the word in **OpenThesaurus**. Its bundled client supplies n8n’s homepage as its User-Agent. Run manually.
+In Open Flow, edit **Query q** in **Look up German synonyms**. Keep the JSON format and API URL. Set the **User-Agent** header to include your project’s homepage or contact email; the default is the Open Flow homepage. Run manually.
 
-Each run makes one search request and keeps the synonym groups in their returned order, including term labels and categories. It does not enable similar-spelling or substring options. Open Flow returns the group array and its count; n8n returns one item per group. No match produces an empty array in Open Flow and no result items in n8n.
+Each run makes one search request and keeps the synonym groups in their returned order, including term labels and categories. It does not enable similar-spelling or substring options. Open Flow returns the group array and its count.
 
 Keep a visible [OpenThesaurus](https://www.openthesaurus.de/) link wherever you publish its results. Follow the service’s [API usage conditions](https://www.openthesaurus.de/about/api), including its contact header, rate limit and requirement to contact the maintainer before permanent use.
 
 A service error or malformed response stops the run. There is no cache, history or automatic retry.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, set the word in **OpenThesaurus**. Its bundled client supplies n8n’s homepage as its User-Agent. N8n returns one item per group. No match produces an empty array in Open Flow and no result items in n8n.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

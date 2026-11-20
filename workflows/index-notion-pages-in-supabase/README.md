@@ -13,11 +13,18 @@ Embed new Notion pages and store their text chunks in Supabase.
 
 ## Setup and use
 
-Connect Notion and OpenAI and configure the database trigger. Create a Supabase documents table with an auto-generated id, content text, metadata jsonb and embedding vector(1536), enable pgvector, and authorize inserts. In Open Flow configure the project URL, bind SUPABASE_KEY and SUPABASE_AUTHORIZATION (the latter is the same key prefixed by Bearer followed by a space), and use persistent State. In n8n set the database ID, Supabase credentials and table, and select a Data Table with item_key and status text columns.
+Connect Notion and OpenAI and configure the database trigger. Create a Supabase documents table with an auto-generated id, content text, metadata jsonb and embedding vector(1536), enable pgvector, and authorize inserts. In Open Flow configure the project URL, bind SUPABASE_KEY and SUPABASE_AUTHORIZATION (the latter is the same key prefixed by Bearer followed by a space), and use persistent State.
 
 ## Behavior
 
-The workflow processes newly added pages and reads direct blocks with pagination. Image and video blocks are excluded; child-page titles are included but nested blocks are not fetched. Open Flow splits text into overlapping chunks of up to 920 Unicode characters with 120 characters overlap; n8n uses the source token splitter (256 tokens, 30 overlap). Both use text-embedding-3-small and store page ID, title and creation time with each chunk. Avoid overlapping runs. Inspect Supabase before clearing a pending checkpoint after an uncertain insert. Reset completed checkpoints only when deliberate reindexing is needed.
+The workflow processes newly added pages and reads direct blocks with pagination. Image and video blocks are excluded; child-page titles are included but nested blocks are not fetched. Open Flow splits text into overlapping chunks of up to 920 Unicode characters with 120 characters overlap. Both use text-embedding-3-small and store page ID, title and creation time with each chunk. Avoid overlapping runs. Inspect Supabase before clearing a pending checkpoint after an uncertain insert. Reset completed checkpoints only when deliberate reindexing is needed.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n set the database ID, Supabase credentials and table, and select a Data Table with item_key and status text columns. N8n uses the source token splitter (256 tokens, 30 overlap).
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

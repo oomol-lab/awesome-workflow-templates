@@ -13,11 +13,18 @@ Create a flat EUR checkout discount in Paddle Billing.
 
 ## Setup
 
-Connect Paddle Billing with an API key that has discount.write and product.read permissions. In Open Flow, set a unique code in **Prepare the discount** using letters and numbers only. In n8n, configure a Header Auth credential named Authorization with the value Bearer followed by your Paddle Billing API key, then set the code in **Prepare the discount**. Run one format.
+Connect Paddle Billing with an API key that has discount.write and product.read permissions. In Open Flow, set a unique code in **Prepare the discount** using letters and numbers only.
 
 ## Behavior
 
 Each manual run creates a nonrecurring EUR 2 checkout discount, usable across products unless changed in Paddle. The result is returned by Paddle. A failed or uncertain creation may already have created a discount; inspect Paddle before retrying.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, configure a Header Auth credential named Authorization with the value Bearer followed by your Paddle Billing API key, then set the code in **Prepare the discount**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

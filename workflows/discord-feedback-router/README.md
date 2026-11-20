@@ -13,17 +13,15 @@ Route one submitted feedback message to a department in Discord. The model write
 
 ## Setup and use
 
-Select a configured `gpt-4o-mini-2024-07-18` model in **Classify service feedback**. In n8n, select your OpenAI credential on **Analyze User Request**. Both formats use temperature `0.5` and a 500-token completion budget. The default snapshot remains available now and has an [announced shutdown on January 14, 2027](https://developers.openai.com/api/docs/deprecations/). Choose a compatible available model in both formats before that date and check classification quality again.
+Select a configured `gpt-4o-mini-2024-07-18` model in **Classify service feedback**. The workflow uses temperature `0.5` and a 500-token completion budget. The default snapshot remains available now and has an [announced shutdown on January 14, 2027](https://developers.openai.com/api/docs/deprecations/). Choose a compatible available model before that date and check classification quality again.
 
-Connect a Discord bot that can send messages in the chosen customer-success, IT, and support channels. Set the three channel IDs on their message nodes. In n8n, select a Discord Bot credential plus server and channel on each corresponding Discord node. This uses bot accounts in both formats; incoming-webhook URLs from the source are replaced by normal account and channel configuration.
+Connect a Discord bot that can send messages in the chosen customer-success, IT, and support channels. Set the three channel IDs on their message nodes. This uses bot accounts ; incoming-webhook URLs from the source are replaced by normal account and channel configuration.
 
 For a manual Open Flow run, supply:
 
 ```json
 { "feedback": "Our production integration has stopped working and customers cannot sign in." }
 ```
-
-For n8n manual testing, edit **Example Feedback** and use Execute Workflow. To receive submissions, publish and enable the workflow and POST the same JSON to its webhook. The webhook acknowledges receipt immediately with HTTP 200; execution results show the later routing outcome.
 
 ## Behavior
 
@@ -35,6 +33,13 @@ For n8n manual testing, edit **Example Feedback** and use Execute Workflow. To r
 The result contains the normalized category, generated instruction, original feedback and `status`. A recognized category sends exactly one message. Invalid JSON, missing required category/instruction, an instruction longer than Discord’s 2000-character limit, or a failed model/message step stops the execution. No workflow-level retries or duplicate-submission checks are configured.
 
 Submitted feedback is sent to the selected model service. Only its generated department instruction is sent to Discord. The category and urgency assessment are model judgments; check the instructions with examples appropriate for your support process.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, select your OpenAI credential on **Analyze User Request**. In n8n, select a Discord Bot credential plus server and channel on each corresponding Discord node. For n8n manual testing, edit **Example Feedback** and use Execute Workflow. To receive submissions, publish and enable the workflow and POST the same JSON to its webhook. The webhook acknowledges receipt immediately with HTTP 200; execution results show the later routing outcome.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

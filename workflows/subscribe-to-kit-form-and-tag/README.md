@@ -13,7 +13,7 @@ Add a subscriber to a Kit form, create a tag and apply it to the subscriber.
 
 ## Setup
 
-Use a Kit form that accepts subscribers and a V3 API secret. In Open Flow, create a secret Variable containing the V3 secret and bind **Auth Token** on **Subscribe to the form**, **Create the tag** and **Apply the tag**. Run with the subscriber email, numeric form ID and one tag name. In n8n, connect a ConvertKit API credential on all three ConvertKit nodes and edit **Set subscription details**.
+Use a Kit form that accepts subscribers and a V3 API secret. In Open Flow, create a secret Variable containing the V3 secret and bind **Auth Token** on **Subscribe to the form**, **Create the tag** and **Apply the tag**. Run with the subscriber email, numeric form ID and one tag name.
 
 Only subscribe people who have agreed to receive your messages. Kit's form settings control any confirmation email and subscription status.
 
@@ -21,7 +21,14 @@ Only subscribe people who have agreed to receive your messages. Kit's form setti
 
 Each run submits the email to the form, creates the named tag and applies the returned tag to the same subscriber. It does not wait for a confirmation email to be accepted. Existing form settings and Kit automations can send messages or take other actions. This uses Kit's deprecated V3 API, which Kit says remains available but is no longer actively developed; review your integration if Kit retires it. V3 credentials are distinct from V4 credentials.
 
-A failure stops later steps. Earlier writes can already have succeeded, and an uncertain response may mean a write succeeded. Inspect the subscriber, form and tags before retrying. The V3 secret is sent in the request URL, as in the original n8n credential; URLs may appear in service or proxy logs.
+A failure stops later steps. Earlier writes can already have succeeded, and an uncertain response may mean a write succeeded. Inspect the subscriber, form and tags before retrying.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect a ConvertKit API credential on all three ConvertKit nodes and edit **Set subscription details**. The V3 secret is sent in the request URL, as in the original n8n credential; URLs may appear in service or proxy logs.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

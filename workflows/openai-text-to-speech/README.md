@@ -24,11 +24,16 @@ Connect OpenAI in **Generate MP3 speech**. Use Run and supply:
 
 The text must be nonempty and contain at most 4,096 characters. `voice` defaults to `alloy`; supported choices are `alloy`, `ash`, `coral`, `echo`, `fable`, `onyx`, `nova`, `sage`, and `shimmer`. Text is sent to OpenAI and generation uses your account’s API allowance.
 
-For n8n, edit **Set input text and TTS voice**, select an OpenAI credential in **Send HTTP Request to OpenAI's TTS Endpoint**, and use Execute Workflow. The request returns an MP3 in binary field `data`, ready for download or a cloud upload node.
-
 Each run has one synthesis step, with no workflow-level retries configured. The provider manages any internal request retries. A failed request or invalid audio response stops without a successful file result. Open Flow stores the resulting audio as a run artifact. If you share the recording with listeners, disclose that the voice is AI-generated.
 
 OpenAI has [announced that `tts-1` will shut down on January 6, 2027](https://developers.openai.com/api/docs/guides/text-to-speech). This template retains the source model while that endpoint remains available. Plan a migration before that date; the replacement Realtime API requires a different workflow.
+
+<details>
+<summary>In n8n</summary>
+
+For n8n, edit **Set input text and TTS voice**, select an OpenAI credential in **Send HTTP Request to OpenAI's TTS Endpoint**, and use Execute Workflow. The request returns an MP3 in binary field `data`, ready for download or a cloud upload node.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

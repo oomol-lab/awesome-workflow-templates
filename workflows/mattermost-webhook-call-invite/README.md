@@ -15,11 +15,16 @@ Post a Whereby room invite to a Mattermost channel from a webhook request.
 
 Connect Mattermost with permission to post in the intended channel. Set **Select the configured room** to the exact `user_name` expected in webhook requests and the slug of an existing Whereby room. Deploy the public HTTPS webhook and send JSON containing `channel_id` and `user_name`. Protect the endpoint URL; anyone who can call it can request a post to channels available to the connected Mattermost account.
 
-In n8n, set the same user-name-to-room mapping in **Set**, configure the Mattermost credential and activate the webhook.
-
 ## Behavior
 
-A matching request posts “Join me in a video call:” to the supplied Mattermost channel and attaches a link to the configured Whereby room. Both formats stop before posting when the username is missing or does not match the configured mapping. The source only defines one user-to-room mapping. This workflow does not create a Whereby room or verify that the room is active. An uncertain post may already have arrived, so check Mattermost before retrying.
+A matching request posts “Join me in a video call:” to the supplied Mattermost channel and attaches a link to the configured Whereby room. The workflow stop before posting when the username is missing or does not match the configured mapping. The source only defines one user-to-room mapping. This workflow does not create a Whereby room or verify that the room is active. An uncertain post may already have arrived, so check Mattermost before retrying.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, set the same user-name-to-room mapping in **Set**, configure the Mattermost credential and activate the webhook.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

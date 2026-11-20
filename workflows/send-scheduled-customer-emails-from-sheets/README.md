@@ -13,7 +13,7 @@ Send today’s queued customer emails and mark each successful send in Google Sh
 
 ## Setup
 
-Connect Google Sheets and Gmail to the same accounts in the chosen format. Set the spreadsheet ID and worksheet name in **Choose the customer messages sheet**. In n8n, select the same Google Sheets OAuth credential on the read, refresh and update nodes, and connect Gmail. Enable one format and prevent overlapping runs or concurrent edits to the worksheet while this workflow runs.
+Connect Google Sheets and Gmail to the same accounts in the chosen format. Set the spreadsheet ID and worksheet name in **Choose the customer messages sheet**. Enable one format and prevent overlapping runs or concurrent edits to the worksheet while this workflow runs.
 
 The first row must contain exactly one each of ID, Name, Email, Date, Status, Title and Subject. Give each message a unique nonempty ID. Format dates as text in yyyy/MM/dd. Title is the email subject and Subject is its plain-text body. Set Status to Waiting for sending to queue a message.
 
@@ -21,9 +21,16 @@ The first row must contain exactly one each of ID, Name, Email, Date, Status, Ti
 
 Every minute, the workflow selects rows dated today in UTC with status Waiting for sending and populated Name, Email, Date, Title and Subject. It sends each email, re-reads the sheet, checks that the ID still uniquely identifies the unchanged message, and writes Sent successfully to that row's Status cell only. Missing or duplicate selected IDs stop the run before sending. A changed or missing row after sending stops before the status update. Empty and nonmatching rows send nothing.
 
-The original n8n workflow used its instance timezone; both formats here use UTC, so check the intended date boundary. Open Flow starts on the minute boundary; n8n chooses a fixed second when its schedule is registered. This workflow only sends rows dated today, so it does not catch up automatically on missed days.
+Open Flow starts on the minute boundary. This workflow only sends rows dated today, so it does not catch up automatically on missed days.
 
 A send or status update can succeed even if its response is lost. A retry can send the same email again, especially if email was sent but the status could not be updated. Inspect Gmail and the sheet before retrying. Keep the worksheet stable while a run is active; the row can change between the final check and write.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, select the same Google Sheets OAuth credential on the read, refresh and update nodes, and connect Gmail. The original n8n workflow used its instance timezone; both formats here use UTC, so check the intended date boundary. N8n chooses a fixed second when its schedule is registered.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

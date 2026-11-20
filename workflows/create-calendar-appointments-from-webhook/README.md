@@ -17,7 +17,12 @@ Connect a model and Google Calendar, set the Calendar ID, and enable persistent 
 
 If the Calendar result is unknown, inspect the calendar. Replay the same request with its exact pending key in **Reserve appointment**, setting resolution to confirmed only if the event exists or absent only if it does not. Clear both fields afterwards. Prevent overlapping runs for the same request ID.
 
+<details>
+<summary>In n8n</summary>
+
 The supplied n8n workflow has a disabled trigger; configure its credentials, Data Table with item_key and status text columns, and webhook authentication before enabling it. Inspect a pending row before retrying: mark it done only after confirming the event exists, or delete it only after confirming it does not. Run one format only.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

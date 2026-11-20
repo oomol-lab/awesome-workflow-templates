@@ -15,11 +15,16 @@ Create a manual running activity, update its description, and read it from Strav
 
 Connect Strava with activity read and write permissions. Enter the actual start date and time in ISO format with Z or a UTC offset in **Configure start time**. Edit the run name, duration, distance and description as needed.
 
-In n8n, connect Strava to the three nodes and enter the actual start time in **Strava**. Run one format per intended activity.
-
 ## Behavior
 
 Run manually to create a one-hour, 1,000-metre run, update its description, and read the same activity by its returned ID. The final activity is returned. Check Strava before retrying an uncertain request: the run may already exist and earlier writes are not rolled back.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect Strava to the three nodes and enter the actual start time in **Strava**. Run one format per intended activity.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

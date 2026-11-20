@@ -13,13 +13,20 @@ Search Google Maps for businesses and append their details to Google Sheets.
 
 ## Setup
 
-Connect DumplingAI in **Search Maps** with Provider API Request permission and Google Sheets in **Append the place**. Set the search query in **Set the search query**, spreadsheet ID and A1 range in **Append the place**. The default range is Sheet1 columns A:I. Prepare columns in this order: Name, Address, rating, priceLevel, type, Booking Link, Website, Phone number, Position. Adjust the range to your sheet while keeping that order. In n8n, set the query in **Set the search query**, connect a DumplingAI Header Auth credential with Authorization set to Bearer followed by your API key, and connect Google Sheets and select the spreadsheet and sheet. Use the listed column names as headers in n8n. Run one format.
+Connect DumplingAI in **Search Maps** with Provider API Request permission and Google Sheets in **Append the place**. Set the search query in **Set the search query**, spreadsheet ID and A1 range in **Append the place**. The default range is Sheet1 columns A:I. Prepare columns in this order: Name, Address, rating, priceLevel, type, Booking Link, Website, Phone number, Position. Adjust the range to your sheet while keeping that order.
 
 ## Behavior
 
 One run searches one page in English and appends each returned place as a new row. Optional missing details are blank. No places means no rows. The workflow does not deduplicate, so repeated runs can append the same business again. Values are written as RAW so names and other text beginning with an equals sign remain text. The original first booking link is used when available.
 
-A search failure stops before writes. Open Flow appends one place at a time; n8n submits the prepared rows as one append. An Open Flow append failure stops the run, but earlier rows may already exist. An uncertain append in either format may have succeeded. Inspect the sheet before retrying.
+A search failure stops before writes. Open Flow appends one place at a time. An Open Flow append failure stops the run, but earlier rows may already exist. An uncertain append may have succeeded. Inspect the sheet before retrying.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, set the query in **Set the search query**, connect a DumplingAI Header Auth credential with Authorization set to Bearer followed by your API key, and connect Google Sheets and select the spreadsheet and sheet. Use the listed column names as headers in n8n. N8n submits the prepared rows as one append.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

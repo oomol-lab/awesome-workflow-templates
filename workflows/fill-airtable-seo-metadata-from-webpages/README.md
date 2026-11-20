@@ -13,13 +13,20 @@ Read page titles and meta descriptions from public webpages and update the match
 
 ## Setup
 
-Create an Airtable table with fields **url**, **title tag** and **meta desc**. Connect Airtable in **Find records missing metadata** and **Update matching record**, and set the same base and table IDs in both. Connect ScrapingBee in **Extract page metadata**. In n8n connect Airtable in both nodes and select the same base and table. Run one format with URLs you are authorized to inspect.
+Create an Airtable table with fields **url**, **title tag** and **meta desc**. Connect Airtable in **Find records missing metadata** and **Update matching record**, and set the same base and table IDs in both. Connect ScrapingBee in **Extract page metadata**. Run one format with URLs you are authorized to inspect.
 
 ## Behavior
 
 Each manual run selects up to 10 records whose URL is nonempty and whose title tag and meta desc are both blank. For each, it extracts the first title and description and updates that record. A failed request stops the run; already updated records remain. Open Flow also stops before updating when page metadata is missing. An uncertain write may have succeeded, so inspect the record before retrying. No automatic write retry is added.
 
-Open Flow uses ScrapingBee to fetch public pages without JavaScript rendering; the service receives each URL and its result can differ from a direct n8n HTTP request. n8n reads pages directly and uses its HTML node. Authentication, page access, redirects and execution limits may affect results.
+Open Flow uses ScrapingBee to fetch public pages without JavaScript rendering. Authentication, page access, redirects and execution limits may affect results.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n connect Airtable in both nodes and select the same base and table. The service receives each URL and its result can differ from a direct n8n HTTP request. n8n reads pages directly and uses its HTML node.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

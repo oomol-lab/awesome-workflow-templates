@@ -13,11 +13,18 @@ Queue a saved Komos browser operations task and review its run.
 
 ## Setup and use
 
-Configure a saved Komos task and API key. In Open Flow bind KOMOS_API_KEY as a secret and enable persistent State. In n8n configure a Bearer Auth credential and a Data Table with item_key and status text columns. Use one mode.
+Configure a saved Komos task and API key. In Open Flow bind KOMOS_API_KEY as a secret and enable persistent State.
 
 Enter the task ID, case details, applicant name, portal URL, workflow type, industry and a unique request ID. The workflow queues one asynchronous run with review_required set to true and returns the provider response. Review the run history, browser actions and approval checkpoints in Komos; this workflow does not make an employment decision. The saved task controls the actual browser behavior.
 
-Keep the same request ID when investigating an uncertain submission. Komos documents idempotency for clientRequestId. Check the provider run history and pending State or Data Table row before resolving a submission; use a new ID for a new intended run. Avoid overlapping submissions.
+Keep the same request ID when investigating an uncertain submission. Komos documents idempotency for clientRequestId. Avoid overlapping submissions.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure a Bearer Auth credential and a Data Table with item_key and status text columns. Check the provider run history and pending State or Data Table row before resolving a submission; use a new ID for a new intended run.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

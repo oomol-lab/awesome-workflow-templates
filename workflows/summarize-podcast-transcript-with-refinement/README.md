@@ -13,11 +13,18 @@ Summarize a YouTube podcast transcript and generate specific example questions a
 
 ## Setup and use
 
-Connect SearchApi in **Fetch the transcript** and set the video ID. Select an available model in **Summarize or refine**. In n8n, set the video ID, configure Query Auth with name `api_key` for **Fetch the transcript**, and connect an OpenAI model. Run manually. SearchApi defaults to English, and available transcripts depend on the video and service. Query credentials can appear in service or network logs.
+Connect SearchApi in **Fetch the transcript** and set the video ID. Select an available model in **Summarize or refine**. Run manually. SearchApi defaults to English, and available transcripts depend on the video and service. Query credentials can appear in service or network logs.
 
 ## Behavior
 
 The workflow joins transcript segments in order and splits them into GPT-2 tokens, with 10,000-token chunks and a 250-token overlap. The model summarizes the first chunk and successively refines its summary and specific example questions and answers using each remaining chunk. It makes one model call per chunk. Missing transcripts, API errors, or an empty model response stop the run. Input and intermediate data remain subject to execution and model context limits. Model output can be inaccurate; review it before use.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, set the video ID, configure Query Auth with name `api_key` for **Fetch the transcript**, and connect an OpenAI model.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

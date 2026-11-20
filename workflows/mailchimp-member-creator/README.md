@@ -13,13 +13,20 @@ Add a new Mailchimp audience member with `subscribed` status and save their firs
 
 ## Setup
 
-Select your Mailchimp account in **Add Mailchimp audience member** and grant **Provider API** access. This permission is separate from individual Action permissions. Run with **List ID** (the audience ID), **Email** and **First Name**. The audience must have a `FNAME` merge field. If it requires other merge fields, add them to the request before running. In n8n, choose **OAuth2** credentials and set the audience, email and `FNAME` value in **Mailchimp**.
+Select your Mailchimp account in **Add Mailchimp audience member** and grant **Provider API** access. This permission is separate from individual Action permissions. Run with **List ID** (the audience ID), **Email** and **First Name**. The audience must have a `FNAME` merge field. If it requires other merge fields, add them to the request before running.
 
 Use contacts who have agreed to receive your marketing. The template sends `subscribed` directly; it does not run a confirmation signup flow. Account automations may respond to the new subscription.
 
-Each run sends one add-member request and returns the complete member response. An email already in the audience produces an error instead of updating the existing member. The workflow does not send a campaign, change another member or add tags. n8n also reads Mailchimp’s OAuth metadata to resolve the account’s API server before adding the member.
+Each run sends one add-member request and returns the complete member response. An email already in the audience produces an error instead of updating the existing member. The workflow does not send a campaign, change another member or add tags.
 
 A failed request or unexpected member response stops the run. No automatic retry or rollback is configured. Check the audience before repeating a request with an uncertain result.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, choose **OAuth2** credentials and set the audience, email and `FNAME` value in **Mailchimp**. n8n also reads Mailchimp’s OAuth metadata to resolve the account’s API server before adding the member.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

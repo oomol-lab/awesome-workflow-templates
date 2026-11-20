@@ -13,13 +13,20 @@ Create illustrated Trello cards for talk proposals scoring above 15.
 
 ## Setup
 
-Provide an Airtable table with numeric `Total Score` and these exact text fields: `What's the title of your talk?`, `Please share the abstract of your talk.`, `Please share a URL of your profile picture.`, `Your twitter handle`, `Great, can we get your full name?`, `Please share a bit of information about you.`, and `And what's your email address?`. The profile picture must be a public URL. Provide a Bannerbear template with layers `talk title`, `abstract`, `profile image`, `username` and `full name`. Connect Airtable and Bannerbear in the corresponding Open Flow nodes and allow their declared Actions. Set the base and table in **Read selected proposals**, template UID in **Render proposal image**, and list ID in **Prepare next card**. Connect Trello to **Create Trello card** and allow Provider API access. In n8n, configure the Airtable base and table, template UID in **Bannerbear**, and Trello list. Select an Airtable personal access token credential, Bannerbear project API key credential and Trello credentials.
+Provide an Airtable table with numeric `Total Score` and these exact text fields: `What's the title of your talk?`, `Please share the abstract of your talk.`, `Please share a URL of your profile picture.`, `Your twitter handle`, `Great, can we get your full name?`, `Please share a bit of information about you.`, and `And what's your email address?`. The profile picture must be a public URL. Provide a Bannerbear template with layers `talk title`, `abstract`, `profile image`, `username` and `full name`. Connect Airtable and Bannerbear in the corresponding Open Flow nodes and allow their declared Actions. Set the base and table in **Read selected proposals**, template UID in **Render proposal image**, and list ID in **Prepare next card**. Connect Trello to **Create Trello card** and allow Provider API access. Select an Airtable personal access token credential, Bannerbear project API key credential and Trello credentials.
 
 ## Behavior
 
 A manual run retrieves all Airtable records matching `{Total Score} > 15`, including subsequent pages. It generates an image for each proposal, then creates a Trello card for each image in the same order. The card contains the title, abstract, name, biography, email and Twitter handle, and the generated image URL. This sends proposal details to Bannerbear and Trello. No matches create no images or cards. Repeating a run creates new images and cards for the same matching proposals.
 
-Both formats require the seven proposal fields as text and a completed Bannerbear image. Empty values are omitted from the corresponding Bannerbear layer modification, retaining the template default. Open Flow uses Bannerbear's synchronous endpoint, which waits up to 10 seconds. n8n uses asynchronous creation followed by up to three status checks, two seconds apart. A timeout or failed write can leave an image or card behind. Earlier successful writes are not rolled back and no automatic retry is configured. Inspect the services before repeating a run with an uncertain outcome.
+The workflow requires the seven proposal fields as text and a completed Bannerbear image. Empty values are omitted from the corresponding Bannerbear layer modification, retaining the template default. Open Flow uses Bannerbear's synchronous endpoint, which waits up to 10 seconds. A timeout or failed write can leave an image or card behind. Earlier successful writes are not rolled back and no automatic retry is configured. Inspect the services before repeating a run with an uncertain outcome.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, configure the Airtable base and table, template UID in **Bannerbear**, and Trello list. n8n uses asynchronous creation followed by up to three status checks, two seconds apart.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

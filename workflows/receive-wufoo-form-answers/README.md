@@ -13,11 +13,18 @@ Receive answers submitted to a Wufoo form.
 
 ## Setup and use
 
-Import the n8n workflow, connect Wufoo and choose the form in **Wufoo Trigger**. Activate it to register the webhook; its URL must be publicly reachable by Wufoo. For Open Flow enter its webhook URL in **Forward to Open Flow** and enable that node; leave it disabled for n8n alone. Restrict access to the webhook endpoints.
+Connect Wufoo and choose the form in **Wufoo Trigger**. Activate it to register the webhook; its URL must be publicly reachable by Wufoo. For Open Flow enter its webhook URL in **Forward to Open Flow** and enable that node. Restrict access to the webhook endpoints.
 
 ## Behavior
 
-The trigger checks the handshake key and returns answers labeled by form field, as in the source defaults. The optional relay forwards the answers to Open Flow. The Open Flow relay endpoint does not authenticate the sender; restrict access and inspect n8n execution history for relay failures. Answers may appear in execution history. Event details may appear in execution history.
+The trigger checks the handshake key and returns answers labeled by form field, as in the source defaults. The optional relay forwards the answers to Open Flow. The Open Flow relay endpoint does not authenticate the sender. Answers may appear in execution history. Event details may appear in execution history.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow, connect Wufoo and choose the form in **Wufoo Trigger**. Leave it disabled for n8n alone. Restrict access and inspect n8n execution history for relay failures.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

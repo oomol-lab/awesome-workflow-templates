@@ -21,8 +21,6 @@ Use Run and supply:
 {"query":"password reset"}
 ```
 
-For n8n, replace the tenant in **Query Confluence** while keeping `/wiki/rest/api/search`. Select an HTTP Basic credential using your Atlassian email as the username and an API token as the password. Edit **Search Query**, then run **Run Search**. Another workflow can call **Execute Workflow Trigger** with a `query` string.
-
 ## Behavior
 
 The workflow issues one [Confluence CQL search](https://developer.atlassian.com/cloud/confluence/rest/v1/api-group-search/#api-wiki-rest-api-search-get) with `text ~ "your query"` and a page limit of 25. It returns the first hit and does not fetch later pages. Confluence controls search ranking and visibility. [Text search syntax](https://developer.atlassian.com/cloud/confluence/performing-text-searches-using-cql/) still applies inside the search text; quotes and backslashes are escaped for the surrounding CQL string. Blank queries and control characters are rejected before searching.
@@ -30,6 +28,13 @@ The workflow issues one [Confluence CQL search](https://developer.atlassian.com/
 The result has `found` and `response`. A match returns a text block with `Title`, `Link`, and `Content`. The excerpt is kept as supplied, including any highlight markup. As in the source, the response ends with a consumer hint about sharing the article link for password-reset questions. Its action is document search and link retrieval.
 
 No matches return `found: false` with a short message. A failed search or malformed first result stops the run. The workflow uses a 30-second request limit and has no workflow-level retry or persistent state. Repeating a run performs another search.
+
+<details>
+<summary>In n8n</summary>
+
+For n8n, replace the tenant in **Query Confluence** while keeping `/wiki/rest/api/search`. Select an HTTP Basic credential using your Atlassian email as the username and an API token as the password. Edit **Search Query**, then run **Run Search**. Another workflow can call **Execute Workflow Trigger** with a `query` string.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

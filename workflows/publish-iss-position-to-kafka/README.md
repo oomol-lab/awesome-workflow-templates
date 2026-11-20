@@ -13,11 +13,18 @@ Publish the current International Space Station position to a Kafka topic every 
 
 ## Setup and use
 
-Import the supplied n8n workflow and connect both Kafka nodes with access to the iss-position topic. To run in n8n, enable **Cron** and disable **Kafka relay webhook**. To run in Open Flow, disable **Cron**, enable **Kafka relay webhook**, activate the n8n workflow and put the production webhook URL in **Send to n8n Kafka relay**. Use one mode to avoid duplicate messages. The relay does not authenticate callers; restrict access to its webhook.
+Connect both Kafka nodes with access to the iss-position topic. Use one mode to avoid duplicate messages. The relay does not authenticate callers; restrict access to its webhook.
 
 ## Behavior
 
-Every minute, read the current ISS position and publish JSON with Name, Latitude, Longitude and Timestamp as strings. In Open Flow mode, n8n responds after the Kafka producer finishes sending; a producer error returns an HTTP failure. The source producer uses no broker acknowledgements by default, so a successful response does not establish broker delivery. If an acknowledgement or Kafka send is uncertain, the topic may already contain the message.
+Every minute, read the current ISS position and publish JSON with Name, Latitude, Longitude and Timestamp as strings. The source producer uses no broker acknowledgements by default, so a successful response does not establish broker delivery. If an acknowledgement or Kafka send is uncertain, the topic may already contain the message.
+
+<details>
+<summary>In n8n</summary>
+
+Import the supplied n8n workflow and connect both Kafka nodes with access to the iss-position topic. To run in n8n, enable **Cron** and disable **Kafka relay webhook**. To run in Open Flow, disable **Cron**, enable **Kafka relay webhook**, activate the n8n workflow and put the production webhook URL in **Send to n8n Kafka relay**. In Open Flow mode, n8n responds after the Kafka producer finishes sending; a producer error returns an HTTP failure.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

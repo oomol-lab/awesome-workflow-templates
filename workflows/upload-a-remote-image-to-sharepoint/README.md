@@ -13,11 +13,18 @@ Download a remote image and upload it to the root SharePoint site drive.
 
 ## Setup and use
 
-Obtain a Microsoft Graph access token with write access to the root site drive and store it in the secret Variable GRAPH_ACCESS_TOKEN. Configure the image URL, folder and filename in **Download and upload image**. If you change image hosts, update that node’s HTTP capability and host check. In n8n, set the image URL and destination and connect an HTTP Header Auth credential named Authorization with the value Bearer followed by a space and the Graph token. Run one format manually.
+Obtain a Microsoft Graph access token with write access to the root site drive and store it in the secret Variable GRAPH_ACCESS_TOKEN. Configure the image URL, folder and filename in **Download and upload image**. If you change image hosts, update that node’s HTTP capability and host check. Run one format manually.
 
 ## Behavior
 
 The workflow downloads the image and uploads its bytes to the specified path on the root site drive. The target folder must exist. An existing file at that path can be replaced. If the upload result is unknown, inspect the destination before retrying. The Open Flow Code HTTP response limit is 1 MiB. The example image is provided by Picsum and depends on its availability.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, set the image URL and destination and connect an HTTP Header Auth credential named Authorization with the value Bearer followed by a space and the Graph token.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

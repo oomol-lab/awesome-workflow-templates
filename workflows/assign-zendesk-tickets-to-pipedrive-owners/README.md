@@ -13,13 +13,20 @@ Assign new Zendesk tickets to the requester’s Pipedrive owner when that owner 
 
 ## Setup
 
-Connect Zendesk and Pipedrive with ticket, user and person read access and Zendesk ticket update access. Enable persistent State and prevent overlapping runs. In n8n configure the Zendesk subdomain, Pipedrive domain and initial Unix timestamp in **Configure export**. The timestamp must be at least one minute old. Use HTTP Header Auth credentials for the respective services and select a Data Table with item_key and status text columns. Activate one format.
+Connect Zendesk and Pipedrive with ticket, user and person read access and Zendesk ticket update access. Enable persistent State and prevent overlapping runs. The timestamp must be at least one minute old.
 
 ## Behavior
 
-Every five minutes, read Zendesk incremental ticket pages. For each ticket created since the initial timestamp, read its requester, find an exact Pipedrive email match, read that contact's owner and find an active Zendesk agent or admin with the owner's email. Assign the ticket to the matched agent. If the contact or agent is missing, add a private note. Missing requester or owner email, ambiguous matches and unprocessed search pages stop for review. The first Open Flow activation sets the initial time to then; Zendesk holds back the latest minute. n8n processes one export page per scheduled run. The initial timestamp remains fixed across retries. Open Flow Code input and output values must each fit 1 MiB.
+Every five minutes, read Zendesk incremental ticket pages. For each ticket created since the initial timestamp, read its requester, find an exact Pipedrive email match, read that contact's owner and find an active Zendesk agent or admin with the owner's email. Assign the ticket to the matched agent. If the contact or agent is missing, add a private note. Missing requester or owner email, ambiguous matches and unprocessed search pages stop for review. The first Open Flow activation sets the initial time to then; Zendesk holds back the latest minute. The initial timestamp remains fixed across retries. Open Flow Code input and output values must each fit 1 MiB.
 
-The cursor advances after every eligible ticket on its page has been confirmed. If an update result is unknown, inspect the ticket before retrying. In Open Flow enter the pending key and confirmed or absent in **Reserve assignment** or **Reserve internal note**, rerun, then clear those fields. In n8n mark the pending Data Table row done only if the update is confirmed, or delete it only if no update occurred. Retain State and completed rows to prevent duplicate updates and notes.
+The cursor advances after every eligible ticket on its page has been confirmed. If an update result is unknown, inspect the ticket before retrying. In Open Flow enter the pending key and confirmed or absent in **Reserve assignment** or **Reserve internal note**, rerun, then clear those fields. Retain State and completed rows to prevent duplicate updates and notes.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure the Zendesk subdomain, Pipedrive domain and initial Unix timestamp in **Configure export**. Use HTTP Header Auth credentials for the respective services and select a Data Table with item_key and status text columns. n8n processes one export page per scheduled run. In n8n mark the pending Data Table row done only if the update is confirmed, or delete it only if no update occurred.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -13,13 +13,20 @@ Add or update a SendGrid contact, then read the saved contact.
 
 ## Setup
 
-Connect SendGrid with Marketing Contacts read/write access and Provider API Request permission in each SendGrid node. Run Open Flow with an email address, first name and last name. In n8n, connect the same SendGrid API credential to all HTTP Request nodes, then edit **Set contact details**. Run one format.
+Connect SendGrid with Marketing Contacts read/write access and Provider API Request permission in each SendGrid node. Run Open Flow with an email address, first name and last name.
 
 ## Behavior
 
 Each run upserts the first name for the email, waits for that import job to complete, upserts the last name, waits again and reads the same contact. A job is checked every five seconds at most 12 times. A failed, unknown or still-pending job stops the run before the next write or read. The final contact must match both names. SendGrid lowercases the email address.
 
 The writes are asynchronous and may already have succeeded when a response is lost or a wait times out. Inspect SendGrid and the job status before retrying. The workflow does not roll back or retry writes. The email-only upsert is appropriate when email is the contact's only identifier; SendGrid requires all existing identifiers when updating a contact with additional identifiers.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect the same SendGrid API credential to all HTTP Request nodes, then edit **Set contact details**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

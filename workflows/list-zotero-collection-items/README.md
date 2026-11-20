@@ -13,11 +13,18 @@ List item keys, titles and creator summaries from a Zotero collection.
 
 ## Setup
 
-In Open Flow, connect Zotero on **Read collection items** and set your eight-character collection key there. The connected user library is used by default; set its numeric user ID there if needed. The account must be able to read the library. In n8n, set the user ID and collection key in **Collection settings**, then create a Header Auth credential with name Zotero-API-Key and your Zotero API key as its value on **Read collection items**. Run either workflow manually.
+In Open Flow, connect Zotero on **Read collection items** and set your eight-character collection key there. The connected user library is used by default; set its numeric user ID there if needed. The account must be able to read the library. Run either workflow manually.
 
 ## Behavior
 
-The workflow reads the selected user's collection in pages of up to 100 and returns each item's key, title and creator summary. Missing titles or creator summaries are returned as empty strings. An empty collection returns an empty list. The collection can include notes and attachments, as in the source API request. API errors stop the run. Both formats stop above 10,000 items; Open Flow also requires the accumulated results to fit its Code limits. A collection that changes while pages are being fetched may produce an inconsistent list; rerun if a stable snapshot is required.
+The workflow reads the selected user's collection in pages of up to 100 and returns each item's key, title and creator summary. Missing titles or creator summaries are returned as empty strings. An empty collection returns an empty list. The collection can include notes and attachments, as in the source API request. API errors stop the run. The workflow stop above 10,000 items; Open Flow also requires the accumulated results to fit its Code limits. A collection that changes while pages are being fetched may produce an inconsistent list; rerun if a stable snapshot is required.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, set the user ID and collection key in **Collection settings**, then create a Header Auth credential with name Zotero-API-Key and your Zotero API key as its value on **Read collection items**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

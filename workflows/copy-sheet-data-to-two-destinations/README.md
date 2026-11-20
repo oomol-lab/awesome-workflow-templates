@@ -13,13 +13,20 @@ Copy a Google Sheets data range to two destination spreadsheets every two minute
 
 ## Setup
 
-Connect Google Sheets with read access to the source and write access to both destinations. Set the source spreadsheet ID and range in **Read the source range**. Set the destination spreadsheet ID and corresponding range in each **Update destination** node. In n8n set the three spreadsheet IDs and the range on **Read Sheet**; both write ranges reference that source range by default. Connect Google Sheets. Enable one format.
+Connect Google Sheets with read access to the source and write access to both destinations. Set the source spreadsheet ID and range in **Read the source range**. Set the destination spreadsheet ID and corresponding range in each **Update destination** node. Connect Google Sheets.
 
 ## Behavior
 
 Every two minutes, read the configured source values without formatting and write the returned rows to both destinations as raw values. An empty source produces no writes. Values outside the returned range are not cleared, so deleting source rows does not remove old destination rows. Formula results are copied as values rather than formulas.
 
-Open Flow updates destination 2 and then destination 1; if either update fails, later steps stop. The n8n format retains the source's two branches. A failed or uncertain write may already have succeeded; inspect both destinations before retrying. The source cron specifies second zero, and both formats use two-minute boundaries.
+Open Flow updates destination 2 and then destination 1; if either update fails, later steps stop. A failed or uncertain write may already have succeeded; inspect both destinations before retrying. The source cron specifies second zero, and both formats use two-minute boundaries.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n set the three spreadsheet IDs and the range on **Read Sheet**; both write ranges reference that source range by default. The n8n format retains the source's two branches.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

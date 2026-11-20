@@ -13,9 +13,16 @@ Generate a styled FLUX image and save it to an S3 bucket.
 
 ## Setup and use
 
-Configure fal authentication, an S3 bucket and connection, and persistent State. Use an S3 bucket where intended recipients can read the generated object. In n8n configure Header Auth with Authorization: Key YOUR_FAL_KEY, an S3 connection, a Data Table with item_key, status and url text columns, and YOUR_PUBLIC_BUCKET_HOST in the response page. Inspect fal and S3 before clearing pending checkpoints; Use a unique Request ID for each image and reuse that same ID when retrying the same request; both the checkpoints and S3 object key use it. In Open Flow bind FAL_AUTH_HEADER to the complete Authorization value Key YOUR_FAL_KEY. Restrict the webhook with an authenticated gateway or private network.
+Configure fal authentication, an S3 bucket and connection, and persistent State. Use an S3 bucket where intended recipients can read the generated object. Inspect fal and S3 before clearing pending checkpoints; Use a unique Request ID for each image and reuse that same ID when retrying the same request; both the checkpoints and S3 object key use it. In Open Flow bind FAL_AUTH_HEADER to the complete Authorization value Key YOUR_FAL_KEY. Restrict the webhook with an authenticated gateway or private network.
 
-The n8n form asks for a prompt and style. Open Flow accepts JSON fields submissionId, prompt and style, and returns an S3 URL. Use a unique stable submissionId for each image. Inspect fal and S3 before clearing a pending checkpoint after an uncertain operation. The source's previous-image gallery is omitted; it guessed previous execution IDs and could expose unrelated images.
+Open Flow accepts JSON fields submissionId, prompt and style, and returns an S3 URL. Use a unique stable submissionId for each image. Inspect fal and S3 before clearing a pending checkpoint after an uncertain operation. The source's previous-image gallery is omitted; it guessed previous execution IDs and could expose unrelated images.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure Header Auth with Authorization: Key YOUR_FAL_KEY, an S3 connection, a Data Table with item_key, status and url text columns, and YOUR_PUBLIC_BUCKET_HOST in the response page. The n8n form asks for a prompt and style.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

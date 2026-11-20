@@ -13,13 +13,20 @@ Scan four integration sheets and generate a FAQ JSON for each unfinished row.
 
 ## Setup
 
-Configure a spreadsheet containing four sheets named Single Integration Native, Single Integration Cred-only, Single Integration Non-native and Categories. Each needs a status column and a displayName column (or Category name for Categories). Supply the spreadsheet ID, four matching Drive folder IDs, and a reviewed current pricing answer. Connect Google Sheets and Drive and configure the AI model. Enable persistent State. In n8n configure the same spreadsheet, each folder and each status column letter in its Prepare node, the Data Table, and the workflow self-call. Set the same reviewed pricing answer in all four Prepare nodes.
+Configure a spreadsheet containing four sheets named Single Integration Native, Single Integration Cred-only, Single Integration Non-native and Categories. Each needs a status column and a displayName column (or Category name for Categories). Supply the spreadsheet ID, four matching Drive folder IDs, and a reviewed current pricing answer. Connect Google Sheets and Drive and configure the AI model. Enable persistent State. Set the same reviewed pricing answer in all four Prepare nodes.
 
 Import both bundled Open Flow workflows, **Scan FAQ source sheets** and **Generate one FAQ**. Publish the worker first, then refresh its interface in the scan workflow before running.
 
 ## Behavior
 
 The manual scan selects rows whose status is blank, creates a job for each and calls the bundled FAQ worker. It writes a JSON file to the corresponding folder and marks the same sheet row done. Drafts need human review. Run only one scan at a time; inspect Drive and Sheets before clearing any pending checkpoint after an uncertain write.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure the same spreadsheet, each folder and each status column letter in its Prepare node, the Data Table, and the workflow self-call.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

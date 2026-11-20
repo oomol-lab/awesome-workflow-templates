@@ -17,13 +17,20 @@ Use a US PagerDuty account served by `https://api.pagerduty.com`. In **Create Pa
 
 Run with **From**, the email address of a valid PagerDuty member on that account, and **Service ID**, an existing service that accepts incidents. The connected account and member must have permission to perform these operations.
 
-The example creates an incident titled `Firewall on Fire` and changes it to `Firewalls on Fire`. Edit both titles in **Prepare incident creation** before running. In n8n, configure the three PagerDuty accounts, email, service and titles in **PagerDuty** and **PagerDuty1**.
+The example creates an incident titled `Firewall on Fire` and changes it to `Firewalls on Fire`. Edit both titles in **Prepare incident creation** before running.
 
 Each run makes three requests in order: create, update that incident’s title, then retrieve its current record. Creation can notify on-call responders through the service’s escalation policy. Use a service where creating this incident is intended. The workflow leaves the incident open; it does not acknowledge or resolve it.
 
 If creation fails, later requests do not run. If an update or read fails, the already-created incident remains. There is no rollback, duplicate check, incident key or automatic retry. Check PagerDuty before rerunning an uncertain write. Concurrent changes can appear in the final retrieved record.
 
-Open Flow returns the complete incident object; n8n returns the final incident record. No other incident properties are intentionally changed.
+Open Flow returns the complete incident object. No other incident properties are intentionally changed.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, configure the three PagerDuty accounts, email, service and titles in **PagerDuty** and **PagerDuty1**. N8n returns the final incident record.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -13,13 +13,20 @@ Send one SMS to a phone number through ClickSend.
 
 ## Setup
 
-Connect ClickSend with its API username and API key. Run the Open Flow workflow with a recipient in E.164 format, such as `+12025550123`, and the message text. In n8n, set these values in **Set SMS data** and configure HTTP Basic Auth on **Send SMS** using the same API username and API key. Run one format at a time.
+Connect ClickSend with its API username and API key. Run the Open Flow workflow with a recipient in E.164 format, such as `+12025550123`, and the message text.
 
 ## Behavior
 
 The workflow submits one SMS and returns its ClickSend message ID after the service reports that message was queued. Queued does not mean delivered; consult ClickSend delivery receipts for the final outcome. A request-level or per-message error stops the run, including errors returned with HTTP 200.
 
 A failed or uncertain request may already have queued the message. Check ClickSend before retrying; there is no automatic retry or deduplication. The destination and message are sent to ClickSend.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, set these values in **Set SMS data** and configure HTTP Basic Auth on **Send SMS** using the same API username and API key.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

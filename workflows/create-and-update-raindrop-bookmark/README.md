@@ -13,11 +13,18 @@ Create a collection and bookmark, update the bookmark title, and retrieve the re
 
 ## Setup and use
 
-Connect Raindrop with permission to create collections and bookmarks. Configure the collection title, bookmark URL and titles in the respective nodes. In n8n connect the Raindrop OAuth credential and configure the same fields. Run one format manually.
+Connect Raindrop with permission to create collections and bookmarks. Configure the collection title, bookmark URL and titles in the respective nodes. Run one format manually.
 
 ## Behavior
 
 The workflow creates a collection, adds the bookmark to that collection, changes its title and retrieves it. Each creation or update is a separate write. If a response is lost or a step fails, inspect Raindrop before rerunning because a collection or bookmark may already exist.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n connect the Raindrop OAuth credential and configure the same fields.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

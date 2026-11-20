@@ -13,9 +13,16 @@ Extract requested fields and a structured summary from a webpage.
 
 ## Setup and use
 
-Import n8n, configure the model and a Header Auth credential on **Fetch relay**, and set its URL and matching N8N_FETCH_RELAY_TOKEN in Open Flow. Deploy the Open Flow webhook. For direct n8n mode configure its model credential. Restrict both entry points and the relay to trusted callers; they can request external URLs. Use one mode.
+Set its URL and matching FETCH_RELAY_TOKEN in Open Flow. Deploy the Open Flow webhook. Restrict both entry points and the relay to trusted callers; they can request external URLs.
 
-POST JSON with url and optional extract_fields and name. Fields default to price,features,description. The workflow follows redirects, strips scripts, styles and tags, and sends the first 4,000 characters of text to the model. It returns title, description, extractedData, statistics and sentiment as JSON. Page text is sent to the model and the result should be checked against the source. Failed or empty fetches do not produce an extraction. The n8n model retries as configured in the source; Open Flow reports model failures without automatic retry.
+POST JSON with url and optional extract_fields and name. Fields default to price,features,description. The workflow follows redirects, strips scripts, styles and tags, and sends the first 4,000 characters of text to the model. It returns title, description, extractedData, statistics and sentiment as JSON. Page text is sent to the model and the result should be checked against the source. Failed or empty fetches do not produce an extraction. Open Flow reports model failures without automatic retry.
+
+<details>
+<summary>In n8n</summary>
+
+Import n8n, configure the model and a Header Auth credential on **Fetch relay**, and set its URL and matching N8N_FETCH_RELAY_TOKEN in Open Flow. For direct n8n mode configure its model credential. The n8n model retries as configured in the source.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

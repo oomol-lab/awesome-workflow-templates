@@ -13,11 +13,18 @@ Look up a person using an email address with Clearbit.
 
 ## Setup
 
-In Open Flow, create a secret Variable containing a Clearbit API key with Person API access and bind it to **Auth Token** in **Look up the person**. Run with an email address. In n8n, connect a Clearbit API credential and enter an email in **Clearbit**. Run one format for each lookup.
+In Open Flow, create a secret Variable containing a Clearbit API key with Person API access and bind it to **Auth Token** in **Look up the person**. Run with an email address.
 
 ## Behavior
 
-A manual run requests person enrichment for one email and returns the service response without filtering. If the service returns an array, Open Flow returns the complete array and n8n emits its elements as individual items. An empty HTTP 202 response produces a null Open Flow response; it is not a completed person record. Request failures, including a not-found response, stop the workflow. Open Flow applies a 30-second HTTP timeout and a 4 MiB response limit.
+A manual run requests person enrichment for one email and returns the service response without filtering. An empty HTTP 202 response produces a null Open Flow response; it is not a completed person record. Request failures, including a not-found response, stop the workflow. Open Flow applies a 30-second HTTP timeout and a 4 MiB response limit.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect a Clearbit API credential and enter an email in **Clearbit**. If the service returns an array, Open Flow returns the complete array and n8n emits its elements as individual items.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

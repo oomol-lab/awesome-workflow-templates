@@ -13,11 +13,18 @@ Read a PostgreSQL table and export its rows as a CSV file.
 
 ## Setup
 
-Import the supplied n8n workflow and connect the PostgreSQL credential. For Open Flow, enable **Postgres relay webhook**, connect its **Read table for relay** node, activate n8n, and set the relay URL in **Read table from n8n**. Set the table name in **Choose table** and run Open Flow manually. For n8n-only use, disable the relay webhook and set the table in **TableName** before running manually.
+Connect the PostgreSQL credential. Set the table name in **Choose table** and run Open Flow manually.
 
 ## Behavior
 
-The workflow selects all rows from one table and creates a CSV file. Nested values are flattened into dot-separated columns. Table names must be unqualified identifiers containing letters, digits or underscores and beginning with a letter or underscore. The database account controls table visibility. An empty table produces an empty CSV in Open Flow. In direct n8n mode the source query emits no items, so no file is produced. The relay does not authenticate callers and can read tables accessible to its credential; restrict access to trusted callers. Large tables are subject to request and artifact size limits.
+The workflow selects all rows from one table and creates a CSV file. Nested values are flattened into dot-separated columns. Table names must be unqualified identifiers containing letters, digits or underscores and beginning with a letter or underscore. The database account controls table visibility. An empty table produces an empty CSV in Open Flow. The relay does not authenticate callers and can read tables accessible to its credential; restrict access to trusted callers. Large tables are subject to request and artifact size limits.
+
+<details>
+<summary>In n8n</summary>
+
+Import the supplied n8n workflow and connect the PostgreSQL credential. For Open Flow, enable **Postgres relay webhook**, connect its **Read table for relay** node, activate n8n, and set the relay URL in **Read table from n8n**. For n8n-only use, disable the relay webhook and set the table in **TableName** before running manually. In direct n8n mode the source query emits no items, so no file is produced.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

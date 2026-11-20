@@ -13,11 +13,18 @@ Fetch a YouTube transcript and generate a concise summary.
 
 ## Setup
 
-Connect SearchApi in **Fetch the transcript** and replace YOUR_YOUTUBE_VIDEO_ID with a video ID. Select an available model in **Summarize the transcript**. In n8n, set the video ID in **Fetch the transcript**, configure Query Auth with name api_key and your SearchApi key as its value, and connect an OpenAI model in **OpenAI Chat Model**. Run either format manually.
+Connect SearchApi in **Fetch the transcript** and replace YOUR_YOUTUBE_VIDEO_ID with a video ID. Select an available model in **Summarize the transcript**. Run the workflow manually.
 
 ## Behavior
 
 The workflow requests the video's transcript, joins the returned text segments in order, and summarizes the text. If no transcript is available, it produces no summary. API errors or invalid transcript data stop the run. SearchApi defaults to English; available captions depend on the video and service. The model receives the transcript and may make mistakes, so review the result. Long transcripts can exceed execution or model context limits. Query credentials can appear in service or network logs; keep keys and execution data private.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, set the video ID in **Fetch the transcript**, configure Query Auth with name api_key and your SearchApi key as its value, and connect an OpenAI model in **OpenAI Chat Model**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

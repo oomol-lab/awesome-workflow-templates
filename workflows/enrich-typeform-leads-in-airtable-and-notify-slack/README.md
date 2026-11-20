@@ -15,13 +15,20 @@ Enrich a Typeform lead, create or update its Airtable contact and notify Slack.
 
 Connect Typeform with webhook-management access, select the form, deploy to a public callback and activate it. In **Read the lead answers**, set the unique titles of the first name, last name, company and website questions, plus the Airtable base, table and Slack channel IDs. The form must supply first and last names and at least a company or website. Connect Dropcontact, Airtable and Slack.
 
-The Airtable table needs writable fields firstName, lastName, linkedInProfile, Email, Phone, website, LinkedIn Company, Industry and Address. It also needs a searchable **fullName** formula such as TRIM({firstName} & ' ' & {lastName}). In n8n, configure the form, Airtable base/table and Slack channel in their service nodes and in **Read the lead answers**, and set the question titles in that Code node. Connect Typeform, Dropcontact, Airtable and Slack credentials. Activate one format.
+The Airtable table needs writable fields firstName, lastName, linkedInProfile, Email, Phone, website, LinkedIn Company, Industry and Address. It also needs a searchable **fullName** formula such as TRIM({firstName} & ' ' & {lastName}). Connect Typeform, Dropcontact, Airtable and Slack credentials.
 
 ## Behavior
 
 Each completed form submits the contact for French Dropcontact enrichment with SIREN, waits 45 seconds and reads the result once. It searches Airtable by the enriched full name. With no match it creates a contact; with one match it updates that record; multiple matches stop before writing. Only returned nonempty optional fields are written. A confirmed Airtable write is followed by the corresponding Slack notice.
 
 A pending or failed enrichment stops before Airtable. Unknown Airtable or Slack results may already have succeeded; inspect both services before replaying. Earlier writes are not rolled back and repeated form deliveries can repeat notifications. Restrict execution history and service access to protect lead data.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, configure the form, Airtable base/table and Slack channel in their service nodes and in **Read the lead answers**, and set the question titles in that Code node.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

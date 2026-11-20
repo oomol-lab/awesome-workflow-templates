@@ -13,13 +13,20 @@ Fetch a configured page through Scrappey each day and return its response.
 
 ## Setup
 
-In Open Flow, set the target page URL in **Configure the page URL**, create a secret Variable with your Scrappey API key and bind it to **Auth Token** on **Fetch the page with Scrappey**. In n8n, edit the URL in **Test Data** and configure HTTP Query Auth on the request with name `key` and your API key as its value. Activate one format.
+In Open Flow, set the target page URL in **Configure the page URL**, create a secret Variable with your Scrappey API key and bind it to **Auth Token** on **Fetch the page with Scrappey**.
 
 ## Behavior
 
 At midnight each day, Scrappey loads the configured page in a browser session and returns its response. Inspect the response for the page status and contents; this workflow does not save or send the result elsewhere. Use it only for pages you are authorized to access. The API key is sent in the request URL and may appear in service or proxy logs. Scrappey and the target site may also retain request data.
 
-Both schedules start in UTC; the source used the n8n instance timezone. n8n Schedule Trigger chooses a stable second within the minute, while Open Flow starts on the minute boundary. Non-2xx HTTP responses stop the run; Scrappey may report a page or service error inside a successful HTTP response, so inspect its response. Open Flow applies a 30-second request timeout and 4 MiB response limit. A timeout may occur after the service started the request; check its result before retrying. The target URL must be HTTP or HTTPS without embedded credentials.
+Both schedules start in UTC. Open Flow starts on the minute boundary. Non-2xx HTTP responses stop the run; Scrappey may report a page or service error inside a successful HTTP response, so inspect its response. Open Flow applies a 30-second request timeout and 4 MiB response limit. A timeout may occur after the service started the request; check its result before retrying. The target URL must be HTTP or HTTPS without embedded credentials.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, edit the URL in **Test Data** and configure HTTP Query Auth on the request with name `key` and your API key as its value. The source used the n8n instance timezone. n8n Schedule Trigger chooses a stable second within the minute.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

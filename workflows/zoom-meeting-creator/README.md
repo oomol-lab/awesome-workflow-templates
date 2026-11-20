@@ -13,13 +13,20 @@ Create a Zoom meeting for the connected user and return its meeting details and 
 
 ## Setup
 
-Select a Zoom user OAuth account in **Create Zoom meeting**. The account must be able to host meetings and grant meeting creation access, such as `meeting:write:meeting`. Run with **Topic**. In n8n, choose **OAuth2** credentials and set **Topic** in **Zoom**. Both formats create the meeting for the connected user (`me`).
+Select a Zoom user OAuth account in **Create Zoom meeting**. The account must be able to host meetings and grant meeting creation access, such as `meeting:write:meeting`. Run with **Topic**. The workflow create the meeting for the connected user (`me`).
 
-The template uses Zoom’s scheduled meeting type (`2`) with no start time or duration supplied. Zoom uses the current time when start time is omitted and applies the account’s timezone, meeting settings and security rules. To schedule a future time, configure the Action’s start time, timezone and duration, or the corresponding n8n Additional Fields.
+The template uses Zoom’s scheduled meeting type (`2`) with no start time or duration supplied. Zoom uses the current time when start time is omitted and applies the account’s timezone, meeting settings and security rules.
 
-Open Flow returns the normalized meeting and its complete raw record; n8n returns the raw creation response. The result may include a participant join URL, host start URL and passcode. The host start URL normally expires after two hours. No calendar event, participant registration or separate invitation is created by this workflow.
+Open Flow returns the normalized meeting and its complete raw record. The result may include a participant join URL, host start URL and passcode. The host start URL normally expires after two hours. No calendar event, participant registration or separate invitation is created by this workflow.
 
 Each run creates another meeting. A failed request stops the run, with no workflow retry or duplicate check. Check Zoom before repeating a request with an uncertain result.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, choose **OAuth2** credentials and set **Topic** in **Zoom**. To schedule a future time, configure the Action’s start time, timezone and duration, or the corresponding n8n Additional Fields. N8n returns the raw creation response.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

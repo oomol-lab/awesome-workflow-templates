@@ -15,13 +15,18 @@ Check URLs in Google Sheets every minute and send failed checks to Telegram.
 
 Connect Google Sheets and Telegram. Set the spreadsheet ID in **Read the URL list** and the destination chat ID in **Send the Telegram alert**. The read range defaults to `'Sheet1'!A:Z`; change the A1 range in **Read the URL list** to select your sheet and include the `URLS` column. Name that column `URLS` and list one complete HTTP or HTTPS URL per row. Ensure the bot can send to the chat and the host can reach the URLs.
 
-In n8n, select the spreadsheet and sheet, connect both credentials, and set the Telegram chat ID. Activate one format.
-
 ## Behavior
 
-Every minute the workflow checks each URL with HTTP GET and alerts the chat for a failed request or a non-2xx final response. Redirects are followed up to 21 hops. Requests time out after 30 seconds per hop in Open Flow and after 30 seconds in n8n. Empty lists send no alerts. URLs must be HTTP or HTTPS without embedded credentials. Configure only destinations that are safe and intended to be contacted.
+Every minute the workflow checks each URL with HTTP GET and alerts the chat for a failed request or a non-2xx final response. Redirects are followed up to 21 hops. Empty lists send no alerts. URLs must be HTTP or HTTPS without embedded credentials. Configure only destinations that are safe and intended to be contacted.
 
-Open Flow checks rows sequentially; n8n follows its item execution order. A Telegram failure stops the run; an uncertain send may already have arrived, so check the chat before retrying. Messages use Telegram legacy Markdown, so formatting characters in a URL can affect rendering or cause a send error. Runs are not deduplicated. In Open Flow responses larger than 4 MiB stop the run without an alert and the sheet must fit execution limits. Both schedules start in UTC; the original inherited the n8n instance timezone.
+Open Flow checks rows sequentially. A Telegram failure stops the run; an uncertain send may already have arrived, so check the chat before retrying. Messages use Telegram legacy Markdown, so formatting characters in a URL can affect rendering or cause a send error. Runs are not deduplicated. In Open Flow responses larger than 4 MiB stop the run without an alert and the sheet must fit execution limits. Both schedules start in UTC.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, select the spreadsheet and sheet, connect both credentials, and set the Telegram chat ID. Activate one format. Requests time out after 30 seconds per hop in Open Flow and after 30 seconds in n8n. N8n follows its item execution order. The original inherited the n8n instance timezone.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

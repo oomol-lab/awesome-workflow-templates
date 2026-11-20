@@ -13,11 +13,18 @@ Generate images from a prompt and return each image as a downloadable file.
 
 ## Setup and use
 
-Bind the secret Variable OPENAI_API_KEY to **Generate images**. Edit its prompt, image count, size and quality, then run the workflow. In n8n connect the OpenAI credential and edit **Set Variables**. Download the resulting image files. Use one format.
+Bind the secret Variable OPENAI_API_KEY to **Generate images**. Edit its prompt, image count, size and quality, then run the workflow. Download the resulting image files.
 
 ## Behavior
 
 The workflow requests images from GPT Image and converts each returned base64 image to a PNG file. Generation consumes API credits and can take time. A failed or interrupted request may have incurred charges; inspect the provider before retrying.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n connect the OpenAI credential and edit **Set Variables**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

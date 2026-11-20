@@ -13,13 +13,20 @@ Generate an image from a Telegram text message and send it back to the same chat
 
 ## Setup
 
-Connect the same Telegram bot to the trigger and send node, and connect Magic Hour to both image nodes. In n8n install the Magic Hour community node and connect its credential and the same Telegram bot. Activate one format; Telegram allows one active webhook per bot.
+Connect the same Telegram bot to the trigger and send node, and connect Magic Hour to both image nodes. Activate one format; Telegram allows one active webhook per bot.
 
 ## Behavior
 
 Send a text description to the bot. The workflow requests one 640px square image using Magic Hour flux-2-klein and replies in the same chat. Magic Hour provides a temporary image URL that Telegram must be able to fetch. Prompts and images are shared with Magic Hour and Telegram. Non-text updates do not generate an image.
 
-Open Flow checks at 10-second intervals at most 60 times; n8n polls for roughly ten minutes. A failed or uncertain generation may have created a project; inspect Magic Hour before retrying. An uncertain Telegram send may have succeeded; inspect the chat before retrying.
+Open Flow checks at 10-second intervals at most 60 times. A failed or uncertain generation may have created a project; inspect Magic Hour before retrying. An uncertain Telegram send may have succeeded; inspect the chat before retrying.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n install the Magic Hour community node and connect its credential and the same Telegram bot. N8n polls for roughly ten minutes.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

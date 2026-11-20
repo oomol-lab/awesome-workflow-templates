@@ -15,13 +15,18 @@ Enrich unprocessed company domains in Google Sheets with ProspectLens data.
 
 Create a sheet whose first row contains unique headers **domain**, **name**, **description**, **processed_at**, **data**, **domain_name**, **traffic**, **location**, **funds**, **year_founded**, **funding_round**, and **last_funding_at**, all within columns A:Z. Add domains and leave processed_at empty. In **Choose the sheet**, set the spreadsheet ID and sheet name. Connect Google Sheets in **Read sheet rows** and **Update the company row**. Create a secret Variable PROSPECTLENS_API_KEY and bind it to **Look up the company**.
 
-In n8n, set the same spreadsheet ID and sheet name in **Choose the sheet**, connect Google Sheets OAuth2 credentials to its HTTP nodes, and configure Header Auth on **ProspectLens API call** with name x-apiroad-key and the API key as its value. Run either format manually.
-
 ## Behavior
 
 The workflow reads the sheet and processes rows with a domain and an empty processed_at field. Each domain is sent to ProspectLens. A failed lookup is tried twice, one second apart; after a second failure the workflow leaves that row unprocessed and continues. A successful response must contain the expected company fields. The workflow updates the corresponding row's twelve named fields, including a timestamp and the first 2,000 UTF-16 code units of the returned data JSON. Values are written as raw cells. The source domain, research data and execution history may be sensitive; review service access and storage.
 
 Missing expected fields or a sheet write failure stops the run. An uncertain write may already have changed cells; inspect the sheet before retrying. Earlier updates remain, and a subsequent run skips rows with processed_at populated. Do not reorder or edit rows during a run, or run copies concurrently. Open Flow's Code and HTTP response size limits apply; large sheets or responses can fail. The workflow does not create spreadsheet rows.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, set the same spreadsheet ID and sheet name in **Choose the sheet**, connect Google Sheets OAuth2 credentials to its HTTP nodes, and configure Header Auth on **ProspectLens API call** with name x-apiroad-key and the API key as its value. Run either format manually.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

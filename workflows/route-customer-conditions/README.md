@@ -13,11 +13,18 @@ Demonstrate three independent condition and country-routing rules for a customer
 
 ## Setup and use
 
-Provide a customer array with name and country in Open Flow. In n8n run the included manual workflow; its training datastore supplies example customers.
+Provide a customer array with name and country in Open Flow.
 
 ## Behavior
 
-Each customer is routed independently through three examples: country equals US, empty country or name contains Max, and a four-way US/CO/UK/other route. Open Flow returns grouped arrays for each branch; n8n displays routed items on each condition output. The three examples apply independently to the same input.
+Each customer is routed independently through three examples: country equals US, empty country or name contains Max, and a four-way US/CO/UK/other route. Open Flow returns grouped arrays for each branch. The three examples apply independently to the same input.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n run the included manual workflow; its training datastore supplies example customers. N8n displays routed items on each condition output.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

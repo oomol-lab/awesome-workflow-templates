@@ -13,13 +13,20 @@ Cluster stored review vectors and append customer insights to a spreadsheet.
 
 ## Setup
 
-Provide an existing Qdrant collection named trustpilot_reviews with vectors and payload content plus metadata company_id, review_date, review_author, review_rating and review_url. Configure the Qdrant URL and API key, model, and Google Sheets connection and spreadsheet. In Open Flow set the Qdrant host in the Code node HTTP allowlist and both Qdrant URLs. Open Flow uses persistent State; n8n requires a Data Table with item_key and status text columns. Call the n8n workflow with companyId, or run Open Flow with company.
+Provide an existing Qdrant collection named trustpilot_reviews with vectors and payload content plus metadata company_id, review_date, review_author, review_rating and review_url. Configure the Qdrant URL and API key, model, and Google Sheets connection and spreadsheet. In Open Flow set the Qdrant host in the Code node HTTP allowlist and both Qdrant URLs. Open Flow uses persistent State.
 
 ## Behavior
 
 The workflow retrieves up to 500 review vectors for the current UTC month, groups them into up to five clusters using deterministic JavaScript K-means and summarizes clusters with at least three reviews. It appends company, date range, insight, sentiment, suggested improvements, count and raw reviews to columns A through H. K-means grouping and model summaries need review. Review text and author information are sent to the model and stored in the sheet. This component analyzes existing records; it does not retrieve reviews from Trustpilot or populate Qdrant.
 
 Prevent overlapping runs. If a sheet append has an uncertain outcome, inspect the sheet before clearing its pending checkpoint.
+
+<details>
+<summary>In n8n</summary>
+
+N8n requires a Data Table with item_key and status text columns. Call the n8n workflow with companyId, or run Open Flow with company.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

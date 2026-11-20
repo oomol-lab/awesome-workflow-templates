@@ -13,11 +13,18 @@ Append an ID and name to a Google Sheet and read the table.
 
 ## Setup
 
-Create a Google Sheet with unique `id` and `name` headers in columns A:B of the first worksheet. Connect Google Sheets with edit access. In Open Flow provide the spreadsheet ID, numeric ID and name when starting. In n8n configure the spreadsheet on **Google Sheets**, connect both Sheets nodes and edit the values in **Set**.
+Create a Google Sheet with unique `id` and `name` headers in columns A:B of the first worksheet. Connect Google Sheets with edit access. In Open Flow provide the spreadsheet ID, numeric ID and name when starting.
 
 ## Behavior
 
-The workflow appends one row and returns the table. It writes the ID as text, as the original n8n Sheets V1 append does with RAW input. An unknown append may have succeeded; inspect the sheet before retrying. The workflow does not retry or deduplicate.
+The workflow appends one row and returns the table. An unknown append may have succeeded; inspect the sheet before retrying. The workflow does not retry or deduplicate.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure the spreadsheet on **Google Sheets**, connect both Sheets nodes and edit the values in **Set**. It writes the ID as text, as the original n8n Sheets V1 append does with RAW input.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

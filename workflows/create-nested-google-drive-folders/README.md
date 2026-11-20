@@ -13,13 +13,20 @@ Find or create each segment of a folder path in Google Drive.
 
 ## Setup
 
-Connect Google Drive with access to list and create folders. Run Open Flow with a parent folder ID (or `root`) and a slash-separated path, such as `Projects/2026/Reports`. Allow the declared Drive actions. In n8n configure the same values in **Folder path**, connect Google Drive, and run manually. Other n8n workflows can call the workflow with `google_drive_folder_id` and `desired_path`.
+Connect Google Drive with access to list and create folders. Run Open Flow with a parent folder ID (or `root`) and a slash-separated path, such as `Projects/2026/Reports`. Allow the declared Drive actions.
 
 ## Behavior
 
 Each path segment is looked up under the previously selected folder. Existing folders are reused; missing folders are created. The result is the final folder ID. Empty segments and ambiguous duplicate folder names stop the run. Folder names are case-sensitive. Avoid concurrent runs for the same path because lookup and creation are not atomic.
 
 A failed or uncertain create may leave some folders created. Inspect Drive before rerunning; the workflow does not automatically retry writes.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure the same values in **Folder path**, connect Google Drive, and run manually. Other n8n workflows can call the workflow with `google_drive_folder_id` and `desired_path`.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

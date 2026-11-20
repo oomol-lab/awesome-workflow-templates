@@ -15,15 +15,20 @@ Find HubSpot deals by purchase order when Stripe reports an invoice payment, mar
 
 Connect Stripe in **Receive paid invoice** with permission to manage webhooks. Connect HubSpot in both deal nodes. Each deal must have a text property named **po_number** and a property named **paid** that accepts Yes. Connect Slack in the three alert nodes and set the channel ID in **Prepare the invoice alert**.
 
-In n8n, connect Stripe, HubSpot and Slack. Ensure the Stripe credential has the webhook signing secret, or verify that the automatically created webhook has stored its secret. The n8n Stripe trigger accepts requests without signature verification if neither secret is available. Select the same Slack channel in the three Slack nodes. Enable only one format.
-
 ## Behavior
 
-On an invoice.payment_succeeded event, the workflow reads the first Stripe invoice custom field as the purchase order. Missing purchase orders generate a Slack alert. With a purchase order it searches HubSpot by exact po_number. No match sends a different alert. For matching deals, it sets paid to Yes for each deal, then sends one paid-invoice alert per deal. Both formats stop before writing if more than 100 deals match; inspect HubSpot and reconcile duplicates. Open Flow orders the returned deals by creation time, newest first.
+On an invoice.payment_succeeded event, the workflow reads the first Stripe invoice custom field as the purchase order. Missing purchase orders generate a Slack alert. With a purchase order it searches HubSpot by exact po_number. No match sends a different alert. For matching deals, it sets paid to Yes for each deal, then sends one paid-invoice alert per deal. The workflow stop before writing if more than 100 deals match; inspect HubSpot and reconcile duplicates. Open Flow orders the returned deals by creation time, newest first.
 
 Alerts contain the Stripe event ID, customer name and email, purchase order where present, currency and amount in Stripe’s minor units. For example, 1000 USD minor units is 10 USD, while 100 JPY minor units is 100 JPY. Check Stripe’s currency rules before interpreting the value.
 
 A failure stops subsequent work. Some deals may already be marked paid or messages sent; inspect HubSpot and Slack before retrying an uncertain run. HubSpot search can lag recent changes. Repeated events or manual retries can produce duplicate alerts; avoid overlapping runs.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect Stripe, HubSpot and Slack. Ensure the Stripe credential has the webhook signing secret, or verify that the automatically created webhook has stored its secret. The n8n Stripe trigger accepts requests without signature verification if neither secret is available. Select the same Slack channel in the three Slack nodes. Enable only one format.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

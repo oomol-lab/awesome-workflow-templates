@@ -3,13 +3,8 @@
 Create a Monday item for an n8n execution error and save its details in board columns.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/log-n8n-execution-errors-to-monday/) [![n8n JSON](../../assets/n8n-json.svg)](templates/log-n8n-execution-errors-to-monday.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/log-n8n-execution-errors-to-monday.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup
 

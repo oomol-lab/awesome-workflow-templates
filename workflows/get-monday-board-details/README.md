@@ -13,11 +13,18 @@ Read metadata and owner IDs for a Monday board.
 
 ## Setup and use
 
-Connect Monday with board read permission. In Open Flow, allow Provider API Request for the connection and run with a numeric board ID. In n8n, configure the board ID and connect Monday credentials in **Monday.com**.
+Connect Monday with board read permission. In Open Flow, allow Provider API Request for the connection and run with a numeric board ID.
 
 ## Behavior
 
-The query returns the board ID, name, description, state, folder ID, board kind and owner IDs. The result may be empty if no accessible board matches. Open Flow returns an array; n8n emits matching boards as items. GraphQL errors stop the lookup.
+The query returns the board ID, name, description, state, folder ID, board kind and owner IDs. The result may be empty if no accessible board matches. Open Flow returns an array. GraphQL errors stop the lookup.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, configure the board ID and connect Monday credentials in **Monday.com**. N8n emits matching boards as items.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

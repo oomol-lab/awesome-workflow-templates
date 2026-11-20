@@ -13,11 +13,18 @@ Look up a Twitch login and inspect the live stream returned by Twitch.
 
 ## Setup
 
-Register a Twitch application and obtain an app or user OAuth access token for the same client ID. In Open Flow, bind the token as a secret Variable to **Look up the stream**, and run with the login and client ID. In n8n, set the login in **Document**, set your client ID in **Twitch GraphQL**, and configure its header credential with name `Authorization` and value `Bearer YOUR_ACCESS_TOKEN`. Refresh or replace the token when it expires.
+Register a Twitch application and obtain an app or user OAuth access token for the same client ID. In Open Flow, bind the token as a secret Variable to **Look up the stream**, and run with the login and client ID. Refresh or replace the token when it expires.
 
 ## Behavior
 
 A returned live stream includes its ID, viewer count, title, type, and game ID when available. An empty result means Twitch returned no discoverable live stream for that login. It may be offline, unknown, or restricted from discovery; it does not prove the account exists or is offline. Request and authentication errors stop the workflow.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, set the login in **Document**, set your client ID in **Twitch GraphQL**, and configure its header credential with name `Authorization` and value `Bearer YOUR_ACCESS_TOKEN`.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

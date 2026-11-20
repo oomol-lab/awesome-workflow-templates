@@ -17,8 +17,6 @@ Connect Airtable and Google Sheets. In **Read recently updated contacts**, set t
 
 Set the same spreadsheet ID on **Read the existing sheet window**, **Append one new contact as RAW** and **Update existing contact cells**. The `A1:E1000` lookup selects the first worksheet. Row1 must contain contiguous, unique field-name headers including `Email`, with at most five columns. Create the headers before running. Airtable field names and Email keys match exactly, with no case folding or trimming. Existing nonempty keys in the lookup window must be unique text; incoming keys must be unique nonempty text.
 
-In n8n, select an **Airtable Personal Access Token** on the source node. Set the same spreadsheet ID in all three HTTP Request URLs and choose a **Google Sheets OAuth2 API** credential with read/write access on each. The append URL is an expression; replace only its spreadsheet ID. Run manually after configuration. The source has no scheduled trigger; none is added.
-
 ## Sync behavior
 
 All Airtable pages and the existing sheet window are read and validated before any write. Each new Email is appended separately, in source order. After every new-contact append completes, one [Sheets values batch update](https://developers.google.com/workspace/sheets/api/reference/rest/v4/spreadsheets.values/batchUpdate) updates the provided non-key cells of existing contacts. A matched record containing no such values remains unchanged. The Email key itself is not rewritten.
@@ -27,9 +25,16 @@ Both operations use `RAW`, so text beginning with `=` stays text. The legacy sou
 
 `A1:E1000` limits **lookup**, rather than the number of contacts that can be appended. Google chooses the append location and can return a row beyond1,000. Such rows will not be matched by a later run using the unchanged lookup window and can be appended again. Use a table suited to that fixed window, or adapt its range and validation together for larger datasets. No row is deleted and no header or column is added.
 
-Missing or duplicate keys, blank/duplicate headers, malformed records or invalid mapped cells fail before writing. An empty Airtable selection performs no Sheets operation; Open Flow returns zeros and n8n ends without a result. Completed runs report updated, inserted, unchanged and total record counts, with record/email/row associations. Append and cell-update receipts are checked before completion.
+Missing or duplicate keys, blank/duplicate headers, malformed records or invalid mapped cells fail before writing. Completed runs report updated, inserted, unchanged and total record counts, with record/email/row associations. Append and cell-update receipts are checked before completion.
 
 There is no workflow retry or cross-service transaction. A failed new-contact append stops later appends and all existing-row updates. A later update failure leaves earlier appends in place. A lost or incomplete response may already have changed the sheet; inspect it before repeating the run. Receipt validation does not roll back remote changes. Avoid concurrent syncs or sheet edits between the read and write. Open Flow's per-invocation Code limits still apply, including1 MiB for input and result in the inspected host. Each Airtable page and new-contact append runs as a separate native execution; large accumulated data fails rather than being truncated.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, select an **Airtable Personal Access Token** on the source node. Set the same spreadsheet ID in all three HTTP Request URLs and choose a **Google Sheets OAuth2 API** credential with read/write access on each. The append URL is an expression; replace only its spreadsheet ID. Run manually after configuration. The source has no scheduled trigger; none is added. An empty Airtable selection performs no Sheets operation; Open Flow returns zeros and n8n ends without a result.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

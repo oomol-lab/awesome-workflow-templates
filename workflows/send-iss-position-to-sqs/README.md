@@ -13,11 +13,18 @@ Send the current ISS position as a JSON message to an Amazon SQS queue every min
 
 ## Setup and use
 
-In Open Flow, set a standard SQS queue URL in **Sign the SQS request**, and bind AWS access key ID and secret access key to secret Variables. For temporary credentials, bind the same session token Variable to both **Sign the SQS request** and **Send to the queue** → **X-Amz-Security-Token**. Leave both unset for long-lived credentials. The identity needs sqs:SendMessage permission for that queue. In n8n, connect AWS credentials and select the standard queue. Activate one format.
+In Open Flow, set a standard SQS queue URL in **Sign the SQS request**, and bind AWS access key ID and secret access key to secret Variables. For temporary credentials, bind the same session token Variable to both **Sign the SQS request** and **Send to the queue** → **X-Amz-Security-Token**. Leave both unset for long-lived credentials. The identity needs sqs:SendMessage permission for that queue.
 
 ## Behavior
 
-Every minute retrieve the ISS position and send a JSON message with Name, Latitude, Longitude and Timestamp. Open Flow runs on the minute boundary; n8n Cron V1 uses a fixed second within the minute. A failed or uncertain send stops without automatic replay; check the queue before retrying. FIFO queues require a message group and are not covered.
+Every minute retrieve the ISS position and send a JSON message with Name, Latitude, Longitude and Timestamp. Open Flow runs on the minute boundary. A failed or uncertain send stops without automatic replay; check the queue before retrying. FIFO queues require a message group and are not covered.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect AWS credentials and select the standard queue. N8n Cron V1 uses a fixed second within the minute.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

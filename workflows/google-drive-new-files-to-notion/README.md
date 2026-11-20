@@ -17,8 +17,6 @@ Connect Google Drive in **Watch for new Drive files** and replace **Folder ID**.
 
 Connect Notion on both Notion nodes. In **Read the Notion data source**, replace **Data Source ID** with the data source ID inside the destination database. Share that destination with the integration and allow page insertion. It must have exactly one title property and a property named **File** with type **Files & media**. The title property name is read from the schema. A database container ID is different from its data source ID.
 
-In n8n, select **Google Drive OAuth2 API** on the trigger and **Notion API** credentials on both HTTP Request nodes. Set the same folder and data source IDs. Keep the fixed Notion endpoints, `Notion-Version: 2026-03-11`, JSON bodies, response mode and redirect settings. Activate one format for this process.
-
 ## Behavior
 
 Only files created directly inside the selected folder are selected. Folder creation, file updates and nested descendants are outside that selection. Polling uses creation timestamps and current parent membership. The first activation without a checkpoint starts at the current time, without backfilling older files; a saved checkpoint can resume after a pause.
@@ -29,9 +27,16 @@ Notion external files require accessible HTTPS URLs. A Drive viewer link opens t
 
 The batch is checked before page creation starts. The data source schema is read once per batch, then pages are created one at a time in event order. Invalid links, an incompatible schema or an invalid page receipt fail the run. A failed or uncertain creation stops later pages and keeps any pages already created. Check Notion before replaying a failed run; repeating it can create duplicate records. No workflow retry or cross-run history is added.
 
-Open Flow reads up to 50 file candidates per page and preserves the continuation checkpoint; n8n reads all native result pages in a poll. Their checkpoint and overlap rules differ, and neither guarantees exactly-once recording. A workflow failure does not automatically replay events after its poll checkpoint advances. Full batches, schemas and accumulated page receipts must fit the inspected host’s 1 MiB per-Code budget; oversized data fails without truncation.
+Open Flow reads up to 50 file candidates per page and preserves the continuation checkpoint. Their checkpoint and overlap rules differ, and neither guarantees exactly-once recording. A workflow failure does not automatically replay events after its poll checkpoint advances. Full batches, schemas and accumulated page receipts must fit the inspected host’s 1 MiB per-Code budget; oversized data fails without truncation.
 
 The result contains each file ID with its full Notion page receipt and a count.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, select **Google Drive OAuth2 API** on the trigger and **Notion API** credentials on both HTTP Request nodes. Set the same folder and data source IDs. Keep the fixed Notion endpoints, `Notion-Version: 2026-03-11`, JSON bodies, response mode and redirect settings. Activate one format for this process. N8n reads all native result pages in a poll.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

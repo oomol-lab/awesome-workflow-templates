@@ -15,13 +15,18 @@ Send the input of a Pushcut online action as an SMS through Twilio.
 
 In Open Flow, connect Twilio, set the sender and recipient in **Send the SMS**, publish the workflow and copy its webhook URL. Register that URL with Pushcut as an online action by sending a POST to `https://api.pushcut.io/v1/subscriptions` with your `API-Key` header and JSON body `{"actionName":"Leaving Home","url":"YOUR_WEBHOOK_URL"}`. Save the returned subscription ID; delete it through Pushcut when no longer needed. Configure a Pushcut notification or automation to run that online action with an input.
 
-In n8n, connect Pushcut and Twilio, enter the sender and recipient, and activate the workflow. The Pushcut Trigger registers its subscription automatically. Use one format for each action.
-
 The callback URL is unauthenticated. Anyone with it can send SMS through the connected account; keep it private and restrict Twilio permissions. Pushcut does not sign this callback.
 
 ## Behavior
 
-When the online action runs, the workflow sends one SMS containing “I'm ” followed by its input. The input is provided by Pushcut and can contain personal information. If no input is supplied, Open Flow sends `undefined`; n8n sends an empty value. A failed or uncertain send may already have delivered an SMS; inspect Twilio before retrying. Open Flow acknowledges the webhook before the SMS outcome is known.
+When the online action runs, the workflow sends one SMS containing “I'm ” followed by its input. The input is provided by Pushcut and can contain personal information. If no input is supplied, Open Flow sends `undefined`. A failed or uncertain send may already have delivered an SMS; inspect Twilio before retrying. Open Flow acknowledges the webhook before the SMS outcome is known.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect Pushcut and Twilio, enter the sender and recipient, and activate the workflow. The Pushcut Trigger registers its subscription automatically. Use one format for each action. N8n sends an empty value.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

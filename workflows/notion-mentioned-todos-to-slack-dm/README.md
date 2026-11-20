@@ -13,15 +13,22 @@ Send a daily Slack direct message for each unchecked Notion to-do mentioning a s
 
 ## Setup
 
-Connect Notion in **Read Notion child blocks** and set the parent block or page ID. The integration needs access to its direct children. In **Collect matching to-dos**, set the Notion user ID; in **Open a Slack direct message**, connect Slack and set the recipient Slack user ID. The two IDs refer to the same person on different services. In n8n set the parent ID in **Get To Dos**, the Notion user ID in **Filter to-dos**, and the Slack user ID in **Create a Direct Message**, then connect both credentials. Enable one format only.
+Connect Notion in **Read Notion child blocks** and set the parent block or page ID. The integration needs access to its direct children. In **Collect matching to-dos**, set the Notion user ID; in **Open a Slack direct message**, connect Slack and set the recipient Slack user ID. The two IDs refer to the same person on different services.
 
-Both formats start at 08:00 UTC each day. The original used the n8n instance timezone; check the schedule and timezone before enabling it. The n8n Cron V1 uses a fixed randomized second, while Open Flow runs on the minute boundary.
+The workflow start at 08:00 UTC each day. Open Flow runs on the minute boundary.
 
 ## Behavior
 
 The workflow reads all pages of direct child blocks. It selects unchecked to-do blocks whose second rich-text element mentions the configured Notion user, and uses the first text element as the task title. It opens a Slack DM for each match, then sends one message per task in the same order. No matches means no message. Nested child blocks are not searched. A mention is not a separate assignment field.
 
-A read error stops before Slack. Open Flow also stops on an incomplete page or repeated pagination cursor; n8n uses the native Notion node’s pagination. A later Slack error stops the remaining operations; earlier opens or messages may already have succeeded. Check Slack before rerunning after an uncertain write. Very large sets must fit the execution platform's state limits; oversized task titles stop the run before messages.
+A read error stops before Slack. Open Flow also stops on an incomplete page or repeated pagination cursor. A later Slack error stops the remaining operations; earlier opens or messages may already have succeeded. Check Slack before rerunning after an uncertain write. Very large sets must fit the execution platform's state limits; oversized task titles stop the run before messages.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n set the parent ID in **Get To Dos**, the Notion user ID in **Filter to-dos**, and the Slack user ID in **Create a Direct Message**, then connect both credentials. The original used the n8n instance timezone; check the schedule and timezone before enabling it. The n8n Cron V1 uses a fixed randomized second. N8n uses the native Notion node’s pagination.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

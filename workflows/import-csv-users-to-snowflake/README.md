@@ -15,11 +15,16 @@ Read user records from a CSV URL and insert them into a Snowflake users table.
 
 Configure the CSV URL in **Download the CSV**. Its header must contain id, first_name and last_name. In **Prepare the next insert**, set the Snowflake account identifier, warehouse, database and schema. Create a secret Variable named **SNOWFLAKE_TOKEN** with a [Snowflake programmatic access token](https://docs.snowflake.com/en/user-guide/programmatic-access-tokens) authorized to insert into the users table. Its network policy must permit the workflow's requests.
 
-In n8n, connect Snowflake, configure the target table and CSV URL, then run manually.
-
 ## Behavior
 
 Insert each CSV row as id, first_name and last_name. Open Flow waits for confirmation of an asynchronous statement before submitting the next row; it stops after 60 status checks. A failed or uncertain insert may have succeeded: inspect the table before retrying. Previously inserted rows are not rolled back when a later insert fails.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect Snowflake, configure the target table and CSV URL, then run manually.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -17,11 +17,16 @@ Create a secret Variable whose full value is `token YOUR_TRAVIS_API_TOKEN`, incl
 
 Run with **Repository Slug** in `owner/repository` form and **Branch**. The repository must be enabled in Travis CI Cloud, and the token must have permission to request a build. The build uses the selected branch’s current commit and `.travis.yml`.
 
-In n8n, choose an **HTTP Header Auth** credential in **Request Travis CI build**. Set its header name to `Authorization` and its value to `token YOUR_TRAVIS_API_TOKEN`. Replace `YOUR_OWNER%2FYOUR_REPOSITORY` in the URL, keeping the slash between owner and repository encoded as `%2F`, and edit the branch in the JSON body.
-
 Each run makes one build request. The `202` pending result and request ID confirm acceptance, not a completed or successful build. The workflow does not poll for build status, override build configuration, retry jobs or cancel builds.
 
 The Open Flow HTTP step has a 30-second execution budget. A rejected request, unexpected response or transport failure stops the run. No duplicate check or automatic retry is configured. Check Travis CI before repeating an uncertain request, since it may already have started a build.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, choose an **HTTP Header Auth** credential in **Request Travis CI build**. Set its header name to `Authorization` and its value to `token YOUR_TRAVIS_API_TOKEN`. Replace `YOUR_OWNER%2FYOUR_REPOSITORY` in the URL, keeping the slash between owner and repository encoded as `%2F`, and edit the branch in the JSON body.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

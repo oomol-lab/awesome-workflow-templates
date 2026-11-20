@@ -13,13 +13,20 @@ Back up Squarespace header and footer injections as HTML files in GitHub.
 
 ## Setup
 
-Set your public Squarespace page-context URL in **Read Squarespace page context**, including the query string ?format=page-context. Connect GitHub with repository contents read/write access. Set the same repository owner and name in **Select backup file**, **Compare and reserve backup**, and **Write injection backup**. Enable persistent State. In n8n set the page-context URL, GitHub repository, and a Data Table with item_key and status text columns. Avoid overlapping runs for the same site.
+Set your public Squarespace page-context URL in **Read Squarespace page context**, including the query string ?format=page-context. Connect GitHub with repository contents read/write access. Set the same repository owner and name in **Select backup file**, **Compare and reserve backup**, and **Write injection backup**. Enable persistent State. Avoid overlapping runs for the same site.
 
 ## Behavior
 
 Run manually or every two hours. The workflow extracts and cleans the header and footer, then writes headers.html and footers.html under squarespace-backup/<site-domain>/ in GitHub. Existing identical content is left unchanged. Page-context data and backups can contain site code; use a repository with appropriate access.
 
-When a GitHub write outcome is uncertain, inspect the destination file. In Open Flow enter the pending key and confirmed or absent in **Compare and reserve backup** and rerun, then clear the recovery fields. Confirmed requires matching file content; absent requires the destination SHA to remain unchanged. In n8n inspect the checkpoint and repository, and delete the pending Data Table row only after reconciliation.
+When a GitHub write outcome is uncertain, inspect the destination file. In Open Flow enter the pending key and confirmed or absent in **Compare and reserve backup** and rerun, then clear the recovery fields. Confirmed requires matching file content; absent requires the destination SHA to remain unchanged.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n set the page-context URL, GitHub repository, and a Data Table with item_key and status text columns. In n8n inspect the checkpoint and repository, and delete the pending Data Table row only after reconciliation.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

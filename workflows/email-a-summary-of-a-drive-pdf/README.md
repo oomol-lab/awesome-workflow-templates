@@ -15,13 +15,18 @@ Summarize a PDF stored in Google Drive and email the result.
 
 Connect Google Drive in **Download the PDF** and set the same PDF file ID there and in **Read the PDF bytes**. Enable Drive file transit and set its HTTPS hostname in the **Read the PDF bytes** HTTP allowlist. Connect Encodian in **Extract PDF text**. Select an available model in **Summarize the document**. Connect Gmail in **Email the summary** and set the recipient.
 
-In n8n, set the PDF file ID in **Download uploaded File from Google Drive**, connect Google Drive and Mistral Cloud, and set the recipient and Gmail connection in **Send Summarized text to Gmail**. Run either format manually.
-
 ## Behavior
 
 The workflow downloads one PDF, extracts its text layer, summarizes that text and emails the result with the processing time in Africa/Lagos. Open Flow accepts PDFs up to 700,000 bytes and requires an accessible text layer; scanned images without text are not transcribed. Text extraction and model results can differ between formats and should be reviewed. Large documents may exceed model or execution limits.
 
 The document is sent to Encodian and its text to the selected model. Restrict access to execution data and temporary transit URLs. Read, extraction or model failures stop before email. A failed or uncertain send may have succeeded; check Sent mail before retrying.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, set the PDF file ID in **Download uploaded File from Google Drive**, connect Google Drive and Mistral Cloud, and set the recipient and Gmail connection in **Send Summarized text to Gmail**. Run either format manually.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -15,11 +15,16 @@ Create a Google contact, set their organization and read the updated contact.
 
 Enable the Google People API and authorize the `https://www.googleapis.com/auth/contacts` scope. In Open Flow, store a Google OAuth access token in a secret Variable and bind **Auth Token** on all four HTTP Request nodes. Access tokens expire; refresh the token externally and update the Variable. Run with the person's given and family names and their organization name, title and domain.
 
-In n8n, connect the same Google Contacts OAuth2 credential to the Google Contacts and HTTP Request nodes and edit **Set contact details**. Run one format.
-
 ## Behavior
 
 Each run creates a contact, reads its current contact-source version, replaces its organization with the supplied values and reads it back. An ETag conflict or any failed step stops the run. A write whose response is lost may have succeeded; inspect Google Contacts before retrying. The workflow does not retry or roll back writes, and each run can create another contact.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect the same Google Contacts OAuth2 credential to the Google Contacts and HTTP Request nodes and edit **Set contact details**. Run one format.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

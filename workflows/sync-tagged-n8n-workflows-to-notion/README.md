@@ -3,13 +3,8 @@
 Keep a Notion inventory of tagged n8n workflows and their status up to date.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/sync-tagged-n8n-workflows-to-notion/) [![n8n JSON](../../assets/n8n-json.svg)](templates/sync-tagged-n8n-workflows-to-notion.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/sync-tagged-n8n-workflows-to-notion.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup
 

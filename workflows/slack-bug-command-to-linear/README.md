@@ -13,11 +13,18 @@ Create a Linear bug from a Slack slash command and reply with its issue link.
 
 ## Setup and use
 
-Create a Slack slash command and point it to the n8n webhook URL. Import the n8n workflow and set teamId and labelIds in **Set me up**. Set executionMode to n8n to process there, or openflow to forward the complete Slack form payload to Open Flow. In n8n connect Linear OAuth. In Open Flow set the relay URL in **Forward to Open Flow**, set the Linear team and label IDs in **Prepare Linear issue**, and bind the Linear Authorization header value as the secret Variable LINEAR_AUTHORIZATION. For an OAuth token include the Bearer prefix; for a personal API key use the key as the header value. Activate the n8n webhook and choose one mode.
+Set teamId and labelIds in **Set me up**. In Open Flow set the relay URL in **Forward to Open Flow**, set the Linear team and label IDs in **Prepare Linear issue**, and bind the Linear Authorization header value as the secret Variable LINEAR_AUTHORIZATION. For an OAuth token include the Bearer prefix; for a personal API key use the key as the header value.
 
 ## Behavior
 
-n8n accepts the slash command and acknowledges it before executing the selected branch. The Open Flow mode relays the entire form payload as JSON inside event. The selected workflow creates a Linear issue with the submitted title, configured team and labels, a bug-report description and creator name, then sends the created issue URL to the original Slack response URL. The n8n webhook and Open Flow relay do not verify the sender; restrict access to both endpoints. Slack response URLs and event data may appear in execution history. Slack has deprecated user_name; the creator text depends on that field. An uncertain issue creation or Slack response requires checking Linear and the conversation before retrying; another run can create a duplicate issue. Slack acknowledgment must arrive within three seconds; network and server latency affect this.
+The Open Flow mode relays the entire form payload as JSON inside event. The selected workflow creates a Linear issue with the submitted title, configured team and labels, a bug-report description and creator name, then sends the created issue URL to the original Slack response URL. Slack response URLs and event data may appear in execution history. Slack has deprecated user_name; the creator text depends on that field. An uncertain issue creation or Slack response requires checking Linear and the conversation before retrying; another run can create a duplicate issue. Slack acknowledgment must arrive within three seconds; network and server latency affect this.
+
+<details>
+<summary>In n8n</summary>
+
+Create a Slack slash command and point it to the n8n webhook URL. Import the n8n workflow and set teamId and labelIds in **Set me up**. Set executionMode to n8n to process there, or openflow to forward the complete Slack form payload to Open Flow. In n8n connect Linear OAuth. Activate the n8n webhook and choose one mode. n8n accepts the slash command and acknowledges it before executing the selected branch. The n8n webhook and Open Flow relay do not verify the sender; restrict access to both endpoints.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

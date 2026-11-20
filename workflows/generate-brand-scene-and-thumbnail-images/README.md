@@ -13,11 +13,18 @@ Turn a linked blog post and brand guidelines into four scene images and a thumbn
 
 ## Setup
 
-Connect Airtable, configure brand, keyword, content and asset tables and an AI model. The keyword table needs Keyword and RelatedContent linked record IDs; the content table needs Title and Content. The asset table needs Asset URL, Asset Name and Asset Type. The first brand record provides the guidelines. Set the keyword filter and a Leonardo API key. Leonardo API requires a separate account with credits. Open Flow uses a secret variable LEONARDO_API_KEY and persistent State. In n8n configure a Header Auth credential with Authorization: Bearer followed by your Leonardo key on both HTTP nodes and a Data Table with item_key and status columns.
+Connect Airtable, configure brand, keyword, content and asset tables and an AI model. The keyword table needs Keyword and RelatedContent linked record IDs; the content table needs Title and Content. The asset table needs Asset URL, Asset Name and Asset Type. The first brand record provides the guidelines. Set the keyword filter and a Leonardo API key. Leonardo API requires a separate account with credits. Open Flow uses a secret variable LEONARDO_API_KEY and persistent State.
 
 ## Behavior
 
-The manual run selects the first linked article for a matching keyword, drafts four short scenes and a thumbnail, and generates five 720×1280 images. It saves each image URL in Airtable, with scene scripts in the asset names. Review generated content before use. Prevent overlapping runs. If a submission or asset write has an uncertain outcome, inspect Leonardo or Airtable before clearing its pending checkpoint. Open Flow polls every 30 seconds up to 20 times; rerun to continue a submitted generation. n8n checks once after 30 seconds and leaves its checkpoint pending if the image is not ready; inspect the execution and Leonardo before recovery.
+The manual run selects the first linked article for a matching keyword, drafts four short scenes and a thumbnail, and generates five 720×1280 images. It saves each image URL in Airtable, with scene scripts in the asset names. Review generated content before use. Prevent overlapping runs. If a submission or asset write has an uncertain outcome, inspect Leonardo or Airtable before clearing its pending checkpoint. Open Flow polls every 30 seconds up to 20 times; rerun to continue a submitted generation.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure a Header Auth credential with Authorization: Bearer followed by your Leonardo key on both HTTP nodes and a Data Table with item_key and status columns. n8n checks once after 30 seconds and leaves its checkpoint pending if the image is not ready; inspect the execution and Leonardo before recovery.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

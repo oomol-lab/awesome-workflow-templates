@@ -13,11 +13,18 @@ Learn how a switch routes three example items by ID and assigns branch-specific 
 
 ## Setup and use
 
-Run the workflow manually. To explore the routes, edit the sample IDs in **Route and name items** in Open Flow or **Function** in n8n.
+Run the workflow manually. To explore the routes, edit the sample IDs in **Route and name items**.
 
 ## Behavior
 
-Items with IDs 0, 1, and 2 receive the names n8n, nodemation, and nathan respectively. Other IDs follow the fallback branch unchanged. Open Flow returns each branch as an array; in n8n, inspect **Set**, **Set1**, **Set2**, and **NoOp**.
+Other IDs follow the fallback branch unchanged. Open Flow returns each branch as an array.
+
+<details>
+<summary>In n8n</summary>
+
+To explore the routes, edit the sample IDs in **Route and name items** in Open Flow or **Function** in n8n. Items with IDs 0, 1, and 2 receive the names n8n, nodemation, and nathan respectively. In n8n, inspect **Set**, **Set1**, **Set2**, and **NoOp**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

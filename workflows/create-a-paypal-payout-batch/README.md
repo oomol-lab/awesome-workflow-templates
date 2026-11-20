@@ -13,11 +13,18 @@ Submit a configured batch of payout items to PayPal.
 
 ## Setup and use
 
-Enable PayPal Payouts for your account. Connect PayPal using REST application credentials and allow Provider API Request. Open Flow defaults to the sandbox endpoint; match the endpoint to the connection environment. Enter a new sender batch ID in **Prepare payout batch** and provide a non-empty array of [PayPal payout items](https://developer.paypal.com/api/payments.payouts-batch/v1/definitions/create_payout_request/), including recipient type, receiver and amount with currency. In n8n, connect PayPal, set a batch ID and add at least one payout item in the PayPal node. The source contains no configured recipients or amounts.
+Enable PayPal Payouts for your account. Connect PayPal using REST application credentials and allow Provider API Request. Open Flow defaults to the sandbox endpoint; match the endpoint to the connection environment. Enter a new sender batch ID in **Prepare payout batch** and provide a non-empty array of [PayPal payout items](https://developer.paypal.com/api/payments.payouts-batch/v1/definitions/create_payout_request/), including recipient type, receiver and amount with currency. The source contains no configured recipients or amounts.
 
 ## Behavior
 
 A run submits one batch and returns the PayPal response. The source batch ID is `123`; replace it with an ID for your payout. PayPal rejects a batch ID reused within 30 days. An accepted batch may still be processing. If the result is unknown, check PayPal before retrying and keep the same ID for the same payout.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect PayPal, set a batch ID and add at least one payout item in the PayPal node.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

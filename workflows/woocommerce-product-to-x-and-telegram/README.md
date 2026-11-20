@@ -17,15 +17,20 @@ Connect WooCommerce to **Product created** with REST API Read/Write credentials 
 
 Connect **Post on X** to an X account allowed to post. In **Prepare the announcement**, set the Telegram chat ID, then connect **Send the Telegram notice** to a bot allowed to post there.
 
-In n8n, choose WooCommerce, Twitter OAuth2 and Telegram credentials on the three service nodes and set the same Telegram chat ID in **Prepare the announcement**. Activate one format for this process.
-
 ## Behavior
 
 Each product-created event produces the original announcement with its name and permalink. X is posted first, then Telegram. The result retains the product and both post receipts. A missing name or permalink stops before either post.
 
-A failed or uncertain X post stops before Telegram; a failed Telegram post can leave the X post already published. Inspect both destinations before replaying. There is no workflow retry or rollback. The n8n OAuth2 helper can refresh the X token and resend the request once after HTTP 401; inspect X before replaying an uncertain post. Open Flow uses the WooCommerce delivery ID for trigger deduplication when provided; n8n does not add that key. Neither format guarantees exactly-once posting. Callback acknowledgment confirms receipt, not completed posting.
+A failed or uncertain X post stops before Telegram; a failed Telegram post can leave the X post already published. Inspect both destinations before replaying. There is no workflow retry or rollback. Open Flow uses the WooCommerce delivery ID for trigger deduplication when provided. Neither format guarantees exactly-once posting. Callback acknowledgment confirms receipt, not completed posting.
 
-Open Flow requires signed JSON events of at most 64 KiB and checks the topic. Its endpoint rejects WooCommerce's unsigned setup ping with HTTP 400. Configure and verify subscription delivery for your deployment. The native n8n trigger validates the signature but trusts the subscription topic without an additional topic check.
+Open Flow requires signed JSON events of at most 64 KiB and checks the topic. Its endpoint rejects WooCommerce's unsigned setup ping with HTTP 400. Configure and verify subscription delivery for your deployment.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, choose WooCommerce, Twitter OAuth2 and Telegram credentials on the three service nodes and set the same Telegram chat ID in **Prepare the announcement**. Activate one format for this process. The n8n OAuth2 helper can refresh the X token and resend the request once after HTTP 401; inspect X before replaying an uncertain post. N8n does not add that key. The native n8n trigger validates the signature but trusts the subscription topic without an additional topic check.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

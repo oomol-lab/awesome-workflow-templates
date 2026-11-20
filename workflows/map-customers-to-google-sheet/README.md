@@ -13,11 +13,18 @@ Map customer fields and upsert them by ID in a Google Sheet.
 
 ## Setup and use
 
-Create a sheet with headers **ID**, **Full name**, **Email**, **Created time** in that order. Configure the spreadsheet and Google Sheets connection. Provide customer records with id, name and email in Open Flow. In n8n configure the sheet and run the training datastore workflow.
+Create a sheet with headers **ID**, **Full name**, **Email**, **Created time** in that order. Configure the spreadsheet and Google Sheets connection. Provide customer records with id, name and email in Open Flow.
 
 ## Behavior
 
-Each customer is mapped to those four columns, with the current time in Created time, and inserted or updated by ID. A later run updates the timestamp as well. An empty Open Flow input performs no write. The n8n upsert may append some rows before a later update fails. If a write result is unknown, inspect the sheet before retrying.
+Each customer is mapped to those four columns, with the current time in Created time, and inserted or updated by ID. A later run updates the timestamp as well. An empty Open Flow input performs no write. If a write result is unknown, inspect the sheet before retrying.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure the sheet and run the training datastore workflow. The n8n upsert may append some rows before a later update fails.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

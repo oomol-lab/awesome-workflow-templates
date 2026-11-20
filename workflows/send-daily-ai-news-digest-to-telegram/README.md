@@ -13,13 +13,20 @@ Collect recent AI articles from GNews and News API, summarize them in Traditiona
 
 ## Setup
 
-Create a secret Variable **GNEWS_API_KEY** and bind it in **Fetch recent GNews articles**. Connect News API in **Fetch recent News API articles** and Telegram in **Send the digest to Telegram**; set the Telegram chat ID. Configure the AI model. In n8n connect separate Header Auth credentials with the header name X-Api-Key for GNews and News API, select the AI model and Telegram bot, and configure the chat ID. Activate one format.
+Create a secret Variable **GNEWS_API_KEY** and bind it in **Fetch recent GNews articles**. Connect News API in **Fetch recent News API articles** and Telegram in **Send the digest to Telegram**; set the Telegram chat ID. Configure the AI model.
 
 ## Behavior
 
 Every day at 08:00 UTC, the workflow searches English articles for AI: the first 10 GNews results and the first 20 News API results. Duplicate URLs are combined. An Agent selects up to 15 articles, writes Traditional Chinese titles and concise summaries and includes their original URLs. The opening date uses UTC. If no articles are returned, no message is sent. Review the digest: AI can misinterpret or omit context, and source links or articles can change.
 
-The digest must fit Telegram's message limit; oversized or invalid model output or invalid source data stops before sending rather than being truncated. A failed or uncertain Telegram send may already have succeeded; check the chat before retrying. No automatic write retry or cross-run deduplication is added. n8n runs at a fixed second within the scheduled minute; Open Flow runs at the minute boundary. Restrict access to the API keys and execution history.
+The digest must fit Telegram's message limit; oversized or invalid model output or invalid source data stops before sending rather than being truncated. A failed or uncertain Telegram send may already have succeeded; check the chat before retrying. No automatic write retry or cross-run deduplication is added. Open Flow runs at the minute boundary. Restrict access to the API keys and execution history.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n connect separate Header Auth credentials with the header name X-Api-Key for GNews and News API, select the AI model and Telegram bot, and configure the chat ID. n8n runs at a fixed second within the scheduled minute.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

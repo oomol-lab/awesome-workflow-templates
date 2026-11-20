@@ -15,8 +15,6 @@ Create one Salesmate company with a name and an existing owner.
 
 Select your Salesmate account in **Create Salesmate company**. Run the workflow with the company **Name** and **Owner**, the numeric ID of an existing Salesmate user. The connected account must be allowed to create companies and assign that owner. The name must contain 1–255 characters.
 
-For n8n, edit **Create Salesmate company**:
-
 - Replace `your-link-name.salesmate.io` in both the URL and `x-linkname` header with your tenant link name.
 - Set the JSON body’s `name` and replace `owner: null` with the owner’s numeric user ID.
 - Select a **Header Auth** credential whose name is `accessToken` and whose value is your Salesmate access token. Keep the token in the credential.
@@ -24,6 +22,13 @@ For n8n, edit **Create Salesmate company**:
 Run manually after setup. Each run sends one company creation request and returns the complete API response. Other company fields use your account’s defaults; use a tenant where any additional required fields have defaults or configure those fields before use. Salesmate automations configured for new companies may also run.
 
 There is no lookup, upsert or duplicate detection. A failed request stops the run without an automatic retry. If a request times out, check Salesmate before running it again.
+
+<details>
+<summary>In n8n</summary>
+
+For n8n, edit **Create Salesmate company**:
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -15,11 +15,16 @@ Embed a Cloud Storage image dataset and index the results in Qdrant.
 
 Connect Qdrant Cloud and select a Google Cloud STS Workload Identity Connection in **List the next image page** with permission to list objects. Bind the **Embed crop images with Voyage** key input to the secret Variable `VOYAGE_API_KEY`. Enter a bucket, prefix and Qdrant collection. Image objects must be publicly readable by Voyage. Images are grouped by their parent folder; tomato is excluded for the source anomaly-detection example.
 
-In n8n, configure the Google Cloud Storage, Voyage and Qdrant credentials and the bucket, prefix and collection nodes. Use one format at a time.
-
 ## Behavior
 
 Cloud Storage pages of four are embedded with Voyage multimodal-3 and written as named `voyage` vectors with crop and image URL payloads. A new collection receives a cosine 1024-dimensional named vector and a crop index. Existing collections must already have that vector and index. Point IDs are derived from image URLs so retrying replaces the same points. A changed image at the same URL replaces its old vector. A run that stops can be restarted; check the collection after an uncertain create or write. Token and API access require appropriate permissions, and images are sent to Voyage.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, configure the Google Cloud Storage, Voyage and Qdrant credentials and the bucket, prefix and collection nodes. Use one format at a time.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

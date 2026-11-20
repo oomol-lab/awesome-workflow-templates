@@ -15,13 +15,18 @@ Email overdue and upcoming Notion tasks and send a Pushover notification each we
 
 Connect Notion, Gmail and Pushover. In **Read all Notion tasks**, configure the data source ID. The source needs a title property and properties named deadline (date), prio (select), status (status or select) and tags (multi-select). Set an HTTPS board URL and email recipient. Set the Pushover user key in **Send Pushover notice**, enable persistent State and prevent overlapping runs.
 
-In n8n set the data source ID and board URL in **Configure digest**, set SMTP and Pushover credentials and the sender address in **Send Email**, select a Data Table with item_key and status text columns, and configure the recipient and Pushover user key using credentials or an expression. Choose one format.
-
 ## Behavior
 
 Every Monday at 09:00 UTC, or on manual run, the workflow reads all pages, ignores tasks without a deadline, sorts the rest and groups deadlines at or before now as overdue and later deadlines as upcoming. It emails the digest and sends the Pushover notice. Both empty groups are allowed. Date-only deadlines are compared at midnight UTC. Task data is included in email and execution history. In Open Flow, each Code node input and output must fit within 1 MiB, including the accumulated Notion pages and rendered digest.
 
-Each action is checkpointed by UTC week. If email or notice delivery is unknown, inspect Gmail or Pushover before rerunning. In Open Flow enter its pending key in the corresponding reserve node and select confirmed if sent or absent if not; rerun and clear the fields. In n8n inspect the Data Table and services, finish any missing action manually and mark done, or remove the row only if neither action happened.
+Each action is checkpointed by UTC week. If email or notice delivery is unknown, inspect Gmail or Pushover before rerunning. In Open Flow enter its pending key in the corresponding reserve node and select confirmed if sent or absent if not; rerun and clear the fields.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n set the data source ID and board URL in **Configure digest**, set SMTP and Pushover credentials and the sender address in **Send Email**, select a Data Table with item_key and status text columns, and configure the recipient and Pushover user key using credentials or an expression. Choose one format. In n8n inspect the Data Table and services, finish any missing action manually and mark done, or remove the row only if neither action happened.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

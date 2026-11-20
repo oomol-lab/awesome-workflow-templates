@@ -17,8 +17,6 @@ Connect your Telegram bot in **Send the Telegram message**. Replace **Chat ID** 
 
 Enable the workflow webhook and copy its URL. Each valid GET request sends one message using the configured bot. This workflow does not register a Telegram update webhook or download media.
 
-In n8n, select **Telegram API** credentials on its send node and replace that node’s Chat ID. Keep GET, the last-node response mode, the `response` property and the plain-text content type. Activate one format for this endpoint.
-
 ## Use
 
 Supply one URL-encoded `parameter` value:
@@ -39,7 +37,14 @@ The name comes from Telegram’s returned private-chat first name. The quoted te
 
 The endpoint waits up to 60 seconds for the workflow result. Telegram errors, invalid receipts, cancellation or a response timeout can happen after a message was sent. Check the conversation before repeating such a request. Each replay can send another message; the workflow adds no retry, message history or deduplication.
 
-The workflow result also retains the complete message returned by its platform: Open Flow keeps the Action’s normalized message fields, while n8n keeps the Telegram API envelope. Only the confirmation text is returned by HTTP. Message text and returned data must fit the inspected Open Flow host’s 1 MiB per-Code input/result budget; oversized data fails without truncation.
+The workflow result also retains the complete message returned by its platform: Open Flow keeps the Action’s normalized message fields. Only the confirmation text is returned by HTTP. Message text and returned data must fit the inspected Open Flow host’s 1 MiB per-Code input/result budget; oversized data fails without truncation.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, select **Telegram API** credentials on its send node and replace that node’s Chat ID. Keep GET, the last-node response mode, the `response` property and the plain-text content type. Activate one format for this endpoint. N8n keeps the Telegram API envelope.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

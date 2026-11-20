@@ -15,15 +15,20 @@ Turn a Telegram text or voice project description into Todoist tasks and send co
 
 Connect the same Telegram bot to **Receive a Telegram message**, **Identify the connected bot**, **Get the voice file path** and **Confirm the task in Telegram**. For voice, bind secret Variable **TELEGRAM_TASK_BOT_TOKEN** to the matching bot token and enable the Telegram Provider API and access to api.telegram.org. Configure the trigger's chat or user filters to limit who can create tasks. Connect OpenAI for voice translation, configure the AI model, connect Todoist and set the project ID in **Choose the next task**.
 
-In n8n connect Telegram, OpenAI and Todoist, and choose the Todoist project. Enable only one format for a bot, as Telegram supports one webhook per bot.
-
 ## Behavior
 
 Send the bot a text or voice description of a project. Voice is translated into English by Whisper before analysis. The AI breaks the description into actionable tasks and assigns each a Todoist priority from 1 (lowest) to 4 (highest). Each task is created in order and confirmed in the original chat. Other message types are ignored. Review the generated tasks and priorities; model output can vary. Audio and text are sent to the configured AI services.
 
-Open Flow verifies that the download token belongs to the connected bot. Its voice bytes and Base64 representation must fit the host's 1 MiB fetch and Code limits; oversized audio fails rather than being truncated. The source n8n Telegram V1 trigger does not verify its callback secret, so protect its callback URL. Restrict execution history access because it can contain message and audio data.
+Open Flow verifies that the download token belongs to the connected bot. Its voice bytes and Base64 representation must fit the host's 1 MiB fetch and Code limits; oversized audio fails rather than being truncated. Restrict execution history access because it can contain message and audio data.
 
 If a later task or confirmation fails, earlier tasks remain. A failed or uncertain create/send may already have succeeded; inspect Todoist and Telegram before retrying. There is no cross-run deduplication.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n connect Telegram, OpenAI and Todoist, and choose the Todoist project. Enable only one format for a bot, as Telegram supports one webhook per bot. The source n8n Telegram V1 trigger does not verify its callback secret, so protect its callback URL.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

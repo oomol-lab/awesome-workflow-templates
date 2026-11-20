@@ -15,9 +15,14 @@ Repurpose an article or transcript into an X thread and LinkedIn post. The promp
 
 For Open Flow, import the JSON, select a configured `gpt-4o-mini` model in **Repurpose article**, and use Run. Supply the article as `source` and optional guidance as `voice_notes`. The output is `posts`.
 
+The workflow normalizes whitespace and sends the first 9,000 characters to the model. It requests `===TWITTER THREAD===` and `===LINKEDIN POST===` sections, with 6–9 tweets and a 120–220-word LinkedIn post. For insufficient material, the requested output begins `[NEEDS-HUMAN]` with a reason. These are model instructions; review grounding, length, and wording before publishing. Nothing is posted automatically.
+
+<details>
+<summary>In n8n</summary>
+
 For n8n, connect OpenAI in **Chat Model**, open **Article Form**, and submit the article and optional voice notes. **Show Posts** displays the result. Open Flow uses manual run inputs and outputs in place of the n8n hosted form.
 
-The workflow normalizes whitespace and sends the first 9,000 characters to the model. It requests `===TWITTER THREAD===` and `===LINKEDIN POST===` sections, with 6–9 tweets and a 120–220-word LinkedIn post. For insufficient material, the requested output begins `[NEEDS-HUMAN]` with a reason. These are model instructions; review grounding, length, and wording before publishing. Nothing is posted automatically.
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

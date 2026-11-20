@@ -13,13 +13,20 @@ Send each Webflow form submission to a matching Discord channel.
 
 ## Setup
 
-Connect a Discord bot with permission to list and create channels and send messages. Set the guild ID in both Discord nodes and the general channel ID in **Notify general channel**. Set the Webflow site ID in **Validate form submission**, enable persistent State, and register the workflow webhook as a Webflow form_submission webhook. In n8n select the Discord credentials, IDs, Webflow site ID and a Data Table with item_key and status text columns. Activate one format.
+Connect a Discord bot with permission to list and create channels and send messages. Set the guild ID in both Discord nodes and the general channel ID in **Notify general channel**. Set the Webflow site ID in **Validate form submission**, enable persistent State, and register the workflow webhook as a Webflow form_submission webhook.
 
 ## Use
 
 A submission finds a text channel named from its form name, or creates one and announces it in general. The submission is sent to that channel. Use form names that form valid Discord channel names and keep messages under 2,000 characters. Do not overlap submissions for the same form.
 
-The webhook does not verify Webflow signatures; restrict access at your deployment boundary. On uncertain channel creation or message delivery inspect Discord before retrying. In Open Flow enter the pending key and confirmed or absent in **Choose submission step**, plus the channel ID for a confirmed channel creation, and replay the same submission; clear recovery fields afterward. In n8n a failed Discord write stops on its error output or at the following error guard, with the checkpoint still pending. Inspect Discord and repair partial work before deleting that Data Table row. Protect form data in execution history.
+The webhook does not verify Webflow signatures; restrict access at your deployment boundary. On uncertain channel creation or message delivery inspect Discord before retrying. In Open Flow enter the pending key and confirmed or absent in **Choose submission step**, plus the channel ID for a confirmed channel creation, and replay the same submission; clear recovery fields afterward. Protect form data in execution history.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n select the Discord credentials, IDs, Webflow site ID and a Data Table with item_key and status text columns. In n8n a failed Discord write stops on its error output or at the following error guard, with the checkpoint still pending. Inspect Discord and repair partial work before deleting that Data Table row.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

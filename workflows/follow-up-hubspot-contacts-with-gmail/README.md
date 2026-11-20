@@ -13,13 +13,20 @@ Follow up older HubSpot contacts and log each sent email.
 
 ## Setup
 
-Connect HubSpot and Gmail to the intended accounts. In Open Flow, store a HubSpot private app token as the secret Variable HUBSPOT_PRIVATE_APP_TOKEN for both HubSpot HTTP nodes. Grant the token `crm.objects.contacts.read`, `crm.objects.contacts.write` and `sales-email-read`, with access to the same HubSpot account as the HubSpot connection. Enter the Gmail sender address and edit the subject and message in **Check eligibility and prepare the email**. In n8n, connect HubSpot OAuth on the search node, set an HTTP Header Auth credential containing `Authorization: Bearer YOUR_HUBSPOT_TOKEN` on both HTTP nodes, connect Gmail, and set the sender and message in the matching Code node. The OAuth connection and token must address the same HubSpot account. Enable only one format and avoid overlapping runs.
+Connect HubSpot and Gmail to the intended accounts. In Open Flow, store a HubSpot private app token as the secret Variable HUBSPOT_PRIVATE_APP_TOKEN for both HubSpot HTTP nodes. Grant the token `crm.objects.contacts.read`, `crm.objects.contacts.write` and `sales-email-read`, with access to the same HubSpot account as the HubSpot connection. Enter the Gmail sender address and edit the subject and message in **Check eligibility and prepare the email**. The OAuth connection and token must address the same HubSpot account. Enable only one format and avoid overlapping runs.
 
 ## Behavior
 
-At 09:00 UTC each day, search up to the first 100 contacts with a known last-contacted date, oldest first. For each contact last contacted over 30 days ago, read its HubSpot engagement associations. Exactly one association with no next page qualifies the contact. Send a Gmail message, then log an email engagement associated with that contact. Zero, multiple or paginated associations do not send. The association check counts all engagement types, not just email. Open Flow starts on the minute boundary; n8n uses a fixed second within the minute.
+At 09:00 UTC each day, search up to the first 100 contacts with a known last-contacted date, oldest first. For each contact last contacted over 30 days ago, read its HubSpot engagement associations. Exactly one association with no next page qualifies the contact. Send a Gmail message, then log an email engagement associated with that contact. Zero, multiple or paginated associations do not send. The association check counts all engagement types, not just email. Open Flow starts on the minute boundary.
 
-The original n8n schedule used the instance timezone; adjust UTC if needed. This checks only the first 100 search results each run and search indexing can delay changes. Concurrent contact updates can change eligibility after the check. Missing contact details or invalid API responses stop processing. A send or engagement write can succeed even when its response is lost. If a send succeeded but logging failed or was uncertain, a later run can send again; inspect Gmail and HubSpot before retrying. Earlier contacts may already have been processed when a later one fails.
+This checks only the first 100 search results each run and search indexing can delay changes. Concurrent contact updates can change eligibility after the check. Missing contact details or invalid API responses stop processing. A send or engagement write can succeed even when its response is lost. If a send succeeded but logging failed or was uncertain, a later run can send again; inspect Gmail and HubSpot before retrying. Earlier contacts may already have been processed when a later one fails.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect HubSpot OAuth on the search node, set an HTTP Header Auth credential containing `Authorization: Bearer YOUR_HUBSPOT_TOKEN` on both HTTP nodes, connect Gmail, and set the sender and message in the matching Code node. N8n uses a fixed second within the minute. The original n8n schedule used the instance timezone; adjust UTC if needed.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

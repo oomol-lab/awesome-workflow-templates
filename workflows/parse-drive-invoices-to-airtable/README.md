@@ -13,9 +13,16 @@ Parse new PDF invoices and save linked invoice and line item records in Airtable
 
 ## Setup and use
 
-Import both Open Flow workflows, configure and publish Invoice PDF Worker, then refresh the Process one PDF capability in the dispatcher. Connect Google Drive, Airtable and a model. Configure the watched folder, Airtable base and two tables. In Invoices create a Name text field; in Line Items create Description, Qty, Unit price, Amount and an Invoices linked-record field. Configure a LlamaCloud Bearer token in LLAMA_AUTHORIZATION and a protected n8n PDF upload relay; bind N8N_RELAY_AUTHORIZATION. For n8n, create a Data Table with text columns item_key and status, configure its ID on the checkpoint nodes, and connect Google Drive, Airtable, LlamaCloud header authentication and the model. The relay webhook uses header authentication: set its credential to match N8N_RELAY_AUTHORIZATION, configure the relay Drive and LlamaCloud credentials, activate the n8n workflow and set the worker URL to its production webhook URL. Use one format at a time.
+Import both Open Flow workflows, configure and publish Invoice PDF Worker, then refresh the Process one PDF capability in the dispatcher. Connect Google Drive, Airtable and a model. Configure the watched folder, Airtable base and two tables. In Invoices create a Name text field; in Line Items create Description, Qty, Unit price, Amount and an Invoices linked-record field.
 
 Each new PDF is uploaded and parsed by LlamaParse. The model extracts its line items; the workflow creates one invoice record and a linked record for each line. Verify AI output against the PDF. State keeps the parse job, parent ID and completed line index; inspect LlamaCloud or Airtable before clearing a pending checkpoint. Avoid overlapping runs.
+
+<details>
+<summary>In n8n</summary>
+
+Configure a LlamaCloud Bearer token in LLAMA_AUTHORIZATION and a protected n8n PDF upload relay; bind N8N_RELAY_AUTHORIZATION. For n8n, create a Data Table with text columns item_key and status, configure its ID on the checkpoint nodes, and connect Google Drive, Airtable, LlamaCloud header authentication and the model. The relay webhook uses header authentication: set its credential to match N8N_RELAY_AUTHORIZATION, configure the relay Drive and LlamaCloud credentials, activate the n8n workflow and set the worker URL to its production webhook URL.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

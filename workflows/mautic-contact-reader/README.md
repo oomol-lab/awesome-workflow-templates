@@ -15,11 +15,18 @@ Read up to 30 contact records from a Mautic instance, including their grouped fi
 
 Enable the API on your Mautic instance. In Open Flow, select your Mautic account in **Read first 30 Mautic contacts** and allow `mautic.list_contacts`. Configure the instance URL, username and password in the connection; the instance must permit API Basic authentication, and the user needs permission to view contacts.
 
-The n8n format retains the source’s OAuth2 authentication. Configure Mautic OAuth2 credentials for the same instance in **Mautic**. The two formats use different authentication methods, so configure each connection separately. Run the workflow manually.
+Configure Mautic OAuth2 credentials for the same instance in **Mautic**. The two formats use different authentication methods, so configure each connection separately. Run the workflow manually.
 
 Each run reads one page of up to 30 contacts, starting at row zero, with no search or ordering filter. It retains the complete contact objects, including grouped fields and null values supplied by Mautic. Open Flow also returns the matching total reported by the API; this can exceed the number of returned records. An empty result returns an empty contacts array.
 
 This workflow does not collect every page, flatten contact fields, create contacts or change campaigns or segments. A failed request stops the run without an automatic retry.
+
+<details>
+<summary>In n8n</summary>
+
+The n8n format retains the source’s OAuth2 authentication.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

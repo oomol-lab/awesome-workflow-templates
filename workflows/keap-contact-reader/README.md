@@ -17,13 +17,18 @@ Use a Keap CRM account and an existing application authorized for REST API v1. K
 
 In Open Flow, store a valid OAuth access token with Keap’s `full` scope in a secret Variable. Bind **Auth Token** (`auth.token`) in **Read first Keap contacts page** to that Variable. Renew it when it expires. The workflow does not acquire or refresh tokens. Shared JSON contains no token or Variable binding.
 
-In n8n, select a generic **OAuth2 API** credential in **Read first Keap contacts page**. Use **Authorization Code**, your Keap app client ID and secret, authorization URL `https://accounts.infusionsoft.com/app/oauth/authorize`, access-token URL `https://api.infusionsoft.com/token`, and scope `full`. Register the HTTPS callback URL shown by n8n in your Keap application. Leave PKCE and extra query/body parameters unset.
-
-Keap uses different client authentication for the two token operations. Set **Authentication** to **Body**, connect the account, and complete consent. After it is connected, change only **Authentication** to **Header** and save the same credential without reconnecting. This preserves the stored tokens and makes later refresh requests use Basic client authentication. Repeat Body → connect → Header → save whenever you reconnect. Keep the client ID, secret and token URLs unchanged during that switch. The [Keap authentication guide](https://developer.keap.com/authentication/) documents the initial body credentials and Basic refresh. This template uses generic OAuth2 because the source Keap credential fixes both operations to Body. n8n stores each new refresh token for subsequent refreshes. The two formats have different token-management requirements.
+Keap uses different client authentication for the two token operations. Set **Authentication** to **Body**, connect the account, and complete consent. After it is connected, change only **Authentication** to **Header** and save the same credential without reconnecting. This preserves the stored tokens and makes later refresh requests use Basic client authentication. Repeat Body → connect → Header → save whenever you reconnect. Keep the client ID, secret and token URLs unchanged during that switch. The [Keap authentication guide](https://developer.keap.com/authentication/) documents the initial body credentials and Basic refresh. This template uses generic OAuth2 because the source Keap credential fixes both operations to Body. The two formats have different token-management requirements.
 
 Each normal manual run makes one GET request with `limit=100`, with no filter, explicit offset or optional-property expansion. It does not follow the next-page link or read individual contact details. This is a first-page read, not a complete account export. Properties excluded by the API’s default projection remain absent.
 
-Open Flow returns the complete page response, the contact records and their returned count. n8n returns one item per contact. An empty page yields an empty array and count zero in Open Flow, and no result items in n8n. No contacts are created or changed. n8n can refresh an expired token and resend that read once; Open Flow requires manual token renewal. Other errors stop the run and no workflow retry is configured. Both HTTP steps use a 30-second timeout; this is not a total authorization/refresh budget.
+Open Flow returns the complete page response, the contact records and their returned count. No contacts are created or changed. Open Flow requires manual token renewal. Other errors stop the run and no workflow retry is configured. Both HTTP steps use a 30-second timeout; this is not a total authorization/refresh budget.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, select a generic **OAuth2 API** credential in **Read first Keap contacts page**. Use **Authorization Code**, your Keap app client ID and secret, authorization URL `https://accounts.infusionsoft.com/app/oauth/authorize`, access-token URL `https://api.infusionsoft.com/token`, and scope `full`. Register the HTTPS callback URL shown by n8n in your Keap application. Leave PKCE and extra query/body parameters unset. n8n stores each new refresh token for subsequent refreshes. n8n returns one item per contact. An empty page yields an empty array and count zero in Open Flow, and no result items in n8n. n8n can refresh an expired token and resend that read once.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

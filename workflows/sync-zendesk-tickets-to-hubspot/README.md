@@ -15,13 +15,18 @@ Create or update HubSpot tickets from changed Zendesk tickets and link new ticke
 
 Connect Zendesk for incremental ticket export and user/ticket updates. Bind a HubSpot private app token with contact, ticket and association access as Secret Variable `HUBSPOT_TOKEN`. Set the HubSpot ticket pipeline and stage IDs in **Prepare new ticket**. Enable persistent State and prevent overlapping runs.
 
-In n8n configure the Zendesk subdomain, a fixed initial Unix start time, and the HubSpot pipeline and stage in **Configure export**. Use HTTP Header Auth credentials containing the appropriate Zendesk OAuth bearer token and HubSpot private app bearer token for their respective HTTP nodes. Create a Data Table with text columns `ticket_key` and `status`, select it in the checkpoint nodes, and prevent overlapping runs. Activate one format.
-
 ## Behavior
 
 Every five minutes the workflow reads changed Zendesk tickets using a cursor-based incremental export. In Open Flow the initial cursor starts two minutes before activation; Zendesk holds back the most recent minute. Existing external IDs identify HubSpot tickets to update. For a new ticket, the workflow upserts the requester by email, stores the contact ID on the Zendesk user, creates and associates a HubSpot ticket, then stores its ID on the Zendesk ticket.
 
-The cursor advances only after every ticket on a page is confirmed. If a write result is unknown, inspect both services and complete or undo the partial work before entering that Zendesk ticket ID in **Check pending ticket** to acknowledge it. Previously completed tickets are skipped during page retry. In n8n one export page is processed per scheduled run, so a backlog takes multiple runs. On a pending row, inspect and reconcile both services before setting its status to `done`; remove the row only if it is safe to retry. The initial start time must be at least one minute old and remains fixed across retries.
+The cursor advances only after every ticket on a page is confirmed. If a write result is unknown, inspect both services and complete or undo the partial work before entering that Zendesk ticket ID in **Check pending ticket** to acknowledge it. Previously completed tickets are skipped during page retry. On a pending row, inspect and reconcile both services before setting its status to `done`; remove the row only if it is safe to retry. The initial start time must be at least one minute old and remains fixed across retries.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure the Zendesk subdomain, a fixed initial Unix start time, and the HubSpot pipeline and stage in **Configure export**. Use HTTP Header Auth credentials containing the appropriate Zendesk OAuth bearer token and HubSpot private app bearer token for their respective HTTP nodes. Create a Data Table with text columns `ticket_key` and `status`, select it in the checkpoint nodes, and prevent overlapping runs. Activate one format. In n8n one export page is processed per scheduled run, so a backlog takes multiple runs.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

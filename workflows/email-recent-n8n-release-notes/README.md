@@ -13,11 +13,18 @@ Check the latest n8n GitHub release daily and email its release notes when it is
 
 ## Setup and use
 
-Import the supplied n8n workflow and configure SMTP credentials and sender and recipient addresses on both email nodes. For n8n mode enable **Daily Trigger** and disable **SMTP relay webhook**. For Open Flow mode disable **Daily Trigger**, enable the relay, activate n8n and enter its production URL in **Send notes to SMTP relay**. Use one mode. The relay does not authenticate callers; restrict access to it. Both formats use UTC by default; change their schedules to your timezone if desired.
+Configure SMTP credentials and sender and recipient addresses on both email nodes. The relay does not authenticate callers; restrict access to it. The workflow uses UTC by default; change their schedules to your timezone if desired.
 
 ## Behavior
 
 Daily at midnight, fetch the latest n8n release. When published less than 24 hours ago, convert its Markdown notes to HTML and send an email with the subject New n8n release. The relay responds after SMTP submission; a lost response may mean the email was already sent. Inspect your mail before rerunning.
+
+<details>
+<summary>In n8n</summary>
+
+Import the supplied n8n workflow and configure SMTP credentials and sender and recipient addresses on both email nodes. For n8n mode enable **Daily Trigger** and disable **SMTP relay webhook**. For Open Flow mode disable **Daily Trigger**, enable the relay, activate n8n and enter its production URL in **Send notes to SMTP relay**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

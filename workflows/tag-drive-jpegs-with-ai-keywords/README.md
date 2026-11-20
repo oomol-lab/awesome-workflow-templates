@@ -13,13 +13,20 @@ Analyze new JPEG images and add descriptive XMP keywords to the original files.
 
 ## Setup
 
-Connect Google Drive and Gemini. Select a Drive folder in **Watch for new Drive JPEGs**, enable persistent State and set the connector transit hostname in **Prepare JPEG analysis**. In n8n select the same folder, connect Google Drive and Gemini, and select one Data Table with text columns `item_key` and `status` for the checkpoint nodes. Use one format and avoid overlapping runs.
+Connect Google Drive and Gemini. Select a Drive folder in **Watch for new Drive JPEGs**, enable persistent State and set the connector transit hostname in **Prepare JPEG analysis**. Use one format and avoid overlapping runs.
 
 ## Behavior
 
 The workflow analyzes each new JPEG and embeds keywords in an XMP subject in the same Drive file. Gemini receives the image; generated keywords may be inaccurate. Open Flow handles files whose complete bytes and encoded request fit its 1 MiB Code and fetch budgets. It merges keywords into existing XMP subject metadata and retains other XMP fields and JPEG segments. Invalid or ambiguous XMP stops the run for review. Keep original backups and restrict transit URLs and execution history.
 
-An uncertain update stops processing. Inspect the original file before retrying. For Open Flow enter `drive-xmp:<file ID>` and `confirmed` or `absent` in **Choose the next JPEG**, use **Retry a Drive file** with the same file ID, and clear the recovery fields. For n8n inspect the pending Data Table row, mark it done if the change is present or delete it only if absent, enable the authenticated **Resume JPEG** webhook and POST the original `fileId`.
+An uncertain update stops processing. Inspect the original file before retrying. For Open Flow enter `drive-xmp:<file ID>` and `confirmed` or `absent` in **Choose the next JPEG**, use **Retry a Drive file** with the same file ID, and clear the recovery fields.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n select the same folder, connect Google Drive and Gemini, and select one Data Table with text columns `item_key` and `status` for the checkpoint nodes. For n8n inspect the pending Data Table row, mark it done if the change is present or delete it only if absent, enable the authenticated **Resume JPEG** webhook and POST the original `fileId`.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

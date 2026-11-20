@@ -13,11 +13,18 @@ Receive Mailchimp audience subscribe notifications.
 
 ## Setup and use
 
-Import the n8n workflow, connect Mailchimp and select the audience in **Mailchimp Trigger**. Activate it to register the webhook; its URL must be publicly reachable by Mailchimp. For Open Flow enter its webhook URL in **Forward to Open Flow** and enable that node; leave it disabled for n8n alone. Restrict access to the webhook endpoints.
+Connect Mailchimp and select the audience in **Mailchimp Trigger**. Activate it to register the webhook; its URL must be publicly reachable by Mailchimp. For Open Flow enter its webhook URL in **Forward to Open Flow** and enable that node. Restrict access to the webhook endpoints.
 
 ## Behavior
 
-The trigger receives subscribe events from API, admin and user sources. Form-encoded nested keys are retained in their parsed form. The optional relay forwards each event to Open Flow. The fixed n8n trigger does not verify Mailchimp signatures; restrict access and inspect n8n execution history for relay failures. Subscriber data may appear in execution history. Event details may appear in execution history.
+The trigger receives subscribe events from API, admin and user sources. Form-encoded nested keys are retained in their parsed form. The optional relay forwards each event to Open Flow. Subscriber data may appear in execution history. Event details may appear in execution history.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow, connect Mailchimp and select the audience in **Mailchimp Trigger**. Leave it disabled for n8n alone. The fixed n8n trigger does not verify Mailchimp signatures; restrict access and inspect n8n execution history for relay failures.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

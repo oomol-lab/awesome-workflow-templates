@@ -11,10 +11,9 @@ Turn ticket-tagged Slack messages into structured Linear support tickets, retain
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
 
-
 ## Configure
 
-Connect Slack using a user token with `search:read` and access to your support channel. Set the query on the Slack search node; the starter query selects messages carrying the ticket emoji. Connect Linear and replace the team and state IDs on the create node. Configure the `gpt-5-mini` model connection. Test before enabling the five-minute schedule. Both templates start with UTC; the original schedule inherited the n8n instance timezone.
+Connect Slack using a user token with `search:read` and access to your support channel. Set the query on the Slack search node; the starter query selects messages carrying the ticket emoji. Connect Linear and replace the team and state IDs on the create node. Configure the `gpt-5-mini` model connection. Test before enabling the five-minute schedule. The workflow start with UTC.
 
 ## Behavior
 
@@ -24,7 +23,14 @@ The description retains the summary, up to three suggestions, original author/me
 
 Deduplication covers only hashes in these bounded issue scans. Older issues outside the window, concurrent runs and an uncertain creation response can still produce duplicates. Avoid overlapping runs and inspect Linear before repeating a failed run. No write is automatically retried. A failure creating or confirming a later ticket leaves earlier tickets created; the run does not return a success report for the incomplete batch. The Open Flow Action also reads the newly created issue to confirm it; a lost confirmation can follow a successful creation.
 
-The source leaves its OpenAI model unspecified. The pinned current n8n model node defaults to `gpt-5-mini`, now made explicit in both files. Open Flow uses one native Agent round with structured output and no tools, memory or code. It uses the deployment's Agent generation settings. The n8n ChatOpenAI adapter permits two transient transport retries; the Open Flow Agent executor does not retry that transport failure. Neither format adds a workflow retry. Check the [model documentation](https://developers.openai.com/api/docs/models/gpt-5-mini) and your configured route before enabling the schedule. The source's optional RAG/tools suggestion is not implemented in its graph. Model quality, account permissions and live API access require your own testing.
+The source leaves its OpenAI model unspecified. Open Flow uses one native Agent round with structured output and no tools, memory or code. It uses the deployment's Agent generation settings. The Open Flow Agent executor does not retry that transport failure. Neither format adds a workflow retry. Check the [model documentation](https://developers.openai.com/api/docs/models/gpt-5-mini) and your configured route before enabling the schedule. The source's optional RAG/tools suggestion is not implemented in its graph. Model quality, account permissions and live API access require your own testing.
+
+<details>
+<summary>In n8n</summary>
+
+The original schedule inherited the n8n instance timezone. The pinned current n8n model node defaults to `gpt-5-mini`, now made explicit in both files. The n8n ChatOpenAI adapter permits two transient transport retries.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

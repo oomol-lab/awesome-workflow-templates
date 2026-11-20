@@ -15,13 +15,18 @@ Identify a customer and add the customer ID to an existing manual segment in Cus
 
 Connect Customer.io using the Track API Site ID and API key. Grant Provider API Request access to the same connection. In **Configure customer and segment**, replace the example customer ID `2`, enter an existing numeric manual segment ID and set the `Name` value. The original workflow puts that value inside the `data` profile attribute.
 
-In n8n, select the same Customer.io Track credentials on both nodes, set the customer ID and Name in **CustomerIo**, and replace `YOUR_SEGMENT_ID` in the segment node expression with the actual numeric segment ID. Run one format for each intended request.
-
 ## Behavior
 
-Run manually. The workflow identifies or updates the customer, then submits the same ID to the manual segment. It does not work with data-driven segments. Customer.io accepts segment requests without checking whether the person exists; an accepted response alone does not prove membership. Open Flow returns the customer ID and acceptance flag; n8n returns the segment node result.
+Run manually. The workflow identifies or updates the customer, then submits the same ID to the manual segment. It does not work with data-driven segments. Customer.io accepts segment requests without checking whether the person exists; an accepted response alone does not prove membership. Open Flow returns the customer ID and acceptance flag.
 
 A failed or uncertain identify or segment request may already have changed Customer.io. Check the profile and segment before repeating. Neither format rolls back an earlier request.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, select the same Customer.io Track credentials on both nodes, set the customer ID and Name in **CustomerIo**, and replace `YOUR_SEGMENT_ID` in the segment node expression with the actual numeric segment ID. Run one format for each intended request. N8n returns the segment node result.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

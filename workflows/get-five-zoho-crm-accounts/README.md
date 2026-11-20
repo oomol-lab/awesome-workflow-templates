@@ -13,13 +13,20 @@ Read Zoho CRM accounts and return up to five records.
 
 ## Setup and use
 
-Use an OAuth access token with account read permission. In Open Flow, bind a secret Variable containing the complete header value `Zoho-oauthtoken YOUR_ACCESS_TOKEN` in **Read account page** and run with your Zoho API domain, such as `https://www.zohoapis.com`. Refresh or replace the token when it expires. In n8n, connect Zoho OAuth credentials for the same data center.
+Use an OAuth access token with account read permission. In Open Flow, bind a secret Variable containing the complete header value `Zoho-oauthtoken YOUR_ACCESS_TOKEN` in **Read account page** and run with your Zoho API domain, such as `https://www.zohoapis.com`. Refresh or replace the token when it expires.
 
 ## Behavior
 
-The source defaults to accounts, a limit of five, and no filters. Both formats request pages of up to 200 until Zoho reports no more records, then return the first five. The output order follows Zoho; the workflow does not request a specific sort order. It may read more than five records before returning and is not a full account export.
+The source defaults to accounts, a limit of five, and no filters. The workflow request pages of up to 200 until Zoho reports no more records, then return the first five. The output order follows Zoho; the workflow does not request a specific sort order. It may read more than five records before returning and is not a full account export.
 
-Open Flow returns a state object with the records and number of pages read; n8n emits records as separate items. Records can change while pages are being read.
+Open Flow returns a state object with the records and number of pages read. Records can change while pages are being read.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect Zoho OAuth credentials for the same data center. N8n emits records as separate items.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

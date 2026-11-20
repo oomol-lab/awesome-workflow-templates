@@ -15,13 +15,18 @@ Sum captured Stripe charges by customer email and update a HubSpot contact prope
 
 Store a Stripe secret key as Secret Variable `STRIPE_SECRET_KEY` and a HubSpot access token as `HUBSPOT_TOKEN`. Grant charge and customer read access in Stripe and contact and property access in HubSpot. Configure the HubSpot property ID and label in **Choose sync step**. The workflow creates the numeric property if missing; set **checkProperty** to false if you maintain it separately. Enable persistent State and prevent overlapping runs.
 
-In n8n, connect Stripe and HubSpot and configure the property in **Configure**. Run one format. The schedule uses UTC.
-
 ## Behavior
 
 Each day, read all charges, ignore those without a customer, fetch each distinct customer, sum `amount_captured` by email, divide by 100, and create or update the matching HubSpot contact. As in the source, amounts are added without currency conversion and divided by 100; use this only when that calculation matches your Stripe currencies. Customers without an email cannot be matched.
 
 If a HubSpot write has an unknown result, inspect HubSpot before entering its pending key in **Choose sync step**. Acknowledgement treats the write as completed.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect Stripe and HubSpot and configure the property in **Configure**. Run one format. The schedule uses UTC.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

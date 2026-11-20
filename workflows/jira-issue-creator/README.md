@@ -13,11 +13,18 @@ Create a Jira Cloud issue with a project ID, issue type ID and summary.
 
 ## Setup
 
-Select your Jira account in **Create Jira issue**. Run with **Project ID**, **Issue Type ID** and **Summary**. Use a regular issue type whose required creation fields are satisfied by these values. If your project requires more fields, set them in the Action before running. In n8n, choose Jira Cloud credentials, the project and issue type, and set the summary in **Jira**. Add any required fields under **Additional Fields**.
+Select your Jira account in **Create Jira issue**. Run with **Project ID**, **Issue Type ID** and **Summary**. Use a regular issue type whose required creation fields are satisfied by these values. If your project requires more fields, set them in the Action before running. Add any required fields under **Additional Fields**.
 
-The account needs permission to create and read issues in the project. Open Flow’s create Action creates the issue and then reads it to return the normalized issue with its raw fields. n8n checks the issue type before creation and returns Jira’s creation acknowledgment. Neither format assigns a user, sets a due date or changes the issue status in this template. Jira applies the project’s defaults and notification rules.
+The account needs permission to create and read issues in the project. Open Flow’s create Action creates the issue and then reads it to return the normalized issue with its raw fields. Neither format assigns a user, sets a due date or changes the issue status in this template. Jira applies the project’s defaults and notification rules.
 
 Each run can create another issue. No lookup, duplicate detection or workflow retry is configured. If the read after creation fails in Open Flow, the issue remains created. Check Jira before repeating an uncertain request.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, choose Jira Cloud credentials, the project and issue type, and set the summary in **Jira**. n8n checks the issue type before creation and returns Jira’s creation acknowledgment.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

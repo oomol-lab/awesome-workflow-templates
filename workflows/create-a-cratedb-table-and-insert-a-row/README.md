@@ -13,11 +13,18 @@ Create a CrateDB table and insert a row.
 
 ## Setup and use
 
-Bind CRATEDB_USER and CRATEDB_PASSWORD as secret Variables. Run with the CrateDB base URL and the ID and name to insert. In n8n configure the CrateDB PostgreSQL connection and edit the Set node to choose the row. Use one format.
+Bind CRATEDB_USER and CRATEDB_PASSWORD as secret Variables. Run with the CrateDB base URL and the ID and name to insert.
 
 ## Behavior
 
 The workflow creates a table named test with id INT and name STRING, inserts the row, and returns the inserted data. It fails if the table already exists. Both operations change the database; inspect it before retrying an uncertain write.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure the CrateDB PostgreSQL connection and edit the Set node to choose the row.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

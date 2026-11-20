@@ -13,11 +13,18 @@ Receive notifications when a survey response begins.
 
 ## Setup and use
 
-Import and activate the n8n workflow. Register its **Receive SurveyMonkey event** production URL with the SurveyMonkey v3 Webhooks API for response_created and your survey ID. Store the app client ID and secret as SURVEYMONKEY_CLIENT_ID and SURVEYMONKEY_CLIENT_SECRET in the n8n environment and allow the workflow to access them. For Open Flow, enter its webhook URL in **Forward to Open Flow** and enable that node; leave it disabled for n8n alone. Restrict access to the relay endpoint.
+Register its **Receive SurveyMonkey event** production URL with the SurveyMonkey v3 Webhooks API for response_created and your survey ID. For Open Flow, enter its webhook URL in **Forward to Open Flow** and enable that node. Restrict access to the relay endpoint.
 
 ## Behavior
 
-The webhook answers the registration HEAD request and checks each POST HMAC-SHA1 signature over the original bytes before parsing. It emits the complete event; unsafe integer values become decimal strings. The optional relay forwards each event to Open Flow. Inspect n8n execution history for forwarding failures. Events may contain personal information.
+The webhook answers the registration HEAD request and checks each POST HMAC-SHA1 signature over the original bytes before parsing. It emits the complete event; unsafe integer values become decimal strings. The optional relay forwards each event to Open Flow. Events may contain personal information.
+
+<details>
+<summary>In n8n</summary>
+
+Import and activate the n8n workflow. Store the app client ID and secret as SURVEYMONKEY_CLIENT_ID and SURVEYMONKEY_CLIENT_SECRET in the n8n environment and allow the workflow to access them. Leave it disabled for n8n alone. Inspect n8n execution history for forwarding failures.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

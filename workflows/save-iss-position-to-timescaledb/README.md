@@ -13,11 +13,18 @@ Save the current International Space Station position to TimescaleDB every minut
 
 ## Setup and use
 
-Create an iss table with latitude, longitude and timestamp columns compatible with the numeric values and Unix timestamp. Import the supplied n8n workflow and connect both TimescaleDB nodes to that database. For n8n mode enable **Cron** and disable **TimescaleDB relay webhook**. For Open Flow mode disable **Cron**, enable the relay webhook, activate n8n and enter its production URL in **Send to TimescaleDB relay**. Use one mode. The relay does not authenticate callers; restrict access to it.
+Create an iss table with latitude, longitude and timestamp columns compatible with the numeric values and Unix timestamp. Connect both TimescaleDB nodes to that database. The relay does not authenticate callers; restrict access to it.
 
 ## Behavior
 
-Every minute, read the current ISS position and insert its latitude, longitude and Unix timestamp. In Open Flow mode the n8n relay responds after the insert completes; a database error returns an HTTP failure. If a response is lost, a row may already have been inserted.
+Every minute, read the current ISS position and insert its latitude, longitude and Unix timestamp. If a response is lost, a row may already have been inserted.
+
+<details>
+<summary>In n8n</summary>
+
+Import the supplied n8n workflow and connect both TimescaleDB nodes to that database. For n8n mode enable **Cron** and disable **TimescaleDB relay webhook**. For Open Flow mode disable **Cron**, enable the relay webhook, activate n8n and enter its production URL in **Send to TimescaleDB relay**. In Open Flow mode the n8n relay responds after the insert completes; a database error returns an HTTP failure.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

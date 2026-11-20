@@ -20,7 +20,7 @@ In Open Flow, replace the host in **Subscribe to list** and **Create and send ca
 - Subscription body: `api_key=KEY&name=NAME&email=EMAIL&list=LIST_ID&boolean=true`.
 - Campaign body: `api_key=KEY&from_name=NAME&from_email=EMAIL&reply_to=EMAIL&title=TITLE&subject=SUBJECT&html_text=HTML&list_ids=LIST_ID&send_campaign=1&boolean=true`.
 
-The examples show field names, not ready-to-send values. Encode special characters in each value before joining the fields, keep both bodies secret, and use an endpoint that does not redirect. In n8n, configure **Subscribe to list** with a Custom Auth credential containing JSON with `headers` set to `{ "Content-Type": "application/x-www-form-urlencoded" }` and `body` containing `api_key`, `name`, `email`, `list`, and `boolean` set to `"true"`. For example, the credential JSON is:
+The examples show field names, not ready-to-send values. Encode special characters in each value before joining the fields, keep both bodies secret, and use an endpoint that does not redirect. For example, the credential JSON is:
 
 ```json
 { "headers": { "Content-Type": "application/x-www-form-urlencoded" }, "body": { "api_key": "YOUR_KEY", "name": "YOUR_NAME", "email": "YOUR_EMAIL", "list": "YOUR_LIST_ID", "boolean": "true" } }
@@ -31,6 +31,13 @@ Configure the Sendy credential and sender, campaign and list fields in **Sendy1*
 ## Behavior
 
 A successful subscription request is followed by campaign creation with immediate sending enabled. Sendy may return that the campaign was created or is now sending; this is not proof of delivery. Failure stops later steps. No automatic retry or rollback is configured. A lost response may mean the subscription or campaign succeeded, so inspect Sendy before retrying.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, configure **Subscribe to list** with a Custom Auth credential containing JSON with `headers` set to `{ "Content-Type": "application/x-www-form-urlencoded" }` and `body` containing `api_key`, `name`, `email`, `list`, and `boolean` set to `"true"`.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

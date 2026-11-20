@@ -13,11 +13,18 @@ Respond to a GET webhook with an example XML document.
 
 ## Setup and use
 
-Deploy the Open Flow webhook and send it a GET request. In n8n set the webhook path, activate the workflow and call its production URL. Use one format.
+Deploy the Open Flow webhook and send it a GET request.
 
 ## Behavior
 
 The endpoint returns HTTP 200 with application/xml and an example document containing number 1 and string my text. It does not use request data or authenticate the caller.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n set the webhook path, activate the workflow and call its production URL.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

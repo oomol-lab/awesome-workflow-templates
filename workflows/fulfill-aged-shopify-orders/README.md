@@ -13,13 +13,20 @@ Find unfulfilled Shopify orders older than one day and create fulfillments with 
 
 ## Setup
 
-Use a Shopify app with order read and appropriate fulfillment-order read/write scopes, plus a user permitted to fulfill orders. The workflow uses the [Shopify 2026-07 fulfillmentCreate API](https://shopify.dev/docs/api/admin-graphql/2026-07/mutations/fulfillmentCreate). Shopify normally limits order access to the most recent 60 days unless the app has all-orders access. Configure the store subdomain in **Prepare Shopify orders page** and bind secret variable `SHOPIFY_ADMIN_ACCESS_TOKEN`. Enable persistent State and prevent overlapping runs. In n8n configure the store subdomain in **Configure Shopify**, a Header Auth credential with header X-Shopify-Access-Token, and a Data Table with item_key and status text columns. Use one format.
+Use a Shopify app with order read and appropriate fulfillment-order read/write scopes, plus a user permitted to fulfill orders. The workflow uses the [Shopify 2026-07 fulfillmentCreate API](https://shopify.dev/docs/api/admin-graphql/2026-07/mutations/fulfillmentCreate). Shopify normally limits order access to the most recent 60 days unless the app has all-orders access. Configure the store subdomain in **Prepare Shopify orders page** and bind secret variable `SHOPIFY_ADMIN_ACCESS_TOKEN`. Enable persistent State and prevent overlapping runs.
 
 ## Behavior
 
 A manual or daily 09:00 UTC run reads available open, unfulfilled or partially fulfilled orders and selects those strictly older than 24 hours. It uses the first fulfillment order for each order and creates a fulfillment for all its remaining line items with customer notification enabled. Orders without a fulfillment order are skipped. The source is intended for stores selling digital downloads or using fulfillment services; confirm the selected orders are appropriate for automatic fulfillment. Shopify can reject a fulfillment based on its status or permissions. Open Flow Code inputs and outputs must each fit within 1 MiB.
 
-A fulfillment with an unknown result may already exist. Inspect Shopify and complete any missing action manually. In Open Flow enter the fulfillment order ID in **Reserve next fulfillment**, run once to acknowledge the reconciled action, then clear it. In n8n inspect the pending Data Table row and Shopify, then mark the row done if fulfilled or delete it only if absent. Do not overlap runs.
+A fulfillment with an unknown result may already exist. Inspect Shopify and complete any missing action manually. In Open Flow enter the fulfillment order ID in **Reserve next fulfillment**, run once to acknowledge the reconciled action, then clear it. Do not overlap runs.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure the store subdomain in **Configure Shopify**, a Header Auth credential with header X-Shopify-Access-Token, and a Data Table with item_key and status text columns. In n8n inspect the pending Data Table row and Shopify, then mark the row done if fulfilled or delete it only if absent.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

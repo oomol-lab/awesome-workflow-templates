@@ -13,11 +13,18 @@ Receive application details and save a CV link for human review.
 
 ## Setup and use
 
-Import the n8n workflow to host the application form and upload PDFs to Google Drive. Set the Drive folder, Airtable base and table, and a Data Table with item_key, status and file_id text columns. In Choose mode set relay to true to send the application to Open Flow, or false to write directly from n8n. In relay mode configure the Open Flow URL, Airtable connection and persistent State. Create Airtable columns Name, Email address, Phone, CV Link and Applied On as text, and Years of experience as a number. Customize the form job description. Restrict the Open Flow webhook to the n8n sender using a private network or authenticated gateway; it has no built-in caller authentication.
+Set the Drive folder, Airtable base and table. Create Airtable columns Name, Email address, Phone, CV Link and Applied On as text, and Years of experience as a number. Customize the form job description.
 
 ## Behavior
 
 Each submission uploads the PDF and records the supplied details and Drive link. People review applications; this component does not score or shortlist candidates. Personal data and CVs are stored in Drive and Airtable. Avoid overlapping runs and inspect the destination before clearing a pending checkpoint after an uncertain write.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow to host the application form and upload PDFs to Google Drive. Set the Drive folder, Airtable base and table, and a Data Table with item_key, status and file_id text columns. In Choose mode set relay to true to send the application to Open Flow, or false to write directly from n8n. In relay mode configure the Open Flow URL, Airtable connection and persistent State. Restrict the Open Flow webhook to the n8n sender using a private network or authenticated gateway; it has no built-in caller authentication.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

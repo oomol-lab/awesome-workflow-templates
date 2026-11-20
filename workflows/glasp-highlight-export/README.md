@@ -13,9 +13,9 @@ Collect highlight documents from your Glasp account every six hours and format t
 
 ## Setup
 
-Get your [Glasp access token](https://glasp.co/settings/access_token). In Open Flow, bind **Collect Glasp pages → accessToken** to a secret Variable containing that token. In n8n, create a Header Auth credential with name `Authorization` and value `Bearer <your token>`, then select it on **Glasp API**.
+Get your [Glasp access token](https://glasp.co/settings/access_token). In Open Flow, bind **Collect Glasp pages → accessToken** to a secret Variable containing that token.
 
-Review the schedule before enabling it. Both formats run at 00:00, 06:00, 12:00, and 18:00 UTC. Persistent tracking is saved by enabled production executions; n8n manual tests do not persist workflow static data.
+Review the schedule before enabling it. The workflow runs at 00:00, 06:00, 12:00, and 18:00 UTC. Persistent tracking is saved by enabled production executions.
 
 ## Export behavior
 
@@ -23,13 +23,20 @@ The first run queries changes since 24 hours and five minutes before it starts. 
 
 Documents with no highlights are skipped. A tracked document ID is skipped for 30 days, even when it gains new highlights during that time. This is document-level export tracking. It is not a per-highlight synchronization service. Expired IDs are removed after filtering, so a document still present in the queried window may become eligible on a later run.
 
-Each exported document includes its source URL, Glasp URL, tags, notes, highlight metadata, `highlightsText`, and `highlightsMarkdown`. Markdown uses UTC calendar dates and quotes every line of multiline highlights. Open Flow returns a `documents` array, `count`, and `message`; n8n returns one item per exported document. An empty export returns `No new highlights found.` with count zero.
+Each exported document includes its source URL, Glasp URL, tags, notes, highlight metadata, `highlightsText`, and `highlightsMarkdown`. Markdown uses UTC calendar dates and quotes every line of multiline highlights. Open Flow returns a `documents` array, `count`, and `message`. An empty export returns `No new highlights found.` with count zero.
 
-The workflow reads at most 100 pages with a 30-second timeout per page. Open Flow bounds the collection task to 50 minutes and each HTTP response to the runtime's 1 MiB limit. Redirects are rejected in both formats. A failed request, malformed page, repeated cursor, unfinished pagination at the page limit, formatting error, or tracking-save failure fails the run. No workflow retry is configured. Successful output is returned after tracking is saved.
+The workflow reads at most 100 pages with a 30-second timeout per page. Open Flow bounds the collection task to 50 minutes and each HTTP response to the runtime's 1 MiB limit. Redirects are rejected. A failed request, malformed page, repeated cursor, unfinished pagination at the page limit, formatting error, or tracking-save failure fails the run. No workflow retry is configured. Successful output is returned after tracking is saved.
 
 The checkpoint uses the time the run began preparing its query. Changes that occur during pagination remain eligible for the next poll. The five-minute overlap and document tracking reduce repeated exports, but overlapping runs can still export the same document. Keep runs from overlapping if that matters for your destination.
 
 This template returns export data. It does not save to disk or write to Notion, Slack, or another destination. Before adding a destination, move tracking after its successful completion so a failed downstream write can be retried. Changing the Glasp account requires resetting its saved tracking state.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, create a Header Auth credential with name `Authorization` and value `Bearer <your token>`, then select it on **Glasp API**. N8n manual tests do not persist workflow static data. N8n returns one item per exported document.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

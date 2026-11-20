@@ -13,11 +13,18 @@ Send an SMS when the current feels-like temperature is below 18°C.
 
 ## Setup
 
-Connect OpenWeather with a key for Current Weather Data 2.5. Set your city and country in **Read current weather**; the example is Berlin, Germany. Connect Twilio and set sender and recipient phone numbers in **Send sweater reminder**. In n8n, select OpenWeather and Twilio credentials, set the city in **OpenWeatherMap** and the numbers in **Twilio**. Enable one format.
+Connect OpenWeather with a key for Current Weather Data 2.5. Set your city and country in **Read current weather**; the example is Berlin, Germany. Connect Twilio and set sender and recipient phone numbers in **Send sweater reminder**.
 
 ## Behavior
 
 At 14:00 UTC each day, read current metric weather and send the reminder when the feels-like temperature is strictly below 18°C. Exactly 18°C or above sends nothing. Missing or invalid weather data stops before sending. The source's daily trigger used the instance timezone; this version uses UTC. OpenWeather permissions and limits apply. A failed or uncertain SMS may already have been sent; inspect Twilio before replaying. Repeated cold days produce repeated messages.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, select OpenWeather and Twilio credentials, set the city in **OpenWeatherMap** and the numbers in **Twilio**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

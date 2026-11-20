@@ -15,11 +15,16 @@ Send personalized SMS greetings for events listed in Google Sheets.
 
 Connect Google Sheets and Twilio. Set the spreadsheet ID in both read nodes, select the appropriate sheet ranges and set the Twilio sender in **Send greeting SMS**. The calendar header needs unique `Date`, `Event Name`, `First Name`, and `Phone Number` columns; the messages header needs unique `Event Name` and `Congratulations` columns. Use phone numbers in E.164 format and dates formatted as day/month without leading zeroes, for example `5/3`. The message text before its first comma becomes the greeting; the first name is inserted before that comma.
 
-In n8n, connect Google Sheets and Twilio, configure the spreadsheet ID and both ranges and the Twilio sender. Activate only one format.
-
 ## Behavior
 
-Each day at 08:00 UTC, match today's calendar rows against greeting templates by event name and send each matched person a personalized SMS. Unmatched rows produce no message. When greeting names repeat, the last matching template is used. Open Flow sends sequentially and stops on failure; a failed or uncertain send may already have been delivered, so check before retrying. A rerun may send duplicates. Open Flow runs at the minute boundary; n8n's cron can run at a fixed second within that minute.
+Each day at 08:00 UTC, match today's calendar rows against greeting templates by event name and send each matched person a personalized SMS. Unmatched rows produce no message. When greeting names repeat, the last matching template is used. Open Flow sends sequentially and stops on failure; a failed or uncertain send may already have been delivered, so check before retrying. A rerun may send duplicates. Open Flow runs at the minute boundary.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect Google Sheets and Twilio, configure the spreadsheet ID and both ranges and the Twilio sender. Activate only one format. N8n's cron can run at a fixed second within that minute.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

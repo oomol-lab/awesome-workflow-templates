@@ -15,13 +15,18 @@ Create a Deck card from the subject and body of each new email.
 
 Connect your IMAP mailbox in the three mailbox nodes. In **Create the Deck card**, replace the URL with your HTTPS Nextcloud host, board ID and stack ID. Create secret Variables for the Nextcloud username and app password and bind them to the Basic Authentication inputs. The account must be allowed to create cards in the selected stack.
 
-In n8n, connect the IMAP trigger and configure a Basic Auth credential on **Create the Deck card**; set its Nextcloud URL, board ID and stack ID. Activate only one format to avoid duplicates.
-
 ## Behavior
 
-Open Flow checks unread messages every minute; n8n listens for incoming mail. Each message is marked read and creates one card. The subject becomes the title and the HTML body is reduced to text when present; otherwise the plain text body is used. Deck titles must contain 1–255 characters.
+Open Flow checks unread messages every minute. Each message is marked read and creates one card. The subject becomes the title and the HTML body is reduced to text when present; otherwise the plain text body is used. Deck titles must contain 1–255 characters.
 
 A failed run can leave the message marked read. A failed or uncertain card creation may already have created a card, so inspect Deck before replaying. Concurrent Open Flow runs can select the same unread message and create duplicates.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect the IMAP trigger and configure a Basic Auth credential on **Create the Deck card**; set its Nextcloud URL, board ID and stack ID. Activate only one format to avoid duplicates. N8n listens for incoming mail.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -15,9 +15,7 @@ Check article sentences against provided facts with the specialized Bespoke-Mini
 
 Install the official [`bespoke-minicheck:latest`](https://ollama.com/library/bespoke-minicheck) model on your Ollama server. Configure a reachable HTTPS endpoint on **Check with Bespoke-MiniCheck**, keeping `/api/chat`. Select the `OLLAMA_API_KEY` secret Variable for its Bearer authentication and configure your server or reverse proxy to accept it. The shared file contains no token. Keep the checker model name unchanged; a general chat model does not perform this specialized check.
 
-The inspected deployment allows 30 seconds per HTTP request and 4 MiB per HTTP response. Warm the model and use a server capable of returning each answer within that limit. n8n's adapter streams its answer; Open Flow receives one complete non-streaming answer. Redirects are not followed. Choose a supported model on **Summarize unsupported claims**; the source used `qwen2.5:1.5b` through Ollama. Open Flow's native summary Agent uses your configured model service and one model round without tools. It adds output instructions and uses service generation settings. Summary wording can differ from n8n's Ollama completion chain.
-
-For n8n, configure the Ollama credential on both models. Its base URL and optional Bearer API key must be reachable from n8n. Install both `bespoke-minicheck:latest` and `qwen2.5:1.5b`, or select another summary model. The specialized checker remains Bespoke-MiniCheck.
+The inspected deployment allows 30 seconds per HTTP request and 4 MiB per HTTP response. Warm the model and use a server capable of returning each answer within that limit. Open Flow receives one complete non-streaming answer. Redirects are not followed. Choose a supported model on **Summarize unsupported claims**; the source used `qwen2.5:1.5b` through Ollama. Open Flow's native summary Agent uses your configured model service and one model round without tools. It adds output instructions and uses service generation settings.
 
 ## Run
 
@@ -27,15 +25,20 @@ Supply `documents`, an array of reference `facts` and article `text` pairs, to t
 {"documents":[{"facts":"The workshop starts at 10:00. It is held online.","text":"The workshop starts at 10:00. It is held in Berlin."}]}
 ```
 
-In n8n, run the manual example or call **When Executed by Another Workflow** with `facts` and `text` fields. Multiple input items are reviewed as one batch.
-
-All articles are split into claims before checking starts. Each claim is sent separately with exactly `Document: ...` and `Claim: ...` in one user message. The checker must return `Yes` or `No`; malformed or incomplete responses stop the run. Every claim is checked before a report is generated. A later failure prevents a partial report or summary. No claims are silently dropped or truncated.
+All articles are split into claims before checking starts. Each claim is sent separately with exactly `Document:...` and `Claim:...` in one user message. The checker must return `Yes` or `No`; malformed or incomplete responses stop the run. Every claim is checked before a report is generated. A later failure prevents a partial report or summary. No claims are silently dropped or truncated.
 
 The result includes every check, unsupported claims with their document/claim indices, a count and a summary. Only `No` judgments enter the summary. An empty batch or all-`Yes` batch returns an empty unsupported list and a fixed completion message without calling the summary model. No content is published or sent to another service beyond the configured models.
 
 This checks support in the supplied facts, rather than establishing independent truth. Review the model judgments. The sentence splitter uses a Latin/German uppercase heuristic and protects German dates and numbered-list prefixes; abbreviations and other writing systems may need preprocessing. Keep each reference/claim within the model's context and complete collections within platform byte budgets, including 1 MiB per Code input/result in the inspected Open Flow host.
 
-The specialized checker is attempted once per claim in both formats. n8n's legacy summary adapter can retry startup failures up to six additional times; Open Flow's summary Agent does not retry its model round. A failed or unknown model request stops the run.
+The specialized checker is attempted once per claim. Open Flow's summary Agent does not retry its model round. A failed or unknown model request stops the run.
+
+<details>
+<summary>In n8n</summary>
+
+n8n's adapter streams its answer. Summary wording can differ from n8n's Ollama completion chain. For n8n, configure the Ollama credential on both models. Its base URL and optional Bearer API key must be reachable from n8n. Install both `bespoke-minicheck:latest` and `qwen2.5:1.5b`, or select another summary model. The specialized checker remains Bespoke-MiniCheck. In n8n, run the manual example or call **When Executed by Another Workflow** with `facts` and `text` fields. Multiple input items are reviewed as one batch. n8n's legacy summary adapter can retry startup failures up to six additional times.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

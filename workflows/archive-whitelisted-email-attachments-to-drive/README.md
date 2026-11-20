@@ -15,13 +15,18 @@ Save labeled email attachments from whitelisted senders in company and month fol
 
 Create a Gmail label for the messages to process. Connect the same Gmail account to the trigger, read and download nodes and set the label ID in **Check labeled emails every 15 minutes**. Prepare a Google Sheet with unique **email** and **company** headers and one row per sender; connect Google Sheets in **Read the sender whitelist** and configure its spreadsheet ID and range. Connect the same Google Drive account in the folder and upload nodes, enable the folder node's Provider Actions and set its parent folder ID. Set the Connector transit hostname in **Verify complete attachment** and enable Gmail file transit.
 
-In n8n, connect Gmail, Google Sheets and Google Drive select the same label, set the spreadsheet ID and range in the URL of **Read whitelist raw values**, connect its Google Sheets OAuth2 credential, and set the same parent folder in **Search Company Folder1** and **Create Company Folder**. Enable one format.
-
 ## Behavior
 
 Every 15 minutes labeled emails are matched against the whitelist by sender address. Each attachment is saved under a company folder and a single month folder named YYYY/MM using the email Date header in UTC. Files have a timestamp prefix and retain sender and time_received Drive properties. Unmatched senders produce no files. Restrict access to mailbox content, transit URLs, Drive properties and execution history.
 
-Both formats reject duplicate whitelist headers or sender entries. Open Flow handles up to 50 messages per poll, validates unique folder matches, and stops on ambiguous data. Folder searches are paginated. Its file transit and Code limits apply; large files can fail. A folder or file may already have been created when a write fails or its result is uncertain. Check Drive before retrying; previously uploaded files remain. There is no exactly-once guarantee.
+The workflow rejects duplicate whitelist headers or sender entries. Open Flow handles up to 50 messages per poll, validates unique folder matches, and stops on ambiguous data. Folder searches are paginated. Its file transit and Code limits apply; large files can fail. A folder or file may already have been created when a write fails or its result is uncertain. Check Drive before retrying; previously uploaded files remain. There is no exactly-once guarantee.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect Gmail, Google Sheets and Google Drive select the same label, set the spreadsheet ID and range in the URL of **Read whitelist raw values**, connect its Google Sheets OAuth2 credential, and set the same parent folder in **Search Company Folder1** and **Create Company Folder**. Enable one format.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

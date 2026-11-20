@@ -13,13 +13,20 @@ Compare page engagement, Google Search and country data across two seven-day per
 
 ## Setup
 
-Connect Google Analytics with read access to the property and Gmail with permission to send. Enter the property ID in **Collect six analytics reports** and the report recipient in **Format the comparison**. Link Search Console to the property and make the organic Google Search metrics available to the selected property. In n8n, select the same Google Analytics OAuth credential on all six HTTP report nodes, connect Gmail, and set the property ID and recipient in **Prepare report dates** and **Format the comparison**. Run only one format for each report.
+Connect Google Analytics with read access to the property and Gmail with permission to send. Enter the property ID in **Collect six analytics reports** and the report recipient in **Format the comparison**. Link Search Console to the property and make the organic Google Search metrics available to the selected property.
 
 ## Behavior
 
 Run the workflow manually to email six tables for page engagement, Google Search and country views across the seven date labels before the current UTC date and the seven preceding dates. Google Analytics interprets those dates in the property timezone, so the latest date can still be in progress when its timezone is behind UTC. Every report page is read before email is sent. Empty reports appear as empty sections. The Google Analytics property and linked data must support all requested dimensions and metrics. Open Flow must fit the complete report in its host execution limits; a report too large for those limits fails rather than silently truncating. Google Analytics data may change while pages are read, and its reporting may aggregate high-cardinality rows or apply thresholds.
 
 An uncertain Gmail send may already have succeeded. Check the mailbox before running again. Keep the report and its execution data restricted to people who should see the analytics.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, select the same Google Analytics OAuth credential on all six HTTP report nodes, connect Gmail, and set the property ID and recipient in **Prepare report dates** and **Format the comparison**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

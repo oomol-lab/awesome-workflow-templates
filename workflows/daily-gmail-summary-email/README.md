@@ -17,15 +17,20 @@ In **Prepare window and recipients**, replace `YOUR_GMAIL_SEARCH_SCOPE` with a G
 
 In Open Flow, select your Gmail account on **Read one Gmail message page**, **Read one email metadata** and **Send summary email**. The two visible feedback loops read one page or message in each Connector execution. Code only accumulates IDs and the five summary fields. Configure an available gateway model on **Summarize emails and action items**.
 
-In n8n, edit the same settings at the start of **Prepare Window and Recipients**, choose Gmail OAuth2 credentials on both Gmail nodes, and choose an available JSON-capable model and OpenAI credentials on **Summarize Emails**. Both formats collect every matching page with 100 IDs per request, then read each message’s metadata and snippet. Full bodies and attachments are not downloaded for the summary. There is no fixed 25- or 100-message total cap. Complete collection must fit the execution platform’s Code input/result byte budgets and the selected model’s context; a limit failure stops without sending a partial digest. The inspected Open Flow host allows 1 MiB for each Code input and result, so large snippets or a large collection can exceed that budget.
-
 ## Reporting window
 
 The daily schedule is 07:00 in Asia/Kolkata. Each run captures one time and searches from 00:00 of the previous local calendar day to that captured time, using Unix seconds in Gmail’s query. A scheduled run covers about 31 hours, so consecutive daily runs overlap by seven hours. This is not a rolling 24-hour digest. Manual runs use the same window rule at their actual run time. Review both the schedule and calculation before changing timezones.
 
-The model receives only message ID, From, To, CC and snippet. It produces one structured summary; Open Flow uses an AI Agent with no external tools and one model round. n8n uses its OpenAI JSON response operation. Gateway/model selection and the Agent’s built-in output instructions differ, so generated wording can differ. Invalid output stops the run without another model request. HTML characters in generated text are escaped before sending. Check summaries against the original messages.
+The model receives only message ID, From, To, CC and snippet. It produces one structured summary; Open Flow uses an AI Agent with no external tools and one model round. Gateway/model selection and the Agent’s built-in output instructions differ, so generated wording can differ. Invalid output stops the run without another model request. HTML characters in generated text are escaped before sending. Check summaries against the original messages.
 
-No matching messages means no model call and no email. Open Flow returns `no_matching_email`; n8n produces no further items. A successful run requires Gmail to return a sent message ID. It does not prove recipient delivery. The workflow does not mark, label or delete source messages, deduplicate reports, or retry sends. If the send response is lost, inspect Sent before running again.
+No matching messages means no model call and no email. Open Flow returns `no_matching_email`. A successful run requires Gmail to return a sent message ID. It does not prove recipient delivery. The workflow does not mark, label or delete source messages, deduplicate reports, or retry sends. If the send response is lost, inspect Sent before running again.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, edit the same settings at the start of **Prepare Window and Recipients**, choose Gmail OAuth2 credentials on both Gmail nodes, and choose an available JSON-capable model and OpenAI credentials on **Summarize Emails**. Both formats collect every matching page with 100 IDs per request, then read each message’s metadata and snippet. Full bodies and attachments are not downloaded for the summary. There is no fixed 25- or 100-message total cap. Complete collection must fit the execution platform’s Code input/result byte budgets and the selected model’s context; a limit failure stops without sending a partial digest. The inspected Open Flow host allows 1 MiB for each Code input and result, so large snippets or a large collection can exceed that budget. n8n uses its OpenAI JSON response operation. N8n produces no further items.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -15,13 +15,18 @@ Capture a public webpage and describe the screenshot in one sentence.
 
 Set the website name and public HTTP or HTTPS URL in **Choose a website**. Create and bind the secret Variable `URLBOX_API_SECRET` to **Capture full webpage**. Connect OpenAI and select an available vision model in **Describe the screenshot**.
 
-In n8n, set the name and URL in **Setup**, configure Header Auth with name `Authorization` and value `Bearer YOUR_URLBOX_API_SECRET` for **URLbox API Request**, and connect OpenAI; select a vision-capable model in **Analyze the Screenshot**.
-
 ## Behavior
 
 A manual run asks URLbox for a full-page screenshot, sends its temporary image URL to OpenAI, and returns the name, URL and generated description together. Both services receive the webpage or screenshot; use URLs you are authorized to share. Generated descriptions can be inaccurate. URLbox's screenshot link expires, and the workflow does not retain the image.
 
-An unsuccessful capture or model request stops the run. A screenshot request can have succeeded even if its response is lost; inspecting URLbox before retrying can avoid duplicate renders. The source n8n capture retries on failure; Open Flow does not automatically retry. Open Flow stops after 30 seconds or a redirect; slower URLbox renders may therefore require another approach.
+An unsuccessful capture or model request stops the run. A screenshot request can have succeeded even if its response is lost; inspecting URLbox before retrying can avoid duplicate renders. Open Flow does not automatically retry. Open Flow stops after 30 seconds or a redirect; slower URLbox renders may therefore require another approach.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, set the name and URL in **Setup**, configure Header Auth with name `Authorization` and value `Bearer YOUR_URLBOX_API_SECRET` for **URLbox API Request**, and connect OpenAI; select a vision-capable model in **Analyze the Screenshot**. The source n8n capture retries on failure.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

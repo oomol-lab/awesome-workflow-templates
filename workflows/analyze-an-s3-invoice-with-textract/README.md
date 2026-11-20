@@ -15,11 +15,16 @@ Extract invoice summary fields from an image stored in Amazon S3.
 
 In **Analyze the S3 invoice**, set the S3 bucket, object key and AWS region. The bucket and Textract must use the same region. The allowed HTTP host initially covers `us-east-1`; if changing the region, update the node’s allowed host to the corresponding Textract endpoint. Bind secret Variables for the IAM access key ID and secret access key, and for the session token if using temporary credentials. Grant the principal access to the object and to Textract AnalyzeExpense. Signing uses the server clock.
 
-In n8n, configure the S3 bucket and key, and connect AWS credentials to both S3 and Textract nodes in the same region. Run either format manually.
-
 ## Behavior
 
 The workflow analyzes one receipt or invoice and returns summary fields keyed by their Textract type or label. If a field repeats, the last value is kept, matching the source's simplified output. Line items and geometry are not included. Recognition can be incomplete or wrong; check the original document. Restrict access to execution history and the invoice. A missing object, permission error or invalid response stops the run.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, configure the S3 bucket and key, and connect AWS credentials to both S3 and Textract nodes in the same region. Run either format manually.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

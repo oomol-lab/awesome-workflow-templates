@@ -13,13 +13,20 @@ Find Product Hunt launches relevant to a topic and share the results with a Slac
 
 ## Setup
 
-Create an Airtop API key and connect Slack. In Open Flow, create a secret Variable named AIRTOP_API_KEY with the key, set the topic in **Prepare the product search**, and select a Slack channel in **Post the launches to Slack**. In n8n, connect Airtop and Slack, set the topic in **Define relevant products**, and select a Slack channel. Activate one format.
+Create an Airtop API key and connect Slack. In Open Flow, create a secret Variable named AIRTOP_API_KEY with the key, set the topic in **Prepare the product search**, and select a Slack channel in **Post the launches to Slack**.
 
 ## Behavior
 
-Every day at 06:00 UTC, Airtop opens Product Hunt and extracts up to five launches matching the topic. A result containing [NA] produces no Slack message; otherwise the returned text is posted. Open Flow runs on the minute boundary; n8n uses a fixed second within that minute. Results are AI-generated and should be checked before use.
+Every day at 06:00 UTC, Airtop opens Product Hunt and extracts up to five launches matching the topic. A result containing [NA] produces no Slack message; otherwise the returned text is posted. Open Flow runs on the minute boundary. Results are AI-generated and should be checked before use.
 
 Open Flow checks readiness up to 60 times, five seconds apart, then closes its session after a successful query before posting. If an earlier request fails, the session can remain until Airtop's idle timeout. An unknown request outcome may have created a session or sent a message; inspect the service before retrying. There is no automatic deduplication or replay.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect Airtop and Slack, set the topic in **Define relevant products**, and select a Slack channel. N8n uses a fixed second within that minute.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

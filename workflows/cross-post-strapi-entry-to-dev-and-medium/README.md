@@ -13,11 +13,18 @@ Publish a Strapi entry to DEV and Medium when a webhook is received.
 
 ## Setup
 
-Configure Strapi to send its webhook to the deployed endpoint with an Authorization header. Bind its full value as a secret Variable in **Authorize and read entry**. The entry must contain the string fields **Title**, **PostContent** and **Tag**. Connect DEV, and bind an existing Medium integration token to both Medium HTTP nodes. Medium no longer issues new integration tokens; existing tokens continue to work. In n8n configure the webhook Header Auth, DEV header credential, and Medium connection.
+Configure Strapi to send its webhook to the deployed endpoint with an Authorization header. Bind its full value as a secret Variable in **Authorize and read entry**. The entry must contain the string fields **Title**, **PostContent** and **Tag**. Connect DEV, and bind an existing Medium integration token to both Medium HTTP nodes. Medium no longer issues new integration tokens; existing tokens continue to work.
 
 ## Behavior
 
 An authenticated event publishes the entry's title and Markdown content to both services. The DEV post is public and uses the entry's tag. Medium publishes without that tag. Open Flow accepts the standard entry webhook envelope with event, createdAt, model, optional uid and entry; it rejects additional top-level fields. Fields inside entry are retained. A webhook acknowledgment is not confirmation of both publications. Check both accounts before retrying an uncertain delivery; the workflow does not deduplicate posts.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure the webhook Header Auth, DEV header credential, and Medium connection.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

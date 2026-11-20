@@ -13,13 +13,20 @@ Create a Bitwarden organization group, add the organization members, and retriev
 
 ## Setup and use
 
-Connect the same Bitwarden organization to each Bitwarden node. Use an organization API key with group-management permissions. Set the group name in **Prepare group**. In n8n connect Bitwarden and set the group name in **Bitwarden**. Run one format manually.
+Connect the same Bitwarden organization to each Bitwarden node. Use an organization API key with group-management permissions. Set the group name in **Prepare group**. Run one format manually.
 
 ## Behavior
 
 The workflow creates a new group with access to all collections disabled, lists all organization members, sets the group membership to those IDs and reads the resulting IDs. It changes group membership for the whole organization, so use it only when that is intended. If no members are returned, the new group remains empty. Changes made concurrently may affect the result.
 
 A failed or uncertain creation can leave a group behind. An uncertain membership update may have succeeded. Inspect the organization and group before retrying; earlier changes are not rolled back.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n connect Bitwarden and set the group name in **Bitwarden**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

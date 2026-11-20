@@ -13,13 +13,20 @@ Generate an image from a Telegram text message and send it back to the same chat
 
 ## Setup
 
-Connect the same Telegram bot to the trigger and **Send the image to Telegram**, and connect Magic Hour to both image nodes. In n8n install the Magic Hour community node, connect its API credential and connect the same Telegram bot to its trigger and send node. Activate one format; Telegram allows one active webhook per bot.
+Connect the same Telegram bot to the trigger and **Send the image to Telegram**, and connect Magic Hour to both image nodes. Activate one format; Telegram allows one active webhook per bot.
 
 ## Behavior
 
 Send the bot a text description. The workflow sends that prompt to Magic Hour, requests one 640px square image using flux-2-klein and replies with the completed image in the same chat. Magic Hour provides a temporary image URL, which Telegram must be able to fetch. Prompts and generated images are shared with Magic Hour and Telegram.
 
-Open Flow waits 10 seconds between at most 60 checks; request time can extend the run beyond ten minutes. n8n's community node polls for roughly ten minutes. A failed, uncertain or timed-out generation may already have created a project; inspect Magic Hour before retrying. An uncertain Telegram send may already have succeeded; inspect the chat before retrying. Non-text updates do not generate an image.
+Open Flow waits 10 seconds between at most 60 checks; request time can extend the run beyond ten minutes. A failed, uncertain or timed-out generation may already have created a project; inspect Magic Hour before retrying. An uncertain Telegram send may already have succeeded; inspect the chat before retrying. Non-text updates do not generate an image.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n install the Magic Hour community node, connect its API credential and connect the same Telegram bot to its trigger and send node. n8n's community node polls for roughly ten minutes.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

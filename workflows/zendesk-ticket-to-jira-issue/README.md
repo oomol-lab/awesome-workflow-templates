@@ -15,13 +15,20 @@ Create a Jira Cloud issue for a Zendesk ticket or add a comment to its linked is
 
 Create a Zendesk ticket text custom field for the Jira issue key. In **Validate the ticket event**, set its numeric ID and the Jira Cloud project and non-subtask issue type IDs. Connect Zendesk in **Read the Zendesk ticket** and its Action in **Link the Zendesk ticket**, using the same account with ticket read and update access. Connect the same Jira Cloud account in **Create a Jira issue** and **Comment on the Jira issue**, with issue and comment creation access. The Zendesk read Action also reads ticket comments. The ticket's API URL must be on its Zendesk-hosted subdomain.
 
-Create an Open Flow secret Variable named ZENDESK_JIRA_SECRET with at least 24 unpredictable characters and bind it to the secret input of **Validate the ticket event**. Configure the webhook sender to POST JSON containing the ticket ID in id, comment text in comment and the shared value in secret. The shared value is a bearer secret; restrict access to the sender, endpoint and execution history, and use HTTPS. In n8n configure the same field ID, Jira project and issue type in **Validate the ticket event**, credentials on the Zendesk and Jira nodes, and the same secret as the ZENDESK_JIRA_SECRET environment variable accessible to Code nodes. Self-hosted n8n may require enabling environment access. Enable one format only.
+Create an Open Flow secret Variable named ZENDESK_JIRA_SECRET with at least 24 unpredictable characters and bind it to the secret input of **Validate the ticket event**. Configure the webhook sender to POST JSON containing the ticket ID in id, comment text in comment and the shared value in secret. The shared value is a bearer secret; restrict access to the sender, endpoint and execution history, and use HTTPS.
 
 ## Behavior
 
 The endpoint immediately acknowledges receipt. The workflow validates the secret and reads the ticket. If the configured field contains an issue key, it adds the supplied comment to that issue. The comment is sent as text in a Jira document, may contain Zendesk HTML, and may be visible to anyone with access to the Jira project. Otherwise it creates an issue with the trimmed ticket subject and a link to the ticket, then saves the returned issue key in the ticket field. The creation branch does not add the supplied comment. A missing field, invalid key or empty comment for a linked issue stops the run.
 
 An acknowledgement does not mean the issue or ticket was updated. If issue creation succeeds but the follow-up issue read or ticket update fails, the issue remains unlinked. An uncertain write is not retried automatically; check both systems before rerunning. Concurrent events can create duplicate issues or comments because there is no locking or deduplication.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure the same field ID, Jira project and issue type in **Validate the ticket event**, credentials on the Zendesk and Jira nodes, and the same secret as the ZENDESK_JIRA_SECRET environment variable accessible to Code nodes. Self-hosted n8n may require enabling environment access.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

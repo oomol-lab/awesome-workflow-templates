@@ -31,9 +31,16 @@ For Open Flow, connect Google Sheets in **Save classified feedback**, replace `Y
 
 Name, category, and feedback are required. Category must be `Product`, `Service`, or `Other`. Contact is optional. An optional `submittedAt` timestamp can come from your form; otherwise the workflow uses the current UTC time.
 
-For n8n, use the included **Submit form with customer feedback** hosted form. Connect OpenAI and Google Sheets, replace the spreadsheet, and keep the listed column headers. Open Flow supplies a JSON webhook instead of hosting that form.
+Open Flow supplies a JSON webhook instead of hosting that form.
 
 Acknowledgment confirms receipt, before classification and storage finish. Invalid feedback or a model failure prevents the sheet write. Each valid submission appends a row, including repeated requests. `Entered by` is `Form` and `Urgent?` stays blank. Only the feedback text is sent to the configured model provider. The submitted form fields and model assessment are stored in Google Sheets.
+
+<details>
+<summary>In n8n</summary>
+
+For n8n, use the included **Submit form with customer feedback** hosted form. Connect OpenAI and Google Sheets, replace the spreadsheet, and keep the listed column headers.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

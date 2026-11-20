@@ -15,11 +15,16 @@ Send one daily affirmation to a Telegram chat.
 
 Connect your Telegram bot and enter the destination chat ID in **Send the Telegram message**. Confirm that the bot can send messages to that chat. The schedule is set to 09:00 UTC; change the timezone if you want a different local delivery time. The workflow also needs access to `affirmations.dev`.
 
-In n8n, select Telegram credentials, set the chat ID, and activate the workflow. The workflow timezone starts at UTC; n8n chooses a second within the 09:00 minute.
-
 ## Behavior
 
 Once each day, the workflow requests one affirmation and sends it with a short introduction. If the response has no non-empty `affirmation` string or the request fails, no Telegram message is sent. Messages use Telegram legacy Markdown, so formatting characters in an affirmation can affect rendering or cause a send error. A Telegram send failure stops the run; an uncertain send may already have arrived, so check the chat before retrying.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, select Telegram credentials, set the chat ID, and activate the workflow. The workflow timezone starts at UTC; n8n chooses a second within the 09:00 minute.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

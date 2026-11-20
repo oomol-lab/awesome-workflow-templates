@@ -13,13 +13,18 @@ Check a remote server for upgradable apt packages and email a notice when update
 
 ## Setup
 
-Import the n8n workflow and connect SSH credentials to **SSH relay** for the target Debian-based server. Enable **SSH relay webhook**, activate the workflow, and configure its production URL in **Check remote packages** in Open Flow. Disable **Run workflow every day** when using Open Flow. The relay has no built-in authentication and exposes package information; restrict access to trusted callers. Connect an IMAP/SMTP mailbox and set the recipient in **Email update notice**.
-
-For n8n-only operation, disable **SSH relay webhook**, enable **Run workflow every day**, connect SSH credentials to **List upgradable packages**, and configure SMTP sender and recipient in **Send Email through SMTP**. Use one scheduling mode. Both formats default to midnight UTC.
+Connect SSH credentials to **SSH relay** for the target Debian-based server. Enable **SSH relay webhook**, activate the workflow, and configure its production URL in **Check remote packages** in Open Flow. Disable **Run workflow every day** when using Open Flow. The relay has no built-in authentication and exposes package information; restrict access to trusted callers. Connect an IMAP/SMTP mailbox and set the recipient in **Email update notice**.
 
 ## Behavior
 
 Each day the workflow runs `apt list --upgradable` over SSH and sends an HTML list only if packages are present. It reports package information; it does not perform upgrades. SSH connection or nonzero command failures stop the run. If an email result is unknown, inspect sent mail before retrying. Package text is escaped in the email.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow and connect SSH credentials to **SSH relay** for the target Debian-based server. For n8n-only operation, disable **SSH relay webhook**, enable **Run workflow every day**, connect SSH credentials to **List upgradable packages**, and configure SMTP sender and recipient in **Send Email through SMTP**. Use one scheduling mode. Both formats default to midnight UTC.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

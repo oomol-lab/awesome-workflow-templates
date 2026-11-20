@@ -13,15 +13,22 @@ Delete old daily tasks and copy today’s matching task templates to your Todois
 
 ## Setup
 
-Configure both Todoist project IDs and use the same Todoist personal API token for the two reading nodes, deletion request, and creation node. The token must have permission to delete tasks. Allow Provider API Request access for **Delete an old daily task**; the standard Todoist OAuth connection requests read/write without the separate deletion scope. Set the same IDs and Todoist credentials in n8n. Review the Inbox tasks tagged daily before activation: those tasks will be deleted. Activate one format.
+Configure both Todoist project IDs and use the same Todoist personal API token for the two reading nodes, deletion request, and creation node. The token must have permission to delete tasks. Allow Provider API Request access for **Delete an old daily task**; the standard Todoist OAuth connection requests read/write without the separate deletion scope. Review the Inbox tasks tagged daily before activation: those tasks will be deleted.
 
 Template descriptions use for example `days:mon,tues; due:8am`. The due time is optional; supported weekday names are sun, mon, tues, wed, thurs, fri and sat.
 
 ## Behavior
 
-At 05:10 UTC daily, the workflow reads all pages of both projects, selects templates matching the UTC weekday, deletes Inbox tasks bearing the daily label, then creates the matching tasks with that label. Template content and description are copied; optional due times use UTC. n8n runs at a fixed second within the minute; Open Flow runs at the minute boundary.
+At 05:10 UTC daily, the workflow reads all pages of both projects, selects templates matching the UTC weekday, deletes Inbox tasks bearing the daily label, then creates the matching tasks with that label. Template content and description are copied; optional due times use UTC. Open Flow runs at the minute boundary.
 
 An invalid page or template stops before deletions. Neither format automatically retries failed reads or writes. A failed deletion or creation stops later writes; earlier changes remain. Check Todoist before retrying an uncertain write. Changes during a run can affect results. Avoid overlapping runs: one run can delete daily tasks created by another. Open Flow collects both projects in run state, which must fit the host execution limits.
+
+<details>
+<summary>In n8n</summary>
+
+Set the same IDs and Todoist credentials in n8n. n8n runs at a fixed second within the minute.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

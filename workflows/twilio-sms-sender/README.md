@@ -13,11 +13,18 @@ Submit one SMS to Twilio with a sender number, recipient number and message.
 
 ## Setup
 
-Select your Twilio account in **Send Twilio SMS**, using its Account SID and Auth Token. Run with **From**, **To** and **Body**. Use a Twilio sender that supports SMS and an allowed recipient, both in E.164 format. Trial accounts may require a verified recipient. In n8n, select Twilio credentials and set **From**, **To** and **Message** in **Twilio**.
+Select your Twilio account in **Send Twilio SMS**, using its Account SID and Auth Token. Run with **From**, **To** and **Body**. Use a Twilio sender that supports SMS and an allowed recipient, both in E.164 format. Trial accounts may require a verified recipient.
 
-Each run submits one text message. The workflow does not enable WhatsApp, add media or set a delivery callback. Open Flow returns the Action’s message SID, account SID, status, numbers and body; n8n returns Twilio’s full message record. An accepted or queued message is not proof of delivery to the phone.
+Each run submits one text message. The workflow does not enable WhatsApp, add media or set a delivery callback. Open Flow returns the Action’s message SID, account SID, status, numbers and body. An accepted or queued message is not proof of delivery to the phone.
 
 Twilio account restrictions apply. Failed requests stop without an automatic retry. The workflow has no history or duplicate detection; check Twilio before repeating a request whose result is uncertain.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, select Twilio credentials and set **From**, **To** and **Message** in **Twilio**. N8n returns Twilio’s full message record.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

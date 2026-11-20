@@ -13,9 +13,16 @@ Convert a calendar date written as DD/MM/YYYY into MM/DD/YYYY. For example, 14/0
 
 ## Use
 
-In Open Flow, run with **Value**, such as `14/02/2020`. In n8n, edit the `value` string at the start of **Validate and format calendar date** and run the workflow manually. Both formats return the converted string in `data`. No account or external service is required.
+In Open Flow, run with **Value**, such as `14/02/2020`. The workflow returns the converted string in `data`. No account or external service is required.
 
 Use two digits for the day and month and four digits for the year. The workflow checks month lengths and Gregorian leap years. Invalid dates, extra text and other input formats stop the run. It does not guess the date convention, convert timezones or create a timestamp.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, edit the `value` string at the start of **Validate and format calendar date** and run the workflow manually.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

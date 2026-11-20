@@ -13,7 +13,7 @@ Send Telegram updates for Binance spot pairs whose 24-hour price change reaches 
 
 ## Setup
 
-Connect a Telegram bot and set the destination chat ID in **Send a Telegram update**. The bot must be able to post there. In n8n, set the chat ID and connect Telegram credentials on **Send Telegram Message**. Activate one format.
+Connect a Telegram bot and set the destination chat ID in **Send a Telegram update**. The bot must be able to post there.
 
 ## Behavior
 
@@ -21,9 +21,16 @@ Every five minutes the workflow reads the current Binance spot symbol list, fetc
 
 The batched readings occur at different times and may differ from a single snapshot. A new symbol after the initial list is not included until the next run; if a listed symbol disappears or a batch is incomplete, duplicated or unexpected, the run stops before sending. Each run repeats alerts for matching pairs. The initial list and accumulated matches must fit the runtime's Code input limit.
 
-Binance applies IP-based request weights. The symbol list uses weight 4 and each batch uses weight 2, so large lists consume more weight than a single all-symbol request. Adjust the schedule if other integrations share the IP and obey rate-limit responses. Access can vary by region. The source used the n8n instance timezone; this template uses UTC. n8n chooses a stable second within each scheduled minute, while Open Flow uses the minute boundary.
+Binance applies IP-based request weights. The symbol list uses weight 4 and each batch uses weight 2, so large lists consume more weight than a single all-symbol request. Adjust the schedule if other integrations share the IP and obey rate-limit responses. Access can vary by region. Open Flow uses the minute boundary.
 
 HTTP or batch validation errors stop before any Telegram message. Telegram messages are sent sequentially; earlier messages may already have arrived when a later send fails, and an unknown send may also have arrived. Check the chat before retrying. Open Flow limits each HTTP response to 4 MiB and 30 seconds. Telegram uses legacy Markdown.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, set the chat ID and connect Telegram credentials on **Send Telegram Message**. The source used the n8n instance timezone; this template uses UTC. n8n chooses a stable second within each scheduled minute.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

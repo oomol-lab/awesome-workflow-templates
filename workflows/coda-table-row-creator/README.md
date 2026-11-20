@@ -15,11 +15,16 @@ Submit one new row to a Coda table. The example writes values to three columns.
 
 For Open Flow, import the JSON and connect Coda in **Submit Coda row**. Replace `YOUR_CODA_DOC_ID` and `YOUR_CODA_TABLE_ID`. Edit the three `cells` entries in Rows so each `column` matches a destination column name or ID and each `value` contains the data to write. Stable column IDs are preferable when table headings may change.
 
-For n8n, connect Coda and select the document and table in **Coda**. Edit the field names and values in **Set** to match the destination columns.
-
 Run once to submit a row. No key columns are configured, so subsequent runs add new rows instead of updating a matching record. Coda parses the supplied values using its normal rules.
 
-Coda accepts writes asynchronously. Open Flow returns the request ID and any row IDs Coda supplies; these do not confirm that the row has finished appearing in the document. n8n returns the submitted field values after Coda accepts the request. Check the destination table before retrying an uncertain write.
+Coda accepts writes asynchronously. Open Flow returns the request ID and any row IDs Coda supplies; these do not confirm that the row has finished appearing in the document. Check the destination table before retrying an uncertain write.
+
+<details>
+<summary>In n8n</summary>
+
+For n8n, connect Coda and select the document and table in **Coda**. Edit the field names and values in **Set** to match the destination columns. n8n returns the submitted field values after Coda accepts the request.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -13,13 +13,20 @@ Check recent ServiceNow incidents and notify a Slack channel.
 
 ## Setup
 
-In Open Flow, enter your ServiceNow instance URL in **Prepare the incident query**. Store the ServiceNow username and password as secret Variables and bind them to the corresponding Basic Authentication inputs of **Read recent incidents**. Connect Slack and set the same destination channel ID on both Slack nodes. In n8n, connect the ServiceNow Basic Auth credential and Slack, select the destination channel on both Slack nodes, and replace the instance URL in **Post Incident Details to Slack Channel**. The ServiceNow account must interpret query times as UTC; verify its timezone before activation. Enable one format.
+In Open Flow, enter your ServiceNow instance URL in **Prepare the incident query**. Store the ServiceNow username and password as secret Variables and bind them to the corresponding Basic Authentication inputs of **Read recent incidents**. Connect Slack and set the same destination channel ID on both Slack nodes. The ServiceNow account must interpret query times as UTC; verify its timezone before activation.
 
 ## Behavior
 
 Every five minutes or on a manual run, the workflow requests incidents created since five minutes before the run. It sends the returned incidents to Slack in ascending incident-number order, with their description, severity, caller, priority, state, category, opened date and an instance link. The source defaults to a maximum of 50 returned records; this template retains that limit. Incidents beyond the first 50 may not be reported. Empty results send no incident alert. A failed ServiceNow request sends one connection alert. Messages can contain sensitive incident data; restrict channel and workflow access.
 
-The query is a rolling five-minute window, not a durable checkpoint. Delayed runs, inaccessible records or overlapping runs can miss or duplicate incidents. In Open Flow, a response larger than 4 MiB stops the run without a connection alert. Slack delivery failures stop the run; a lost response can hide a delivered message, so inspect the channel before retrying. Open Flow uses UTC for its timestamp. n8n also uses UTC; confirm the ServiceNow account interprets query times as intended.
+The query is a rolling five-minute window, not a durable checkpoint. Delayed runs, inaccessible records or overlapping runs can miss or duplicate incidents. In Open Flow, a response larger than 4 MiB stops the run without a connection alert. Slack delivery failures stop the run; a lost response can hide a delivered message, so inspect the channel before retrying. Open Flow uses UTC for its timestamp.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect the ServiceNow Basic Auth credential and Slack, select the destination channel on both Slack nodes, and replace the instance URL in **Post Incident Details to Slack Channel**. n8n also uses UTC; confirm the ServiceNow account interprets query times as intended.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

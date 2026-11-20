@@ -13,7 +13,7 @@ Reply to a Telegram message with a random cocktail photo and name.
 
 ## Setup
 
-Connect the same Telegram bot to **Receive a Telegram message** and **Reply with the cocktail photo**. In n8n, connect the same bot to **Telegram Trigger** and **Telegram**. Enable one format and make sure users have started the bot or the bot has access to the group. A Telegram bot can have only one active webhook subscription.
+Connect the same Telegram bot to **Receive a Telegram message** and **Reply with the cocktail photo**. Enable one format and make sure users have started the bot or the bot has access to the group. A Telegram bot can have only one active webhook subscription.
 
 The CocktailDB URL uses its public test key 1, documented for development and education. Check [CocktailDB API access](https://www.thecocktaildb.com/api.php) for your use and replace the key in **Prepare the cocktail API URL** or **HTTP Request** if needed.
 
@@ -21,7 +21,14 @@ The CocktailDB URL uses its public test key 1, documented for development and ed
 
 Each received message fetches one random cocktail and replies to that message with its photo and name as the caption. The API can return the same drink again. Telegram fetches the photo URL; the workflow does not download it to a local file. The photo must be accessible to Telegram. An invalid response, missing name or photo, caption over Telegram's 1,024-character limit, failed request or failed reply stops the run. A failed or uncertain photo send may already have been delivered; check the chat before retrying.
 
-The API request follows up to 21 redirects with a 30-second request timeout. Open Flow limits each HTTP response to 4 MiB. Use the bot in a trusted chat; any message received by the configured bot triggers a reply. Open Flow's Telegram trigger uses delivery IDs to help deduplicate webhook admission; n8n does not add the same key. Neither format promises exactly-once replies.
+The API request follows up to 21 redirects with a 30-second request timeout. Open Flow limits each HTTP response to 4 MiB. Use the bot in a trusted chat; any message received by the configured bot triggers a reply. Open Flow's Telegram trigger uses delivery IDs to help deduplicate webhook admission. Neither format promises exactly-once replies.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect the same bot to **Telegram Trigger** and **Telegram**. N8n does not add the same key.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

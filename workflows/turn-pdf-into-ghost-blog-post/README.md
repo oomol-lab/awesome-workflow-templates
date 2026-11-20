@@ -13,13 +13,20 @@ Turn an uploaded PDF into a structured HTML blog article and create it in Ghost.
 
 ## Setup
 
-In n8n connect Gemini and Ghost Admin, select a Data Table with text columns item_key and status for the checkpoints, and configure two separate Header Auth credentials for the Open Flow and Ghost relay endpoints. Set **Choose form mode** to direct to use n8n alone, or relay to forward extracted text to Open Flow. In relay mode set the Open Flow webhook URL and the n8n Ghost relay URL. In Open Flow connect Gemini, bind PDF_BLOG_RELAY_AUTH to the full incoming Authorization header and GHOST_RELAY_TOKEN to the Ghost relay bearer token, then enable persistent State. Protect execution history and both endpoints.
+In Open Flow connect Gemini, bind PDF_BLOG_RELAY_AUTH to the full incoming Authorization header and GHOST_RELAY_TOKEN to the Ghost relay bearer token, then enable persistent State. Protect execution history and both endpoints.
 
 ## Behavior
 
 Upload a PDF and supply a unique random Request ID of 16–128 letters, digits, underscores or hyphens. Reuse that ID only for a retry of the same submission. Text is sent to Gemini, which drafts a structured HTML article; Ghost creates the article. Review the result and source citations before publishing. Relay admission does not mean the article has been created.
 
-A pending checkpoint stops a repeated uncertain Ghost write. Inspect Ghost and n8n before retrying. In Open Flow enter the pending key and confirmed or absent in **Check submission and prepare prompt**, replay the same submission, then clear these recovery fields. In n8n inspect the post and remove the relevant Data Table checkpoint only when safe. Avoid overlapping runs for the same Request ID.
+A pending checkpoint stops a repeated uncertain Ghost write. In Open Flow enter the pending key and confirmed or absent in **Check submission and prepare prompt**, replay the same submission, then clear these recovery fields. Avoid overlapping runs for the same Request ID.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n connect Gemini and Ghost Admin, select a Data Table with text columns item_key and status for the checkpoints, and configure two separate Header Auth credentials for the Open Flow and Ghost relay endpoints. Set **Choose form mode** to direct to use n8n alone, or relay to forward extracted text to Open Flow. In relay mode set the Open Flow webhook URL and the n8n Ghost relay URL. Inspect Ghost and n8n before retrying. In n8n inspect the post and remove the relevant Data Table checkpoint only when safe.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

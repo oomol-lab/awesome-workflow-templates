@@ -13,11 +13,18 @@ Synchronize Notion page details to ClickUp and ClickUp status changes back to No
 
 ## Setup and use
 
-Configure Notion and ClickUp credentials, the Notion database, ClickUp workspace and matching status names in n8n. For n8n mode enable the original two triggers; for Open Flow mode disable them, enable their Open Flow counterparts and set both relay URLs. In Open Flow connect Notion and ClickUp and provide the Notion data source ID. The Notion data source needs a rich text **ClickUp ID**, title **Task name**, select **Status** and date **Deadline**. Restrict access to both Open Flow webhooks, which do not authenticate callers.
+For Open Flow mode disable them, enable their Open Flow counterparts and set both relay URLs. In Open Flow connect Notion and ClickUp and provide the Notion data source ID. The Notion data source needs a rich text **ClickUp ID**, title **Task name**, select **Status** and date **Deadline**. Restrict access to both Open Flow webhooks, which do not authenticate callers.
 
 ## Behavior
 
 A changed Notion page updates the matching ClickUp task’s name, status and deadline when they differ. A ClickUp status event queries every matching Notion page by ClickUp ID and updates its Status select when it differs. Keep status names consistent and monitor both directions for repeated updates. Trigger polling and the relay are not durable queues; reconcile changes after outages or failed deliveries. Inspect both systems before retrying an uncertain write.
+
+<details>
+<summary>In n8n</summary>
+
+Configure Notion and ClickUp credentials, the Notion database, ClickUp workspace and matching status names in n8n. For n8n mode enable the original two triggers.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -13,11 +13,18 @@ Center a transparent logo over a background image.
 
 ## Setup
 
-Provide two publicly accessible HTTPS image URLs. The overlay must be no larger than the background. Connect Cloudinary in Open Flow. In n8n configure the two image URL nodes and run manually.
+Provide two publicly accessible HTTPS image URLs. The overlay must be no larger than the background. Connect Cloudinary in Open Flow.
 
 ## Behavior
 
-The logo is centered without scaling. Open Flow uploads the background to Cloudinary, then retrieves a JPEG with the remote overlay. The uploaded background remains in your Cloudinary account. Enable persistent State. A repeated background URL reuses the saved upload; use a new URL if the source image changes. If an upload is uncertain, inspect the account and enter the pending key in **Upload background image**, with resolution absent to retry or confirmed and the verified Cloudinary image URL to continue. Clear the recovery fields afterward. n8n composites the downloaded images directly.
+The logo is centered without scaling. Open Flow uploads the background to Cloudinary, then retrieves a JPEG with the remote overlay. The uploaded background remains in your Cloudinary account. Enable persistent State. A repeated background URL reuses the saved upload; use a new URL if the source image changes. If an upload is uncertain, inspect the account and enter the pending key in **Upload background image**, with resolution absent to retry or confirmed and the verified Cloudinary image URL to continue. Clear the recovery fields afterward.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure the two image URL nodes and run manually. n8n composites the downloaded images directly.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

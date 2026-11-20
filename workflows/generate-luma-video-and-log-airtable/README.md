@@ -15,8 +15,6 @@ Submit a text-to-video request with a random camera motion and log the generatio
 
 Bind LUMA_API_KEY as a secret, connect Airtable, and configure the base and table in **Log generation in Airtable**. The table needs Generation ID, Prompt, Aspect, Length, Model, Resolution and Cluster ID fields, plus a Status field accepting In progress. Configure the prompt, aspect, duration and optional public callback URL in **Prepare next generation step**. Enable persistent State.
 
-For n8n, configure **Video settings**, an HTTP Header Auth credential with Authorization set to Bearer followed by your Luma key, an Airtable credential, and a Data Table with text columns item_key, status, spec and generation_id. Use a fresh request ID for each generation.
-
 For a pending generation, inspect Luma: if confirmed, set the checkpoint status to generated and generation_id to the confirmed ID; if absent, delete the checkpoint. For a pending Airtable record, inspect the matching Generation ID and Cluster ID: set status to done if confirmed, or generated if absent. Never change checkpoints while a run is active.
 
 ## Behavior
@@ -26,6 +24,13 @@ Start with a new, unique request ID. The workflow selects a random camera motion
 If submission or Airtable creation has an unknown result, inspect Luma or Airtable before retrying the same request ID. Set the pending key and confirmed or absent in **Prepare next generation step**. For confirmed generation supply its ID; for a confirmed Airtable record verify that it belongs to that generation. Clear recovery fields after reconciliation. Avoid overlapping runs for the same request ID.
 
 See [Luma's video API](https://docs.lumalabs.ai/reference/creategeneration).
+
+<details>
+<summary>In n8n</summary>
+
+For n8n, configure **Video settings**, an HTTP Header Auth credential with Authorization set to Bearer followed by your Luma key, an Airtable credential, and a Data Table with text columns item_key, status, spec and generation_id. Use a fresh request ID for each generation.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

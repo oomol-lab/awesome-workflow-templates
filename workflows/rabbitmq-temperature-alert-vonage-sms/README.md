@@ -13,13 +13,18 @@ Send a Vonage SMS when a RabbitMQ JSON message reports a temperature above 50.
 
 ## Setup
 
-Import the bundled n8n workflow and connect the RabbitMQ credential. Set the queue in **RabbitMQ** and send JSON messages with a numeric `temp` field. For Open Flow, connect Vonage, set the sender and destination in **Send temperature alert**, set **Choose delivery mode** to `relay` and configure the Open Flow URL in **Forward RabbitMQ message**. The sender must be permitted for the destination.
-
-For n8n-only operation leave the mode as `direct`, connect Vonage and set its sender and destination. Activate one mode. The Open Flow webhook is unauthenticated and may send SMS messages to the configured recipient; restrict access to trusted callers.
+Connect the RabbitMQ credential. Set the queue in **RabbitMQ** and send JSON messages with a numeric `temp` field. For Open Flow, connect Vonage, set the sender and destination in **Send temperature alert**, set **Choose delivery mode** to `relay` and configure the Open Flow URL in **Forward RabbitMQ message**. The sender must be permitted for the destination.
 
 ## Behavior
 
 A temperature strictly above 50 sends one SMS with the value; 50 and below send nothing. The source trigger acknowledges messages immediately, before downstream processing. The Open Flow webhook acknowledges before processing, so a later relay or SMS failure is visible in the respective execution. An uncertain SMS may have been sent; inspect Vonage before replaying.
+
+<details>
+<summary>In n8n</summary>
+
+Import the bundled n8n workflow and connect the RabbitMQ credential. For n8n-only operation leave the mode as `direct`, connect Vonage and set its sender and destination. Activate one mode. The Open Flow webhook is unauthenticated and may send SMS messages to the configured recipient; restrict access to trusted callers.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

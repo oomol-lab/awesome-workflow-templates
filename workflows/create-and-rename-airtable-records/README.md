@@ -13,13 +13,20 @@ Create a sample record and rename all matching records in an Airtable table.
 
 ## Setup
 
-Connect Airtable and configure the same base and table in all three Airtable nodes. The table needs a numeric `ID` field and a text `Name` field. Use a test table: this tutorial modifies existing matching records. In n8n, configure an Airtable Personal Access Token and the same base and table in each Airtable node. Run one format at a time.
+Connect Airtable and configure the same base and table in all three Airtable nodes. The table needs a numeric `ID` field and a text `Name` field. Use a test table: this tutorial modifies existing matching records.
 
 ## Behavior
 
 A manual run creates one record with `ID = 3` and `Name = n8n`. It then reads every page of records whose `Name` is `n8n` and changes the `Name` to `nodemation` for each match, including pre-existing matches. Updates are sent in batches of at most 10. Other fields remain unchanged. Open Flow returns the update responses and count.
 
 A failure after creation can leave the new record in the table; a later failed or uncertain update may have changed some records. Inspect the table before retrying, as another run creates another sample record. Avoid overlapping runs. Collected records and responses must fit execution limits.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, configure an Airtable Personal Access Token and the same base and table in each Airtable node.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

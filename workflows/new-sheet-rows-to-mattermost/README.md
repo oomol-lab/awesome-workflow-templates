@@ -13,13 +13,20 @@ Read a sheet and send a Mattermost message for each newly appended row, newest f
 
 ## Setup
 
-Connect Google Sheets and Mattermost. In **Read the sheet**, set the spreadsheet ID and a range covering the entire table. Its first row must contain unique `ID`, `Name` and `Email` headers; every data row needs an ID. In **Find new rows**, set the Mattermost channel ID. Keep the workflow deployed with persistent State and prevent overlapping runs. In n8n, set the spreadsheet and channel in the corresponding nodes. Activate only one format.
+Connect Google Sheets and Mattermost. In **Read the sheet**, set the spreadsheet ID and a range covering the entire table. Its first row must contain unique `ID`, `Name` and `Email` headers; every data row needs an ID. In **Find new rows**, set the Mattermost channel ID. Keep the workflow deployed with persistent State and prevent overlapping runs.
 
 ## Behavior
 
 Every minute, the workflow reads the entire range, scans rows from the bottom and stops at the first previously seen ID. It sends one message per row above that point, in newest-first order. The first successful run notifies all rows. Empty tables, header-only tables and completely empty rows do not change saved IDs. Each message contains ID, Name and Email. Changes below or before a known ID are not a general synchronization; duplicate or reordered IDs can suppress rows.
 
-Open Flow saves the full ID list before sending. n8n saves its changed static IDs at execution end even when a send fails. A failed send can therefore cause remaining notices to be skipped on the next run. Unknown sends may already have delivered. A hard crash or overlapping runs can behave differently between formats. Inspect Mattermost before retrying. State, table data and messages must fit execution limits.
+Open Flow saves the full ID list before sending. A failed send can therefore cause remaining notices to be skipped on the next run. Unknown sends may already have delivered. A hard crash or overlapping runs can behave differently between formats. Inspect Mattermost before retrying. State, table data and messages must fit execution limits.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, set the spreadsheet and channel in the corresponding nodes. n8n saves its changed static IDs at execution end even when a send fails.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

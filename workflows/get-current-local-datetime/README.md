@@ -13,11 +13,18 @@ Return the current date and time in a chosen time zone.
 
 ## Setup and use
 
-Run manually with an IANA time zone such as `America/New_York`. In n8n, set the time zone in **Get Local Datetime** before running.
+Run manually with an IANA time zone such as `America/New_York`.
 
 ## Behavior
 
 The workflow returns the current UTC instant as an ISO string, local year, zero-indexed month, day, hour, minute, second, millisecond, and a formatted local date with UTC offset. Daylight saving time follows the runtime's time-zone data. An invalid time zone stops the run.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, set the time zone in **Get Local Datetime** before running.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

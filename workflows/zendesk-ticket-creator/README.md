@@ -13,11 +13,18 @@ Create one Zendesk support ticket with a subject and initial comment.
 
 ## Setup
 
-Select a Zendesk agent account in **Create Zendesk ticket** and replace the subject and description. The description becomes the initial ticket comment. In n8n, select Zendesk OAuth2 credentials in **Zendesk** and edit its description and subject. Run manually after setup.
+Select a Zendesk agent account in **Create Zendesk ticket** and replace the subject and description. The description becomes the initial ticket comment. Run manually after setup.
 
-The workflow creates one ticket and returns the result. Open Flow returns the current Action’s ticket fields and the original API record under `raw`; n8n returns the original API ticket. The template leaves requester, assignee, status, priority and comment visibility to the service defaults. Account rules and triggers may send notifications or make other ticket changes.
+The workflow creates one ticket and returns the result. Open Flow returns the current Action’s ticket fields and the original API record under `raw`. The template leaves requester, assignee, status, priority and comment visibility to the service defaults. Account rules and triggers may send notifications or make other ticket changes.
 
 Each manual run creates another ticket. There is no search, upsert or duplicate detection. A service error stops the workflow without an automatic retry. If a creation request times out, check the service before running it again.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, select Zendesk OAuth2 credentials in **Zendesk** and edit its description and subject. N8n returns the original API ticket.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

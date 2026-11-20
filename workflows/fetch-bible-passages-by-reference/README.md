@@ -13,11 +13,18 @@ Fetch Bible passages for one or more references using the GetBible API.
 
 ## Setup
 
-Provide `references` as an array of Bible references, such as `["John 3:16", "Romans 3:16"]`, and optionally set a translation and API version. If references are omitted, the workflow uses `John 3:16`; the defaults for translation and version are `kjv` and `v2`. The n8n version is a sub-workflow called by another workflow. In Open Flow, run it with Start inputs or call it as a workflow. Network access to `query.getbible.net` is required.
+Provide `references` as an array of Bible references, such as `["John 3:16", "Romans 3:16"]`, and optionally set a translation and API version. If references are omitted, the workflow uses `John 3:16`; the defaults for translation and version are `kjv` and `v2`. In Open Flow, run it with Start inputs or call it as a workflow. Network access to `query.getbible.net` is required.
 
 ## Behavior
 
 The references are joined into one GetBible query and the API's JSON is returned under `result`. Ranges and comma-separated verses are passed to GetBible for interpretation. A failed request stops the run. The external service determines available translations and returned text.
+
+<details>
+<summary>In n8n</summary>
+
+The n8n version is a sub-workflow called by another workflow.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

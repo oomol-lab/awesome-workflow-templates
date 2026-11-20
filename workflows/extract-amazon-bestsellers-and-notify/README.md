@@ -13,11 +13,18 @@ Extract structured bestseller information from an Amazon page and send it to a w
 
 ## Setup and use
 
-Bind secret Variable BRIGHT_DATA_TOKEN, set your Web Unlocker zone and Amazon page URL in **Fetch bestseller page**, configure the model, and set the destination URL in **Send results to webhook**. In n8n configure Bright Data Header Auth with Authorization: Bearer followed by your API token, connect the Gemini model, and set the zone, Amazon URL and webhook URL. Run one format manually.
+Bind secret Variable BRIGHT_DATA_TOKEN, set your Web Unlocker zone and Amazon page URL in **Fetch bestseller page**, configure the model, and set the destination URL in **Send results to webhook**. Run one format manually.
 
 ## Behavior
 
 The workflow sends the page HTML to the model, extracts the category and ranked product details, and POSTs the structured result as summary to the destination. The model may miss or invent details; review the results. Bright Data and model usage may incur charges. A failed or uncertain notification may have arrived; inspect the destination before retrying.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure Bright Data Header Auth with Authorization: Bearer followed by your API token, connect the Gemini model, and set the zone, Amazon URL and webhook URL.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

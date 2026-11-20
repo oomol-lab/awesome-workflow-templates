@@ -13,13 +13,20 @@ Qualify an enquiry, request an administrator decision and create an appointment 
 
 ## Setup and use
 
-Import the n8n workflow, connect its OpenAI and Gmail credentials, set the administrator email and calendar, and configure the form and terms for your use. For Open Flow mode set **Open Flow mode** to true, configure the Open Flow webhook URL in both forwarding nodes, deploy the Open Flow workflow, configure its model and connect Google Calendar and Gmail. For n8n-only mode leave it false and connect Google Calendar in n8n. Activate one mode.
+Connect its OpenAI and Gmail credentials, set the administrator email and calendar, and configure the form and terms for your use. For Open Flow mode set **Open Flow mode** to true, configure the Open Flow webhook URL in both forwarding nodes, deploy the Open Flow workflow, configure its model and connect Google Calendar and Gmail.
 
 ## Behavior
 
-The form qualifies the enquiry, collects terms acceptance and a requested time, and emails an acknowledgement. A separate Gmail approval waits for an administrator. Approval creates a 30-minute calendar event with the requester and a Google Meet request; rejection emails the requester. The Open Flow webhook receives both classification requests and approval decisions from the supplied n8n workflow. It does not authenticate callers; restrict access to trusted senders. The n8n form lists working days within the next five calendar days and times from 9:00 through 18:00 in its configured timezone. Review available dates and possible conflicts before approving; the workflow does not check availability.
+The form qualifies the enquiry, collects terms acceptance and a requested time, and emails an acknowledgement. A separate Gmail approval waits for an administrator. Approval creates a 30-minute calendar event with the requester and a Google Meet request; rejection emails the requester. It does not authenticate callers; restrict access to trusted senders. Review available dates and possible conflicts before approving; the workflow does not check availability.
 
 Enquiries are shared with the model. A lost email or calendar response may represent a completed write; inspect the relevant account before retrying.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow, connect its OpenAI and Gmail credentials, set the administrator email and calendar, and configure the form and terms for your use. For n8n-only mode leave it false and connect Google Calendar in n8n. The Open Flow webhook receives both classification requests and approval decisions from the supplied n8n workflow. The n8n form lists working days within the next five calendar days and times from 9:00 through 18:00 in its configured timezone.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

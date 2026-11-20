@@ -13,13 +13,20 @@ Generate a short post about a randomly selected hashtag and save it to Airtable 
 
 ## Setup
 
-Edit the hashtag list in **Choose a hashtag**, configure the model in **Draft a short post**, and connect Airtable in **Save the draft in Airtable**. Set the base ID and table name. The table needs text fields named **Hashtag** and **Content**. In n8n, edit the list in **Choose a hashtag**, connect OpenAI and Airtable credentials and set the same base and table. Run either format manually.
+Edit the hashtag list in **Choose a hashtag**, configure the model in **Draft a short post**, and connect Airtable in **Save the draft in Airtable**. Set the base ID and table name. The table needs text fields named **Hashtag** and **Content**. Run the workflow manually.
 
 ## Behavior
 
 Each run randomly chooses one configured hashtag, asks the model for a post about it and saves one draft. The workflow trims the result and requires the selected hashtag and fewer than 100 Unicode code points before creating a record. Empty, overlong or mismatched output stops the run. The selected hashtag is sent to the model provider. Review the generated text for accuracy before use; the workflow does not publish a post.
 
 An uncertain Airtable write may already have created a record. Check the table before retrying; repeating a run can create another draft.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, edit the list in **Choose a hashtag**, connect OpenAI and Airtable credentials and set the same base and table.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

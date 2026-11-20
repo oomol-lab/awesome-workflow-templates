@@ -15,11 +15,18 @@ Send Slack a notification when someone adds or removes a star from your reposito
 
 Connect GitHub in **Receive repository star event** and set the repository owner and name. The GitHub account must be able to manage that repository’s webhooks. Keep the subscribed event as `star`.
 
-Connect Slack in both **Post added star to Slack** and **Post removed star to Slack**, and set their channel IDs. They can use the same channel or separate channels. The account must have permission to post there. In n8n, configure the equivalent **Github Trigger**, **Slack - Add**, and **Slack - Remove** nodes. Activate one format after setup.
+Connect Slack in both **Post added star to Slack** and **Post removed star to Slack**, and set their channel IDs. They can use the same channel or separate channels. The account must have permission to post there. Activate one format after setup.
 
 Each `created` event sends one green attachment; each `deleted` event sends one red attachment. The message includes the sender’s GitHub login, profile link, avatar, and the repository star count from that event. The count is a snapshot from the webhook payload; the workflow does not query GitHub again or adjust the number itself.
 
 The workflow keeps no notification history. Duplicate event deliveries or two active formats can produce repeated alerts. A malformed payload fails before Slack; a Slack error fails the run without an automatic retry.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, configure the equivalent **Github Trigger**, **Slack - Add**, and **Slack - Remove** nodes.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

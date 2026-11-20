@@ -15,17 +15,24 @@ Find recent Who is hiring threads and save structured recruiting records from th
 
 Choose an available model on **Extract hiring details**. Configure your Airtable connection, base and table on **Create Airtable job**. Create text columns `company`, `title`, `location`, `type`, `salary`, `description`, `apply_url` and `company_url`. Hacker News reads need no login; enable its custom API access for the date-sorted phrase search.
 
-The source used `gpt-4o-mini`; choose an available model in each format. For n8n, configure the OpenAI model and Airtable credential, base and table on their respective nodes.
+The source used `gpt-4o-mini`; choose an available model in each format.
 
 ## Run
 
 Start manually. Search the newest 30 story matches for the source phrase, then keep stories created within the last 30 days. Read all their immediate comment IDs and comment texts in returned order. After all reads finish, retain the source's first five comments, extract each into a hiring record and save one Airtable row per selected comment. No replies, emails or job applications are sent.
 
-Both formats preserve the five-comment limit. The Open Flow result returns created record IDs associated with comment IDs. A read or extraction failure prevents every Airtable write; a write failure stops later writes. Inspect Airtable before repeating a run whose write response was lost. Repeated runs can create duplicate rows.
+The workflow preserve the five-comment limit. The Open Flow result returns created record IDs associated with comment IDs. A read or extraction failure prevents every Airtable write; a write failure stops later writes. Inspect Airtable before repeating a run whose write response was lost. Repeated runs can create duplicate rows.
 
-The model extracts company, role, location, employment type, work arrangement, compensation, description and application/company URLs when present. Missing fields can remain absent or null. The source does not save `work_location` to Airtable; the same eight source columns are saved here. Model judgments and extracted links need review. Open Flow uses a tool-free native Agent with one model round and service generation settings; n8n uses its native LLM Chain, structured parser and OpenAI adapter with two additional transient retries. Results can differ.
+The model extracts company, role, location, employment type, work arrangement, compensation, description and application/company URLs when present. Missing fields can remain absent or null. The source does not save `work_location` to Airtable; the same eight source columns are saved here. Model judgments and extracted links need review. Open Flow uses a tool-free native Agent with one model round and service generation settings. Results can differ.
 
-Complete ID collections and selected comment content must fit execution and Code limits, including 1 MiB per Code input/result in the inspected Open Flow host. Oversized batches fail rather than silently truncate. Search results are a 30-hit window, not an exhaustive historical job archive. Deleted, missing or mismatched comment records stop the Open Flow run before any extraction or write; n8n also requires usable comment text. Text cleaning follows the source's simple HTML/entity/whitespace substitutions; it is not a complete HTML decoder.
+Complete ID collections and selected comment content must fit execution and Code limits, including 1 MiB per Code input/result in the inspected Open Flow host. Oversized batches fail rather than silently truncate. Search results are a 30-hit window, not an exhaustive historical job archive. Deleted, missing or mismatched comment records stop the Open Flow run before any extraction or write. Text cleaning follows the source's simple HTML/entity/whitespace substitutions; it is not a complete HTML decoder.
+
+<details>
+<summary>In n8n</summary>
+
+For n8n, configure the OpenAI model and Airtable credential, base and table on their respective nodes. N8n uses its native LLM Chain, structured parser and OpenAI adapter with two additional transient retries. N8n also requires usable comment text.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

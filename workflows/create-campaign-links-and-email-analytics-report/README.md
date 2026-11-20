@@ -15,13 +15,18 @@ Create tracked campaign URLs and QR codes, and email scheduled GA4 traffic summa
 
 Connect Airtable, Google Analytics, Gmail and a model. Configure the Airtable base and table in **Save campaign URL**, the GA4 property in **Read source and medium sessions**, and the recipient in **Prepare report delivery**. The Airtable table needs a writable URL field. The schedule runs daily at midnight UTC; adjust it to suit.
 
-In n8n configure the same accounts, property, recipient, Airtable base and table, and a Data Table with item_key and status text columns on the checkpoint nodes. Use only one format for each campaign or report and prevent overlapping runs.
-
 ## Use
 
 Run **Create a campaign link** with the website and campaign parameters. The result includes the tracked URL and a QuickChart QR image URL. Opening it sends the campaign URL to QuickChart. The scheduled branch reads up to 50 source/medium rows for the last seven days through today and asks the model for an executive summary before sending it by email.
 
-If Airtable or Gmail has an unknown result, inspect the service before retrying. Enter the pending key in the corresponding preparation step with resolution confirmed if the write happened, or absent if it did not; run again, then clear both fields. In n8n inspect the pending Data Table row, complete or verify the write manually, then mark it done or delete it to retry.
+If Airtable or Gmail has an unknown result, inspect the service before retrying. Enter the pending key in the corresponding preparation step with resolution confirmed if the write happened, or absent if it did not; run again, then clear both fields.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure the same accounts, property, recipient, Airtable base and table, and a Data Table with item_key and status text columns on the checkpoint nodes. Use only one format for each campaign or report and prevent overlapping runs. In n8n inspect the pending Data Table row, complete or verify the write manually, then mark it done or delete it to retry.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

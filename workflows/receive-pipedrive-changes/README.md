@@ -13,11 +13,18 @@ Receive Pipedrive change notifications.
 
 ## Setup and use
 
-Import the n8n workflow and activate it, then register the **Receive Pipedrive event** production URL with Pipedrive Webhooks API v2, setting event_action and event_object to * and giving it a name. The URL must be publicly reachable by Pipedrive. For Open Flow enter its webhook URL in **Forward to Open Flow** and enable that node; leave it disabled for n8n alone. Restrict access to the webhook endpoints.
+Activate it, then register the **Receive Pipedrive event** production URL with Pipedrive Webhooks API v2, setting event_action and event_object to * and giving it a name. The URL must be publicly reachable by Pipedrive. For Open Flow enter its webhook URL in **Forward to Open Flow** and enable that node. Restrict access to the webhook endpoints.
 
 ## Behavior
 
-Pipedrive v2 reports a merge as separate delete and change events, and uses data for the current object. The webhook receives Pipedrive change events and the optional relay forwards each event to Open Flow as workflow output. Neither endpoint verifies the sender; restrict access and inspect n8n execution history for relay failures. Event data may appear in execution history. Event details may appear in execution history.
+Pipedrive v2 reports a merge as separate delete and change events, and uses data for the current object. The webhook receives Pipedrive change events and the optional relay forwards each event to Open Flow as workflow output. Neither endpoint verifies the sender. Event data may appear in execution history. Event details may appear in execution history.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow and activate it, then register the **Receive Pipedrive event** production URL with Pipedrive Webhooks API v2, setting event_action and event_object to * and giving it a name. Leave it disabled for n8n alone. Restrict access and inspect n8n execution history for relay failures.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

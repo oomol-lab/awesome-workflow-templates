@@ -13,13 +13,20 @@ Create upcoming NHL event records and update matching records with scores.
 
 ## Setup
 
-Connect Airtable with read and write access and set the same base and table in each node. Create text fields named event_id, sports_key, sport_title, commence_time, home_team, away_team, scores, completed and last_update. Store the Odds API key in Secret Variable ODDS_API_KEY. For n8n, configure an HTTP Header Auth credential named x-api-key, Airtable credentials and the same table. Activate one format.
+Connect Airtable with read and write access and set the same base and table in each node. Create text fields named event_id, sports_key, sport_title, commence_time, home_team, away_team, scores, completed and last_update. Store the Odds API key in Secret Variable ODDS_API_KEY.
 
 ## Behavior
 
 At 07:00 UTC the workflow creates one record per upcoming NHL event. At 23:00 UTC it retrieves recent scores, reads the Airtable table and updates records whose event_id matches an event. Scores are stored as JSON text. Scores without a matching record are skipped. Duplicate matching event IDs stop the run; remove duplicates before enabling. Morning runs do not deduplicate and can create duplicates on repeated imports.
 
 Errors stop processing; prior writes remain. A failed or uncertain write may have succeeded. Inspect the table before replaying. API responses and all collected Airtable records must fit host limits. The source's merge across separate schedules could not link the executions; this version matches the stored event ID to its Airtable record ID.
+
+<details>
+<summary>In n8n</summary>
+
+For n8n, configure an HTTP Header Auth credential named x-api-key, Airtable credentials and the same table.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -17,13 +17,11 @@ The Open Flow JSON contains two workflows, **WordPress Post Categorizer** and **
 
 Use the same WordPress account on **Read one WordPress post page** and **Apply one validated category**. The account must be able to read the posts and edit their categories. The model is `gpt-5-mini`, with provider-default generation settings.
 
-OpenAI lists December 11, 2026 as the [shutdown date for `gpt-5-mini`](https://developers.openai.com/api/docs/deprecations/). Select an available model in both formats before that date and recheck category responses and the selected model’s generation settings.
-
-For n8n, choose WordPress credentials on the two native WordPress nodes and an OpenAI credential on **OpenAI Chat Model**. Edit **Set Category Taxonomy** before executing. Its initial `[]` is a placeholder and stops before any post read or update.
+OpenAI lists December 11, 2026 as the [shutdown date for `gpt-5-mini`](https://developers.openai.com/api/docs/deprecations/). Select an available model before that date and recheck category responses and the selected model’s generation settings.
 
 ## Run
 
-Create the desired categories in WordPress beforehand. Supply `taxonomyJson` as JSON text in the main Open Flow workflow, or the same text in n8n’s settings node. Use the actual IDs from your site. For example, if IDs101 and102 belong to these categories:
+Create the desired categories in WordPress beforehand. Use the actual IDs from your site. For example, if IDs101 and102 belong to these categories:
 
 ```json
 [
@@ -36,9 +34,16 @@ The workflow reads the WordPress post collection using its default filters and o
 
 Each title is classified once into one configured category. All classifications must complete and pass the allowlist check before any update is attempted. An empty collection returns a zero-count summary. Categories are replaced with exactly one chosen ID; existing category assignments are removed by that replacement. No categories are created, and post content, tags and publication status are not included in the update.
 
-Updates run one at a time in collection order. A failed update stops later updates and leaves earlier changes completed. There are no workflow-level retries or rollback. Each successful rerun reclassifies and replaces categories for the selected collection again. The n8n model adapter permits two additional transient transport retries; Open Flow’s selected model service controls its own transport retry behavior. A failed classification causes no post updates. The three visible feedback loops read one page, classify one title and update one post in separate executions. There is no fixed 100-post or 100-page total cap. The accumulated titles and category assignments must fit the execution platform’s Code input and result budgets; the inspected Open Flow host allows 1 MiB for each. A limit failure stops the run, and earlier completed updates remain if it occurs during the write phase. Model-service and overall execution limits also apply.
+Updates run one at a time in collection order. A failed update stops later updates and leaves earlier changes completed. There are no workflow-level retries or rollback. Each successful rerun reclassifies and replaces categories for the selected collection again. Open Flow’s selected model service controls its own transport retry behavior. A failed classification causes no post updates. The three visible feedback loops read one page, classify one title and update one post in separate executions. There is no fixed 100-post or 100-page total cap. The accumulated titles and category assignments must fit the execution platform’s Code input and result budgets; the inspected Open Flow host allows 1 MiB for each. A limit failure stops the run, and earlier completed updates remain if it occurs during the write phase. Model-service and overall execution limits also apply.
 
 The result contains the requested `{id, categoryId}` assignments and a count after all update calls succeed. These are the selected assignments, not an independent read-back audit. Post titles and the configured category names are sent to the model service. Choosing a category is a model judgment; review the taxonomy and test on a suitable WordPress site before running across the collection.
+
+<details>
+<summary>In n8n</summary>
+
+For n8n, choose WordPress credentials on the two native WordPress nodes and an OpenAI credential on **OpenAI Chat Model**. Edit **Set Category Taxonomy** before executing. Its initial `[]` is a placeholder and stops before any post read or update. Supply `taxonomyJson` as JSON text in the main Open Flow workflow, or the same text in n8n’s settings node. The n8n model adapter permits two additional transient transport retries.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -15,13 +15,18 @@ Create WordPress drafts with Pexels featured images from Airtable articles.
 
 In Airtable create fields `Status`, `Title`, `Keyword` and `Blog Post`. Mark articles ready with `To Post` in Status. Configure the base and table in both Airtable nodes, set the same HTTPS WordPress site URL in **Checkpoint draft** and **Upload featured image**, and replace `wordpress.example.com` in the upload node HTTP capabilities with the site's hostname. Connect Airtable in both nodes. Bind Secret Variables `PEXELS_API_KEY` and `WORDPRESS_AUTHORIZATION` (the full Basic authorization header made from the WordPress username and application password). Enable persistent State and prevent overlapping runs.
 
-For n8n, connect Airtable and WordPress credentials, configure the base, table and WordPress URL in the relevant nodes, and configure HTTP Header Auth with the Pexels API key as `Authorization`. Create an n8n Data Table with a text column `record_id` and set its ID in both checkpoint nodes. Prevent overlapping runs and activate one format.
-
 ## Behavior
 
 Daily at midnight UTC, search up to three records with Status containing `To Post`. For each article with a Blog Post, convert Markdown to HTML, create a WordPress draft, find and upload a Pexels image, set it as featured media, and mark the original Airtable row `Posted`. The post remains a draft for review. The source tripled the article text; this version converts it once. Open Flow limits each image to 1 MiB and requires the Pexels image host.
 
-Writes are not automatically replayed after an uncertain result. Open Flow records the current stage in State; n8n inserts a Data Table checkpoint before the draft. If processing stops, inspect WordPress and Airtable, finish or undo any partial work, then clear that record's checkpoint only when it is safe to retry. Successful n8n checkpoints remain until manually removed. Prior completed posts remain.
+Writes are not automatically replayed after an uncertain result. Open Flow records the current stage in State. If processing stops, inspect WordPress and Airtable, finish or undo any partial work, then clear that record's checkpoint only when it is safe to retry. Prior completed posts remain.
+
+<details>
+<summary>In n8n</summary>
+
+For n8n, connect Airtable and WordPress credentials, configure the base, table and WordPress URL in the relevant nodes, and configure HTTP Header Auth with the Pexels API key as `Authorization`. Create an n8n Data Table with a text column `record_id` and set its ID in both checkpoint nodes. Prevent overlapping runs and activate one format. N8n inserts a Data Table checkpoint before the draft. Successful n8n checkpoints remain until manually removed.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

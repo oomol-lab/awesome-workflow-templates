@@ -27,8 +27,6 @@ Select a GitHub connection on both repository nodes and a Dev.to connection on t
 
 The GitHub connection must have access to both repositories. Use a published Dev.to article. The connectors manage authentication and API requests; API rate limits still apply.
 
-### n8n
-
 Replace the three API URL placeholders:
 
 | Node | URL format |
@@ -37,9 +35,9 @@ Replace the three API URL placeholders:
 | GitHub Repo 2 | `https://api.github.com/repos/OWNER/REPOSITORY` |
 | dev.to Article 1 | `https://dev.to/api/articles/USERNAME/ARTICLE-SLUG` |
 
-The n8n template uses HTTP Request nodes for public repositories and a published article. These public endpoints require no account connection and are subject to API rate limits.
+These public endpoints require no account connection and are subject to API rate limits.
 
-Both formats use the schedule `0 0,12 * * *` in `UTC`. Confirm the timezone before enabling the workflow and run a manual test after configuration.
+The workflow uses the schedule `0 0,12 * * *` in `UTC`. Confirm the timezone before enabling the workflow and run a manual test after configuration.
 
 ## Output
 
@@ -52,9 +50,16 @@ Both formats use the schedule `0 0,12 * * *` in `UTC`. Confirm the timezone befo
 }
 ```
 
-Open Flow exposes these fields as workflow outputs. In n8n, they are the result of `Compile Summary`. GitHub's `open_issues_count` includes open pull requests.
+Open Flow exposes these fields as workflow outputs. GitHub's `open_issues_count` includes open pull requests.
 
 The three requests run in order. A failed request stops the run. This template produces a snapshot; it does not store historical results or send notifications.
+
+<details>
+<summary>In n8n</summary>
+
+### n8n The n8n template uses HTTP Request nodes for public repositories and a published article. In n8n, they are the result of `Compile Summary`.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

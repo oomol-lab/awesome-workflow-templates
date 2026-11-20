@@ -13,7 +13,7 @@ Send selected text from an Apple Shortcut to translate it into English or Spanis
 
 ## Setup
 
-Import the JSON. In Open Flow, select a configured `gpt-4o-mini` model in **Transform text**. In n8n, select your OpenAI credential on each of the five OpenAI nodes. Publish and enable the configured workflow and copy its production webhook URL.
+Import the JSON. In Open Flow, select a configured `gpt-4o-mini` model in **Transform text**. Publish and enable the configured workflow and copy its production webhook URL.
 
 Create an Apple Shortcut that receives text from the share sheet or clipboard. Add **Get Contents of URL**, set the URL to the webhook, choose **POST**, and set its request body to JSON with `type` and `content`. Pass the selected text as `content`. Show or copy the response using the Shortcut's normal text actions.
 
@@ -37,6 +37,13 @@ Any JSON HTTP client can make the same request:
 Each valid request makes one model call. A successful response is HTTP 200 with a plain-text body. Letter case matters for `type`; missing or empty text and unknown operations fail before the model runs. An empty or incorrectly shaped model result also fails. Error status and body follow the hosting platform's error handling. No automatic retry is configured.
 
 The length requests are prompts, so the result may differ from 5%. Review wording before replacing your original text. Open Flow waits up to 60 seconds for the response; an HTTP timeout does not cancel an already running model call. Submitted text is sent to your configured model provider.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, select your OpenAI credential on each of the five OpenAI nodes.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

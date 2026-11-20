@@ -15,13 +15,20 @@ Find or create Salesforce accounts and upsert sheet contacts by email.
 
 Use a sheet with unique headers `Company Name`, `First Name`, `Last Name`, and `Email`. Connect Google Sheets and Salesforce with permission to query and create Accounts and upsert Contacts by Email. Contact Email must be available as an idLookup field in your Salesforce organization. Salesforce rejects an upsert when multiple Contacts match an email.
 
-In Open Flow, set the spreadsheet ID and A1 range in **Read contact sheet** (default `'Sheet1'!A:Z`), and select Salesforce connections for **Find account**, **Create account**, and **Upsert contact**. Allow each node's declared Action. In n8n, configure the sheet ID and range and Salesforce credentials on each Salesforce node.
+In Open Flow, set the spreadsheet ID and A1 range in **Read contact sheet** (default `'Sheet1'!A:Z`), and select Salesforce connections for **Find account**, **Create account**, and **Upsert contact**. Allow each node's declared Action.
 
 ## Behavior
 
 Each run validates the rows, resolves each company to one Salesforce Account with an exactly matching name, creates it if absent, and upserts each Contact by email with first name, last name and AccountId. The workflow reuses an account ID for later rows of the same company in that run. Repeated emails update the same Contact again, so a later row can change its account and name. It stops if a query returns multiple account matches, on invalid account responses, invalid rows or an error. An empty sheet does nothing.
 
 The workflow processes contacts in order. Earlier writes remain if a later request fails; there is no rollback or automatic retry. A lost response may mean a write succeeded, so check Salesforce before retrying. Concurrent account creation or duplicate names can change the outcome.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, configure the sheet ID and range and Salesforce credentials on each Salesforce node.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

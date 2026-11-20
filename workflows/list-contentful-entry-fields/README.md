@@ -13,11 +13,18 @@ Read the fields of all published entries in a Contentful environment.
 
 ## Setup and use
 
-Set your Contentful space ID and environment in **Collect entry pages** in Open Flow. Bind a Content Delivery API access token as the secret Variable **CONTENTFUL_DELIVERY_TOKEN** on **Read entries**. In n8n, set the space and environment in both the URL and pagination next URL in **Read entries**, and select a Bearer Auth credential with the delivery token. Run manually.
+Set your Contentful space ID and environment in **Collect entry pages** in Open Flow. Bind a Content Delivery API access token as the secret Variable **CONTENTFUL_DELIVERY_TOKEN** on **Read entries**. Run manually.
 
 ## Behavior
 
-The workflow reads published entries in pages of 100 until all available pages have been collected. It returns each entry's `fields` object as returned for the delivery API's default locale. Open Flow returns an array; n8n emits one item per entry. Empty spaces return an empty array or no items respectively. Records are held in execution memory and may change during pagination; very large spaces can exceed runtime limits.
+The workflow reads published entries in pages of 100 until all available pages have been collected. It returns each entry's `fields` object as returned for the delivery API's default locale. Open Flow returns an array. Empty spaces return an empty array or no items respectively. Records are held in execution memory and may change during pagination; very large spaces can exceed runtime limits.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, set the space and environment in both the URL and pagination next URL in **Read entries**, and select a Bearer Auth credential with the delivery token. N8n emits one item per entry.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

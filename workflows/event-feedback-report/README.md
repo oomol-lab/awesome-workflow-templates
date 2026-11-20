@@ -2,6 +2,15 @@
 
 Summarize event feedback from Google Sheets and email a report on overall sentiment and ideas for improving the event. Run it manually when you want to review the responses collected so far.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/event-feedback-report/) [![n8n JSON](../../assets/n8n-json.svg)](templates/event-feedback-report.n8n.json)
+<!-- template-actions:end -->
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
+  <img alt="Open Flow workflow" src="preview-light.png">
+</picture>
+
 ## Setup
 
 Create a sheet named `Feedback` with these exact question headers in columns A–C:
@@ -18,11 +27,16 @@ For Open Flow, import the JSON and configure:
 | Summarize feedback | Configure `gpt-4.1-2025-04-14` or choose a compatible available model. Review the report instructions. |
 | Email report | Connect Gmail and replace `report-recipient@example.com`. |
 
-For n8n, configure the same spreadsheet, model, and recipient in `Get Google Sheets records`, `Summarize via GPT model`, and `Send via Gmail`.
+Use Run. A run reads all rows in the configured range and sends one HTML email. An empty sheet or a sheet with only headers sends no email. Repeated runs include the same existing responses. Source feedback is sent to your configured AI provider. Large response sets must fit your model's context window.
 
-Use Run in Open Flow or Execute Workflow in n8n. A run reads all rows in the configured range and sends one HTML email. An empty sheet or a sheet with only headers sends no email. Repeated runs include the same existing responses. Source feedback is sent to your configured AI provider. Large response sets must fit your model's context window.
+OpenAI lists this snapshot for [shutdown on January 14, 2027](https://developers.openai.com/api/docs/deprecations/). Choose an available compatible model before that date and check the report output. The replacement model can produce different wording and assessments; no model quality or account availability is guaranteed.
 
-OpenAI lists this snapshot for [shutdown on January 14, 2027](https://developers.openai.com/api/docs/deprecations/). Choose an available compatible model in both formats before that date and check the report output. The replacement model can produce different wording and assessments; no model quality or account availability is guaranteed.
+<details>
+<summary>In n8n</summary>
+
+For n8n, configure the same spreadsheet, model, and recipient in `Get Google Sheets records`, `Summarize via GPT model`, and `Send via Gmail`. Use Run in Open Flow or Execute Workflow in n8n.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>
@@ -33,15 +47,6 @@ OpenAI lists this snapshot for [shutdown on January 14, 2027](https://developers
 - Replace the original private spreadsheet and recipient with setup placeholders.
 - Generate the HTML report directly in the model step, retaining the sentiment and improvement brief while removing the intermediate Markdown conversion.
 - Replace the retired `gpt-4-turbo-preview` default with `gpt-4.1-2025-04-14`, an officially documented compatible replacement, retaining temperature `0.3` and the report instructions. See [OpenAI's deprecation guidance](https://developers.openai.com/api/docs/deprecations/) and [GPT-4.1 model details](https://developers.openai.com/api/docs/models/gpt-4.1).
-
-<!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/event-feedback-report/) [![n8n JSON](../../assets/n8n-json.svg)](templates/event-feedback-report.n8n.json)
-<!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 Adapted from [Summarize Google Sheets form feedback via OpenAI_s GPT-4](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Google_Drive_and_Google_Sheets/Summarize%20Google%20Sheets%20form%20feedback%20via%20OpenAI_s%20GPT-4.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 

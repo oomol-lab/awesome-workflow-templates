@@ -13,7 +13,7 @@ Learn matching, enrichment, and append operations with ingredient and musician e
 
 ## Setup and use
 
-Run the workflow manually to see the three examples. In n8n, the input lists are in the six Code nodes; in Open Flow, edit **Match, enrich, and append** to experiment with the sample data.
+Run the workflow manually to see the three examples. In Open Flow, edit **Match, enrich, and append** to experiment with the sample data.
 
 ## Behavior
 
@@ -22,6 +22,13 @@ Run the workflow manually to see the three examples. In n8n, the input lists are
 - Append the Led Zeppelin sample list after the Queen sample list, preserving every record and its fields.
 
 The musician names and instruments are source sample data. The examples demonstrate list operations and do not verify biographical facts. The fixed examples use unique names; adapting them to duplicate match keys may require a different join implementation.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, the input lists are in the six Code nodes.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

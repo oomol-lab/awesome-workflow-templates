@@ -13,13 +13,20 @@ Extract Colombian invoice details from ZIP attachments and organize their PDFs a
 
 ## Setup
 
-Connect Gmail, Encodian, Gemini, Google Drive and Google Sheets. Set the Drive folder in **Choose the next attachment**, spreadsheet ID and sheet name in **Upsert invoice row**, and the Gmail transit hostname in **Verify complete attachment**. Enable persistent State. In n8n configure matching connections, a Drive folder, the sheet and a Data Table for write checkpoints. Use one format and avoid overlapping runs.
+Connect Gmail, Encodian, Gemini, Google Drive and Google Sheets. Set the Drive folder in **Choose the next attachment**, spreadsheet ID and sheet name in **Upsert invoice row**, and the Gmail transit hostname in **Verify complete attachment**. Enable persistent State. Use one format and avoid overlapping runs.
 
 ## Behavior
 
 Every 30 minutes the workflow examines Gmail ZIP attachments. Each supported archive contains exactly one PDF and one XML invoice. It extracts PDF text, combines it with XML for Gemini, validates the invoice fields and arithmetic, creates the original PDF with the invoice date and number in its name, and upserts the row by issuer NIT and invoice number. Review extracted data against the source. The Open Flow ZIP is limited to 512 KiB compressed and expanded, with at most 20 entries; each entry is at most 256 KiB. Scanned PDFs require OCR and ambiguous archives stop for review.
 
-If an external write is uncertain, inspect Drive or Sheets before retrying. In **Validate invoice and recover** enter the pending key, resolution confirmed or absent and, for a confirmed PDF creation, its Drive file ID. Use **Retry a Gmail message**, then clear recovery fields. A completed Drive PDF is retained while the sheet stage resumes. In n8n, a pending Data Table row blocks the archive. Inspect both Drive and Sheets; if only the PDF was created, complete the sheet row manually before marking the row done. Delete the pending row only after verifying that neither write occurred. Enable the authenticated **Resume Gmail message** webhook and POST the original messageId to retry. Protect mail, transit and execution data.
+If an external write is uncertain, inspect Drive or Sheets before retrying. In **Validate invoice and recover** enter the pending key, resolution confirmed or absent and, for a confirmed PDF creation, its Drive file ID. Use **Retry a Gmail message**, then clear recovery fields. A completed Drive PDF is retained while the sheet stage resumes. Inspect both Drive and Sheets; if only the PDF was created, complete the sheet row manually before marking the row done. Delete the pending row only after verifying that neither write occurred. Enable the authenticated **Resume Gmail message** webhook and POST the original messageId to retry. Protect mail, transit and execution data.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure matching connections, a Drive folder, the sheet and a Data Table for write checkpoints. In n8n, a pending Data Table row blocks the archive.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

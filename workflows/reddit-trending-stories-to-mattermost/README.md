@@ -13,13 +13,20 @@ Analyze trending Reddit-linked news and share a ZIP of story reports.
 
 ## Setup
 
-Connect Reddit, Gemini, Google Drive and Mattermost. In Open Flow set the newline-separated topics, Drive folder ID and Mattermost channel ID in Configure topics and destinations, bind JINA_API_KEY, and enable persistent State. In n8n set topics, Drive folder, Data Table with item_key and status text columns, the Mattermost webhook URL and Header Auth credentials for Jina and Gemini. The schedule runs Monday at 06:00 UTC in Open Flow; configure the n8n instance timezone to UTC for the same schedule.
+Connect Reddit, Gemini, Google Drive and Mattermost. In Open Flow set the newline-separated topics, Drive folder ID and Mattermost channel ID in Configure topics and destinations, bind JINA_API_KEY, and enable persistent State. The schedule runs Monday at 06:00 UTC in Open Flow.
 
 ## Use
 
 The workflow searches each topic, selects link posts with more than 100 upvotes, retains the most-upvoted post per URL, and reads comments and the linked news article. Three analyses use the discussion, article and engagement metrics to create one report per post. Reports are combined into a ZIP, uploaded to Drive, shared with anyone holding the link and announced in Mattermost. No notification is sent when no posts qualify. Reddit comments and article text are sent to Gemini. Check the resulting reports and share only material suitable for a public link.
 
-A delivery of unknown outcome stays pending. Inspect Drive permissions and Mattermost before retrying. For Open Flow enter the pending key in ack; choose confirmed only after all effects are complete, or absent only after verifying no prior effects remain. Clear the recovery fields afterwards. For n8n reconcile the Data Table row before removing a pending checkpoint. Avoid overlapping runs. Each date is delivered once; use a different date for another run.
+A delivery of unknown outcome stays pending. Inspect Drive permissions and Mattermost before retrying. For Open Flow enter the pending key in ack; choose confirmed only after all effects are complete, or absent only after verifying no prior effects remain. Clear the recovery fields afterwards. Avoid overlapping runs. Each date is delivered once; use a different date for another run.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n set topics, Drive folder, Data Table with item_key and status text columns, the Mattermost webhook URL and Header Auth credentials for Jina and Gemini. Configure the n8n instance timezone to UTC for the same schedule. For n8n reconcile the Data Table row before removing a pending checkpoint.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

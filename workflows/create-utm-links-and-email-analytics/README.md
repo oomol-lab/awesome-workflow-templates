@@ -15,15 +15,20 @@ Create a campaign link and QR code, and email a scheduled analytics summary.
 
 Connect Airtable, Google Analytics, Gemini and Gmail. Create an Airtable table with a URL field. Set its base and table in **Save campaign URL**, the Analytics property in **Read sessions by source**, and the recipient in **Reserve report email**. Enable persistent State.
 
-In n8n, connect Airtable, Google Analytics, Gemini and Gmail. Set the campaign values and a unique request ID in **Set UTM Parameters For Link**. Configure the Airtable base and table in **Submit UTM Link To Database**, and set the property and recipient in **Configure report**. Select one Data Table with text columns `item_key` and `status` in all checkpoint nodes. Use only one format for the same campaign or report.
-
 ## Behavior
 
-Start a campaign run with a website URL, source, medium, campaign, term, campaign ID and unique request ID. The workflow adds the UTM parameters, saves the URL in Airtable, and produces a QuickChart QR image URL in Open Flow or an image in n8n. Opening the image URL sends the campaign URL to QuickChart. Reusing a request ID skips a previously confirmed Airtable write.
+Start a campaign run with a website URL, source, medium, campaign, term, campaign ID and unique request ID. The workflow adds the UTM parameters, saves the URL in Airtable, and produces a QuickChart QR image URL. Opening the image URL sends the campaign URL to QuickChart. Reusing a request ID skips a previously confirmed Airtable write.
 
 At 00:00 UTC each day the workflow reads all Google Analytics pages for sessions by date and source/medium, from seven days ago through today, and emails a Gemini-generated summary. Google Analytics interprets relative dates in the property timezone; today may be incomplete. The summary can be wrong and the report may be subject to Analytics thresholds or sampling. A report over 50,000 characters stops before the model call.
 
-An uncertain Airtable create or Gmail send may have succeeded. Inspect the destination before retrying. In Open Flow enter the pending key and `confirmed` or `absent` in the corresponding reserve node, rerun the same request, and clear the recovery fields. In n8n inspect the pending Data Table row, set it to `done` if confirmed or delete it if absent, and rerun. Avoid overlapping runs; checkpoints are not atomic locks. Keep report data and execution history restricted.
+An uncertain Airtable create or Gmail send may have succeeded. Inspect the destination before retrying. In Open Flow enter the pending key and `confirmed` or `absent` in the corresponding reserve node, rerun the same request, and clear the recovery fields. Avoid overlapping runs; checkpoints are not atomic locks. Keep report data and execution history restricted.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect Airtable, Google Analytics, Gemini and Gmail. Set the campaign values and a unique request ID in **Set UTM Parameters For Link**. Configure the Airtable base and table in **Submit UTM Link To Database**, and set the property and recipient in **Configure report**. Select one Data Table with text columns `item_key` and `status` in all checkpoint nodes. Use only one format for the same campaign or report. The workflow adds the UTM parameters, saves the URL in Airtable, and produces a QuickChart QR image URL in Open Flow or an image in n8n. In n8n inspect the pending Data Table row, set it to `done` if confirmed or delete it if absent, and rerun.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

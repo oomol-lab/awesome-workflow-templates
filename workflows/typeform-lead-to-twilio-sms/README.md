@@ -13,15 +13,22 @@ Send a sales contact an SMS with the answers from a completed Typeform lead form
 
 ## Setup
 
-Connect Typeform in **Receive the completed lead form** and set the form ID. The connection needs access to the form and permission to register its webhook. In **Send lead SMS**, connect Twilio and set an SMS-enabled sender number and the recipient number in E.164 format. In n8n set the same form, Twilio credentials and numbers. Enable one format only.
+Connect Typeform in **Receive the completed lead form** and set the form ID. The connection needs access to the form and permission to register its webhook. In **Send lead SMS**, connect Twilio and set an SMS-enabled sender number and the recipient number in E.164 format.
 
-The mapping in **Prepare the lead SMS** uses the source form’s exact question titles for last name, first name, number of children, country, email and birth date. Adjust the titles in the code to match your form in both formats. Typeform field references in question titles appear in square brackets after conversion, so the country question’s field reference will normally need changing for your form. Each question must have one answer. A missing, duplicate or unsupported answer stops before sending.
+The mapping in **Prepare the lead SMS** uses the source form’s exact question titles for last name, first name, number of children, country, email and birth date. Adjust the titles in the code to match your form. Typeform field references in question titles appear in square brackets after conversion, so the country question’s field reference will normally need changing for your form. Each question must have one answer. A missing, duplicate or unsupported answer stops before sending.
 
 ## Behavior
 
 Each completed form produces one SMS containing those six answers. The source title mentions WhatsApp, but its Twilio node has WhatsApp disabled and its numbers lack the WhatsApp prefix, so this template preserves its actual SMS setting. The template limits the message to 1,600 UTF-16 code units; longer results stop before sending. Unicode encoding can affect SMS segments and Twilio limits. The source’s organization-specific greeting is replaced with a generic lead heading.
 
-Names, family information, email and birth date are sent to Twilio and the configured recipient. Use a form and recipient authorized to receive these details, and limit access to run history. A successful Twilio response means the message was accepted for processing, not necessarily delivered. The source enabled automatic retries; this template disables them to avoid repeating a send with an unknown outcome. Check Twilio before manually replaying an uncertain send. Typeform can redeliver events; Open Flow uses the response token for trigger deduplication, while n8n adds no separate submission history.
+Names, family information, email and birth date are sent to Twilio and the configured recipient. Use a form and recipient authorized to receive these details, and limit access to run history. A successful Twilio response means the message was accepted for processing, not necessarily delivered. The source enabled automatic retries; this template disables them to avoid repeating a send with an unknown outcome. Check Twilio before manually replaying an uncertain send. Typeform can redeliver events; Open Flow uses the response token for trigger deduplication.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n set the same form, Twilio credentials and numbers. N8n adds no separate submission history.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

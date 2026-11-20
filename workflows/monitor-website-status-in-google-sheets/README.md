@@ -13,13 +13,20 @@ Check website status, record observations and alert a team when a site is down o
 
 ## Setup
 
-Connect Google Sheets, Gmail and Slack. Configure the same spreadsheet ID in each Sheets node, an alert recipient and a Slack channel. In the spreadsheet create a worksheet named dashboard with unique columns Property, Status and Log Sheet. Each Property is a unique HTTP(S) URL; Status starts as UP or DOWN; Log Sheet names an existing worksheet for that site. Its first seven columns must be date, period, Property, UP_FROM_UP, DOWN_FROM_DOWN, UP_FROM_DOWN, DOWN_FROM_UP. Use the same configuration and credentials in n8n. Activate one format and prevent overlapping runs and concurrent dashboard edits.
+Connect Google Sheets, Gmail and Slack. Configure the same spreadsheet ID in each Sheets node, an alert recipient and a Slack channel. In the spreadsheet create a worksheet named dashboard with unique columns Property, Status and Log Sheet. Each Property is a unique HTTP(S) URL; Status starts as UP or DOWN; Log Sheet names an existing worksheet for that site. Its first seven columns must be date, period, Property, UP_FROM_UP, DOWN_FROM_DOWN, UP_FROM_DOWN, DOWN_FROM_UP. Activate one format and prevent overlapping runs and concurrent dashboard edits.
 
 ## Behavior
 
-Every six hours in UTC, each website is checked and its observation logged. A response below 400 is UP; 400 or higher is DOWN. Both a status change and a continuing DOWN state send Gmail and Slack alerts; continuing UP is logged without an alert. Open Flow starts at the minute boundary; n8n uses a fixed second within the scheduled minute. Empty dashboards produce no writes. Failed network requests stop the run. Redirects follow up to 21 hops.
+Every six hours in UTC, each website is checked and its observation logged. A response below 400 is UP; 400 or higher is DOWN. Both a status change and a continuing DOWN state send Gmail and Slack alerts; continuing UP is logged without an alert. Open Flow starts at the minute boundary. Empty dashboards produce no writes. Failed network requests stop the run. Redirects follow up to 21 hops.
 
 Failed or uncertain alerts and writes may have completed; inspect the destinations before retrying. Earlier side effects are not rolled back. A later check can repeat an alert if its status update did not complete. Open Flow requires each response to fit its host limits.
+
+<details>
+<summary>In n8n</summary>
+
+Use the same configuration and credentials in n8n. N8n uses a fixed second within the scheduled minute.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

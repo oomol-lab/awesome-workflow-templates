@@ -13,13 +13,20 @@ Create Instagram captions for new Airtable editorial records using audience back
 
 ## Setup
 
-Connect Airtable and configure the same base and editorial table in the trigger, read and update nodes. Configure the background table and record in the Agent tool. The editorial table needs created_at, Briefing, SoMe_Text_KI, Posten and Werbeanzeige fields. Configure a tool-capable model with access to gpt-5.4-mini. Enable persistent State and prevent overlapping executions. In n8n configure the same tables, background record, model and a Data Table with item_key and status columns. Activate one format.
+Connect Airtable and configure the same base and editorial table in the trigger, read and update nodes. Configure the background table and record in the Agent tool. The editorial table needs created_at, Briefing, SoMe_Text_KI, Posten and Werbeanzeige fields. Configure a tool-capable model with access to gpt-5.4-mini. Enable persistent State and prevent overlapping executions.
 
 ## Behavior
 
 Every minute the workflow processes new records, waits one minute, reads the briefing, asks the Agent to consult the audience background and writes the resulting caption to the same record while setting both checkboxes false. Open Flow processes batch records sequentially, so later records wait longer. Its initial Airtable query establishes a baseline; records created during that query can be absorbed into it. Review captions before publication. Briefing and background data go to the configured model and may appear in execution history.
 
-If an update is uncertain, inspect the Airtable record before resolving its pending State or Data Table entry. Do not replay an unresolved update.
+Do not replay an unresolved update.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure the same tables, background record, model and a Data Table with item_key and status columns. If an update is uncertain, inspect the Airtable record before resolving its pending State or Data Table entry.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

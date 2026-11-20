@@ -15,15 +15,20 @@ Send a Telegram alert when a new Gmail subject contains `Urgent` or equals `Serv
 
 Connect the same Gmail mailbox in **New Gmail messages each minute** and **Fetch the matching snippet**. Connect your Telegram bot in **Send the Telegram alert**, and set the destination chat ID in **Prepare the Telegram alert**. The bot must be able to post in that chat.
 
-In n8n, select Gmail and Telegram credentials and set the chat ID in **Send Telegram Message**. Activate only one format to avoid duplicate alerts.
-
 ## Behavior
 
-Each minute, new incoming mail is checked. A subject matches if it contains `Urgent` anywhere or exactly equals `Server Down`; both checks are case-sensitive. `urgent` and `Server Down today` do not match. Each matching message sends one preformatted alert with the original sender, subject and Gmail snippet. Both formats escape the fields as literal text and disable link previews. The snippet is a preview, not the full email body.
+Each minute, new incoming mail is checked. A subject matches if it contains `Urgent` anywhere or exactly equals `Server Down`; both checks are case-sensitive. `urgent` and `Server Down today` do not match. Each matching message sends one preformatted alert with the original sender, subject and Gmail snippet. The workflow escape the fields as literal text and disable link previews. The snippet is a preview, not the full email body.
 
-The poll starts at the current mailbox position and does not import old mail. Both formats exclude drafts, spam, trash and outgoing-only messages. n8n also excludes scheduled messages; Open Flow does not add that filter. Open Flow uses Gmail history checkpoints; n8n uses a time cursor and bounded backlog queue. Poll pages contain at most 50 messages. Neither format guarantees exactly-once delivery or automatic replay after a workflow failure.
+The poll starts at the current mailbox position and does not import old mail. The workflow excludes drafts, spam, trash and outgoing-only messages. Open Flow does not add that filter. Open Flow uses Gmail history checkpoints. Poll pages contain at most 50 messages. Neither format guarantees exactly-once delivery or automatic replay after a workflow failure.
 
 A failed read or send stops the page; earlier alerts may already have been sent. Check Telegram before replaying an uncertain send. The workflow does not split messages over Telegram’s 4096-character limit. Full fetched Gmail responses and Code inputs must fit execution limits. Restrict access to the mailbox, Telegram chat and run history.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, select Gmail and Telegram credentials and set the chat ID in **Send Telegram Message**. Activate only one format to avoid duplicate alerts. n8n also excludes scheduled messages. N8n uses a time cursor and bounded backlog queue.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

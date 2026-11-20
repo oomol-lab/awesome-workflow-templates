@@ -13,13 +13,20 @@ Read page URLs from Google Sheets, extract product details from screenshots and 
 
 ## Setup and use
 
-Create a spreadsheet with **List of URLs** column A headed url and **Results** columns page URL, product title, price, brand, promotion and percentage. In Open Flow bind SCRAPINGBEE_API_KEY as a secret Variable, configure the fallback Agent, connect Google Sheets, set the spreadsheet ID on both Sheets nodes, and set the deployed n8n webhook URL on **Extract screenshot products**.
+Create a spreadsheet with **List of URLs** column A headed url and **Results** columns page URL, product title, price, brand, promotion and percentage.
 
-Import and activate the supplied n8n workflow. Configure the ScrapingBee query-auth credential with key name api_key for both screenshot and HTML fallback requests, including the embedded tool workflow, and configure Gemini. Set the same spreadsheet in the n8n Sheets nodes. Run either the n8n manual entry or Open Flow entry to avoid duplicate rows.
+Configure the ScrapingBee query-auth credential with key name api_key for both screenshot and HTML fallback requests, including the embedded tool workflow, and configure Gemini.
 
 ## Behavior
 
-Each URL is rendered as a full-page ScrapingBee screenshot. The Gemini agent extracts product title, price, brand and promotion details, and can request the page HTML as Markdown when the image is incomplete. The n8n relay retains screenshot bytes and performs the visual extraction. If it reports missing details, Open Flow fetches HTML with ScrapingBee and asks its configured model to supplement the visual results; Open Flow writes the resulting rows. The relay does not authenticate callers; restrict access to trusted senders. Page data is shared with ScrapingBee and Gemini. A lost Sheets append response may represent written rows; inspect the sheet before retrying.
+Each URL is rendered as a full-page ScrapingBee screenshot. The Gemini agent extracts product title, price, brand and promotion details, and can request the page HTML as Markdown when the image is incomplete. If it reports missing details, Open Flow fetches HTML with ScrapingBee and asks its configured model to supplement the visual results; Open Flow writes the resulting rows. The relay does not authenticate callers; restrict access to trusted senders. Page data is shared with ScrapingBee and Gemini. A lost Sheets append response may represent written rows; inspect the sheet before retrying.
+
+<details>
+<summary>In n8n</summary>
+
+In Open Flow bind SCRAPINGBEE_API_KEY as a secret Variable, configure the fallback Agent, connect Google Sheets, set the spreadsheet ID on both Sheets nodes, and set the deployed n8n webhook URL on **Extract screenshot products**. Import and activate the supplied n8n workflow. Set the same spreadsheet in the n8n Sheets nodes. Run either the n8n manual entry or Open Flow entry to avoid duplicate rows. The n8n relay retains screenshot bytes and performs the visual extraction.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -13,11 +13,18 @@ Email a monthly list of Songkick concerts for a chosen location.
 
 ## Setup and use
 
-Connect Gmail, set the recipient and enter a Songkick metro-area URL in **Prepare next event page** without a trailing /this-month. Adjust the monthly schedule and timezone if needed. In n8n set the location and email in **Setup location and email** and connect Gmail. Use one format.
+Connect Gmail, set the recipient and enter a Songkick metro-area URL in **Prepare next event page** without a trailing /this-month. Adjust the monthly schedule and timezone if needed.
 
 ## Behavior
 
 On the first day of each month at 20:00 UTC, the workflow reads Songkick's this-month event pages, following 50-item pages with a three-second pause, and emails each event's date, artist, support act, location and link. It sends no email if there are no events. Songkick page structure and availability may change. Event listings and email content can appear in execution history. If sending has an unknown outcome, inspect Gmail before retrying.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n set the location and email in **Setup location and email** and connect Gmail.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

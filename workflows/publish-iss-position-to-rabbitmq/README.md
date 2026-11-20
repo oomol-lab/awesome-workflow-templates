@@ -13,11 +13,18 @@ Publish the current International Space Station position to a RabbitMQ queue eve
 
 ## Setup and use
 
-Create the iss-position queue and connect RabbitMQ in n8n. For Open Flow enable the RabbitMQ management plugin and its HTTPS HTTP API, enter its base URL, virtual host and queue in **Prepare queue message**, and bind secret Variables RABBITMQ_USERNAME and RABBITMQ_PASSWORD with permission to publish. Activate one format.
+For Open Flow enable the RabbitMQ management plugin and its HTTPS HTTP API, enter its base URL, virtual host and queue in **Prepare queue message**, and bind secret Variables RABBITMQ_USERNAME and RABBITMQ_PASSWORD with permission to publish.
 
 ## Behavior
 
-Every minute, read the current ISS position and publish JSON with numeric Latitude, Longitude and Timestamp and string Name. Open Flow uses the management API and default exchange to route to the existing queue, and stops if the response reports no routing. n8n uses AMQP. If a publish result is unknown, the queue may already contain the message. RabbitMQ describes its HTTP API as inefficient for high-volume publishing.
+Every minute, read the current ISS position and publish JSON with numeric Latitude, Longitude and Timestamp and string Name. Open Flow uses the management API and default exchange to route to the existing queue, and stops if the response reports no routing. If a publish result is unknown, the queue may already contain the message. RabbitMQ describes its HTTP API as inefficient for high-volume publishing.
+
+<details>
+<summary>In n8n</summary>
+
+Create the iss-position queue and connect RabbitMQ in n8n. n8n uses AMQP.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

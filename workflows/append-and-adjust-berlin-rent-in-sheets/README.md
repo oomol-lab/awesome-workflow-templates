@@ -13,11 +13,18 @@ Append an example property and increase rent for matching Berlin rows.
 
 ## Setup
 
-Create a Google Sheet whose first worksheet has the unique headers `ID`, `Name`, `Rent` and `City` in columns A:D. Rent must be numeric. Connect Google Sheets with edit permission. In Open Flow enter the spreadsheet ID when starting. In n8n configure the spreadsheet in **Google Sheets** and connect the same credential to each Google Sheets or HTTP node.
+Create a Google Sheet whose first worksheet has the unique headers `ID`, `Name`, `Rent` and `City` in columns A:D. Rent must be numeric. Connect Google Sheets with edit permission. In Open Flow enter the spreadsheet ID when starting.
 
 ## Behavior
 
 A run appends an example Berlin property with an integer ID, then adds 100 to the rent of every Berlin row and reads the updated sheet. Open Flow returns formatted cell values. Duplicate matching IDs or nonnumeric rents stop the update. An earlier append or update may already have succeeded. Keep the sheet stable while the run is active. Check the sheet before retrying an uncertain write.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure the spreadsheet in **Google Sheets** and connect the same credential to each Google Sheets or HTTP node.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

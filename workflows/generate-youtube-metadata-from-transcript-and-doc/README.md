@@ -13,15 +13,22 @@ Generate a video title, description and tags using a transcript and channel refe
 
 ## Setup
 
-Connect YouTube with permission to edit the selected video, Google Docs with read access to your channel reference, and an AI model. Put your approved promotional links in that document. In n8n set the document ID in **Prepare submission** and the Google Docs tool, connect the same accounts, and select a Data Table with item_key and status text columns. Prevent concurrent updates to a video.
+Connect YouTube with permission to edit the selected video, Google Docs with read access to your channel reference, and an AI model. Put your approved promotional links in that document. Prevent concurrent updates to a video.
 
-For Open Flow set **Prepare submission** to relay, configure its webhook URL, connect YouTube and Google Docs and enable persistent State. Restrict webhook access. Direct mode runs in n8n; use one mode.
+Configure its webhook URL, connect YouTube and Google Docs and enable persistent State. Restrict webhook access.
 
 ## Behavior
 
 Submit a YouTube video URL or ID, transcript and optional focus keywords. The workflow reads the reference document and generates a title, description, tags, hashtags and call to action, then updates the same video while retaining its category and language settings. Model output may be inaccurate; review the metadata and promotional links in YouTube Studio. Transcript and reference content are sent to the model and may appear in execution history. Code ports must each fit within 1 MiB.
 
-If an update is uncertain, inspect the video first. In Open Flow set **Reserve metadata update** resolution to applied if the changes exist or absent if they do not, replay once, then clear the field. In n8n reconcile the pending Data Table row against YouTube before marking it done or deleting it. Remove a completed checkpoint before a deliberate new update.
+If an update is uncertain, inspect the video first. In Open Flow set **Reserve metadata update** resolution to applied if the changes exist or absent if they do not, replay once, then clear the field. Remove a completed checkpoint before a deliberate new update.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n set the document ID in **Prepare submission** and the Google Docs tool, connect the same accounts, and select a Data Table with item_key and status text columns. For Open Flow set **Prepare submission** to relay, configure its webhook URL, connect YouTube and Google Docs and enable persistent State. Direct mode runs in n8n; use one mode. In n8n reconcile the pending Data Table row against YouTube before marking it done or deleting it.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

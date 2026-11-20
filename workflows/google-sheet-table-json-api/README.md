@@ -15,7 +15,7 @@ Expose a configured Google Sheet table through a GET endpoint. The HTTP response
 
 Connect Google Sheets in **Read the problem table** with permission to read the spreadsheet. Replace **Spreadsheet ID** with the ID from its Google Sheets URL. Set **Range** to the A1 range to expose; the source uses `Problems!A:D`. The first row in that range supplies the column labels, and data starts on the second row.
 
-In n8n, set **Authentication** to **Service Account** and select **Google Service Account API** credentials on its read node. Share the spreadsheet with that service account’s `client_email`; Viewer access is sufficient for this read. Set the spreadsheet ID and range there. Open Flow uses the selected Google user Connection, so its account must separately have read access.
+Open Flow uses the selected Google user Connection, so its account must separately have read access.
 
 Enable the GET webhook behind the access controls your deployment requires and copy its URL. The template itself adds no caller authentication. Callers who can reach it can read the configured range through your selected account; the caller does not need a Google account. Only activate the format you intend to serve.
 
@@ -36,6 +36,13 @@ The endpoint reads the whole configured range once on every call. Its spreadshee
 Values use **UNFORMATTED_VALUE**, preserving numbers and booleans; dates and times use Google’s serial numbers. Formula cells return their calculated values. Literal labels such as `a.b` remain single JSON keys. Blank or other falsy labels are ignored, and later duplicate labels overwrite earlier values in the same row. Unlabelled cells are excluded. Missing trailing cells remain absent, explicit empty strings/nulls remain present, and rows with no labelled cells are skipped. A header-only or empty range returns `[]`.
 
 The complete table, header mapping and JSON result must fit the inspected Open Flow host’s 1 MiB per-Code input/result budget. Oversized tables fail without truncation. Choose a suitable range before exposing large sheets. Read errors, invalid cell values, cancellation or response timeout fail instead of returning a partial array. Repeating a request performs another read; no workflow retry or response cache is added.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, set **Authentication** to **Service Account** and select **Google Service Account API** credentials on its read node. Share the spreadsheet with that service account’s `client_email`; Viewer access is sufficient for this read. Set the spreadsheet ID and range there.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

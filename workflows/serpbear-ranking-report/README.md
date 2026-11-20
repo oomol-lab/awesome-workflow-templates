@@ -17,19 +17,24 @@ Use a SERPBear instance reachable by HTTPS and a Baserow Cloud table with `Date`
 
 In Open Flow, set your tracked `domain` and `blog` label in **Prepare report scope**. Replace the host in **Read SERPBear rankings** and select a secret Variable for its bearer token. Select the OpenRouter connection in **Analyze keyword rankings**, and set the Baserow connection and `tableId` in **Save ranking report**. The Baserow action uses field names. It connects to Baserow Cloud at `api.baserow.io`.
 
-In n8n, edit **Prepare Report Scope**, set the SERPBear URL in **Read SERPBear Rankings**, and select a Header Auth credential with `Authorization: Bearer YOUR_SERPBEAR_API_KEY`. Set another Header Auth credential with `Authorization: Bearer YOUR_OPENROUTER_API_KEY` in **Analyze Keyword Rankings**. Select **Database Token** credentials in **Save Ranking Report**, use the Baserow Cloud host and select your table. Field metadata is read to map `Date`, `Note` and `Blog` to field IDs before creating the row. Credentials stay in the normal account fields.
-
-Both formats use `meta-llama/llama-3.1-70b-instruct` through OpenRouter. The source's `:free` route currently lists no available endpoints. Check current [model availability](https://openrouter.ai/meta-llama/llama-3.1-70b-instruct) before enabling the schedule; model and provider routing can change generated wording. No temperature or output-token budget is added.
+The workflow uses `meta-llama/llama-3.1-70b-instruct` through OpenRouter. The source's `:free` route currently lists no available endpoints. Check current [model availability](https://openrouter.ai/meta-llama/llama-3.1-70b-instruct) before enabling the schedule; model and provider routing can change generated wording. No temperature or output-token budget is added.
 
 ## Run and results
 
-Use Run in Open Flow or Execute Workflow in n8n for a manual report. The schedule is explicitly Sunday at 00:00 UTC. Check the timezone and time before enabling it. The source inherited the n8n instance timezone.
+The schedule is explicitly Sunday at 00:00 UTC. Check the timezone and time before enabling it.
 
 Each run reads all tracked keywords for one domain, calculates each keyword's mean over ranked positions in its latest seven available history observations, asks for an analysis table and suggested actions, then creates one Baserow row. Rank `0` means outside the top 100 and is excluded from the mean; it is never reported as an improvement. Empty history produces no numeric average. A valid empty keyword list still produces a report request describing that empty list. It does not refresh rankings or scrape search results.
 
-The UTC report date is captured before reading rankings and is reused in the prompt and saved row. The keyword data is sent to OpenRouter, and the generated report is saved in Baserow. Review its claims and recommendations. Model response quality is not guaranteed, and a large domain can exceed the model or service request limits. Both formats give the ranking read 30 seconds; Open Flow also limits this HTTP response to 4 MiB.
+The UTC report date is captured before reading rankings and is reused in the prompt and saved row. The keyword data is sent to OpenRouter, and the generated report is saved in Baserow. Review its claims and recommendations. Model response quality is not guaranteed, and a large domain can exceed the model or service request limits. The workflow give the ranking read 30 seconds; Open Flow also limits this HTTP response to 4 MiB.
 
 Failed reads or analysis, malformed ranking data, and absent report text stop before creating a row. No workflow-level retries or deduplication are configured. A manual rerun creates another report row; a write with an unknown result may already have created one. A successful response means Baserow accepted the row.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, edit **Prepare Report Scope**, set the SERPBear URL in **Read SERPBear Rankings**, and select a Header Auth credential with `Authorization: Bearer YOUR_SERPBEAR_API_KEY`. Set another Header Auth credential with `Authorization: Bearer YOUR_OPENROUTER_API_KEY` in **Analyze Keyword Rankings**. Select **Database Token** credentials in **Save Ranking Report**, use the Baserow Cloud host and select your table. Field metadata is read to map `Date`, `Note` and `Blog` to field IDs before creating the row. Credentials stay in the normal account fields. Use Run in Open Flow or Execute Workflow in n8n for a manual report. The source inherited the n8n instance timezone.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

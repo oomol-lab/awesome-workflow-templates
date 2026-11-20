@@ -13,11 +13,18 @@ Send a Slack notification for Linear issue events that match the configured bug 
 
 ## Setup and use
 
-Configure the Linear team and credentials in the n8n trigger. For n8n mode enable **Linear Trigger**; for Open Flow mode disable it, enable **Linear Trigger (Open Flow)**, configure **Forward to Open Flow**, and deploy the Open Flow workflow. Configure the Slack connection and destination channel for the chosen mode. The Open Flow endpoint does not authenticate callers; restrict access.
+For Open Flow mode disable it, enable **Linear Trigger (Open Flow)**, configure **Forward to Open Flow**, and deploy the Open Flow workflow. Configure the Slack connection and destination channel for the chosen mode. The Open Flow endpoint does not authenticate callers; restrict access.
 
 ## Behavior
 
-The original filter matches events whose priority is at least 3 and whose first label is exactly `bug`. The source calls these urgent bugs, but Linear priority values of 3 and higher need not mean urgent. The message uses the issue URL and title-cased title and mentions the channel. The trigger accepts issue events without checking the action. n8n computes the title and forwards the complete Linear event in Open Flow mode. Inspect Slack before retrying an unknown send result.
+The original filter matches events whose priority is at least 3 and whose first label is exactly `bug`. The source calls these urgent bugs, but Linear priority values of 3 and higher need not mean urgent. The message uses the issue URL and title-cased title and mentions the channel. The trigger accepts issue events without checking the action. Inspect Slack before retrying an unknown send result.
+
+<details>
+<summary>In n8n</summary>
+
+Configure the Linear team and credentials in the n8n trigger. For n8n mode enable **Linear Trigger**. n8n computes the title and forwards the complete Linear event in Open Flow mode.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

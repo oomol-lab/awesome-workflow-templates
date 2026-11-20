@@ -13,11 +13,18 @@ Find recent Stripe Checkout sessions with both nickname and job title filled.
 
 ## Setup and use
 
-Bind a Stripe secret key with Checkout Session read access as secret Variable STRIPE_SECRET_KEY in **List checkout sessions**. In n8n connect its Stripe credential. Run one format manually.
+Bind a Stripe secret key with Checkout Session read access as secret Variable STRIPE_SECRET_KEY in **List checkout sessions**. Run one format manually.
 
 ## Behavior
 
 The workflow reads every Stripe Checkout Session created from midnight UTC 20 days ago through midnight UTC today, and returns complete sessions with nonempty nickname and job_title custom fields. The source note says seven days, but its query uses 20; this template follows the query. Session records can include customer information and may appear in execution history.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n connect its Stripe credential.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

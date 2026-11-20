@@ -15,13 +15,20 @@ Save a user’s reply to a bot’s dated journal prompt as a row in Google Sheet
 
 Connect your Telegram bot in **Receive a Telegram message**, deploy a public HTTPS callback and activate the workflow. Set the bot and user usernames without `@` in **Check the dated journal reply**. Both accounts must have usernames, and the bot must receive the user’s reply in the chosen chat.
 
-Connect Google Sheets in **Append the journal entry**, set the spreadsheet ID and A1 range, and place `entry` and `date` headers in that order. In n8n, select Telegram and Google Sheets OAuth2 credentials, set the same usernames in **Check the dated journal reply**, and configure the sheet and range in **Add entry to sheet**. Activate only one format for the bot webhook.
+Connect Google Sheets in **Append the journal entry**, set the spreadsheet ID and A1 range, and place `entry` and `date` headers in that order.
 
 ## Behavior
 
 Reply to a message from the configured bot with a text entry. The bot’s prompt must contain a colon followed by the date, for example `What did you do: 2026-11-10`. The workflow takes the text after the first colon up to any next colon, removes whitespace and saves that value as `date`; the reply text becomes `entry`. It does not validate the date or send a reminder. This can be paired with [Telegram Journal Reminder](../telegram-journal-reminder/README.md).
 
-Other users, non-replies and non-text messages are ignored. A matching reply with a malformed bot prompt fails before writing. Usernames are Telegram profile fields and can change; restrict the bot and sheet to people who should access journal entries. Google Sheets receives values as RAW text. A failed or uncertain append may already have written a row; inspect the sheet before replaying. Open Flow uses Telegram update IDs to help deduplicate webhook admission; the native n8n trigger does not add that same key. Neither format guarantees exactly-once sheet writes or automatic failed-run replay.
+Other users, non-replies and non-text messages are ignored. A matching reply with a malformed bot prompt fails before writing. Usernames are Telegram profile fields and can change; restrict the bot and sheet to people who should access journal entries. Google Sheets receives values as RAW text. A failed or uncertain append may already have written a row; inspect the sheet before replaying. Open Flow uses Telegram update IDs to help deduplicate webhook admission. Neither format guarantees exactly-once sheet writes or automatic failed-run replay.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, select Telegram and Google Sheets OAuth2 credentials, set the same usernames in **Check the dated journal reply**, and configure the sheet and range in **Add entry to sheet**. The native n8n trigger does not add that same key.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -30,9 +30,7 @@ In Open Flow, select a configured `gpt-4o-mini-2024-07-18` model for all five mo
 
 `content` must be a string containing at least 50 characters after trimming its outer whitespace; `text` is accepted as an alternative. The original content is sent without trimming. Missing or empty `title` becomes `Untitled`; `brand_voice` defaults to `professional yet approachable`.
 
-In n8n, select an OpenAI credential on each attached **Model**, and a Google Sheets credential in **Save to Google Sheets**. Set the destination spreadsheet and sheet. Activate the workflow and POST the same object to its production webhook. The input Code uses `crypto.randomUUID()`, as the source does. n8n Cloud allows `crypto`; self-hosted n8n must allow it with `NODE_FUNCTION_ALLOW_BUILTIN=crypto`, on the task runner when using runners.
-
-Both formats use the model snapshot above, JSON object mode, the original system prompts, temperatures and generation budgets. OpenAI has [announced its shutdown on January 14, 2027](https://developers.openai.com/api/docs/deprecations/). Select an available compatible model in both formats before that date and check its draft quality and parameter support again.
+The workflow uses the model snapshot above, JSON object mode, the original system prompts, temperatures and generation budgets. OpenAI has [announced its shutdown on January 14, 2027](https://developers.openai.com/api/docs/deprecations/). Select an available compatible model before that date and check its draft quality and parameter support again.
 
 ## Behavior
 
@@ -40,11 +38,18 @@ One analysis step extracts key points and a core message. Four subsequent model 
 
 The workflow checks JSON object structure, required text fields, the thread list and hashtag lists before logging. Requested post lengths, tweet counts and hashtag counts are model guidance, without hard length or count enforcement. Review facts, wording and each platform's limits before posting. The workflow does not publish posts.
 
-The five model steps each allow three total workflow attempts, two seconds apart. n8n's attached model adapters have their internal retries disabled so the workflow owns this allowance. Sheet append allows two total attempts, one second apart. Open Flow retries only failures the platform classifies as safe to retry; n8n retries node failures more broadly. The configured model service can have its own internal request behavior. A failed model or Sheet step prevents a successful workflow result. A bad draft does not produce a blank success row.
+The five model steps each allow three total workflow attempts, two seconds apart. Sheet append allows two total attempts, one second apart. Open Flow retries only failures the platform classifies as safe to retry. The configured model service can have its own internal request behavior. A failed model or Sheet step prevents a successful workflow result. A bad draft does not produce a blank success row.
 
-Open Flow waits at most 60 seconds for a final webhook response. Five generation steps and retries can take longer. A timed-out HTTP reply does not prove that logging failed; inspect the execution and Sheet before submitting again. n8n's HTTP connection lifetime depends on its deployment. There is no request deduplication or rollback, and uncertain or repeated submissions can append duplicate rows. Use the manual Open Flow entry when a synchronous HTTP reply is unnecessary.
+Open Flow waits at most 60 seconds for a final webhook response. Five generation steps and retries can take longer. A timed-out HTTP reply does not prove that logging failed; inspect the execution and Sheet before submitting again. There is no request deduplication or rollback, and uncertain or repeated submissions can append duplicate rows. Use the manual Open Flow entry when a synchronous HTTP reply is unnecessary.
 
 Submitted content goes to the selected model service. The Sheet receives the generated drafts, title, request ID and completion time. API and model use consumes your configured accounts' allowances.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, select an OpenAI credential on each attached **Model**, and a Google Sheets credential in **Save to Google Sheets**. Set the destination spreadsheet and sheet. Activate the workflow and POST the same object to its production webhook. The input Code uses `crypto.randomUUID()`, as the source does. n8n Cloud allows `crypto`; self-hosted n8n must allow it with `NODE_FUNCTION_ALLOW_BUILTIN=crypto`, on the task runner when using runners. n8n's attached model adapters have their internal retries disabled so the workflow owns this allowance. N8n retries node failures more broadly. n8n's HTTP connection lifetime depends on its deployment.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

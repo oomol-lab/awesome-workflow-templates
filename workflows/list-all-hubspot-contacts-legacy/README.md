@@ -13,11 +13,18 @@ Read all HubSpot contacts using the legacy contacts endpoint.
 
 ## Setup
 
-Configure a HubSpot bearer token with contacts read access. Bind it to the secret Variable **HUBSPOT_CONTACTS_TOKEN** in Open Flow. In n8n, configure a Header Auth credential containing the bearer token on **Read contacts**. Run manually.
+Configure a HubSpot bearer token with contacts read access. Bind it to the secret Variable **HUBSPOT_CONTACTS_TOKEN** in Open Flow. Run manually.
 
 ## Behavior
 
-The workflow follows the legacy endpoint’s cursor and reads pages of 100 until no pages remain. Open Flow returns an array; n8n returns one item per contact. An empty account returns an empty array or no items respectively. Contact records are held in execution memory; large accounts can exceed runtime limits. Avoid exposing execution history because it contains contact data. HubSpot has announced that v1–v3 APIs will become unsupported in September 2027.
+The workflow follows the legacy endpoint’s cursor and reads pages of 100 until no pages remain. Open Flow returns an array. An empty account returns an empty array or no items respectively. Contact records are held in execution memory; large accounts can exceed runtime limits. Avoid exposing execution history because it contains contact data. HubSpot has announced that v1–v3 APIs will become unsupported in September 2027.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, configure a Header Auth credential containing the bearer token on **Read contacts**. N8n returns one item per contact.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

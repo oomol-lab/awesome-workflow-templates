@@ -2,6 +2,15 @@
 
 Welcome a new client by Gmail and save their project in Google Sheets. A successful webhook response includes the client ID and name after the email and sheet write complete.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/client-onboarding/) [![n8n JSON](../../assets/n8n-json.svg)](templates/client-onboarding.n8n.json)
+<!-- template-actions:end -->
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
+  <img alt="Open Flow workflow" src="preview-light.png">
+</picture>
+
 ## Setup
 
 Create a sheet named `Clients` with these headers in columns A–F:
@@ -17,10 +26,6 @@ For Open Flow, import the JSON and configure:
 | Welcome client | Connect the Gmail account that sends welcome emails. |
 | Record client | Connect Google Sheets and replace `YOUR_SPREADSHEET_ID`. The default range is `'Clients'!A:F`. |
 
-For n8n, configure the same signature, Gmail account, and spreadsheet in `Validate`, `Gmail: Welcome Email`, and `Log to Sheets`.
-
-The n8n Code node uses the `crypto` built-in to create client IDs. It is available in n8n Cloud. Self-hosted n8n must [allow the `crypto` module](https://docs.n8n.io/hosting/configuration/configuration-examples/modules-in-code-node/).
-
 Publish and enable the configured workflow and POST to its webhook URL:
 
 ```json
@@ -34,7 +39,14 @@ Publish and enable the configured workflow and POST to its webhook URL:
 
 The aliases `client_name`, `client_email`, and `company_name` take precedence over `name`, `email`, and `company`. Name and a valid email are required. The project defaults to `General`.
 
-The success body is `{"success":true,"clientId":"CF-…","name":"Ada"}`. The welcome email runs before the sheet write. An email failure prevents the sheet write; a sheet failure does not undo a sent email. Both write steps retain the source's two-attempt limit with a one-second retry interval. Open Flow retries only failures the platform identifies as safe to retry and stops when a write's result is unknown; n8n retries any node error. Retrying a request can create another email and row. The webhook waits up to 30 seconds in Open Flow; a timeout does not cancel work already running.
+The success body is `{"success":true,"clientId":"CF-…","name":"Ada"}`. The welcome email runs before the sheet write. An email failure prevents the sheet write; a sheet failure does not undo a sent email. Both write steps retain the source's two-attempt limit with a one-second retry interval. Open Flow retries only failures the platform identifies as safe to retry and stops when a write's result is unknown. Retrying a request can create another email and row. The webhook waits up to 30 seconds in Open Flow; a timeout does not cancel work already running.
+
+<details>
+<summary>In n8n</summary>
+
+For n8n, configure the same signature, Gmail account, and spreadsheet in `Validate`, `Gmail: Welcome Email`, and `Log to Sheets`. The n8n Code node uses the `crypto` built-in to create client IDs. It is available in n8n Cloud. Self-hosted n8n must [allow the `crypto` module](https://docs.n8n.io/hosting/configuration/configuration-examples/modules-in-code-node/). N8n retries any node error.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>
@@ -46,15 +58,6 @@ The success body is `{"success":true,"clientId":"CF-…","name":"Ada"}`. The wel
 - Keep the email-before-sheet order explicit and bind the saved fields and success response to the prepared client.
 - Write literal sheet values with RAW formatting, including names or project text starting with `=`.
 - Replace server environment variables with editable template configuration.
-
-<!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/client-onboarding/) [![n8n JSON](../../assets/n8n-json.svg)](templates/client-onboarding.n8n.json)
-<!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 Adapted from [ClientFlow Lite - Client Onboarding Automation](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Other_Integrations_and_Use_Cases/ClientFlow%20Lite%20-%20Client%20Onboarding%20Automation.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 

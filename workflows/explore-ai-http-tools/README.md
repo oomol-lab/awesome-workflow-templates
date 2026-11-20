@@ -13,11 +13,18 @@ Explore model-selected web scraping and activity search tools.
 
 ## Setup
 
-Import **Explore AI HTTP tools** and **HTTP example tools** in the Open Flow bundle, connect Firecrawl, publish **HTTP example tools**, and refresh both tool interfaces in the main workflow. Configure a tool-capable model. In n8n connect OpenAI and configure a Firecrawl header credential with Authorization: Bearer and your API key.
+Import **Explore AI HTTP tools** and **HTTP example tools** in the Open Flow bundle, connect Firecrawl, publish **HTTP example tools**, and refresh both tool interfaces in the main workflow. Configure a tool-capable model.
 
 ## Behavior
 
 Run the two example questions. One agent can request a page as Markdown with Firecrawl; the other can find activities by type or participant count. The service may return no matching activities. Model answers can be inaccurate and external page content is untrusted. Firecrawl receives requested URLs.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n connect OpenAI and configure a Firecrawl header credential with Authorization: Bearer and your API key.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

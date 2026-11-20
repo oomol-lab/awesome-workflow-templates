@@ -13,11 +13,18 @@ Learn how to sum three example USD amounts in a workflow.
 
 ## Setup and use
 
-Run the workflow manually. To experiment, edit the example amounts in **Sum the amounts** in Open Flow or **Mock data** in n8n.
+Run the workflow manually. To experiment, edit the example amounts in **Sum the amounts**.
 
 ## Behavior
 
 The sample adds 50, 20, and 60 USD and returns `total_value: 130`. The calculation illustrates summing numerical fields; it does not perform currency conversion.
+
+<details>
+<summary>In n8n</summary>
+
+To experiment, edit the example amounts in **Sum the amounts** in Open Flow or **Mock data** in n8n.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -13,13 +13,20 @@ Copy new comments from email-channel Zendesk tickets to matching Pipedrive conta
 
 ## Setup
 
-Import the Open Flow bundle, publish **Copy ticket comments** and refresh its interface in **Copy comments for ticket**. Connect Zendesk and Pipedrive in both workflows. Enable persistent State for both and prevent overlapping runs. In n8n configure the Zendesk subdomain, Pipedrive domain and initial Unix timestamp in **Configure export**. It must be at least one minute old. Use HTTP Header Auth credentials for each service and select a Data Table with item_key and status text columns. Activate one format.
+Import the Open Flow bundle, publish **Copy ticket comments** and refresh its interface in **Copy comments for ticket**. Connect Zendesk and Pipedrive in both workflows. Enable persistent State for both and prevent overlapping runs. It must be at least one minute old.
 
 ## Behavior
 
-Daily at 09:00 UTC the workflow reads changed Zendesk tickets, selects email-channel tickets and matches each sender address to one Pipedrive contact. It reads the ticket's comment pages and copies comments created since the initial timestamp to that contact's notes. The first Open Flow activation sets the initial timestamp to then. In n8n it is configured explicitly and must remain fixed across retries; n8n processes one ticket page per scheduled run. Zendesk delays its most recent minute. Non-email tickets, missing contacts and tickets without new comments are skipped. Ambiguous matches stop for review. The source did not filter comment visibility, so **private Zendesk comments are copied to Pipedrive**; confirm that destination access is appropriate. Comments and execution data can contain sensitive information. Open Flow Code inputs and outputs must each fit 1 MiB.
+Daily at 09:00 UTC the workflow reads changed Zendesk tickets, selects email-channel tickets and matches each sender address to one Pipedrive contact. It reads the ticket's comment pages and copies comments created since the initial timestamp to that contact's notes. The first Open Flow activation sets the initial timestamp to then. Zendesk delays its most recent minute. Non-email tickets, missing contacts and tickets without new comments are skipped. Ambiguous matches stop for review. The source did not filter comment visibility, so **private Zendesk comments are copied to Pipedrive**; confirm that destination access is appropriate. Comments and execution data can contain sensitive information. Open Flow Code inputs and outputs must each fit 1 MiB.
 
-The ticket cursor advances after all selected comments on the page have been confirmed. Each note is reserved before writing. If a result is unknown, inspect Pipedrive before replay. In Open Flow enter the pending key and confirmed or absent in **Copy comments for ticket**, rerun and clear those fields after recovery. In n8n mark the pending Data Table row done only after confirming the note, or delete it only after confirming no note was created. Retain both workflow States and completed rows to prevent duplicates.
+The ticket cursor advances after all selected comments on the page have been confirmed. Each note is reserved before writing. If a result is unknown, inspect Pipedrive before replay. In Open Flow enter the pending key and confirmed or absent in **Copy comments for ticket**, rerun and clear those fields after recovery. Retain both workflow States and completed rows to prevent duplicates.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure the Zendesk subdomain, Pipedrive domain and initial Unix timestamp in **Configure export**. Use HTTP Header Auth credentials for each service and select a Data Table with item_key and status text columns. In n8n it is configured explicitly and must remain fixed across retries; n8n processes one ticket page per scheduled run. In n8n mark the pending Data Table row done only after confirming the note, or delete it only after confirming no note was created.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

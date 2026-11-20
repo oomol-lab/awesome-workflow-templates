@@ -25,8 +25,6 @@ In Open Flow, import the JSON and configure `minimumItems` and `recordIdField` o
 }
 ```
 
-In n8n, set the same values on **Configure check** and replace the fictional example records on **Completed records**. To use the check after real processing, connect your completed-output node to **Check completed outputs** and keep **Configure check** upstream. Enable **Always Output Data** on the producer so an empty result reaches the check. The included producer already enables this setting.
-
 No accounts or network requests are required. This adaptation includes the source's independent local validation component. The optional Keptick receipt integration is outside this template.
 
 ## Report
@@ -40,9 +38,16 @@ No accounts or network requests are required. This adaptation includes the sourc
 | `invalidItems` | Nonempty rows with missing, empty, or invalid IDs. |
 | `duplicateItems` | Valid rows beyond the first occurrence of each normalized ID. |
 
-IDs may be nonempty strings or finite numbers. Their string forms are trimmed before comparing, so `1`, `"1"`, and `" 1 "` count as one ID. Duplicates reduce the distinct count but do not independently fail the check. Empty objects are ignored, including n8n's empty-batch placeholder. With minimum zero, an empty batch is healthy; any invalid nonempty row still fails.
+IDs may be nonempty strings or finite numbers. Their string forms are trimmed before comparing, so `1`, `"1"`, and `" 1 "` count as one ID. Duplicates reduce the distinct count but do not independently fail the check. With minimum zero, an empty batch is healthy; any invalid nonempty row still fails.
 
 This checks IDs and counts. It does not establish that upstream work was correct, detect a run that never started, or catch errors before the check. A failed check is returned as report data, not thrown as a workflow error. Invalid configuration fails the workflow.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, set the same values on **Configure check** and replace the fictional example records on **Completed records**. To use the check after real processing, connect your completed-output node to **Check completed outputs** and keep **Configure check** upstream. Enable **Always Output Data** on the producer so an empty result reaches the check. The included producer already enables this setting. Empty objects are ignored, including n8n's empty-batch placeholder.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

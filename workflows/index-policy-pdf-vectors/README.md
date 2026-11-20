@@ -13,11 +13,18 @@ Extract a policy PDF and index its text chunks in a vector table.
 
 ## Setup and use
 
-In Open Flow connect PDF.co and OpenAI, configure Supabase REST project URL, SUPABASE_KEY and SUPABASE_AUTHORIZATION and persistent State. Create a documents table with auto-generated id, content text, metadata jsonb, and embedding vector(1536); enable pgvector and grant insert permissions. Run with a direct HTTPS PDF URL and a document version. In n8n set the PDF URL and version in Policy settings, configure OpenAI and PostgreSQL credentials and PGVector table, and select a Data Table with item_key and status text columns.
+In Open Flow connect PDF.co and OpenAI, configure Supabase REST project URL, SUPABASE_KEY and SUPABASE_AUTHORIZATION and persistent State. Create a documents table with auto-generated id, content text, metadata jsonb, and embedding vector(1536); enable pgvector and grant insert permissions. Run with a direct HTTPS PDF URL and a document version.
 
 ## Behavior
 
 The PDF is extracted, split into overlapping chunks, embedded and inserted into the vector table. A new version is a new index; remove obsolete vectors separately if needed. Inspect the database before clearing any pending checkpoint after an uncertain write. Avoid overlapping runs. Open Flow sends the PDF URL to PDF.co and document text to OpenAI. The excluded Telegram chat is not part of this component.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n set the PDF URL and version in Policy settings, configure OpenAI and PostgreSQL credentials and PGVector table, and select a Data Table with item_key and status text columns.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

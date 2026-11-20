@@ -13,13 +13,20 @@ Record the current International Space Station position in a BigQuery table each
 
 ## Setup
 
-Create a BigQuery table with columns `name` (STRING), `latitude` and `longitude` (FLOAT), and `timestamp` (INTEGER, Unix seconds). Connect Google BigQuery and set the project, dataset and table IDs on **Insert the position**. Grant the connection permission to insert rows. In n8n, set the same IDs and connect a Google BigQuery OAuth2 credential on **Google BigQuery**. Activate one format.
+Create a BigQuery table with columns `name` (STRING), `latitude` and `longitude` (FLOAT), and `timestamp` (INTEGER, Unix seconds). Connect Google BigQuery and set the project, dataset and table IDs on **Insert the position**. Grant the connection permission to insert rows.
 
 ## Behavior
 
-Each minute the workflow requests the ISS position for the current Unix second and inserts its name, latitude, longitude and timestamp as one row. A malformed position, HTTP failure, BigQuery error or row-level insert error stops the run. The workflow uses UTC as its schedule starting point; the source inherited the n8n instance timezone. n8n Cron V1 selects a fixed second within the minute; Open Flow uses the minute boundary.
+Each minute the workflow requests the ISS position for the current Unix second and inserts its name, latitude, longitude and timestamp as one row. A malformed position, HTTP failure, BigQuery error or row-level insert error stops the run. The workflow uses UTC as its schedule starting point. Open Flow uses the minute boundary.
 
-A failed or uncertain insert may have reached BigQuery. Check the table before retrying; the workflow does not assign a deduplication ID or automatically retry. Repeated runs can create duplicate rows. Open Flow does not follow HTTP redirects and applies a 30-second timeout and 4 MiB response limit; n8n uses its HTTP node defaults. The position API is rate limited.
+A failed or uncertain insert may have reached BigQuery. Check the table before retrying; the workflow does not assign a deduplication ID or automatically retry. Repeated runs can create duplicate rows. Open Flow does not follow HTTP redirects and applies a 30-second timeout and 4 MiB response limit. The position API is rate limited.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, set the same IDs and connect a Google BigQuery OAuth2 credential on **Google BigQuery**. The source inherited the n8n instance timezone. n8n Cron V1 selects a fixed second within the minute. N8n uses its HTTP node defaults.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

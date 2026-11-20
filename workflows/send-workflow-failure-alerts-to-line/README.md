@@ -13,11 +13,18 @@ Send a LINE message when a configured workflow fails.
 
 ## Setup
 
-Connect a LINE Messaging API channel with permission to send push messages and set the user, group or room ID in **Send the LINE alert**. The destination must be reachable by that LINE Official Account. In Open Flow, select the published source workflows in **Receive a workflow failure**, then publish and enable this workflow. In n8n configure a Header Auth credential with Authorization set to Bearer followed by the channel access token in **Send the LINE alert**, set the destination ID in **Prepare the failure alert**, enable this workflow, and select it as the error workflow in each source workflow's settings. Enable one format and avoid assigning the error workflow to itself.
+Connect a LINE Messaging API channel with permission to send push messages and set the user, group or room ID in **Send the LINE alert**. The destination must be reachable by that LINE Official Account. In Open Flow, select the published source workflows in **Receive a workflow failure**, then publish and enable this workflow. Enable one format and avoid assigning the error workflow to itself.
 
 ## Behavior
 
-An automatic workflow failure sends one LINE message with its workflow name. Open Flow also reports indeterminate runs and includes the run ID; its error event does not supply an execution URL. n8n includes the execution URL when available. An alert over 5,000 characters stops before sending. Restrict access to the LINE conversation and execution history. A successful API response confirms acceptance, not delivery to a recipient who has blocked the account. A failed or uncertain push may already have been accepted; check LINE before retrying.
+An automatic workflow failure sends one LINE message with its workflow name. Open Flow also reports indeterminate runs and includes the run ID; its error event does not supply an execution URL. An alert over 5,000 characters stops before sending. Restrict access to the LINE conversation and execution history. A successful API response confirms acceptance, not delivery to a recipient who has blocked the account. A failed or uncertain push may already have been accepted; check LINE before retrying.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure a Header Auth credential with Authorization set to Bearer followed by the channel access token in **Send the LINE alert**, set the destination ID in **Prepare the failure alert**, enable this workflow, and select it as the error workflow in each source workflow's settings. n8n includes the execution URL when available.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

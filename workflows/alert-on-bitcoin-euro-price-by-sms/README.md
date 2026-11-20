@@ -13,11 +13,18 @@ Check Bitcoin’s price in euros every minute and send an SMS when it reaches a 
 
 ## Setup
 
-Connect CoinGecko and Twilio. In Open Flow, set the EUR threshold and sender and recipient E.164 numbers in **Check the threshold**. In n8n configure **CoinGecko** HTTP Header Auth with header x-cg-demo-api-key and your Demo API key (for Pro, use the Pro host and x-cg-pro-api-key). Set the threshold in **IF** and the phone numbers in **Twilio**. Enable only one format. CoinGecko and Twilio account access and applicable request and messaging limits are required.
+Connect CoinGecko and Twilio. In Open Flow, set the EUR threshold and sender and recipient E.164 numbers in **Check the threshold**. Set the threshold in **IF** and the phone numbers in **Twilio**. CoinGecko and Twilio account access and applicable request and messaging limits are required.
 
 ## Behavior
 
 Every minute the workflow requests the Bitcoin/EUR price. If the price is greater than or equal to the threshold, it sends an SMS with the quoted price. Every qualifying run sends another SMS; there is no crossing detection or deduplication. CoinGecko quotes can be delayed and are not trading prices. A failed or uncertain SMS may already have been sent; check before retrying.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure **CoinGecko** HTTP Header Auth with header x-cg-demo-api-key and your Demo API key (for Pro, use the Pro host and x-cg-pro-api-key).
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

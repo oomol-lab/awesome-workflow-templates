@@ -13,11 +13,18 @@ Receive Customer.io customer unsubscribe events.
 
 ## Setup and use
 
-Import the n8n workflow and activate it, then register the **Receive Customer.io event** production URL in Customer.io Reporting Webhooks with the customer unsubscribe event. The URL must be publicly reachable by Customer.io. For Open Flow enter its webhook URL in **Forward to Open Flow** and enable that node; leave it disabled for n8n alone. Restrict access to the webhook endpoints.
+Activate it, then register the **Receive Customer.io event** production URL in Customer.io Reporting Webhooks with the customer unsubscribe event. The URL must be publicly reachable by Customer.io. For Open Flow enter its webhook URL in **Forward to Open Flow** and enable that node. Restrict access to the webhook endpoints.
 
 ## Behavior
 
-The webhook receives customer unsubscribe events and the optional relay forwards each event to Open Flow as workflow output. Neither endpoint verifies the sender; restrict access and inspect n8n execution history for relay failures. Event data may appear in execution history. Event details may appear in execution history.
+The webhook receives customer unsubscribe events and the optional relay forwards each event to Open Flow as workflow output. Neither endpoint verifies the sender. Event data may appear in execution history. Event details may appear in execution history.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow and activate it, then register the **Receive Customer.io event** production URL in Customer.io Reporting Webhooks with the customer unsubscribe event. Leave it disabled for n8n alone. Restrict access and inspect n8n execution history for relay failures.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

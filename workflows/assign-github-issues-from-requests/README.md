@@ -13,13 +13,20 @@ Assign an unassigned GitHub issue to its author or commenter when they request i
 
 ## Setup
 
-Connect GitHub in **Receive issue events**, set the repository owner and name, and keep both subscribed events. Connect the GitHub Action in **Assign the issue** and connect GitHub in **Reply to the commenter** using an account allowed to edit issues and create comments. The repository needs an existing label named `assigned`. In n8n configure the same repository and GitHub credentials on the trigger and action nodes. Enable one format only.
+Connect GitHub in **Receive issue events**, set the repository owner and name, and keep both subscribed events. Connect the GitHub Action in **Assign the issue** and connect GitHub in **Reply to the commenter** using an account allowed to edit issues and create comments. The repository needs an existing label named `assigned`.
 
 ## Behavior
 
 On an opened issue or newly created issue comment, the workflow looks for the source pattern matching “assign … me”. If the event says the issue has no assignees, it assigns the author or commenter and sets the labels to only `assigned`, replacing existing labels. If a comment requests an already assigned issue, it replies naming its current assignee. An opened issue that is already assigned, or a message without the pattern, causes no write. GitHub also delivers issue comments on pull requests to this event.
 
 The decision uses the webhook's issue snapshot, not a fresh lookup or an atomic claim. Concurrent requests or later changes can overwrite an assignment or labels. Duplicate deliveries can cause repeated writes or comments; check the issue before retrying after an uncertain result. GitHub may reject assignment when the account lacks access or the requester cannot be assigned.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure the same repository and GitHub credentials on the trigger and action nodes.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -15,11 +15,16 @@ Select a batch of messages with one Gmail label, remove that label, and add a de
 
 In Open Flow, connect Gmail through the **Actions** settings of **Read source-label messages**, **Remove source labels**, and **Add destination labels**. Use the same mailbox for all three. Set Source Label ID in the reader and Destination Label ID in the final label step. The reader limit defaults to 10 messages.
 
-In n8n, connect the same Gmail account in all three Gmail nodes. Set the source label in **Gmail** and the destination label in **Gmail2**. **Gmail1** reads its source label from **Gmail**. Return All is disabled and Limit is 10 by default; keep that setting to match Open Flow’s single-batch behavior.
-
 Run manually. The workflow reads the selected batch before changing labels. It removes the source label from every selected message in order, then adds the destination label to every selected message in the same order. Other labels remain attached. With no matches, it changes nothing. Open Flow returns the modified message records and the number of removals and additions.
 
 A service error stops the run without replaying earlier writes. A removal error prevents the addition phase. An addition error can leave earlier messages with the destination label and later messages with neither configured label. Check the mailbox before rerunning; messages whose source label was already removed will no longer match the reader.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect the same Gmail account in all three Gmail nodes. Set the source label in **Gmail** and the destination label in **Gmail2**. **Gmail1** reads its source label from **Gmail**. Return All is disabled and Limit is 10 by default; keep that setting to match Open Flow’s single-batch behavior.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

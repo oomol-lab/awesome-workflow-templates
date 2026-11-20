@@ -13,15 +13,20 @@ Extract resume data, log model token usage, and email a monthly client invoice.
 
 ## Setup
 
-Import the bundled n8n workflow and configure its PDF form. Use extractable-text PDFs; scanned PDFs need OCR. For Open Flow set the relay URL in **Forward PDF text to Open Flow**, select relay mode, bind `OPENAI_API_KEY`, connect Google Sheets and Gmail, and set the same client ID, workflow ID, spreadsheet ID and range in both branches. Set the recipient and input/output rates per million tokens in **Prepare usage log**. Use a Sheet1 table with headers date, workflow_id, execution_id, client_id, client_name, input_tokens, output_tokens, total_tokens, input_cost, output_cost and total_cost, in that order. Enable persistent State and avoid overlapping runs. Restrict access to the Open Flow webhook, which has no built-in authentication.
-
-For direct n8n mode configure Header Auth with Authorization: Bearer and your OpenAI API key, connect Sheets, set client ID and rates in **Configure service**, set the same client ID in **Get Client Logs** and **Calculate monthly invoice**, select the same Data Table for checkpoints, and configure the invoice recipient and Gmail credential. Select one mode and one format.
+Configure its PDF form. Use extractable-text PDFs; scanned PDFs need OCR. Set the recipient and input/output rates per million tokens in **Prepare usage log**. Use a Sheet1 table with headers date, workflow_id, execution_id, client_id, client_name, input_tokens, output_tokens, total_tokens, input_cost, output_cost and total_cost, in that order. Enable persistent State and avoid overlapping runs. Restrict access to the Open Flow webhook, which has no built-in authentication.
 
 ## Behavior
 
 The consented PDF is converted to text and sent to OpenAI for structured resume extraction. The returned prompt and completion token counts are multiplied by the configured rates and appended to the client usage log. Rates are examples; set rates matching your agreement. Calculated amounts are estimates and may differ from provider charges. Resume content and usage data appear in service and execution histories. The Open Flow Code ports each have a 1 MiB limit; its HTTP request has a 30-second budget and the form waits up to 60 seconds.
 
-At 18:00 UTC on the last day of each month, the workflow sums the configured client's current-month usage and emails a 20% tax invoice when records exist. Review the rates and update the 20% tax calculation in the invoice nodes if needed. A lost model, log or invoice response can represent a completed action. Inspect the provider, sheet and Gmail before retrying. For Open Flow enter the pending key in the corresponding reserve node and select confirmed after manually completing missing steps, or absent only if no action occurred, then rerun and clear the fields. In n8n reconcile the Data Table pending row and complete missing steps manually before marking done.
+At 18:00 UTC on the last day of each month, the workflow sums the configured client's current-month usage and emails a 20% tax invoice when records exist. Review the rates and update the 20% tax calculation in the invoice nodes if needed. A lost model, log or invoice response can represent a completed action. Inspect the provider, sheet and Gmail before retrying. For Open Flow enter the pending key in the corresponding reserve node and select confirmed after manually completing missing steps, or absent only if no action occurred, then rerun and clear the fields.
+
+<details>
+<summary>In n8n</summary>
+
+Import the bundled n8n workflow and configure its PDF form. For Open Flow set the relay URL in **Forward PDF text to Open Flow**, select relay mode, bind `OPENAI_API_KEY`, connect Google Sheets and Gmail, and set the same client ID, workflow ID, spreadsheet ID and range in both branches. For direct n8n mode configure Header Auth with Authorization: Bearer and your OpenAI API key, connect Sheets, set client ID and rates in **Configure service**, set the same client ID in **Get Client Logs** and **Calculate monthly invoice**, select the same Data Table for checkpoints, and configure the invoice recipient and Gmail credential. Select one mode and one format. In n8n reconcile the Data Table pending row and complete missing steps manually before marking done.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

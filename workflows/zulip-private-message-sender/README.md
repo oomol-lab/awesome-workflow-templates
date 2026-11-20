@@ -15,13 +15,20 @@ Send one Zulip private message to one person or to a group of recipients.
 
 Create secret Variables for your Zulip user or bot’s API email address and API key. In **Send Zulip private message**, bind **Authentication Username** (`auth.username`) to the email Variable and **Authentication Password** (`auth.password`) to the API key Variable. Replace the URL with your organization’s HTTPS URL followed by `/api/v1/messages`. Both authentication fields use HTTP Basic. Choose the Variables after import; the shared file contains no credentials or Variable bindings.
 
-Run with **Recipients**, an array of Zulip API email addresses, and **Content**, the message text. Use the API email address shown by Zulip, which can differ from a person’s usual email address. The sender needs permission to message these users. In n8n, configure your organization URL, email and API key in Zulip credentials, choose recipients and enter the content in **Zulip**.
+Run with **Recipients**, an array of Zulip API email addresses, and **Content**, the message text. Use the API email address shown by Zulip, which can differ from a person’s usual email address. The sender needs permission to message these users.
 
 Each run sends one message. Multiple recipients receive a single group private message with the sender, rather than separate individual messages. Zulip supports its message formatting in the content. The result includes the message ID and any additional fields the server returns; it does not confirm that anyone has read the message.
 
 The request retains the source’s `private` message type. Zulip still supports this value but recommends `direct` on servers from version 7.0 onward.
 
 The Open Flow HTTP step has a 30-second execution budget. A rejected message, unexpected response or failed request stops the run. Each run can send another message. No duplicate check or automatic retry is configured, so check Zulip before repeating an uncertain request.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, configure your organization URL, email and API key in Zulip credentials, choose recipients and enter the content in **Zulip**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -13,11 +13,18 @@ Ask Perplexity Sonar to compare workflow tools using selected domains and return
 
 ## Setup and use
 
-Connect Perplexity with a Sonar-capable API key. Edit the system and user messages and domain filter in **Ask Perplexity Sonar**. The example asks about n8n and Make, limits search to their domains and uses a one-month recency filter. In n8n, configure Header Auth with your Perplexity bearer key and edit **Set Params**.
+Connect Perplexity with a Sonar-capable API key. Edit the system and user messages and domain filter in **Ask Perplexity Sonar**. The example asks about n8n and Make, limits search to their domains and uses a one-month recency filter.
 
 ## Behavior
 
 One manual run returns the first answer and citation URLs. Search results and generated text vary over time; review cited sources before relying on the answer. An API failure stops the run. The source's system prompt asks for an n8n-favoring perspective; edit it for a different perspective.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, configure Header Auth with your Perplexity bearer key and edit **Set Params**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

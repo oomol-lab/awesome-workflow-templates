@@ -13,13 +13,20 @@ Post the distance and name of new Strava activities to X.
 
 ## Setup
 
-Connect Strava and X. Authorize activity:read_all if private activities should be included. Enable persistent State and prevent overlapping runs. Configure Strava and X credentials in n8n and use one format.
+Connect Strava and X. Authorize activity:read_all if private activities should be included. Enable persistent State and prevent overlapping runs.
 
 ## Behavior
 
 Open Flow scans the connected athlete's complete activity list every 15 minutes, using pages of 200. The first completed scan establishes the baseline; later scans post unseen activity IDs, including backfilled activities. Activities added during the initial scan may become part of the baseline. A changing list can shift page boundaries, so an activity may appear on a subsequent scan; an activity removed before it is observed cannot be posted. IDs accumulate in State and must fit its limits. Strava limits API calls per application: adjust the schedule for the total pages and other application usage to stay within its 15-minute and daily read limits. Each post uses the source text, including its wording for all activity types.
 
 Before posting, Open Flow stores the activity ID as pending. If a run stops after this point, later runs stop until the outcome is inspected on X. In **Select new activity**, enter that ID in acknowledgeActivityId and set resolution to confirmed if the post exists, or retry if it is safe to send again. Run once, then clear both fields. Activity details may be retained in execution history.
+
+<details>
+<summary>In n8n</summary>
+
+Configure Strava and X credentials in n8n and use one format.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

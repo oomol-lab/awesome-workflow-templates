@@ -15,11 +15,16 @@ Publish an Outline document when a GitLab release is created.
 
 Connect GitLab in **Receive GitLab release events**, set the project path and deploy the public HTTPS callback. The GitLab account must be allowed to manage project webhooks. Connect Outline in **Publish the Outline document** with an API key allowed to create and publish documents. Set the collection ID and, if needed, the parent document ID in **Prepare the release document**.
 
-In n8n set the GitLab owner and project in **GitLab Trigger**, connect GitLab, and configure a Header Auth credential with Authorization: Bearer YOUR_OUTLINE_API_KEY in **Publish the Outline document**. Enter the same Outline IDs in **Prepare the release document**. Leave the parent ID empty to publish at the collection root. Activate one format. After each n8n webhook registration, enable SSL verification for that webhook in GitLab: the native n8n node registers it disabled. Use a newly registered webhook so n8n stores its verification secret; an older registration without that secret may accept unsigned requests.
-
 ## Behavior
 
-Each GitLab release creation publishes a new Outline document titled “Release” followed by the release name. The body contains its description and a link to the release. A missing description becomes empty. Release updates and deletions do not change the document. Repeated deliveries can create duplicates. Check Outline before retrying a failed or uncertain write. The webhook acknowledgment confirms receipt, not publication. Open Flow verifies the GitLab token and uses the delivery ID for deduplication when supplied; n8n verifies its stored token for newly registered webhooks but does not add the same delivery deduplication.
+Each GitLab release creation publishes a new Outline document titled “Release” followed by the release name. The body contains its description and a link to the release. A missing description becomes empty. Release updates and deletions do not change the document. Repeated deliveries can create duplicates. Check Outline before retrying a failed or uncertain write. The webhook acknowledgment confirms receipt, not publication. Open Flow verifies the GitLab token and uses the delivery ID for deduplication when supplied.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n set the GitLab owner and project in **GitLab Trigger**, connect GitLab, and configure a Header Auth credential with Authorization: Bearer YOUR_OUTLINE_API_KEY in **Publish the Outline document**. Enter the same Outline IDs in **Prepare the release document**. Leave the parent ID empty to publish at the collection root. Activate one format. After each n8n webhook registration, enable SSL verification for that webhook in GitLab: the native n8n node registers it disabled. Use a newly registered webhook so n8n stores its verification secret; an older registration without that secret may accept unsigned requests. N8n verifies its stored token for newly registered webhooks but does not add the same delivery deduplication.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

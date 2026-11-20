@@ -13,13 +13,20 @@ Archive unread Orlen invoice attachments in dated Google Drive folders and notif
 
 ## Setup
 
-Connect Gmail with read and modify access, Google Drive and Slack. Set the existing parent Drive folder in **Find year and month folders** and enable its Drive Action. Set a channel ID in **Notify Slack**. Configure Gmail file transit and its hostname in **Check attachment bytes**. In n8n, connect the same services and configure the parent folder in **Current date** and channel in **Slack**. Activate one format.
+Connect Gmail with read and modify access, Google Drive and Slack. Set the existing parent Drive folder in **Find year and month folders** and enable its Drive Action. Set a channel ID in **Notify Slack**. Configure Gmail file transit and its hostname in **Check attachment bytes**.
 
 ## Behavior
 
-At 23:45 UTC or on manual start, find existing year and two-digit month folders under the configured parent and collect all unread messages from orlenpay@orlen.pl with attachments. Save the first attachment from each message, mark that message read and send a Slack notification. No matching messages causes no writes. Folders must already exist and names must be unique within their parent. Open Flow stops on repeated pages, more than 5,000 messages, or runtime limits before uploading; its file transit and Code size limits also apply. n8n stops if a folder search has another page and uses its own Gmail and MIME limits. Open Flow and n8n can select differently ordered attachments for unusual MIME messages.
+At 23:45 UTC or on manual start, find existing year and two-digit month folders under the configured parent and collect all unread messages from orlenpay@orlen.pl with attachments. Save the first attachment from each message, mark that message read and send a Slack notification. No matching messages causes no writes. Folders must already exist and names must be unique within their parent. Open Flow stops on repeated pages, more than 5,000 messages, or runtime limits before uploading; its file transit and Code size limits also apply.
 
-An upload or label change may succeed even if the response is lost. Check Drive and Gmail before retrying; earlier files and label changes are not rolled back, and an unread message can be uploaded twice. Open Flow reads the message batch and stages available attachment bytes before uploading, then uploads, marks and notifies one message at a time. A missing attachment is reported when its message is processed, so earlier messages may already have been uploaded and marked read. n8n completes each node for its batch before running the next, so a later upload failure can leave earlier files while the messages remain unread. Its Drive node uploads file content before assigning the destination and filename, so a later failure can leave a file outside the intended folder. A Slack failure occurs after the message is marked read; review the execution to send a missing notification. Avoid overlapping runs and restrict access to execution data and attachment transit URLs.
+An upload or label change may succeed even if the response is lost. Check Drive and Gmail before retrying; earlier files and label changes are not rolled back, and an unread message can be uploaded twice. Open Flow reads the message batch and stages available attachment bytes before uploading, then uploads, marks and notifies one message at a time. A missing attachment is reported when its message is processed, so earlier messages may already have been uploaded and marked read. Its Drive node uploads file content before assigning the destination and filename, so a later failure can leave a file outside the intended folder. A Slack failure occurs after the message is marked read; review the execution to send a missing notification. Avoid overlapping runs and restrict access to execution data and attachment transit URLs.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect the same services and configure the parent folder in **Current date** and channel in **Slack**. n8n stops if a folder search has another page and uses its own Gmail and MIME limits. Open Flow and n8n can select differently ordered attachments for unusual MIME messages. n8n completes each node for its batch before running the next, so a later upload failure can leave earlier files while the messages remain unread.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

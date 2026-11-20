@@ -15,9 +15,7 @@ Check the first page of currently live tennis matches every five minutes and pos
 
 Select a secret Variable containing your [Live Tennis API](https://livetennisapi.com/) key on **Read first live match page**. It is sent in the `X-API-Key` header. On **Announce new matches in Discord**, choose a Discord Bot account under Actions and set `channelId` to a channel where the bot can send messages.
 
-In n8n, select a Header Auth credential whose header name is `X-API-Key` on **Get Live Matches**. Select a Discord Bot credential, server, and channel on **Discord**. The template uses a bot connection in both formats instead of the source’s incoming webhook URL.
-
-The schedule is every five minutes in UTC. This uses **288 API requests per day**, plus any manual tests. Check your account’s request limits before enabling the schedule; adjust the schedule in both formats if needed.
+The schedule is every five minutes in UTC. This uses **288 API requests per day**, plus any manual tests. Check your account’s request limits before enabling the schedule; adjust the schedule if needed.
 
 ## Behavior
 
@@ -27,9 +25,16 @@ All returned records are checked before history is changed. Duplicate IDs within
 
 If a Discord call fails, later messages are not attempted and that execution’s new IDs are not retained. A later poll can resend messages that succeeded earlier in the failed run. Inspect execution results and the channel before rerunning or clearing history. Clearing history also allows still-live matches to be announced again. This is not a guarantee of exactly-once delivery.
 
-Open Flow uses persistent node-scoped deduplication storage, separated between draft and live runs. Its capacity is set by the platform; a full store fails the run before delivery. Use the workflow’s state controls to inspect or clear this node’s history. Replacing the node changes its history identity. n8n uses node-scoped workflow static data capped at 10,000 distinct IDs. At capacity, known IDs are still skipped, while a page with new IDs fails before sending. Reset that node’s static history with an explicit maintenance edit when needed. n8n saves static data only for successful executions of a published workflow called by its trigger; manual tests do not retain history. Static data is experimental and can be unreliable under high-frequency or overlapping executions. Run one workflow instance at a time; this template does not coordinate two independent imports or promise cross-platform shared history.
+Open Flow uses persistent node-scoped deduplication storage, separated between draft and live runs. Its capacity is set by the platform; a full store fails the run before delivery. Use the workflow’s state controls to inspect or clear this node’s history. Replacing the node changes its history identity. At capacity, known IDs are still skipped, while a page with new IDs fails before sending. Reset that node’s static history with an explicit maintenance edit when needed. Static data is experimental and can be unreliable under high-frequency or overlapping executions. Run one workflow instance at a time; this template does not coordinate two independent imports or promise cross-platform shared history.
 
 The Live Tennis API receives your query and key. Discord receives the player names and match status. No scores or betting information are sent.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, select a Header Auth credential whose header name is `X-API-Key` on **Get Live Matches**. Select a Discord Bot credential, server, and channel on **Discord**. The template uses a bot connection in both formats instead of the source’s incoming webhook URL. n8n uses node-scoped workflow static data capped at 10,000 distinct IDs. n8n saves static data only for successful executions of a published workflow called by its trigger; manual tests do not retain history.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

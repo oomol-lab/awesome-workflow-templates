@@ -15,13 +15,18 @@ Shuffle channel members into small coffee groups, announce each group and create
 
 Connect the Mattermost account in the greeting, user request and announcement nodes. It needs access to list users in the selected channel and send posts; Provider API Request access is required. Set the channel ID and Google Calendar ID in **Configure the coffee session**. Connect Google Calendar to the invitation request and allow event creation and Provider API Request access. Every channel member must expose a username and email to the Mattermost account.
 
-In n8n, connect Mattermost and Google Calendar credentials, set the channel ID in **Greetings**, set the Calendar ID in **Choose session time**, and select the Google Calendar OAuth credential in **Send calendar invites**. Deploy one format for this channel. The Calendar account must be able to create Google Meet conferences.
-
 ## Behavior
 
-At 10:00 UTC each Monday, the workflow greets the channel, reads all member pages, shuffles members into groups of three and moves one member from the previous group when a group would contain one person. It announces each group, then creates a 30-minute event for each group. Open Flow schedules it one hour after the trigger time; n8n uses one hour after the workflow starts. Each event includes all group emails, requests a Google Meet, allows guests to modify it and asks Google to send invitation updates. Google may create the Meet asynchronously; check the event for the outcome. With fewer than two members, the greeting is sent and no groups or invitations are created.
+At 10:00 UTC each Monday, the workflow greets the channel, reads all member pages, shuffles members into groups of three and moves one member from the previous group when a group would contain one person. It announces each group, then creates a 30-minute event for each group. Open Flow schedules it one hour after the trigger time. Each event includes all group emails, requests a Google Meet, allows guests to modify it and asks Google to send invitation updates. Google may create the Meet asynchronously; check the event for the outcome. With fewer than two members, the greeting is sent and no groups or invitations are created.
 
 Errors stop the remaining steps. Earlier messages or invitations may already exist; inspect Mattermost and Calendar before retrying. Invites and groups are not deduplicated. Member data and groups must fit the execution limits; Open Flow stops if channel listing reaches 100 pages rather than silently truncating. Restrict access to member emails and workflow history.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect Mattermost and Google Calendar credentials, set the channel ID in **Greetings**, set the Calendar ID in **Choose session time**, and select the Google Calendar OAuth credential in **Send calendar invites**. Deploy one format for this channel. The Calendar account must be able to create Google Meet conferences. N8n uses one hour after the workflow starts.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

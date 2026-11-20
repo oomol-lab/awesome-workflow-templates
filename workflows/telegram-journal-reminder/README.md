@@ -13,11 +13,18 @@ Send a daily prompt to write about yesterday: “What did you do: YYYY-MM-DD”.
 
 ## Setup
 
-Connect your Telegram bot in **Send journal reminder** in Open Flow or the node with the same name in n8n. Replace `@YOUR_TELEGRAM_CHANNEL` with your destination channel username or numeric chat ID. Start a private chat with the bot, or allow it to post in the chosen group or channel.
+Connect your Telegram bot in **Send journal reminder**. Replace `@YOUR_TELEGRAM_CHANNEL` with your destination channel username or numeric chat ID. Start a private chat with the bot, or allow it to post in the chosen group or channel.
 
-Both formats default to 06:00 UTC. The source used the n8n instance’s schedule timezone. Set the reminder time and timezone before enabling the workflow. The date inside the prompt uses yesterday in UTC in both formats, even if you change the schedule timezone.
+The workflow default to 06:00 UTC. Set the reminder time and timezone before enabling the workflow. The date inside the prompt uses yesterday in UTC , even if you change the schedule timezone.
 
 Each run formats the date when it executes and sends one message. It does not store journal entries or check whether you answered. A Telegram error stops the run without retry; rerunning sends another reminder.
+
+<details>
+<summary>In n8n</summary>
+
+Connect your Telegram bot in **Send journal reminder** in Open Flow or the node with the same name in n8n. The source used the n8n instance’s schedule timezone.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

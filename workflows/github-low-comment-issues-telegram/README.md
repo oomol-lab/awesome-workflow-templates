@@ -15,11 +15,16 @@ Check a repository every ten minutes. Send one Telegram alert for each matching 
 
 In Open Flow, connect GitHub in **Read open Bug issues**, replace the owner and repository placeholders, and edit Labels if your repository uses a different label. The source filter is the case-sensitive name `Bug`. Connect your Telegram bot through **Actions** in **Send issue alerts in order** and set the destination channel username or numeric chat ID.
 
-In n8n, configure the repository and GitHub account in **Get Github Issues**. Set the Telegram account and chat ID in **Send Message to @user**. Both formats use an explicit UTC schedule every ten minutes.
-
 Each run queries the first 50 raw results for open, matching-label issues updated in the preceding 30 minutes. Pull requests are excluded. The workflow then selects issues with 0–4 comments and sends their title and link in GitHub’s returned order. It does not fetch another page. With no matches, it sends nothing.
 
 “Updated” includes changes to older issues; these alerts are not limited to newly created issues. The 30-minute query window overlaps the ten-minute schedule, and the workflow keeps no notification history. An issue can generate repeated alerts across runs. A read failure prevents notifications; a send failure stops later alerts without replaying earlier ones.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, configure the repository and GitHub account in **Get Github Issues**. Set the Telegram account and chat ID in **Send Message to @user**. Both formats use an explicit UTC schedule every ten minutes.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

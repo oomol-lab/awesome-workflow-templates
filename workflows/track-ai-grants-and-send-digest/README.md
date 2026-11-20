@@ -13,11 +13,18 @@ Track new AI grant opportunities and email a digest of eligible listings.
 
 ## Setup
 
-Configure the Airtable base, grants and subscribers tables, organization profile, Gmail connection and model. The grants table needs the fields Opportunity Number, Status, Title, URL, Agency, Goal, Notes, Success Criteria, Duration, Eligibility?, Eligibility Notes, Posted Date, Response Date, Funding, Award Floor, Award Ceiling, Agency Email, Agency Phone and Created; subscribers need Email and Status. Enable persistent State. In n8n configure both Airtable tables, Gmail, model and a Data Table with item_key and status text columns. Prevent overlapping runs.
+Configure the Airtable base, grants and subscribers tables, organization profile, Gmail connection and model. The grants table needs the fields Opportunity Number, Status, Title, URL, Agency, Goal, Notes, Success Criteria, Duration, Eligibility?, Eligibility Notes, Posted Date, Response Date, Funding, Award Floor, Award Ceiling, Agency Email, Agency Phone and Created; subscribers need Email and Status. Enable persistent State. Prevent overlapping runs.
 
 ## Behavior
 
 At 08:30 UTC search Grants.gov for recent AI grants, assess each against the configured profile and save records. At 09:00 UTC send today's eligible new grants to active subscribers. The search stops if Grants.gov reports more than 5,000 results rather than omitting records. Model eligibility is a lead for human review, not a determination. Grant text and organization profile are sent to the model provider. Inspect Airtable or Gmail before clearing pending checkpoints after uncertain writes.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure both Airtable tables, Gmail, model and a Data Table with item_key and status text columns.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

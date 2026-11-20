@@ -13,13 +13,20 @@ Add a GitHub pull request link to Pipedrive people whose email matches the event
 
 ## Setup
 
-Use a GitHub.com repository. Connect GitHub in **Receive pull request events**, set the repository owner and name, and connect GitHub in **Get the sender profile**. Connect Pipedrive in **Search people by email** and grant Provider API access in **Add a Pipedrive note** to the same account. The account needs permission to search people and create notes. In n8n configure the GitHub and Pipedrive credentials and repository. Enable only one format.
+Use a GitHub.com repository. Connect GitHub in **Receive pull request events**, set the repository owner and name, and connect GitHub in **Get the sender profile**. Connect Pipedrive in **Search people by email** and grant Provider API access in **Add a Pipedrive note** to the same account. The account needs permission to search people and create notes.
 
 ## Behavior
 
 For each subscribed pull request event, the workflow reads the sender's public GitHub profile email and searches Pipedrive people by exact email, case insensitive. It adds a note containing the pull request URL to each returned person with a nonempty name, one at a time. People with empty names are skipped. Search returns at most 100 people per event; further matching people are not processed. If the sender has no public email or no person matches, it adds no notes. The sender is the actor who triggered the event, which can differ from the pull request author. GitHub may deliver several events for the same pull request; each matching event can add another note.
 
 If a read fails, no later write occurs. If a note fails, earlier notes remain and later notes are not attempted. A write with an unknown outcome is not retried automatically; check Pipedrive before rerunning.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure the GitHub and Pipedrive credentials and repository.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

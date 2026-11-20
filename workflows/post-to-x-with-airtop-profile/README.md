@@ -13,15 +13,22 @@ Use an authenticated Airtop browser profile to submit text to X.
 
 ## Setup
 
-Create an Airtop profile signed in to X and connect Airtop in n8n. The form and workflow trigger accept the profile name and text. Select a Data Table with item_key and status text columns; prevent overlapping runs.
+The form and workflow trigger accept the profile name and text.
 
-For Open Flow set **Choose mode** to relay and configure its webhook URL. Bind AIRTOP_API_KEY and enable persistent State. Restrict the webhook to trusted n8n. Direct mode uses Airtop nodes in n8n. Run one mode.
+For Open Flow set **Choose mode** to relay and configure its webhook URL. Bind AIRTOP_API_KEY and enable persistent State.
 
 ## Behavior
 
 A five-minute browser session opens X using the selected profile, types the provided text and clicks Post, then closes the session and saves the profile. Airtop interaction completion does not prove that X published the post. Check X directly before treating it as published. The text and browser state are sent to Airtop.
 
-The interaction is reserved before typing because Enter or a click could submit the post. If typing or clicking is uncertain, inspect X before retrying. Open Flow keeps the pending key after interaction; to mark a verified post, enter the key and confirmed in **Reserve X interaction** and replay once, then clear the fields. Use absent only after verifying no post exists. In n8n inspect the Data Table row and mark it done after checking X, or delete it only when no post exists. A failed run may leave a browser session active until timeout; close it in Airtop if needed.
+The interaction is reserved before typing because Enter or a click could submit the post. If typing or clicking is uncertain, inspect X before retrying. Open Flow keeps the pending key after interaction; to mark a verified post, enter the key and confirmed in **Reserve X interaction** and replay once, then clear the fields. Use absent only after verifying no post exists. A failed run may leave a browser session active until timeout; close it in Airtop if needed.
+
+<details>
+<summary>In n8n</summary>
+
+Create an Airtop profile signed in to X and connect Airtop in n8n. Select a Data Table with item_key and status text columns; prevent overlapping runs. Restrict the webhook to trusted n8n. Direct mode uses Airtop nodes in n8n. In n8n inspect the Data Table row and mark it done after checking X, or delete it only when no post exists.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

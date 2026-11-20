@@ -15,13 +15,20 @@ Create a GitHub issue for a Zendesk ticket or add a comment to its linked issue.
 
 Create a Zendesk ticket custom field that stores a GitHub issue number. In **Validate the ticket event**, set its numeric field ID and the GitHub repository owner and name. Connect Zendesk in **Read the Zendesk ticket** and its Action in **Link the Zendesk ticket**, using the same account with ticket read and update access. Connect GitHub in **Comment on the issue** and its Action in **Create a GitHub issue**, using an account that can create issues and comments in that repository. The Zendesk read Action also reads ticket comments.
 
-Create an Open Flow secret Variable named ZENDESK_GITHUB_SECRET with at least 24 unpredictable characters and bind it to the secret input of **Validate the ticket event**. Configure the Zendesk webhook sender to POST JSON containing the ticket ID in id, the comment text in comment, and the shared value in secret. The shared value is a bearer secret; restrict access to the sender, endpoint and execution history, and use HTTPS. In n8n, configure the same field ID and repository in **Validate the ticket event**, credentials on the Zendesk and GitHub nodes, and the same secret as the ZENDESK_GITHUB_SECRET environment variable accessible to Code nodes. Self-hosted n8n may require enabling environment access. Enable one format only.
+Create an Open Flow secret Variable named ZENDESK_GITHUB_SECRET with at least 24 unpredictable characters and bind it to the secret input of **Validate the ticket event**. Configure the Zendesk webhook sender to POST JSON containing the ticket ID in id, the comment text in comment, and the shared value in secret. The shared value is a bearer secret; restrict access to the sender, endpoint and execution history, and use HTTPS.
 
 ## Behavior
 
 The endpoint immediately acknowledges receipt. The workflow validates the secret and reads the ticket. If the configured field contains an issue number, it adds the supplied comment verbatim to that issue. The comment can include Zendesk HTML and may be visible to anyone with access to the GitHub repository. Otherwise it creates an issue with the ticket subject and an empty body, then saves its issue number in the ticket field. The creation branch does not add the supplied comment. A missing field, invalid number or empty comment for a linked issue stops the run.
 
 An acknowledgement does not mean the issue or ticket was updated. If issue creation succeeds but ticket update fails, the issue remains unlinked. An uncertain write is not retried automatically; check both systems before rerunning. Concurrent events can create duplicate issues or comments because there is no locking or deduplication.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, configure the same field ID and repository in **Validate the ticket event**, credentials on the Zendesk and GitHub nodes, and the same secret as the ZENDESK_GITHUB_SECRET environment variable accessible to Code nodes. Self-hosted n8n may require enabling environment access.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

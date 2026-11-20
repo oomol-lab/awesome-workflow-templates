@@ -17,9 +17,7 @@ Prepare a Notion data source with **Name** as its title property, **Email** as a
 
 In Open Flow, connect a Calendly **Personal Access Token** in **Receive a new Calendly booking** and your Notion account in **Create the booking record**. In **Prepare Notion page request**, configure `dataSourceId` and `statusOptionId`. Use a data source ID rather than the enclosing database ID; Notion provides **Copy data source ID** in the database’s data-source settings.
 
-In n8n, connect **Calendly Personal Access Token API** in the trigger and **Notion API** credentials in **Create the booking record**. Set the two configuration constants at the start of **Prepare Notion page request**. The native HTTP step preserves the supplied `Notion-Version: 2026-03-11` while Notion API credentials manage the integration secret. Keep that header and the current page request format together.
-
-Keep Calendly scope `user` and event `invitee.created`. Deploy a public HTTPS callback and activate to register a fresh signed subscription. Remove an older unsigned subscription for the same n8n callback before activation. Use one format for this process; activating both registers two subscriptions and can create two records. Open Flow’s Calendly trigger requires a Personal Access Token connection.
+Keep Calendly scope `user` and event `invitee.created`. Deploy a public HTTPS callback and activate to register a fresh signed subscription. Open Flow’s Calendly trigger requires a Personal Access Token connection.
 
 ## Behavior
 
@@ -27,7 +25,14 @@ Each accepted booking validates its name, email and configured IDs, then creates
 
 Invalid configuration or missing invitee data stops before the write. Notion permission, property or API errors stop the run. No workflow retry or exactly-once write guarantee is added. Check Notion before replaying a write with an unknown result.
 
-New subscriptions verify signatures. Open Flow uses a three-minute signature timestamp window; native n8n uses five minutes. Keep the server clock accurate. Webhook acknowledgment does not confirm the later Notion write.
+New subscriptions verify signatures. Open Flow uses a three-minute signature timestamp window. Keep the server clock accurate. Webhook acknowledgment does not confirm the later Notion write.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect **Calendly Personal Access Token API** in the trigger and **Notion API** credentials in **Create the booking record**. Set the two configuration constants at the start of **Prepare Notion page request**. The native HTTP step preserves the supplied `Notion-Version: 2026-03-11` while Notion API credentials manage the integration secret. Keep that header and the current page request format together. Remove an older unsigned subscription for the same n8n callback before activation. Native n8n uses five minutes.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

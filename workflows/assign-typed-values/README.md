@@ -13,11 +13,18 @@ Learn to assign a number, a string and a boolean to named fields with this tutor
 
 ## Setup and use
 
-Run the workflow manually. Open Flow assigns the values in **Assign values**; n8n assigns them in **Set**. Edit the values in that node to adapt the example.
+Run the workflow manually. Open Flow assigns the values in **Assign values**. Edit the values in that node to adapt the example.
 
 ## Behavior
 
 The output has three fields: `number` is 20, `string` is “From n8n with love”, and `boolean` is true. The field types are number, string and boolean respectively.
+
+<details>
+<summary>In n8n</summary>
+
+N8n assigns them in **Set**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

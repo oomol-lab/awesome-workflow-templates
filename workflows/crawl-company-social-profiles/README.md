@@ -13,11 +13,18 @@ Find company social profiles by exploring their websites and save the results to
 
 ## Setup
 
-Import **Company social profiles** and **Company website reader** from the bundle. Create Supabase input columns id, name and website and output columns company_name, company_website and social_media (JSON). Set the REST URLs and bind SUPABASE_API_KEY and SUPABASE_AUTHORIZATION (including Bearer) as secret variables. Configure a Firecrawl connection and a tool-capable model. In n8n connect Supabase and OpenAI, and select a Data Table with item_key and status text columns in the checkpoint nodes. Publish **Company website reader** and refresh the tool interface in the main workflow. Enable persistent State and avoid overlapping runs.
+Import **Company social profiles** and **Company website reader** from the bundle. Create Supabase input columns id, name and website and output columns company_name, company_website and social_media (JSON). Set the REST URLs and bind SUPABASE_API_KEY and SUPABASE_AUTHORIZATION (including Bearer) as secret variables. Configure a Firecrawl connection and a tool-capable model. Publish **Company website reader** and refresh the tool interface in the main workflow. Enable persistent State and avoid overlapping runs.
 
 ## Behavior
 
-Both formats retrieve all companies. Open Flow reads Supabase in pages of 100 and uses Firecrawl for page text and links. n8n uses its native HTTP, HTML and Markdown nodes as the agent tools. The agent follows website links and returns social profiles for each company. Website content is untrusted and model results need review. Inspect Supabase after an uncertain insert before clearing the pending checkpoint. n8n retains a reservation for completed results and skips them on later runs; reconcile reservations manually. The website, content and model output are sent to Firecrawl, the model provider and Supabase.
+The workflow retrieves all companies. Open Flow reads Supabase in pages of 100 and uses Firecrawl for page text and links. The agent follows website links and returns social profiles for each company. Website content is untrusted and model results need review. Inspect Supabase after an uncertain insert before clearing the pending checkpoint. The website, content and model output are sent to Firecrawl, the model provider and Supabase.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n connect Supabase and OpenAI, and select a Data Table with item_key and status text columns in the checkpoint nodes. n8n uses its native HTTP, HTML and Markdown nodes as the agent tools. n8n retains a reservation for completed results and skips them on later runs; reconcile reservations manually.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

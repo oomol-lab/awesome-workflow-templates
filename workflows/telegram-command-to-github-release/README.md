@@ -17,13 +17,18 @@ Connect a Telegram bot to **Receive a Telegram message** and publish the workflo
 
 Connect GitHub in **Publish the GitHub release**, set the repository owner and name, and grant the account permission to create releases. The operation creates a published release, not a draft. GitHub may create a missing tag at the repository's default branch.
 
-In n8n, choose Telegram and GitHub OAuth2 credentials, set the same allowed IDs in **Check the authorized command**, and set the owner and repository in **GitHub**. Only one webhook can be active per Telegram bot; activate one format for this process.
-
 ## Behavior
 
 Send a message containing the exact text /deploy. The workflow uses the second field produced by splitting the full message on a single space as the release tag, matching the source. For example, /deploy v1.2.3 uses v1.2.3. Missing or empty tags stop before GitHub; a message from another chat or sender is skipped. Other messages are skipped. The confirmed result contains the GitHub release.
 
-Open Flow validates Telegram's webhook secret and uses update ID deduplication where available. The native trigger is upgraded to version 1.2 to validate its webhook secret. Neither format promises exactly-once creation. A failed or uncertain create may already have published a release or created a tag; inspect GitHub before replaying. No workflow retry or rollback is added. The n8n OAuth2 helper can refresh credentials and resend once after HTTP 401.
+Open Flow validates Telegram's webhook secret and uses update ID deduplication where available. The native trigger is upgraded to version 1.2 to validate its webhook secret. Neither format promises exactly-once creation. A failed or uncertain create may already have published a release or created a tag; inspect GitHub before replaying. No workflow retry or rollback is added.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, choose Telegram and GitHub OAuth2 credentials, set the same allowed IDs in **Check the authorized command**, and set the owner and repository in **GitHub**. Only one webhook can be active per Telegram bot; activate one format for this process. The n8n OAuth2 helper can refresh credentials and resend once after HTTP 401.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

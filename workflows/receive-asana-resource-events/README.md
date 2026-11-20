@@ -13,11 +13,18 @@ Receive change events for an Asana task or project.
 
 ## Setup and use
 
-Import the n8n workflow, connect Asana and set the task or project ID in **Asana-Trigger**. Activate it to register the webhook; its URL must be publicly reachable by Asana. For Open Flow enter its webhook URL in **Forward to Open Flow** and enable that node; leave it disabled for n8n alone. Restrict access to the webhook endpoints.
+Connect Asana and set the task or project ID in **Asana-Trigger**. Activate it to register the webhook; its URL must be publicly reachable by Asana. For Open Flow enter its webhook URL in **Forward to Open Flow** and enable that node. Restrict access to the webhook endpoints.
 
 ## Behavior
 
-Asana may deliver several events together. The n8n trigger emits each event separately and ignores empty heartbeats. The optional relay forwards each event to Open Flow as workflow output. The fixed n8n trigger completes the Asana handshake but does not verify event signatures; restrict access and inspect n8n execution history for relay failures. Event details may appear in execution history.
+Asana may deliver several events together. The optional relay forwards each event to Open Flow as workflow output. Event details may appear in execution history.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow, connect Asana and set the task or project ID in **Asana-Trigger**. Leave it disabled for n8n alone. The n8n trigger emits each event separately and ignores empty heartbeats. The fixed n8n trigger completes the Asana handshake but does not verify event signatures; restrict access and inspect n8n execution history for relay failures.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

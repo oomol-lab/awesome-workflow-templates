@@ -13,13 +13,20 @@ Extract purchase order lines from matching Gmail messages and append them to Goo
 
 ## Setup
 
-Connect the same Gmail account to **Check for new emails** and **Read the email**. Configure the model in **Extract the purchase order**. Connect Google Sheets in **Append order lines**, set the spreadsheet ID and A1 range, and create columns in this order: PO_NUMBER, EXPECTED_DELIVERY DATE, SKU_ID, QUANTITY. In n8n connect Gmail, Google Sheets and OpenAI, and select the destination spreadsheet and sheet. Activate one format.
+Connect the same Gmail account to **Check for new emails** and **Read the email**. Configure the model in **Extract the purchase order**. Connect Google Sheets in **Append order lines**, set the spreadsheet ID and A1 range, and create columns in this order: PO_NUMBER, EXPECTED_DELIVERY DATE, SKU_ID, QUANTITY.
 
 ## Behavior
 
 Every minute new emails whose subject contains the case-sensitive phrase Inbound Order are sent to the model. Each extracted line is appended with its purchase order and delivery date. Other emails do not write. The model can misread or invent details, so review the rows before relying on them. Limit access to email contents and execution history. Long messages may exceed model limits.
 
 Open Flow checks up to 25 messages per poll and processes each email in the poll page in sequence and validates extracted values before one append per email. If an append fails, earlier emails may already have been written. An uncertain append may have succeeded; inspect the sheet before retrying. Polling does not guarantee exactly-once delivery.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n connect Gmail, Google Sheets and OpenAI, and select the destination spreadsheet and sheet.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -13,13 +13,20 @@ Summarize holiday and illness events by person and email the absence totals.
 
 ## Setup
 
-Connect Google Calendar and set the calendar ID in **Summarize calendar absences**. Connect SendGrid and set its verified sender and payroll recipient in **Email payroll summary**. In n8n select the calendar, connect Google Calendar and SMTP credentials, and replace the sender and recipient addresses. Enable one workflow.
+Connect Google Calendar and set the calendar ID in **Summarize calendar absences**. Connect SendGrid and set its verified sender and payroll recipient in **Email payroll summary**. Enable one workflow.
 
 ## Behavior
 
 At 08:00 UTC on the first of the month the workflow reads the preceding month through the current time, finds event summaries containing Holiday or Illness, and totals their all-day duration by the name before the first comma in each event description. A summary containing both terms is classified as Holiday. No matching events sends no email. Events must use all-day start and end dates and include a description. Recurring events are expanded. Calendar event details and absence information pass through execution history and email. Restrict access to these records and use an appropriate recipient.
 
 The Open Flow email uses SendGrid instead of SMTP. An unknown send outcome may mean the email was delivered; inspect the provider before rerunning. Calendar edits during pagination can affect results.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n select the calendar, connect Google Calendar and SMTP credentials, and replace the sender and recipient addresses.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

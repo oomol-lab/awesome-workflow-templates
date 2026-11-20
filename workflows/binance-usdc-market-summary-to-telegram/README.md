@@ -13,13 +13,20 @@ Send an hourly summary of BTC, ETH and SOL against USDC to a Telegram chat.
 
 ## Setup
 
-Connect a Telegram bot and set the destination chat ID in **Send the Telegram summary**. In n8n, configure the Telegram credential and destination chat ID. Activate one format. The schedule runs at minute 5 of each hour in UTC; the source used the n8n instance timezone. The host must be able to reach Binance’s public spot API.
+Connect a Telegram bot and set the destination chat ID in **Send the Telegram summary**. The schedule runs at minute 5 of each hour in UTC. The host must be able to reach Binance’s public spot API.
 
 ## Behavior
 
 The report uses Binance’s rolling 24-hour BTCUSDC, ETHUSDC and SOLUSDC tickers. It includes the three-pair average price change, combined quote volume in USDC, highest high/low volatility, narrowest bid/ask spread, volume ranking, and per-pair gainers and losers with price, volume, spread, momentum against weighted average price and trade count. The average is an unweighted average of these three pairs; it is not the whole cryptocurrency market. A zero-change pair is included in the overview and volume ranking but has no gainer or loser section.
 
 The workflow requests the three pairs in one public call, retries the read up to four times after failure at five-second intervals, and sends HTML report chunks in order. Missing, malformed or unavailable ticker data stops before Telegram. A Telegram failure stops later chunks; an uncertain send may already have arrived, so check the chat before rerunning. The prices are Binance spot snapshots quoted in USDC.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, configure the Telegram credential and destination chat ID. The source used the n8n instance timezone.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

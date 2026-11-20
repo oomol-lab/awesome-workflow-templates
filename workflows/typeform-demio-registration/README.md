@@ -22,11 +22,16 @@ Use a text question for the name and an email question for the email address. Ea
 
 Connect Demio in **Register attendee in Demio** and replace the placeholder Event ID `0` with your event’s numeric ID. No session ID is supplied, so Demio chooses the nearest active session. This template maps only name and email; use a destination event whose other registration fields are optional.
 
-For n8n, configure **Typeform Trigger** and **Demio**, select the form and event, and edit the two selectors at the bottom of **Read registration name and email**. The trigger keeps the full response so the question definitions and typed answers remain available. Activate one format after setup.
-
 Each completed submission makes one registration call. Missing, ambiguous, or invalid answers stop before Demio. The registration hash and join link are available in the workflow result; they are not sent back to the Typeform respondent by this workflow. Demio may send the event’s configured registration messages.
 
 Duplicate submissions or event deliveries can make another registration call. The workflow keeps no delivery history and does not automatically retry failed calls. Check the Demio registration before retrying a run whose outcome is uncertain.
+
+<details>
+<summary>In n8n</summary>
+
+For n8n, configure **Typeform Trigger** and **Demio**, select the form and event, and edit the two selectors at the bottom of **Read registration name and email**. The trigger keeps the full response so the question definitions and typed answers remain available. Activate one format after setup.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

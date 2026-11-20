@@ -13,11 +13,18 @@ Return the most recent 1,000 lines of container logs.
 
 ## Setup
 
-Provide a Docker Engine v1.44 endpoint behind an authenticated HTTPS gateway that permits container inspection and log reads. Set its URL and expected server domain in **Validate server and request**, and set the gateway hostname in the HTTP allowlist of **Read and decode Docker logs**. Bind INSPECTION_WEBHOOK_AUTH to the incoming Authorization header and DOCKER_GATEWAY_TOKEN to the gateway token. In n8n set the same server domain and gateway URL and connect Header Auth credentials on the webhook and Docker HTTP nodes.
+Provide a Docker Engine v1.44 endpoint behind an authenticated HTTPS gateway that permits container inspection and log reads. Set its URL and expected server domain in **Validate server and request**, and set the gateway hostname in the HTTP allowlist of **Read and decode Docker logs**. Bind INSPECTION_WEBHOOK_AUTH to the incoming Authorization header and DOCKER_GATEWAY_TOKEN to the gateway token.
 
 ## Use
 
 POST server_domain, domain and command set to container_log. The workflow reads stdout and stderr for the container named domain followed by _immich, with tail 1000. Logs may contain secrets and personal data; restrict access to the endpoint and execution history. Docker logging driver must support reading logs.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n set the same server domain and gateway URL and connect Header Auth credentials on the webhook and Docker HTTP nodes.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

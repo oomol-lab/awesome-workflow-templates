@@ -13,11 +13,18 @@ Create one open, low-priority Freshdesk ticket for a requester email.
 
 ## Setup
 
-Select your Freshdesk API-key account in **Create Freshdesk ticket** and allow **Provider API** access. This permission is separate from individual Action permissions. Run with the requester **Email**, ticket **Subject** and **Description**. The description can contain HTML. In n8n, set your Freshdesk subdomain in the HTTP URL, choose **Freshdesk API** credentials and edit the JSON request fields in **Create Freshdesk ticket**.
+Select your Freshdesk API-key account in **Create Freshdesk ticket** and allow **Provider API** access. This permission is separate from individual Action permissions. Run with the requester **Email**, ticket **Subject** and **Description**. The description can contain HTML.
 
-The ticket uses Open status `2`, Low priority `1` and Portal source `2`, matching the source defaults. If your helpdesk requires custom ticket fields, add those fields to the prepared request in both formats before running. Freshdesk can create a contact when the requester email is new. Account rules may assign the ticket or send notifications.
+The ticket uses Open status `2`, Low priority `1` and Portal source `2`, matching the source defaults. If your helpdesk requires custom ticket fields, add those fields to the prepared request before running. Freshdesk can create a contact when the requester email is new. Account rules may assign the ticket or send notifications.
 
 Each run makes one creation request and returns the complete ticket record. There is no search, duplicate detection or update. Errors stop without retry or rollback. Check Freshdesk before rerunning a request whose write result is uncertain.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, set your Freshdesk subdomain in the HTTP URL, choose **Freshdesk API** credentials and edit the JSON request fields in **Create Freshdesk ticket**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

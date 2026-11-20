@@ -15,9 +15,7 @@ Analyze a Typeform feedback submission and post its text and score to Mattermost
 
 Connect **Completed Typeform response** to Typeform and set your form ID. Select a secret Variable containing a Google Cloud API key on the **Analyze feedback sentiment** authentication input. Enable the Cloud Natural Language API and billing in that key’s Google Cloud project, and restrict the key to that API. The key is sent in the `x-goog-api-key` header.
 
-For n8n, choose a Typeform credential and form in **Typeform Trigger**, and a Google Cloud Natural Language OAuth2 credential in **Google Cloud Natural Language**. The n8n trigger keeps the full submission so the question definitions and answers can be matched by field ID.
-
-Use a text question titled **What did you think about the event?**. Select a Mattermost account and channel on **Alert Mattermost**. In n8n, select that account and channel on **Mattermost**.
+Use a text question titled **What did you think about the event?**. Select a Mattermost account and channel on **Alert Mattermost**.
 
 ## Behavior
 
@@ -26,6 +24,13 @@ A score below zero posts one message containing the feedback and score to Matter
 Each completed form runs one sentiment analysis step against Google Cloud Natural Language v1, using plain text, automatic language detection, and UTF-16 sentence offsets. Blank answers, ambiguous question titles, or an invalid service response stop the run before a destination write. No workflow-level retries or delivery deduplication are configured. A later failed write can leave an earlier write completed; inspect the destination before rerunning the same submission.
 
 Feedback text is sent to Google for sentiment analysis. Negative feedback is sent to the chosen Mattermost channel.
+
+<details>
+<summary>In n8n</summary>
+
+For n8n, choose a Typeform credential and form in **Typeform Trigger**, and a Google Cloud Natural Language OAuth2 credential in **Google Cloud Natural Language**. The n8n trigger keeps the full submission so the question definitions and answers can be matched by field ID. In n8n, select that account and channel on **Mattermost**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

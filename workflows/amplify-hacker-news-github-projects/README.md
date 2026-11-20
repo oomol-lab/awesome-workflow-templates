@@ -13,9 +13,16 @@ Discover GitHub links on Hacker News, draft social posts and publish them after 
 
 ## Setup and use
 
-Connect Airtable, Firecrawl, Telegram, X and LinkedIn. Configure the Airtable base and table fields Post, Title, Url, Tweet, LinkedIn, TDone and LDone, Telegram chat, LinkedIn person URN, model and persistent State. In n8n configure a Data Table with item_key and status columns. Prevent overlapping runs.
+Connect Airtable, Firecrawl, Telegram, X and LinkedIn. Configure the Airtable base and table fields Post, Title, Url, Tweet, LinkedIn, TDone and LDone, Telegram chat, LinkedIn person URN, model and persistent State. Prevent overlapping runs.
 
 Every six hours the workflow reviews the first 30 top Hacker News stories, filters GitHub links, resumes recorded story IDs or drafts two posts for new stories, notifies Telegram, waits five minutes, publishes and marks each status. Content is sent to the AI provider. Review the notification promptly; the five-minute delay is not an approval gate. After uncertain writes inspect the relevant service before resolving pending checkpoints.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure a Data Table with item_key and status columns.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

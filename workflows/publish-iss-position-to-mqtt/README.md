@@ -13,11 +13,18 @@ Publish the current International Space Station position to an MQTT topic every 
 
 ## Setup and use
 
-Connect an MQTT broker in Open Flow using its MQTT-over-WebSocket URL and any required credentials. In n8n connect an MQTT credential. The default topic is iss-position; change it in the publish node if needed. Activate one format.
+Connect an MQTT broker in Open Flow using its MQTT-over-WebSocket URL and any required credentials. The default topic is iss-position; change it in the publish node if needed.
 
 ## Behavior
 
 Every minute, the workflow reads the current ISS position from Where the ISS at? and publishes a JSON message with Name, Latitude, Longitude and Timestamp as strings. The default MQTT QoS is 0 and retain is false, matching the source. QoS 0 does not provide delivery acknowledgement. If a publish result is uncertain, a subscriber may already have received it.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n connect an MQTT credential.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

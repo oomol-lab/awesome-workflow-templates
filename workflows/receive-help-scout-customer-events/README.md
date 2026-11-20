@@ -13,11 +13,18 @@ Receive Help Scout customer creation events.
 
 ## Setup and use
 
-Import the n8n workflow and connect Help Scout in **HelpScout Trigger**. Activate it to register the webhook; its URL must be publicly reachable by Help Scout. For Open Flow enter its webhook URL in **Forward to Open Flow** and enable that node; leave it disabled for n8n alone. Restrict access to the webhook endpoints.
+Connect Help Scout in **HelpScout Trigger**. Activate it to register the webhook; its URL must be publicly reachable by Help Scout. For Open Flow enter its webhook URL in **Forward to Open Flow** and enable that node. Restrict access to the webhook endpoints.
 
 ## Behavior
 
-The trigger verifies the Help Scout signature and emits each customer event. The optional relay forwards each event to Open Flow as workflow output. The Open Flow relay endpoint itself does not authenticate the sender; restrict access and inspect n8n execution history for relay failures. Customer creation events cover all inboxes. Event details may appear in execution history.
+The trigger verifies the Help Scout signature and emits each customer event. The optional relay forwards each event to Open Flow as workflow output. The Open Flow relay endpoint itself does not authenticate the sender. Customer creation events cover all inboxes. Event details may appear in execution history.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow and connect Help Scout in **HelpScout Trigger**. Leave it disabled for n8n alone. Restrict access and inspect n8n execution history for relay failures.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

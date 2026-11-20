@@ -13,11 +13,18 @@ Find competitors and research their company, products and reviews in Notion.
 
 ## Setup and use
 
-Import **Competitor research** and **Competitor research tools**, publish the research tools workflow and refresh the tool interfaces. Configure EXA_API_KEY, SERPAPI_API_KEY, Firecrawl and Notion connections, a Notion parent page, persistent State and an available model. Run with the source company HTTPS URL. In n8n configure the Exa, SerpApi, Firecrawl, OpenAI and Notion credentials and a Notion database with a title property and rich-text properties Founded, Funding Status, Money Raised, Positive Reviews (%), Pros and Cons. Select a Data Table with item_key and status text columns for write checkpoints.
+Import **Competitor research** and **Competitor research tools**, publish the research tools workflow and refresh the tool interfaces. Configure EXA_API_KEY, SERPAPI_API_KEY, Firecrawl and Notion connections, a Notion parent page, persistent State and an available model. Run with the source company HTTPS URL.
 
 ## Behavior
 
 Exa searches for competitors, then three agents research company details, product offerings and customer reviews using web search and page text. The results are saved per company. Web pages and model output can be incomplete or inaccurate; review sources and reports before use. Inspect Notion before clearing a pending checkpoint after an uncertain write. Avoid overlapping runs.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure the Exa, SerpApi, Firecrawl, OpenAI and Notion credentials and a Notion database with a title property and rich-text properties Founded, Funding Status, Money Raised, Positive Reviews (%), Pros and Cons. Select a Data Table with item_key and status text columns for write checkpoints.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

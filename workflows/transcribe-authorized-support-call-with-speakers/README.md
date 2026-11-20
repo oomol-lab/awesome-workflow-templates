@@ -13,13 +13,20 @@ Transcribe one authorized call with anonymous speaker labels.
 
 ## Setup
 
-Connect Apify and set APIFY_TOKEN for the same account. Supply one direct public HTTPS audio or video URL with an ASCII hostname or IPv4 address, an ISO language (default pt), a maximum duration from 1 to 20 minutes, a unique request ID and explicit confirmation of processing rights and any required speaker consent. The URL checks do not verify DNS resolution. Enable persistent State and prevent overlapping runs. In n8n configure Header Auth for Apify, the input and a Data Table with item_key and status columns. Use one format.
+Connect Apify and set APIFY_TOKEN for the same account. Supply one direct public HTTPS audio or video URL with an ASCII hostname or IPv4 address, an ISO language (default pt), a maximum duration from 1 to 20 minutes, a unique request ID and explicit confirmation of processing rights and any required speaker consent. The URL checks do not verify DNS resolution. Enable persistent State and prevent overlapping runs.
 
 ## Behavior
 
 The Actor returns one transcript with timed segments, anonymous speaker labels and JSON, SRT, VTT and TXT files. Speaker labels are placeholders for human review, not verified identities. The workflow checks the result URL, integration source, structure and charged duration. It retains the source maximum of one result and a US$0.05 run cap. The recording and transcript are processed by Apify; review access and retention.
 
-Open Flow stores a known Actor run ID and can resume polling it with the same request ID and inputs. If the start response is unknown, inspect Apify before resolving the pending state. n8n uses the original synchronous endpoint; inspect the pending Data Table record and account before retrying an uncertain run.
+Open Flow stores a known Actor run ID and can resume polling it with the same request ID and inputs. If the start response is unknown, inspect Apify before resolving the pending state.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure Header Auth for Apify, the input and a Data Table with item_key and status columns. n8n uses the original synchronous endpoint; inspect the pending Data Table record and account before retrying an uncertain run.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

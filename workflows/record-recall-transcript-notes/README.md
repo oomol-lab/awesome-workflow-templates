@@ -13,16 +13,21 @@ Save verified live transcript segments and create meeting notes when a keyword i
 
 ## Setup
 
-Configure a Recall bot separately with recording_config.transcript.provider.recallai_streaming and a recording_config.realtime_endpoints webhook subscribed to transcript.data, pointing to the n8n webhook. Follow the Recall real-time transcription documentation for the bot request. Use a Recall workspace verification secret and set RECALL_WORKSPACE_SECRET in the n8n runtime. Self-hosted n8n must allow the Node crypto builtin in its Code task runner (NODE_FUNCTION_ALLOW_BUILTIN=crypto) and allow this environment variable in nodes. Configure PostgreSQL credentials and create these tables:
+Follow the Recall real-time transcription documentation for the bot request. Configure PostgreSQL credentials and create these tables:
 
-    CREATE TABLE meeting_utterances (event_id text PRIMARY KEY, bot_id text NOT NULL, speaker text NOT NULL, words text NOT NULL, relative_seconds double precision NOT NULL, note_status text NOT NULL DEFAULT 'pending');
-    CREATE TABLE meeting_notes (event_id text PRIMARY KEY, bot_id text NOT NULL, note text NOT NULL);
-
-In n8n set Choose mode relay to false for direct AI and PostgreSQL notes, or true to forward to Open Flow after verification and storage. In relay mode configure the Open Flow URL, Supabase read-only management connection and project reference, Supabase REST project URL, credentials and persistent State. Both paths must use the same Supabase PostgreSQL database. The REST role must insert and read meeting_notes and select and update meeting_utterances. Restrict the Open Flow webhook to the n8n sender through a private network or authenticated gateway; it has no built-in caller authentication. Configure an available model in the selected mode.
+CREATE TABLE meeting_utterances (event_id text PRIMARY KEY, bot_id text NOT NULL, speaker text NOT NULL, words text NOT NULL, relative_seconds double precision NOT NULL, note_status text NOT NULL DEFAULT 'pending');
+CREATE TABLE meeting_notes (event_id text PRIMARY KEY, bot_id text NOT NULL, note text NOT NULL);
 
 ## Behavior
 
-The n8n receiver verifies Recall's raw-body signature before parsing, stores each finalized utterance once by webhook ID, acknowledges the callback, and processes it asynchronously. When a segment contains Jimmy, the model may save a note using that bot's ordered transcript. Replayed pending events can resume; completed events are skipped. If processing fails after acknowledgement, inspect and retry the n8n execution from the stored event; a stale signed callback cannot pass verification again. Avoid overlapping runs for the same bot. Meeting content is sent to the selected model and stored in PostgreSQL; review the resulting notes. This component does not create Recall bots.
+When a segment contains Jimmy, the model may save a note using that bot's ordered transcript. Replayed pending events can resume; completed events are skipped. Avoid overlapping runs for the same bot. Meeting content is sent to the selected model and stored in PostgreSQL; review the resulting notes. This component does not create Recall bots.
+
+<details>
+<summary>In n8n</summary>
+
+Configure a Recall bot separately with recording_config.transcript.provider.recallai_streaming and a recording_config.realtime_endpoints webhook subscribed to transcript.data, pointing to the n8n webhook. Use a Recall workspace verification secret and set RECALL_WORKSPACE_SECRET in the n8n runtime. Self-hosted n8n must allow the Node crypto builtin in its Code task runner (NODE_FUNCTION_ALLOW_BUILTIN=crypto) and allow this environment variable in nodes. In n8n set Choose mode relay to false for direct AI and PostgreSQL notes, or true to forward to Open Flow after verification and storage. In relay mode configure the Open Flow URL, Supabase read-only management connection and project reference, Supabase REST project URL, credentials and persistent State. Both paths must use the same Supabase PostgreSQL database. The REST role must insert and read meeting_notes and select and update meeting_utterances. Restrict the Open Flow webhook to the n8n sender through a private network or authenticated gateway; it has no built-in caller authentication. Configure an available model in the selected mode. The n8n receiver verifies Recall's raw-body signature before parsing, stores each finalized utterance once by webhook ID, acknowledges the callback, and processes it asynchronously. If processing fails after acknowledgement, inspect and retry the n8n execution from the stored event; a stale signed callback cannot pass verification again.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

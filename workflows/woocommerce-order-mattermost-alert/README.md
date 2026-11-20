@@ -23,13 +23,16 @@ Each new order sends one message: `<billing first name> bought <first line item 
 
 Missing billing first-name or first-item name fields stop before posting. A failed or uncertain post stops the run without a workflow retry or rollback. The post may already have been accepted; inspect the channel before replaying. Incoming complete order bodies must fit the current Open Flow integration limit of 64 KiB, and Code inputs/results must fit 1 MiB.
 
-The store subscription receives future events rather than importing existing orders. Open Flow uses a delivery ID as its trigger deduplication key when supplied; native n8n does not add that key. This is not an exactly-once message guarantee. Callback acknowledgment confirms receipt, not completion of the later message. Open Flow additionally checks that the signed topic matches the subscription; native n8n trusts the subscription topic after signature verification.
+The store subscription receives future events rather than importing existing orders. Open Flow uses a delivery ID as its trigger deduplication key when supplied. This is not an exactly-once message guarantee. Callback acknowledgment confirms receipt, not completion of the later message. Open Flow additionally checks that the signed topic matches the subscription.
 
 The current Open Flow endpoint returns HTTP 400 to WooCommerce’s unsigned form setup ping and accepts signed JSON order events. Check the registered webhook’s active status and delivery logs after activation. The setup ping does not send a purchase notice.
 
-## n8n
+<details>
+<summary>In n8n</summary>
 
-Select WooCommerce API credentials in **Order created**, set the same channel ID in **Build the purchase notice**, and select Mattermost API credentials in **Post the purchase notice**. Activate one format for this notification to avoid duplicate subscriptions. Both formats use signed callbacks for fresh subscriptions. The native Mattermost authentication helper can send a request once more after HTTP 401; Open Flow rejects 401 after one request. Other inspected errors and unknown writes are not automatically repeated by these message transports.
+Native n8n does not add that key. Native n8n trusts the subscription topic after signature verification. Select WooCommerce API credentials in **Order created**, set the same channel ID in **Build the purchase notice**, and select Mattermost API credentials in **Post the purchase notice**. Activate one format for this notification to avoid duplicate subscriptions. Both formats use signed callbacks for fresh subscriptions. The native Mattermost authentication helper can send a request once more after HTTP 401; Open Flow rejects 401 after one request. Other inspected errors and unknown writes are not automatically repeated by these message transports.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

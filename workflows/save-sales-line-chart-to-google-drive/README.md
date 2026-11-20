@@ -13,11 +13,18 @@ Render a line chart from sales data and save the PNG to Google Drive.
 
 ## Setup
 
-Connect Google Drive with write access. In Open Flow edit the labels and sales values in **Set chart data**. In n8n edit them in **Edit Fields: Set JSON data to test** and connect the Drive node.
+Connect Google Drive with write access. In Open Flow edit the labels and sales values in **Set chart data**.
 
 ## Behavior
 
 A manual run renders a line chart with QuickChart and uploads the PNG to the root of Google Drive. QuickChart receives the chart data. If an upload result is unknown, check Drive before retrying.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n edit them in **Edit Fields: Set JSON data to test** and connect the Drive node.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

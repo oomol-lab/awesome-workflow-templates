@@ -13,13 +13,20 @@ Create an example document, update its name, and read it back from Firestore.
 
 ## Setup
 
-Create a Firestore database in a Google Cloud project and choose a collection ID. In Open Flow, bind a Google OAuth access token with the datastore or cloud-platform scope to all three HTTP nodes; refresh or replace the token when it expires. Run with the project ID and collection ID. In n8n, configure the project and collection in **Google Cloud Firestore** and connect the same Firestore OAuth credential to all three Firestore nodes. Run one format at a time.
+Create a Firestore database in a Google Cloud project and choose a collection ID. In Open Flow, bind a Google OAuth access token with the datastore or cloud-platform scope to all three HTTP nodes; refresh or replace the token when it expires. Run with the project ID and collection ID.
 
 ## Behavior
 
 The workflow creates a document with an automatically assigned ID and fields `id: 1` and `name: n8n`. It updates only the name to `nodemation`, then retrieves the same document. It uses the default Firestore database. Each run creates a new document.
 
 The workflow checks the update's per-write status before reading. A failed or uncertain request can leave a document created or updated. Inspect Firestore before retrying; writes are not rolled back or automatically repeated.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, configure the project and collection in **Google Cloud Firestore** and connect the same Firestore OAuth credential to all three Firestore nodes.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

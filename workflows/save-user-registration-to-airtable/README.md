@@ -13,13 +13,20 @@ Record a registration with contact details and subscription choice in Airtable.
 
 ## Setup
 
-Create an Airtable table with text fields **Name**, **Age**, **Email**, **Address**, **Subscription** and **Submitted**. In Open Flow connect Airtable and set the base and table in **Save registration**. Configure a form or client to POST JSON such as {"Name":"Alex","Age":30,"email":"alex@example.com","address":"","You have Subscription ?":"Yes"} to the webhook. In n8n connect Airtable, choose the base and table, and use the hosted form; change its path if it conflicts with another form. Activate one format.
+Create an Airtable table with text fields **Name**, **Age**, **Email**, **Address**, **Subscription** and **Submitted**. In Open Flow connect Airtable and set the base and table in **Save registration**. Configure a form or client to POST JSON such as {"Name":"Alex","Age":30,"email":"alex@example.com","address":"","You have Subscription ?":"Yes"} to the webhook.
 
 ## Behavior
 
-Each submission creates one record with name, numeric age converted to text, email, optional address, Yes/No subscription choice and submission time. Open Flow records the processing time in UTC; n8n uses its form submission timestamp. An acknowledgment from the form or webhook does not guarantee the record was saved. Restrict access to the form, webhook and execution history because they contain personal information.
+Each submission creates one record with name, numeric age converted to text, email, optional address, Yes/No subscription choice and submission time. Open Flow records the processing time in UTC. An acknowledgment from the form or webhook does not guarantee the record was saved. Restrict access to the form, webhook and execution history because they contain personal information.
 
 A failed or uncertain Airtable write may have succeeded; inspect the table before retrying. Repeated submissions create additional records. No automatic retry or deduplication is added.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n connect Airtable, choose the base and table, and use the hosted form; change its path if it conflicts with another form. N8n uses its form submission timestamp.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

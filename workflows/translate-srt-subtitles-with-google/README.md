@@ -15,13 +15,18 @@ Translate SRT subtitles into English or Japanese while retaining cue numbers and
 
 Enable the Google Cloud Translation API and bind its API key as the Secret Variable `GOOGLE_TRANSLATE_API_KEY`. Enable the Open Flow webhook. The public endpoint can invoke translation requests; control access to its URL.
 
-For n8n, connect Google Translate OAuth2 credentials and activate the form. Select EN or JP and upload an SRT file. The completed form returns the translated file.
-
 ## Use
 
 POST JSON to the Open Flow webhook with `srt` containing the full UTF-8 subtitle text and `language` set to `EN` or `JP`. The response is JSON with an `srt` field; save its contents as an SRT file. The workflow sends each cue's text to Google in order and retains the cue number and timestamp. JP maps to Google's `ja` language code.
 
 The endpoint waits up to 60 seconds. Long files can exceed this timeout or host input limits; use shorter files if needed. Translation failures stop the workflow. Subtitle text is sent to Google Cloud Translation and may contain sensitive content.
+
+<details>
+<summary>In n8n</summary>
+
+For n8n, connect Google Translate OAuth2 credentials and activate the form. Select EN or JP and upload an SRT file. The completed form returns the translated file.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

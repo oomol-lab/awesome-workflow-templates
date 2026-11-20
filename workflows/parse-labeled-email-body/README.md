@@ -13,11 +13,18 @@ Extract labeled values from a sample plain-text email body.
 
 ## Setup and use
 
-Start Open Flow with a plain-text **body** and comma-separated **labels**, such as `Name,Email,Subject,Message`. In n8n edit **Set values** and run manually. The example contains placeholder contact data.
+Start Open Flow with a plain-text **body** and comma-separated **labels**, such as `Name,Email,Subject,Message`. The example contains placeholder contact data.
 
 ## Behavior
 
-Each label matches without regard to case and captures the text after spaces or a colon. Non-final labels capture to a newline or dollar sign; the last label can span lines until a dollar sign. Missing labels are omitted. Labels are interpreted as regular-expression text, so use simple label names unless that behavior is intended. Open Flow returns the parsed object as **fields**; n8n emits it as the item JSON. This example parses supplied text and does not fetch email.
+Each label matches without regard to case and captures the text after spaces or a colon. Non-final labels capture to a newline or dollar sign; the last label can span lines until a dollar sign. Missing labels are omitted. Labels are interpreted as regular-expression text, so use simple label names unless that behavior is intended. Open Flow returns the parsed object as **fields**. This example parses supplied text and does not fetch email.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n edit **Set values** and run manually. N8n emits it as the item JSON.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

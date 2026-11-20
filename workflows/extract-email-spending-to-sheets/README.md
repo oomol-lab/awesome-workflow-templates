@@ -13,13 +13,20 @@ Extract invoice and card transaction details from labeled Gmail messages into a 
 
 ## Setup and use
 
-Import the supplied n8n workflow and configure both Gmail triggers with your own label IDs and Gmail credentials. Configure the sender filters, PDF password if needed and the Google Sheet. The supplied source filters and PDF password are examples to replace. In Open Flow connect Google Sheets, set spreadsheet ID and A1 range, and configure a model. The sheet columns are date, service, details, amount, category, currency, payment and source. Set all three **Use Open Flow?** conditions to true and configure all three forwarding URLs. For n8n-only mode leave them false and connect its models and Sheets nodes. Activate one mode.
+Configure both Gmail triggers with your own label IDs and Gmail credentials. Configure the sender filters, PDF password if needed and the Google Sheet. The supplied source filters and PDF password are examples to replace. In Open Flow connect Google Sheets, set spreadsheet ID and A1 range, and configure a model. The sheet columns are date, service, details, amount, category, currency, payment and source. Set all three **Use Open Flow?** conditions to true and configure all three forwarding URLs.
 
 ## Behavior
 
-n8n polls each label, extracts the first PDF attachment where present, and routes a multi-transaction HTML notice, single card notice or invoice. Multi-transaction notices produce one request per extracted table entry. The selected workflow extracts fields and appends rows. Model output can be inaccurate; review the sheet against the source messages. Message text and extracted PDF content are shared with the model. Avoid assigning both labels to the same message unless duplicate rows are intended. The Open Flow webhook does not authenticate senders; restrict access.
+Multi-transaction notices produce one request per extracted table entry. The selected workflow extracts fields and appends rows. Model output can be inaccurate; review the sheet against the source messages. Message text and extracted PDF content are shared with the model. Avoid assigning both labels to the same message unless duplicate rows are intended. The Open Flow webhook does not authenticate senders; restrict access.
 
-An unknown append result may already have created a row; inspect the sheet before retrying. A processing or relay failure can occur after Gmail polling has advanced; inspect execution history and recover the original message manually. PDF passwords in node settings and sensitive transaction details may be retained in n8n execution data.
+An unknown append result may already have created a row; inspect the sheet before retrying. A processing or relay failure can occur after Gmail polling has advanced; inspect execution history and recover the original message manually.
+
+<details>
+<summary>In n8n</summary>
+
+Import the supplied n8n workflow and configure both Gmail triggers with your own label IDs and Gmail credentials. For n8n-only mode leave them false and connect its models and Sheets nodes. n8n polls each label, extracts the first PDF attachment where present, and routes a multi-transaction HTML notice, single card notice or invoice. PDF passwords in node settings and sensitive transaction details may be retained in n8n execution data.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

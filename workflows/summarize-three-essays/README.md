@@ -13,11 +13,18 @@ Read the first three essay links from Paul Graham’s article index and summariz
 
 ## Setup
 
-Configure an AI model. In Open Flow, import the n8n workflow, enable its **HTML parsing relay**, configure a Header Auth credential and bind the matching secret N8N_HTML_RELAY_TOKEN and relay URL in both parser nodes. Configure the model in n8n for direct use. Use one format and protect the relay.
+Configure an AI model. Use one format and protect the relay.
 
 ## Behavior
 
-Fetch the index, take its first three nested-table links, fetch each essay and return its title, URL and summary. The workflow sends page content to the model. Open Flow summarizes every 4,000-character chunk and combines those summaries; n8n uses its recursive document splitter and summarization chain. Summaries can differ and require review. Very large pages must fit workflow input and model limits.
+Fetch the index, take its first three nested-table links, fetch each essay and return its title, URL and summary. The workflow sends page content to the model. Open Flow summarizes every 4,000-character chunk and combines those summaries. Summaries can differ and require review. Very large pages must fit workflow input and model limits.
+
+<details>
+<summary>In n8n</summary>
+
+In Open Flow, import the n8n workflow, enable its **HTML parsing relay**, configure a Header Auth credential and bind the matching secret N8N_HTML_RELAY_TOKEN and relay URL in both parser nodes. Configure the model in n8n for direct use. N8n uses its recursive document splitter and summarization chain.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

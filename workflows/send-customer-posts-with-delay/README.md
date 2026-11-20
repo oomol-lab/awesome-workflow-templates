@@ -13,11 +13,18 @@ Post customer IDs and names one at a time with a four-second delay.
 
 ## Setup and use
 
-In Open Flow provide a customers array with id and name fields and set the target URL in **Post customer**. The default JSONPlaceholder endpoint is a public demonstration service. In n8n the original training datastore supplies fictional customers; replace it with your customer source and configure the HTTP destination. Use one format.
+In Open Flow provide a customers array with id and name fields and set the target URL in **Post customer**. The default JSONPlaceholder endpoint is a public demonstration service.
 
 ## Behavior
 
 The workflow sends one JSON object with id and name per customer, waits four seconds after each successful POST, then processes the next customer. A failed or unknown request stops the run; earlier requests may have succeeded. Inspect the destination before retrying to avoid duplicate writes. Customer data is sent to the configured endpoint.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n the original training datastore supplies fictional customers; replace it with your customer source and configure the HTTP destination.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

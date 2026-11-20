@@ -13,11 +13,18 @@ Count new UX ideas in a Notion data source and post a weekly Slack summary.
 
 ## Setup
 
-Connect Notion with read access to the data source and Slack with permission to post to the destination channel. In **Count new UX ideas**, set the data source ID and the exact name of the multi-select property containing the option `UX`. Set the channel ID in **Post weekly summary**. In n8n, set those values in **Configure report**, select Notion credentials in **Query ideas**, and select Slack credentials and channel in **Post weekly summary**. Activate only one format.
+Connect Notion with read access to the data source and Slack with permission to post to the destination channel. In **Count new UX ideas**, set the data source ID and the exact name of the multi-select property containing the option `UX`. Set the channel ID in **Post weekly summary**.
 
 ## Behavior
 
 Every Monday at 09:00 UTC, query all pages created in the preceding seven days and count distinct page IDs whose configured multi-select contains exactly `UX`. A summary is sent even when the count is zero. The query is paginated; a failed read stops before sending. Data source permissions, indexing, and workflow execution limits apply. The query is not a snapshot while pages change. If a Slack send fails or its result is unknown, inspect the channel before rerunning; a rerun can create a duplicate message.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, set those values in **Configure report**, select Notion credentials in **Query ideas**, and select Slack credentials and channel in **Post weekly summary**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

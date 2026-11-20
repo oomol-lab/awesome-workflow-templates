@@ -15,11 +15,16 @@ Send a Twilio SMS identifying a workflow that failed.
 
 In Open Flow, select the published source workflows in **Receive a workflow failure**, then publish and enable the error workflow. Connect Twilio in **Send the SMS** and set an SMS-capable sender and recipient in E.164 format.
 
-In n8n, connect Twilio, configure the sender and recipient, assign this workflow as the error workflow in each source workflow’s settings, and activate it. Avoid assigning it to itself.
-
 ## Behavior
 
 An automatic failure in a configured source workflow sends an SMS containing that workflow’s ID and name. Manual test runs do not represent automatic error dispatch. If a send fails or its outcome is uncertain, check the recipient before retrying; the SMS may already have been delivered.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect Twilio, configure the sender and recipient, assign this workflow as the error workflow in each source workflow’s settings, and activate it. Avoid assigning it to itself.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

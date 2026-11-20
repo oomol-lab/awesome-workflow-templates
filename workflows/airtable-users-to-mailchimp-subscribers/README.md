@@ -13,7 +13,7 @@ Add Airtable users to a Mailchimp audience as subscribed contacts.
 
 ## Setup
 
-Connect Airtable in **Read Airtable users**, set the base ID and table name, and provide text fields named `Name` and `Email` and a field named `Interest`. Connect Mailchimp in **Add the subscriber** and grant Provider API permission. Enter your audience ID in **Prepare the next subscriber**. The audience needs an `FNAME` merge field. In n8n configure the same Airtable base and table, an Airtable personal access token, Mailchimp audience and OAuth2 credentials. Enable one format only.
+Connect Airtable in **Read Airtable users**, set the base ID and table name, and provide text fields named `Name` and `Email` and a field named `Interest`. Connect Mailchimp in **Add the subscriber** and grant Provider API permission. Enter your audience ID in **Prepare the next subscriber**. The audience needs an `FNAME` merge field.
 
 Only use contacts who have agreed to receive marketing. This workflow directly sets `subscribed` and does not run a confirmation signup flow.
 
@@ -21,9 +21,16 @@ Only use contacts who have agreed to receive marketing. This workflow directly s
 
 Every day, the workflow reads all Airtable pages and adds each user to Mailchimp in order. It sends Email, Name as `FNAME`, and the literal tag `Interest`. The source reads an Airtable field with that name but does not use its value as the tag. A user already in the audience causes an error rather than an update. Since source rows remain in Airtable, a later run can stop on a previously added user before reaching later rows. Use a view or adjust the table selection to supply only new users. An empty table makes no Mailchimp requests.
 
-The source schedule used the n8n instance timezone. Both templates start at 14:00 UTC; review the timezone and schedule. n8n Cron V1 uses a fixed randomized second, while Open Flow runs on the minute boundary.
+The workflow start at 14:00 UTC; review the timezone and schedule. Open Flow runs on the minute boundary.
 
 A read error or a record without text Name and Email stops before writes. A later error stops the run; earlier subscribers remain added. Check Mailchimp before rerunning after a failed or uncertain request. No automatic retries or rollback are configured. Results must fit execution state limits.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure the same Airtable base and table, an Airtable personal access token, Mailchimp audience and OAuth2 credentials. The source schedule used the n8n instance timezone. n8n Cron V1 uses a fixed randomized second.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

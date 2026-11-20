@@ -15,8 +15,6 @@ Read a Google Sheet to list its columns, retrieve one column with row numbers, o
 
 Connect Google Sheets in **Read complete sheet tab**. In **Prepare sheet lookup**, replace `YOUR_SPREADSHEET_ID` with your spreadsheet ID and set `range` to the complete tab in [A1 notation](https://developers.google.com/workspace/sheets/api/guides/concepts#cell), such as `'Sheet1'` or `'Customer Records'`. Keep the surrounding single quotes; double an apostrophe inside a tab name. Cell subranges are rejected so row numbers stay relative to the spreadsheet. The connected account needs read access to that spreadsheet.
 
-For n8n, select your Google Sheets OAuth2 credential in **Read Complete Sheet Tab**. Set the spreadsheet ID and tab range in **Sheet Settings**. Edit **Lookup Query**, then run **Run Sheet Lookup**. Another workflow can supply `operation` and `query` through **Execute Workflow Trigger**.
-
 Use Run in Open Flow with one request:
 
 | Operation | Example input | Decoded `response` |
@@ -34,6 +32,13 @@ The first nonempty row supplies the column headers. Use unique nonempty text hea
 The workflow reads the complete configured tab with [Values Get](https://developers.google.com/workspace/sheets/api/reference/rest/v4/spreadsheets.values/get). It keeps unformatted numeric and boolean values and requests formatted date/time strings, matching the source's read options. It does not set a fixed row limit. Large sheets can still reach the platform or Google API's request and response limits.
 
 Column names are returned once, including for a header-only tab. Empty tabs, missing rows and column reads with no data records return `[]` as JSON text. When data records exist, an empty column still returns those records with empty cell strings and row numbers. A column name absent from an existing header causes an error. Google API failures stop the run. There are no writes, persistent state or workflow-level retries. Each run reads the tab again.
+
+<details>
+<summary>In n8n</summary>
+
+For n8n, select your Google Sheets OAuth2 credential in **Read Complete Sheet Tab**. Set the spreadsheet ID and tab range in **Sheet Settings**. Edit **Lookup Query**, then run **Run Sheet Lookup**. Another workflow can supply `operation` and `query` through **Execute Workflow Trigger**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

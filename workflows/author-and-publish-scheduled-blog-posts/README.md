@@ -15,11 +15,16 @@ Generate blog content from scheduled spreadsheet rows and publish due posts to W
 
 Connect Google Sheets and WordPress, configure the spreadsheet IDs and bind OPENROUTER_API_KEY to the OpenRouter request. Use a Config sheet with Key and Value columns and a Schedule sheet with headers including Action, Status, Scheduled, Title and final. Supply prompt_ACTION and prompt_ACTION_model entries for each authoring stage. Scheduled timestamps use UTC in yyyy-MM-dd HH:mm:ss format. Create a Log sheet with Date, Type and Message headers. Enable persistent State and prevent overlapping runs.
 
-In n8n configure Google Sheets, OpenRouter and WordPress credentials and choose a Data Table with rowNumber and status columns in the pending checkpoints. Activate only one format.
-
 ## Behavior
 
-Run manually or every hour; each changed Action is processed. Authoring actions substitute row and configuration values into their prompt and update that row. A publish action creates a published WordPress post once the scheduled time has arrived and marks the row published. Each post is marked pending before the create request. If the response or later row update is uncertain, runs stop before another publication. Inspect WordPress and the row. If already published, set its Status to publish; then enter its row number and retry as the resolution in Select scheduled row, run once and clear both fields. If absent, use the same resolution to retry. In n8n inspect WordPress, update the Schedule row if needed and mark its Data Table pending record resolved. Never run both formats simultaneously.
+Run manually or every hour; each changed Action is processed. Authoring actions substitute row and configuration values into their prompt and update that row. A publish action creates a published WordPress post once the scheduled time has arrived and marks the row published. Each post is marked pending before the create request. If the response or later row update is uncertain, runs stop before another publication. Inspect WordPress and the row. If already published, set its Status to publish; then enter its row number and retry as the resolution in Select scheduled row, run once and clear both fields. If absent, use the same resolution to retry.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure Google Sheets, OpenRouter and WordPress credentials and choose a Data Table with rowNumber and status columns in the pending checkpoints. Activate only one format. In n8n inspect WordPress, update the Schedule row if needed and mark its Data Table pending record resolved.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -13,11 +13,18 @@ Create or update a Vero user profile using its user ID.
 
 ## Setup
 
-Create a secret Variable named `VERO_AUTH_TOKEN` and bind it to **Identify the Vero user** in Open Flow. Run with the user ID. In n8n configure Vero credentials and enter the user ID in **Vero**. Use one format per run.
+Create a secret Variable named `VERO_AUTH_TOKEN` and bind it to **Identify the Vero user** in Open Flow. Run with the user ID. Use one format per run.
 
 ## Behavior
 
 A manual run sends the ID to Vero's identify endpoint. Vero creates the profile if it does not exist or updates the existing profile for that ID. The workflow returns Vero's response. If a request fails or its outcome is uncertain, inspect Vero before retrying.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure Vero credentials and enter the user ID in **Vero**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

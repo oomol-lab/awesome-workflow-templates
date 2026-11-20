@@ -13,13 +13,20 @@ Fetch the current ISS position every minute and return it when its timestamp cha
 
 ## Setup
 
-Enable persistent workflow State and activate one format. The workflow needs access to the Where the ISS at? API. n8n requires active workflow static data to persist between scheduled runs.
+Enable persistent workflow State and activate one format. The workflow needs access to the Where the ISS at? API.
 
 ## Behavior
 
 Each minute the workflow requests the ISS position for the current Unix second. A new timestamp returns latitude, longitude and timestamp; a repeated timestamp returns `No new items`. It remembers the last successful timestamp, rather than a complete history. Inspect the workflow result to use the data; no notification or external database write is configured.
 
-The schedule starts in UTC; the source inherited its n8n instance timezone. n8n Cron V1 selects a fixed second within the minute, while Open Flow starts at the minute boundary. Open Flow does not follow HTTP redirects and limits each request to 30 seconds and each response to 4 MiB; n8n uses its HTTP node defaults. Avoid overlapping runs, which may race when updating State. API or State errors fail the run.
+The schedule starts in UTC. Open Flow starts at the minute boundary. Open Flow does not follow HTTP redirects and limits each request to 30 seconds and each response to 4 MiB. Avoid overlapping runs, which may race when updating State. API or State errors fail the run.
+
+<details>
+<summary>In n8n</summary>
+
+n8n requires active workflow static data to persist between scheduled runs. The source inherited its n8n instance timezone. n8n Cron V1 selects a fixed second within the minute. N8n uses its HTTP node defaults.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

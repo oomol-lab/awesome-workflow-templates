@@ -13,11 +13,18 @@ Send a formatted message to a Twake channel.
 
 ## Setup
 
-Install the n8n integration in the Twake workspace and obtain its workspace key and destination channel ID. In Open Flow create a secret Variable named `TWAKE_WORKSPACE_KEY` and bind it to **Send to Twake**. Run with the channel ID and formatted message. In n8n configure Twake Cloud credentials and enter the channel ID and message in **Twake**. Use one format per message.
+In Open Flow create a secret Variable named `TWAKE_WORKSPACE_KEY` and bind it to **Send to Twake**. Run with the channel ID and formatted message. Use one format per message.
 
 ## Behavior
 
-A manual run posts one formatted message. The message is configured so everyone can delete it, as in the source. Open Flow returns the full API response; n8n returns its `object` field. If a request fails or the outcome is uncertain, check the channel before retrying to avoid a duplicate.
+A manual run posts one formatted message. The message is configured so everyone can delete it, as in the source. Open Flow returns the full API response. If a request fails or the outcome is uncertain, check the channel before retrying to avoid a duplicate.
+
+<details>
+<summary>In n8n</summary>
+
+Install the n8n integration in the Twake workspace and obtain its workspace key and destination channel ID. In n8n configure Twake Cloud credentials and enter the channel ID and message in **Twake**. N8n returns its `object` field.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

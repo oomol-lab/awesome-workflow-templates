@@ -15,13 +15,20 @@ Subscribe webinar feedback respondents and assign tags from their form answers.
 
 Configure Gravity Forms Webhooks Add-On to POST JSON with fields `1`, `3`, `4`, `5`, `6`, `7`, `8`, `9`, `11`, `12.1` and `13`. In **Validate and map feedback**, set the opt-in process ID and five distinct KlickTipp custom field IDs for feedback, rating, comments, choice and webinar time. Use matching field types. The original account-specific IDs are examples and have been removed.
 
-Obtain a Management API session cookie for a dedicated KlickTipp API user and store the complete `name=value` pair in secret Variable **KLICKTIPP_SESSION_COOKIE**. Renew it when the session expires. This differs from the Listbuilding API key. In n8n, install the KlickTipp community node version 1.0.48, connect its Management API credential, configure the opt-in and custom field IDs, and configure the Gravity Forms feed URL.
+Obtain a Management API session cookie for a dedicated KlickTipp API user and store the complete `name=value` pair in secret Variable **KLICKTIPP_SESSION_COOKIE**. Renew it when the session expires. This differs from the Listbuilding API key.
 
 ## Behavior
 
 The form supplies first name (1), last name (3), email (4), phone (5), birthday YYYY-MM-DD (6), feedback (7), numeric rating (8), comments (9), a JSON array of additional tags (11), choice (12.1), and webinar date DD.MM.YYYY HH:mm (13). Dates are interpreted as UTC. Rating is multiplied by 100. A leading plus on the phone becomes 00 and non-digits are removed. Fields 8, 13, and each value in 11 become tag names. Invalid JSON in field 11 yields no extra tags.
 
-The workflow subscribes or updates the contact, lists tags, creates missing names and assigns the corresponding IDs. Open Flow creates missing tags sequentially and assigns all IDs together; n8n processes existing and new tags in separate branches. Open Flow removes repeated tag names. Failed or uncertain writes may already have changed KlickTipp. Check the contact and tags before retrying. The webhook is unauthenticated and acknowledges receipt before processing completes. You can restrict access at deployment. The n8n community node refreshes its session and retries a request after HTTP 403; Open Flow stops on that response.
+The workflow subscribes or updates the contact, lists tags, creates missing names and assigns the corresponding IDs. Open Flow creates missing tags sequentially and assigns all IDs together. Open Flow removes repeated tag names. Failed or uncertain writes may already have changed KlickTipp. Check the contact and tags before retrying. The webhook is unauthenticated and acknowledges receipt before processing completes. You can restrict access at deployment. Open Flow stops on that response.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, install the KlickTipp community node version 1.0.48, connect its Management API credential, configure the opt-in and custom field IDs, and configure the Gravity Forms feed URL. N8n processes existing and new tags in separate branches. The n8n community node refreshes its session and retries a request after HTTP 403.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

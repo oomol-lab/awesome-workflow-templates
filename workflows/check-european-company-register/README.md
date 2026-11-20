@@ -13,13 +13,20 @@ Look up a company in one of seven national registers and flag non-active results
 
 ## Setup
 
-Connect Apify and enable the company registry Actor. In Open Flow, send a POST request to the webhook with a JSON object whose `data` object contains `Company name or registration number` and `Country`; the country must be one of cz, ee, fi, fr, no, pl or sk. In n8n, use a Header Auth credential named `Authorization` with value `Bearer YOUR_APIFY_TOKEN` on every HTTP Request node, then submit the form. Use one format.
+Connect Apify and enable the company registry Actor. In Open Flow, send a POST request to the webhook with a JSON object whose `data` object contains `Company name or registration number` and `Country`; the country must be one of cz, ee, fi, fr, no, pl or sk.
 
 ## Behavior
 
 The workflow searches the selected register for up to five matches. Each active record receives the verdict **ok** and includes identifying registry fields; other statuses receive **check by hand**. No match returns no records. Similar names can produce multiple companies: confirm registration numbers and follow the official registry links before making decisions. The Actor cannot search Polish records by name. The verdict reflects the Actor's status at lookup time and is not an official extract.
 
-Both formats use the Apify summary and avoid automatic Actor start retries. Open Flow acknowledges the webhook immediately; inspect the completed run outputs for records and the Actor’s lookup summary. The Actor can stop with partial results when a register fails or a run approaches its deadline. Check the `SUMMARY` record in the run's key-value store in Apify to distinguish a complete search from an incomplete one. n8n results appear in its execution. Unknown run outcomes may have started an Actor; inspect Apify before retrying.
+The workflow uses the Apify summary and avoid automatic Actor start retries. Open Flow acknowledges the webhook immediately; inspect the completed run outputs for records and the Actor’s lookup summary. The Actor can stop with partial results when a register fails or a run approaches its deadline. Check the `SUMMARY` record in the run's key-value store in Apify to distinguish a complete search from an incomplete one. Unknown run outcomes may have started an Actor; inspect Apify before retrying.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, use a Header Auth credential named `Authorization` with value `Bearer YOUR_APIFY_TOKEN` on every HTTP Request node, then submit the form. n8n results appear in its execution.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -15,15 +15,20 @@ Translate a random Chinese classical poem into English and send it to a Telegram
 
 Connect Lingvanex in **Translate the poem to English** and your Telegram bot in **Send the poem to Telegram**. Enter the destination chat ID and ensure the bot can send there. The schedule starts at 10:00 UTC; adjust the timezone and time for your chat.
 
-In n8n, select LingvaNex and Telegram credentials, set the chat ID and activate the workflow. The formats use different Lingvanex endpoints, so the account must support the chosen one.
-
 ## Behavior
 
 Each day, the workflow requests a random Chinese classical five-character quatrain from [Shiquan](https://poetry.palemoky.com/), translates its text to English and sends the translation with the original title and poet. The collection differs from the source workflow's international Poemist selection. The API uses the [chinese-poetry dataset](https://github.com/chinese-poetry/chinese-poetry), distributed under its MIT notice (Copyright 2016 JackeyGao).
 
 A request failure, missing poem fields, translation failure, empty translation or message longer than 4096 characters stops before sending. Telegram's legacy Markdown mode can interpret formatting characters in the text or reject malformed markup. A failed or uncertain Telegram request may have delivered the message; check the chat before retrying. No automatic resend is configured. The HTTP step follows up to 21 redirects with a 30-second timeout per request; Open Flow limits each response to 4 MiB.
 
-Open Flow uses Lingvanex `api-gl.lingvanex.com`, with the API key in the request URL; protect URL logs. n8n uses the legacy `api-b2b.backenster.com` endpoint with a Bearer credential. Translation quality depends on the service.
+Open Flow uses Lingvanex `api-gl.lingvanex.com`, with the API key in the request URL; protect URL logs. Translation quality depends on the service.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, select LingvaNex and Telegram credentials, set the chat ID and activate the workflow. The formats use different Lingvanex endpoints, so the account must support the chosen one. n8n uses the legacy `api-b2b.backenster.com` endpoint with a Bearer credential.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

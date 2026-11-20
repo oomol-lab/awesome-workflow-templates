@@ -15,11 +15,16 @@ Send a video URL to a Google Apps Script web app and rename the uploaded Drive f
 
 Deploy your own Google Apps Script web app that accepts POST JSON with videoUrl and secret, uploads the video to Drive, and returns JSON with driveUrl as a Google Drive file link. The source does not include the script. Set its deployment URL and the video URL in **Request Apps Script upload**, bind the secret Variable APPS_SCRIPT_SECRET to the shared secret, and connect Google Drive. Set the desired filename in **Rename uploaded video**. The Code node allows the standard Apps Script hosts; update its HTTP capability if your deployment uses another host.
 
-In n8n set the web app URL, video URL and shared secret in **Send URL to GDrive Script and Upload**, then connect Google Drive. The n8n request body contains the shared secret, so restrict access to workflow configuration and execution history. Run one format manually.
-
 ## Behavior
 
 The script performs the upload and returns the file link. Each Open Flow Code HTTP request has a 30-second limit to receive its complete response. Real upload durations have not been measured and a video upload may exceed this limit. The workflow extracts the file ID from that link and renames the file. If the upload or rename result is uncertain, inspect Drive before rerunning because a file may already exist or be renamed.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n set the web app URL, video URL and shared secret in **Send URL to GDrive Script and Upload**, then connect Google Drive. The n8n request body contains the shared secret, so restrict access to workflow configuration and execution history. Run one format manually.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

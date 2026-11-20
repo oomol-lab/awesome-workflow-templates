@@ -13,11 +13,18 @@ Analyze inventory photos and enrich Airtable records with product attributes.
 
 ## Setup
 
-Import **Inventory image enrichment** and **Inventory research tools**, publish the research workflow and refresh both tool interfaces. Configure Airtable, OpenAI and Firecrawl connections, SERPAPI_API_KEY, and persistent State. The Airtable table needs Title, Image, Description, Model, Material, Color, Condition and AI_status fields. In n8n configure the Airtable base and table, OpenAI, SerpApi and Firecrawl credentials, select a Data Table with item_key and status text columns, and activate the imported workflow so its self-referencing research tools can run. Avoid overlapping runs.
+Import **Inventory image enrichment** and **Inventory research tools**, publish the research workflow and refresh both tool interfaces. Configure Airtable, OpenAI and Firecrawl connections, SERPAPI_API_KEY, and persistent State. The Airtable table needs Title, Image, Description, Model, Material, Color, Condition and AI_status fields. Avoid overlapping runs.
 
 ## Behavior
 
 The workflow reads records with images and AI_status false, analyzes the image, optionally searches similar images and product pages, then updates the same record. Model output and search results can be inaccurate; review the changes. Image URLs and related content are sent to the model and research services. Inspect Airtable before clearing a pending update after an uncertain outcome. To deliberately reprocess an already completed record, reset its AI_status and clear its completed checkpoint.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure the Airtable base and table, OpenAI, SerpApi and Firecrawl credentials, select a Data Table with item_key and status text columns, and activate the imported workflow so its self-referencing research tools can run.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

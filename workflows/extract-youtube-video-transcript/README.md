@@ -13,11 +13,18 @@ Retrieve and clean the full available transcript for a submitted YouTube video.
 
 ## Setup
 
-Connect GetYouTubeTranscript in **Fetch the transcript**. Configure a form or client to POST JSON such as {"video":"https://www.youtube.com/watch?v=jNQXAC9IVRw"} to the Open Flow webhook. In n8n use the hosted form and configure HTTP Header Auth with Authorization set to Bearer followed by your GetYouTubeTranscript API key in **Fetch the transcript**. Change the form path if it conflicts. Activate one format.
+Connect GetYouTubeTranscript in **Fetch the transcript**. Configure a form or client to POST JSON such as {"video":"https://www.youtube.com/watch?v=jNQXAC9IVRw"} to the Open Flow webhook. Change the form path if it conflicts.
 
 ## Behavior
 
 Submit a YouTube watch, Shorts, embed or completed live-recording URL, or an 11-character video ID. The workflow retrieves the available transcript and cleans excess whitespace and spaces before punctuation. The result appears in the workflow run; the form or webhook acknowledgment does not contain the transcript. The service chooses the caption language according to its defaults. Private, inaccessible or captionless videos and request failures stop the run. Service and execution-size limits apply; the workflow does not truncate transcript text.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n use the hosted form and configure HTTP Header Auth with Authorization set to Bearer followed by your GetYouTubeTranscript API key in **Fetch the transcript**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

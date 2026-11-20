@@ -13,11 +13,18 @@ Route emails through user-specific Notion connections and create tasks and summa
 
 ## Setup and use
 
-Configure Gmail, processed and error label IDs, an Airtable routes table, and a Secret Variable AIRTABLE_TOKEN with access to that table. Set base and table IDs. Each route record ID is used as the Gmail plus alias and needs Active, Token and NotionDatabase fields. Each user must grant their Notion integration access to the target database, which needs a Name title property. Configure a model and persistent State. In n8n use a self-hosted runtime with AIRTABLE_TOKEN available to Code nodes (set N8N_BLOCK_ENV_ACCESS_IN_NODE=false), configure Gmail and a Data Table with item_key and status text columns, and set the base and table IDs inside the three route Code nodes.
+Configure Gmail, processed and error label IDs, an Airtable routes table, and a Secret Variable AIRTABLE_TOKEN with access to that table. Set base and table IDs. Each route record ID is used as the Gmail plus alias and needs Active, Token and NotionDatabase fields. Each user must grant their Notion integration access to the target database, which needs a Name title property. Configure a model and persistent State.
 
 ## Behavior
 
 New inbox messages addressed to an active route are turned into a task and email summary in that user's Notion database, then labeled processed. Missing routes trigger a sender notice and error label. A Notion authorization rejection deactivates the route and notifies the sender; transient or uncertain writes stop for inspection. Inspect the destination before clearing pending checkpoints. Avoid overlapping runs. Email and generated content are sent to the configured AI provider. Protect the route table because it contains Notion tokens, and restrict access to execution history and user data.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n use a self-hosted runtime with AIRTABLE_TOKEN available to Code nodes (set N8N_BLOCK_ENV_ACCESS_IN_NODE=false), configure Gmail and a Data Table with item_key and status text columns, and set the base and table IDs inside the three route Code nodes.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

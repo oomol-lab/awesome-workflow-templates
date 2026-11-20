@@ -15,11 +15,16 @@ Create a Taiga issue, update its description, and retrieve the same issue.
 
 Connect all Taiga nodes to the same account and instance, including the Actions in **Create the issue** and **Update the description**. Enter your numeric project ID and subject in **Configure the issue**, and edit the description in **Prepare the description update**. The account needs permission to create and update issues.
 
-In n8n, connect the same Taiga credentials to the three nodes, enter your project ID in **Taiga**, and edit the subject and description. Run one format per intended issue.
-
 ## Behavior
 
-Run manually to create an issue, update its description, then read the issue by the ID returned by creation. Both formats read the current version before updating. Open Flow returns the final issue; n8n returns the final node result. If a write fails or its outcome is uncertain, inspect Taiga before retrying: the issue may already exist or have changed, and earlier writes are not rolled back.
+Run manually to create an issue, update its description, then read the issue by the ID returned by creation. The workflow reads the current version before updating. Open Flow returns the final issue. If a write fails or its outcome is uncertain, inspect Taiga before retrying: the issue may already exist or have changed, and earlier writes are not rolled back.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect the same Taiga credentials to the three nodes, enter your project ID in **Taiga**, and edit the subject and description. Run one format per intended issue. N8n returns the final node result.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

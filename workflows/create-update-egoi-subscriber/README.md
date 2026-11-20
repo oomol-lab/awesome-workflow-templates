@@ -13,13 +13,20 @@ Create an E-goi contact, update their first name and read the saved contact.
 
 ## Setup
 
-Use an E-goi list and an API key with contact create, update and read access. In Open Flow, store the key as a secret Variable and bind **Auth Token** on **Create contact**, **Update first name** and **Read the contact**. Run with the list ID, email, initial first name and updated first name. In n8n, connect E-goi credentials to all three nodes and edit **Set contact details**. Run one format.
+Use an E-goi list and an API key with contact create, update and read access. In Open Flow, store the key as a secret Variable and bind **Auth Token** on **Create contact**, **Update first name** and **Read the contact**. Run with the list ID, email, initial first name and updated first name.
 
 Only add people who have agreed to receive your messages. E-goi determines the contact status; list automations may send messages.
 
 ## Behavior
 
-Each run creates one contact with the initial first name, updates that same contact to the new first name and reads it back. A failed step stops later steps. E-goi may reject an existing email according to its list rules. The workflow does not deduplicate, roll back or retry writes. A lost response can mean a write succeeded; inspect E-goi before retrying. n8n performs an intermediate read after the update; Open Flow reads after the update.
+Each run creates one contact with the initial first name, updates that same contact to the new first name and reads it back. A failed step stops later steps. E-goi may reject an existing email according to its list rules. The workflow does not deduplicate, roll back or retry writes. A lost response can mean a write succeeded; inspect E-goi before retrying. Open Flow reads after the update.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect E-goi credentials to all three nodes and edit **Set contact details**. n8n performs an intermediate read after the update.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

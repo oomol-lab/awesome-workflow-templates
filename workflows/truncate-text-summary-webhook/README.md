@@ -13,13 +13,20 @@ Return a short text excerpt from a webhook request.
 
 ## Setup and use
 
-Import the supplied n8n workflow. For n8n mode enable **Webhook** and disable **Open Flow relay webhook**. For Open Flow mode disable **Webhook**, enable the relay, set the deployed Open Flow webhook URL in **Forward complete request**, and activate n8n. Send a JSON POST containing text to the selected n8n production webhook. Neither endpoint verifies callers; restrict access as needed.
+Neither endpoint verifies callers; restrict access as needed.
 
 ## Behavior
 
-Trim the text and return it as summary. Text longer than 240 characters is truncated to the first 240 characters followed by an ellipsis. Missing or empty text uses the source's example phrase. The n8n relay forwards the complete JSON body and waits for the Open Flow response. The Open Flow webhook waits up to 60 seconds.
+Trim the text and return it as summary. Text longer than 240 characters is truncated to the first 240 characters followed by an ellipsis. Missing or empty text uses the source's example phrase. The Open Flow webhook waits up to 60 seconds.
 
 The source also contains a disabled, disconnected OpenAI node. The default workflow uses the local truncation step and does not call an AI model.
+
+<details>
+<summary>In n8n</summary>
+
+Import the supplied n8n workflow. For n8n mode enable **Webhook** and disable **Open Flow relay webhook**. For Open Flow mode disable **Webhook**, enable the relay, set the deployed Open Flow webhook URL in **Forward complete request**, and activate n8n. Send a JSON POST containing text to the selected n8n production webhook. The n8n relay forwards the complete JSON body and waits for the Open Flow response.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

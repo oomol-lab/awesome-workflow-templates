@@ -17,11 +17,16 @@ Connect a Philips Hue account and authorize a Hue application for remote API acc
 
 In Open Flow, create a secret Variable containing the full Hue remote V1 URL `https://api.meethue.com/route/api/BRIDGE_USERNAME/lights/LIGHT_ID/state`, replacing both placeholders, and bind it to **Update the Hue light** → **URL**. Bind the current OAuth access token as a separate secret Variable to that node's Bearer token. The token expires and must be refreshed before it expires. Start the workflow with an integer brightness from 1 to 254; the source uses 90.
 
-In n8n, connect your Philips Hue OAuth2 credential and select the light in **Philips Hue**. The native node finds or registers its Bridge application username. Adjust the brightness there if needed.
-
 ## Behavior
 
-Each run turns on the light and sets its brightness. Open Flow checks that the Bridge confirms both changes for the same light. Open Flow stops if the Bridge reports an error or does not confirm both changes; an uncertain HTTP request also stops without an automatic retry. The n8n node can return an empty result when the Bridge reports an error inside an HTTP 200 response, so inspect its output. The Hue account and Bridge must be connected and reachable through the Hue remote service.
+Each run turns on the light and sets its brightness. Open Flow checks that the Bridge confirms both changes for the same light. Open Flow stops if the Bridge reports an error or does not confirm both changes; an uncertain HTTP request also stops without an automatic retry. The Hue account and Bridge must be connected and reachable through the Hue remote service.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect your Philips Hue OAuth2 credential and select the light in **Philips Hue**. The native node finds or registers its Bridge application username. Adjust the brightness there if needed. The n8n node can return an empty result when the Bridge reports an error inside an HTTP 200 response, so inspect its output.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

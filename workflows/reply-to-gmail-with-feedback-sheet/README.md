@@ -13,13 +13,20 @@ Generate and send replies to selected Gmail messages and record recipient feedba
 
 ## Setup
 
-Connect Gmail, Google Sheets and Gemini. Create a sheet named Database with columns ID, Initial message, Generated reply and Good response?. Enter its ID in all three Sheets nodes, configure sender addresses in **Select allowed sender**, and set the public feedback webhook URL in **Reserve next email action**. Enable persistent State and use one format at a time. In n8n configure Gmail, Gemini, Google Sheets, the matching spreadsheet and sheet IDs, the allowed senders and the feedback URL. Select the same Data Table in all checkpoint nodes, with text columns item_key, status, token, initial and draft.
+Connect Gmail, Google Sheets and Gemini. Create a sheet named Database with columns ID, Initial message, Generated reply and Good response?. Enter its ID in all three Sheets nodes, configure sender addresses in **Select allowed sender**, and set the public feedback webhook URL in **Reserve next email action**. Enable persistent State and use one format at a time.
 
 ## Behavior
 
 Incoming messages from allowed senders generate a reply. The workflow saves the message and reply before sending links that record Yes or No against the matching row. Feedback links grant the holder the ability to change that response. Avoid overlapping executions and protect stored email content. The model can produce incorrect replies; configure the allowed sender list carefully. Unquoted message text longer than 14,800 characters stops processing, and earlier messages may already have been processed.
 
-If a sheet append or email reply has an unknown result, inspect the destination before retrying. Enter the pending key and confirmed or absent in **Reserve next email action**, run **Retry a message** with the original message ID, thread ID and sender, and clear the recovery fields afterward. In n8n inspect the matching pending Data Table row: after confirming an append set status to sheet_done; if absent delete the row. For reply_pending set done if sent or sheet_done if absent.
+If a sheet append or email reply has an unknown result, inspect the destination before retrying. Enter the pending key and confirmed or absent in **Reserve next email action**, run **Retry a message** with the original message ID, thread ID and sender, and clear the recovery fields afterward. For reply_pending set done if sent or sheet_done if absent.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure Gmail, Gemini, Google Sheets, the matching spreadsheet and sheet IDs, the allowed senders and the feedback URL. Select the same Data Table in all checkpoint nodes, with text columns item_key, status, token, initial and draft. In n8n inspect the matching pending Data Table row: after confirming an append set status to sheet_done; if absent delete the row.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

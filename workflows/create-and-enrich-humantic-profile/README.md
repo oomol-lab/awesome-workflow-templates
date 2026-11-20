@@ -13,13 +13,20 @@ Create a profile, enrich it with a resume, and retrieve its hiring persona for r
 
 ## Setup
 
-Connect a Humantic API subscription and provide its API key as HUMANTIC_API_KEY. Import the n8n workflow, configure a query-auth credential whose key is apikey, enable its authenticated resume relay and set RELAY_TOKEN and the relay URL in Open Flow. Enable persistent State. In n8n-only mode configure the profile URL, resume URL, unique request ID and Data Table. Use one mode and prevent overlapping runs. Use a PDF or DOCX URL accessible to n8n.
+Connect a Humantic API subscription and provide its API key as HUMANTIC_API_KEY. Configure a query-auth credential whose key is apikey, enable its authenticated resume relay and set RELAY_TOKEN and the relay URL in Open Flow. Enable persistent State. Use one mode and prevent overlapping runs.
 
 ## Behavior
 
 One manual run creates a profile for the supplied LinkedIn URL, uploads the matching resume, then requests the hiring persona for that same identifier. Humantic processes updates asynchronously, so an immediate fetch may report in progress; retrieve it later rather than repeating writes. The resume and inferred personality profile are sensitive, and are sent to Humantic. Review the result with appropriate safeguards and make any employment decision independently.
 
-A pending create or update may have succeeded. Inspect Humantic and the pending State or Data Table record before any retry. The workflow does not automatically repeat writes.
+A pending create or update may have succeeded. The workflow does not automatically repeat writes.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow, configure a query-auth credential whose key is apikey, enable its authenticated resume relay and set RELAY_TOKEN and the relay URL in Open Flow. In n8n-only mode configure the profile URL, resume URL, unique request ID and Data Table. Use a PDF or DOCX URL accessible to n8n. Inspect Humantic and the pending State or Data Table record before any retry.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

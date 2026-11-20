@@ -13,11 +13,18 @@ Rename the top-level field `key` to `newkey` in a JSON object. For example, `{"k
 
 ## Use
 
-In Open Flow, run with **Record** containing a JSON object. The **Record** output contains the transformed object. In n8n, edit **Set** to supply the fields, then run manually; **Rename Keys** returns the transformed item. The source example uses `key` with the value `somevalue`. No account or external service is required.
+In Open Flow, run with **Record** containing a JSON object. The **Record** output contains the transformed object. The source example uses `key` with the value `somevalue`. No account or external service is required.
 
-For reuse, provide one object to the Open Flow Start input. In n8n, connect your actual upstream items to **Rename Keys** in place of the **Set** demonstration. That node processes each incoming item separately; an empty item list produces no items. The template does not fetch, store or send the object.
+For reuse, provide one object to the Open Flow Start input. That node processes each incoming item separately; an empty item list produces no items. The template does not fetch, store or send the object.
 
 At the rename step, the value, including null, an array or a nested object, is kept without conversion. Other fields remain. When `key` is absent, the object is unchanged. When `newkey` already exists, the source value replaces it. This template performs one fixed top-level rename; it does not recursively rename matching nested fields.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, edit **Set** to supply the fields, then run manually; **Rename Keys** returns the transformed item. In n8n, connect your actual upstream items to **Rename Keys** in place of the **Set** demonstration.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

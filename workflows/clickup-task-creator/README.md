@@ -13,11 +13,18 @@ Create one ClickUp task in a configured list and return its complete record.
 
 ## Setup
 
-Select a ClickUp account in **Create ClickUp task** and replace the list ID and task name. In n8n, select the account and choose the workspace, space, folder and list in **ClickUp**, or enter the destination list ID directly. The API request uses the list ID and task name. Run manually after setup.
+Select a ClickUp account in **Create ClickUp task** and replace the list ID and task name. The API request uses the list ID and task name. Run manually after setup.
 
 The workflow creates one task in the selected list and returns its complete record. Optional properties follow ClickUp defaults; the template adds no assignees, tags, due dates or dependencies.
 
 Each manual run creates another task. There is no search, upsert or duplicate detection. A service error stops the workflow without an automatic retry. If a creation request times out, check the service before running it again.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, select the account and choose the workspace, space, folder and list in **ClickUp**, or enter the destination list ID directly.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -13,15 +13,22 @@ Send reports for a reviewed Steam phishing domain after checking its nameservers
 
 ## Setup
 
-Only submit a domain you have independently reviewed as a Steam phishing site. DNS records do not establish phishing or prove the site's hosting provider. Connect Mailgun in both report nodes and configure the same sending domain and verified sender in each. Edit the sender signature and recipients to suit your reporting policy. Edit the signature in **Prepare the reports** (Open Flow) or **Prepare reports** (n8n). In n8n, configure the Mailgun credentials, sender and recipients.
+Only submit a domain you have independently reviewed as a Steam phishing site. DNS records do not establish phishing or prove the site's hosting provider. Connect Mailgun in both report nodes and configure the same sending domain and verified sender in each. Edit the sender signature and recipients to suit your reporting policy.
 
-In Open Flow create secret Variable `STEAM_REPORT_BASIC_AUTH` containing the full HTTP Basic authorization value, for example `Basic <base64 username:password>`. Configure strong credentials and keep the HTTPS webhook URL private. In n8n configure the webhook's HTTP Basic credentials. Enable only one template format. Restrict access to execution data, which can contain the incoming authorization header.
+In Open Flow create secret Variable `STEAM_REPORT_BASIC_AUTH` containing the full HTTP Basic authorization value, for example `Basic <base64 username:password>`. Configure strong credentials and keep the HTTPS webhook URL private. Enable only one template format. Restrict access to execution data, which can contain the incoming authorization header.
 
 ## Behavior
 
-Send an authenticated GET request with the ASCII domain in query parameter `q`. Google Public DNS resolves NS records. If at least one is returned, the workflow emails Valve once; when an NS name ends in cloudflare.com it then emails Cloudflare once. A DNS failure stops before mail. DNS absence means no email. DNS is a point-in-time result and may differ between resolvers. The queried domain is sent to Google Public DNS. Open Flow returns a JSON report status after the mail requests, while n8n returns its last node output.
+Send an authenticated GET request with the ASCII domain in query parameter `q`. Google Public DNS resolves NS records. If at least one is returned, the workflow emails Valve once; when an NS name ends in cloudflare.com it then emails Cloudflare once. A DNS failure stops before mail. DNS absence means no email. DNS is a point-in-time result and may differ between resolvers. The queried domain is sent to Google Public DNS. Open Flow returns a JSON report status after the mail requests.
 
 The workflow does not investigate a site, verify abuse, or deduplicate submissions. Mailgun acceptance is not proof of delivery. Check prior reports before resending after an uncertain write; duplicate requests can create duplicate emails.
+
+<details>
+<summary>In n8n</summary>
+
+Edit the signature in **Prepare the reports** (Open Flow) or **Prepare reports** (n8n). In n8n, configure the Mailgun credentials, sender and recipients. In n8n configure the webhook's HTTP Basic credentials. N8n returns its last node output.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

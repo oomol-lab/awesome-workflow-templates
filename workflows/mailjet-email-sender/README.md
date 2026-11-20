@@ -15,11 +15,16 @@ Send one plain-text email to one recipient through Mailjet and return the Send A
 
 In Open Flow, create secret Variables for your Mailjet API key and API secret. In **Send Mailjet email**, bind **Authentication Username** (`auth.username`) to the key Variable and **Authentication Password** (`auth.password`) to the secret Variable. Both fields use HTTP Basic authentication. Choose the Variables after import; the shared file contains no credentials or Variable bindings. Run with **From Email**, **To Email**, **Subject** and **Text**. Mailjet must have validated the sender address or its domain.
 
-In n8n, choose Mailjet Email credentials, keep **Sandbox Mode** disabled, and edit the sender, recipient, subject and text in **Mailjet**. This template sends a real email; sandbox mode is disabled in the Open Flow request.
-
 Each run makes one Send API request containing one message for one recipient. It sends plain text, with no template, attachment, CC or BCC. Mailjet can also create a contact record for a new recipient. The result includes Mailjet’s message identifiers. Acceptance means Mailjet has accepted the email for processing; it does not confirm inbox delivery.
 
 The Open Flow HTTP step has a 30-second execution budget. A rejected message, unexpected response or request failure stops the run. Each run can send another email. No duplicate check or automatic retry is configured, so check Mailjet before repeating an uncertain request.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, choose Mailjet Email credentials, keep **Sandbox Mode** disabled, and edit the sender, recipient, subject and text in **Mailjet**. This template sends a real email; sandbox mode is disabled in the Open Flow request.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

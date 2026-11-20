@@ -13,11 +13,18 @@ Return ComfyUI system statistics and the number of available node types.
 
 ## Setup
 
-Set the base URL of your ComfyUI server in **Configure server address**. In n8n set the base URL in **Configure server address**. The source uses the local Docker Compose hostname; the execution platform must be able to reach your configured server. Protect access to both the ComfyUI server and the deployed webhook because the response exposes system information. The template itself does not authenticate requests.
+Set the base URL of your ComfyUI server in **Configure server address**. The source uses the local Docker Compose hostname; the execution platform must be able to reach your configured server. Protect access to both the ComfyUI server and the deployed webhook because the response exposes system information. The template itself does not authenticate requests.
 
 ## Behavior
 
 A GET request reads system statistics, then available node definitions, and returns the full statistics object, the number of top-level node types, and example API endpoint URLs. Either failed request stops the run. No automatic retry is configured. The webhook waits up to 60 seconds for the response.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n set the base URL in **Configure server address**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

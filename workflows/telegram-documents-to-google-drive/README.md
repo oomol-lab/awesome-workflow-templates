@@ -15,15 +15,20 @@ Save each document sent to a Telegram bot in a Google Drive folder.
 
 Connect the same Telegram bot to **Receive a Telegram message**, **Identify the connected bot** and **Get the document path**. The red marker on **Get the document path** means its Connection needs to be selected. Set a My Drive **Folder ID** in **Choose the destination folder** and connect **Upload the document to Drive** to a Google account that can create files there.
 
-Create a secret Variable named TELEGRAM_DOCUMENT_BOT_TOKEN containing the same bot token, and select it in **Verify the download token** and **Download the complete document**. Allow Telegram Proxy for getFile and the api.telegram.org HTTP capability. The default accepts messages from any chat that can reach the bot; configure the trigger chat or user filters if needed. Only one webhook can be active per Telegram bot; activate one format for this process. Open Flow checks the Telegram webhook secret. The source n8n trigger is version 1 and does not check a webhook secret; protect its callback URL.
-
-In n8n, select the Telegram and Google Drive credentials and set the folder in **Upload File to GDrive**.
+Create a secret Variable named TELEGRAM_DOCUMENT_BOT_TOKEN containing the same bot token, and select it in **Verify the download token** and **Download the complete document**. Allow Telegram Proxy for getFile and the api.telegram.org HTTP capability. The default accepts messages from any chat that can reach the bot; configure the trigger chat or user filters if needed. Only one webhook can be active per Telegram bot; activate one format for this process. Open Flow checks the Telegram webhook secret.
 
 ## Behavior
 
 Each incoming Telegram message with a document downloads the complete file and creates one Drive file with its original filename. If Telegram omits the filename, the returned file-path basename is used. Messages without a document do not upload anything. The upload uses the document's MIME type when available, otherwise application/octet-stream. The native trigger infers MIME type from the downloaded file path.
 
-Open Flow checks that the separately configured download token belongs to the connected bot. File content must fit the host’s 1 MiB fetch and Code input/result limits, including Base64 expansion. Larger files fail instead of being truncated. For an empty file, the Drive request creates an empty file using metadata. A failed or uncertain upload may already have created the file; inspect Drive before replaying. The native Drive node also updates metadata after creating the file, so that later step can fail after creation. No workflow retry or rollback is added. The n8n Google OAuth2 helper can refresh credentials and resend a request once after HTTP 401. Telegram's delivery ID is used for trigger deduplication when available; this is not an exactly-once guarantee. Callback acknowledgment confirms receipt, not completion of the upload.
+Open Flow checks that the separately configured download token belongs to the connected bot. File content must fit the host’s 1 MiB fetch and Code input/result limits, including Base64 expansion. Larger files fail instead of being truncated. For an empty file, the Drive request creates an empty file using metadata. A failed or uncertain upload may already have created the file; inspect Drive before replaying. The native Drive node also updates metadata after creating the file, so that later step can fail after creation. No workflow retry or rollback is added. Telegram's delivery ID is used for trigger deduplication when available; this is not an exactly-once guarantee. Callback acknowledgment confirms receipt, not completion of the upload.
+
+<details>
+<summary>In n8n</summary>
+
+The source n8n trigger is version 1 and does not check a webhook secret; protect its callback URL. In n8n, select the Telegram and Google Drive credentials and set the folder in **Upload File to GDrive**. The n8n Google OAuth2 helper can refresh credentials and resend a request once after HTTP 401.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

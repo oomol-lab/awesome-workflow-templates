@@ -13,13 +13,20 @@ Convert text into an MP3 using OpenAI speech synthesis.
 
 ## Setup and use
 
-Connect OpenAI in **Generate MP3 speech**. Run Open Flow with text and a voice; the source example is `The quick brown fox jumped over the lazy dog.` with `alloy`. In n8n, edit **Set input text and TTS voice** and connect an OpenAI credential to the HTTP node. Input is limited to 4,096 characters.
+Connect OpenAI in **Generate MP3 speech**. Run Open Flow with text and a voice; the source example is `The quick brown fox jumped over the lazy dog.` with `alloy`. Input is limited to 4,096 characters.
 
 ## Behavior
 
-One request sends the text to `tts-1` and returns MP3 audio. Open Flow produces a downloadable `speech.mp3` artifact; n8n returns binary `data`. Failed synthesis or invalid audio stops the run. If you share the recording, disclose that the voice is AI-generated.
+One request sends the text to `tts-1` and returns MP3 audio. Open Flow produces a downloadable `speech.mp3` artifact. Failed synthesis or invalid audio stops the run. If you share the recording, disclose that the voice is AI-generated.
 
 OpenAI has [announced the shutdown of `tts-1` on January 6, 2027](https://developers.openai.com/api/docs/guides/text-to-speech). The recommended Realtime API replacement uses a different workflow.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, edit **Set input text and TTS voice** and connect an OpenAI credential to the HTTP node. N8n returns binary `data`.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

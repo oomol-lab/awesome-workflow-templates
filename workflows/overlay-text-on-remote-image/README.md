@@ -15,13 +15,18 @@ Add text to a remotely hosted image and return the rendered image.
 
 In Open Flow, create a Bannerbear image template sized for your source image. Add an image layer named `background` covering the canvas and a text layer named `message` above it. Place the text at the desired position, for example x=300, y=500, and set the font size to 100 to match the source example. Adjust image fitting, canvas size, font and text fitting for your images. Set the template UID and Bannerbear connection in **Render image**. The connection needs a V2 project API key and permission to create images. Supply a publicly reachable image URL and text when starting the workflow. Bannerbear fetches the image and processes the text.
 
-In n8n, enter the image URL in **HTTP Request** and the text and position in **Edit Image**. The image editing node operates on the downloaded binary and outputs the edited binary.
-
 ## Behavior
 
-Each manual run overlays the supplied text on one image. Open Flow returns the completed Bannerbear image record and its image URL; n8n returns image binary. Open Flow uses the dimensions and fitting of the configured template, while n8n uses the downloaded image dimensions. Use matching image and canvas dimensions when preserving the source framing matters.
+Each manual run overlays the supplied text on one image. Open Flow returns the completed Bannerbear image record and its image URL. Open Flow uses the dimensions and fitting of the configured template. Use matching image and canvas dimensions when preserving the source framing matters.
 
 The Bannerbear synchronous request waits up to 10 seconds. A failed or uncertain request may already have created an image; check Bannerbear before repeating it. No automatic retry is configured.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, enter the image URL in **HTTP Request** and the text and position in **Edit Image**. The image editing node operates on the downloaded binary and outputs the edited binary. N8n returns image binary. N8n uses the downloaded image dimensions.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

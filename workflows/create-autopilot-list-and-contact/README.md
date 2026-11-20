@@ -13,11 +13,18 @@ Create a list, upsert a contact twice, and read all contacts in that list.
 
 ## Setup and use
 
-Bind the secret Variable AUTOPILOT_API_KEY to your Autopilot API key. Enter the list name, contact email and company in **Configure list and contact**. In n8n connect the Autopilot API credential and enter the email in **Autopilot1**. Run one format manually.
+Bind the secret Variable AUTOPILOT_API_KEY to your Autopilot API key. Enter the list name, contact email and company in **Configure list and contact**. Run one format manually.
 
 ## Behavior
 
 Create a list, add or update the contact in that list, update its company, and retrieve all pages of contacts from the newly created list. If any write has an unknown result, inspect Autopilot before rerunning; the list or contact may already exist.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n connect the Autopilot API credential and enter the email in **Autopilot1**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

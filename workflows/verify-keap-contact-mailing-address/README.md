@@ -13,11 +13,18 @@ Verify Keap contact mailing addresses and apply deliverability tags.
 
 ## Setup and use
 
-Subscribe a Keap contact REST Hook to the supplied n8n webhook. Configure n8n **Choose execution mode** as n8n to process there or openflow to relay the complete event to Open Flow. In n8n set a Keap bearer credential on **Read Keap contact**, a Keap connection on both tag nodes, Lob HTTP Basic Auth with API key as username and empty password, and numeric tag IDs in the tag nodes. For Open Flow bind secret Variable KEAP_ACCESS_TOKEN with contact read and tag write permissions to all three Keap HTTP nodes, connect Lob, enter the two numeric tag IDs in **Prepare deliverability tag**, and set **Forward to Open Flow** to its webhook URL. Use one mode.
+For Open Flow bind secret Variable KEAP_ACCESS_TOKEN with contact read and tag write permissions to all three Keap HTTP nodes, connect Lob, enter the two numeric tag IDs in **Prepare deliverability tag**, and set **Forward to Open Flow** to its webhook URL.
 
 ## Behavior
 
 Keap REST Hook events can contain multiple contact IDs. The workflow reads each contact, selects its BILLING address, otherwise SHIPPING, otherwise its first address, and asks Lob to verify it. Exactly deliverable applies the configured deliverable tag; other returned statuses apply the other tag. Configure Keap contacts with US mailing addresses. Both webhook entrances acknowledge before downstream work and do not authenticate the sender; restrict access and inspect execution history. Full contact data may appear in execution history. If a tag write is uncertain, inspect the contact before retrying; earlier contacts in the batch may already have been tagged.
+
+<details>
+<summary>In n8n</summary>
+
+Subscribe a Keap contact REST Hook to the supplied n8n webhook. Configure n8n **Choose execution mode** as n8n to process there or openflow to relay the complete event to Open Flow. In n8n set a Keap bearer credential on **Read Keap contact**, a Keap connection on both tag nodes, Lob HTTP Basic Auth with API key as username and empty password, and numeric tag IDs in the tag nodes.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

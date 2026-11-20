@@ -13,13 +13,20 @@ Archive older unstarred inbox messages on workdays while keeping starred message
 
 ## Setup
 
-Connect Gmail with read and modify permission. Review the selected mailbox and stop concurrent mailbox changes while this workflow runs. Activate one format. The workflow removes the INBOX label; it does not delete messages.
+Connect Gmail with read and modify permission. Review the selected mailbox and stop concurrent mailbox changes while this workflow runs. The workflow removes the INBOX label; it does not delete messages.
 
 ## Behavior
 
-At midnight UTC on weekdays, the workflow finds inbox messages received before 24 hours earlier and archives those without the STARRED label. Open Flow runs at the minute boundary; n8n uses a fixed second within the minute. Open Flow reads every search page before modifying messages and archives in batches of up to 1,000; n8n archives matching messages individually. Empty search results perform no writes.
+At midnight UTC on weekdays, the workflow finds inbox messages received before 24 hours earlier and archives those without the STARRED label. Open Flow runs at the minute boundary. Open Flow reads every search page before modifying messages and archives in batches of up to 1,000. Empty search results perform no writes.
 
 A message starred or otherwise changed during a run may still be archived because Gmail does not provide an atomic condition on a label update. Prevent overlapping runs and review the mailbox before retrying a failed or uncertain update; earlier changes are not rolled back. Open Flow must fit the selected message IDs and page tokens within the host execution limits.
+
+<details>
+<summary>In n8n</summary>
+
+N8n uses a fixed second within the minute. N8n archives matching messages individually.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

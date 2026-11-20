@@ -15,13 +15,20 @@ Classify customer feedback sentiment and save the feedback with the result in Go
 
 Configure the model in **Classify sentiment** and connect Google Sheets. Set the spreadsheet ID and range in **Append feedback to Sheets**. Create a sheet named Feedback with columns in this order: Timestamp, Category, Customer Feedback, Customer Name, Customer contact, Entered by, Sentiment.
 
-The Open Flow webhook is public and accepts JSON such as `{"name":"Alex","category":"Product","feedback":"Easy to use","contact":"alex@example.com"}`; restrict access to its URL. Contact is optional. In n8n, configure the OpenAI and Google Sheets credentials, select the spreadsheet and sheet in **Add customer feedback to Google Sheets**, and use the included customer feedback form. Activate one format.
+The Open Flow webhook is public and accepts JSON such as `{"name":"Alex","category":"Product","feedback":"Easy to use","contact":"alex@example.com"}`; restrict access to its URL. Contact is optional.
 
 ## Behavior
 
-Each submission sends its feedback text to the model for sentiment classification, then appends the original fields and classification as a new row. Open Flow uses its receipt time for Timestamp; n8n uses the form submission time. Model output can be wrong and should be reviewed. Do not submit information you are not authorized to send to the model provider. Form data and contact details can appear in execution history and the sheet.
+Each submission sends its feedback text to the model for sentiment classification, then appends the original fields and classification as a new row. Open Flow uses its receipt time for Timestamp. Model output can be wrong and should be reviewed. Do not submit information you are not authorized to send to the model provider. Form data and contact details can appear in execution history and the sheet.
 
 An invalid submission or model failure stops before writing. An uncertain append may already have succeeded; check the sheet before replaying. Repeated submissions can create duplicate rows.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, configure the OpenAI and Google Sheets credentials, select the spreadsheet and sheet in **Add customer feedback to Google Sheets**, and use the included customer feedback form. N8n uses the form submission time.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -13,11 +13,18 @@ Check a YouTube channel every 30 minutes and publish an AI-written X post when t
 
 ## Setup and use
 
-Connect YouTube with read access and X with permission to create posts. Set your channel ID in **Set channel and time window**, configure the AI model and choose a schedule timezone. The default gpt-4o-mini snapshot has an announced January 14, 2027 shutdown; check the active model route and choose an available replacement. In n8n, set the channel on **Fetch Latest Videos**. The source tutorial is available at [mrc.fm/ai2x](https://mrc.fm/ai2x).
+Connect YouTube with read access and X with permission to create posts. Set your channel ID in **Set channel and time window**, configure the AI model and choose a schedule timezone. The default gpt-4o-mini snapshot has an announced January 14, 2027 shutdown; check the active model route and choose an available replacement. The source tutorial is available at [mrc.fm/ai2x](https://mrc.fm/ai2x).
 
-Each run searches videos from the channel created in the preceding 30 minutes, with a limit of one. The search retains YouTube's default relevance order; it does not guarantee the newest result. YouTube indexing delays, multiple uploads in one window, downtime or overlapping runs can cause missed or duplicate announcements. No persistent deduplication or catch-up is included. Open Flow fires on the minute in UTC by default; n8n uses its workflow timezone and a fixed registration-time second. Open Flow returns posted:false for an empty result; n8n ends without a post.
+Each run searches videos from the channel created in the preceding 30 minutes, with a limit of one. The search retains YouTube's default relevance order; it does not guarantee the newest result. YouTube indexing delays, multiple uploads in one window, downtime or overlapping runs can cause missed or duplicate announcements. No persistent deduplication or catch-up is included. Open Flow fires on the minute in UTC by default. Open Flow returns posted:false for an empty result.
 
-The model is asked to include the video URL and write at most 140 characters. This is a prompt, not a programmatic check; review generated posts and confirm your account settings before enabling the schedule. Open Flow stops on malformed video fields; the source n8n path uses its own node and expression behavior. X may reject a post. Open Flow checks the returned post ID and does not retry posting. The n8n credential helper may refresh and resend on an authentication failure. Inspect X before replaying an uncertain post.
+The model is asked to include the video URL and write at most 140 characters. This is a prompt, not a programmatic check; review generated posts and confirm your account settings before enabling the schedule. Open Flow stops on malformed video fields. X may reject a post. Open Flow checks the returned post ID and does not retry posting. Inspect X before replaying an uncertain post.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, set the channel on **Fetch Latest Videos**. N8n uses its workflow timezone and a fixed registration-time second. N8n ends without a post. The source n8n path uses its own node and expression behavior. The n8n credential helper may refresh and resend on an authentication failure.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

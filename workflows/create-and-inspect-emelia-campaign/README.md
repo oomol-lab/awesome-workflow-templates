@@ -13,11 +13,18 @@ Create a campaign, add a contact to a configured campaign, and retrieve the newl
 
 ## Setup and use
 
-Bind the secret Variable EMELIA_API_KEY to your Emelia API key. Enter the campaign name in **Create campaign** and the existing campaign ID, contact email and first name in **Prepare contact**. In n8n connect the Emelia credential and configure the same values. Run one format manually.
+Bind the secret Variable EMELIA_API_KEY to your Emelia API key. Enter the campaign name in **Create campaign** and the existing campaign ID, contact email and first name in **Prepare contact**. Run one format manually.
 
 ## Behavior
 
 The contact is added to the configured existing campaign, while the final lookup uses the ID of the newly created campaign, as in the source. Both creation and contact insertion write to Emelia. If a write fails or its response is lost, inspect Emelia before rerunning because it may have succeeded.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n connect the Emelia credential and configure the same values.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

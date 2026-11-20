@@ -13,11 +13,18 @@ Create one Asana task with a name in an existing workspace.
 
 ## Setup
 
-Select your Asana account through **Actions** in **Create Asana task**. Run with the task **Name** and **Workspace ID**. The account needs permission to create tasks in that workspace. In n8n, select Asana credentials, set the name and choose the workspace in **Asana**.
+Select your Asana account through **Actions** in **Create Asana task**. Run with the task **Name** and **Workspace ID**. The account needs permission to create tasks in that workspace.
 
-Each run makes one task creation request with only the name and workspace. It does not assign the task, add it to a project, set dates or change other task properties. Asana applies its defaults. Open Flow returns the task fields supplied by the Action; n8n returns the task from the API response.
+Each run makes one task creation request with only the name and workspace. It does not assign the task, add it to a project, set dates or change other task properties. Asana applies its defaults. Open Flow returns the task fields supplied by the Action.
 
 There is no lookup, duplicate detection, update or automatic retry. A failed request stops the run. If a write times out, check Asana before running it again. Repeating a successful run can create another task.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, select Asana credentials, set the name and choose the workspace in **Asana**. N8n returns the task from the API response.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

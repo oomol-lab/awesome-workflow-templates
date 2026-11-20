@@ -15,13 +15,18 @@ Verify a US mailing address and add a deliverability tag to its HighLevel contac
 
 Connect Lob and HighLevel. Set your HighLevel location ID in **Prepare address and contact**. The HighLevel connection needs contact write permission for that location. POST a contact to the webhook with `address`, an email or phone, and either `zip_code` or both `city` and `state`. Use optional `address2` for a unit or secondary address line. Values should be strings so ZIP codes retain leading zeros.
 
-In n8n, configure the location ID in **Prepare address and contact**, HTTP Basic Auth for Lob with the API key as username and an empty password, and Header Auth named `Authorization` with value `Bearer YOUR_HIGHLEVEL_TOKEN` on both HighLevel requests. Use a location-scoped private integration token with contact write permission. Both formats use an immediate webhook acknowledgement; check the execution for the outcome. Protect the webhook URL and allow only trusted senders.
-
 ## Behavior
 
 Lob verifies the US address. Exactly `deliverable` adds **Mailing Address Deliverable**; the other documented deliverability results add **Mailing Address NOT Deliverable**. HighLevel matches or creates a contact by email or phone according to the location's duplicate settings, then adds the selected tag without replacing existing tags. If email and phone match different contacts, HighLevel applies its configured matching order. Review the result and the service's detailed address status.
 
 The contact upsert and tag addition are separate writes. If the second fails, the contact may already have changed; an uncertain write may also have succeeded. Inspect HighLevel before retrying. No automatic retry or duplicate protection is added.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, configure the location ID in **Prepare address and contact**, HTTP Basic Auth for Lob with the API key as username and an empty password, and Header Auth named `Authorization` with value `Bearer YOUR_HIGHLEVEL_TOKEN` on both HighLevel requests. Use a location-scoped private integration token with contact write permission. Both formats use an immediate webhook acknowledgement; check the execution for the outcome. Protect the webhook URL and allow only trusted senders.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -13,11 +13,18 @@ Submit a person and company to Icypeas to discover a professional email address.
 
 ## Setup
 
-In Open Flow, connect Icypeas in **Submit the email search** and replace the first name, last name and company domain or name. In n8n, configure an HTTP Header Auth credential named Authorization with your Icypeas API key, and replace those three fields in **Submit the email search**. Run one format.
+In Open Flow, connect Icypeas in **Submit the email search** and replace the first name, last name and company domain or name.
 
 ## Behavior
 
 A manual run submits one search. The response includes the search item ID and its current status when the service provides them. Icypeas processes searches asynchronously; inspect the item in Icypeas to see the result. If a submission fails or its outcome is uncertain, check Icypeas before retrying.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, configure an HTTP Header Auth credential named Authorization with your Icypeas API key, and replace those three fields in **Submit the email search**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -13,11 +13,18 @@ Send a configured text message to a Lark group as an app.
 
 ## Setup and use
 
-Create a Lark app with permission to send messages and add it to the target chat. Obtain a tenant access token and chat ID. In Open Flow set the chat ID and text in **Prepare the message**, then bind the tenant token to a secret Variable in **Send to Lark**. In n8n set the chat ID and text in **Input** and configure Header Auth with `Authorization: Bearer YOUR_TENANT_TOKEN`. Tenant access tokens expire; refresh the credential before it expires.
+Create a Lark app with permission to send messages and add it to the target chat. Obtain a tenant access token and chat ID. In Open Flow set the chat ID and text in **Prepare the message**, then bind the tenant token to a secret Variable in **Send to Lark**. Tenant access tokens expire; refresh the credential before it expires.
 
 ## Behavior
 
 A manual run sends one text message as the app to the configured group. The example message is the source author's website URL. A successful response confirms acceptance by Lark, not that every member read it. If the result is unknown, inspect the chat before retrying to avoid a duplicate.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n set the chat ID and text in **Input** and configure Header Auth with `Authorization: Bearer YOUR_TENANT_TOKEN`.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

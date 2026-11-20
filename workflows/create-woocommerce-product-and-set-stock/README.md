@@ -15,13 +15,18 @@ Create a product, set its stock quantity to 100, then retrieve the same product.
 
 Connect all WooCommerce nodes to the same store with REST API credentials that can create, update and read products. Enable inventory management in WooCommerce. Edit the product name, description and regular price in **Create the product**, and the quantity in **Set stock to 100**. The example creates a product in the store and may make it visible according to store defaults.
 
-In n8n, select the same WooCommerce credentials on all three nodes and edit the matching fields in **WooCommerce** and **WooCommerce1**. Run one format for each intended product.
-
 ## Behavior
 
-Run manually. The first request creates a product, the second enables product stock management and sets its quantity to 100, and the third reads the product using the ID returned by creation. Open Flow returns the ID, name and stock quantity; n8n returns the product from the final node.
+Run manually. The first request creates a product, the second enables product stock management and sets its quantity to 100, and the third reads the product using the ID returned by creation. Open Flow returns the ID, name and stock quantity.
 
 If a request fails or its outcome is uncertain, inspect the store before running again. A product may already exist or its stock may already have changed; earlier writes are not rolled back. The workflow does not deduplicate products.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, select the same WooCommerce credentials on all three nodes and edit the matching fields in **WooCommerce** and **WooCommerce1**. Run one format for each intended product. N8n returns the product from the final node.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

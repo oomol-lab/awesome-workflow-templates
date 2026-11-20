@@ -13,13 +13,20 @@ Create telli contacts and schedule voice-agent calls for new Airtable records.
 
 ## Setup
 
-Connect Airtable and configure the same base and table in **Watch new contacts** and **Read contact**. The table needs a created-time field named Created Time and first_name, last_name and phone_number fields. Optional fields are email, salutation, timezone, external_url and contact_details. Bind the secret Variable TELLI_API_KEY and set your telli agent ID in **Prepare call**. Connect Airtable in n8n, set its table and use Header Auth with Bearer followed by the telli API key on both requests. Set your agent ID in **Schedule Calls Request**.
+Connect Airtable and configure the same base and table in **Watch new contacts** and **Read contact**. The table needs a created-time field named Created Time and first_name, last_name and phone_number fields. Optional fields are email, salutation, timezone, external_url and contact_details. Bind the secret Variable TELLI_API_KEY and set your telli agent ID in **Prepare call**. Set your agent ID in **Schedule Calls Request**.
 
-Activate one format. Open Flow establishes a baseline on the first Airtable poll; add records after that poll completes. Records created during the baseline query may be absorbed into it.
+Open Flow establishes a baseline on the first Airtable poll; add records after that poll completes. Records created during the baseline query may be absorbed into it.
 
 ## Behavior
 
 New records are processed sequentially: the Airtable record ID and contact fields create a telli contact, then the returned contact_id and configured agent ID schedule a call. Contact information is sent to telli. The add-contact endpoint is deprecated but remains operational alongside telli's current contacts API. If either write fails or its result is unknown, inspect telli before retrying; earlier contacts or calls are not rolled back and retries can duplicate them.
+
+<details>
+<summary>In n8n</summary>
+
+Connect Airtable in n8n, set its table and use Header Auth with Bearer followed by the telli API key on both requests.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

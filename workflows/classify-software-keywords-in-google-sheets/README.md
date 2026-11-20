@@ -13,7 +13,7 @@ Identify keywords containing a known IT software, service, tool or app name and 
 
 ## Setup
 
-Set the spreadsheet ID and worksheet name in **Choose the keyword worksheet**. The first row must contain one each of `Number`, `Keyword` and `Service?`. Every populated row needs a Number match key and a nonblank Keyword value. Connect both reads and the write node to Google Sheets with edit access. Configure a gateway route for `gpt-4o-mini`. The original default model is scheduled to shut down on January 14, 2027. Before deploying, check the [official model page](https://platform.openai.com/docs/models/gpt-4o-mini) and [deprecations](https://platform.openai.com/docs/deprecations) for an available replacement, then update the model in both formats.
+Set the spreadsheet ID and worksheet name in **Choose the keyword worksheet**. The first row must contain one each of `Number`, `Keyword` and `Service?`. Every populated row needs a Number match key and a nonblank Keyword value. Connect both reads and the write node to Google Sheets with edit access. Configure a gateway route for `gpt-4o-mini`. The original default model is scheduled to shut down on January 14, 2027. Before deploying, check the [official model page](https://platform.openai.com/docs/models/gpt-4o-mini) and [deprecations](https://platform.openai.com/docs/deprecations) for an available replacement, then update the model.
 
 ## Behavior
 
@@ -21,9 +21,12 @@ Read the complete worksheet once, process six keyword rows at a time and wait fi
 
 The result retains every classified keyword, its original row and per-batch updated/unmatched counts. Empty or header-only sheets complete without model calls, waits or writes. Invalid rows or classifications fail clearly. A failed model or match read stops before that batch’s write; an uncertain write stops later batches without automatic replay or rollback. Earlier batches may already be saved. Check the sheet before restarting. Model classifications need review and are not deterministic. The complete table/state/results must fit the current Code host’s 1 MiB budgets.
 
-## n8n
+<details>
+<summary>In n8n</summary>
 
 Set the same spreadsheet ID and worksheet name in its **Choose the keyword worksheet** Code node. Select Google Sheets OAuth2 credentials in the three HTTP nodes and OpenAI credentials in **OpenAI Chat Model**. Keep `gpt-4o-mini`, the six-item loop, five-second wait and structured parser connected. The original Agent uses its formatter tool internally; no external lookup/tool or Memory is added. The native model client can retry a server or connection failure up to twice; its 401, 403 and 429 paths stop after one attempt. Uncertain sheet writes are never automatically replayed. Open Flow uses one classification round with a typed yes/no result and no retry of a failed model transport call; role/formatting instructions differ from the native formatter-tool protocol. The native Agent retains its ten-iteration cap; Open Flow allows one classification round. The native parser is strengthened to a required yes/no schema; both formats reject malformed or non-yes/no classifications before writing that batch. Native empty sheets finish with no result items; Open Flow returns an empty result with Count zero.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

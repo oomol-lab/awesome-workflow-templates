@@ -13,13 +13,20 @@ Summarize a transcript, research its topics using Wikipedia and email a digest.
 
 ## Setup
 
-Configure a current AI model and Gmail connection. Import the bundle, publish **Wikipedia research tool**, refresh its interface in **Podcast digest**, and configure its User-Agent with a contact. Supply a transcript, recipient and a unique request ID; enable persistent State. In n8n replace the sample transcript and recipient, configure OpenAI and Gmail credentials, and create a Data Table with item_key and status text columns. Use one format and avoid overlapping runs.
+Configure a current AI model and Gmail connection. Import the bundle, publish **Wikipedia research tool**, refresh its interface in **Podcast digest**, and configure its User-Agent with a contact. Supply a transcript, recipient and a unique request ID; enable persistent State. Use one format and avoid overlapping runs.
 
 ## Behavior
 
-A manual run splits the transcript into 6000-character chunks with 1000-character overlap, refines a summary across all chunks, generates topics and questions, and asks an Agent to research each topic with Wikipedia. The email contains the summary, topic research and questions. Open Flow uses fixed character windows; n8n uses its original recursive splitter. Review model output and sources. Transcript data is sent to the model provider; topic queries are sent to Wikipedia. Workflow input and Code data size limits apply.
+A manual run splits the transcript into 6000-character chunks with 1000-character overlap, refines a summary across all chunks, generates topics and questions, and asks an Agent to research each topic with Wikipedia. The email contains the summary, topic research and questions. Open Flow uses fixed character windows. Review model output and sources. Transcript data is sent to the model provider; topic queries are sent to Wikipedia. Workflow input and Code data size limits apply.
 
-An unknown email outcome may already have sent. Inspect Gmail before clearing a pending request in persistent State or the n8n Data Table. Use a new request ID only for a new intended digest.
+An unknown email outcome may already have sent. Use a new request ID only for a new intended digest.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n replace the sample transcript and recipient, configure OpenAI and Gmail credentials, and create a Data Table with item_key and status text columns. N8n uses its original recursive splitter. Inspect Gmail before clearing a pending request in persistent State or the n8n Data Table.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

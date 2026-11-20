@@ -15,11 +15,16 @@ Create a Harvest client with a configured name and return its complete record.
 
 Set the name in **Set client name**. In **Create Harvest client**, select a Harvest administrator account and allow **Provider API** access. The connection manages its token and Harvest account ID. Provider API permission is separate from individual Action permissions. Run manually after setup.
 
-In n8n, select Harvest credentials in **Harvest**, choose the destination account ID and replace the client name. Use an administrator account that can create clients.
-
 The workflow sends one client creation request. It accepts the completed HTTP 201 response and returns the complete client record. The client’s other properties use Harvest defaults.
 
 Each manual run creates another client. There is no lookup, upsert or duplicate detection. Errors and unexpected responses stop the workflow without a retry or rollback. If a write times out, check Harvest before running it again.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, select Harvest credentials in **Harvest**, choose the destination account ID and replace the client name. Use an administrator account that can create clients.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

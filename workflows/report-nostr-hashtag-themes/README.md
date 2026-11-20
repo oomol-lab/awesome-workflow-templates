@@ -13,15 +13,20 @@ Summarize Nostr hashtag posts and send a themes overview and detailed report by 
 
 ## Setup
 
-Install the [Nostrobots community node](https://github.com/ocknamo/n8n-nodes-nostrobots) in n8n and configure a Nostr relay in **Nostr Read #damus**. For Open Flow, import the n8n workflow, set **Choose processing mode** to relay and enter the Open Flow webhook URL in **Forward Nostr events**. Select an AI model, connect Gmail and Telegram, and set the email and chat ID in both corresponding nodes. Enable persistent State. Restrict access to the Open Flow webhook URL.
-
-For direct n8n processing, choose direct mode, connect the model, Gmail and Telegram credentials, and set both email recipients and chat IDs. Activate only one mode. The source queries the last 180 days of hashtag events.
+Select an AI model, connect Gmail and Telegram, and set the email and chat ID in both corresponding nodes. Enable persistent State. Restrict access to the Open Flow webhook URL.
 
 ## Behavior
 
-The workflow analyzes the fetched posts, extracts themes, prepares a detailed report, and delivers both summaries to Gmail and Telegram. AI results may be inaccurate. Open Flow sends plain text and uses a configurable model; n8n preserves the source model prompts and HTML email formatting.
+The workflow analyzes the fetched posts, extracts themes, prepares a detailed report, and delivers both summaries to Gmail and Telegram. AI results may be inaccurate. Open Flow sends plain text and uses a configurable model.
 
 If a delivery fails or its result is unknown, inspect both destinations and complete the report manually before entering the pending execution ID in **Prepare hashtag posts** to acknowledge it. Do not replay the report without checking each destination. Keep runs from overlapping.
+
+<details>
+<summary>In n8n</summary>
+
+Install the [Nostrobots community node](https://github.com/ocknamo/n8n-nodes-nostrobots) in n8n and configure a Nostr relay in **Nostr Read #damus**. For Open Flow, import the n8n workflow, set **Choose processing mode** to relay and enter the Open Flow webhook URL in **Forward Nostr events**. For direct n8n processing, choose direct mode, connect the model, Gmail and Telegram credentials, and set both email recipients and chat IDs. Activate only one mode. The source queries the last 180 days of hashtag events. N8n preserves the source model prompts and HTML email formatting.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

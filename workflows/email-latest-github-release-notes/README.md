@@ -13,13 +13,20 @@ Email the latest published GitHub release notes as HTML each day.
 
 ## Setup
 
-Connect GitHub in **Get the latest release** and **Render Markdown**, allowing release reads and Provider API Request access. Set the repository owner and name in **Get the latest release**; the defaults are n8n-io and n8n. Connect Gmail and set the recipient in **Email the release notes**. In n8n, set the repository in **Fetch Github Repo Releases**, connect Gmail and set its recipient. Enable one format.
+Connect GitHub in **Get the latest release** and **Render Markdown**, allowing release reads and Provider API Request access. Set the repository owner and name in **Get the latest release**. Connect Gmail and set the recipient in **Email the release notes**.
 
 ## Behavior
 
 Every day at 00:00 UTC, the workflow reads GitHub's latest published release and emails its notes rendered as HTML. It sends every day even when the release has not changed. An empty or null release body produces an empty message body; if the body field is absent, no email is sent. Drafts and prereleases are excluded by GitHub's latest-release endpoint. A missing release, GitHub API error or rendering failure stops before the email. GitHub may impose rate limits, and the workflow's execution limits apply to large release notes.
 
-GitHub renders the Markdown, so its HTML can differ from the source's renderer. The source inherited the n8n instance timezone; both formats start in UTC. An uncertain Gmail send may already have succeeded, so inspect Sent mail before retrying.
+GitHub renders the Markdown, so its HTML can differ from the source's renderer. An uncertain Gmail send may already have succeeded, so inspect Sent mail before retrying.
+
+<details>
+<summary>In n8n</summary>
+
+The defaults are n8n-io and n8n. In n8n, set the repository in **Fetch Github Repo Releases**, connect Gmail and set its recipient. The source inherited the n8n instance timezone; both formats start in UTC.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

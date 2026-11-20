@@ -13,11 +13,18 @@ Exchange a short-lived Facebook user token and retrieve the first page of associ
 
 ## Setup and use
 
-Create a Meta app, obtain a valid short-lived user token, and grant the permissions needed to list Pages. In Open Flow set the app ID and app-scoped user ID in **Exchange and retrieve tokens**. Bind secret Variables **META_APP_SECRET** and **FACEBOOK_SHORT_TOKEN**. In n8n configure a Custom Auth credential for **Get long-lived user token** with JSON `{"qs":{"client_id":"YOUR_APP_ID","client_secret":"YOUR_APP_SECRET","fb_exchange_token":"YOUR_SHORT_TOKEN"}}`; set the app-scoped user ID in **Get Page tokens**.
+Create a Meta app, obtain a valid short-lived user token, and grant the permissions needed to list Pages. In Open Flow set the app ID and app-scoped user ID in **Exchange and retrieve tokens**. Bind secret Variables **META_APP_SECRET** and **FACEBOOK_SHORT_TOKEN**.
 
 ## Behavior
 
-A manual run exchanges the user token, then requests the first page of the user's Pages and their tokens. Open Flow returns the user token and Page response; in n8n the user token is in **Get long-lived user token** and Page tokens are in **Get Page tokens**. They are sensitive and appear in workflow results and execution history; restrict access to runs and remove history according to your retention policy. The Page response can include a paging link for additional pages. A failed request stops the workflow. Meta's [token guide](https://developers.facebook.com/documentation/facebook-login/guides/access-tokens/get-long-lived) describes token validity and permissions.
+A manual run exchanges the user token, then requests the first page of the user's Pages and their tokens. Open Flow returns the user token and Page response. They are sensitive and appear in workflow results and execution history; restrict access to runs and remove history according to your retention policy. The Page response can include a paging link for additional pages. A failed request stops the workflow. Meta's [token guide](https://developers.facebook.com/documentation/facebook-login/guides/access-tokens/get-long-lived) describes token validity and permissions.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure a Custom Auth credential for **Get long-lived user token** with JSON `{"qs":{"client_id":"YOUR_APP_ID","client_secret":"YOUR_APP_SECRET","fb_exchange_token":"YOUR_SHORT_TOKEN"}}`; set the app-scoped user ID in **Get Page tokens**. In n8n the user token is in **Get long-lived user token** and Page tokens are in **Get Page tokens**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

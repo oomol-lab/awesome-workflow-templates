@@ -15,15 +15,20 @@ Capture standard and full-page screenshots, save them to Dropbox, and email the 
 
 Provide a public website URL, recipient email and a unique submission ID. Configure a Dropbox folder. Bind UPROC_EMAIL and UPROC_API_KEY for the legacy Uproc v2 API and DROPBOX_ACCESS_TOKEN. Configure a verified SES sender and region, bind AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY, and enable persistent State. For temporary AWS credentials bind the same session token to the signing node and SES header.
 
-In n8n configure Uproc, Dropbox and AWS SES credentials, website and recipient in **Create Web + Email Item**, and the verified sender in **Send Email**. Select a Data Table with item_key and status text columns. Use one format per run. Restrict access to execution history because it contains signed requests and addresses.
-
 ## Behavior
 
-Uproc generates a 640-pixel standard and full-page screenshot. Each is saved in Dropbox; the email embeds both original screenshot URLs. Open Flow uses Dropbox's save_url, which may rename files on collision, so use unique submission IDs and inspect the actual saved paths. n8n downloads and uploads the original binary. URLs and images may contain sensitive content.
+Uproc generates a 640-pixel standard and full-page screenshot. Each is saved in Dropbox; the email embeds both original screenshot URLs. Open Flow uses Dropbox's save_url, which may rename files on collision, so use unique submission IDs and inspect the actual saved paths. URLs and images may contain sensitive content.
 
-If either Dropbox save or the email result is uncertain, inspect Dropbox or SES before retrying. Open Flow keeps per-operation pending keys; enter the key and confirmed or absent in the relevant reserve node, replay and clear fields. Confirmed results stop for manual completion; do not replay the completed write. In n8n inspect Data Table rows, complete missing work manually, mark done after confirmation or delete only if no write occurred. Errors can leave earlier saves completed.
+If either Dropbox save or the email result is uncertain, inspect Dropbox or SES before retrying. Open Flow keeps per-operation pending keys; enter the key and confirmed or absent in the relevant reserve node, replay and clear fields. Confirmed results stop for manual completion; do not replay the completed write. Errors can leave earlier saves completed.
 
 [Dropbox save_url](https://opensource.dropbox.com/SwiftyDropbox/api-docs/latest/Classes/FilesRoutes.html) may run asynchronously and names conflicts automatically.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure Uproc, Dropbox and AWS SES credentials, website and recipient in **Create Web + Email Item**, and the verified sender in **Send Email**. Select a Data Table with item_key and status text columns. Use one format per run. Restrict access to execution history because it contains signed requests and addresses. n8n downloads and uploads the original binary. In n8n inspect Data Table rows, complete missing work manually, mark done after confirmation or delete only if no write occurred.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

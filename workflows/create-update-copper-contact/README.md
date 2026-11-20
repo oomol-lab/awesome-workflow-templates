@@ -13,11 +13,18 @@ Create a Copper person, add their work phone and read the contact.
 
 ## Setup
 
-Use a Copper API key and the email of the Copper user who generated it, with permission to create, edit and read people. In Open Flow, create a secret Variable for the API key and bind **Auth Token** on all three HTTP nodes. Run with the account email and the contact's name, work email and work phone. In n8n, connect the Copper credential to all three Copper nodes and edit **Set contact details**.
+Use a Copper API key and the email of the Copper user who generated it, with permission to create, edit and read people. In Open Flow, create a secret Variable for the API key and bind **Auth Token** on all three HTTP nodes. Run with the account email and the contact's name, work email and work phone.
 
 ## Behavior
 
 The workflow creates one person, replaces that person's phone-number list with the supplied work number and reads the same person. It checks the work email and phone on the final record. Copper applies only fields present in the update; the workflow does not send other fields. An error stops later steps. No retry, rollback or duplicate check is performed; a lost response can mean a write succeeded, so inspect Copper before retrying.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect the Copper credential to all three Copper nodes and edit **Set contact details**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

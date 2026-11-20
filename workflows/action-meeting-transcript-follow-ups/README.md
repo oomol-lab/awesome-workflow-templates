@@ -13,11 +13,18 @@ Summarize a Google Meet transcript and schedule agreed follow-up meetings.
 
 ## Setup
 
-Configure Google Calendar, Meet and Docs connections, a tool-capable model and persistent State. Import Meeting transcript follow-ups and Follow-up calendar tool, publish Follow-up calendar tool and refresh its interface in the main workflow. Set the same calendar ID in the calendar tool and supply it with the event ID when starting. In n8n configure Google OAuth credentials with Calendar, Meet and Drive access, calendar and event IDs, and a Data Table with item_key, status and response text columns. Activate the workflow so its self-referencing calendar tool can run; use the same calendar ID for both Calendar nodes.
+Configure Google Calendar, Meet and Docs connections, a tool-capable model and persistent State. Import Meeting transcript follow-ups and Follow-up calendar tool, publish Follow-up calendar tool and refresh its interface in the main workflow. Set the same calendar ID in the calendar tool and supply it with the event ID when starting. Activate the workflow so its self-referencing calendar tool can run; use the same calendar ID for both Calendar nodes.
 
 ## Behavior
 
 The workflow matches the timed Calendar event to a single overlapping Meet conference, reads all generated transcript documents, summarizes the discussion and may create agreed follow-up meetings with attendees. The model can make mistakes; review the summary and calendar. The transcript is sent to the model. Avoid overlapping runs. Inspect the calendar before clearing pending checkpoints after an uncertain event creation. The calendar tool requires RFC3339 timestamps with explicit timezone offsets; invitations are sent to the supplied attendees. Transcripts must have FILE_GENERATED status and accessible Docs files.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure Google OAuth credentials with Calendar, Meet and Drive access, calendar and event IDs, and a Data Table with item_key, status and response text columns.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

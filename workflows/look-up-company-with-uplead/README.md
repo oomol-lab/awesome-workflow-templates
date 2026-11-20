@@ -13,11 +13,18 @@ Look up company information by name using UpLead.
 
 ## Setup
 
-Create a secret Variable named `UPLEAD_API_KEY` in Open Flow and bind it to **Look up the company**. Run with a company name. In n8n connect UpLead credentials and enter a company name in **Uplead**. Use one format per lookup.
+Create a secret Variable named `UPLEAD_API_KEY` in Open Flow and bind it to **Look up the company**. Run with a company name. Use one format per lookup.
 
 ## Behavior
 
-A manual run looks up one company name through UpLead. Open Flow returns the complete API response, including its `data` and `userInfo` fields; n8n emits the data object or array and emits no item when data is null. Company names can be ambiguous, so verify the match. A failed request stops the run.
+A manual run looks up one company name through UpLead. Open Flow returns the complete API response, including its `data` and `userInfo` fields. Company names can be ambiguous, so verify the match. A failed request stops the run.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n connect UpLead credentials and enter a company name in **Uplead**. N8n emits the data object or array and emits no item when data is null.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

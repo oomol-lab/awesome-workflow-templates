@@ -13,15 +13,22 @@ Classify incoming WordPress contact inquiries, prepare Gmail drafts for review a
 
 ## Setup
 
-Connect Gmail and Google Sheets and configure the AI model. Set the spreadsheet ID and range in **Append the inquiry log**. The sheet columns, in order, are DATE, FIRST NAME, LAST NAME, EMAIL, PHONE, MESSAGE, CLASSIFIED and DRAFT. In n8n connect the OpenAI model, Gmail and Google Sheets, and configure the spreadsheet and sheet. Enable one format.
+Connect Gmail and Google Sheets and configure the AI model. Set the spreadsheet ID and range in **Append the inquiry log**. The sheet columns, in order, are DATE, FIRST NAME, LAST NAME, EMAIL, PHONE, MESSAGE, CLASSIFIED and DRAFT.
 
-Install [Contact Form 7](https://contactform7.com/) and [CF7 to Webhook](https://wordpress.org/plugins/cf7-to-zapier/). In the form, use exactly five named fields that produce text values: first_name, last_name, email, phone and message; email and message are required and the others may be empty. In the form’s Webhook settings, enable sending and enter this workflow’s webhook URL; use the default POST and JSON body, with no custom body or special mail tags. The plugin sends after Contact Form 7 reports its own mail as sent, so configure that mail delivery too. Each field is limited to 10,000 characters. Open Flow rejects additional JSON keys; n8n ignores them. Protect the webhook with access controls appropriate to your deployment: it does not authenticate the sender itself. Its HTTP 200 acknowledges receipt, not successful drafting or logging.
+Install [Contact Form 7](https://contactform7.com/) and [CF7 to Webhook](https://wordpress.org/plugins/cf7-to-zapier/). In the form, use exactly five named fields that produce text values: first_name, last_name, email, phone and message; email and message are required and the others may be empty. In the form’s Webhook settings, enable sending and enter this workflow’s webhook URL; use the default POST and JSON body, with no custom body or special mail tags. The plugin sends after Contact Form 7 reports its own mail as sent, so configure that mail delivery too. Each field is limited to 10,000 characters. Open Flow rejects additional JSON keys. Protect the webhook with access controls appropriate to your deployment: it does not authenticate the sender itself. Its HTTP 200 acknowledges receipt, not successful drafting or logging.
 
 ## Behavior
 
 An Agent classifies the inquiry as Product Info, Order Info or Other request and drafts a subject and reply. The workflow creates a Gmail draft addressed to the submitter and then appends the inquiry, classification and generated reply to the sheet. It does not send the draft. Review it for accuracy and replace any placeholders before sending. Invalid generated results, subjects over 300 characters or replies over 40,000 characters stop before a draft is created. The log date uses UTC. Form content is sent to the configured model; restrict access to executions and the sheet because they contain contact details.
 
-A failed or uncertain Gmail draft creation may already have succeeded and prevents the sheet step. A later sheet error can leave a draft without a log row. Inspect both services before retrying: repeated requests can create duplicates. No workflow-level write retry or cross-run deduplication is added. n8n OAuth may refresh credentials and retry a request once after an HTTP 401.
+A failed or uncertain Gmail draft creation may already have succeeded and prevents the sheet step. A later sheet error can leave a draft without a log row. Inspect both services before retrying: repeated requests can create duplicates. No workflow-level write retry or cross-run deduplication is added.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n connect the OpenAI model, Gmail and Google Sheets, and configure the spreadsheet and sheet. N8n ignores them. n8n OAuth may refresh credentials and retry a request once after an HTTP 401.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

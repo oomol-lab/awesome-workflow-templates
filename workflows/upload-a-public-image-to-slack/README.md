@@ -15,11 +15,16 @@ Download a public image and upload its bytes to a Slack channel with a comment.
 
 Connect Slack with `files:write` and access to the target channel. In **Validate image and channel**, enter a public HTTPS PNG URL, the filename Slack should display, and the channel ID. The source image URL returned HTTP 404 when checked, so provide an available image. The example filename uses the source URL basename.
 
-In n8n, set the image URL in **Download the file**, and set the channel ID and filename in **Post to Slack**. Connect Slack credentials. Run one format for each intended upload.
-
 ## Behavior
 
-Run manually to download the file bytes and upload them to the configured channel with the comment “This is the file”. Open Flow returns the Slack file ID and upload result; n8n returns the native upload result. If upload completion fails or the result is uncertain, inspect the channel before retrying: the file may already have been uploaded.
+Run manually to download the file bytes and upload them to the configured channel with the comment “This is the file”. Open Flow returns the Slack file ID and upload result. If upload completion fails or the result is uncertain, inspect the channel before retrying: the file may already have been uploaded.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, set the image URL in **Download the file**, and set the channel ID and filename in **Post to Slack**. Connect Slack credentials. Run one format for each intended upload. N8n returns the native upload result.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

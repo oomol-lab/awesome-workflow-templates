@@ -13,11 +13,18 @@ Create an Intercom user contact from an email address.
 
 ## Setup
 
-In Open Flow connect Intercom with contact write permission, then run with the email address. The connection determines the Intercom region. In n8n, create an HTTP Header Auth credential with name `Authorization` and value `Bearer YOUR_INTERCOM_ACCESS_TOKEN`; select it in **Create the Intercom user** and replace the email placeholder. The n8n URL targets the US API; use `https://api.eu.intercom.io/contacts` or `https://api.au.intercom.io/contacts` for those regions. Run one format.
+In Open Flow connect Intercom with contact write permission, then run with the email address. The connection determines the Intercom region.
 
 ## Behavior
 
 A manual run creates one contact with role `user` and returns Intercom's contact record. Intercom rejects a duplicate contact instead of updating it. If a request fails or its outcome is uncertain, check Intercom before retrying; it may already have created the contact.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, create an HTTP Header Auth credential with name `Authorization` and value `Bearer YOUR_INTERCOM_ACCESS_TOKEN`; select it in **Create the Intercom user** and replace the email placeholder. The n8n URL targets the US API; use `https://api.eu.intercom.io/contacts` or `https://api.au.intercom.io/contacts` for those regions.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

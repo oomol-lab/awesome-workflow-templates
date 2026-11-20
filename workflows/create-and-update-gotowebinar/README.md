@@ -13,11 +13,18 @@ Create a webinar, update a configured webinar description, and retrieve that web
 
 ## Setup and use
 
-Provide a GoToWebinar OAuth access token in the secret Variable GOTOWEBINAR_ACCESS_TOKEN. Set the organizer key, existing webinar key, subject, future start and end times in ISO 8601 format, and description in **Configure webinar actions**. Refresh the token when it expires. In n8n connect the GoToWebinar OAuth credential and update the dates and existing webinar key. Run one format manually.
+Provide a GoToWebinar OAuth access token in the secret Variable GOTOWEBINAR_ACCESS_TOKEN. Set the organizer key, existing webinar key, subject, future start and end times in ISO 8601 format, and description in **Configure webinar actions**. Refresh the token when it expires. Run one format manually.
 
 ## Behavior
 
 The workflow creates a new webinar, updates the description on the configured existing webinar without notifying participants, and reads that existing webinar. The update and lookup target the configured key, not the newly created webinar. If either write has an unknown result, inspect GoToWebinar before rerunning; the create or update may already have succeeded.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n connect the GoToWebinar OAuth credential and update the dates and existing webinar key.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

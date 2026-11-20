@@ -13,11 +13,18 @@ Create a Fastmail masked email and return the address to the webhook caller.
 
 ## Setup and use
 
-Bind a Fastmail API token with Masked Email access to both Open Flow HTTP nodes as secret Variable FASTMAIL_API_TOKEN. In n8n configure HTTP Header Auth with Authorization as the header name and Bearer followed by a space and the token as its value. Activate one workflow and send a JSON POST with optional state and description fields to its webhook. The default state is pending and the default description is Test via N8n.
+Bind a Fastmail API token with Masked Email access to both Open Flow HTTP nodes as secret Variable FASTMAIL_API_TOKEN. Activate one workflow and send a JSON POST with optional state and description fields to its webhook.
 
 ## Behavior
 
 The endpoint reads the Fastmail session, creates one masked email in its primary Masked Email account, and returns an object with email and desciption. The spelling desciption follows the source response. The Open Flow webhook accepts the declared state and description fields. The endpoint does not verify the caller; restrict access because requests create masked addresses. If creation succeeds but the response is lost, inspect Fastmail before retrying to avoid another address.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure HTTP Header Auth with Authorization as the header name and Bearer followed by a space and the token as its value. The default state is pending and the default description is Test via N8n.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

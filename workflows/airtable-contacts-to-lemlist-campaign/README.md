@@ -15,13 +15,18 @@ Add Airtable contacts to one Lemlist campaign and look up each email.
 
 Connect Airtable in **Read Airtable contacts** and set the base and table. Supply text fields named `Email` and `Name`. Connect Lemlist to both API request nodes and allow Provider API Request. Set the campaign ID in **Prepare each campaign lead**. The API key's user needs permission to create leads and any associated contacts or companies. Verify the campaign settings: enrolling contacts may begin outreach. Use contacts who have agreed to receive it.
 
-In n8n select Airtable personal access token and Lemlist API credentials. Configure the same base, table and campaign in the Airtable and Lemlist nodes. Run one format for each import.
-
 ## Behavior
 
 Run manually. The workflow reads all Airtable pages and validates every Email and Name before writing. It creates campaign leads in row order, passing Name as firstName, then looks up each email in the same order. Lookups can return leads from multiple campaigns. An empty table makes no Lemlist requests. Existing campaign leads are rejected by Lemlist rather than updated.
 
 A read or validation error stops before creation. A failed or uncertain creation stops subsequent requests; earlier leads may already exist. A lookup failure can occur after all creations succeeded. Check the campaign before rerunning, as the workflow has no rollback, automatic retry or import history. Pages are not a snapshot and large result sets must fit runtime limits.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n select Airtable personal access token and Lemlist API credentials. Configure the same base, table and campaign in the Airtable and Lemlist nodes. Run one format for each import.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

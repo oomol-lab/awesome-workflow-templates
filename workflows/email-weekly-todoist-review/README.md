@@ -13,13 +13,20 @@ Email a weekly review of completed Todoist tasks, grouped by completion date.
 
 ## Setup
 
-Connect Todoist to **Read Todoist completed tasks** and allow Provider API Request access. Connect your email account in **Send the review** and set the recipient. Optionally list Todoist project IDs to omit in **Prepare the email**. In n8n, connect Todoist and SMTP credentials, set sender and recipient in **Send Email**, and edit the ignored project ID list in **Prepare the email**. Run manually or activate one format.
+Connect Todoist to **Read Todoist completed tasks** and allow Provider API Request access. Connect your email account in **Send the review** and set the recipient. Optionally list Todoist project IDs to omit in **Prepare the email**. Run manually or activate one format.
 
 ## Behavior
 
 On Friday at 15:00 UTC, or when run manually, the workflow requests completed tasks for the previous seven days and emails one HTML list grouped by UTC completion date. The start is inclusive and the end exclusive. Empty results or only ignored projects send no email. It reads all pages before sending; errors, repeated cursors or more than 100 pages stop the run before email. HTML characters in task content are escaped. The list reflects what Todoist returns and may change while pagination is in progress.
 
-The source inherited the n8n instance timezone; both templates use UTC. Check the time before activation. An email with an uncertain outcome may have been accepted; check the recipient before retrying.
+Check the time before activation. An email with an uncertain outcome may have been accepted; check the recipient before retrying.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect Todoist and SMTP credentials, set sender and recipient in **Send Email**, and edit the ignored project ID list in **Prepare the email**. The source inherited the n8n instance timezone; both templates use UTC.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -13,13 +13,20 @@ Search recent AI news with Perplexity and post one headline and link to X.
 
 ## Setup
 
-Connect Perplexity in **Find recent AI news** and X in **Post the headline on X**. The X account needs permission to publish. In n8n configure a Header Auth credential named `Authorization` with value `Bearer YOUR_PERPLEXITY_API_KEY` on **Perplexity**, and connect an X account on **Post to X**. Review the question, source-domain filter and schedule before activating one format.
+Connect Perplexity in **Find recent AI news** and X in **Post the headline on X**. The X account needs permission to publish. Review the question, source-domain filter and schedule before activating one format.
 
 ## Behavior
 
 The workflow searches for AI news from the past day, with search restricted to `perplexity.ai`, and asks for one short headline and article link. It posts a nonempty response of at most 200 characters containing a link. Perplexity may generate incorrect or repeated content; the workflow does not independently verify the article or keep post history. Review the account and topic before enabling automatic public posting.
 
-Open Flow runs every 21 hours on its UTC interval grid. n8n uses a 21-hour recurrence starting at minute 00; its scheduler and start time can differ. The source selected a random minute and inherited its instance timezone. A failed or uncertain post may already have been published; check X before retrying. No automatic post retry or deduplication is added.
+Open Flow runs every 21 hours on its UTC interval grid. The source selected a random minute and inherited its instance timezone. A failed or uncertain post may already have been published; check X before retrying. No automatic post retry or deduplication is added.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure a Header Auth credential named `Authorization` with value `Bearer YOUR_PERPLEXITY_API_KEY` on **Perplexity**, and connect an X account on **Post to X**. n8n uses a 21-hour recurrence starting at minute 00; its scheduler and start time can differ.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

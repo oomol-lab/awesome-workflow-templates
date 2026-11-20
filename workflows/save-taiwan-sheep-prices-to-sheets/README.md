@@ -13,13 +13,20 @@ Fetch Taiwan sheep market quotations for a date range and append them to Google 
 
 ## Setup
 
-Create a sheet with columns in this order: transDate, marketID, shortName, name, productID, productName, productTypeName, quantity, avgWeight, avgPrice, highestPrice, Record_ID. In **Choose the dates and market**, set dates as YYYY/MM/DD. Leave market empty for all markets or enter an exact market shortName. Connect Google Sheets and set the spreadsheet ID and A1 range in **Append the quotations**. In n8n set the same dates, market, spreadsheet ID and sheet name in **Choose the dates and market**, and connect its Google Sheets credential. Run either format manually.
+Create a sheet with columns in this order: transDate, marketID, shortName, name, productID, productName, productTypeName, quantity, avgWeight, avgPrice, highestPrice, Record_ID. In **Choose the dates and market**, set dates as YYYY/MM/DD. Leave market empty for all markets or enter an exact market shortName. Connect Google Sheets and set the spreadsheet ID and A1 range in **Append the quotations**. Run the workflow manually.
 
 ## Behavior
 
 The workflow reads Taiwan Ministry of Agriculture sheep quotations for the chosen dates, filters the returned records by market when specified, and appends their fields as raw cells. It appends nothing for an empty result. A failed request, incomplete response or sheet error stops the run. If the API indicates another page, the run stops before writing; choose a shorter date range. Open Flow applies HTTP response size and timeout limits.
 
 Runs append rather than deduplicate. Check the sheet before retrying an uncertain write because it may already have succeeded. Repeated date ranges can add duplicate rows. The API may revise historical records.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n set the same dates, market, spreadsheet ID and sheet name in **Choose the dates and market**, and connect its Google Sheets credential.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

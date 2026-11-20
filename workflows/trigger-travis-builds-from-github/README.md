@@ -15,13 +15,18 @@ Request a Travis CI build when a GitHub repository is pushed or a pull request o
 
 Connect GitHub and set the repository owner and name in **Watch repository events**. Set the Travis branch in **Select the next build**; the same branch is used for both event types. Store the full value `token YOUR_TRAVIS_TOKEN` in Secret Variable `TRAVIS_AUTHORIZATION`. The Travis account needs permission to request builds for that repository. Enable persistent State and prevent overlapping runs.
 
-In n8n configure the GitHub credential, repository and branch, and an HTTP Header Auth credential named `Authorization` with value `token YOUR_TRAVIS_TOKEN`, and create a Data Table with text columns delivery_id and status for the checkpoint nodes. Activate one format.
-
 ## Behavior
 
 A push or an opened pull request requests a build for the repository named in the GitHub event. Other pull request actions are ignored. GitHub webhook redeliveries can occur; a pending or completed delivery is not automatically submitted twice. A successful request means Travis accepted it, not that the build succeeded.
 
-If the request fails or its outcome is unknown, inspect Travis. In Open Flow set **acknowledgeId** to the pending delivery ID after inspection, then send another qualifying event; the acknowledged delivery is treated as handled and queued events continue. Clear the field afterward. In n8n mark the pending Data Table row done if handled, or remove it only when retry is safe. IDs accumulate until deliberately cleared.
+If the request fails or its outcome is unknown, inspect Travis. In Open Flow set **acknowledgeId** to the pending delivery ID after inspection, then send another qualifying event; the acknowledged delivery is treated as handled and queued events continue. Clear the field afterward. IDs accumulate until deliberately cleared.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure the GitHub credential, repository and branch, and an HTTP Header Auth credential named `Authorization` with value `token YOUR_TRAVIS_TOKEN`, and create a Data Table with text columns delivery_id and status for the checkpoint nodes. Activate one format. In n8n mark the pending Data Table row done if handled, or remove it only when retry is safe.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

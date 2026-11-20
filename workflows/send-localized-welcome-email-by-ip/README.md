@@ -15,13 +15,18 @@ Look up an IP address and send a localized welcome email through Amazon SES.
 
 In Open Flow, bind secret Uproc account email and legacy v2 API key Variables to **Look up IP location**. In **Prepare next welcome email**, configure a verified SES sender. In **Sign SES request**, set the AWS region and bind secret Variables for access key ID and secret access key; for temporary credentials, bind the same session token Variable to **Sign SES request** and **Send with Amazon SES** → **X-Amz-Security-Token**. Leave both unset for long-lived credentials. Run with an IP address and recipient email.
 
-In n8n, configure Uproc and AWS credentials, the IP and recipient in **Create IP and Email Item**, and the verified sender in both SES nodes. Use one format per welcome email. Restrict access to execution data because signed requests and email addresses appear in runs.
-
 ## Behavior
 
-Uproc returns location data. For each result, country code exactly `ES` sends the Spanish welcome; all other values send the English welcome, matching the source condition. Each message is plain text and retains the source subject and body. No email is sent for an empty result array. Both formats process the Spanish branch first, then the English branch, preserving the order within each branch. Open Flow sends each result sequentially. One email can be sent per returned result.
+Uproc returns location data. For each result, country code exactly `ES` sends the Spanish welcome; all other values send the English welcome, matching the source condition. Each message is plain text and retains the source subject and body. No email is sent for an empty result array. The workflow process the Spanish branch first, then the English branch, preserving the order within each branch. Open Flow sends each result sequentially. One email can be sent per returned result.
 
 An uncertain SES request may already have sent an email. Check delivery before retrying; earlier sends are not rolled back. Open Flow returns the accepted SES responses and count. A successful SES response indicates acceptance, not delivery. The AWS account must permit sending to the configured recipient and sender in the selected region. Open Flow applies execution-size and HTTP limits.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, configure Uproc and AWS credentials, the IP and recipient in **Create IP and Email Item**, and the verified sender in both SES nodes. Use one format per welcome email. Restrict access to execution data because signed requests and email addresses appear in runs.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

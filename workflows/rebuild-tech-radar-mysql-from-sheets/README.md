@@ -13,13 +13,20 @@ Replace the tech radar table each month using the current sheet.
 
 ## Setup
 
-Create the existing MySQL table techradar with the expected columns and connect Google Sheets and MySQL in n8n. Select a Data Table with item_key and status text columns. In Open Flow configure the sheet and enable persistent State. Enable the n8n relay webhook, set Header Auth to Authorization: Bearer plus a secret, set its URL in **Run MySQL rebuild via n8n**, and bind RADAR_MYSQL_RELAY_TOKEN. Activate one schedule only.
+In Open Flow configure the sheet and enable persistent State. Activate one schedule only.
 
 ## Use
 
 At 22:00 UTC on the first of each month, the workflow reads the sheet and replaces all table rows. The sheet must have the columns name, ring, quadrant, isStrategicDirection, isUsedByChildCompany1, isUsedByChildCompany2, isUsedByChildCompany3, isNew, status and description. A successfully read empty sheet clears the table. A failed read or malformed header stops before clearing it; the source cleared the table before attempting the read.
 
-The original TRUNCATE commits separately from insertion. A failed or uncertain run can leave the table empty or partially rebuilt. Inspect MySQL and the pending Data Table row; repair or complete the rebuild before marking it done or clearing the checkpoint. In Open Flow enter the pending key and confirmed or absent in **Reserve monthly refresh** and rerun after reconciliation; clear recovery fields afterward. Do not overlap refreshes.
+The original TRUNCATE commits separately from insertion. A failed or uncertain run can leave the table empty or partially rebuilt. In Open Flow enter the pending key and confirmed or absent in **Reserve monthly refresh** and rerun after reconciliation; clear recovery fields afterward. Do not overlap refreshes.
+
+<details>
+<summary>In n8n</summary>
+
+Create the existing MySQL table techradar with the expected columns and connect Google Sheets and MySQL in n8n. Select a Data Table with item_key and status text columns. Enable the n8n relay webhook, set Header Auth to Authorization: Bearer plus a secret, set its URL in **Run MySQL rebuild via n8n**, and bind RADAR_MYSQL_RELAY_TOKEN. Inspect MySQL and the pending Data Table row; repair or complete the rebuild before marking it done or clearing the checkpoint.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

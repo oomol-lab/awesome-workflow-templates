@@ -13,13 +13,20 @@ Check configured Upwork searches during working hours and post newly observed jo
 
 ## Setup
 
-Connect Apify, Airtable and Slack. Set the same Airtable base ID and table name in **Read saved job records** and **Save the job record**. Create text fields named title, link, paymentType, budget, projectLength, shortBio, skills, publishedDate, normalizedDate, searchUrl and Raw job JSON. In **Start the Upwork search**, configure the search URLs and proxy country for the actor. Set the destination channel ID in **Post the job to Slack**. Prevent overlapping runs. In n8n configure the Apify query-auth credential, MongoDB connection and collection, and Slack connection and channel. The n8n Apify credential is sent in the URL query; upstream or proxy logs can record that URL. Enable one format.
+Connect Apify, Airtable and Slack. Set the same Airtable base ID and table name in **Read saved job records** and **Save the job record**. Create text fields named title, link, paymentType, budget, projectLength, shortBio, skills, publishedDate, normalizedDate, searchUrl and Raw job JSON. In **Start the Upwork search**, configure the search URLs and proxy country for the actor. Set the destination channel ID in **Post the job to Slack**. Prevent overlapping runs.
 
 ## Behavior
 
-Every ten minutes from 03:00 through 14:59 UTC, the workflow runs the configured searches and posts each new job with its title, publication date, link, payment type, budget, skills and description. Jobs are considered duplicates when title and budget match. Missing budgets are treated as empty when matching the same title. Open Flow starts on the minute boundary; n8n uses a fixed second in the scheduled minute.
+Every ten minutes from 03:00 through 14:59 UTC, the workflow runs the configured searches and posts each new job with its title, publication date, link, payment type, budget, skills and description. Jobs are considered duplicates when title and budget match. Missing budgets are treated as empty when matching the same title. Open Flow starts on the minute boundary.
 
-Open Flow waits up to five minutes for the search, reads its dataset and saved records in pages, then saves each new job in Airtable before posting it. The text columns are searchable; Raw job JSON retains the original data types and fields. A failed or uncertain Airtable or Slack write may already have succeeded; inspect both services before retrying. Dataset and record history must fit platform execution limits. n8n stores records in MongoDB. The two formats do not share their histories.
+Open Flow waits up to five minutes for the search, reads its dataset and saved records in pages, then saves each new job in Airtable before posting it. The text columns are searchable; Raw job JSON retains the original data types and fields. A failed or uncertain Airtable or Slack write may already have succeeded; inspect both services before retrying. Dataset and record history must fit platform execution limits. The two formats do not share their histories.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure the Apify query-auth credential, MongoDB connection and collection, and Slack connection and channel. The n8n Apify credential is sent in the URL query; upstream or proxy logs can record that URL. N8n uses a fixed second in the scheduled minute. n8n stores records in MongoDB.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

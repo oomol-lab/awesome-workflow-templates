@@ -13,11 +13,18 @@ Compare two sample fruit datasets by fruit name and inspect four result groups.
 
 ## Setup and use
 
-Run the example manually. In n8n open **Compare Datasets** to inspect its four output branches. In Open Flow inspect the four output arrays; edit the example arrays and comparison code to experiment with other fruit records.
+Run the example manually. In Open Flow inspect the four output arrays; edit the example arrays and comparison code to experiment with other fruit records.
 
 ## Behavior
 
 Both datasets contain five example fruits. Matching uses the fruit name. Strawberry appears only in A, kiwi only in B, and apple, orange and banana are the same. Grape appears in both with different colors: green in A and purple in B. The different result identifies the matching key and shows the values from both inputs.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n open **Compare Datasets** to inspect its four output branches.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

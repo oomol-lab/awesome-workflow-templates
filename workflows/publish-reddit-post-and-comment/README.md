@@ -13,11 +13,18 @@ Publish a text post to a subreddit, verify it and add a comment to the same post
 
 ## Setup
 
-Connect a Reddit account with permission to submit posts, read the chosen subreddit and comment. In Open Flow select the Reddit connection on **Publish text post**, **Read the post** and **Add comment**. Run with a subreddit name without `r/`, title, post text and comment. In n8n, edit **Set post details** and select Reddit credentials on the three Reddit nodes.
+Connect a Reddit account with permission to submit posts, read the chosen subreddit and comment. In Open Flow select the Reddit connection on **Publish text post**, **Read the post** and **Add comment**. Run with a subreddit name without `r/`, title, post text and comment.
 
 ## Behavior
 
 A manual run publishes one text post, reads that post back and adds one comment to it. Both the post and comment are public in accordance with the subreddit’s visibility and rules. Open Flow requests at most one comment while reading the post; the comment tree itself is not used. A missing or mismatched post stops before commenting. A failure or lost response can leave a post or comment on Reddit; inspect the subreddit before repeating an uncertain run. There is no automatic retry or rollback.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, edit **Set post details** and select Reddit credentials on the three Reddit nodes.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

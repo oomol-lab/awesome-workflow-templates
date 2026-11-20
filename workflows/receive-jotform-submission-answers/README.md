@@ -13,11 +13,18 @@ Receive answers when a Jotform form is submitted.
 
 ## Setup and use
 
-Import the n8n workflow, connect Jotform and choose the form in **JotForm Trigger**. Activate it to register the webhook; its URL must be publicly reachable by Jotform. For Open Flow enter its webhook URL in **Forward to Open Flow** and enable that node; leave it disabled for n8n alone. Restrict access to the webhook endpoints.
+Connect Jotform and choose the form in **JotForm Trigger**. Activate it to register the webhook; its URL must be publicly reachable by Jotform. For Open Flow enter its webhook URL in **Forward to Open Flow** and enable that node. Restrict access to the webhook endpoints.
 
 ## Behavior
 
-The trigger resolves form question names and returns answers only, as in the source defaults. The optional relay forwards those answers to Open Flow. Neither endpoint verifies the sender; restrict access and inspect n8n execution history for relay failures. Submission answers may appear in execution history. Event details may appear in execution history.
+The trigger resolves form question names and returns answers only, as in the source defaults. The optional relay forwards those answers to Open Flow. Neither endpoint verifies the sender. Submission answers may appear in execution history. Event details may appear in execution history.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow, connect Jotform and choose the form in **JotForm Trigger**. Leave it disabled for n8n alone. Restrict access and inspect n8n execution history for relay failures.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

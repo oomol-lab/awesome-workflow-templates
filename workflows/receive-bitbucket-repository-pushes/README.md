@@ -13,11 +13,18 @@ Receive push events for a Bitbucket repository.
 
 ## Setup and use
 
-Import the n8n workflow, connect Bitbucket and set the workspace and repository in **Bitbucket Trigger**. Activate it to register a repo:push webhook. For Open Flow enter its webhook URL in **Forward to Open Flow** and enable that node; leave it disabled for n8n alone. Restrict access to the webhook endpoints.
+Connect Bitbucket and set the workspace and repository in **Bitbucket Trigger**. Activate it to register a repo:push webhook. For Open Flow enter its webhook URL in **Forward to Open Flow** and enable that node. Restrict access to the webhook endpoints.
 
 ## Behavior
 
-The trigger emits each complete repository push event. The optional relay forwards it to Open Flow as workflow output. The fixed n8n trigger compares the webhook UUID but does not verify a cryptographic signature; restrict access and inspect n8n execution history for relay failures. Event details may appear in execution history.
+The trigger emits each complete repository push event. The optional relay forwards it to Open Flow as workflow output. Event details may appear in execution history.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow, connect Bitbucket and set the workspace and repository in **Bitbucket Trigger**. Leave it disabled for n8n alone. The fixed n8n trigger compares the webhook UUID but does not verify a cryptographic signature; restrict access and inspect n8n execution history for relay failures.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

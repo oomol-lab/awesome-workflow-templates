@@ -13,11 +13,18 @@ Send a transactional email using a Mandrill template.
 
 ## Setup and use
 
-Create or select a published Mailchimp Transactional template. Configure a verified sender and a recipient in **Send the template email** in Open Flow or **Mandrill** in n8n. The example template name is `welcomeemailv2`; change it to a template in your account. Bind the API key as the secret Variable **MANDRILL_API_KEY** in Open Flow or connect a Mandrill credential in n8n. Run manually.
+Create or select a published Mailchimp Transactional template. Configure a verified sender and a recipient in **Send the template email**. The example template name is `welcomeemailv2`; change it to a template in your account. Bind the API key as the secret Variable **MANDRILL_API_KEY**. Run manually.
 
 ## Behavior
 
-Each run sends one template email. Open Flow returns the recipient and the provider's status; n8n returns the provider response. A `sent` or `queued` status does not prove inbox delivery; `rejected` and `invalid` require attention. If a request fails or its result is unknown, check the Transactional account before retrying to avoid a duplicate message. Restrict access to execution history because it contains recipient data.
+Each run sends one template email. Open Flow returns the recipient and the provider's status. A `sent` or `queued` status does not prove inbox delivery; `rejected` and `invalid` require attention. If a request fails or its result is unknown, check the Transactional account before retrying to avoid a duplicate message. Restrict access to execution history because it contains recipient data.
+
+<details>
+<summary>In n8n</summary>
+
+Configure a verified sender and a recipient in **Send the template email** in Open Flow or **Mandrill** in n8n. Bind the API key as the secret Variable **MANDRILL_API_KEY** in Open Flow or connect a Mandrill credential in n8n. N8n returns the provider response.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

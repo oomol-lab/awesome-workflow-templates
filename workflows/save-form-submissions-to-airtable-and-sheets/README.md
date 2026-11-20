@@ -13,13 +13,20 @@ Store each form submission in both destinations and send a message after each wr
 
 ## Setup
 
-Connect Airtable, Google Sheets and Gmail. Configure an Airtable table with text fields Name, City, Email, Date and Time, and a Google Sheet with these columns in that order. Set the base, table, spreadsheet and range in their nodes. Configure a form or client to POST JSON with name, city and email to the Open Flow webhook. In n8n configure the hosted form, the same destinations and credentials. Activate one format.
+Connect Airtable, Google Sheets and Gmail. Configure an Airtable table with text fields Name, City, Email, Date and Time, and a Google Sheet with these columns in that order. Set the base, table, spreadsheet and range in their nodes. Configure a form or client to POST JSON with name, city and email to the Open Flow webhook.
 
 ## Behavior
 
 Each submission stores the contact and the UTC date and time in both destinations. Each branch sends a separate email to the submitted address after its write. A branch failure can stop the run before the other branch sends its email, even if the other write has succeeded. The webhook is a public write and email entry point; protect the endpoint as appropriate and use addresses authorized to receive messages. Restrict access to stored contact information and execution history.
 
 Writes and sends are independent and cannot be rolled back. A failure or uncertain outcome can leave either destination updated or an email sent. Inspect both destinations and sent mail before replaying to avoid duplicates. The webhook acknowledgment does not confirm processing.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure the hosted form, the same destinations and credentials.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

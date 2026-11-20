@@ -13,11 +13,18 @@ Receive events from a Taiga project.
 
 ## Setup and use
 
-Import the n8n workflow, connect Taiga and select the project in **Taiga Trigger**. Activate it to register the webhook; its URL must be publicly reachable by Taiga. For Open Flow enter its webhook URL in **Forward to Open Flow** and enable that node; leave it disabled for n8n alone. Restrict access to the webhook endpoints.
+Connect Taiga and select the project in **Taiga Trigger**. Activate it to register the webhook; its URL must be publicly reachable by Taiga. For Open Flow enter its webhook URL in **Forward to Open Flow** and enable that node. Restrict access to the webhook endpoints.
 
 ## Behavior
 
-The trigger receives project events for all supported resources and operations by default. The optional relay forwards each event to Open Flow as workflow output. The fixed n8n trigger does not verify Taiga signatures; restrict access and inspect n8n execution history for relay failures. Event data may appear in execution history. Event details may appear in execution history.
+The trigger receives project events for all supported resources and operations by default. The optional relay forwards each event to Open Flow as workflow output. Event data may appear in execution history. Event details may appear in execution history.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow, connect Taiga and select the project in **Taiga Trigger**. Leave it disabled for n8n alone. The fixed n8n trigger does not verify Taiga signatures; restrict access and inspect n8n execution history for relay failures.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

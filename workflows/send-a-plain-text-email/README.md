@@ -15,11 +15,16 @@ Send a plain-text email with a subject to a recipient.
 
 In Open Flow, connect SendGrid with Mail Send permission and use a verified sender. Start the workflow with `from` as an object containing `email`, `to` as an array of recipient objects containing `email`, plus `subject` and `text`. For example, use `{"email":"sender@example.com"}` and `[{"email":"recipient@example.com"}]`, replacing both addresses.
 
-In n8n, connect an SMTP credential and set the sender, recipient, subject and text in **Send Email**. The SMTP server certificate must be valid.
-
 ## Behavior
 
-Each run sends one plain-text email. Open Flow returns SendGrid's acceptance status and any message ID; n8n returns its SMTP send result. Acceptance does not guarantee delivery. A failed or unknown send stops the run; inspect the provider before retrying because the email may already have been accepted. Neither format automatically retries.
+Each run sends one plain-text email. Open Flow returns SendGrid's acceptance status and any message ID. Acceptance does not guarantee delivery. A failed or unknown send stops the run; inspect the provider before retrying because the email may already have been accepted. Neither format automatically retries.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect an SMTP credential and set the sender, recipient, subject and text in **Send Email**. The SMTP server certificate must be valid. N8n returns its SMTP send result.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

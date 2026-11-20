@@ -15,17 +15,22 @@ Run the workflow manually to generate the current six-digit time-based one-time 
 
 In Open Flow, connect **Generate the current TOTP code** to a **TOTP Authenticator** Connection. Set its website URL, username and existing Base32 TOTP secret. The website and username identify the configured account; generation does not contact that website. The secret is stored in the Connection and is not included in the template or returned outputs.
 
-In n8n, select **TOTP API** credentials and enter the same Base32 secret. Its optional Label uses `issuer:username`, for example `Example:alice`. Keep the native **Generate Secret** operation, **SHA1**, **6** digits and a **30**-second period. Despite that native operation label, this workflow generates a current code from your existing secret; it does not create, rotate or reveal a secret or provision a new account.
-
-Both formats use the execution server’s clock. Keep that clock synchronized with the account’s authentication service. The account must use these same algorithm, digit and period settings.
+The workflow uses the execution server’s clock. Keep that clock synchronized with the account’s authentication service. The account must use these same algorithm, digit and period settings.
 
 ## Use
 
-Run **Generate a code now** in Open Flow or run the manual trigger in n8n. The workflow generates one code and returns immediately. Preserve the code as text so leading zeroes remain present. Runs within the same 30-second window normally return the same code. There is no timer, automatic refresh, login attempt or code-verification step.
+Run **Generate a code now**. The workflow generates one code and returns immediately. Preserve the code as text so leading zeroes remain present. Runs within the same 30-second window normally return the same code. There is no timer, automatic refresh, login attempt or code-verification step.
 
-Open Flow returns **Code**, its UTC **Expires At** timestamp, **Remaining Seconds**, **Website** and **Username**. Remaining Seconds rounds the lifetime up to a whole second. n8n returns `token` and `secondsRemaining`; its native lifetime is rounded down and can be `0` just before expiry. These values are snapshots at generation time and do not count down after the run. Use a fresh code if the remaining window is too short.
+Open Flow returns **Code**, its UTC **Expires At** timestamp, **Remaining Seconds**, **Website** and **Username**. Remaining Seconds rounds the lifetime up to a whole second. These values are snapshots at generation time and do not count down after the run. Use a fresh code if the remaining window is too short.
 
 An output confirms generation, not acceptance by the account’s service. Do not publish or share run outputs containing a usable code. Restrict access to the workflow and its run history. Invalid credentials or generation failure stop the run; no replacement secret or guessed code is returned. No workflow retry is added.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, select **TOTP API** credentials and enter the same Base32 secret. Its optional Label uses `issuer:username`, for example `Example:alice`. Keep the native **Generate Secret** operation, **SHA1**, **6** digits and a **30**-second period. Despite that native operation label, this workflow generates a current code from your existing secret; it does not create, rotate or reveal a secret or provision a new account. Run **Generate a code now** in Open Flow or run the manual trigger in n8n. n8n returns `token` and `secondsRemaining`; its native lifetime is rounded down and can be `0` just before expiry.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

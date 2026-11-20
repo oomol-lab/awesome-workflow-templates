@@ -13,9 +13,16 @@ Identify likely personal-data columns in new CSV files and write a review copy w
 
 ## Setup and use
 
-Connect Google Drive and a model. Set separate input and output folders and enable persistent State. In n8n configure the same folders, model and a Data Table with item_key and status columns. Use one format at a time and avoid overlapping runs.
+Connect Google Drive and a model. Set separate input and output folders and enable persistent State. Use one format at a time and avoid overlapping runs.
 
 For each new CSV, the workflow sends the headers and first two rows to the configured model, removes the columns it identifies and uploads a review copy. It preserves all rows in the remaining columns. **Review the result before sharing:** model identification can miss personal information, including information in later rows or unexpected columns. The first two rows are sent to the model provider. Open Flow intermediate data is subject to its 4 MiB execution limit; larger files need another processing method. If an upload has an uncertain result, inspect the output folder before clearing its pending checkpoint.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure the same folders, model and a Data Table with item_key and status columns.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

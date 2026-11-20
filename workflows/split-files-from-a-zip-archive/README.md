@@ -13,11 +13,18 @@ Download an example ZIP and return each extracted file separately.
 
 ## Setup and use
 
-Run manually to download the example ZIP and extract its files. To use another archive, edit the URL in **Download and split ZIP** in Open Flow or **Download Example Data** in n8n. Open Flow allows the example host; configure the HTTP capability for a different host.
+Run manually to download the example ZIP and extract its files. To use another archive, edit the URL in **Download and split ZIP**. Open Flow allows the example host; configure the HTTP capability for a different host.
 
 ## Behavior
 
-Each extracted file keeps its filename and bytes. n8n emits one item per file with binary data under `data`; Open Flow returns an array of file objects with base64 contents. A failed download or invalid ZIP stops the run. The archive and extracted results must fit the platform execution limits.
+Each extracted file keeps its filename and bytes. Open Flow returns an array of file objects with base64 contents. A failed download or invalid ZIP stops the run. The archive and extracted results must fit the platform execution limits.
+
+<details>
+<summary>In n8n</summary>
+
+To use another archive, edit the URL in **Download and split ZIP** in Open Flow or **Download Example Data** in n8n. n8n emits one item per file with binary data under `data`.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

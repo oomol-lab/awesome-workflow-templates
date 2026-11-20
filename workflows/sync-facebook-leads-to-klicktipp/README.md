@@ -13,11 +13,18 @@ Import Facebook Lead Ads contacts and form answers into KlickTipp.
 
 ## Setup
 
-Enable persistent State and prevent overlapping runs. Configure the form ID in **Prepare lead page**, bind secret Variable FACEBOOK_PAGE_TOKEN with a Page token permitted to retrieve the form's leads (including leads_retrieval and the Page/ad permissions required by Meta), and connect KlickTipp using a Listbuilding API key configured for the intended opt-in and tag. In **Select next lead**, set the three KlickTipp field keys for comments, course and payment method. The form must contain email, full name and the source's three German question keys; adapt mappings for your form. Configure Facebook, form, KlickTipp opt-in and custom fields in n8n and activate one format.
+Enable persistent State and prevent overlapping runs. Configure the form ID in **Prepare lead page**, bind secret Variable FACEBOOK_PAGE_TOKEN with a Page token permitted to retrieve the form's leads (including leads_retrieval and the Page/ad permissions required by Meta), and connect KlickTipp using a Listbuilding API key configured for the intended opt-in and tag. In **Select next lead**, set the three KlickTipp field keys for comments, course and payment method. The form must contain email, full name and the source's three German question keys; adapt mappings for your form.
 
 ## Behavior
 
-Open Flow polls all pages of the form every minute. Its first completed poll records existing lead IDs as a baseline; subsequent polls subscribe unseen leads and remember them after KlickTipp confirms. IDs accumulate in State and must fit its limits. Leads created during the initial baseline may be absorbed into it. This differs from the n8n real-time trigger. The Listbuilding API key selects its opt-in and tag; custom field IDs must match the account. Full lead responses may be retained in execution history. Before each subscription Open Flow saves the lead ID as pending. If a run stops after that point, later runs stop without sending until you inspect KlickTipp. In **Select next lead**, enter the pending lead ID in acknowledgeLeadId and set resolution to confirmed if the subscription exists, or retry if it is safe to send again. Run once, then clear both fields.
+Open Flow polls all pages of the form every minute. Its first completed poll records existing lead IDs as a baseline; subsequent polls subscribe unseen leads and remember them after KlickTipp confirms. IDs accumulate in State and must fit its limits. Leads created during the initial baseline may be absorbed into it. The Listbuilding API key selects its opt-in and tag; custom field IDs must match the account. Full lead responses may be retained in execution history. Before each subscription Open Flow saves the lead ID as pending. If a run stops after that point, later runs stop without sending until you inspect KlickTipp. In **Select next lead**, enter the pending lead ID in acknowledgeLeadId and set resolution to confirmed if the subscription exists, or retry if it is safe to send again. Run once, then clear both fields.
+
+<details>
+<summary>In n8n</summary>
+
+Configure Facebook, form, KlickTipp opt-in and custom fields in n8n and activate one format. This differs from the n8n real-time trigger.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

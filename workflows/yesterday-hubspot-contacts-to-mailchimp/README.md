@@ -13,7 +13,7 @@ Add up to 100 HubSpot contacts created yesterday to a Mailchimp audience.
 
 ## Setup
 
-Connect HubSpot in **Find yesterday’s contacts** with contact read and search permission. Connect Mailchimp in **Add the subscriber** and grant Provider API permission; enter the audience ID in **Prepare the next contact**. The audience needs `FNAME` and `LNAME` merge fields. Configure HubSpot OAuth2 credentials, Mailchimp OAuth2 credentials and the same audience in n8n. Enable one format only.
+Connect HubSpot in **Find yesterday’s contacts** with contact read and search permission. Connect Mailchimp in **Add the subscriber** and grant Provider API permission; enter the audience ID in **Prepare the next contact**. The audience needs `FNAME` and `LNAME` merge fields.
 
 Only use contacts who have agreed to receive marketing. This workflow directly sets `subscribed` and does not run a confirmation signup flow.
 
@@ -21,9 +21,16 @@ Only use contacts who have agreed to receive marketing. This workflow directly s
 
 Each day the workflow searches contacts created from yesterday 00:00 inclusive to today 00:00 exclusive in UTC. Like the source, it retrieves at most 100 contacts in descending creation time; it does not process older matches beyond that limit. It sends each returned contact’s email, first name and last name to Mailchimp in order. Missing or non-text email, first name or last name stops before writes. An empty result causes no Mailchimp requests.
 
-The original schedule and date window used the n8n instance timezone. Both formats use UTC and run at 07:00 as a starting point; review your timezone before enabling. n8n Cron V1 uses a fixed randomized second, while Open Flow runs on the minute boundary. The window is calculated at execution time.
+The workflow uses UTC and run at 07:00 as a starting point; review your timezone before enabling. Open Flow runs on the minute boundary. The window is calculated at execution time.
 
 An existing audience member causes an error rather than an update. Earlier additions remain if a later request fails; inspect Mailchimp before rerunning an uncertain request. No automatic retry or rollback is configured. HubSpot search indexing can delay newly created contacts, so a late-indexed contact may miss its window.
+
+<details>
+<summary>In n8n</summary>
+
+Configure HubSpot OAuth2 credentials, Mailchimp OAuth2 credentials and the same audience in n8n. The original schedule and date window used the n8n instance timezone. n8n Cron V1 uses a fixed randomized second.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

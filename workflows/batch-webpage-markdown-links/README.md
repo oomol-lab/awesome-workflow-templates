@@ -15,19 +15,26 @@ Convert the first 40 URLs in a list into Markdown, page metadata and link arrays
 
 The Open Flow JSON imports **Batch Webpage Markdown and Links** and **Webpage Markdown and Links Scraper**. Select your Firecrawl account on the scraper’s **Read Markdown and links** Connector, publish that workflow, then refresh **Scrape ten URLs, pause one minute** in the main workflow to select its published interface. The shared worker revision stays unconfigured until you publish it.
 
-Run the main workflow with `urlsJson`, a JSON array such as `["https://example.com/", "https://example.org/"]`. In n8n, edit the same JSON in **Set Page URLs** and select a Header Auth credential on **Retrieve Page Markdown and Links** with header `Authorization` and value `Bearer <your Firecrawl API key>`.
+Run the main workflow with `urlsJson`, a JSON array such as `["https://example.com/", "https://example.org/"]`.
 
-The workflow uses the first 40 entries in input order. It reports the number omitted by this cap; it does not automatically continue with the remaining URLs. Repeated URLs are processed again. An invalid selected URL stops the batch before any scrape. An empty list returns no pages; n8n produces no items for that empty list.
+The workflow uses the first 40 entries in input order. It reports the number omitted by this cap; it does not automatically continue with the remaining URLs. Repeated URLs are processed again. An invalid selected URL stops the batch before any scrape. An empty list returns no pages.
 
 ## Results and limits
 
 Each page record includes `url`, `title`, `description`, Markdown `content`, an ordered `links` array and nullable `pageStatus`. Missing optional title or description becomes an empty string. A missing requested Markdown value or link array fails the workflow. A successful Firecrawl response can contain a target error page; `pageStatus` exposes the reported target status rather than treating API success as proof of HTTP 200.
 
-Pages run sequentially in groups of ten, with a one-minute pause before another group. There is no pause after the last group. This limits the normal processing cadence; retries and overlapping runs can make additional API requests. Check your account’s rate limits. The main Open Flow mapping step has a two-hour execution budget and the scraper’s **Read Markdown and links** step has a 150-second budget for its configured retry handling. n8n’s HTTP request timeout is 45 seconds per attempt. Cancel the run if you no longer need it.
+Pages run sequentially in groups of ten, with a one-minute pause before another group. There is no pause after the last group. This limits the normal processing cadence; retries and overlapping runs can make additional API requests. Check your account’s rate limits. The main Open Flow mapping step has a two-hour execution budget and the scraper’s **Read Markdown and links** step has a 150-second budget for its configured retry handling. Cancel the run if you no longer need it.
 
-Each page’s read step allows two additional attempts five seconds apart. Open Flow retries only failures its platform marks safe to retry; n8n’s HTTP retry setting applies to node errors more broadly. A failed page stops later URLs and does not replay earlier successful pages. Results can change before a manual rerun. The workflow has no deduplication, resume checkpoint or rollback. It returns records for you to inspect or connect to a destination; no database writes are configured.
+Each page’s read step allows two additional attempts five seconds apart. Open Flow retries only failures its platform marks safe to retry. A failed page stops later URLs and does not replay earlier successful pages. Results can change before a manual rerun. The workflow has no deduplication, resume checkpoint or rollback. It returns records for you to inspect or connect to a destination; no database writes are configured.
 
 The scrape sends each selected URL to Firecrawl. It requests fresh main content with `maxAge: 0`, `onlyMainContent: true`, `formats: ["markdown", "links"]` and a 30-second scrape timeout. Review the [current Firecrawl limits](https://docs.firecrawl.dev/rate-limits) and your allowance before a full batch.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, edit the same JSON in **Set Page URLs** and select a Header Auth credential on **Retrieve Page Markdown and Links** with header `Authorization` and value `Bearer <your Firecrawl API key>`. N8n produces no items for that empty list. n8n’s HTTP request timeout is 45 seconds per attempt. N8n’s HTTP retry setting applies to node errors more broadly.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

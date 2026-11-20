@@ -13,11 +13,18 @@ Check Google Drive portraits against digital passport photo guidance and review 
 
 ## Setup
 
-Import the n8n workflow, connect Google Drive and Gemini, and configure a current vision-capable Gemini model. Activate the photo relay. In Open Flow set **Check original photo** to its production webhook URL and run with photos containing a name and Google Drive file ID. To run n8n directly, set the photo list in **Photo URLs** and use its manual trigger. Restrict access to the relay; it does not authenticate callers.
+Connect Google Drive and Gemini, and configure a current vision-capable Gemini model. Activate the photo relay. In Open Flow set **Check original photo** to its production webhook URL and run with photos containing a name and Google Drive file ID. Restrict access to the relay; it does not authenticate callers.
 
 ## Behavior
 
 For each original image, the relay measures pixel dimensions and byte length before resizing for the model. It returns those measurements, whether the digital size requirements pass, and the model's assessment of visible features. Review each result against the original image and current official guidance; a model cannot establish all requirements or guarantee acceptance. Images are sent to Gemini.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow, connect Google Drive and Gemini, and configure a current vision-capable Gemini model. To run n8n directly, set the photo list in **Photo URLs** and use its manual trigger.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

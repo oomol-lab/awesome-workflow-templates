@@ -13,11 +13,18 @@ Publish a message with a subject to an Amazon SNS topic.
 
 ## Setup
 
-In Open Flow, set the standard SNS topic ARN, message and subject in **Prepare and sign SNS request**. Bind AWS access key ID and secret access key to secret Variables; if using temporary credentials, bind the same session token Variable both to **Prepare and sign SNS request** and to **Publish to SNS** → **X-Amz-Security-Token**. Leave both unset for long-lived credentials. In n8n, connect AWS credentials to **AWS SNS** and select the target topic, then set the message and subject. The AWS identity needs `sns:Publish` for that topic.
+In Open Flow, set the standard SNS topic ARN, message and subject in **Prepare and sign SNS request**. Bind AWS access key ID and secret access key to secret Variables; if using temporary credentials, bind the same session token Variable both to **Prepare and sign SNS request** and to **Publish to SNS** → **X-Amz-Security-Token**. Leave both unset for long-lived credentials. The AWS identity needs `sns:Publish` for that topic.
 
 ## Behavior
 
 The workflow supports standard topics; FIFO topics require a message group ID and are not covered. A run publishes one message and returns its SNS message ID. SNS sends the subject to email subscriptions and delivers the message to the topic's subscribers. An unsuccessful or uncertain request stops the run without an automatic retry. Check SNS before retrying an uncertain publication.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect AWS credentials to **AWS SNS** and select the target topic, then set the message and subject.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

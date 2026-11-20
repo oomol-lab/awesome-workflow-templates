@@ -13,11 +13,18 @@ Generate a placeholder image with custom colors, text and font.
 
 ## Setup and use
 
-Run manually. Change the image properties in **Generate the image** in Open Flow or **Set Image Properties** in n8n. The example requests a 600 × 400 PNG with the text “Generated!”.
+Run manually. Change the image properties in **Generate the image**. The example requests a 600 × 400 PNG with the text “Generated!”.
 
 ## Behavior
 
-DummyJSON generates the image using the requested size, background and text colors, text, font size, font family and format. Open Flow returns a file object containing a name, MIME type and base64 content; n8n returns the downloaded image as binary data. Open Flow's Code fetch accepts responses up to 1 MiB. The endpoint must be reachable and may impose its own limits.
+DummyJSON generates the image using the requested size, background and text colors, text, font size, font family and format. Open Flow returns a file object containing a name, MIME type and base64 content. Open Flow's Code fetch accepts responses up to 1 MiB. The endpoint must be reachable and may impose its own limits.
+
+<details>
+<summary>In n8n</summary>
+
+Change the image properties in **Generate the image** in Open Flow or **Set Image Properties** in n8n. N8n returns the downloaded image as binary data.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

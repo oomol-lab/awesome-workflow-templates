@@ -13,11 +13,18 @@ Return Docker inspection details for an Immich container.
 
 ## Setup
 
-Provide a Docker Engine v1.44 endpoint behind an HTTPS gateway that authenticates Bearer tokens and is restricted to container inspection. Set the gateway URL and expected server domain in **Validate server and request**. Bind INSPECTION_WEBHOOK_AUTH to the complete Authorization header expected from callers and DOCKER_GATEWAY_TOKEN to the gateway token. Secure both endpoints. In n8n configure the incoming Header Auth and Docker gateway Bearer credentials, the expected server domain and gateway URL.
+Provide a Docker Engine v1.44 endpoint behind an HTTPS gateway that authenticates Bearer tokens and is restricted to container inspection. Set the gateway URL and expected server domain in **Validate server and request**. Bind INSPECTION_WEBHOOK_AUTH to the complete Authorization header expected from callers and DOCKER_GATEWAY_TOKEN to the gateway token. Secure both endpoints.
 
 ## Use
 
 POST a JSON object with server_domain, domain and command set to container_information_inspect. The workflow inspects the container named by domain followed by _immich. A missing container returns an empty inspect object. Docker inspection details can contain environment variables and other sensitive configuration; restrict access to responses and execution history.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure the incoming Header Auth and Docker gateway Bearer credentials, the expected server domain and gateway URL.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -13,17 +13,24 @@ Research a topic with Perplexity and return an HTML article.
 
 ## Setup
 
-Import **Research topic to HTML** and **Perplexity research tool**, configure an AI model and the PERPLEXITY_API_KEY secret, connect Telegram, enable persistent State, publish the research tool and refresh its interface in the main workflow. In n8n configure OpenAI, Perplexity header authentication and Telegram. Create a Data Table with item_key and status text columns, select it in both notification reservations, and set the imported workflow ID in **Call Perplexity Researcher**. Restrict webhook access.
+Import **Research topic to HTML** and **Perplexity research tool**, configure an AI model and the PERPLEXITY_API_KEY secret, connect Telegram, enable persistent State, publish the research tool and refresh its interface in the main workflow. Restrict webhook access.
 
-Choose one entry point: enable the original n8n webhook for direct n8n operation, or disable it and enable **Open Flow HTML frontend**, with the deployed Open Flow webhook URL. Send a GET request with URL-encoded topic, chatId and requestId query parameters. Use a unique requestId for each request and prevent overlapping requests with the same ID.
+Send a GET request with URL-encoded topic, chatId and requestId query parameters. Use a unique requestId for each request and prevent overlapping requests with the same ID.
 
 ## Behavior
 
-The workflow rewrites the topic, invokes a Perplexity research tool, sends the research topic and an excerpt to Telegram, and returns a generated HTML page. Research is limited to the source workflow's perplexity.ai domain and the preceding month. Both the topic and research are sent to external AI services. Generated HTML can contain inaccurate or unsafe content; inspect it and display it only in a sandboxed context. The n8n response applies a restrictive Content Security Policy.
+The workflow rewrites the topic, invokes a Perplexity research tool, sends the research topic and an excerpt to Telegram, and returns a generated HTML page. Research is limited to the source workflow's perplexity.ai domain and the preceding month. Both the topic and research are sent to external AI services. Generated HTML can contain inaccurate or unsafe content; inspect it and display it only in a sandboxed context.
 
-A notification is reserved before sending. If a response is lost or a request times out, inspect Telegram and the pending State or Data Table row before retrying. A repeated request ID is blocked; resolve the existing notification manually and use a new ID only after confirming whether the prior messages were sent. Never run both entry points for the same request.
+A notification is reserved before sending. A repeated request ID is blocked; resolve the existing notification manually and use a new ID only after confirming whether the prior messages were sent. Never run both entry points for the same request.
 
 The synchronous Sonar Chat Completions API remains operational through Perplexity's compatibility path, although its support ended on September 27, 2026. Check Perplexity's current API availability before use.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure OpenAI, Perplexity header authentication and Telegram. Create a Data Table with item_key and status text columns, select it in both notification reservations, and set the imported workflow ID in **Call Perplexity Researcher**. Choose one entry point: enable the original n8n webhook for direct n8n operation, or disable it and enable **Open Flow HTML frontend**, with the deployed Open Flow webhook URL. The n8n response applies a restrictive Content Security Policy. If a response is lost or a request times out, inspect Telegram and the pending State or Data Table row before retrying.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

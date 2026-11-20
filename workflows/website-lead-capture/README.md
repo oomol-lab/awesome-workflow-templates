@@ -27,8 +27,6 @@ For Open Flow, import the JSON and configure:
 | Acknowledge enquiry | Connect the Gmail account that will send acknowledgments. |
 | Prepare lead | Set `timezone` for timestamps and `signature` for the email. The timezone starts at `UTC`. |
 
-For n8n, import the JSON, connect the same three services, and configure the sheet, Telegram destination, and email signature in the corresponding nodes. Change the workflow timezone if needed; the exported template uses `UTC`.
-
 Publish and enable the workflow when configured, then use the webhook URL shown by your platform. Send a POST request with a JSON body such as:
 
 ```json
@@ -45,6 +43,13 @@ The aliases `nome`, `telefono`, and `messaggio` are also accepted and take prece
 The webhook acknowledges receipt immediately with `{"message":"Workflow was started"}`. Acknowledgment does not confirm that the sheet write or notifications have completed. A valid email address is required.
 
 If your form sends extra fields, add them to the Open Flow webhook body schema before use.
+
+<details>
+<summary>In n8n</summary>
+
+For n8n, import the JSON, connect the same three services, and configure the sheet, Telegram destination, and email signature in the corresponding nodes. Change the workflow timezone if needed; the exported template uses `UTC`.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

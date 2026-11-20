@@ -13,13 +13,20 @@ Send workflow failure details to a Slack channel.
 
 ## Setup
 
-Connect Slack with permission to post in the destination channel. In Open Flow, set its channel ID on **Send Slack alert**, select the published source workflows in **Receive a workflow failure**, then publish and enable this workflow. In n8n, select the channel and connect Slack on **Slack**, enable this workflow, and choose it as the error workflow in each source workflow's settings. Enable one format. Avoid assigning the error workflow to itself.
+Connect Slack with permission to post in the destination channel. In Open Flow, set its channel ID on **Send Slack alert**, select the published source workflows in **Receive a workflow failure**, then publish and enable this workflow. Avoid assigning the error workflow to itself.
 
 ## Behavior
 
-An automatic workflow failure sends its workflow name, execution reference, failed node and error message to Slack. Open Flow sends the run ID and, when available, the node ID. n8n sends the execution URL and last node name. Missing details are shown as not available.
+An automatic workflow failure sends its workflow name, execution reference, failed node and error message to Slack. Open Flow sends the run ID and, when available, the node ID. Missing details are shown as not available.
 
-Error messages can contain sensitive information. Restrict access to the channel and workflow history. Open Flow stops before sending if the alert exceeds 40,000 characters; Slack may reject oversized messages in either format. A failed or uncertain send may already have been delivered; inspect the channel before retrying.
+Error messages can contain sensitive information. Restrict access to the channel and workflow history. Open Flow stops before sending if the alert exceeds 40,000 characters; Slack may reject oversized messages. A failed or uncertain send may already have been delivered; inspect the channel before retrying.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, select the channel and connect Slack on **Slack**, enable this workflow, and choose it as the error workflow in each source workflow's settings. n8n sends the execution URL and last node name.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

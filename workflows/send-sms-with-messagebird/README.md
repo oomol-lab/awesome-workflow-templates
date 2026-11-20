@@ -13,11 +13,18 @@ Send an SMS to one or more recipients using MessageBird.
 
 ## Setup
 
-In Open Flow create a secret Variable named `MESSAGEBIRD_AUTHORIZATION` containing `AccessKey ` followed by your MessageBird API key, and bind it to **Send the SMS**. Run with the sender, message and comma-separated recipient numbers including country codes. In n8n connect MessageBird and enter the same values in **MessageBird**. Use one format per send.
+In Open Flow create a secret Variable named `MESSAGEBIRD_AUTHORIZATION` containing `AccessKey ` followed by your MessageBird API key, and bind it to **Send the SMS**. Run with the sender, message and comma-separated recipient numbers including country codes. Use one format per send.
 
 ## Behavior
 
 A manual run sends one message request to up to 50 recipients and returns MessageBird's response. The response reports recipient statuses; acceptance does not guarantee delivery. Open Flow rejects malformed recipient numbers before sending. If a request fails or the outcome is uncertain, check MessageBird and recipient statuses before retrying; some or all messages may already have been sent.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n connect MessageBird and enter the same values in **MessageBird**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

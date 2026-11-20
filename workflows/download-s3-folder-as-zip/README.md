@@ -13,11 +13,18 @@ Download nonempty files directly within an S3 folder into a ZIP archive.
 
 ## Setup and use
 
-Connect AWS S3 with permission to list the bucket and download its objects. Set the same bucket and region in **List folder objects** and **Download and archive objects**. Set the folder prefix in **List folder objects**, including its trailing slash. Add the Connector file transit hostname to **Download and archive objects** HTTP allowed hosts. Run the workflow manually and download the returned ZIP artifact. In n8n connect AWS credentials and set the same bucket and folder in both S3 nodes, then run the workflow manually.
+Connect AWS S3 with permission to list the bucket and download its objects. Set the same bucket and region in **List folder objects** and **Download and archive objects**. Set the folder prefix in **List folder objects**, including its trailing slash. Add the Connector file transit hostname to **Download and archive objects** HTTP allowed hosts. Run the workflow manually and download the returned ZIP artifact.
 
 ## Behavior
 
 The workflow lists nonempty files directly under the prefix, downloads each file and creates `s3-export.zip` with their filenames. It skips empty objects, folder markers and nested folders. Open Flow stops if no files remain, filenames collide, a download fails or its size does not match. Each transit download must fit the host's 1 MiB HTTP response limit, and the archive must fit artifact and execution limits. Restrict access to the execution and resulting archive.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n connect AWS credentials and set the same bucket and folder in both S3 nodes, then run the workflow manually.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

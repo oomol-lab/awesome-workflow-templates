@@ -13,13 +13,20 @@ Check replies from campaign contacts and create a deal when the sender is intere
 
 ## Setup
 
-Connect each Gmail poll and its corresponding read node to the same inbox. Give the two inboxes distinct namespace values, and keep **Choose source inbox** aligned with them. Connect Pipedrive and Gemini. Set the same person custom-field key in **Read campaign field** and **Check campaign membership**, and set the actual single-option ID for True. Enable persistent State. In n8n connect both Gmail credentials, Gemini and Pipedrive. Configure an HTTP Header Auth credential named x-api-token on the two Pipedrive read nodes, set the campaign custom-field key in **Read campaign contact** and **Check campaign membership**, and set the actual True option ID. Select one Data Table with item_key and status text columns. For an uncertain deal, inspect Pipedrive and set the matching pending row to done if confirmed or delete it if absent. Enter the original inbox, message ID, sender and reply in **Configure retry** before running the manual trigger.
+Connect each Gmail poll and its corresponding read node to the same inbox. Give the two inboxes distinct namespace values, and keep **Choose source inbox** aligned with them. Connect Pipedrive and Gemini. Set the same person custom-field key in **Read campaign field** and **Check campaign membership**, and set the actual single-option ID for True. Enable persistent State. Configure an HTTP Header Auth credential named x-api-token on the two Pipedrive read nodes, set the campaign custom-field key in **Read campaign contact** and **Check campaign membership**, and set the actual True option ID. For an uncertain deal, inspect Pipedrive and set the matching pending row to done if confirmed or delete it if absent. Enter the original inbox, message ID, sender and reply in **Configure retry** before running the manual trigger.
 
 ## Behavior
 
 New inbox messages are matched to a unique Pipedrive contact by exact sender email. Only contacts with the configured campaign option are classified. A positive meeting-interest classification creates a deal linked to that person. The model can misclassify; review created deals. Unquoted replies over 14,800 characters stop processing.
 
 If a deal creation is uncertain, inspect Pipedrive for the corresponding person and message, then enter the pending key and confirmed or absent in **Select next inbox message** then run **Retry inbox message** with the original inbox namespace and Gmail message ID. Avoid overlapping runs and clear recovery fields afterward.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n connect both Gmail credentials, Gemini and Pipedrive. Select one Data Table with item_key and status text columns.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

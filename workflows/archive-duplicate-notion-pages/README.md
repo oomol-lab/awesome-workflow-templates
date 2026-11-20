@@ -13,13 +13,20 @@ Archive extra Notion database pages with the same text property.
 
 ## Setup
 
-Connect Notion with access to read and update the database. Set the database ID in **Watch new pages** and its data source ID and exact text property name in **Find and archive duplicates**. Use a title or rich-text property. Enable persistent State and prevent overlapping runs. In n8n select Notion credentials, database ID in the trigger, data source ID and property in **Configure database**, and create a Data Table with text columns page_id and status for the checkpoint nodes. Enable the desired triggers and use one format.
+Connect Notion with access to read and update the database. Set the database ID in **Watch new pages** and its data source ID and exact text property name in **Find and archive duplicates**. Use a title or rich-text property. Enable persistent State and prevent overlapping runs. Enable the desired triggers and use one format.
 
 ## Behavior
 
 A daily run or a new page checks the entire data source. For each nonempty identical text value, keep the earliest created page, breaking ties by page ID, and move later pages to Notion trash. Values compare exactly, including case and whitespace. Empty values are skipped. A text property returned with 25 or more fragments is rejected because it may be truncated; choose a shorter property. The source database can change while it is read and the query is not a snapshot. Review the property and database before enabling, and prevent concurrent runs or edits during cleanup.
 
-An archive failure or unknown response leaves a pending checkpoint. Inspect Notion before proceeding. In Open Flow set **acknowledgePageId** to the pending page ID after inspection, run once, then clear it. That page remains skipped until its checkpoint is deliberately cleared. In n8n mark the pending Data Table row done if archived, or delete it only when retry is safe. Confirmed n8n checkpoint rows prevent re-archiving restored pages until deliberately removed.
+An archive failure or unknown response leaves a pending checkpoint. Inspect Notion before proceeding. In Open Flow set **acknowledgePageId** to the pending page ID after inspection, run once, then clear it. That page remains skipped until its checkpoint is deliberately cleared.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n select Notion credentials, database ID in the trigger, data source ID and property in **Configure database**, and create a Data Table with text columns page_id and status for the checkpoint nodes. In n8n mark the pending Data Table row done if archived, or delete it only when retry is safe. Confirmed n8n checkpoint rows prevent re-archiving restored pages until deliberately removed.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

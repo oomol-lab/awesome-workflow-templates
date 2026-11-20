@@ -15,13 +15,18 @@ Transcribe each page of a bank statement and extract deposit rows with a vision 
 
 Connect Google Drive and set the PDF file ID in **Download statement from Drive**. Create the Secret Variable GEMINI_API_KEY and bind it to both Gemini nodes. Allow the actual Connector file-transit hostname in **Transcribe statement pages** in place of example.com. Configure the PDF-capable Gemini model if needed.
 
-In n8n, set the Drive file ID and credentials, connect the Gemini model credentials, and set the Stirling PDF server URL in **Split PDF into Images**. The source supports a self-hosted Stirling server. Use one format.
-
 ## Behavior
 
-The workflow reads a PDF, transcribes every page visually to Markdown, then asks Gemini to extract deposit rows with date, description and amount. It supports scanned and text PDFs. Open Flow sends each page as a separate PDF to Gemini; n8n converts pages to images first. The PDF must be at most 50 MiB and 1000 pages. Large Connector transit downloads must support HTTP byte ranges and a stable validator. Runtime and model limits apply.
+The workflow reads a PDF, transcribes every page visually to Markdown, then asks Gemini to extract deposit rows with date, description and amount. It supports scanned and text PDFs. Open Flow sends each page as a separate PDF to Gemini. The PDF must be at most 50 MiB and 1000 pages. Large Connector transit downloads must support HTTP byte ranges and a stable validator. Runtime and model limits apply.
 
-Vision and extraction can make mistakes. Review the transcription and rows against the statement before relying on them. The statement is sent to Gemini and, in n8n, to the configured Stirling server. Restrict access to those services, transit URLs and execution history. Gemini Files uploads are temporary; if an upload result is unknown, inspect the Files API before retrying.
+Vision and extraction can make mistakes. Review the transcription and rows against the statement before relying on them. Restrict access to those services, transit URLs and execution history. Gemini Files uploads are temporary; if an upload result is unknown, inspect the Files API before retrying.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, set the Drive file ID and credentials, connect the Gemini model credentials, and set the Stirling PDF server URL in **Split PDF into Images**. The source supports a self-hosted Stirling server. Use one format. N8n converts pages to images first. The statement is sent to Gemini and, in n8n, to the configured Stirling server.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

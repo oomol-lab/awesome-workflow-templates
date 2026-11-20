@@ -13,13 +13,18 @@ Summarize today’s calendar meetings and attendees in Slack.
 
 ## Setup
 
-Connect Google Calendar, Slack and the model in Open Flow, enter the calendar ID and Slack channel ID, and enable persistent State. In direct n8n mode configure the calendar, Gemini, Slack and a Data Table with item_key and status text columns. Use one mode and prevent overlapping runs.
+Connect Google Calendar, Slack and the model in Open Flow, enter the calendar ID and Slack channel ID, and enable persistent State. Use one mode and prevent overlapping runs.
 
 ## Behavior
 
-At 09:00 UTC daily, read one page of up to 50 calendar events in the current UTC day, summarize meetings and all returned attendees, and post the digest in Slack. Events beyond the first page are not included. The calendar request retains the source node’s recurrence behavior. Calendar information is sent to the model; verify the digest. Open Flow uses a fixed calendar read followed by an Agent and labels the message Meeting digest; direct n8n retains the Calendar tool Agent and original Gemini label.
+At 09:00 UTC daily, read one page of up to 50 calendar events in the current UTC day, summarize meetings and all returned attendees, and post the digest in Slack. Events beyond the first page are not included. The calendar request retains the source node’s recurrence behavior. Calendar information is sent to the model; verify the digest. Open Flow uses a fixed calendar read followed by an Agent and labels the message Meeting digest.
 
-If Slack delivery is uncertain, inspect the channel and resolve the pending State or Data Table row before rerunning.
+<details>
+<summary>In n8n</summary>
+
+In direct n8n mode configure the calendar, Gemini, Slack and a Data Table with item_key and status text columns. Direct n8n retains the Calendar tool Agent and original Gemini label. If Slack delivery is uncertain, inspect the channel and resolve the pending State or Data Table row before rerunning.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

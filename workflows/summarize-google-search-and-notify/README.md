@@ -13,11 +13,18 @@ Extract and summarize Google search results and send them to a webhook.
 
 ## Setup and use
 
-Set the search query and SERP zone in **Prepare search request**, bind secret Variable BRIGHT_DATA_TOKEN, configure the models, and set the destination URL in **Send search results**. In n8n configure Bright Data Header Auth as Authorization: Bearer followed by the API token, connect the Gemini models, and set the query, zone and webhook URL. Run one format manually.
+Set the search query and SERP zone in **Prepare search request**, bind secret Variable BRIGHT_DATA_TOKEN, configure the models, and set the destination URL in **Send search results**. Run one format manually.
 
 ## Behavior
 
 The workflow requests the Google result page through Bright Data, extracts readable results, summarizes them and POSTs search_result and search_summary to the configured endpoint. Model results can be inaccurate; inspect cited sources. Provider and model usage may incur charges. If the notification result is uncertain, check the destination before retrying.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure Bright Data Header Auth as Authorization: Bearer followed by the API token, connect the Gemini models, and set the query, zone and webhook URL.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

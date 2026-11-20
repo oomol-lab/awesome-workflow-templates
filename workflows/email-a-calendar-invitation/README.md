@@ -15,11 +15,16 @@ Generate an iCalendar event file and email it as an attachment.
 
 In Open Flow, connect SendGrid, set the verified sender and recipient in **Email the invitation**, and set the event title, start and end in **Create calendar event file**. Use UTC timestamps such as `2030-06-11T15:30:00Z`; the end must be later than the start. Edit the email body if needed.
 
-In n8n, run the instance with its process timezone set to UTC, configure the **iCalendar** title, start and end as UTC timestamps, connect an SMTP account in **Send Email**, and set its sender, recipient and message. Each format uses its own email connection. Run the workflow manually.
-
 ## Behavior
 
 Each run generates an iCalendar event file and emails it to the configured recipient. Open Flow creates a new event UID for each run. A failed or uncertain send may already have been delivered; check the mailbox before retrying. The attachment publishes an event; it does not manage attendee RSVPs. The recipient's mail or calendar app decides how to import it.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, run the instance with its process timezone set to UTC, configure the **iCalendar** title, start and end as UTC timestamps, connect an SMTP account in **Send Email**, and set its sender, recipient and message. Each format uses its own email connection. Run the workflow manually.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

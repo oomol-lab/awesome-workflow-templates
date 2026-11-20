@@ -15,13 +15,18 @@ Add newsletter signups from a Google Sheet to a Mailchimp audience with their si
 
 Connect Google Sheets and Mailchimp. In **Configure sheet and audience**, set the spreadsheet ID, sheet name and Mailchimp audience ID. The sheet needs unique headers **Email Address**, **Name** and **Submitted On**. Format each signup time as ISO 8601 text with an explicit time zone, such as `2025-01-20T13:45:30Z`. The Mailchimp audience needs an `FNAME` merge field. Open Flow requires Mailchimp Provider API Request permission.
 
-In n8n, set the same sheet, audience and Mailchimp server prefix (for example, `us1`) in **Configure sheet and audience**. Connect a Google Sheets OAuth2 credential to **Read newsletter signups** and a Header Auth credential containing `Authorization: Bearer <Mailchimp API key>` to the Mailchimp HTTP node. Run one format. Only import contacts who agreed to receive marketing: this workflow directly sets `subscribed` and does not send a confirmation request.
-
 ## Behavior
 
-Run manually or daily at 00:00 UTC. The workflow validates the entire sheet before writing, then creates each subscriber in order with email, name as `FNAME`, and the original signup timestamp. An empty sheet sends nothing. Invalid rows or duplicate emails stop before any writes. n8n runs at a fixed second within the scheduled minute; Open Flow runs on the minute boundary. Review the time zone and schedule.
+Run manually or daily at 00:00 UTC. The workflow validates the entire sheet before writing, then creates each subscriber in order with email, name as `FNAME`, and the original signup timestamp. An empty sheet sends nothing. Invalid rows or duplicate emails stop before any writes. Open Flow runs on the minute boundary. Review the time zone and schedule.
 
 The operation creates members only; an existing member causes an error and is not updated or resubscribed. Since rows remain in the sheet, later runs can stop at an existing member before reaching later rows. Select or maintain a sheet containing only new signups. Earlier creates remain after a later failure, and a lost response may still mean a member was created. Inspect Mailchimp before rerunning. No automatic write retry is added.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, set the same sheet, audience and Mailchimp server prefix (for example, `us1`) in **Configure sheet and audience**. Connect a Google Sheets OAuth2 credential to **Read newsletter signups** and a Header Auth credential containing `Authorization: Bearer <Mailchimp API key>` to the Mailchimp HTTP node. Run one format. Only import contacts who agreed to receive marketing: this workflow directly sets `subscribed` and does not send a confirmation request. n8n runs at a fixed second within the scheduled minute.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

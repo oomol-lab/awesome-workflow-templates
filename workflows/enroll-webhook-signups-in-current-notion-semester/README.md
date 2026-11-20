@@ -15,13 +15,20 @@ Find or create a Notion user and add the current semester without removing exist
 
 Connect Notion with access to the users and semesters data sources. Set their data source IDs in **Authorize the signup**. The users source needs a title property **Name**, an email property **Email**, and a relation **Semesters** to the semesters source. The semesters source needs checkbox **Is Current?** with exactly one selected row.
 
-Create a secret Variable **SIGNUP_BASIC_AUTH** containing a complete HTTP Basic Authorization value, such as Basic followed by base64 of username:password. Deploy the webhook over HTTPS and send POST JSON with name and email. Restrict access to execution history, which can contain authorization headers and personal data. In n8n configure the Webhook Basic Auth credential, enter both data source IDs in **Prepare signup**, and select the same Notion credential in **Find current semester**, **Find user by email**, **Create user**, **Read semester relations** and **Add current semester**. Activate one format.
+Create a secret Variable **SIGNUP_BASIC_AUTH** containing a complete HTTP Basic Authorization value, such as Basic followed by base64 of username:password. Deploy the webhook over HTTPS and send POST JSON with name and email. Restrict access to execution history, which can contain authorization headers and personal data.
 
 ## Behavior
 
 An authorized signup finds a user by email or creates one, then adds the current semester while preserving existing relations. Duplicate email matches or multiple current semesters stop rather than choosing one. The relation list is fully paginated. Notion allows at most 100 relations in one update request; if the combined list is larger, the workflow stops before changing it. Platform execution limits also apply. If reading or updating relations fails after creating a user, the new user remains. A failed or uncertain create/update may already have succeeded; inspect Notion before replaying. Simultaneous signups for the same email can create duplicates.
 
-Open Flow returns a response after the update; a timeout or lost response does not prove that no write occurred. The n8n source acknowledges the webhook before processing.
+Open Flow returns a response after the update; a timeout or lost response does not prove that no write occurred.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure the Webhook Basic Auth credential, enter both data source IDs in **Prepare signup**, and select the same Notion credential in **Find current semester**, **Find user by email**, **Create user**, **Read semester relations** and **Add current semester**. The n8n source acknowledges the webhook before processing.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -13,13 +13,20 @@ Summarize the previous day’s matching Gmail messages and email the summary and
 
 ## Setup
 
-Connect Gmail to **Search Gmail**, **Read message metadata**, and **Send the Gmail summary**. In **Set summary details**, enter the sender address, report recipient and optional CC addresses. Configure an AI model in **Summarize emails and actions**. In n8n, set the same addresses in **Set summary details**, connect Gmail credentials on the read and send nodes, and configure OpenAI credentials and model. Activate one format.
+Connect Gmail to **Search Gmail**, **Read message metadata**, and **Send the Gmail summary**. In **Set summary details**, enter the sender address, report recipient and optional CC addresses. Configure an AI model in **Summarize emails and actions**.
 
 ## Behavior
 
-At 07:00 UTC each day, the workflow searches Gmail for messages from the configured sender in the preceding 24 hours. It collects message IDs, sender, recipient, CC and snippet, then asks the model for a summary and named actions. An empty result sends no email. Gmail search may not expand sender aliases. Open Flow stops before sending if the message list exceeds 5,000 items or 100 pages, if a page repeats, or if collected data exceeds runtime limits; n8n uses its own limits. It sends one HTML email with escaped model output.
+At 07:00 UTC each day, the workflow searches Gmail for messages from the configured sender in the preceding 24 hours. It collects message IDs, sender, recipient, CC and snippet, then asks the model for a summary and named actions. An empty result sends no email. Gmail search may not expand sender aliases. Open Flow stops before sending if the message list exceeds 5,000 items or 100 pages, if a page repeats, or if collected data exceeds runtime limits. It sends one HTML email with escaped model output.
 
-Email headers and snippets are sent to the configured model provider. Review access, data handling and the generated summary before relying on it; email content may include instructions that the model cannot be guaranteed to ignore. Read, model or send errors stop the run. An uncertain send may already have delivered; inspect the mailbox before retrying. The source depended on the n8n instance timezone; both formats start at 07:00 UTC. n8n chooses a fixed second within the minute, while Open Flow starts on the minute boundary.
+Email headers and snippets are sent to the configured model provider. Review access, data handling and the generated summary before relying on it; email content may include instructions that the model cannot be guaranteed to ignore. Read, model or send errors stop the run. An uncertain send may already have delivered; inspect the mailbox before retrying. Open Flow starts on the minute boundary.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, set the same addresses in **Set summary details**, connect Gmail credentials on the read and send nodes, and configure OpenAI credentials and model. N8n uses its own limits. The source depended on the n8n instance timezone; both formats start at 07:00 UTC. n8n chooses a fixed second within the minute.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

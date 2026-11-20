@@ -13,11 +13,18 @@ Send an SMS to numbers, contacts or groups using seven.
 
 ## Setup
 
-In Open Flow create a secret Variable named `SEVEN_API_KEY` and bind it to **Send the SMS**. Run with recipient numbers, contact names or group names in `to`, separated by commas, and a message. The sender is optional. In n8n connect seven credentials and set the recipient, sender if needed, and message in **Sms77**. Use one format per send.
+In Open Flow create a secret Variable named `SEVEN_API_KEY` and bind it to **Send the SMS**. Run with recipient numbers, contact names or group names in `to`, separated by commas, and a message. The sender is optional. Use one format per send.
 
 ## Behavior
 
 A manual run sends one SMS request. seven's success code `100` means the gateway accepted it; it does not guarantee delivery. Other response codes stop the workflow. A partial failure or uncertain request may already have sent messages to some recipients. Check seven's message statuses before retrying. Open Flow Code input and output are limited to 1 MiB; oversized responses stop the run.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n connect seven credentials and set the recipient, sender if needed, and message in **Sms77**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

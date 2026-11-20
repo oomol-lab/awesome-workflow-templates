@@ -13,11 +13,18 @@ Read the three most recent unread messages in the Fastmail inbox.
 
 ## Setup and use
 
-Create a Fastmail API token with mail read access and bind it as secret Variable FASTMAIL_API_TOKEN in all three Open Flow HTTP nodes. In n8n configure HTTP Header Auth with Authorization as the header name and Bearer followed by your API token as the value. Run manually and use one format.
+Create a Fastmail API token with mail read access and bind it as secret Variable FASTMAIL_API_TOKEN in all three Open Flow HTTP nodes. Run manually and use one format.
 
 ## Behavior
 
 The workflow finds the primary mail account and inbox, queries its three most recent unread messages and returns the JMAP response with IDs, received times, senders, subjects and keywords. Email metadata may appear in execution history.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure HTTP Header Auth with Authorization as the header name and Bearer followed by your API token as the value.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -13,11 +13,18 @@ Create a Slack thread for a Zendesk ticket and send later comments to that threa
 
 ## Setup
 
-Create a Zendesk text custom field for the Slack thread timestamp. Set its numeric field ID in both **Find saved thread** and **Prepare thread field**, and set the same Slack channel ID in both message nodes. Connect Zendesk and Slack. Configure a Zendesk trigger and webhook to POST JSON containing numeric ticket id and comment text to the deployed endpoint. In n8n set the field ID in **Code** and **Update ticket**, configure the channel, and connect Zendesk and Slack.
+Create a Zendesk text custom field for the Slack thread timestamp. Set its numeric field ID in both **Find saved thread** and **Prepare thread field**, and set the same Slack channel ID in both message nodes. Connect Zendesk and Slack. Configure a Zendesk trigger and webhook to POST JSON containing numeric ticket id and comment text to the deployed endpoint.
 
 ## Behavior
 
 If the ticket has no saved thread timestamp, the workflow posts its subject to Slack and stores the returned timestamp in Zendesk. Later events with that field set post the event comment as a reply. The webhook does not authenticate the sender; restrict access as appropriate. Its acknowledgment confirms receipt, not Slack or Zendesk completion. Repeated events may create duplicate messages. A failed or unknown Zendesk update after Slack posting leaves a thread without a saved timestamp; inspect Slack and the ticket before retrying. Concurrent events for one ticket may create multiple threads.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n set the field ID in **Code** and **Update ticket**, configure the channel, and connect Zendesk and Slack.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

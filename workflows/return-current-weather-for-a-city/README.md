@@ -13,11 +13,18 @@ Return a city’s current and feels-like temperature in Celsius through a GET we
 
 ## Setup and use
 
-Connect OpenWeather and deploy the webhook. Send a GET request with the query parameter parameter, such as ?parameter=London%2CGB; omitted or empty values use berlin,de. Configure the OpenWeather credential in n8n and activate one workflow format.
+Connect OpenWeather and deploy the webhook. Send a GET request with the query parameter parameter, such as ?parameter=London%2CGB; omitted or empty values use berlin,de.
 
 ## Behavior
 
 The endpoint waits for OpenWeather and responds with current and feels-like temperatures in Celsius and the resolved city. It does not authenticate callers; restrict access as appropriate. Requests consume OpenWeather API usage.
+
+<details>
+<summary>In n8n</summary>
+
+Configure the OpenWeather credential in n8n and activate one workflow format.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

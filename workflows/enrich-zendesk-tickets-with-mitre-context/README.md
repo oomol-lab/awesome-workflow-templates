@@ -13,11 +13,18 @@ Retrieve MITRE ATT&CK context and add a private summary and technique fields to 
 
 ## Setup
 
-Import **Zendesk MITRE enrichment** and **Retrieve MITRE techniques**, publish the retrieval workflow and refresh the agent tool. Configure Zendesk, Qdrant and OpenAI connections, the collection name, custom field IDs and persistent State. The Qdrant collection must contain MITRE documents embedded with **text-embedding-3-large at 1536 dimensions**. Dimension alone does not make vectors from different models compatible. The source's separate Drive indexing path is not included; prepare that collection before use. In n8n configure the corresponding credentials, collection, custom field IDs and a Data Table with item_key and status columns.
+Import **Zendesk MITRE enrichment** and **Retrieve MITRE techniques**, publish the retrieval workflow and refresh the agent tool. Configure Zendesk, Qdrant and OpenAI connections, the collection name, custom field IDs and persistent State. The Qdrant collection must contain MITRE documents embedded with **text-embedding-3-large at 1536 dimensions**. Dimension alone does not make vectors from different models compatible. The source's separate Drive indexing path is not included; prepare that collection before use.
 
 ## Behavior
 
 Run manually to list tickets, retrieve relevant ATT&CK context and write a private summary plus first technique ID and tactic to the matching ticket. Results are suggestions for human review, not incident determinations. Ticket content goes to the model and embedding services. Inspect Zendesk before clearing a pending checkpoint after an uncertain update. Completed ticket IDs are skipped on later runs; clear a checkpoint deliberately to reprocess a ticket. Avoid overlapping runs.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure the corresponding credentials, collection, custom field IDs and a Data Table with item_key and status columns.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

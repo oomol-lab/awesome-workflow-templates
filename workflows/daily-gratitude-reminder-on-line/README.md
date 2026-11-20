@@ -13,11 +13,18 @@ Generate a daily reflection prompt and send it to a LINE conversation.
 
 ## Setup
 
-Connect an AI model and a LINE Messaging API channel. Set a reachable user, group or room ID in **Send the LINE reminder**. In n8n connect Azure OpenAI, select your deployed model, configure a Header Auth credential named `Authorization` with value `Bearer YOUR_LINE_CHANNEL_ACCESS_TOKEN`, and set the destination ID in **Prepare the LINE message**. Activate one format.
+Connect an AI model and a LINE Messaging API channel. Set a reachable user, group or room ID in **Send the LINE reminder**.
 
 ## Behavior
 
 At 21:00 in Asia/Bangkok, the model rewrites a prompt asking the recipient to reflect on something good that happened today. One text message is sent to the configured LINE conversation. Review the time zone and model before activation. Model responses can vary. LINE acceptance does not guarantee delivery to a recipient who has blocked the account. If a push fails or its outcome is uncertain, check the conversation before retrying.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n connect Azure OpenAI, select your deployed model, configure a Header Auth credential named `Authorization` with value `Bearer YOUR_LINE_CHANNEL_ACCESS_TOKEN`, and set the destination ID in **Prepare the LINE message**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

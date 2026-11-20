@@ -13,11 +13,18 @@ Generate a reply to an incoming email, log it and record linked feedback.
 
 ## Setup and use
 
-Import the n8n workflow, configure Gmail and OpenAI credentials, set the allowed senders in **Configure**, and set a public feedback webhook URL for your n8n instance. Configure an existing spreadsheet, or allow the workflow to create one on its first run. In Open Flow, set **Find or create spreadsheet** to an existing spreadsheet ID or leave it empty to create one with a header in its default worksheet; set its feedback URL in **Format linked reply**. Set **Choose mode** to direct for n8n-only execution, or relay to use Open Flow. In relay mode set both Open Flow URLs, connect Google Sheets and Gmail on all relevant nodes, and configure the model. Activate one mode.
+Configure an existing spreadsheet, or allow the workflow to create one on its first run. In Open Flow, set **Find or create spreadsheet** to an existing spreadsheet ID or leave it empty to create one with a header in its default worksheet; set its feedback URL in **Format linked reply**.
 
 ## Behavior
 
-For allowed incoming messages the workflow extracts the reply text, asks the model for a response, sends a Gmail reply to the originating message and records both texts. The response includes Yes/No links; a click records feedback against the corresponding UUID. In Open Flow mode the supplied n8n workflow retains the Gmail trigger, source parser, feedback webhook and HTML response; Open Flow sends the Gmail reply. For an existing Open Flow sheet, use Sheet1 with columns ID, Initial message, Generated reply, Good response?. Initialize an empty configuration with one request before allowing simultaneous requests; automatic creation is not serialized. If creation is uncertain, inspect Google Sheets and configure the created spreadsheet ID before running again. Open Flow sends a reply using the original Gmail message ID and thread ID. The Open Flow webhook does not authenticate callers; restrict access to trusted senders. Email content is shared with the model. Lost Gmail or Sheets responses can mean a write succeeded; inspect the destination before retrying.
+For allowed incoming messages the workflow extracts the reply text, asks the model for a response, sends a Gmail reply to the originating message and records both texts. The response includes Yes/No links; a click records feedback against the corresponding UUID. For an existing Open Flow sheet, use Sheet1 with columns ID, Initial message, Generated reply, Good response?. Initialize an empty configuration with one request before allowing simultaneous requests; automatic creation is not serialized. If creation is uncertain, inspect Google Sheets and configure the created spreadsheet ID before running again. Open Flow sends a reply using the original Gmail message ID and thread ID. The Open Flow webhook does not authenticate callers; restrict access to trusted senders. Email content is shared with the model. Lost Gmail or Sheets responses can mean a write succeeded; inspect the destination before retrying.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow, configure Gmail and OpenAI credentials, set the allowed senders in **Configure**, and set a public feedback webhook URL for your n8n instance. Set **Choose mode** to direct for n8n-only execution, or relay to use Open Flow. In relay mode set both Open Flow URLs, connect Google Sheets and Gmail on all relevant nodes, and configure the model. In Open Flow mode the supplied n8n workflow retains the Gmail trigger, source parser, feedback webhook and HTML response; Open Flow sends the Gmail reply.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

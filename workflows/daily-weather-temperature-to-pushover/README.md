@@ -13,13 +13,20 @@ Send the current city temperature to Pushover every morning.
 
 ## Setup and use
 
-Connect OpenWeather and Pushover. Set the city in **Get current weather**; the example uses Berlin and metric units. Set your Pushover user or group key in **Send Pushover message**. In n8n configure the OpenWeather and Pushover credentials and user key. Enable one format to avoid duplicate messages.
+Connect OpenWeather and Pushover. Set the city in **Get current weather**; the example uses Berlin and metric units. Set your Pushover user or group key in **Send Pushover message**. Enable one format to avoid duplicate messages.
 
-The initial schedule is 09:00 UTC daily. The source used the n8n instance timezone; adjust the schedule and timezone to your preference.
+The initial schedule is 09:00 UTC daily.
 
 ## Behavior
 
 Each run reads the current temperature in Celsius and sends one normal-priority message titled “Today's Weather”. If the weather read fails, no notification is sent. If the notification result is unknown, check Pushover before retrying to avoid duplicates.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure the OpenWeather and Pushover credentials and user key. The source used the n8n instance timezone; adjust the schedule and timezone to your preference.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

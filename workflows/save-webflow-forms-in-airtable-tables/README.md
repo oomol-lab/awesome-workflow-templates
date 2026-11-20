@@ -15,13 +15,18 @@ Create an Airtable table per Webflow form and save each submission in its corres
 
 Connect Airtable with schema read/write and record read/write access to the selected base. Set the base ID and Webflow site ID in **Save submissions by form**. Enable persistent State and prevent overlapping runs. Deploy the webhook and register its HTTPS URL as a `form_submission` webhook for the site using the [Webflow API](https://developers.webflow.com/data/reference/webhooks/create). The registration requires Webflow authorization with `forms:read`.
 
-In n8n configure Airtable credentials, set the Airtable base ID in all Airtable and HTTP nodes, and set the same Webflow site ID in **Prepare submission**. Create a Data Table with text columns payload and status and select it in the queue nodes. Deploy the n8n webhook and register that URL in Webflow. Activate one format.
-
 ## Behavior
 
-For each Webflow v2 form submission, the workflow finds or creates a **Form Index** table and an entry mapping the form ID to its own table. It creates the form table if needed, then saves the submission ID, form ID and name, timestamp, and JSON form data there. Duplicate index entries stop processing. Same-name form tables can conflict and require a distinct form name. Open Flow tracks submission IDs; n8n checks the target table before inserting. Restrict access to the queue and execution history because they contain form data.
+For each Webflow v2 form submission, the workflow finds or creates a **Form Index** table and an entry mapping the form ID to its own table. It creates the form table if needed, then saves the submission ID, form ID and name, timestamp, and JSON form data there. Duplicate index entries stop processing. Same-name form tables can conflict and require a distinct form name. Open Flow tracks submission IDs. Restrict access to the queue and execution history because they contain form data.
 
-The webhook is a public write entry point and does not verify Webflow signatures, matching the original trigger. Its acknowledgment does not confirm Airtable writes. A failed or uncertain write may have succeeded. Both formats retain later queued submissions and stop on the pending item. Inspect Airtable and repair any incomplete index or table. In Open Flow set **ackSubmissionId** to the pending submission ID and **ackResolution** to `completed` only after the submission is stored, or `retry` only after ensuring a retry will not duplicate a write; run **Resume queued submissions** and clear both fields. In n8n inspect the pending queue row and Airtable, mark it `done` if the submission is stored or `queued` after repairing state and ensuring retry is safe, then run **Resume queued submissions**. Remove completed queue rows periodically. If saving an incoming batch itself fails or has an unknown result, inspect and backfill missing submissions manually.
+The webhook is a public write entry point and does not verify Webflow signatures, matching the original trigger. Its acknowledgment does not confirm Airtable writes. A failed or uncertain write may have succeeded. The workflow retain later queued submissions and stop on the pending item. Inspect Airtable and repair any incomplete index or table. In Open Flow set **ackSubmissionId** to the pending submission ID and **ackResolution** to `completed` only after the submission is stored, or `retry` only after ensuring a retry will not duplicate a write; run **Resume queued submissions** and clear both fields. Remove completed queue rows periodically. If saving an incoming batch itself fails or has an unknown result, inspect and backfill missing submissions manually.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure Airtable credentials, set the Airtable base ID in all Airtable and HTTP nodes, and set the same Webflow site ID in **Prepare submission**. Create a Data Table with text columns payload and status and select it in the queue nodes. Deploy the n8n webhook and register that URL in Webflow. Activate one format. N8n checks the target table before inserting. In n8n inspect the pending queue row and Airtable, mark it `done` if the submission is stored or `queued` after repairing state and ensuring retry is safe, then run **Resume queued submissions**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

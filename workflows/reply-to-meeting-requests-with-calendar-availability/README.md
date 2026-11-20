@@ -13,13 +13,20 @@ Reply to meeting requests with suggested times based on Google Calendar.
 
 ## Setup
 
-Import the bundle, publish **Calendar availability tool**, refresh its interface in **Meeting request replies**, and connect Gmail and Google Calendar. Set the calendar ID if it is not primary. Configure a tool-capable AI model and enable persistent State. In n8n connect Gmail and Google Calendar, configure the calendar and a Data Table with item_key and status text columns. Use one format and avoid overlapping executions.
+Import the bundle, publish **Calendar availability tool**, refresh its interface in **Meeting request replies**, and connect Gmail and Google Calendar. Set the calendar ID if it is not primary. Configure a tool-capable AI model and enable persistent State. Use one format and avoid overlapping executions.
 
 ## Behavior
 
 The Gmail trigger checks new unread messages every minute, excluding spam and trash. The model classifies meeting requests; other messages remain unread. For a meeting request, an Agent calls the calendar tool and drafts a reply proposing specific times with a 15-minute buffer after prior meetings. The tool reads all pages of confirmed timed events from one day before now to one month ahead. Open Flow uses UTC for the range and keeps event timestamps with their offsets. All-day events are excluded as in the source, so check them separately before relying on suggestions. The workflow suggests times and does not create a calendar event. Review model behavior before enabling automatic replies.
 
-The reply is sent to the original message, and only after a confirmed reply is that message marked read. Each write has a separate pending checkpoint. If an outcome is unknown, inspect Gmail before resolving it; a successful reply is never resent merely because marking read needs attention. In n8n attempt records remain in the Data Table and require manual reconciliation on retry. Email snippets and calendar event details are sent to the model provider.
+The reply is sent to the original message, and only after a confirmed reply is that message marked read. Each write has a separate pending checkpoint. If an outcome is unknown, inspect Gmail before resolving it; a successful reply is never resent merely because marking read needs attention. Email snippets and calendar event details are sent to the model provider.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n connect Gmail and Google Calendar, configure the calendar and a Data Table with item_key and status text columns. In n8n attempt records remain in the Data Table and require manual reconciliation on retry.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

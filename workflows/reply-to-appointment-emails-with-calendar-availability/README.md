@@ -13,13 +13,20 @@ Identify appointment requests, check calendar availability and reply with sugges
 
 ## Setup
 
-Connect Gmail, Google Calendar and an AI model. Import the n8n workflow, configure the calendar and a Data Table with item_key and status text columns. For Open Flow select relay mode in **Prepare email**, set its webhook URL, configure the calendar and timezone in **Read calendar availability**, and enable persistent State. Restrict the webhook to trusted n8n and activate one mode. Prevent overlapping runs for the same message.
+Connect Gmail, Google Calendar and an AI model. Configure the calendar. Prevent overlapping runs for the same message.
 
 ## Behavior
 
 Unread email is classified by subject and snippet. Appointment requests use all calendar pages from one day ago through one month ahead to suggest a specific time with a 15-minute buffer after prior events. The workflow replies to the original email and marks it read after the reply is confirmed. Other messages are left unread. It does not create calendar events. Review suggested times: model output may be wrong, and the workflow does not reserve a slot. Email content and calendar data are sent to the model; protect execution history. Open Flow Code inputs and outputs must fit 1 MiB.
 
-If a reply or mark-read outcome is unknown, inspect Gmail before replaying. In Open Flow enter the reply pending key and confirmed or absent in **Reserve reply**, replay the same message and clear the fields. In n8n mark the corresponding pending Data Table row done only after confirming the operation, or delete it only after confirming it did not occur.
+If a reply or mark-read outcome is unknown, inspect Gmail before replaying. In Open Flow enter the reply pending key and confirmed or absent in **Reserve reply**, replay the same message and clear the fields.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow, configure the calendar and a Data Table with item_key and status text columns. For Open Flow select relay mode in **Prepare email**, set its webhook URL, configure the calendar and timezone in **Read calendar availability**, and enable persistent State. Restrict the webhook to trusted n8n and activate one mode. In n8n mark the corresponding pending Data Table row done only after confirming the operation, or delete it only after confirming it did not occur.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -13,11 +13,18 @@ Generate sample machine telemetry every second and publish it to an AMQP destina
 
 ## Setup and use
 
-Import the supplied n8n workflow and configure both AMQP nodes with the same AMQP 1.0 connection and destination. For n8n mode enable **Interval** and disable **Open Flow interval** and **AMQP relay webhook**. For Open Flow mode disable **Interval**, enable the other two, enter the deployed Open Flow webhook URL in **Send tick to Open Flow**, and enter the n8n production webhook URL in **Send to n8n AMQP relay**. Activate the n8n workflow and use one mode. Neither webhook authenticates callers; restrict access to both.
+Configure both AMQP nodes with the same AMQP 1.0 connection and destination. Neither webhook authenticates callers; restrict access to both.
 
 ## Behavior
 
-Every second, generate a machine name, random temperature and uptime from 0 through 99, and the current Unix timestamp in milliseconds. These sample values are sent as an AMQP object. In Open Flow mode n8n forwards a tick to Open Flow; Open Flow generates the telemetry and sends it to the n8n AMQP relay. The relay responds after the sender submits the message; sender failure returns HTTP failure. The tick request is acknowledged before the Open Flow run finishes, so inspect that run for relay failures. A successful AMQP relay response does not establish broker delivery. A lost response can mean the message was already sent. Intervals can overlap if delivery takes longer than one second.
+Every second, generate a machine name, random temperature and uptime from 0 through 99, and the current Unix timestamp in milliseconds. These sample values are sent as an AMQP object. The relay responds after the sender submits the message; sender failure returns HTTP failure. The tick request is acknowledged before the Open Flow run finishes, so inspect that run for relay failures. A successful AMQP relay response does not establish broker delivery. A lost response can mean the message was already sent. Intervals can overlap if delivery takes longer than one second.
+
+<details>
+<summary>In n8n</summary>
+
+Import the supplied n8n workflow and configure both AMQP nodes with the same AMQP 1.0 connection and destination. For n8n mode enable **Interval** and disable **Open Flow interval** and **AMQP relay webhook**. For Open Flow mode disable **Interval**, enable the other two, enter the deployed Open Flow webhook URL in **Send tick to Open Flow**, and enter the n8n production webhook URL in **Send to n8n AMQP relay**. Activate the n8n workflow and use one mode. In Open Flow mode n8n forwards a tick to Open Flow; Open Flow generates the telemetry and sends it to the n8n AMQP relay.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

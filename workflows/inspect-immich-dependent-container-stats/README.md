@@ -13,9 +13,16 @@ Return inspection and resource statistics for the Immich ML, database and Redis 
 
 ## Setup and use
 
-Provide a Linux Docker Engine v1.44 endpoint behind an authenticated HTTPS gateway restricted to container inspection and stats. Configure the gateway, expected server domain, STATS_WEBHOOK_AUTH and DOCKER_GATEWAY_TOKEN. In n8n configure the webhook and gateway credentials and the same gateway and server domain. POST server_domain, domain and command dependent_containers_information_stats. The workflow queries domain_ml, domain_db and domain_redis. Inspect output may contain secrets; restrict the endpoint and execution history.
+Provide a Linux Docker Engine v1.44 endpoint behind an authenticated HTTPS gateway restricted to container inspection and stats. Configure the gateway, expected server domain, STATS_WEBHOOK_AUTH and DOCKER_GATEWAY_TOKEN. POST server_domain, domain and command dependent_containers_information_stats. The workflow queries domain_ml, domain_db and domain_redis. Inspect output may contain secrets; restrict the endpoint and execution history.
 
 Stats are formatted from Engine counters using Docker CLI conventions. A missing container returns empty inspect and stats objects. Unavailable stats return an empty stats object. No filesystem measurements are included.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure the webhook and gateway credentials and the same gateway and server domain.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

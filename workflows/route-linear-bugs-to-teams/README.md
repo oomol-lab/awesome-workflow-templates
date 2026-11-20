@@ -13,15 +13,22 @@ Classify selected Linear bugs, move them to a matching team, or notify Slack whe
 
 ## Setup
 
-Configure Linear source team, triage state and bug label IDs, team responsibilities and a Slack channel. Connect Linear and Slack and configure an AI model. In n8n configure the Linear Trigger and use one Data Table with item_key and status text columns. Enable persistent State in Open Flow. Prevent overlapping runs.
+Configure Linear source team, triage state and bug label IDs, team responsibilities and a Slack channel. Connect Linear and Slack and configure an AI model. Enable persistent State in Open Flow. Prevent overlapping runs.
 
-Register a Linear Issue webhook for the configured source team at the Open Flow POST URL. Protect this endpoint at the deployment boundary: this workflow does not verify Linear's optional signing secret. In n8n select Linear OAuth credentials on the trigger and team query, a Linear API credential on the update, and Slack and OpenAI credentials. Configure the same source team and other IDs in **Set me up**. Choose one format.
+Register a Linear Issue webhook for the configured source team at the Open Flow POST URL. Protect this endpoint at the deployment boundary: this workflow does not verify Linear's optional signing secret. Configure the same source team and other IDs in **Set me up**.
 
 ## Behavior
 
 Issues with a description other than the placeholder, the configured state and bug label are classified against the configured team descriptions. An exact matching team moves the issue; Other sends a Slack notification. Review model decisions and maintain the team list. Open Flow requires the issue ID and webhook timestamp as event identity; the timestamp must be within one minute of receipt.
 
-For unknown moves or messages, inspect Linear or Slack before replay. In Open Flow enter the pending key in **Reserve triage action** and set confirmed if applied or absent if not. Also enter that key in **Select source triage bugs** as recoveryKey to allow the original timestamp, replay the same event, then clear all recovery fields. In n8n reconcile the pending Data Table row, mark it done if the action happened or delete it only if no action happened. Event data may appear in execution history.
+For unknown moves or messages, inspect Linear or Slack before replay. In Open Flow enter the pending key in **Reserve triage action** and set confirmed if applied or absent if not. Also enter that key in **Select source triage bugs** as recoveryKey to allow the original timestamp, replay the same event, then clear all recovery fields. Event data may appear in execution history.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure the Linear Trigger and use one Data Table with item_key and status text columns. In n8n select Linear OAuth credentials on the trigger and team query, a Linear API credential on the update, and Slack and OpenAI credentials. In n8n reconcile the pending Data Table row, mark it done if the action happened or delete it only if no action happened.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -23,8 +23,6 @@ For Open Flow, import the JSON and configure:
 | Format digest | Set `timezone` to match the schedule timezone for the date in the heading. |
 | Send digest | Connect your Telegram bot and replace `@YOUR_TELEGRAM_CHANNEL` with your destination. |
 
-For n8n, connect Gmail, OpenAI, and Telegram in their respective nodes, set the Telegram chat ID, and confirm the workflow timezone. The exported template uses `UTC`.
-
 Run a manual test after configuration. Publish and enable the workflow to start automatic delivery.
 
 ## Behavior
@@ -38,6 +36,13 @@ is:unread newer_than:1d -category:promotions -category:social
 The workflow sends the model each message's sender, subject, and first 200 characters of preview text. It makes one summary request for the whole batch. Empty results produce no model call or Telegram notification. Messages stay unread.
 
 The prompt groups messages into urgent, important, and remaining items. Model output is delivered as plain text. It must fit within Telegram's 4,096-character message limit.
+
+<details>
+<summary>In n8n</summary>
+
+For n8n, connect Gmail, OpenAI, and Telegram in their respective nodes, set the Telegram chat ID, and confirm the workflow timezone. The exported template uses `UTC`.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

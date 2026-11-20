@@ -13,11 +13,18 @@ Research a query with Perplexity Sonar and return the answer.
 
 ## Setup and use
 
-Connect Perplexity and run Open Flow with a query. The n8n version is a subworkflow: configure its Perplexity Authorization header and pass query from a calling workflow. Use one format.
+Connect Perplexity and run Open Flow with a query.
 
 ## Behavior
 
 The source system prompt and Sonar settings are retained, including a search domain restricted to perplexity.ai and a one-month recency filter. The first response message is returned as text. Research quality and availability depend on the service and query. Queries and responses may appear in execution history; API usage may be billed.
+
+<details>
+<summary>In n8n</summary>
+
+The n8n version is a subworkflow: configure its Perplexity Authorization header and pass query from a calling workflow.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -13,11 +13,18 @@ Create a customer, create a consulting invoice, and send it by email.
 
 ## Setup and use
 
-Connect QuickBooks Online with accounting access. Obtain an OAuth access token for the same company and bind it as the secret Variable QUICKBOOKS_ACCESS_TOKEN; refresh it when it expires. Run with a unique customer name, email, existing service item ID, company realm ID and either production or sandbox. The token, environment and connected company must refer to the same company. In n8n configure the QuickBooks credential and replace the example customer, email and item ID before running manually. Use one format.
+Connect QuickBooks Online with accounting access. Obtain an OAuth access token for the same company and bind it as the secret Variable QUICKBOOKS_ACCESS_TOKEN; refresh it when it expires. Run with a unique customer name, email, existing service item ID, company realm ID and either production or sandbox. The token, environment and connected company must refer to the same company.
 
 ## Behavior
 
 Each run creates a customer, creates a 100-unit consulting invoice for the specified service item, then sends the invoice to the customer's email. These are real accounting and email actions. If any write has an unknown outcome, inspect the QuickBooks company before retrying; starting again can create duplicate customers or invoices, or send another email. Accounting details may appear in execution history.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure the QuickBooks credential and replace the example customer, email and item ID before running manually.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

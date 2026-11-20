@@ -13,13 +13,20 @@ Demonstrate validating a six-digit TOTP code against a Base32 secret.
 
 ## Setup and use
 
-For Open Flow, bind a test Base32 secret to the secret Variable **TOTP_SECRET**, then run with the six-digit code as a string. In n8n, set the example secret and code in **EXAMPLE FIELDS** and run manually. Use test values when exploring the workflow.
+For Open Flow, bind a test Base32 secret to the secret Variable **TOTP_SECRET**, then run with the six-digit code as a string. Use test values when exploring the workflow.
 
 ## Behavior
 
-The workflow calculates TOTP using HMAC-SHA1, six digits and 30-second steps. It compares only the current step and returns `1` for a match or `0` for a non-match. A malformed Base32 secret stops the run. n8n routes the result through its true/false IF node; Open Flow returns `status` for a later condition.
+The workflow calculates TOTP using HMAC-SHA1, six digits and 30-second steps. It compares only the current step and returns `1` for a match or `0` for a non-match. A malformed Base32 secret stops the run. Open Flow returns `status` for a later condition.
 
-This is a validation example. Production authentication also needs appropriate protection against repeated attempts and replay, secure secret handling and a clock policy. n8n stores the example fields in workflow data, so do not put production secrets there.
+This is a validation example. Production authentication also needs appropriate protection against repeated attempts and replay, secure secret handling and a clock policy.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, set the example secret and code in **EXAMPLE FIELDS** and run manually. n8n routes the result through its true/false IF node. n8n stores the example fields in workflow data, so do not put production secrets there.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

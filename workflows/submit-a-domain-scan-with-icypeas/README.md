@@ -13,11 +13,18 @@ Submit a company or domain to Icypeas to find role-based email addresses.
 
 ## Setup
 
-In Open Flow, connect Icypeas in **Submit the domain scan** and replace the company domain or name. In n8n, configure an HTTP Header Auth credential named Authorization with your Icypeas API key, and replace the company field in **Submit the domain scan**. Run one format.
+In Open Flow, connect Icypeas in **Submit the domain scan** and replace the company domain or name.
 
 ## Behavior
 
 A manual run submits one domain scan for role-based email addresses. The response includes the search item ID and its current status when the service provides them. Icypeas processes searches asynchronously; inspect the item in Icypeas to see the result. If a submission fails or its outcome is uncertain, check Icypeas before retrying.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, configure an HTTP Header Auth credential named Authorization with your Icypeas API key, and replace the company field in **Submit the domain scan**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

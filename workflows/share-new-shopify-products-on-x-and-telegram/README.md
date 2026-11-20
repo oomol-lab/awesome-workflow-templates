@@ -13,11 +13,18 @@ Announce a new Shopify product on X and in a Telegram chat.
 
 ## Setup
 
-Connect X and Telegram, and replace `@YOUR_TELEGRAM_CHANNEL` with your Telegram chat ID or channel username. Deploy the Open Flow webhook and register it for Shopify's products/create topic with the full product payload. In n8n connect Shopify, X and Telegram, and replace `@YOUR_TELEGRAM_CHANNEL` with your Telegram chat ID or channel username. Use one workflow format.
+Connect X and Telegram, and replace `@YOUR_TELEGRAM_CHANNEL` with your Telegram chat ID or channel username. Deploy the Open Flow webhook and register it for Shopify's products/create topic with the full product payload.
 
 ## Behavior
 
 Each new product supplies the vendor, title and product type for two announcements. The webhook does not verify the sender; restrict access appropriately. Its acknowledgment confirms receipt, not delivery to either service. Each message is a separate external write, so check both destinations before retrying a failed or uncertain run. Execution history can include product data.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n connect Shopify, X and Telegram, and replace `@YOUR_TELEGRAM_CHANNEL` with your Telegram chat ID or channel username.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -13,13 +13,20 @@ Monitor a recent X search and post new results to a Mattermost channel.
 
 ## Setup
 
-Connect X with access to recent search and Mattermost with permission to post. Set the query in **Search recent X posts** and channel ID in **Post to Mattermost**. Enable persistent workflow State. n8n static data persists in active scheduled runs. In n8n connect X OAuth2 to **Search recent X posts**, Mattermost to **Post to Mattermost**, and set the query and channel. Activate one format.
+Connect X with access to recent search and Mattermost with permission to post. Set the query in **Search recent X posts** and channel ID in **Post to Mattermost**. Enable persistent workflow State.
 
 ## Behavior
 
 Each minute the workflow reads up to 50 recent search results, compares them with the previous nonempty result set and sends the new results in search order until it encounters an already seen ID. Each notification links to the post and includes its text and author. The first run sends the returned results. It remembers only the latest result set; older or delayed results can be missed or repeated. X recent search covers a limited time window and requires an eligible account.
 
-The workflow advances its saved IDs only after a successful run. If a later notification fails, earlier posts remain and a retry can repeat them. An uncertain post may already have been created; inspect Mattermost before retrying. Avoid overlapping runs, which can race on saved State. The source inherited its n8n instance timezone; the schedule uses UTC.
+The workflow advances its saved IDs only after a successful run. If a later notification fails, earlier posts remain and a retry can repeat them. An uncertain post may already have been created; inspect Mattermost before retrying. Avoid overlapping runs, which can race on saved State.
+
+<details>
+<summary>In n8n</summary>
+
+n8n static data persists in active scheduled runs. In n8n connect X OAuth2 to **Search recent X posts**, Mattermost to **Post to Mattermost**, and set the query and channel. The source inherited its n8n instance timezone; the schedule uses UTC.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

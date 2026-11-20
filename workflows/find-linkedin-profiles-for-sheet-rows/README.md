@@ -13,11 +13,18 @@ Search for LinkedIn profiles using person descriptions in a Google Sheet and upd
 
 ## Setup
 
-Connect Google Sheets and create an Airtop API key. The sheet needs unique headers `Person Info` and `Linkedin URL`. In Open Flow, configure the spreadsheet ID on **Read people from the sheet** and **Update the profile cell**, the sheet name in the full-column A1 range on **Read people from the sheet**, and the same sheet name on **Identify sheet rows**. Keep the range starting at column A and including the header row and both required columns. Create a secret Variable AIRTOP_API_KEY and bind it to every Airtop request. In n8n, connect Airtop and Google Sheets and select the spreadsheet and sheet on the Sheets nodes. Run one format.
+Connect Google Sheets and create an Airtop API key. The sheet needs unique headers `Person Info` and `Linkedin URL`. In Open Flow, configure the spreadsheet ID on **Read people from the sheet** and **Update the profile cell**, the sheet name in the full-column A1 range on **Read people from the sheet**, and the same sheet name on **Identify sheet rows**. Keep the range starting at column A and including the header row and both required columns. Create a secret Variable AIRTOP_API_KEY and bind it to every Airtop request.
 
 ## Behavior
 
-For each nonempty person description, search Google with Airtop and write the returned LinkedIn profile URL to the same row. An empty result clears the URL cell. Results are AI-generated and can identify the wrong person, so review them before use. Do not reorder rows or run overlapping copies during execution. Errors stop the run; earlier cells may already have changed. An uncertain write may have succeeded, so inspect the sheet before retrying. Open Flow searches and writes each row in sequence and changes only the URL cell. n8n completes the Airtop node before its update node and writes the mapped row fields as well. Open Flow checks session readiness up to 60 times at five-second intervals; its HTTP requests use a 30-second timeout and a 4 MiB response limit. It closes each session after a successful query; an earlier error may leave a session until its idle timeout.
+For each nonempty person description, search Google with Airtop and write the returned LinkedIn profile URL to the same row. An empty result clears the URL cell. Results are AI-generated and can identify the wrong person, so review them before use. Do not reorder rows or run overlapping copies during execution. Errors stop the run; earlier cells may already have changed. An uncertain write may have succeeded, so inspect the sheet before retrying. Open Flow searches and writes each row in sequence and changes only the URL cell. Open Flow checks session readiness up to 60 times at five-second intervals; its HTTP requests use a 30-second timeout and a 4 MiB response limit. It closes each session after a successful query; an earlier error may leave a session until its idle timeout.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect Airtop and Google Sheets and select the spreadsheet and sheet on the Sheets nodes. n8n completes the Airtop node before its update node and writes the mapped row fields as well.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

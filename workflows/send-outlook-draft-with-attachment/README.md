@@ -13,13 +13,20 @@ Create an Outlook draft, add a downloaded image and send the message.
 
 ## Setup
 
-Connect the same Outlook account to **Create an Outlook draft**, **Attach the image** and **Send the Outlook draft**, with Mail.ReadWrite and Mail.Send permissions. Set a real recipient, subject and body in **Create an Outlook draft**. Allow the download from n8n.io. In n8n connect Outlook and set a recipient in **Microsoft Outlook2**. Run one format.
+Connect the same Outlook account to **Create an Outlook draft**, **Attach the image** and **Send the Outlook draft**, with Mail.ReadWrite and Mail.Send permissions. Set a real recipient, subject and body in **Create an Outlook draft**.
 
 ## Behavior
 
-A manual run creates a draft, downloads the sample n8n logo, attaches it as n8n.png and sends the draft. Open Flow accepts files that fit its 1 MiB fetch and Code input/output limits; oversized data stops rather than being truncated. Restrict access to run data containing email content and attachment bytes.
+Open Flow accepts files that fit its 1 MiB fetch and Code input/output limits; oversized data stops rather than being truncated. Restrict access to run data containing email content and attachment bytes.
 
-Open Flow adds the recipient when creating the draft; n8n adds it just before sending. A failure may leave a draft or an attachment. An uncertain send may already have completed; inspect Outlook before retrying. Send acceptance does not guarantee delivery.
+Open Flow adds the recipient when creating the draft. A failure may leave a draft or an attachment. An uncertain send may already have completed; inspect Outlook before retrying. Send acceptance does not guarantee delivery.
+
+<details>
+<summary>In n8n</summary>
+
+Allow the download from n8n.io. In n8n connect Outlook and set a recipient in **Microsoft Outlook2**. A manual run creates a draft, downloads the sample n8n logo, attaches it as n8n.png and sends the draft. N8n adds it just before sending.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

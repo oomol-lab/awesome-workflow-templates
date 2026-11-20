@@ -13,11 +13,18 @@ Learn to match example names and greetings by language.
 
 ## Setup and use
 
-Run manually to match the sample lists. Edit the people and greetings lists in **Match by language** in Open Flow, or the two sample Code nodes in n8n.
+Run manually to match the sample lists. Edit the people and greetings lists in **Match by language**.
 
 ## Behavior
 
-The sample pairs Stefan and Hans with “Hallo” and Jim with “Hello”. Matching uses the `language` value; unmatched entries are omitted. Each matching pair produces a result. Open Flow returns the matches as an array; n8n emits one item per match.
+The sample pairs Stefan and Hans with “Hallo” and Jim with “Hello”. Matching uses the `language` value; unmatched entries are omitted. Each matching pair produces a result. Open Flow returns the matches as an array.
+
+<details>
+<summary>In n8n</summary>
+
+Edit the people and greetings lists in **Match by language** in Open Flow, or the two sample Code nodes in n8n. N8n emits one item per match.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

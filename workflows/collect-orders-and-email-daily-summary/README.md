@@ -13,7 +13,7 @@ Store orders received by webhook in Airtable and email a daily table of recent o
 
 ## Setup
 
-Connect Airtable and set the same base and table on the read and create nodes. Create fields `time` (date and time), `orderID` (number), and `orderPrice` (number). Connect Gmail and set the summary recipient. Enable one format. POST JSON such as `{"orderID":123,"orderPrice":42.5}` to the webhook. The endpoint is public and has no authentication; restrict access to its URL.
+Connect Airtable and set the same base and table on the read and create nodes. Create fields `time` (date and time), `orderID` (number), and `orderPrice` (number). Connect Gmail and set the summary recipient. POST JSON such as `{"orderID":123,"orderPrice":42.5}` to the webhook. The endpoint is public and has no authentication; restrict access to its URL.
 
 ## Behavior
 

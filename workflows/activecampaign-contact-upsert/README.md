@@ -13,11 +13,18 @@ Create an ActiveCampaign contact or update the contact with the same email addre
 
 ## Setup
 
-Select your ActiveCampaign account in **Create or update contact**. The connection needs your account API URL and API token, with permission to add and edit contacts. Run with **Email**, **First Name** and **Last Name**. All three values are required in this template. In n8n, choose ActiveCampaign credentials, set the email and both names, and keep **Update if Exists** enabled.
+Select your ActiveCampaign account in **Create or update contact**. The connection needs your account API URL and API token, with permission to add and edit contacts. Run with **Email**, **First Name** and **Last Name**. All three values are required in this template.
 
 Each run makes one contact sync request. An existing email updates that contact; a new email creates a contact. Other contact fields remain unchanged. The template does not subscribe the contact to a list or add tags. Existing account automations may respond to the contact change.
 
-Open Flow returns the normalized contact and its complete raw record. n8n returns the saved contact from the API response. A failed request stops the run; no workflow retry or rollback is configured. Check the contact before repeating a request with an uncertain result.
+Open Flow returns the normalized contact and its complete raw record. A failed request stops the run; no workflow retry or rollback is configured. Check the contact before repeating a request with an uncertain result.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, choose ActiveCampaign credentials, set the email and both names, and keep **Update if Exists** enabled. n8n returns the saved contact from the API response.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

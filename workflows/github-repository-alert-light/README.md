@@ -19,15 +19,20 @@ Connect Home Assistant in **Turn the alert light red** using a long-lived access
 
 Replace `entity_id` in **Service Data** with an existing RGB-capable light, such as `light.office_lamp`. Keep **Domain** `light`, **Service** `turn_on`, and `rgb_color` `[255, 0, 0]` for red. You can change that RGB array to another supported color. Do not request service response data for this light service.
 
-In n8n, select **GitHub API** access-token credentials on its trigger, set the owner/repository, then select **Home Assistant API** credentials on its light node. Configure the Home Assistant host, protocol, port and long-lived token for your n8n deployment. Replace the light entity under **Service Attributes**. Activate one format for the repository.
-
 ## Behavior
 
 Each delivered repository event calls `light.turn_on` once with the configured entity and RGB color. It does not filter for failures or releases, flash the light, restore its previous state, turn it off, or apply a cooldown. The selected Home Assistant integration controls how the light implements the color request. GitHub determines which activities produce webhook deliveries.
 
-Open Flow returns the Action’s complete normalized `changedStates` and `serviceResponse` outputs; n8n returns the service API’s changed-state rows and emits one empty object when the API returns an empty array. A successful call can return an empty list when no state changes while the service runs. Returned states can include other changes during that interval. The result records the service response and does not independently verify the physical light or guarantee that every state row is the configured entity.
+Open Flow returns the Action’s complete normalized `changedStates` and `serviceResponse` outputs. A successful call can return an empty list when no state changes while the service runs. Returned states can include other changes during that interval. The result records the service response and does not independently verify the physical light or guarantee that every state row is the configured entity.
 
-Webhook signatures are checked using the registered secret. Open Flow uses a delivery ID for deduplication when GitHub supplies one; n8n adds no workflow-level delivery history. Redelivery or manual replay can call the light service again. An API error or uncertain outcome fails the run without a workflow retry; the light may already have changed.
+Webhook signatures are checked using the registered secret. Open Flow uses a delivery ID for deduplication when GitHub supplies one. Redelivery or manual replay can call the light service again. An API error or uncertain outcome fails the run without a workflow retry; the light may already have changed.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, select **GitHub API** access-token credentials on its trigger, set the owner/repository, then select **Home Assistant API** credentials on its light node. Configure the Home Assistant host, protocol, port and long-lived token for your n8n deployment. Replace the light entity under **Service Attributes**. Activate one format for the repository. N8n returns the service API’s changed-state rows and emits one empty object when the API returns an empty array. N8n adds no workflow-level delivery history.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

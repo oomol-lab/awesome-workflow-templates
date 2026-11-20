@@ -16,13 +16,19 @@ Poll an RSS or Atom feed every 10 minutes and publish new items to Mastodon whil
 1. Replace `https://YOUR_RSS_FEED_URL` in **Fetch RSS feed** with your RSS or Atom feed URL.
 2. Replace `https://YOUR_MASTODON_INSTANCE/api/v1/statuses` in **Post status to Mastodon** with your Mastodon server endpoint and bind `MASTODON_ACCESS_TOKEN` to a secret variable containing your Mastodon access token (`write:statuses` scope).
 3. Enable persistent State in Open Flow so `rss-to-mastodon:last-id` is preserved across runs.
-4. For the n8n template, configure the feed URL in **RSS Feed Read** and your Mastodon instance URL and access token in **HTTP Request**.
 
 ## Behavior
 
 - Runs every 10 minutes (UTC), fetches the feed XML, and extracts each entry's short ID (trailing path segment of `guid`/`id`/`link`), title, and URL.
 - Collects entries newer than the stored `rss-to-mastodon:last-id` checkpoint and posts them in chronological order to `POST /api/v1/statuses`.
 - Updates `rss-to-mastodon:last-id` only after each Mastodon post succeeds so failed posts can be retried on the next scheduled run.
+
+<details>
+<summary>In n8n</summary>
+
+For the n8n template, configure the feed URL in **RSS Feed Read** and your Mastodon instance URL and access token in **HTTP Request**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

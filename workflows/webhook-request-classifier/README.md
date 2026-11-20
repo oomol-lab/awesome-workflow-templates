@@ -13,7 +13,7 @@ Classify an incoming request and return a route, priority, and one-sentence summ
 
 ## Setup
 
-For Open Flow, import the JSON and select a configured Claude Haiku 4.5 model in **Classify request**. For n8n, select an Anthropic credential in **Claude Classifier**.
+For Open Flow, import the JSON and select a configured Claude Haiku 4.5 model in **Classify request**.
 
 Publish and enable the workflow. Send a JSON POST request with a `request` field to the webhook URL:
 
@@ -26,9 +26,16 @@ Publish and enable the workflow. Send a JSON POST request with a `request` field
 }
 ```
 
-The `request` value can contain your own JSON fields or a text string. Both formats use the same wrapper. A successful response has `received: true`, a `route`, a `priority` of `high`, `medium`, or `low`, and a `summary`.
+The `request` value can contain your own JSON fields or a text string. The workflow uses the same wrapper. A successful response has `received: true`, a `route`, a `priority` of `high`, `medium`, or `low`, and a `summary`.
 
 Malformed model output returns the fallback `general` / `medium` with summary `Unable to classify`. Unknown route and priority labels become `general` and `medium`. Model request failures still fail the workflow. Open Flow waits up to 60 seconds for classification; an HTTP timeout does not cancel the run. Review model accuracy for your request types before using the result to make routing decisions.
+
+<details>
+<summary>In n8n</summary>
+
+For n8n, select an Anthropic credential in **Claude Classifier**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

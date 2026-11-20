@@ -13,9 +13,16 @@ Log check-in and check-out events from location shortcuts to a Google Sheet.
 
 ## Setup and use
 
-Connect Drive and Sheets and enable persistent State. Set ATTENDANCE_WEBHOOK_AUTH to the shared signing secret. Create iPhone location automations that call the webhook with Direction set to Check-In or Check-Out, a unique Request-ID for each event, and X-Signature set to the hex HMAC-SHA256 of Request-ID, a newline and Direction using that secret. Retain the same Request-ID when retrying. Dates and times use UTC. In self-hosted n8n, set ATTENDANCE_WEBHOOK_AUTH in the environment, enable NODE_FUNCTION_ALLOW_BUILTIN=crypto and set N8N_BLOCK_ENV_ACCESS_IN_NODE=false. Configure Google Drive and Sheets credentials on their nodes, including the Sheets HTTP node. Select a Data Table with text columns item_key and status on all checkpoint nodes.
+Connect Drive and Sheets and enable persistent State. Set ATTENDANCE_WEBHOOK_AUTH to the shared signing secret. Create iPhone location automations that call the webhook with Direction set to Check-In or Check-Out, a unique Request-ID for each event, and X-Signature set to the hex HMAC-SHA256 of Request-ID, a newline and Direction using that secret. Retain the same Request-ID when retrying. Dates and times use UTC. Configure Google Drive and Sheets credentials on their nodes, including the Sheets HTTP node.
 
-The workflow finds the spreadsheet named WorkTimeTracking or creates it and its headings. Existing spreadsheets need a Worklog worksheet with Date, Time and Direction columns. A newly created spreadsheet uses its default worksheet. Avoid simultaneous first runs. Inspect the spreadsheet and pending state before any retry after an uncertain write; a repeated request does not append automatically. In Open Flow clear the exact attendance:<Request-ID> pending State only after verifying that no row was added; if it was added, mark it done. In n8n inspect and reconcile that key in the Data Table. If spreadsheet creation or heading initialization is uncertain, inspect the spreadsheet and its attendance:spreadsheet checkpoint before another creation.
+The workflow finds the spreadsheet named WorkTimeTracking or creates it and its headings. Existing spreadsheets need a Worklog worksheet with Date, Time and Direction columns. A newly created spreadsheet uses its default worksheet. Avoid simultaneous first runs. Inspect the spreadsheet and pending state before any retry after an uncertain write; a repeated request does not append automatically. In Open Flow clear the exact attendance:<Request-ID> pending State only after verifying that no row was added; if it was added, mark it done. If spreadsheet creation or heading initialization is uncertain, inspect the spreadsheet and its attendance:spreadsheet checkpoint before another creation.
+
+<details>
+<summary>In n8n</summary>
+
+In self-hosted n8n, set ATTENDANCE_WEBHOOK_AUTH in the environment, enable NODE_FUNCTION_ALLOW_BUILTIN=crypto and set N8N_BLOCK_ENV_ACCESS_IN_NODE=false. Select a Data Table with text columns item_key and status on all checkpoint nodes. In n8n inspect and reconcile that key in the Data Table.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

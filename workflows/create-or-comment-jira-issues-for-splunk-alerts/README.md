@@ -15,13 +15,18 @@ Search Jira for a Splunk host alert, then create an issue or comment on matching
 
 Connect Jira with permission to search issues, create issues, and add comments. In **Validate and prepare the alert**, set the numeric project and issue type IDs and the Jira text custom field ID, such as customfield_12345. The field must be searchable with Jira's ~ operator and available on the issue creation screen. Create a secret Variable SPLUNK_ALERT_SECRET with at least 24 unpredictable characters and bind it to the same node. Configure the Splunk webhook to send that value as the custom x-splunk-secret header over HTTPS. This checks a static header; it does not verify Splunk’s separate signed webhook mechanism. Restrict access to execution history because webhook headers can be recorded.
 
-In n8n, configure Header Auth on **Webhook** using the same header name and secret, set the Jira search field and the project, issue type and custom field in the Jira nodes, and connect Jira. Activate only one format.
-
 ## Behavior
 
 Configure the alert payload to supply inputs.A.key["host.name"], description, messageBody and timestamp. The host is stripped to ASCII letters, digits and spaces, as in the source, and searched with Jira's ~ text operator. A match results in a comment on each returned issue; no match creates an issue containing the original host and description, message body and normalized host field. The search uses at most 50 matches, matching the source's default limit. Text search can match more than one host; configure the field and review your Jira search behavior.
 
 The immediate HTTP response acknowledges receipt only. The search and writes are not atomic: concurrent alerts or Jira search indexing delays can create duplicate issues. A failed or uncertain create or comment may have succeeded; inspect Jira before retrying. No exactly-once guarantee is provided.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, configure Header Auth on **Webhook** using the same header name and secret, set the Jira search field and the project, issue type and custom field in the Jira nodes, and connect Jira. Activate only one format.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

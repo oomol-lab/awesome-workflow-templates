@@ -15,13 +15,20 @@ Read the books table from MySQL each week and append matching columns to Google 
 
 Connect Google Sheets and set the same spreadsheet ID in **Read sheet headers** and **Prepare weekly append**. Set matching header and append ranges for the same sheet. The default ranges use the first six columns, matching the source; the first row contains case-sensitive MySQL column names.
 
-Import the bundled n8n workflow, connect MySQL to the read relay, enable **MySQL read webhook**, and set **Read MySQL books** to its production URL. Configure the relay Header Auth credential as Authorization: Bearer followed by a secret, and bind that same secret as MYSQL_RELAY_TOKEN in Open Flow. Disable the direct n8n Cron when using Open Flow. Enable persistent State and prevent overlapping runs. For direct n8n, configure MySQL, Google Sheets and one Data Table with item_key and status text columns, and leave the relay disabled.
+Connect MySQL and set **Read MySQL books** to its production URL. Configure the relay Header Auth credential as Authorization: Bearer followed by a secret, and bind that same secret as MYSQL_RELAY_TOKEN in Open Flow. Enable persistent State and prevent overlapping runs.
 
 ## Behavior
 
 At 05:00 UTC each Monday, run SELECT * FROM books and append every returned row using exact sheet header matches. Null or absent values become empty cells and other values are converted to strings, as in the source. An empty table does not append rows. Each weekly run appends the full table again.
 
-If the sheet append outcome is unknown, inspect the sheet before retrying. Enter the pending key in **Prepare weekly append**, set resolution to confirmed if appended or absent if not, rerun, then clear the fields. In n8n inspect the pending run row; mark it done if the full append succeeded or delete it only if none occurred. Protect the relay and execution histories, which can contain book records.
+If the sheet append outcome is unknown, inspect the sheet before retrying. Enter the pending key in **Prepare weekly append**, set resolution to confirmed if appended or absent if not, rerun, then clear the fields. Protect the relay and execution histories, which can contain book records.
+
+<details>
+<summary>In n8n</summary>
+
+Import the bundled n8n workflow, connect MySQL to the read relay, enable **MySQL read webhook**, and set **Read MySQL books** to its production URL. Disable the direct n8n Cron when using Open Flow. For direct n8n, configure MySQL, Google Sheets and one Data Table with item_key and status text columns, and leave the relay disabled. In n8n inspect the pending run row; mark it done if the full append succeeded or delete it only if none occurred.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

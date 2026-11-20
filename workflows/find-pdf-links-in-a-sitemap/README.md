@@ -13,11 +13,18 @@ Fetch a sitemap and return entries whose URL ends in .pdf.
 
 ## Setup and use
 
-Set **Fetch sitemap** to the URL of the XML sitemap to inspect and run manually. In n8n set **Set sitemap URL** to the same URL and run the workflow. The default is the source's example sitemap.
+Set **Fetch sitemap** to the URL of the XML sitemap to inspect and run manually. The default is the source's example sitemap.
 
 ## Behavior
 
-The workflow parses sitemap entries and returns those whose loc ends in lowercase .pdf, retaining the other entry fields. It does not traverse sitemap indexes.
+The workflow parses sitemap entries and returns those whose loc ends in lowercase.pdf, retaining the other entry fields. It does not traverse sitemap indexes.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n set **Set sitemap URL** to the same URL and run the workflow.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

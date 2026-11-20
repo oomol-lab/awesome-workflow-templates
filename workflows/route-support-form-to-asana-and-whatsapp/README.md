@@ -13,11 +13,18 @@ Create an Asana support task and send a WhatsApp confirmation for each form subm
 
 ## Setup
 
-Create a Typeform with required questions titled **What is your name?**, **What is your phone number?** and **What is your problem?**. Use a phone number field with international numbers. Connect Typeform and set its form ID in **Receive support form**. Connect WhatsApp Business Cloud and Asana, and set the WhatsApp phone number ID and Asana workspace ID. In n8n use the included form, connect WhatsApp and Asana, and set the same identifiers.
+Create a Typeform with required questions titled **What is your name?**, **What is your phone number?** and **What is your problem?**. Use a phone number field with international numbers. Connect Typeform and set its form ID in **Receive support form**. Connect WhatsApp Business Cloud and Asana, and set the WhatsApp phone number ID and Asana workspace ID.
 
 ## Behavior
 
-Each submission sends the named customer a WhatsApp confirmation and creates an Asana task containing the problem. WhatsApp free-text messaging requires an eligible customer-service conversation under Meta's rules. A failure in one branch does not undo a completed action in the other. Check both services before retrying an uncertain result; repeated submissions can create duplicate messages or tasks. Open Flow uses Typeform instead of the n8n form.
+Each submission sends the named customer a WhatsApp confirmation and creates an Asana task containing the problem. WhatsApp free-text messaging requires an eligible customer-service conversation under Meta's rules. A failure in one branch does not undo a completed action in the other. Check both services before retrying an uncertain result; repeated submissions can create duplicate messages or tasks.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n use the included form, connect WhatsApp and Asana, and set the same identifiers. Open Flow uses Typeform instead of the n8n form.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

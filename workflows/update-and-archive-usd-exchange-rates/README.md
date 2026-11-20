@@ -13,13 +13,20 @@ Refresh a USD exchange rate row and append a historical snapshot in Google Sheet
 
 ## Setup
 
-Set the secret deployment variable EXCHANGE_RATE_URL to the complete ExchangeRate-API Standard URL for USD, including your API key. Protect execution logs because the key is part of the URL. Connect Google Sheets and set the spreadsheet ID on all four Sheets nodes. Create sheets named Rates and Archives with matching column headers, including base_currency and time_last_update_utc, plus desired currency codes. Rates must contain exactly one USD row. Set a unique namespace in **Prepare next rate write** and enable persistent State. In n8n configure the API key in **USD Query**, both sheet IDs, and one Data Table with text columns item_key, status, snapshot and stamp. Create one row with item_key exchange-rates:YOUR_RATE_SHEET and status ready; use the same key in all checkpoint nodes. For an uncertain update, inspect the USD row and set status to archive_ready if confirmed or ready if absent. For an uncertain archive, inspect the matching timestamp and set status to done if confirmed or archive_ready if absent. Keep the snapshot and stamp unchanged during reconciliation.
+Set the secret deployment variable EXCHANGE_RATE_URL to the complete ExchangeRate-API Standard URL for USD, including your API key. Protect execution logs because the key is part of the URL. Connect Google Sheets and set the spreadsheet ID on all four Sheets nodes. Create sheets named Rates and Archives with matching column headers, including base_currency and time_last_update_utc, plus desired currency codes. Rates must contain exactly one USD row. Set a unique namespace in **Prepare next rate write** and enable persistent State. Create one row with item_key exchange-rates:YOUR_RATE_SHEET and status ready; use the same key in all checkpoint nodes. For an uncertain update, inspect the USD row and set status to archive_ready if confirmed or ready if absent. For an uncertain archive, inspect the matching timestamp and set status to done if confirmed or archive_ready if absent. Keep the snapshot and stamp unchanged during reconciliation.
 
 ## Behavior
 
 Run manually or daily at 07:00 UTC. The current USD row is updated and a matching snapshot is appended to Archives. Each update timestamp is archived once. Avoid overlapping runs and concurrent edits to the current row. If a write is uncertain, inspect its destination, then enter the pending key and confirmed or absent in **Prepare next rate write**. Clear the recovery fields afterward. The preserved snapshot is used until both writes complete.
 
 [ExchangeRate-API Standard requests](https://www.exchangerate-api.com/docs/standard-requests)
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure the API key in **USD Query**, both sheet IDs, and one Data Table with text columns item_key, status, snapshot and stamp.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

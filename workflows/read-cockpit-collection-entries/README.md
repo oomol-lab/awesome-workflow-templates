@@ -13,11 +13,18 @@ Read up to 100 entries from a Cockpit CMS collection.
 
 ## Setup and use
 
-Use a Cockpit CMS v1 instance and a token permitted to read the collection. In Open Flow, set its HTTPS base URL and collection name in **Choose the collection**, then bind the token as the secret Variable **COCKPIT_API_TOKEN** in **Read collection entries**. In n8n, set the collection and Cockpit credential. The example collection is `samplecollection`.
+Use a Cockpit CMS v1 instance and a token permitted to read the collection. In Open Flow, set its HTTPS base URL and collection name in **Choose the collection**, then bind the token as the secret Variable **COCKPIT_API_TOKEN** in **Read collection entries**. The example collection is `samplecollection`.
 
 ## Behavior
 
-Run manually to read up to 100 entries with their returned fields. Open Flow returns an array; n8n emits one item per entry. An empty collection returns an empty array or no items. The workflow does not fetch later entries. This uses Cockpit v1's `/api/collections/get` endpoint; newer Cockpit versions use a different API. The token is sent as a query parameter, so restrict access to server and proxy logs.
+Run manually to read up to 100 entries with their returned fields. Open Flow returns an array. An empty collection returns an empty array or no items. The workflow does not fetch later entries. This uses Cockpit v1's `/api/collections/get` endpoint; newer Cockpit versions use a different API. The token is sent as a query parameter, so restrict access to server and proxy logs.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, set the collection and Cockpit credential. N8n emits one item per entry.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

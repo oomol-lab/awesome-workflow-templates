@@ -13,13 +13,20 @@ Classify top-level Inbox tasks and set their Todoist priorities from a configura
 
 ## Setup
 
-Connect Todoist and configure the Inbox project ID in **Read Inbox tasks**. Configure the category-to-priority object in **Select the next top-level task**. Values are Todoist API priorities from 1 through 4, where 4 is most urgent. Select an AI model. In n8n connect Todoist and OpenAI, select the Inbox project and configure the category map. Enable one format.
+Connect Todoist and configure the Inbox project ID in **Read Inbox tasks**. Configure the category-to-priority object in **Select the next top-level task**. Values are Todoist API priorities from 1 through 4, where 4 is most urgent. Select an AI model.
 
 ## Behavior
 
 Every day at 00:00 UTC, the workflow reads all Inbox task pages, skips subtasks, classifies each top-level task and updates the task priority only for a known category. The example categories are apartment, health and german. An unknown category or other causes no update. Review model-driven changes before relying on them.
 
-Open Flow starts at the minute boundary; n8n uses a fixed second within that minute. Task content is sent to the configured model. A failed or uncertain update stops the run. Each daily run reads the Inbox again and may update the same task, so inspect Todoist before the next run or manual retry. Open Flow uses the formal Todoist Actions through Code for page and per-task coordination. n8n uses its Todoist nodes. Large projects must fit platform execution limits.
+Open Flow starts at the minute boundary. Task content is sent to the configured model. A failed or uncertain update stops the run. Each daily run reads the Inbox again and may update the same task, so inspect Todoist before the next run or manual retry. Open Flow uses the formal Todoist Actions through Code for page and per-task coordination. Large projects must fit platform execution limits.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n connect Todoist and OpenAI, select the Inbox project and configure the category map. N8n uses a fixed second within that minute. n8n uses its Todoist nodes.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

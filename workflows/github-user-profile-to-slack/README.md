@@ -15,8 +15,6 @@ Post a GitHub user’s name, company, location, avatar and matching public or co
 
 Connect GitHub in **Read the GitHub profile** and allow **Provider API** access. This is a separate permission from individual Actions. The Connection needs access to the queried GitHub data. Connect Slack in **Post a profile attachment** with `chat:write` and membership in the destination conversation.
 
-In n8n, select **GitHub API** access-token credentials on the HTTP Request and **Slack API** access-token credentials on the send node. The workflow replaces the source’s inline token placeholder with managed credentials.
-
 Enable the POST webhook behind access controls appropriate for your deployment. The endpoint itself has no shared-secret or Slack-signature check. Anyone with access can use your selected GitHub account and post to a submitted Slack conversation that your connection can reach.
 
 ## Use
@@ -29,15 +27,22 @@ curl -X POST -H 'Content-Type: application/json' \
   'YOUR_WEBHOOK_URL'
 ```
 
-This is a JSON webhook. It does not directly accept a Slack slash command’s form-encoded payload or verify Slack requests. Both formats acknowledge admission with HTTP 200 before the query or Slack post finishes. Check the workflow run for completion; the HTTP acknowledgment is not a delivery receipt.
+This is a JSON webhook. It does not directly accept a Slack slash command’s form-encoded payload or verify Slack requests. The workflow acknowledge admission with HTTP 200 before the query or Slack post finishes. Check the workflow run for completion; the HTTP acknowledgment is not a delivery receipt.
 
 The query reads the user’s public email and the last 25 pull requests returned by GitHub, with the last 25 commits in each. It makes no additional pagination requests. A commit email is included when its author name contains the nonempty profile name as literal, case-sensitive text, or exactly equals the submitted username. The public email comes first, duplicates are removed, and GitHub no-reply addresses are excluded. Commit-author names and emails can be self-reported; a name match does not verify that an email belongs to the user. This is a bounded lookup, not a complete email history.
 
 A profile with no matching email still posts its other details. Missing name, company or location is shown as empty. A missing user, malformed response or GraphQL errors stop before Slack; partial GraphQL results are not posted. Profile text is escaped for Slack, with attachment Markdown disabled. The avatar is attached to the first message. Long results are posted sequentially as numbered attachments of at most 3800 characters, preserving all text.
 
-Open Flow returns the complete queried profile, selected emails, scan counts and all normalized Slack `ts`/`channelId` receipts. n8n retains the profile summary and complete Slack API responses. A failed or uncertain Slack post stops later parts without a workflow retry. Earlier parts may already exist; check the conversation before repeating a request. Repeating a request can post again.
+Open Flow returns the complete queried profile, selected emails, scan counts and all normalized Slack `ts`/`channelId` receipts. A failed or uncertain Slack post stops later parts without a workflow retry. Earlier parts may already exist; check the conversation before repeating a request. Repeating a request can post again.
 
 The complete request, GraphQL response, parts and accumulated receipts must fit the inspected Open Flow host’s 1 MiB per-Code input/result budget. Oversized data fails without truncation.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, select **GitHub API** access-token credentials on the HTTP Request and **Slack API** access-token credentials on the send node. The workflow replaces the source’s inline token placeholder with managed credentials. n8n retains the profile summary and complete Slack API responses.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

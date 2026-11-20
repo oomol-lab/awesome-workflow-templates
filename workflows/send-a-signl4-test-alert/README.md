@@ -13,11 +13,18 @@ Send a test alert to a SIGNL4 team.
 
 ## Setup and use
 
-In Open Flow, bind the full SIGNL4 team webhook URL to the secret Variable **SIGNL4_WEBHOOK_URL** in **Send the test alert**. In n8n, connect a SIGNL4 team credential. Edit the title and message to suit your test, then run manually. The webhook URL contains the team secret; restrict access to execution logs.
+In Open Flow, bind the full SIGNL4 team webhook URL to the secret Variable **SIGNL4_WEBHOOK_URL** in **Send the test alert**. Edit the title and message to suit your test, then run manually. The webhook URL contains the team secret; restrict access to execution logs.
 
 ## Behavior
 
 Each run sends one new alert with the example title “Sample Title” and message “This is a test alert sent from n8n to SIGNL4”. An accepted request does not confirm that a person received the notification. If the send result is unknown, check SIGNL4 before retrying to avoid a duplicate alert.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect a SIGNL4 team credential.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

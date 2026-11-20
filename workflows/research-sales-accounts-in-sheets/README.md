@@ -13,7 +13,14 @@ Research companies on the web and update their matching spreadsheet rows.
 
 ## Setup and use
 
-Import **Sales account research** and **Sales research tools**, publish the research tool and refresh the agent tools. Configure Google Sheets, Firecrawl, a tool-capable model and SERPAPI_API_KEY. Set the spreadsheet and worksheet and create columns input, enrichment_status, domain, linkedinUrl, market, cheapest_plan, has_entreprise_plan, has_API, has_free_trial, integrations and last_case_study_link. Enable persistent State and do not reorder rows or overlap runs while processing. In n8n configure the same sheet, model, SerpAPI, website tool and a Data Table with item_key and status columns. Run manually or use the built-in two-hour UTC schedule. Inspect a pending row before retrying an uncertain write. Research results require human review.
+Import **Sales account research** and **Sales research tools**, publish the research tool and refresh the agent tools. Configure Google Sheets, Firecrawl, a tool-capable model and SERPAPI_API_KEY. Set the spreadsheet and worksheet and create columns input, enrichment_status, domain, linkedinUrl, market, cheapest_plan, has_entreprise_plan, has_API, has_free_trial, integrations and last_case_study_link. Enable persistent State and do not reorder rows or overlap runs while processing. Run manually or use the built-in two-hour UTC schedule. Inspect a pending row before retrying an uncertain write. Research results require human review.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure the same sheet, model, SerpAPI, website tool and a Data Table with item_key and status columns.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

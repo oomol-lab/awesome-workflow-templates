@@ -13,13 +13,20 @@ Send a Slack alert when a configured workflow fails.
 
 ## Setup
 
-In Open Flow, select the published source workflows in **Receive a workflow failure**, publish and enable this workflow, connect Slack, and set the destination channel ID. In n8n, connect Slack, set the destination channel, and assign this workflow as the error workflow in each source workflow's settings. Do not assign the workflow to itself.
+In Open Flow, select the published source workflows in **Receive a workflow failure**, publish and enable this workflow, connect Slack, and set the destination channel ID. Do not assign the workflow to itself.
 
 ## Behavior
 
-An automatic failure sends an alert containing the workflow name. Open Flow includes the run ID; n8n includes the execution URL when available. Open Flow does not supply an execution URL in its error event. Manual test runs do not represent automatic failure dispatch.
+An automatic failure sends an alert containing the workflow name. Open Flow includes the run ID. Open Flow does not supply an execution URL in its error event. Manual test runs do not represent automatic failure dispatch.
 
 If a send fails or its outcome is uncertain, check Slack before retrying; the alert may already have been delivered.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect Slack, set the destination channel, and assign this workflow as the error workflow in each source workflow's settings. N8n includes the execution URL when available.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

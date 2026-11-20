@@ -13,13 +13,20 @@ Record Shopify orders with a first-visit campaign in Baserow each day.
 
 ## Setup
 
-Connect Shopify with the read_orders scope and Baserow Cloud with permission to create rows. Set the Baserow table ID in **Create the Baserow row**. Create fields named Order, Campaign, Content, Medium, Source, Revenue and Currency; Configure Revenue as a decimal field with sufficient precision for the shop currency and Currency as text. In n8n, configure the Shopify shop domain and Header Auth credential with name X-Shopify-Access-Token and a Shopify Admin API token, connect a Baserow username/password credential, select its database and table, and map the order, campaign, content, medium, source, revenue and currency expressions to their matching fields. Enable only one format and avoid overlapping runs.
+Connect Shopify with the read_orders scope and Baserow Cloud with permission to create rows. Set the Baserow table ID in **Create the Baserow row**. Create fields named Order, Campaign, Content, Medium, Source, Revenue and Currency; Configure Revenue as a decimal field with sufficient precision for the shop currency and Currency as text. Enable only one format and avoid overlapping runs.
 
 ## Behavior
 
 At midnight UTC, request the first 100 Shopify orders created during the previous UTC calendar day. For each whose first visit has a campaign value, create a Baserow row with the order name, campaign, content, medium, source, total received in shop currency, and that currency. An empty campaign string is a present value. Missing journey or first-visit data is skipped; a journey that Shopify reports as not ready stops before any Baserow writes. All selected order data is validated before writes begin.
 
-Only the first 100 orders are checked, as in the source; Open Flow reports whether Shopify has more. When attribution is not ready, the whole batch stops before writing and later scheduled runs move to a new date. To retry that batch, set the override date in **Choose yesterday’s orders** to its UTC date in YYYY-MM-DD format, run the workflow, then clear the override. Older orders can require Shopify all-orders access. A Baserow write can succeed even if the response is lost. Earlier rows remain if a later create fails, and retrying can create duplicates. Check Baserow before retrying. Open Flow starts at the minute boundary; n8n chooses a fixed second within the minute.
+Only the first 100 orders are checked, as in the source; Open Flow reports whether Shopify has more. When attribution is not ready, the whole batch stops before writing and later scheduled runs move to a new date. To retry that batch, set the override date in **Choose yesterday’s orders** to its UTC date in YYYY-MM-DD format, run the workflow, then clear the override. Older orders can require Shopify all-orders access. A Baserow write can succeed even if the response is lost. Earlier rows remain if a later create fails, and retrying can create duplicates. Check Baserow before retrying. Open Flow starts at the minute boundary.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, configure the Shopify shop domain and Header Auth credential with name X-Shopify-Access-Token and a Shopify Admin API token, connect a Baserow username/password credential, select its database and table, and map the order, campaign, content, medium, source, revenue and currency expressions to their matching fields. N8n chooses a fixed second within the minute.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

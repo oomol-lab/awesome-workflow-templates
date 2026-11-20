@@ -13,13 +13,20 @@ Convert one or all Baserow video descriptions from Markdown to HTML.
 
 ## Setup
 
-Connect Baserow and set the same table ID in **Read requested Baserow rows** and **Update same Baserow row**. The table needs a text field named `📥 Video Description` and a text field for HTML. Enter its name in **Convert next description**. In n8n connect Baserow and select the same database, table, and destination HTML field in each read and update node. Activate one format.
+Connect Baserow and set the same table ID in **Read requested Baserow rows** and **Update same Baserow row**. The table needs a text field named `📥 Video Description` and a text field for HTML. Enter its name in **Convert next description**.
 
 ## Use
 
 Send a GET request to the webhook. Add a positive row ID as the `rec` query parameter to update one row; omit it to update all rows. The single-row path enables emoji, simple line breaks and backslash escaping of HTML tags; the all-row path uses default conversion options. Raw HTML may remain in the result; sanitize it before displaying untrusted content.
 
 The webhook triggers writes and its acknowledgment does not confirm completion. Unknown updates may have succeeded; inspect the affected row before retrying. Earlier updates are not rolled back. The public endpoint has no built-in authentication; restrict access if needed. Large tables may exceed execution limits.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n connect Baserow and select the same database, table, and destination HTML field in each read and update node.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -13,13 +13,18 @@ Create a Webflow CMS item, add an image and read the updated item.
 
 ## Setup
 
-Connect Webflow with CMS read and write access. Open Flow uses an API token; n8n uses Webflow OAuth2. In Open Flow set the collection ID, item name, slug and public HTTPS image URL in **Prepare item details**. The collection must have an image field with slug `avatar` and any other required fields must be supplied in the create and update steps. Webflow must be able to fetch the image; its image size limit applies.
-
-In n8n, connect Webflow OAuth2 with Legacy disabled and CMS read/write access to all three HTTP nodes and set the collection ID, name, slug and image URL in **Prepare item details**. The collection must have the same field. Run one format manually.
+Connect Webflow with CMS read and write access. Open Flow uses an API token. In Open Flow set the collection ID, item name, slug and public HTTPS image URL in **Prepare item details**. The collection must have an image field with slug `avatar` and any other required fields must be supplied in the create and update steps. Webflow must be able to fetch the image; its image size limit applies.
 
 ## Behavior
 
 The workflow creates an unarchived, non-draft item, updates its avatar with the configured image, confirms the returned avatar, then reads the item by the same ID. The item is staged for the next site publish; this workflow does not publish the site. A failure stops subsequent steps. A failed or uncertain create or update may already have succeeded, so inspect Webflow before retrying to avoid duplicate items or updates.
+
+<details>
+<summary>In n8n</summary>
+
+N8n uses Webflow OAuth2. In n8n, connect Webflow OAuth2 with Legacy disabled and CMS read/write access to all three HTTP nodes and set the collection ID, name, slug and image URL in **Prepare item details**. The collection must have the same field. Run one format manually.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

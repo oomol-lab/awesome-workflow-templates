@@ -13,11 +13,18 @@ Create an Agile CRM contact with a first and last name.
 
 ## Setup
 
-In Open Flow set your Agile CRM subdomain in **Prepare the contact**. Create secret Variables `AGILE_CRM_EMAIL` and `AGILE_CRM_API_KEY`, containing the account email and REST API key, and bind them to **Create the contact**. Run with the contact's first and last name. In n8n connect Agile CRM, set its subdomain in the credential, and enter the names in **AgileCRM**. Use one format per creation.
+In Open Flow set your Agile CRM subdomain in **Prepare the contact**. Create secret Variables `AGILE_CRM_EMAIL` and `AGILE_CRM_API_KEY`, containing the account email and REST API key, and bind them to **Create the contact**. Run with the contact's first and last name. Use one format per creation.
 
 ## Behavior
 
 A manual run creates one contact and returns the API response. Empty name fields are omitted. If a request fails or its outcome is uncertain, check Agile CRM before retrying; the contact may already exist.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n connect Agile CRM, set its subdomain in the credential, and enter the names in **AgileCRM**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

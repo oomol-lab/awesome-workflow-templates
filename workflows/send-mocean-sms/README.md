@@ -15,11 +15,16 @@ Send one SMS message to a configured recipient through Mocean.
 
 Connect Mocean in **Send through Mocean** using an API token. In **Configure the message**, enter your approved sender ID, recipient number including country code, and message. Sending may consume account credits.
 
-In n8n, select Mocean API key and secret credentials and enter the same sender, recipient and message in **Mocean**. Run one format for each intended message.
-
 ## Behavior
 
-Run manually to submit one SMS request. Open Flow returns Mocean’s per-recipient status and message ID when provided; n8n returns the native message result. Check the provider status: submission is not proof of delivery. If a request fails or its result is uncertain, check Mocean before repeating, because a message may already have been sent.
+Run manually to submit one SMS request. Open Flow returns Mocean’s per-recipient status and message ID when provided. Check the provider status: submission is not proof of delivery. If a request fails or its result is uncertain, check Mocean before repeating, because a message may already have been sent.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, select Mocean API key and secret credentials and enter the same sender, recipient and message in **Mocean**. Run one format for each intended message. N8n returns the native message result.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

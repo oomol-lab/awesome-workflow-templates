@@ -13,11 +13,20 @@ Classify a contact request, email the matching department and log it to Google S
 
 ## Setup and use
 
-Import the n8n workflow and configure the form, SMTP credentials, sender and department recipients, and Google Sheets credentials, spreadsheet and sheet in each database node. In Open Flow, edit the five department addresses in **Choose department**, set the spreadsheet ID and A:F worksheet range in **Append contact to Sheets**, and connect Google Sheets. Set **Choose mode** to direct for native n8n classification, or relay for Open Flow classification. For relay, deploy the Open Flow workflow, configure its model, and set its webhook URL in both Open Flow HTTP nodes. Activate only the chosen mode.
+Configure the form, SMTP credentials, sender and department recipients, and Google Sheets credentials, spreadsheet and sheet in each database node. In Open Flow, edit the five department addresses in **Choose department**, set the spreadsheet ID and A:F worksheet range in **Append contact to Sheets**, and connect Google Sheets. For relay, deploy the Open Flow workflow, configure its model, and set its webhook URL in both Open Flow HTTP nodes. Activate only the chosen mode.
 
 ## Behavior
 
-The form collects a name, email and message. The model selects quote, product information, general problem, order, or other. The matching department receives the request with the submitter as reply-to; the workflow appends its details and recipient to the sheet. The form and email delivery remain in n8n in both modes; in relay mode Open Flow chooses the department and appends the row after SMTP returns successfully. Messages are shared with the configured model. The Open Flow webhook does not authenticate callers; restrict access to trusted senders. A lost email or sheet response can mean the write succeeded; inspect the destination before retrying.
+The form collects a name, email and message. The model selects quote, product information, general problem, order, or other. The matching department receives the request with the submitter as reply-to; the workflow appends its details and recipient to the sheet. Messages are shared with the configured model. The Open Flow webhook does not authenticate callers; restrict access to trusted senders. A lost email or sheet response can mean the write succeeded; inspect the destination before retrying.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow and configure the form, SMTP credentials, sender and department recipients, and Google Sheets credentials, spreadsheet and sheet in each database node. Set **Choose mode** to direct for native n8n classification, or relay for Open Flow classification. The form and email delivery remain in n8n in both modes.
+
+In relay mode Open Flow chooses the department and appends the row after SMTP returns successfully.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

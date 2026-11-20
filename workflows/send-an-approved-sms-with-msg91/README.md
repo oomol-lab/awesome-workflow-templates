@@ -15,11 +15,16 @@ Send a configured MSG91 Flow SMS to one recipient.
 
 Create an approved MSG91 Flow SMS template containing your intended message and configure its sender in the Flow, rather than selecting FromAPI. In Open Flow, connect MSG91, enter the template ID and recipient in **Send the SMS**. Enter the mobile number in international format with country code and no plus sign.
 
-In n8n, configure an HTTP Header Auth credential named authkey with your MSG91 API key, and enter the same template ID and recipient in **Send the SMS**. Run one format.
-
 ## Behavior
 
 A manual run submits the configured template to MSG91 for the recipient. The response indicates whether MSG91 accepted the request; acceptance does not confirm handset delivery. If the send fails or its outcome is uncertain, inspect MSG91 before retrying.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, configure an HTTP Header Auth credential named authkey with your MSG91 API key, and enter the same template ID and recipient in **Send the SMS**. Run one format.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

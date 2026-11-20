@@ -13,11 +13,18 @@ Generate a narrated avatar video and return its finished URL.
 
 ## Setup and use
 
-Connect HeyGen and run with your avatar ID, voice ID and narration text. In n8n configure HTTP Header Auth with header name X-Api-Key and your HeyGen API key as its value and replace the IDs and text in Config. Use one format.
+Connect HeyGen and run with your avatar ID, voice ID and narration text.
 
 ## Behavior
 
-The workflow creates a captioned 1080×1920 video, checks its status every ten seconds and returns the video URL when complete. Open Flow stops when HeyGen reports failure; the n8n version keeps polling until completed, so stop a failed run manually. Video generation can incur charges. If the creation request has an unknown outcome, inspect HeyGen before retrying to avoid duplicate jobs.
+The workflow creates a captioned 1080×1920 video, checks its status every ten seconds and returns the video URL when complete. Open Flow stops when HeyGen reports failure. Video generation can incur charges. If the creation request has an unknown outcome, inspect HeyGen before retrying to avoid duplicate jobs.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure HTTP Header Auth with header name X-Api-Key and your HeyGen API key as its value and replace the IDs and text in Config. The n8n version keeps polling until completed, so stop a failed run manually.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

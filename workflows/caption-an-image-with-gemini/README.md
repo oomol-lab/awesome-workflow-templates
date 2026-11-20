@@ -13,13 +13,20 @@ Generate a caption for an image and overlay it on the picture.
 
 ## Setup
 
-Provide a publicly accessible HTTPS image URL. Connect Cloudinary and Gemini, and enable Provider API access for Gemini. Enable persistent State. In n8n set the image URL in **Get Image**, connect Gemini and make Arial available to the Edit Image node. Use one format.
+Provide a publicly accessible HTTPS image URL. Connect Cloudinary and Gemini, and enable Provider API access for Gemini. Enable persistent State.
 
 ## Behavior
 
-The image is resized for Gemini, which generates a title and caption. They are drawn near the bottom of the original image over a translucent dark background. Open Flow returns a JPEG and the caption; n8n returns the edited image. Text layout can differ between the two rendering services. Review AI-generated captions before publishing.
+The image is resized for Gemini, which generates a title and caption. They are drawn near the bottom of the original image over a translucent dark background. Open Flow returns a JPEG and the caption. Text layout can differ between the two rendering services. Review AI-generated captions before publishing.
 
 Open Flow uploads the background to Cloudinary and retains the asset. The same URL reuses the saved upload; use a new URL if its content changes. If an upload is uncertain, inspect the Cloudinary account and enter the pending key in **Upload background image** with resolution absent to retry, or confirmed and the verified Cloudinary image URL to continue. Clear the recovery fields afterward. Gemini receives a resized image. Cloudinary text rendering does not support all Unicode characters; an unsupported caption can fail.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n set the image URL in **Get Image**, connect Gemini and make Arial available to the Edit Image node. N8n returns the edited image.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

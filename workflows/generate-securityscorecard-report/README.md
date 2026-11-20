@@ -13,13 +13,20 @@ Request a full SecurityScorecard report and retrieve the matching completed repo
 
 ## Setup
 
-Connect SecurityScorecard with report generation and download access to each **Request report**, **Read recent reports** and **Download report** node, and allow Provider API access. Run Open Flow with a scorecard domain or ID. In n8n, configure the identifier in **Set scorecard**, select HTTP Header Auth with name `Authorization` and value `Token YOUR_API_TOKEN` for both HTTP nodes, and select a SecurityScorecard API credential with the same token in **Download report**. Do not put the token in the workflow JSON.
+Connect SecurityScorecard with report generation and download access to each **Request report**, **Read recent reports** and **Download report** node, and allow Provider API access. Run Open Flow with a scorecard domain or ID. Do not put the token in the workflow JSON.
 
 ## Behavior
 
-The workflow requests a full scorecard JSON report, then checks recent reports once per minute for up to 60 checks. It selects only the report with the ID returned by the request and downloads its `download_url` when available. The response URL must be on the SecurityScorecard report-files endpoint. The Open Flow output contains the response body, response headers and a base64 encoding indicator when applicable; n8n returns the downloaded file as binary data. The service can redirect the download to its file host. Open Flow accepts downloads up to 4 MiB; its recent-reports response must also fit the Code node’s 1 MiB input budget. Oversized responses stop the run.
+The workflow requests a full scorecard JSON report, then checks recent reports once per minute for up to 60 checks. It selects only the report with the ID returned by the request and downloads its `download_url` when available. The response URL must be on the SecurityScorecard report-files endpoint. The Open Flow output contains the response body, response headers and a base64 encoding indicator when applicable. The service can redirect the download to its file host. Open Flow accepts downloads up to 4 MiB; its recent-reports response must also fit the Code node’s 1 MiB input budget. Oversized responses stop the run.
 
 A request can succeed even if its response is lost or report generation later fails. Check the service before repeating an uncertain request. No automatic creation retry is configured. A report that does not appear within an hour stops the run. The API may accept a request before a score is ready and later fail to generate it.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, configure the identifier in **Set scorecard**, select HTTP Header Auth with name `Authorization` and value `Token YOUR_API_TOKEN` for both HTTP nodes, and select a SecurityScorecard API credential with the same token in **Download report**. N8n returns the downloaded file as binary data.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

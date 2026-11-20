@@ -17,7 +17,14 @@ Run the workflow manually. It creates the numbers 0 through 9, processes one per
 
 ## Behavior
 
-After visiting the sixth item (number 5), the workflow returns **Loop Ended**; numbers 6 through 9 are not visited. Open Flow additionally returns the numbers it visited in a `visited` object. The n8n example exposes the message on its final Set node.
+After visiting the sixth item (number 5), the workflow returns **Loop Ended**; numbers 6 through 9 are not visited. Open Flow additionally returns the numbers it visited in a `visited` object.
+
+<details>
+<summary>In n8n</summary>
+
+The n8n example exposes the message on its final Set node.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

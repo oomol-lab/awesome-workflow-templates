@@ -13,11 +13,18 @@ Analyze a Drive image and store embeddings of its keywords and color information
 
 ## Setup and use
 
-In n8n select the Drive image, connect Google Drive and OpenAI, and choose one mode. For Open Flow enable **Forward image analysis**, set its webhook URL, and disconnect **Document for Embedding** from **In-Memory Vector Store**. In Open Flow bind secret Variable OPENAI_API_KEY and enable persistent State. For n8n alone leave the relay disabled and retain the original connection. Run the n8n workflow manually. Restrict access to the Open Flow webhook.
+For Open Flow enable **Forward image analysis**, set its webhook URL, and disconnect **Document for Embedding** from **In-Memory Vector Store**. In Open Flow bind secret Variable OPENAI_API_KEY and enable persistent State. Restrict access to the Open Flow webhook.
 
 ## Behavior
 
-n8n downloads the image, derives color statistics and visual keywords, and constructs a document with source, format and background color. In relay mode Open Flow chunks the document, requests text embeddings and appends vectors and metadata to its persistent State. n8n direct mode stores vectors in its in-memory store. The source's unconnected search node is not part of the executed workflow. Model and embedding calls may incur charges; image analysis can be inaccurate. The relay acknowledges receipt before embedding finishes; inspect Open Flow execution history for failures. Avoid overlapping Open Flow imports. The persistent vector list must fit the State read size limit; this example does not provide a search interface.
+The source's unconnected search node is not part of the executed workflow. Model and embedding calls may incur charges; image analysis can be inaccurate. The relay acknowledges receipt before embedding finishes; inspect Open Flow execution history for failures. Avoid overlapping Open Flow imports. The persistent vector list must fit the State read size limit; this example does not provide a search interface.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n select the Drive image, connect Google Drive and OpenAI, and choose one mode. For n8n alone leave the relay disabled and retain the original connection. Run the n8n workflow manually. n8n downloads the image, derives color statistics and visual keywords, and constructs a document with source, format and background color. In relay mode Open Flow chunks the document, requests text embeddings and appends vectors and metadata to its persistent State. n8n direct mode stores vectors in its in-memory store.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -13,13 +13,20 @@ Create one Affinity organization with a name and domain.
 
 ## Setup
 
-Select your Affinity API-key account in **Create Affinity organization** and allow **Provider API** access. This permission is separate from individual Action permissions. The account must be allowed to create organizations. Run with the organization **Name** and **Domain**, such as `example.com`. In n8n, configure the same two fields and Affinity credentials in **Affinity**.
+Select your Affinity API-key account in **Create Affinity organization** and allow **Provider API** access. This permission is separate from individual Action permissions. The account must be allowed to create organizations. Run with the organization **Name** and **Domain**, such as `example.com`.
 
 Each run sends one creation request and returns the complete organization record. No people are associated and the organization is not added to a list by this workflow. Affinity’s API attributes the change to the user who owns the key.
 
-Open Flow uses the managed Affinity Provider API with Bearer authentication. n8n’s native client uses Basic authentication. Affinity’s V1 API supports both methods.
+Open Flow uses the managed Affinity Provider API with Bearer authentication. Affinity’s V1 API supports both methods.
 
 Errors and unexpected responses stop the run without retry or rollback. A repeated run can submit another organization creation request. The workflow has no lookup, upsert or duplicate detection; check Affinity before retrying an uncertain write.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, configure the same two fields and Affinity credentials in **Affinity**. n8n’s native client uses Basic authentication.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

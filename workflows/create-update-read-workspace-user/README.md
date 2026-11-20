@@ -17,11 +17,16 @@ Enable the Google Admin SDK Directory API for your Workspace. Use an administrat
 
 In Open Flow, create a secret Variable containing a JSON text body with the new user's `primaryEmail`, `name.givenName`, `name.familyName`, and `password`, and bind it to **Create the user** → **Body**. For example, replace each placeholder in `{"primaryEmail":"person@example.invalid","name":{"givenName":"First","familyName":"Last"},"password":"REPLACE_WITH_PASSWORD"}`. Obtain a current OAuth access token with scope `https://www.googleapis.com/auth/admin.directory.user` and bind it to the Bearer token inputs of all three HTTP nodes. Access tokens expire; obtain a new one before it expires. Set the desired new family name in **Update the surname**.
 
-In n8n, connect the G Suite Admin credential to all three nodes and configure the domain, username, names and initial password in **G Suite Admin**, then set the updated surname in **G Suite Admin1**.
-
 ## Behavior
 
-The workflow creates one user, updates that same user's surname, and reads their final record. Open Flow returns the full API record; n8n's default Get output returns its simplified user fields. The account and any changes may remain if an operation fails or its response is lost. Inspect the Workspace directory before retrying; the workflow does not retry writes.
+The workflow creates one user, updates that same user's surname, and reads their final record. Open Flow returns the full API record. The account and any changes may remain if an operation fails or its response is lost. Inspect the Workspace directory before retrying; the workflow does not retry writes.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect the G Suite Admin credential to all three nodes and configure the domain, username, names and initial password in **G Suite Admin**, then set the updated surname in **G Suite Admin1**. N8n's default Get output returns its simplified user fields.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -15,11 +15,16 @@ Request DNS records for a domain using Uproc.
 
 The workflow uses Uproc’s legacy v2 process API. In Open Flow, create secret Variables for the Uproc account email and API key, then bind them to **Auth Username** and **Auth Password** in **Look up DNS records**. Run with a domain such as `example.com`.
 
-In n8n, connect a Uproc API credential and set the domain in **Create Domain Item**. Run either format manually.
-
 ## Behavior
 
-Each run submits one domain and returns the response supplied by Uproc. The workflow does not filter or interpret DNS record types. Open Flow returns the complete JSON response; if Uproc returns an array, n8n emits its elements as individual items. Request failures stop the run. Open Flow has a 30-second HTTP timeout and a 4 MiB response limit.
+Each run submits one domain and returns the response supplied by Uproc. The workflow does not filter or interpret DNS record types. Open Flow returns the complete JSON response. Request failures stop the run. Open Flow has a 30-second HTTP timeout and a 4 MiB response limit.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect a Uproc API credential and set the domain in **Create Domain Item**. Run either format manually. If Uproc returns an array, n8n emits its elements as individual items.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

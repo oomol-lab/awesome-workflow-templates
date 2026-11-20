@@ -13,13 +13,20 @@ Submit a URL to a Cortex analyzer and read the resulting job details.
 
 ## Setup
 
-Use an HTTPS Cortex instance, an enabled analyzer that accepts URLs, and an API key with permission to run analyzers and read jobs. In Open Flow, create a secret Variable for the key and bind **Auth Token** on both HTTP nodes. Run with the instance URL, analyzer ID and URL to analyze. In n8n, connect the Cortex credential to both nodes and edit **Set analysis details**; use the same instance in the credential.
+Use an HTTPS Cortex instance, an enabled analyzer that accepts URLs, and an API key with permission to run analyzers and read jobs. In Open Flow, create a secret Variable for the key and bind **Auth Token** on both HTTP nodes. Run with the instance URL, analyzer ID and URL to analyze.
 
 Cortex and the analyzer may send the URL to external services. Only submit URLs you are authorized to share. The request uses TLP 2 (Amber), matching the source. Configure an analyzer compatible with that TLP and the URL datatype.
 
 ## Behavior
 
 Each run submits one analyzer job and immediately reads that job once. The returned status can still be waiting or in progress; this workflow does not wait for completion or retrieve a report. Cortex may return a cached job. A failed request stops the workflow; a lost response may mean the job was created, so inspect Cortex before retrying. There is no automatic retry or rollback.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect the Cortex credential to both nodes and edit **Set analysis details**; use the same instance in the credential.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -13,9 +13,16 @@ Extract and review emailed PDF invoices in Cradl AI, then record invoice lines i
 
 ## Setup and use
 
-Connect Gmail, Google Sheets and a Cradl AI account with an invoice agent. Configure human review in Cradl AI. Install its n8n community node and connect its OAuth credential; use the bundled n8n workflow for Gmail intake, PDF attachments and Cradl's authenticated completion callback. Configure the Open Flow webhook URL in the relay and protect it with an authenticated gateway or private network. Connect the same Gmail account and your sheet in Open Flow and enable persistent State. In n8n select Open Flow mode for the relay; for standalone n8n set the mode to false, connect Google Sheets and select a Data Table with item_key and status columns. Run one mode at a time.
+Connect Gmail, Google Sheets and a Cradl AI account with an invoice agent. Configure human review in Cradl AI. Configure the Open Flow webhook URL in the relay and protect it with an authenticated gateway or private network. Connect the same Gmail account and your sheet in Open Flow and enable persistent State.
 
 Create an Invoices sheet with columns message ID, filename, line number and line JSON. The relay processes attachments sequentially; after each review Open Flow appends the invoice lines and marks the email read only after the final PDF. A pending spreadsheet or Gmail write requires inspection before clearing its checkpoint. The Gmail filter selects unread messages with invoice in the subject and PDF attachments. Avoid overlapping runs. Email attachments and extracted invoice data are sent to Cradl AI.
+
+<details>
+<summary>In n8n</summary>
+
+Install its n8n community node and connect its OAuth credential; use the bundled n8n workflow for Gmail intake, PDF attachments and Cradl's authenticated completion callback. In n8n select Open Flow mode for the relay; for standalone n8n set the mode to false, connect Google Sheets and select a Data Table with item_key and status columns.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

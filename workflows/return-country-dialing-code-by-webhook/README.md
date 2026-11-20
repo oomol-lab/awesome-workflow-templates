@@ -13,11 +13,18 @@ Look up a country by code and return its dialing code and emoji.
 
 ## Setup and use
 
-Deploy the webhook and make a GET request with an ISO country code in the code query parameter, for example ?code=fr. Activate the n8n webhook to use that format.
+Deploy the webhook and make a GET request with an ISO country code in the code query parameter, for example ?code=fr.
 
 ## Behavior
 
 The workflow uppercases the code, looks up the country name, emoji and phone dialing code through the public Countries GraphQL API, and returns a JSON object with a data string. Unknown codes or lookup failures stop the run. The endpoint does not authenticate callers; restrict access as appropriate.
+
+<details>
+<summary>In n8n</summary>
+
+Activate the n8n webhook to use that format.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

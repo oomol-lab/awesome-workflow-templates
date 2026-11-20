@@ -15,7 +15,7 @@ Enrich a company sheet with registration details from seven national business re
 
 Create a worksheet named `Companies` with a `company` header and a company name or registration number on every nonempty row. Keep headers unique, contiguous and plain text. Store registration numbers as text to preserve leading zeros; numeric cells are converted to text without display-format separators. Set the same spreadsheet ID and worksheet on every Google Sheets request.
 
-In Open Flow, select your Apify connection on all three Actor actions and your Google Sheets connection on all sheet actions. In n8n, configure a Header Auth credential with header `Authorization` and value `Bearer YOUR_APIFY_TOKEN` for the three Apify HTTP nodes, and Google Sheets OAuth2 for the sheet HTTP nodes. Run the workflow manually.
+In Open Flow, select your Apify connection on all three Actor actions and your Google Sheets connection on all sheet actions. Run the workflow manually.
 
 The original Actor is [gubidonius/company-registry-lookup](https://apify.com/gubidonius/company-registry-lookup). It searches Czechia, Estonia, Finland, France, Norway, Poland and Slovakia with `maxResultsPerQuery: 1` and `onlyActive: true`. Each sheet query starts its own Actor with a 600-second runtime limit and 1,024MB memory. An empty build setting uses the Actor's current default build. Poland supports number lookups; a name can produce no Polish match.
 
@@ -28,6 +28,13 @@ The workflow adds missing registry headers, updates matching non-null fields, th
 Matching uses the Actor's returned company name, with exact case and text. It does not match a registration-number query back to its original row. An unmatched canonical name creates a new row and leaves the query row intact. Duplicate returned names are retained; existing duplicate names match the first sheet row, as in the source. The receipt counts result records processed, rather than distinct company names.
 
 No-match queries leave their input rows unchanged. A failed read produces no successful data or sheet writes. Each completed header or cell-update receipt must match before a later write can start. A header/update/append failure stops later writes; earlier confirmed writes can remain. Unknown Actor starts and sheet writes are not automatically replayed. Check the Actor run and sheet before restarting after an uncertain result. There is no transaction or concurrency guarantee across services.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, configure a Header Auth credential with header `Authorization` and value `Bearer YOUR_APIFY_TOKEN` for the three Apify HTTP nodes, and Google Sheets OAuth2 for the sheet HTTP nodes.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

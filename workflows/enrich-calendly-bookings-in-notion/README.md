@@ -13,13 +13,20 @@ Enrich each new Calendly invitee and save the booking and contact details in Not
 
 ## Setup
 
-Connect Calendly with a personal access token able to manage user webhooks and provide a public HTTPS callback. Connect Dropcontact and Notion. In **Prepare booking and contact**, set a Notion data source ID and an existing Notion person ID. Grant the Notion integration insert access. The data source needs **Leads** (title), **Date** (date), **email** (email), **Person** (people), **LinkedIn Profile**, **Website**, **LinkedIn Company** (URL), and **Civility** (rich text) properties. Configure the same IDs and connections in n8n. Activate one format.
+Connect Calendly with a personal access token able to manage user webhooks and provide a public HTTPS callback. Connect Dropcontact and Notion. In **Prepare booking and contact**, set a Notion data source ID and an existing Notion person ID. Grant the Notion integration insert access. The data source needs **Leads** (title), **Date** (date), **email** (email), **Person** (people), **LinkedIn Profile**, **Website**, **LinkedIn Company** (URL), and **Civility** (rich text) properties.
 
 ## Behavior
 
 For each new booking, the workflow submits the invitee email and name for French Dropcontact enrichment, waits 45 seconds, fetches the result once and creates a Notion record with booking start/end, the first enriched email, enriched name, configured person and available profile, website, company LinkedIn and civility. Missing optional enriched fields are omitted. A missing name, email, booking time, incomplete enrichment or invalid configuration stops before the Notion write. Enrichment can consume credits.
 
-If enrichment is still pending after 45 seconds, inspect its request before retrying. A failed or uncertain Notion write can have created a page; inspect Notion before replaying. Repeated bookings or webhook deliveries can create additional pages. New subscriptions verify signatures; Open Flow accepts a three-minute signature window and n8n five minutes. An acknowledgment does not confirm the Notion write.
+If enrichment is still pending after 45 seconds, inspect its request before retrying. A failed or uncertain Notion write can have created a page; inspect Notion before replaying. Repeated bookings or webhook deliveries can create additional pages. An acknowledgment does not confirm the Notion write.
+
+<details>
+<summary>In n8n</summary>
+
+Configure the same IDs and connections in n8n. New subscriptions verify signatures; Open Flow accepts a three-minute signature window and n8n five minutes.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

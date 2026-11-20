@@ -15,13 +15,18 @@ Create a recurring Zoom meeting, update a WordPress redirect page, and notify Sl
 
 Connect Zoom, WordPress and Slack. Set the UTC starting date in **Check the 360-day schedule**, the actual WordPress page ID in **Update the WordPress page**, and the Slack channel. Configure a page whose contents may be replaced and a WordPress account and site that preserve HTML meta refresh tags. Confirm the published page and theme actually perform the redirect. The default Zoom meeting is recurring without a fixed time, with participants muted on entry, participant video enabled and join before host requested. Zoom account settings such as Waiting Room may override these options.
 
-In n8n, set the same start date in **Check the 360-day schedule**, connect Zoom, WordPress and Slack credentials, set the page ID and Slack channel, and activate one format.
-
 ## Behavior
 
-At 03:00 UTC on the chosen start date and every 360 UTC calendar days after it, the workflow creates one Zoom meeting, replaces the WordPress page content with a meta refresh to its join URL, checks the returned page content, and posts the URL to Slack. A daily schedule checks whether the date is due; a missed run is not replayed automatically. Both formats use the connected Zoom user. The join URL is published on the page and shared in Slack.
+At 03:00 UTC on the chosen start date and every 360 UTC calendar days after it, the workflow creates one Zoom meeting, replaces the WordPress page content with a meta refresh to its join URL, checks the returned page content, and posts the URL to Slack. A daily schedule checks whether the date is due; a missed run is not replayed automatically. The workflow uses the connected Zoom user. The join URL is published on the page and shared in Slack.
 
 An error stops later steps; earlier changes remain. A lost response can hide a successful create or update, so inspect Zoom, WordPress and Slack before retrying. A successful page update response does not guarantee a visitor’s browser or site theme will execute the redirect.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, set the same start date in **Check the 360-day schedule**, connect Zoom, WordPress and Slack credentials, set the page ID and Slack channel, and activate one format.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

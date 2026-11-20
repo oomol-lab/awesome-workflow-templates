@@ -13,9 +13,16 @@ Parse emailed invoice PDFs and record structured invoice details in Google Sheet
 
 ## Setup and use
 
-Connect Gmail, Google Sheets, an AI model and LlamaCloud. Set LLAMA_AUTHORIZATION to the full Bearer token and bind it to both LlamaParse HTTP nodes. Configure the destination sheet, Gmail label ID, persistent State, and a protected n8n Gmail binary upload relay. The relay uses the Gmail trigger's first PDF attachment. Use an invoice-synced label and configure the Gmail search to exclude that label. Run one mode at a time and avoid overlapping runs.
+Connect Gmail, Google Sheets, an AI model and LlamaCloud. Set LLAMA_AUTHORIZATION to the full Bearer token and bind it to both LlamaParse HTTP nodes. The relay uses the Gmail trigger's first PDF attachment. Use an invoice-synced label and configure the Gmail search to exclude that label. Run one mode at a time and avoid overlapping runs.
 
-LlamaParse processes the PDF asynchronously; the workflow polls for completed Markdown, extracts invoice fields, appends JSON to the sheet and labels the original email. Check AI results against the invoice. If a job, sheet append or label operation has an uncertain result, inspect the service before clearing the corresponding pending state. Configure n8n credentials and matching destination when using standalone n8n.
+LlamaParse processes the PDF asynchronously; the workflow polls for completed Markdown, extracts invoice fields, appends JSON to the sheet and labels the original email. Check AI results against the invoice. If a job, sheet append or label operation has an uncertain result, inspect the service before clearing the corresponding pending state.
+
+<details>
+<summary>In n8n</summary>
+
+Configure the destination sheet, Gmail label ID, persistent State, and a protected n8n Gmail binary upload relay. Configure n8n credentials and matching destination when using standalone n8n.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

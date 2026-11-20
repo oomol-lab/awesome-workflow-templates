@@ -15,8 +15,6 @@ Send a topic to a webhook and receive an AI draft as JSON. The workflow also pos
 
 For Open Flow, import the JSON, select a configured Claude Sonnet 4.6 model in **Generate content**, and connect Slack in **Notify content team**. Replace `YOUR_SLACK_CHANNEL_ID` and invite the connected bot to that channel.
 
-For n8n, select an Anthropic credential in **Generate Content**, connect Slack in **Notify via Slack**, and replace its channel ID.
-
 Publish and enable the workflow. Send a JSON POST request to its webhook URL:
 
 ```json
@@ -31,6 +29,13 @@ Publish and enable the workflow. Send a JSON POST request to its webhook URL:
 All four fields are optional strings. The content types are `blog`, `newsletter`, and `social`; missing or unknown types use `blog`. Defaults are the topic “AI automation trends”, English, and a professional but approachable tone. A successful response contains `status`, `topic`, `contentType`, and the full `content`.
 
 The workflow sends one Slack message before returning success. A model or Slack failure prevents a success response. Open Flow waits up to 60 seconds for the HTTP response; timing out does not cancel the run. Check the run before retrying because a retry can create another Slack message. Review generated facts and wording before publishing.
+
+<details>
+<summary>In n8n</summary>
+
+For n8n, select an Anthropic credential in **Generate Content**, connect Slack in **Notify via Slack**, and replace its channel ID.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

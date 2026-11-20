@@ -13,7 +13,14 @@ Load MITRE ATT&CK descriptions from a Drive JSON file into a Qdrant collection.
 
 ## Setup and use
 
-Configure Google Drive, OpenAI and Qdrant connections and select a JSON file containing a data array of records with id, name, description, kill_chain_phases and external_references. Configure an existing 1536-dimensional Qdrant collection named mitre. Both the index and any retrieval workflow must use text-embedding-3-large at 1536 dimensions. Run manually to embed descriptions and upsert their content and metadata. Open Flow uses stable IDs per document chunk; repeated runs update those IDs but do not remove chunks deleted from the source. For n8n, configure a Data Table with item_key and status columns and set the same unique file version in the checkpoint key of the Check file version, Reserve file version and Confirm file version nodes. Completed versions are skipped; inspect the collection before clearing a pending checkpoint after an uncertain write. Avoid overlapping runs. Choose a new version deliberately when the file changes; existing vectors are not deleted.
+Configure Google Drive, OpenAI and Qdrant connections and select a JSON file containing a data array of records with id, name, description, kill_chain_phases and external_references. Configure an existing 1536-dimensional Qdrant collection named mitre. Both the index and any retrieval workflow must use text-embedding-3-large at 1536 dimensions. Run manually to embed descriptions and upsert their content and metadata. Open Flow uses stable IDs per document chunk; repeated runs update those IDs but do not remove chunks deleted from the source. Completed versions are skipped; inspect the collection before clearing a pending checkpoint after an uncertain write. Avoid overlapping runs. Choose a new version deliberately when the file changes; existing vectors are not deleted.
+
+<details>
+<summary>In n8n</summary>
+
+For n8n, configure a Data Table with item_key and status columns and set the same unique file version in the checkpoint key of the Check file version, Reserve file version and Confirm file version nodes.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

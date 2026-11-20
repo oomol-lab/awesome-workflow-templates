@@ -17,8 +17,6 @@ Create a Strapi 5 collection with plural API ID `posts` and fields `Content` (te
 
 In Open Flow, set **Create Strapi testimonial** to the direct HTTPS REST endpoint for your collection, for example `https://cms.example.com/api/posts`. It must accept the request directly without a redirect. Select a secret Variable containing the Strapi token in its Bearer authentication input. On **Analyze form sentiment**, select a secret Variable containing a Google Cloud API key. Enable Cloud Natural Language and billing in that Google Cloud project; restrict the key to that API.
 
-In n8n, choose the Google Cloud Natural Language OAuth2 credential. On **Store Form Submission in Strapi**, select API Token authentication and a Strapi API Token credential with the instance base URL. Choose **API Version 4** in that credential: this mode sends the `/api/posts` endpoint and `{data: ...}` create envelope used by the current Strapi REST API. The template sends only scalar entry fields and does not use version-specific relation or update operations.
-
 Publish and enable the workflow, then configure your form to POST JSON to its webhook. Put author first and feedback second in `data.fields`, as in the source form:
 
 ```json
@@ -39,6 +37,13 @@ The webhook acknowledges receipt with HTTP 200. The execution analyzes the exact
 Execution output has `status: captured` with the created entry or `status: ignored` with no entry, plus the score. The immediate webhook acknowledgment does not confirm that storage succeeded. Invalid input, failed sentiment analysis, or a failed or unconfirmed Strapi write stops the execution. No workflow-level retries or duplicate-submission checks are configured. Inspect Strapi before rerunning an uncertain write.
 
 Feedback is sent to Google. Captured feedback and the submitted author are sent to Strapi. Use the score as a sorting signal and review testimonials before reuse.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, choose the Google Cloud Natural Language OAuth2 credential. On **Store Form Submission in Strapi**, select API Token authentication and a Strapi API Token credential with the instance base URL. Choose **API Version 4** in that credential: this mode sends the `/api/posts` endpoint and `{data: ...}` create envelope used by the current Strapi REST API. The template sends only scalar entry fields and does not use version-specific relation or update operations.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -13,11 +13,18 @@ Create a Snowflake table, insert a row, and update that row.
 
 ## Setup
 
-Provide the Snowflake account URL and configure a programmatic access token in both Open Flow HTTP nodes. The user needs a default database, schema, warehouse and role with rights to create and modify a table. In n8n connect Snowflake credentials. Use a database where a new table named `docs` can be created.
+Provide the Snowflake account URL and configure a programmatic access token in both Open Flow HTTP nodes. The user needs a default database, schema, warehouse and role with rights to create and modify a table. Use a database where a new table named `docs` can be created.
 
 ## Behavior
 
-The workflow creates `docs`, inserts ID 1 with name n8n, and updates that ID to nodemation. Open Flow submits three SQL statements as one SQL API request and checks the asynchronous result. n8n runs the three original Snowflake nodes. Existing tables and errors stop the workflow. If any statement fails, earlier statements may already have completed. A lost response or polling timeout can also leave changes; inspect Snowflake before running again. Open Flow checks a pending statement every five seconds for up to five minutes.
+Open Flow submits three SQL statements as one SQL API request and checks the asynchronous result. Existing tables and errors stop the workflow. If any statement fails, earlier statements may already have completed. A lost response or polling timeout can also leave changes; inspect Snowflake before running again. Open Flow checks a pending statement every five seconds for up to five minutes.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n connect Snowflake credentials. The workflow creates `docs`, inserts ID 1 with name n8n, and updates that ID to nodemation. n8n runs the three original Snowflake nodes.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

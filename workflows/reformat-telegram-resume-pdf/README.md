@@ -13,15 +13,20 @@ Extract a resume PDF sent to a Telegram bot, format its details, and return a ne
 
 ## Setup
 
-Import the supplied n8n workflow and connect the Telegram nodes to your bot. Configure a reachable [Gotenberg](https://gotenberg.dev/) service in both PDF conversion nodes. For Open Flow, disable **Telegram trigger**, enable **Resume text webhook** and **Resume delivery webhook**, activate n8n, and set their production URLs in the two Open Flow HTTP nodes. Connect Telegram, select an AI model, set the allowed numeric chat ID in **Select authorized resume**, enable persistent State, and prevent overlapping runs. Restrict access to both relay URLs.
-
-For direct n8n use, enable **Telegram trigger**, disable the two relay webhooks, set the authorized chat ID in **Auth**, and connect the OpenAI and Telegram credentials. A bot supports only one active webhook, so activate one format.
+Connect the Telegram nodes to your bot. Configure a reachable [Gotenberg](https://gotenberg.dev/) service in both PDF conversion nodes. Connect Telegram, select an AI model, set the allowed numeric chat ID in **Select authorized resume**, enable persistent State, and prevent overlapping runs. Restrict access to both relay URLs.
 
 ## Behavior
 
-Send a PDF resume to the bot from the configured chat. The workflow extracts readable text, asks the model for structured resume details, formats the result as HTML, converts it to PDF with Gotenberg, and sends the PDF back to that chat. Scanned PDFs without readable text may fail. Review the result because model extraction can omit or misinterpret details. Resume text is sent to the configured model and n8n/Gotenberg services.
+Send a PDF resume to the bot from the configured chat. The workflow extracts readable text, asks the model for structured resume details, formats the result as HTML, converts it to PDF with Gotenberg, and sends the PDF back to that chat. Scanned PDFs without readable text may fail. Review the result because model extraction can omit or misinterpret details.
 
 If PDF delivery is uncertain, inspect the Telegram chat before entering the update ID in **Select authorized resume** to acknowledge it. The command is treated as handled and queued resumes continue. Do not automatically replay an uncertain document send.
+
+<details>
+<summary>In n8n</summary>
+
+Import the supplied n8n workflow and connect the Telegram nodes to your bot. For Open Flow, disable **Telegram trigger**, enable **Resume text webhook** and **Resume delivery webhook**, activate n8n, and set their production URLs in the two Open Flow HTTP nodes. For direct n8n use, enable **Telegram trigger**, disable the two relay webhooks, set the authorized chat ID in **Auth**, and connect the OpenAI and Telegram credentials. A bot supports only one active webhook, so activate one format. Resume text is sent to the configured model and n8n/Gotenberg services.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

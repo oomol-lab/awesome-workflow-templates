@@ -15,11 +15,18 @@ Create a Strapi post, update its slug and read the same document.
 
 Use Strapi 5 with a collection whose plural API ID is `posts` and fields `Title`, `Content`, `Description` and `slug`. Grant an API token create, update and read access. If Draft & Publish is enabled, these requests immediately publish the created and updated document. Use a trusted HTTPS instance and an endpoint that does not redirect.
 
-In Open Flow, bind a secret Variable containing the token to **Auth Token** on each HTTP node. Run with the instance base URL and post fields. In n8n, set the values in **Set post details** and connect an HTTP Header Auth credential named `Authorization` with value `Bearer YOUR_STRAPI_TOKEN` to all HTTP nodes.
+In Open Flow, bind a secret Variable containing the token to **Auth Token** on each HTTP node. Run with the instance base URL and post fields.
 
 ## Behavior
 
 Each run creates a post, updates its slug, and reads the same document by Strapi 5 document ID. Failure stops subsequent requests; there is no automatic retry or rollback. A lost response may mean a write succeeded, so inspect Strapi before rerunning.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, set the values in **Set post details** and connect an HTTP Header Auth credential named `Authorization` with value `Bearer YOUR_STRAPI_TOKEN` to all HTTP nodes.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

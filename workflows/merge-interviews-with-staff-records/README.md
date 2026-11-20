@@ -13,11 +13,18 @@ Join interview records with staff records using the first interviewer ID.
 
 ## Setup and use
 
-Replace the example interviews and staff arrays in **Match interviewer IDs** with your data and run manually. In n8n replace the example JSON in **Data 1** and **Data 2**. Interview records use interviewers[0].id and staff records use fields.eid.
+Replace the example interviews and staff arrays in **Match interviewer IDs** with your data and run manually. Interview records use interviewers[0].id and staff records use fields.eid.
 
 ## Behavior
 
-The workflow keeps each interview with an interviewer ID and copies top-level fields from the matching staff record. Unmatched interviews remain unchanged; if multiple staff entries share an ID, the last one is used. Open Flow returns the records as an array. In n8n an empty branch may stop before the merge node runs.
+The workflow keeps each interview with an interviewer ID and copies top-level fields from the matching staff record. Unmatched interviews remain unchanged; if multiple staff entries share an ID, the last one is used. Open Flow returns the records as an array.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n replace the example JSON in **Data 1** and **Data 2**. In n8n an empty branch may stop before the merge node runs.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -13,13 +13,20 @@ Classify new unread Gmail messages and log the results in a spreadsheet.
 
 ## Setup
 
-Connect Gmail on **Check new unread mail** and **Read the email** to the same mailbox. Connect Google Sheets and set the spreadsheet ID and A1 range in **Append the classification**. The default range is `'Lite Log'!A:E`; the sheet must have the headers Date, From, Subject, Category and Summary in that order. Configure an AI model. In n8n, connect Gmail, OpenAI and Google Sheets, and select the same spreadsheet and sheet in **Log to Sheets**. Activate one format.
+Connect Gmail on **Check new unread mail** and **Read the email** to the same mailbox. Connect Google Sheets and set the spreadsheet ID and A1 range in **Append the classification**. The default range is `'Lite Log'!A:E`; the sheet must have the headers Date, From, Subject, Category and Summary in that order. Configure an AI model.
 
 ## Behavior
 
 Every minute, new unread messages are classified as urgent, important, informational or spam; each row records its date, sender, subject, category and one-sentence summary. The model receives the sender, subject and first 500 characters of the message body, which can include HTML markup. Review classifications before relying on them. Each processed message needs a sender address. Drafts, spam and trash are excluded; messages are not marked read or moved.
 
-Open Flow handles up to 100 messages per poll sequentially. A failed or invalid model response or append stops later messages in the run; earlier rows remain. An uncertain append may have succeeded; inspect the sheet before retrying. Neither format deduplicates rows, and concurrent or repeated runs can create duplicates. n8n retries the model up to three times; Open Flow does not automatically retry it.
+Open Flow handles up to 100 messages per poll sequentially. A failed or invalid model response or append stops later messages in the run; earlier rows remain. An uncertain append may have succeeded; inspect the sheet before retrying. Neither format deduplicates rows, and concurrent or repeated runs can create duplicates. Open Flow does not automatically retry it.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect Gmail, OpenAI and Google Sheets, and select the same spreadsheet and sheet in **Log to Sheets**. n8n retries the model up to three times.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -15,15 +15,20 @@ Save incoming Gmail attachments to Drive with the sender address in each filenam
 
 Connect Gmail in **Check for new attachments every minute**, **Read email and attachments** and **Download Gmail attachment**. Connect Google Drive in **Save attachment in Google Drive** and set a writable folder ID in **Choose the next attachment**. In **Verify complete attachment**, replace the example HTTP allowlist entry with the hostname of your Connector file transit storage. The Gmail download Action must have file transit configured.
 
-In n8n, connect Gmail and Google Drive and choose the destination folder in **upload files to google drive**. Enable one format after setup.
-
 ## Behavior
 
 The workflow checks for new incoming messages matching Gmail’s has:attachment search every minute. It processes each message and attachment in order, saving each file with the sender address added before its final filename extension. Attachments without a filename use attachment. Inline attachment data and separately downloaded attachment bytes are both handled. Messages without attachments do not create files.
 
-Open Flow processes at most 50 messages per poll page and checks the byte count before creating each file. Connector transit downloads and Code execution must fit the host’s 1 MiB fetch and execution limits; larger attachments fail rather than being truncated. n8n has its own poll queue and binary storage limits. Restrict access to mailbox data, file transit links, Drive files and execution history.
+Open Flow processes at most 50 messages per poll page and checks the byte count before creating each file. Connector transit downloads and Code execution must fit the host’s 1 MiB fetch and execution limits; larger attachments fail rather than being truncated. Restrict access to mailbox data, file transit links, Drive files and execution history.
 
 An error stops the run; earlier Drive files remain. A failed or uncertain upload may already have created a file. Inspect Drive before retrying. There is no exactly-once guarantee or automatic retry after a write.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect Gmail and Google Drive and choose the destination folder in **upload files to google drive**. Enable one format after setup. n8n has its own poll queue and binary storage limits.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

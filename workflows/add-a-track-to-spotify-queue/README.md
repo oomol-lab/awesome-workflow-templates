@@ -13,11 +13,18 @@ Add a Spotify track to the current playback queue.
 
 ## Setup
 
-Use a Spotify Premium account with an active playback device and grant `user-modify-playback-state` access. Connect Spotify in Open Flow and run with a track URI such as `spotify:track:YOUR_TRACK_ID`. In n8n connect Spotify and enter the track URI in **Spotify**. Run one format.
+Use a Spotify Premium account with an active playback device and grant `user-modify-playback-state` access. Connect Spotify in Open Flow and run with a track URI such as `spotify:track:YOUR_TRACK_ID`.
 
 ## Behavior
 
 A manual run adds one track to the active device's playback queue. Spotify acknowledges the command, but execution order relative to other player commands is not guaranteed. If the request fails or its result is uncertain, inspect the queue before retrying; repeating the request can add the track again.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n connect Spotify and enter the track URI in **Spotify**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

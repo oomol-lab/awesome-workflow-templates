@@ -15,8 +15,6 @@ Run a query through Xquik and receive normalized X posts with a plain-text diges
 
 In Open Flow, import the JSON and bind **Search X with Xquik → Authentication token** to a secret Variable containing your Xquik API key. The template leaves this value empty. Enter `query` and `limit` when starting the workflow, for example `n8n automation` and `10`.
 
-In n8n, edit **Search Settings**. Create a Header Auth credential with name `X-API-Key` and your Xquik key as its value, then select it on **Search X with Xquik**. Run **Manual Trigger**.
-
 Use a nonempty query of up to 4,096 characters and an integer limit from 1 to 10,000. Xquik recommends keeping queries within 512 characters; larger or expensive searches may fail or return fewer rows because of service limits or available quota. See the [official API specification](https://xquik.com/openapi.json) for current search behavior.
 
 ## Results
@@ -26,6 +24,13 @@ Use a nonempty query of up to 4,096 characters and an integer limit from 1 to 10
 - `results_count`, `has_more`, and `next_cursor` describe this response. The workflow does not follow the cursor or claim to retrieve every match.
 
 Each run makes one search request, with a 120-second task/request timeout and no workflow retry. HTTP failures or malformed responses stop the run. A repeated run performs another search; there is no saved watermark, deduplication, posting, or model call.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, edit **Search Settings**. Create a Header Auth credential with name `X-API-Key` and your Xquik key as its value, then select it on **Search X with Xquik**. Run **Manual Trigger**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

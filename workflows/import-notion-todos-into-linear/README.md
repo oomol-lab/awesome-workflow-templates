@@ -13,13 +13,22 @@ Create Linear issues from unchecked Notion to-dos, including their nested conten
 
 ## Setup
 
-Connect Notion and Linear. Set the secret Variable LINEAR_API_KEY to a Linear API key for reading teams and members, and use the same Linear account for issue creation. Configure the AI model. Import the n8n workflow to use its form; in relay mode set the Open Flow webhook URL, and in direct mode connect its Notion, Linear and model credentials. For both Linear HTTP nodes configure HTTP Header Auth with name `Authorization` and your Linear API key as its value. Enable one mode. The Open Flow webhook is public; restrict access to its URL.
+Connect Notion and Linear. Set the secret Variable LINEAR_API_KEY to a Linear API key for reading teams and members, and use the same Linear account for issue creation. Configure the AI model. For both Linear HTTP nodes configure HTTP Header Auth with name `Authorization` and your Linear API key as its value. The Open Flow webhook is public; restrict access to its URL.
 
 ## Behavior
 
 Enter a Notion page URL and an exact Linear team name. Unchecked to-do blocks without an existing Linear marker become issues. Nested block contents are included as Markdown. A leading [name] is matched to a unique team member; unmatched or ambiguous names are noted in the description. Titles longer than 70 characters use a concise model result. The original rich text is retained when the resulting issue link is added to the Notion block.
 
 Before each Linear write the to-do is marked [In Linear pending]. An interrupted or uncertain write may have created the issue. Inspect Linear and the Notion block, then manually add the issue link if it exists or remove the pending marker if it does not. Do not overlap imports or edit those blocks during an import.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow to use its form.
+
+In relay mode set the Open Flow webhook URL, and in direct mode connect its Notion, Linear and model credentials.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

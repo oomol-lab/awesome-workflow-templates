@@ -3,13 +3,8 @@
 Import n8n workflow JSON files from a Drive folder, apply a tag and move them after success.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/import-n8n-workflows-from-google-drive/) [![n8n JSON](../../assets/n8n-json.svg)](templates/import-n8n-workflows-from-google-drive.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/import-n8n-workflows-from-google-drive.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup
 

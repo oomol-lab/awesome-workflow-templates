@@ -13,13 +13,20 @@ Submit Google Sheet companies to Icypeas bulk domain search.
 
 ## Setup and use
 
-Connect Google Sheets and select the spreadsheet and range. The first row must contain exact column label `company`. Each populated row needs a company or domain. In Open Flow bind an Icypeas API key to the secret Variable **ICYPEAS_API_KEY** in **Submit a search batch**. In n8n configure Header Auth with the header name `Authorization` and the API key as its value. Run manually.
+Connect Google Sheets and select the spreadsheet and range. The first row must contain exact column label `company`. Each populated row needs a company or domain. In Open Flow bind an Icypeas API key to the secret Variable **ICYPEAS_API_KEY** in **Submit a search batch**. Run manually.
 
 ## Behavior
 
 The workflow reads all rows in the configured range and submits them in order for **domain-search**, under the batch name `dernierT`. It splits requests into at most 5,000 rows and waits one second between requests. The output contains accepted Icypeas file IDs; results are processed asynchronously and can be viewed in Icypeas. Empty sheets submit nothing. The sheet and batch data must fit the execution limits.
 
 If a submission fails or its outcome is unknown, later batches stop, but earlier batches may already exist. Check Icypeas before retrying to avoid duplicate searches.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure Header Auth with the header name `Authorization` and the API key as its value.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

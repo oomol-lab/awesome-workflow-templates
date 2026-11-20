@@ -13,13 +13,20 @@ Check a webpage every hour and notify Discord when the text “Out Of Stock” i
 
 ## Setup
 
-Set the page URL in **Prepare the page URL**. Connect a Discord bot that can post to the destination channel and enter its channel ID in **Notify Discord**. In n8n, set the URL in **HTTP Request**, connect Discord Bot credentials and select the server and channel. Activate one format.
+Set the page URL in **Prepare the page URL**. Connect a Discord bot that can post to the destination channel and enter its channel ID in **Notify Discord**.
 
 ## Behavior
 
 Every hour the workflow fetches the page as text and searches for the exact, case-sensitive phrase `Out Of Stock`. When the phrase is absent it sends `value not found` to Discord. When it is present, it sends nothing. A missing phrase does not establish product availability; dynamic pages, wording changes or access restrictions can affect the result.
 
-Redirects are followed up to 21 hops. Open Flow accepts HTTP or HTTPS redirect targets without embedded credentials. A failed request or non-2xx final response stops without a Discord message. Open Flow applies a 30-second timeout per hop; n8n uses its HTTP node default timeout. Open Flow stops without a message if the response exceeds 4 MiB. The schedule uses America/Los_Angeles, matching the source. n8n chooses a fixed second within each hour’s first minute; Open Flow starts at the minute boundary. A Discord failure stops the run; an unknown send may already have succeeded, so inspect the channel before retrying.
+Redirects are followed up to 21 hops. Open Flow accepts HTTP or HTTPS redirect targets without embedded credentials. A failed request or non-2xx final response stops without a Discord message. Open Flow applies a 30-second timeout per hop. Open Flow stops without a message if the response exceeds 4 MiB. The schedule uses America/Los_Angeles, matching the source. Open Flow starts at the minute boundary. A Discord failure stops the run; an unknown send may already have succeeded, so inspect the channel before retrying.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, set the URL in **HTTP Request**, connect Discord Bot credentials and select the server and channel. N8n uses its HTTP node default timeout. n8n chooses a fixed second within each hour’s first minute.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

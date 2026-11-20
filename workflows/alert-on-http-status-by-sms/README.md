@@ -13,13 +13,20 @@ Check a website every five minutes and send an SMS when its HTTP status is not 2
 
 ## Setup
 
-Set the HTTP or HTTPS URL in **Prepare the HTTP target** in Open Flow or **HTTP Request** in n8n. Use an endpoint you are authorized to monitor. Connect Twilio and set a valid sender and recipient in **Send the SMS alert** or **Twilio**. Enable one format.
+Set the HTTP or HTTPS URL in **Prepare the HTTP target**. Use an endpoint you are authorized to monitor. Connect Twilio and set a valid sender and recipient in **Send the SMS alert** or **Twilio**.
 
 ## Behavior
 
-Every five minutes, the workflow makes an HTTP GET, follows up to 21 redirects, and sends the text Service Down by SMS if the final response status is anything other than 200. A final 200 sends nothing. Open Flow runs on UTC minute boundaries; n8n chooses a fixed second when its schedule is registered. Both formats use UTC.
+Every five minutes, the workflow makes an HTTP GET, follows up to 21 redirects, and sends the text Service Down by SMS if the final response status is anything other than 200. A final 200 sends nothing. Open Flow runs on UTC minute boundaries. The workflow uses UTC.
 
-A network or DNS failure, invalid redirect, redirect limit or request timeout stops the run without an SMS. Open Flow stops without an SMS if the response exceeds 4 MiB. Each request has a 30-second timeout in Open Flow; n8n uses a 30-second request timeout. Repeated non-200 responses send repeated messages. A failed or uncertain SMS may already have been sent; check Twilio before retrying.
+A network or DNS failure, invalid redirect, redirect limit or request timeout stops the run without an SMS. Open Flow stops without an SMS if the response exceeds 4 MiB. Each request has a 30-second timeout in Open Flow. Repeated non-200 responses send repeated messages. A failed or uncertain SMS may already have been sent; check Twilio before retrying.
+
+<details>
+<summary>In n8n</summary>
+
+Set the HTTP or HTTPS URL in **Prepare the HTTP target** in Open Flow or **HTTP Request** in n8n. N8n chooses a fixed second when its schedule is registered. N8n uses a 30-second request timeout.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

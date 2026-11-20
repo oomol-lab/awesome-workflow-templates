@@ -13,9 +13,16 @@ Extract and categorize statement transactions from new PDFs or images into Drive
 
 ## Setup and use
 
-Use separate Google Drive input and output folders. Configure Google Drive, OpenAI and Gemini connections. Both the Gemini connector and n8n relay must use the same Gemini project. Configure the input and destination folder IDs, persistent State and protected n8n PDF text and image upload webhooks. Configure the relay HTTP header credential with your Gemini API key. In n8n connect Drive, configure OpenAI and Gemini HTTP header credentials, set the same folder IDs, select a Data Table with item_key and status columns, and use a model available to your account. Protect the PDF relay with an authenticated gateway or private network.
+Use separate Google Drive input and output folders. Configure Google Drive, OpenAI and Gemini connections. Configure the relay HTTP header credential with your Gemini API key. Protect the PDF relay with an authenticated gateway or private network.
 
 The workflow processes each new PDF or PNG, JPEG, WebP, HEIC or HEIF image, extracts transaction rows and a category column, validates the CSV, and uploads a CSV file. PDF text extraction requires selectable text. Review results against the original statement; model output can omit or misread transactions. Statement content is sent to the configured model, and images are temporarily uploaded to Gemini Files. Other image formats stop with an explicit error. An uncertain upload leaves a pending file ID; inspect the output folder before clearing the checkpoint and retrying. Avoid overlapping runs.
+
+<details>
+<summary>In n8n</summary>
+
+Both the Gemini connector and n8n relay must use the same Gemini project. Configure the input and destination folder IDs, persistent State and protected n8n PDF text and image upload webhooks. In n8n connect Drive, configure OpenAI and Gemini HTTP header credentials, set the same folder IDs, select a Data Table with item_key and status columns, and use a model available to your account.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

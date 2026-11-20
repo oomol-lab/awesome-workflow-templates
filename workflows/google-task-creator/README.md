@@ -15,9 +15,14 @@ Create one task in a Google Tasks list. Run it manually after setting the title 
 
 For Open Flow, import the JSON and connect Google Tasks in **Create Google task**. Replace `YOUR_TASK_LIST_ID` and edit the task title.
 
+Run once to create the task. The workflow returns Google’s created task record. Each run creates a new task; it does not search for or update an existing task. Due dates, reminders, notes, parent tasks, and completion status are left at Google’s defaults.
+
+<details>
+<summary>In n8n</summary>
+
 For n8n, connect Google Tasks in **Google Tasks**, select the TaskList Name or ID, and edit Title.
 
-Run once to create the task. The workflow returns Google’s created task record. Each run creates a new task; it does not search for or update an existing task. Due dates, reminders, notes, parent tasks, and completion status are left at Google’s defaults.
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

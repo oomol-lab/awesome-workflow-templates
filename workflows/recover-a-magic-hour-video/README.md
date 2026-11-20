@@ -13,13 +13,20 @@ Retrieve a completed Magic Hour video using its project ID.
 
 ## Setup
 
-Connect Magic Hour in **Find the video project** and set the same existing project ID there and in **Require a completed video**. Allow the vendor download hostname in **Download the video**; the default is videos.magichour.ai and the returned URL may use another host. In n8n, install the Magic Hour community node (the source used version 1.0.3), connect its API credential and set the project ID in **Magic Hour**. Run either format manually.
+Connect Magic Hour in **Find the video project** and set the same existing project ID there and in **Require a completed video**. Allow the vendor download hostname in **Download the video**; the default is videos.magichour.ai and the returned URL may use another host. Run the workflow manually.
 
 ## Behavior
 
-The workflow checks the existing project once and downloads its first video when its status is complete. Pending, canceled or failed projects stop without downloading. The workflow does not create a new project or poll for completion. Open Flow returns the project ID, temporary vendor URL and run-owned video artifact; n8n returns downloaded binary. The vendor URL can expire.
+The workflow checks the existing project once and downloads its first video when its status is complete. Pending, canceled or failed projects stop without downloading. The workflow does not create a new project or poll for completion. Open Flow returns the project ID, temporary vendor URL and run-owned video artifact. The vendor URL can expire.
 
 Open Flow accepts MP4 downloads up to 1 MiB, and its artifact is available to subsequent workflow steps. Download errors stop the run. Restrict access to temporary URLs and video content.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, install the Magic Hour community node (the source used version 1.0.3), connect its API credential and set the project ID in **Magic Hour**. N8n returns downloaded binary.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

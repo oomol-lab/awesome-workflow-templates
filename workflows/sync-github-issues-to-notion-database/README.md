@@ -15,13 +15,20 @@ Create and maintain Notion database pages for GitHub issue lifecycle events.
 
 Connect GitHub in **Receive GitHub issue event** and set the repository owner and name. The account must be able to manage repository webhooks. Share the Notion database with the Notion connection, and connect that account in each Notion node. The database needs **Issue** (title), **Issue ID** (number), **Link** (URL) and **Closed** (checkbox) properties.
 
-In Open Flow set the Notion data source ID in **Prepare issue change**. In n8n select the database in **Create database page** and **Find database page**. The data source ID and database ID can differ. Activate only one format.
+In Open Flow set the Notion data source ID in **Prepare issue change**. The data source ID and database ID can differ.
 
 ## Behavior
 
 An opened issue creates a page with its title, numeric GitHub ID, link and unchecked Closed property. For edited, closed, reopened or deleted issues, the workflow finds the page by issue ID. It changes the title, checks or clears Closed, or archives the page, respectively. Other issue events are ignored; no matching page produces no update. Duplicate matching pages stop before updating.
 
 Notion or GitHub errors stop the run. There is no automatic retry or transactional guarantee; inspect Notion before replaying an uncertain write. Repeated opened deliveries can create duplicate pages. Avoid overlapping runs and restrict access to issue details and workflow history.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n select the database in **Create database page** and **Find database page**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -13,11 +13,18 @@ Read every page of HubSpot contacts and return the collected records.
 
 ## Setup
 
-Create a HubSpot private app token with `crm.objects.contacts.read` scope. Bind it as the secret Variable **HUBSPOT_PRIVATE_APP_TOKEN** in Open Flow. In n8n, create a Header Auth credential with `Authorization: Bearer YOUR_TOKEN` and select it in **Read contacts**. Run manually.
+Create a HubSpot private app token with `crm.objects.contacts.read` scope. Bind it as the secret Variable **HUBSPOT_PRIVATE_APP_TOKEN** in Open Flow. Run manually.
 
 ## Behavior
 
-The workflow reads contacts in pages of 100 and returns the API records with the endpoint’s default contact properties, waiting five seconds between requests. It does not request every custom property. Open Flow also waits after the final page, as in the source. Open Flow returns one array; n8n returns one item per contact. Empty accounts produce an empty array in Open Flow and no items in n8n. A failed page or malformed cursor stops the run; repeated cursors stop Open Flow instead of looping forever. The list is not a transactional snapshot, so concurrent contact changes can affect results. The complete result and intermediate pages are held in execution memory; very large accounts may exceed platform runtime or payload limits. Restrict access to execution history because it contains contact data.
+The workflow reads contacts in pages of 100 and returns the API records with the endpoint’s default contact properties, waiting five seconds between requests. It does not request every custom property. Open Flow also waits after the final page, as in the source. Open Flow returns one array. A failed page or malformed cursor stops the run; repeated cursors stop Open Flow instead of looping forever. The list is not a transactional snapshot, so concurrent contact changes can affect results. The complete result and intermediate pages are held in execution memory; very large accounts may exceed platform runtime or payload limits. Restrict access to execution history because it contains contact data.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, create a Header Auth credential with `Authorization: Bearer YOUR_TOKEN` and select it in **Read contacts**. N8n returns one item per contact. Empty accounts produce an empty array in Open Flow and no items in n8n.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

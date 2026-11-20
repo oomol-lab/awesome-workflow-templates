@@ -13,13 +13,20 @@ Translate words from top Hacker News stories into German, save them in Airtable 
 
 ## Setup
 
-Connect Lingvanex Translation API, Airtable and Vonage. In **Configure the destinations**, set the Airtable base ID and table name or ID, an allowed Vonage sender and a destination in international digits without a leading plus. The table must have text fields named **English word** and **Translated word**. In n8n, set the same four values in **Configure the destinations** and connect Airtable, Vonage and Lingvanex. Activate one format. Both schedules use 08:00 UTC as a starting point; choose your time zone. Open Flow runs on the minute boundary and n8n uses a fixed second within the minute.
+Connect Lingvanex Translation API, Airtable and Vonage. In **Configure the destinations**, set the Airtable base ID and table name or ID, an allowed Vonage sender and a destination in international digits without a leading plus. The table must have text fields named **English word** and **Translated word**. Both schedules use 08:00 UTC as a starting point; choose your time zone.
 
 ## Behavior
 
-Each day the workflow collects unique nonnumeric words from three Hacker News titles, translates all words into German (with automatic source-language detection), saves each pair in Airtable and sends the first five pairs by SMS. Fewer than five words or an invalid translation stops before saving. Unicode SMS may require multiple segments. Open Flow uses Lingvanex’s api-gl endpoint and sends its API key as a URL query parameter; upstream or proxy logs may record it. n8n uses the older api-b2b endpoint and a bearer credential, so check account access to the endpoint used by your format.
+Each day the workflow collects unique nonnumeric words from three Hacker News titles, translates all words into German (with automatic source-language detection), saves each pair in Airtable and sends the first five pairs by SMS. Fewer than five words or an invalid translation stops before saving. Unicode SMS may require multiple segments. Open Flow uses Lingvanex’s api-gl endpoint and sends its API key as a URL query parameter; upstream or proxy logs may record it.
 
 Airtable saves occur before SMS. A later failure does not undo earlier records, and a lost Airtable or SMS response may still mean a write or message succeeded. Inspect the destination before replaying; no automatic write retry is added. The collected data must fit the host execution limits.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, set the same four values in **Configure the destinations** and connect Airtable, Vonage and Lingvanex. Open Flow runs on the minute boundary and n8n uses a fixed second within the minute. n8n uses the older api-b2b endpoint and a bearer credential, so check account access to the endpoint used by your format.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

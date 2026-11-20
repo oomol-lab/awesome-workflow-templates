@@ -15,13 +15,18 @@ Check starred Tiny Tiny RSS articles and save new URLs to Wallabag.
 
 Enable the Tiny Tiny RSS API and create a Wallabag API client. In Open Flow configure both HTTPS service base URLs in **Configure services**. Set and bind the **Configure services** inputs to secret Variables `TTRSS_USER`, `TTRSS_PASSWORD`, `WALLABAG_CLIENT_ID`, `WALLABAG_CLIENT_SECRET`, `WALLABAG_USER` and `WALLABAG_PASSWORD`. Restrict access to execution data because authentication requests contain credentials and tokens. Keep workflow State persistent and prevent overlapping runs.
 
-In n8n, enter HTTPS service URLs in the HTTP Request nodes and configure the six named n8n variables referenced by the login expressions; restrict access to those variables and execution data. Activate only one workflow format. The password grant must be enabled by the Wallabag instance.
-
 ## Behavior
 
 Run manually or every ten minutes. The workflow requests the starred feed and saves article URLs until it reaches the last seen article ID. The first run saves the returned page. It does not paginate: older or reordered articles outside that page may be missed. Tags are not sent. Empty results save nothing.
 
-Open Flow saves the newest ID to State only after all article requests succeed. n8n updates static data only after the save node completes successfully. A failed or uncertain write leaves the checkpoint unchanged, but some URLs may already be saved. Check Wallabag before retrying to avoid duplicates. A hard interruption or overlapping runs can still affect persistence. Overlapping runs can race. Manual n8n tests do not persist workflow static data, while Open Flow manual runs use persistent State. The schedule uses UTC; n8n's Cron V1 may run at a randomized second within the minute.
+Open Flow saves the newest ID to State only after all article requests succeed. A failed or uncertain write leaves the checkpoint unchanged, but some URLs may already be saved. Check Wallabag before retrying to avoid duplicates. A hard interruption or overlapping runs can still affect persistence. Overlapping runs can race. Open Flow manual runs use persistent State. The schedule uses UTC.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, enter HTTPS service URLs in the HTTP Request nodes and configure the six named n8n variables referenced by the login expressions; restrict access to those variables and execution data. Activate only one workflow format. The password grant must be enabled by the Wallabag instance. n8n updates static data only after the save node completes successfully. Manual n8n tests do not persist workflow static data. N8n's Cron V1 may run at a randomized second within the minute.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

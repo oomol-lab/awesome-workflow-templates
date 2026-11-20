@@ -13,13 +13,20 @@ Move GetResponse contacts from other lists to a selected list.
 
 ## Setup
 
-Connect GetResponse in **Read destination list**, **List contacts** and the Action in **Move contact**. Enter the destination list ID when starting the Open Flow workflow. In n8n, connect the same GetResponse account to the HTTP nodes and set the destination list ID in **Read destination list**. Use an account allowed to read and update the contacts.
+Connect GetResponse in **Read destination list**, **List contacts** and the Action in **Move contact**. Enter the destination list ID when starting the Open Flow workflow. Use an account allowed to read and update the contacts.
 
 ## Behavior
 
 A manual run reads the destination list and all contact pages. It moves each contact whose current list name differs from the destination list name. Moving changes the contact's list and carries its activity history and statistics. Review the destination and affected contacts before running. The workflow does not update contact names, scores, notes or other fields.
 
-If a page is missing, inconsistent, changes during reading, or a contact lacks a list identity, the run stops before moving anyone. n8n stops before updates if the list exceeds its 1,000-page limit. Empty contact lists produce no updates. Updates run one at a time. If an update fails or its outcome is uncertain, earlier contacts may already have moved; inspect GetResponse before retrying. No automatic retry or rollback is configured. Changes made concurrently during pagination can affect which contacts are read.
+If a page is missing, inconsistent, changes during reading, or a contact lacks a list identity, the run stops before moving anyone. Empty contact lists produce no updates. Updates run one at a time. If an update fails or its outcome is uncertain, earlier contacts may already have moved; inspect GetResponse before retrying. No automatic retry or rollback is configured. Changes made concurrently during pagination can affect which contacts are read.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect the same GetResponse account to the HTTP nodes and set the destination list ID in **Read destination list**. n8n stops before updates if the list exceeds its 1,000-page limit.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

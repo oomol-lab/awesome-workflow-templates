@@ -15,13 +15,18 @@ Create a WordPress draft with a title, then update the same post with content.
 
 Connect both WordPress nodes to the same public HTTPS site using a username and [Application Password](https://developer.wordpress.org/rest-api/using-the-rest-api/authentication/#basic-authentication-with-application-passwords). The account needs permission to create and edit posts. Set the title in **Create the titled draft** and the content in **Prepare the draft content**.
 
-In n8n, select WordPress API credentials on both nodes, edit the title in **Wordpress** and the content in **Wordpress1**. The second node uses the ID returned by the first. Activate only one format for each intended draft.
-
 ## Behavior
 
-Run manually. The first request creates a draft with the title. The second request adds the configured content to that exact post. Open Flow returns both WordPress post responses and checks that the update response has the same post ID. n8n returns the update response, with the create response available in the previous node. The draft is not published by this workflow; review and publish it in WordPress when ready.
+Run manually. The first request creates a draft with the title. The second request adds the configured content to that exact post. Open Flow returns both WordPress post responses and checks that the update response has the same post ID. The draft is not published by this workflow; review and publish it in WordPress when ready.
 
 If creation or update fails or its result is uncertain, inspect WordPress before retrying. A draft may already exist or its content may already have changed. Earlier changes are not rolled back and the workflow does not search for or deduplicate posts. The hosted Connector accepts public HTTPS sites and may reject private network addresses; both requests use the same WordPress Connection.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, select WordPress API credentials on both nodes, edit the title in **Wordpress** and the content in **Wordpress1**. The second node uses the ID returned by the first. Activate only one format for each intended draft. n8n returns the update response, with the create response available in the previous node.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

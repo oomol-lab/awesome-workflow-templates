@@ -13,11 +13,18 @@ Receive Calendly booking and cancellation events.
 
 ## Setup and use
 
-Import the n8n workflow and connect Calendly. Select the subscription scope in **Calendly Trigger** and activate the workflow to register both booking and cancellation events. Calendly webhook availability depends on the account plan and permissions. For Open Flow enter its webhook URL in **Forward to Open Flow** and enable that node; leave it disabled to use n8n alone. Restrict access to the webhook endpoints.
+Connect Calendly. Select the subscription scope in **Calendly Trigger** and activate the workflow to register both booking and cancellation events. Calendly webhook availability depends on the account plan and permissions. For Open Flow enter its webhook URL in **Forward to Open Flow** and enable that node. Restrict access to the webhook endpoints.
 
 ## Behavior
 
-The trigger emits the complete event for each invitee booking or cancellation. The optional relay forwards it as Open Flow workflow output. The n8n trigger does not verify Calendly signatures; restrict access and inspect n8n execution history for relay failures. Events may contain personal information.
+The trigger emits the complete event for each invitee booking or cancellation. The optional relay forwards it as Open Flow workflow output. Events may contain personal information.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow and connect Calendly. Leave it disabled to use n8n alone. The n8n trigger does not verify Calendly signatures; restrict access and inspect n8n execution history for relay failures.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

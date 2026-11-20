@@ -13,13 +13,20 @@ Expose event lookup, listing, availability, creation, reminders update and delet
 
 ## Setup
 
-Connect Google Calendar and an authenticated n8n MCP server. Configure the same Calendar ID in both formats. Select a Data Table with item_key, status and fingerprint text columns, set a unique requestId for each write, and prevent overlapping runs for a request. In Open Flow enable persistent State and set CALENDAR_MCP_RELAY_AUTH. In n8n select relay mode and configure the matching Header Auth credential and Open Flow URL. Use one mode.
+Configure the same Calendar ID. In Open Flow enable persistent State and set CALENDAR_MCP_RELAY_AUTH.
 
 ## Behavior
 
 The six tools get an event by ID, list all events between After and Before, check availability between Start_Time and End_Time in America/Sao_Paulo, create an event with Start, End, Description and Use_Default_Reminders, update only the reminders setting, or delete by Event_ID. As in the source, an update with Use_Default_Reminders true sends no reminder change; false sets useDefault false. Dates should include offsets. The caller must explicitly request writes. Event data may appear in execution history. The Open Flow list runs through Code, which has a 1 MiB input/output limit.
 
-If a write outcome is unknown, inspect Calendar before retrying. In Open Flow enter the pending key and confirmed or absent in **Reserve calendar write**, replay the request, then clear both fields. In n8n mark the pending Data Table row done only after confirming the write, or delete it only after confirming it did not occur. Use a fresh requestId for intentional new writes. Open Flow treats a delete 404 as already absent; n8n returns an error.
+If a write outcome is unknown, inspect Calendar before retrying. In Open Flow enter the pending key and confirmed or absent in **Reserve calendar write**, replay the request, then clear both fields. Use a fresh requestId for intentional new writes. Open Flow treats a delete 404 as already absent.
+
+<details>
+<summary>In n8n</summary>
+
+Connect Google Calendar and an authenticated n8n MCP server. Select a Data Table with item_key, status and fingerprint text columns, set a unique requestId for each write, and prevent overlapping runs for a request. In n8n select relay mode and configure the matching Header Auth credential and Open Flow URL. In n8n mark the pending Data Table row done only after confirming the write, or delete it only after confirming it did not occur. N8n returns an error.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

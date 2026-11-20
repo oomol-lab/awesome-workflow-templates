@@ -15,13 +15,18 @@ Analyze a domain’s SerpBear keyword rankings and save a report to Baserow.
 
 In **Configure SerpBear**, set your public HTTPS instance URL ending in /api/keywords and the tracked domain. Create a secret Variable containing the SerpBear API key and bind it to **Auth Token**. Connect OpenRouter in **Analyze keyword rankings** and select an available model. Connect Baserow Cloud in **Save report to Baserow**, choose a table with Date, Note and Blog fields, and set the blog name in **Prepare report row**.
 
-In n8n, set the SerpBear URL and domain in **Configure SerpBear**, configure Header Auth with name Authorization and value Bearer YOUR_SERPBEAR_API_KEY, and configure OpenRouter Header Auth with name Authorization and value Bearer YOUR_OPENROUTER_API_KEY. Select an available model in the OpenRouter request. Connect Baserow credentials and select the Date, Note and Blog fields. Activate one format.
-
 ## Behavior
 
 A manual run or weekly schedule reads all keywords returned for the configured domain, summarizes current rank and up to seven most recent recorded history entries, and asks the configured OpenRouter model for observations and actions. Empty keyword lists produce no report. Zero history positions are excluded from the average; a keyword with no ranked history or with position zero is labeled as having insufficient ranking data. Results depend on SerpBear data and model output; review reports before acting. The workflow stores one Date, Note and Blog row in Baserow.
 
-Read, model or write failure stops the run. A failed or uncertain row creation may already have succeeded; check Baserow before retrying. SerpBear must be reachable over HTTPS. Keep API keys and ranking data private. Open Flow uses UTC Sunday midnight; the source depended on the n8n instance timezone. n8n chooses a fixed second within the scheduled minute; Open Flow uses the minute boundary.
+Read, model or write failure stops the run. A failed or uncertain row creation may already have succeeded; check Baserow before retrying. SerpBear must be reachable over HTTPS. Keep API keys and ranking data private. Open Flow uses UTC Sunday midnight. Open Flow uses the minute boundary.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, set the SerpBear URL and domain in **Configure SerpBear**, configure Header Auth with name Authorization and value Bearer YOUR_SERPBEAR_API_KEY, and configure OpenRouter Header Auth with name Authorization and value Bearer YOUR_OPENROUTER_API_KEY. Select an available model in the OpenRouter request. Connect Baserow credentials and select the Date, Note and Blog fields. Activate one format. The source depended on the n8n instance timezone. n8n chooses a fixed second within the scheduled minute.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

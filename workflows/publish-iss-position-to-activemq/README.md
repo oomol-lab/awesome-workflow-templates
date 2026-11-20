@@ -15,11 +15,16 @@ Publish the current ISS position to an ActiveMQ topic every minute.
 
 For Open Flow, enable the [ActiveMQ Classic REST API](https://activemq.apache.org/components/classic/documentation/rest) on a broker reachable from the workflow. In **Publish to the topic**, set the HTTPS URL to your broker's `/api/message?destination=topic%3A%2F%2FYOUR_TOPIC` and bind its username and password as secret Variables. Configure broker access to publish to that topic.
 
-For n8n, configure the AMQP credential and the address `topic://YOUR_TOPIC` in **AMQP Sender**, using the same broker and topic as the REST destination. Activate one format.
-
 ## Behavior
 
-Every minute, retrieve the ISS position and publish one JSON message containing Name, Latitude, Longitude and Timestamp. Open Flow runs at the minute boundary; n8n Cron V1 uses a fixed second within each minute. Open Flow stops on invalid position data or an HTTP error. A publish with an unknown outcome may already have succeeded; check the broker before retrying.
+Every minute, retrieve the ISS position and publish one JSON message containing Name, Latitude, Longitude and Timestamp. Open Flow runs at the minute boundary. Open Flow stops on invalid position data or an HTTP error. A publish with an unknown outcome may already have succeeded; check the broker before retrying.
+
+<details>
+<summary>In n8n</summary>
+
+For n8n, configure the AMQP credential and the address `topic://YOUR_TOPIC` in **AMQP Sender**, using the same broker and topic as the REST destination. Activate one format. N8n Cron V1 uses a fixed second within each minute.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

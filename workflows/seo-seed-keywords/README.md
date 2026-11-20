@@ -25,9 +25,14 @@ For Open Flow, select a configured `claude-sonnet-4-6` model in **Generate seed 
 }
 ```
 
-For n8n, edit those fields in **Set Ideal Customer Profile (ICP)** and connect the attached **Anthropic Chat Model**. The template selects `claude-sonnet-4-6` with a 4,096-token generation budget. Another available model can be selected in both formats; the keyword ideas may differ.
+Each successful run has one generation step and returns `keywords`. Invalid JSON, a list outside 15–20 items, or empty keywords stops the run. The workflow trims and lowercases each keyword. It does not browse, fetch search volume or competition data, write to a database, or publish content. Keyword intent and relevance are model judgments; review them and use your SEO data before prioritizing.
 
-Each successful run has one generation step and returns `keywords`. n8n’s model adapter can retry transient request failures with backoff; it does not repeat the whole workflow. Invalid JSON, a list outside 15–20 items, or empty keywords stops the run. The workflow trims and lowercases each keyword. It does not browse, fetch search volume or competition data, write to a database, or publish content. Keyword intent and relevance are model judgments; review them and use your SEO data before prioritizing.
+<details>
+<summary>In n8n</summary>
+
+For n8n, edit those fields in **Set Ideal Customer Profile (ICP)** and connect the attached **Anthropic Chat Model**. The template selects `claude-sonnet-4-6` with a 4,096-token generation budget. Another available model can be selected in both formats; the keyword ideas may differ. n8n’s model adapter can retry transient request failures with backoff; it does not repeat the whole workflow.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

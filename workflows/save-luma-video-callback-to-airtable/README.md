@@ -13,13 +13,20 @@ Save completed Luma video and thumbnail URLs to the matching Airtable generation
 
 ## Setup
 
-Create an Airtable table with **Generation ID**, **Video URL**, **Thumb URL** and **Status** fields. Add the generation ID to an existing record when requesting the video; configure the Status field to accept **Done**. Connect Airtable and set the same base and table in **Find generation record** and **Update generation record**. Configure the deployed Open Flow webhook URL as Luma’s `callback_url`. In n8n connect Airtable, replace the base and table in **Global SETTINGS**, and use its webhook URL. Activate one format.
+Create an Airtable table with **Generation ID**, **Video URL**, **Thumb URL** and **Status** fields. Add the generation ID to an existing record when requesting the video; configure the Status field to accept **Done**. Connect Airtable and set the same base and table in **Find generation record** and **Update generation record**. Configure the deployed Open Flow webhook URL as Luma’s `callback_url`.
 
 ## Behavior
 
 Luma sends generation updates as POST requests. When a video URL is present, the workflow looks up the first record with the same Generation ID and writes the video URL, thumbnail URL and **Done** status. Events without a video do not write. If no matching record exists, the run stops without a write. Use unique Generation IDs in the table. If the thumbnail is absent, the thumbnail field is set to an empty value.
 
 The webhook acknowledges receipt before the Airtable update completes. Inspect execution history and the record if an update fails or its outcome is unknown. Earlier updates are not rolled back. The source webhook has no built-in authentication and can trigger writes; restrict access to trusted callers.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n connect Airtable, replace the base and table in **Global SETTINGS**, and use its webhook URL.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -13,15 +13,22 @@ Audit a landing page for technical SEO and content improvements and email the fi
 
 ## Setup
 
-Import the n8n workflow, connect OpenAI and Gmail, set the audit recipient in **Gmail**, and choose a Data Table with item_key and status text columns. Prevent overlapping executions.
+Prevent overlapping executions.
 
-For Open Flow set **Prepare audit** to relay, configure the deployed webhook URL, connect Gmail, select an AI model, configure **Reserve audit email** and enable persistent State. Restrict the webhook to trusted n8n. Direct mode runs in n8n; use one mode. Submit a public HTTP(S) landing page URL. Deploy with network controls that prevent access to private or internal hosts, including redirects.
+Configure the deployed webhook URL, connect Gmail, select an AI model, configure **Reserve audit email** and enable persistent State. Submit a public HTTP(S) landing page URL. Deploy with network controls that prevent access to private or internal hosts, including redirects.
 
 ## Behavior
 
 The workflow fetches the requested page and produces a technical audit followed by a content audit. It emails the findings to the configured recipient with the page URL in the subject. Model findings are suggestions, not measured rankings or performance; review them. HTML is sent to the model and may appear in execution history. The page and each Code input/output must fit 1 MiB.
 
-If delivery is uncertain, inspect Gmail before replay. In Open Flow enter the pending key and confirmed or absent in **Reserve audit email**, replay the same submission and clear both fields. In n8n inspect the pending Data Table row, mark it done after confirming delivery or delete it only if no email was sent.
+If delivery is uncertain, inspect Gmail before replay. In Open Flow enter the pending key and confirmed or absent in **Reserve audit email**, replay the same submission and clear both fields.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow, connect OpenAI and Gmail, set the audit recipient in **Gmail**, and choose a Data Table with item_key and status text columns. For Open Flow set **Prepare audit** to relay, configure the deployed webhook URL, connect Gmail, select an AI model, configure **Reserve audit email** and enable persistent State. Restrict the webhook to trusted n8n. Direct mode runs in n8n; use one mode. In n8n inspect the pending Data Table row, mark it done after confirming delivery or delete it only if no email was sent.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

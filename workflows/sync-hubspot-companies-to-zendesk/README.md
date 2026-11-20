@@ -13,11 +13,18 @@ Sync changed HubSpot company names and domains to matching Zendesk organizations
 
 ## Setup
 
-Create a HubSpot app token with company read access, store it as the secret Variable HUBSPOT_PRIVATE_APP_TOKEN and bind it to **List HubSpot companies**. Connect Zendesk for organization listing and both Provider API write nodes. Use the same Zendesk account for all three. In n8n, create a Header Auth credential whose Authorization value is Bearer YOUR_HUBSPOT_TOKEN, select it on **List HubSpot companies**, select the same Zendesk credential on both Zendesk HTTP nodes, and set the Zendesk subdomain URL in **Read the last run time**. Enable only one format. Keep workflow State persistent and prevent overlapping runs.
+Create a HubSpot app token with company read access, store it as the secret Variable HUBSPOT_PRIVATE_APP_TOKEN and bind it to **List HubSpot companies**. Connect Zendesk for organization listing and both Provider API write nodes. Use the same Zendesk account for all three. Keep workflow State persistent and prevent overlapping runs.
 
 ## Behavior
 
-Every five minutes, read HubSpot companies modified in the half-open interval from the saved time through the start of this run, match each by case-insensitive organization name, and create or update the Zendesk organization name and domain. The first run establishes the current-time baseline before reading. The workflow only considers changes after that baseline. Missing names or domains and duplicate matches stop before any organization write. Updating a matched organization replaces its existing domain list with the HubSpot domain. The saved time advances only after every write is confirmed; an empty batch keeps the previous time and is read again next run. A failed or uncertain write may already have succeeded, and earlier writes can remain; inspect Zendesk before rerunning. Full listings are not a transactional snapshot: concurrent changes while pages are read can affect which records are observed. For Open Flow, the Zendesk Action uses offset pagination and stops before writing if more than 100 pages are needed. In n8n, each listing stops before writing if more than 100 pages are needed. Large accounts can hit these limits; a long empty period can increase repeated reading. The workflow does not remove organizations when HubSpot companies are deleted.
+Every five minutes, read HubSpot companies modified in the half-open interval from the saved time through the start of this run, match each by case-insensitive organization name, and create or update the Zendesk organization name and domain. The first run establishes the current-time baseline before reading. The workflow only considers changes after that baseline. Missing names or domains and duplicate matches stop before any organization write. Updating a matched organization replaces its existing domain list with the HubSpot domain. The saved time advances only after every write is confirmed; an empty batch keeps the previous time and is read again next run. A failed or uncertain write may already have succeeded, and earlier writes can remain; inspect Zendesk before rerunning. Full listings are not a transactional snapshot: concurrent changes while pages are read can affect which records are observed. For Open Flow, the Zendesk Action uses offset pagination and stops before writing if more than 100 pages are needed. Large accounts can hit these limits; a long empty period can increase repeated reading. The workflow does not remove organizations when HubSpot companies are deleted.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, create a Header Auth credential whose Authorization value is Bearer YOUR_HUBSPOT_TOKEN, select it on **List HubSpot companies**, select the same Zendesk credential on both Zendesk HTTP nodes, and set the Zendesk subdomain URL in **Read the last run time**. In n8n, each listing stops before writing if more than 100 pages are needed.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

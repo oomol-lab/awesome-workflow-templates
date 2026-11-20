@@ -13,11 +13,18 @@ Find learning resources in Ask HN comments and email a categorized summary.
 
 ## Setup
 
-Import the n8n workflow and configure SMTP, Gemini, the sender address and a Data Table with item_key and status text columns for direct mode. For Open Flow mode, enable the alternate form frontend, set the Open Flow URL, connect Gmail and the model, and enable persistent State. Use one mode.
+Configure SMTP, Gemini, the sender address. For Open Flow mode, enable the alternate form frontend, set the Open Flow URL, connect Gmail and the model, and enable persistent State.
 
-Submit a topic and email address. The topic is optional. Up to 150 Ask HN results are selected in relevance order; direct comments are read and summarized into learning resource categories. No email is sent when no comment text is available. Comment content is sent to the model; review its recommendations and links. Open Flow sends the model’s Markdown as plain text within the email; the direct n8n workflow converts Markdown to HTML. Large comment collections are subject to Open Flow Code and model input limits.
+Submit a topic and email address. The topic is optional. Up to 150 Ask HN results are selected in relevance order; direct comments are read and summarized into learning resource categories. No email is sent when no comment text is available. Comment content is sent to the model; review its recommendations and links. Open Flow sends the model’s Markdown as plain text within the email. Large comment collections are subject to Open Flow Code and model input limits.
 
-If email delivery has an unknown outcome, inspect the mailbox and resolve the persistent submission key or n8n Data Table row only after confirming the result. Reuse the same submission ID for retries; a new form submission has a new ID. Avoid overlapping retries.
+Reuse the same submission ID for retries; a new form submission has a new ID. Avoid overlapping retries.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow and configure SMTP, Gemini, the sender address and a Data Table with item_key and status text columns for direct mode. The direct n8n workflow converts Markdown to HTML. If email delivery has an unknown outcome, inspect the mailbox and resolve the persistent submission key or n8n Data Table row only after confirming the result.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

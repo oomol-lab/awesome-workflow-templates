@@ -15,13 +15,20 @@ Render a random cocktail recipe as an image and share it in Rocket.Chat every Fr
 
 Connect Bannerbear in **Render the cocktail banner** and select your template ID. The template needs an image layer named `cocktail-image` and text layers named `title` and `recipe`. Connect Rocket.Chat in **Post the banner in Rocket.Chat** and enter a room ID, `#channel` or `@username` that the connected user can post to.
 
-The CocktailDB URL uses public test key `1`, intended for development and education. Review [CocktailDB API access](https://www.thecocktaildb.com/api.php) for your use and change the key in **Prepare the cocktail URL** or the n8n **HTTP Request** node if needed. In n8n, configure Bannerbear and Rocket.Chat credentials, template ID and channel, then activate one format.
+The CocktailDB URL uses public test key `1`, intended for development and education.
 
 ## Behavior
 
-At 18:00 each Friday, the workflow requests one random cocktail, fills its image, name and instructions into the template, and posts the rendered image as a Rocket.Chat attachment. The schedule starts in UTC; change the timezone for your local Friday evening. The source used the n8n instance timezone. n8n Cron V1 chooses a fixed randomized second within the minute; Open Flow uses the minute boundary.
+At 18:00 each Friday, the workflow requests one random cocktail, fills its image, name and instructions into the template, and posts the rendered image as a Rocket.Chat attachment. The schedule starts in UTC; change the timezone for your local Friday evening. Open Flow uses the minute boundary.
 
-Missing recipe fields, an invalid image URL, request failure or incomplete image stops the run before posting. Open Flow uses Bannerbear's synchronous endpoint, which can time out after 10 seconds; n8n creates asynchronously and checks up to three times. A timed-out or uncertain image request may already have created an image. A failed or uncertain Rocket.Chat post may already have arrived. Check the services before replaying; no automatic retry or rollback is configured. The HTTP step follows up to 21 redirects with a 30-second timeout per request; Open Flow limits each response to 4 MiB.
+Missing recipe fields, an invalid image URL, request failure or incomplete image stops the run before posting. Open Flow uses Bannerbear's synchronous endpoint, which can time out after 10 seconds. A timed-out or uncertain image request may already have created an image. A failed or uncertain Rocket.Chat post may already have arrived. Check the services before replaying; no automatic retry or rollback is configured. The HTTP step follows up to 21 redirects with a 30-second timeout per request; Open Flow limits each response to 4 MiB.
+
+<details>
+<summary>In n8n</summary>
+
+Review [CocktailDB API access](https://www.thecocktaildb.com/api.php) for your use and change the key in **Prepare the cocktail URL** or the n8n **HTTP Request** node if needed. In n8n, configure Bannerbear and Rocket.Chat credentials, template ID and channel, then activate one format. The source used the n8n instance timezone. n8n Cron V1 chooses a fixed randomized second within the minute. N8n creates asynchronously and checks up to three times.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

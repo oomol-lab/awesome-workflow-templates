@@ -22,9 +22,14 @@ For Open Flow, import the JSON and configure:
 | Generate morning brief | Select the configured Claude Haiku 4.5 model or a compatible replacement. |
 | Send morning brief | Connect your LINE Messaging API account and replace `YOUR_LINE_USER_ID` with an eligible user, group, or room ID. |
 
+Enable the workflow after setup. Test with a LINE recipient your bot is allowed to message. Each run sends one new message, even when the task list has not changed. No calendar or task service is read.
+
+<details>
+<summary>In n8n</summary>
+
 For n8n, configure the task list in **Build Context** and select an Anthropic credential in **Generate Brief**. On **Send via LINE**, select a Header Auth credential with header name `Authorization` and value `Bearer <your LINE channel access token>`; replace the recipient ID in its JSON body. Keep the schedule and display timezone aligned.
 
-Enable the workflow after setup. Test with a LINE recipient your bot is allowed to message. Each run sends one new message, even when the task list has not changed. No calendar or task service is read.
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

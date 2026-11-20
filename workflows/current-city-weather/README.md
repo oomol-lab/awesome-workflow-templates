@@ -13,11 +13,18 @@ Read the current weather for one configured city and return the complete OpenWea
 
 ## Setup
 
-Use an OpenWeather API key authorized for **Current Weather Data 2.5**. In Open Flow, connect OpenWeather in **Read current weather**. Set **Q** to the city and country code, such as `berlin,de`, and keep **Units** as `metric`. In n8n, select **OpenWeatherMap API** credentials in **OpenWeatherMap**. Enter your API key in the credential’s **Access Token** field, set the city and keep **Metric** format. Shared files contain no account or key.
+Use an OpenWeather API key authorized for **Current Weather Data 2.5**. In Open Flow, connect OpenWeather in **Read current weather**. Set **Q** to the city and country code, such as `berlin,de`, and keep **Units** as `metric`. Enter your API key in the credential’s **Access Token** field, set the city and keep **Metric** format. Shared files contain no account or key.
 
-Run manually. The example city is Berlin, Germany. Each normal run makes one current-weather request, then checks the success code before returning the record. Open Flow exposes it as **Weather**; n8n returns it as one item. The response includes temperatures in Celsius, wind speed in metres per second, weather conditions, observation timestamps and the location’s UTC offset when supplied. All returned properties are retained. The workflow does not fetch forecasts, change units after the request, send notifications or store results.
+Run manually. The example city is Berlin, Germany. Each normal run makes one current-weather request, then checks the success code before returning the record. Open Flow exposes it as **Weather**. The response includes temperatures in Celsius, wind speed in metres per second, weather conditions, observation timestamps and the location’s UTC offset when supplied. All returned properties are retained. The workflow does not fetch forecasts, change units after the request, send notifications or store results.
 
-OpenWeather [still supports city-name lookup but has deprecated its built-in geocoder](https://openweathermap.org/api/current). This template preserves the source’s single city request; it does not add a separate geocoding request. API permissions and limits apply. Authentication errors, unknown cities, throttling, transport failures and a non-success response stop the run. No workflow retry is configured. n8n’s native authentication helper can repeat a request once after HTTP 401; this does not renew the API key. Open Flow does not repeat that rejected request.
+OpenWeather [still supports city-name lookup but has deprecated its built-in geocoder](https://openweathermap.org/api/current). This template preserves the source’s single city request; it does not add a separate geocoding request. API permissions and limits apply. Authentication errors, unknown cities, throttling, transport failures and a non-success response stop the run. No workflow retry is configured. Open Flow does not repeat that rejected request.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, select **OpenWeatherMap API** credentials in **OpenWeatherMap**. N8n returns it as one item. n8n’s native authentication helper can repeat a request once after HTTP 401; this does not renew the API key.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

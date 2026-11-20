@@ -13,13 +13,20 @@ Detect requested objects in an image and draw bounding boxes over it.
 
 ## Setup
 
-Bind Secret Variable GEMINI_API_KEY, enter a public HTTPS JPEG or PNG URL and the object to find in **Detect and draw objects**, and add the image host to its HTTP allowlist. Large images require a server supporting byte ranges and a stable validator. In n8n set the image URL and Gemini credential, and edit the object name in **Gemini 2.0 Object Detection**. Use one format.
+Bind Secret Variable GEMINI_API_KEY, enter a public HTTPS JPEG or PNG URL and the object to find in **Detect and draw objects**, and add the image host to its HTTP allowlist. Large images require a server supporting byte ranges and a stable validator.
 
 ## Behavior
 
 The workflow downloads the image, asks Gemini for object bounding boxes normalized to 0–1000, scales them to the original dimensions, and draws them over the original. Download the self-contained SVG result, which embeds the original image. Open Flow also returns the coordinates and labels. The image must be at most 20 MiB.
 
 Detection can miss objects or produce inaccurate boxes. Review the image before using the result. The image is uploaded to Gemini; restrict access to its execution history and any temporary Files API upload. If an upload result is unknown, inspect the Files API before retrying.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n set the image URL and Gemini credential, and edit the object name in **Gemini 2.0 Object Detection**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

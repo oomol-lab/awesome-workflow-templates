@@ -13,11 +13,18 @@ Create a Wekan board with To Do and Done lists, then move a sample card.
 
 ## Setup and use
 
-In Open Flow set the HTTPS Wekan URL and user ID in **Prepare Create board**, and bind the same Wekan session token as secret Variable **WEKAN_SESSION_TOKEN** in each HTTP node. Refresh the token when it expires. In n8n configure the Wekan credential, set the owner and author user ID, and set the same Wekan HTTPS URL in **Read board swimlanes**.
+In Open Flow set the HTTPS Wekan URL and user ID in **Prepare Create board**, and bind the same Wekan session token as secret Variable **WEKAN_SESSION_TOKEN** in each HTTP node. Refresh the token when it expires.
 
 ## Behavior
 
 A manual run creates a board named Documentation, lists named To Do and Done, and a card named Document Wekan node in To Do, then moves the card to Done. It queries the newly created board's swimlane and requires exactly one; if there are multiple swimlanes, it stops for inspection. Open Flow checks the moved card after updating it. These are real writes when run. If a request fails or its result is unknown, earlier objects may already exist; inspect the board before retrying to avoid duplicates.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure the Wekan credential, set the owner and author user ID, and set the same Wekan HTTPS URL in **Read board swimlanes**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

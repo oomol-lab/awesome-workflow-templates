@@ -13,11 +13,18 @@ Submit a text-to-speech voice call with a chosen language and voice.
 
 ## Setup
 
-ClickSend Voice is available only to existing customers with Voice access. In Open Flow, connect ClickSend in **Send the voice call** and configure a form or client to POST JSON to the webhook, for example {"Body":"Hello","To":"+15551234567","Voice":"female","Lang":"en-us"}. In n8n, configure a ClickSend Basic Auth credential with your username and API key in **Send the voice call**, and use the hosted form. Restrict access to the webhook or form and execution history.
+ClickSend Voice is available only to existing customers with Voice access. In Open Flow, connect ClickSend in **Send the voice call** and configure a form or client to POST JSON to the webhook, for example {"Body":"Hello","To":"+15551234567","Voice":"female","Lang":"en-us"}. Restrict access to the webhook or form and execution history.
 
 ## Behavior
 
 The workflow submits one immediate text-to-speech call with answering-machine detection. Enter up to 600 characters, an E.164 phone number, male or female voice, and one of the form's language codes: en-us, it-it, en-au, en-gb, de-de, es-es, fr-fr, is-is, da-dk, nl-nl, pl-pl, pt-br or ru-ru. A form or webhook acknowledgment does not confirm that the call was placed or delivered; inspect the workflow run and ClickSend. If a submission fails or its result is uncertain, check ClickSend before retrying.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, configure a ClickSend Basic Auth credential with your username and API key in **Send the voice call**, and use the hosted form.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

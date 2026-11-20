@@ -19,11 +19,16 @@ Connect Tavily on **Search the web with Tavily**. Use Run and supply:
 { "query": "latest AI agent frameworks" }
 ```
 
-In n8n, edit **Search Query** and select an HTTP Header Auth credential on **Tavily Search** with name `Authorization` and value `Bearer <your Tavily API key>`. Execute the workflow manually.
-
 Each run has one search step. It requests up to five results using Tavily’s `basic` search depth and `general` topic. Generated answers, raw page content, images and automatic parameter selection are disabled. Your query is sent to Tavily and uses your account’s API allowance. Results and order depend on Tavily; the workflow preserves that order.
 
-Open Flow returns a `results` array containing `{title, url, snippet}`. n8n returns one item per result with the same fields. No matches is a successful empty list. Missing results or malformed entries stop the run; request failures are not converted to empty search results. There are no workflow-level retries or duplicate suppression. The provider manages its own request behavior. This template does not summarize results, call an LLM or crawl the linked pages.
+Open Flow returns a `results` array containing `{title, url, snippet}`. No matches is a successful empty list. Missing results or malformed entries stop the run; request failures are not converted to empty search results. There are no workflow-level retries or duplicate suppression. The provider manages its own request behavior. This template does not summarize results, call an LLM or crawl the linked pages.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, edit **Search Query** and select an HTTP Header Auth credential on **Tavily Search** with name `Authorization` and value `Bearer <your Tavily API key>`. Execute the workflow manually. n8n returns one item per result with the same fields.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

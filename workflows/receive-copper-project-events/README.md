@@ -13,11 +13,18 @@ Receive new project notifications from Copper.
 
 ## Setup and use
 
-Import the n8n workflow and connect Copper in **Copper Trigger**. Activate it to register the webhook; its URL must be publicly reachable by Copper. For Open Flow enter its webhook URL in **Forward to Open Flow** and enable that node; leave it disabled for n8n alone. Restrict access to the webhook endpoints.
+Connect Copper in **Copper Trigger**. Activate it to register the webhook; its URL must be publicly reachable by Copper. For Open Flow enter its webhook URL in **Forward to Open Flow** and enable that node. Restrict access to the webhook endpoints.
 
 ## Behavior
 
-The trigger checks the Copper shared secret and emits project creation notifications with their IDs. The optional relay removes the secret before forwarding to Open Flow. The Open Flow relay endpoint itself does not authenticate the sender; restrict access. The secret can appear in n8n execution history; restrict access to it and inspect history for relay failures. Event details may appear in execution history.
+The trigger checks the Copper shared secret and emits project creation notifications with their IDs. The optional relay removes the secret before forwarding to Open Flow. The Open Flow relay endpoint itself does not authenticate the sender; restrict access. Event details may appear in execution history.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow and connect Copper in **Copper Trigger**. Leave it disabled for n8n alone. The secret can appear in n8n execution history; restrict access to it and inspect history for relay failures.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -13,13 +13,20 @@ Triage the latest matching support email with AI and create a Linear issue.
 
 ## Setup
 
-Connect Gmail and set the support recipient in **Find the latest support email**. Connect Linear and set the team and state IDs in **Create the Linear issue**. Configure the model service and persistent workflow State. In n8n, use the same mailbox, recipient, Linear team and state, and a compatible model. Activate one format and avoid overlapping runs.
+Connect Gmail and set the support recipient in **Find the latest support email**. Connect Linear and set the team and state IDs in **Create the Linear issue**. Configure the model service and persistent workflow State. Activate one format and avoid overlapping runs.
 
 ## Behavior
 
-Every hour in UTC the workflow reads the single newest matching Gmail message. If it has not been processed, AI produces a factual issue summary, description, labels and priority, then creates a Linear issue. Labels are written as hashtags in the description. Source priorities 1–4 map directly; 5 maps to Linear Low (4). Open Flow uses a single-round Agent; n8n retains the source chain and expects an HTML message body for its Markdown conversion. Open Flow starts on the minute boundary; n8n uses a fixed second within the minute.
+Every hour in UTC the workflow reads the single newest matching Gmail message. If it has not been processed, AI produces a factual issue summary, description, labels and priority, then creates a Linear issue. Labels are written as hashtags in the description. Source priorities 1–4 map directly; 5 maps to Linear Low (4). Open Flow uses a single-round Agent. Open Flow starts on the minute boundary.
 
 Only the latest message is checked each hour, so intermediate messages may be missed. Message IDs are remembered after a confirmed issue; State must fit host limits. A failed or uncertain Linear write may have created an issue. Check Linear before retrying; after an uncertain write the next run may create a duplicate. Keep email content, model access and execution history restricted. Review AI-generated issues for accuracy.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, use the same mailbox, recipient, Linear team and state, and a compatible model. N8n retains the source chain and expects an HTML message body for its Markdown conversion. N8n uses a fixed second within the minute.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

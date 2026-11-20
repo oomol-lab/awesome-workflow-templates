@@ -13,7 +13,7 @@ Create a Notion database page for a new Clockify invoice.
 
 ## Setup
 
-Create a Notion database with **Invoice number** (title), **Issue date** (date), **Due date** (date) and **Amount** (number). Connect Notion with access to it. In Open Flow, set its data source ID in **Prepare invoice properties**. In n8n, select the Notion credential and database in **Create database page** and map the same properties.
+Create a Notion database with **Invoice number** (title), **Issue date** (date), **Due date** (date) and **Amount** (number). Connect Notion with access to it. In Open Flow, set its data source ID in **Prepare invoice properties**.
 
 Deploy the webhook and configure a Clockify **Invoice created** webhook with its URL. The endpoint accepts a JSON object containing `number`, `issuedDate`, `dueDate` and numeric `amount`. Protect the endpoint URL and restrict access to invoice information. The original workflow uses an unauthenticated webhook; neither format verifies the Clockify token.
 
@@ -21,7 +21,14 @@ Deploy the webhook and configure a Clockify **Invoice created** webhook with its
 
 Each accepted delivery creates a Notion page containing those four values. Dates are stored as UTC calendar dates. The amount is copied as sent, with no currency conversion. Duplicate deliveries can create duplicate pages. If page creation fails or the result is uncertain, inspect Notion before replaying.
 
-Open Flow checks the four fields before creation; n8n uses the mapped source fields directly. Open Flow uses the current Notion data source parent; select the corresponding database in n8n.
+Open Flow checks the four fields before creation. Open Flow uses the current Notion data source parent.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, select the Notion credential and database in **Create database page** and map the same properties. N8n uses the mapped source fields directly. Select the corresponding database in n8n.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

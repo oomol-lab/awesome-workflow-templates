@@ -13,11 +13,18 @@ Receive Mailjet email sent events with exact message IDs.
 
 ## Setup and use
 
-Import and activate the n8n workflow, then register the **Receive Mailjet events** production webhook URL in Mailjet for the sent event. The URL must be publicly reachable by Mailjet. For Open Flow enter its webhook URL in **Forward to Open Flow** and enable that node; leave it disabled for n8n alone. Restrict access to the webhook endpoints.
+The URL must be publicly reachable by Mailjet. For Open Flow enter its webhook URL in **Forward to Open Flow** and enable that node. Restrict access to the webhook endpoints.
 
 ## Behavior
 
-Mailjet may send multiple events in one request. The n8n workflow reads the original bytes and emits each event separately. Integers outside JavaScript’s safe range become decimal strings to preserve exact IDs. The optional relay forwards each event to Open Flow. Neither endpoint authenticates the sender; restrict access and inspect n8n execution history for relay failures. Event details may appear in execution history.
+Mailjet may send multiple events in one request. Integers outside JavaScript’s safe range become decimal strings to preserve exact IDs. The optional relay forwards each event to Open Flow. Neither endpoint authenticates the sender. Event details may appear in execution history.
+
+<details>
+<summary>In n8n</summary>
+
+Import and activate the n8n workflow, then register the **Receive Mailjet events** production webhook URL in Mailjet for the sent event. Leave it disabled for n8n alone. The n8n workflow reads the original bytes and emits each event separately. Restrict access and inspect n8n execution history for relay failures.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

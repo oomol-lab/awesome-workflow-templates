@@ -13,13 +13,20 @@ Notify Slack and email when daylight saving time changes tomorrow in a selected 
 
 ## Setup
 
-Connect Slack and an SMTP mailbox, choose a Slack channel and email recipient, and set the IANA time zones in **Check tomorrow in each zone**. The defaults are `America/New_York` and `Europe/Warsaw`. The schedule starts at 00:00 UTC; choose a time that suits the zones you monitor. Open Flow runs at the minute boundary; n8n chooses a fixed second within that minute. In n8n, configure the zone list in **Check tomorrow in each zone**, the Slack channel, SMTP credentials, sender and recipient. Activate one format or run it manually.
+Connect Slack and an SMTP mailbox, choose a Slack channel and email recipient, and set the IANA time zones in **Check tomorrow in each zone**. The defaults are `America/New_York` and `Europe/Warsaw`. The schedule starts at 00:00 UTC; choose a time that suits the zones you monitor. Open Flow runs at the minute boundary. Activate one format or run it manually.
 
 ## Behavior
 
 For each configured zone, the workflow checks whether its daylight saving status changes during the next local calendar day. For each change it sends a Slack message followed by an email. No change means no notification. Time zone rules come from the runtime and should be kept current. An invalid or duplicate zone stops the run before any message.
 
 If a notification fails, subsequent notifications stop and earlier messages are not undone. A lost response may hide a completed send, so inspect the destination before retrying. Runs are not deduplicated.
+
+<details>
+<summary>In n8n</summary>
+
+N8n chooses a fixed second within that minute. In n8n, configure the zone list in **Check tomorrow in each zone**, the Slack channel, SMTP credentials, sender and recipient.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

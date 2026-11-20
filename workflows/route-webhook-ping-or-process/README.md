@@ -13,11 +13,18 @@ Route a webhook ping or send its payload to an HTTP service and return a JSON re
 
 ## Setup and use
 
-Import the supplied n8n workflow. For n8n mode enable **Webhook** and disable **Open Flow relay webhook**. For Open Flow mode disable **Webhook**, enable the relay, set the deployed Open Flow webhook URL in **Forward complete request**, and activate n8n. Send your JSON POST to the selected n8n production webhook. Configure the service URL in **HTTP Service A** or **Call service A**. The default httpbin endpoint echoes the request and does not process it. Neither endpoint verifies the caller; restrict access as needed.
+Configure the service URL in **HTTP Service A** or **Call service A**. The default httpbin endpoint echoes the request and does not process it. Neither endpoint verifies the caller; restrict access as needed.
 
 ## Behavior
 
-Missing action defaults to ping and returns ok and pong. Action process sends payload to the service and returns ok, source and the service's json field. Missing payload defaults to an example object. The n8n relay forwards the complete request body as JSON text and waits for the Open Flow response. Unsupported actions do not produce a successful response. If the service response is lost, the request may already have been processed; inspect the service before retrying. The Open Flow webhook waits up to 60 seconds for its response.
+Missing action defaults to ping and returns ok and pong. Action process sends payload to the service and returns ok, source and the service's json field. Missing payload defaults to an example object. Unsupported actions do not produce a successful response. If the service response is lost, the request may already have been processed; inspect the service before retrying. The Open Flow webhook waits up to 60 seconds for its response.
+
+<details>
+<summary>In n8n</summary>
+
+Import the supplied n8n workflow. For n8n mode enable **Webhook** and disable **Open Flow relay webhook**. For Open Flow mode disable **Webhook**, enable the relay, set the deployed Open Flow webhook URL in **Forward complete request**, and activate n8n. Send your JSON POST to the selected n8n production webhook. The n8n relay forwards the complete request body as JSON text and waits for the Open Flow response.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -13,13 +13,20 @@ Generate an example invoice for each customer and one customer summary email.
 
 ## Setup
 
-In Open Flow, provide the customer list, unique run ID and internal recipient in **Configure customers**, connect Gmail, enable persistent State and prevent overlapping runs. Each customer needs unique id, name, email, created and optionally country. In n8n edit **Configure customers**, provide the same fields and a unique run ID, configure sender and recipient in both SMTP email nodes, connect SMTP and choose a Data Table with item_key and status text columns. Run one format. Use a new run ID for a new batch; reuse the same ID and unchanged customer list to recover a stopped batch.
+In Open Flow, provide the customer list, unique run ID and internal recipient in **Configure customers**, connect Gmail, enable persistent State and prevent overlapping runs. Each customer needs unique id, name, email, created and optionally country. Use a new run ID for a new batch; reuse the same ID and unchanged customer list to recover a stopped batch.
 
 ## Behavior
 
 The workflow sorts the customer list by name and sends one example invoice per customer to the configured internal recipient, followed by one HTML summary to the same recipient. Customer email addresses appear in invoice and summary bodies; they are not the recipients. The two invoice lines are fixed examples and are not an accounting system. The total is corrected to 66.55 euros. The invoice date uses each customer's created value. The source summary says the last 24 hours but did not filter customers; this workflow lists the supplied customers without date filtering.
 
-Each email is reserved before sending. If delivery is unknown, inspect the sent mailbox before replay. In Open Flow enter the pending key and absent or confirmed in the matching reservation node, replay the unchanged batch, then clear both fields. In n8n mark the pending Data Table row done only after confirming delivery, or delete it only if no message was sent.
+Each email is reserved before sending. If delivery is unknown, inspect the sent mailbox before replay. In Open Flow enter the pending key and absent or confirmed in the matching reservation node, replay the unchanged batch, then clear both fields.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n edit **Configure customers**, provide the same fields and a unique run ID, configure sender and recipient in both SMTP email nodes, connect SMTP and choose a Data Table with item_key and status text columns. In n8n mark the pending Data Table row done only after confirming delivery, or delete it only if no message was sent.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

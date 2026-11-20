@@ -13,7 +13,7 @@ Send the current browser page URL to a webhook and save it as a Notion database 
 
 ## Setup
 
-Create a Notion bookmarks database with a title property named **Name**, share it with your Notion connection and set its data source ID in **Prepare the bookmark**. In n8n, select the Notion credential and destination database in **Notion**. Deploy the selected workflow and copy its public HTTPS webhook URL.
+Create a Notion bookmarks database with a title property named **Name**, share it with your Notion connection and set its data source ID in **Prepare the bookmark**. Deploy the selected workflow and copy its public HTTPS webhook URL.
 
 Create a browser bookmark and replace its URL with the following single line, substituting your webhook URL inside the quotes:
 
@@ -21,11 +21,18 @@ Create a browser bookmark and replace its URL with the following single line, su
 javascript:(()=>{fetch("YOUR_WEBHOOK_URL",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({url:location.href})})})()
 ```
 
-Both formats permit browser requests from any origin for this bookmarklet. Any reverse proxy must forward OPTIONS and POST requests and preserve CORS response headers. The webhook has no authentication, so anyone who knows its URL can create pages; protect the URL and the destination database. The source n8n webhook also accepts unauthenticated requests. Browser security policies on some pages can prevent the bookmarklet from sending; use another sender with a POST JSON body such as `{"url":"https://example.com"}` when needed.
+The workflow permits browser requests from any origin for this bookmarklet. Any reverse proxy must forward OPTIONS and POST requests and preserve CORS response headers. The webhook has no authentication, so anyone who knows its URL can create pages; protect the URL and the destination database. Browser security policies on some pages can prevent the bookmarklet from sending; use another sender with a POST JSON body such as `{"url":"https://example.com"}` when needed.
 
 ## Behavior
 
-Click the bookmarklet while viewing a page. The workflow creates a Notion page whose title is the submitted URL. Duplicate clicks or deliveries create duplicate pages. Inspect Notion before retrying an uncertain write. Open Flow rejects a missing or blank URL before creating a page; n8n uses the submitted field directly.
+Click the bookmarklet while viewing a page. The workflow creates a Notion page whose title is the submitted URL. Duplicate clicks or deliveries create duplicate pages. Inspect Notion before retrying an uncertain write. Open Flow rejects a missing or blank URL before creating a page.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, select the Notion credential and destination database in **Notion**. The source n8n webhook also accepts unauthenticated requests. N8n uses the submitted field directly.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

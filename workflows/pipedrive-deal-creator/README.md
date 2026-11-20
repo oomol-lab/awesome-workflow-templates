@@ -13,11 +13,18 @@ Create one Pipedrive deal with a configured title using API v2.
 
 ## Setup
 
-Select a Pipedrive account under **Actions** in **Create Pipedrive deal** and replace its title input. In n8n, choose an **HTTP Header Auth** credential in **Create Pipedrive deal**. Set its header name to `x-api-token` and save your Pipedrive API token as the credential value. Edit the title in the node’s JSON body. Run manually after setup.
+Select a Pipedrive account under **Actions** in **Create Pipedrive deal** and replace its title input. Set its header name to `x-api-token` and save your Pipedrive API token as the credential value. Edit the title in the node’s JSON body. Run manually after setup.
 
 The workflow creates one deal and returns its complete record. It supplies only the title; the account, pipeline, stage, visibility and other unset properties follow Pipedrive defaults. It does not create or link a person or organization.
 
 Each manual run creates another deal. There is no search, upsert or duplicate detection. A service error stops the workflow without an automatic retry. If a creation request times out, check the service before running it again.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, choose an **HTTP Header Auth** credential in **Create Pipedrive deal**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -15,13 +15,18 @@ Summarize recent Colt news and save each article with technical keywords.
 
 Connect ScrapingBee, Gemini and NocoDB. Create a NocoDB table with the fields `News_Source`, `Title`, `Date`, `Link`, `Summary` and `Keywords`, plus the default `Id` primary key. Enter the same table ID in **Save news record** and **Read created news record**. Enable persistent State.
 
-In n8n, configure an HTTP Query Auth credential with parameter name `api_key` for both ScrapingBee nodes, connect both Gemini model nodes, and configure HTTP Header Auth with name `xc-token` for the two NocoDB nodes. Set your NocoDB host and the same table ID in both URLs. Select one Data Table with text columns `item_key` and `status` in all checkpoint nodes. Activate only one format.
-
 ## Behavior
 
 Every Wednesday at 04:32 UTC, the workflow reads the current Colt Newsroom list and selects articles from the preceding 70 days. It fetches each article, produces a short summary and three technical keywords, and saves one row per URL. The list and article selectors depend on Colt's site structure. The workflow stops if the list is empty, dates are unordered, its oldest listed item does not cover the full 70-day window, or an article title does not match its card. Summaries and keywords may be inaccurate. ScrapingBee receives the public page URLs and extracted article text is sent to Gemini.
 
-A pending NocoDB write may already have succeeded. Inspect the table before retrying. In Open Flow enter the pending key `colt-news:<article URL>` and `confirmed` or `absent` in **Select recent news**, rerun, then clear those fields. In n8n, set the matching Data Table row to `done` if confirmed or delete it if absent, then rerun. Avoid overlapping runs; checkpoints are not atomic locks.
+A pending NocoDB write may already have succeeded. Inspect the table before retrying. In Open Flow enter the pending key `colt-news:<article URL>` and `confirmed` or `absent` in **Select recent news**, rerun, then clear those fields. Avoid overlapping runs; checkpoints are not atomic locks.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, configure an HTTP Query Auth credential with parameter name `api_key` for both ScrapingBee nodes, connect both Gemini model nodes, and configure HTTP Header Auth with name `xc-token` for the two NocoDB nodes. Set your NocoDB host and the same table ID in both URLs. Select one Data Table with text columns `item_key` and `status` in all checkpoint nodes. Activate only one format. In n8n, set the matching Data Table row to `done` if confirmed or delete it if absent, then rerun.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

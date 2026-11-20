@@ -15,13 +15,18 @@ Read a session table and post each feedback form to its Mattermost channel.
 
 Connect Google Sheets in **Read all sessions**, set the spreadsheet ID and keep the `Sessions` tab and A:D range or adjust them to cover the whole table. The first row must contain unique **Session**, **Mattermost Channel ID** and **Feedback Form Link** headers. Each data row needs a session name, channel ID and form URL. Connect Mattermost with permission to post in every listed channel.
 
-In n8n, select the Google Sheets and Mattermost credentials, configure the sheet, and activate the workflow. Run one format for each notification schedule.
-
 ## Behavior
 
-The workflow runs each September 28 at 17:00 UTC. It reads all rows and sends each channel an `@channel` feedback message naming its session, with a **Feedback Form** attachment linked to that row’s URL. Empty rows are skipped. Open Flow validates the complete table before sending and returns the processed count; n8n maps the source fields directly.
+The workflow runs each September 28 at 17:00 UTC. It reads all rows and sends each channel an `@channel` feedback message naming its session, with a **Feedback Form** attachment linked to that row’s URL. Empty rows are skipped. Open Flow validates the complete table before sending and returns the processed count.
 
 A failure stops the remaining sends; earlier notices may already exist. Inspect Mattermost before replaying, which can send duplicates. The complete table and messages must fit execution limits. Only people who may receive the form should have access to the configured channels.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, select the Google Sheets and Mattermost credentials, configure the sheet, and activate the workflow. Run one format for each notification schedule. N8n maps the source fields directly.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -15,11 +15,11 @@ Record every completed Typeform problem report in Google Sheets. Reports with **
 
 Create a Typeform with questions titled **Email**, **Name**, **Severity** and **Problem**. Use an email question, text questions for Name and Problem, and a number question for Severity. Connect Typeform in **Receive a problem report**, select the form ID, deploy with a public HTTPS callback and activate the signed subscription. Completed webhook bodies must fit within 64 KiB.
 
-Create a **Problems** sheet with **Email**, **Name**, **Severity**, **Problem** in cells A1:D1, in that order. Connect an account with edit access in **Log the problem in Google Sheets** and configure the spreadsheet ID. Both formats write values as `RAW`, so user text is stored as text rather than evaluated as formulas. The source’s native Sheets node writes every cell as text, including Severity; this template keeps that sheet representation while using the numeric answer for routing.
+Create a **Problems** sheet with **Email**, **Name**, **Severity**, **Problem** in cells A1:D1, in that order. Connect an account with edit access in **Log the problem in Google Sheets** and configure the spreadsheet ID. The workflow write values as `RAW`, so user text is stored as text rather than evaluated as formulas. The source’s native Sheets node writes every cell as text, including Severity; this template keeps that sheet representation while using the numeric answer for routing.
 
 Connect Slack in **Send severe problems to Slack** and set a channel ID where the account can post. In **Email other problems**, connect the sending mailbox and replace `support@example.com` with the actual recipient. The Open Flow mailbox connection requires a public IMAP server on port 993 and a public SMTP server using port 465 with TLS or a port supporting STARTTLS, plus the mailbox address and app password. Email is sent from that connected mailbox.
 
-In n8n, configure Typeform, **Google API** Service Account, Slack and SMTP credentials on their nodes. In the Google API credential, configure the service account’s `client_email` and private key, and share the spreadsheet with that exact `client_email` address. Open Flow uses a connected Google user account with edit access to the same spreadsheet. Use the same form, spreadsheet, channel, recipient and SMTP mailbox. Set **From Email** to the connected sending mailbox address. Keep the Problems header order shown above. Activate one format for this process to avoid duplicate rows and notifications.
+Open Flow uses a connected Google user account with edit access to the same spreadsheet. Use the same form, spreadsheet, channel, recipient and SMTP mailbox. Set **From Email** to the connected sending mailbox address. Keep the Problems header order shown above.
 
 ## Behavior
 
@@ -27,7 +27,14 @@ Each completed response must contain one unambiguous answer for every configured
 
 Missing or ambiguous answers stop before writing a row. A failed append stops before notification. Notification failures stop after the row has been written. No workflow retry is added. Check the sheet and destination before replaying a failed or uncertain run; replay can append another row or send another notification. SMTP acceptance confirms server submission, not inbox delivery.
 
-Open Flow returns the selected **Route**, original **Report**, confirmed **Log**, and **Notification** receipt. Open Flow uses the Typeform response token as its trigger deduplication identity; native n8n does not add the same key. Neither format guarantees exactly-once writes or notifications.
+Open Flow returns the selected **Route**, original **Report**, confirmed **Log**, and **Notification** receipt. Open Flow uses the Typeform response token as its trigger deduplication identity. Neither format guarantees exactly-once writes or notifications.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, configure Typeform, **Google API** Service Account, Slack and SMTP credentials on their nodes. In the Google API credential, configure the service account’s `client_email` and private key, and share the spreadsheet with that exact `client_email` address. Native n8n does not add the same key.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

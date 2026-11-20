@@ -15,11 +15,16 @@ Extract text from an image with Amazon Rekognition and append the result to Goog
 
 Create a sheet with columns `img_name`, `img_link`, `img_txt`, and `lowerText` in that order. Set its spreadsheet ID and range in **Append image text** and connect Google Sheets. In **Read image text**, set a public HTTPS PNG or JPEG image URL and AWS region. Add that image hostname and the corresponding regional Rekognition endpoint to the node's allowed HTTP hosts. Bind secret Variables for the AWS access key ID and secret access key, and a session token when using temporary credentials. Grant Rekognition DetectText permission. The host limits each HTTP body to 1 MiB.
 
-In n8n, set the image URL in **HTTP Request**, connect AWS and Google Sheets credentials, and set the spreadsheet and sheet in **Google Sheets1** with the same header names. Run one format manually.
-
 ## Behavior
 
 The workflow downloads the image, recognizes its text, and appends the filename, URL, selected text and lowercase text. As in the source, the selected text uses detections at indices 1 through 5; missing detections are omitted. Recognition can be incomplete or inaccurate. A failed download or recognition stops before the append. If the append outcome is unknown, inspect the sheet before retrying. Restrict access to the image, output and execution history as needed.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, set the image URL in **HTTP Request**, connect AWS and Google Sheets credentials, and set the spreadsheet and sheet in **Google Sheets1** with the same header names. Run one format manually.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -13,11 +13,18 @@ Answer a CRC webhook challenge with a signed response token.
 
 ## Setup
 
-Bind a secret Variable containing the shared API key secret to **Sign challenge** and deploy the webhook. In n8n enter the same secret in **Crypto**, set the webhook path and activate the workflow. Configure your calling service to send its GET challenge to the deployed URL.
+Bind a secret Variable containing the shared API key secret to **Sign challenge** and deploy the webhook. Configure your calling service to send its GET challenge to the deployed URL.
 
 ## Behavior
 
 For a GET request with a nonempty crc_token query parameter, the endpoint returns JSON containing response_token, formed by prefixing sha256= to the Base64 HMAC-SHA256 of the token using the configured secret. Missing input or secret stops the run. This endpoint implements the challenge response only.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n enter the same secret in **Crypto**, set the webhook path and activate the workflow.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

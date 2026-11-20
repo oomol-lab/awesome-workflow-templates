@@ -13,11 +13,18 @@ Combine multiple input files into a single ZIP archive.
 
 ## Setup and use
 
-In Open Flow provide an array of files, each with a name and base64-encoded content. In n8n call the sub-workflow with binary files in the **data** property of each item.
+In Open Flow provide an array of files, each with a name and base64-encoded content.
 
 ## Behavior
 
-The workflow combines the inputs into one ZIP containing their filenames and bytes. Open Flow returns its name and base64 contents; n8n returns binary data. Inputs and output must fit the execution limits. Duplicate filenames resolve to the last file.
+The workflow combines the inputs into one ZIP containing their filenames and bytes. Open Flow returns its name and base64 contents. Inputs and output must fit the execution limits. Duplicate filenames resolve to the last file.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n call the sub-workflow with binary files in the **data** property of each item. N8n returns binary data.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

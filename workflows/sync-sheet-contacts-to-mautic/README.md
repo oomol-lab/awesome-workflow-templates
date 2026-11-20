@@ -13,13 +13,20 @@ Keep Mautic contacts aligned with email, first name and mobile fields in a Googl
 
 ## Setup and use
 
-Connect Google Sheets and Mautic, set the spreadsheet ID, and keep the Data sheet headers email, firstname and mobile. The scheduled workflow reads Data!A:P every five minutes. Enable persistent State for Open Flow. For n8n create a Data Table with text columns email and status and a numeric contactId column, then select it in every Data Table node. Use one workflow instance per table.
+Connect Google Sheets and Mautic, set the spreadsheet ID, and keep the Data sheet headers email, firstname and mobile. The scheduled workflow reads Data!A:P every five minutes. Enable persistent State for Open Flow. Use one workflow instance per table.
 
 ## Behavior and recovery
 
 Each sheet row maps email, firstname and mobile to Mautic. The workflow remembers IDs of contacts it creates and updates those contacts when their sheet data changes. Its state starts empty and does not import existing Mautic contacts; review Mautic for existing records before the first run. Mautic may skip blank values in updates. Do not run overlapping copies against the same state.
 
-Before a write, the workflow records a pending operation. If a response is lost, later runs stop before writing. Inspect Mautic for the contact and operation before resolving it. In Open Flow set acknowledgeEmail and resolution to confirmed and, for an uncertain create, set confirmedContactId to the Mautic ID; choose retry only after establishing that the operation did not take effect. Clear these inputs after recovery. In n8n inspect the pending Data Table row: if the write succeeded, enter the confirmed contactId and change status to done; if it did not, delete a pending create row or restore a pending update row to done. The next schedule can then continue.
+Before a write, the workflow records a pending operation. If a response is lost, later runs stop before writing. Inspect Mautic for the contact and operation before resolving it. In Open Flow set acknowledgeEmail and resolution to confirmed and, for an uncertain create, set confirmedContactId to the Mautic ID; choose retry only after establishing that the operation did not take effect. Clear these inputs after recovery. The next schedule can then continue.
+
+<details>
+<summary>In n8n</summary>
+
+For n8n create a Data Table with text columns email and status and a numeric contactId column, then select it in every Data Table node. In n8n inspect the pending Data Table row: if the write succeeded, enter the confirmed contactId and change status to done; if it did not, delete a pending create row or restore a pending update row to done.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

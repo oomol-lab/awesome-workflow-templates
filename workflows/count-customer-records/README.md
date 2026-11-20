@@ -13,11 +13,18 @@ Count the customer records in an input list.
 
 ## Setup and use
 
-Supply an array of customer records to the Open Flow start node. In n8n run the included manual workflow; the training datastore provides example records.
+Supply an array of customer records to the Open Flow start node.
 
 ## Behavior
 
-The workflow returns one count for the complete input list. Open Flow returns zero for an empty array. In n8n an empty upstream result does not execute the count node.
+The workflow returns one count for the complete input list. Open Flow returns zero for an empty array.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n run the included manual workflow; the training datastore provides example records. In n8n an empty upstream result does not execute the count node.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -13,11 +13,18 @@ Send a message to a Discord channel using an incoming webhook.
 
 ## Setup
 
-Create an incoming webhook for the destination Discord channel. In Open Flow create a secret Variable holding the full webhook URL and bind it to the URL input of **Send the Discord message**. Edit that node's JSON body to change the message. In n8n enter the webhook URL and message in **Discord**. Keep the webhook URL private: anyone with it can post to the channel. Use one format per message.
+Create an incoming webhook for the destination Discord channel. In Open Flow create a secret Variable holding the full webhook URL and bind it to the URL input of **Send the Discord message**. Edit that node's JSON body to change the message. Keep the webhook URL private: anyone with it can post to the channel. Use one format per message.
 
 ## Behavior
 
-A manual run posts the configured message once. Open Flow returns the HTTP status; n8n returns a success flag. Discord may reject a request when rate limited. n8n retries rate-limit responses up to five times; Open Flow stops on an error. If delivery is uncertain, check the channel before retrying to avoid a duplicate.
+A manual run posts the configured message once. Open Flow returns the HTTP status. Discord may reject a request when rate limited. Open Flow stops on an error. If delivery is uncertain, check the channel before retrying to avoid a duplicate.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n enter the webhook URL and message in **Discord**. N8n returns a success flag. n8n retries rate-limit responses up to five times.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

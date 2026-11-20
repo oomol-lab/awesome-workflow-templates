@@ -13,11 +13,18 @@ Produce a Markdown blog post through separate research, outline, drafting, and e
 
 ## Setup
 
-For Open Flow, select a configured `llama3:8b` model in every model step. For n8n, connect each attached **Ollama Model** to an Ollama credential with the base URL of a service reachable from n8n. Confirm that it serves `llama3:8b`. The native Ollama models send each step's generation budget as `num_predict`. You can choose another available model in both formats; its wording and quality may differ.
+For Open Flow, select a configured `llama3:8b` model in every model step. Confirm that it serves `llama3:8b`. The native Ollama models send each step's generation budget as `num_predict`. You can choose another available model ; its wording and quality may differ.
 
-In Open Flow, use Run and supply `topic`, `tone`, and integer `word_count`. For example, use “How our support team handles recurring questions”, “professional but conversational”, and `1500`. In n8n, edit those values in **Set Blog Parameters** and use Execute Workflow.
+In Open Flow, use Run and supply `topic`, `tone`, and integer `word_count`. For example, use “How our support team handles recurring questions”, “professional but conversational”, and `1500`.
 
 Four model calls run in order. A failure stops later steps. The workflow does not browse sources, verify citations, or publish the post. Treat research notes as model output and check facts before publication. Word count is a prompt target, not an enforced count.
+
+<details>
+<summary>In n8n</summary>
+
+For n8n, connect each attached **Ollama Model** to an Ollama credential with the base URL of a service reachable from n8n. In n8n, edit those values in **Set Blog Parameters** and use Execute Workflow.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

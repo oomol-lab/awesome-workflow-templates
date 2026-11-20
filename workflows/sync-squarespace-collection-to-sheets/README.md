@@ -13,13 +13,20 @@ Keep a Google Sheets inventory of a public Squarespace blog collection up to dat
 
 ## Setup
 
-Connect Google Sheets. In **Configure the collection and sheet**, enter the HTTPS URL of a public Squarespace blog collection without query parameters, a spreadsheet ID and sheet name. The sheet must have unique headers: id, tags, title, urlId, addedOn, fullUrl, assetUrl, publishOn and categories. Enable one format.
+Connect Google Sheets. In **Configure the collection and sheet**, enter the HTTPS URL of a public Squarespace blog collection without query parameters, a spreadsheet ID and sheet name. The sheet must have unique headers: id, tags, title, urlId, addedOn, fullUrl, assetUrl, publishOn and categories.
 
 ## Behavior
 
 Run manually or daily at 00:00 UTC. The workflow reads the collection's JSON pages and matches articles by ID. It writes the listed article fields to matching rows and adds rows for new IDs, preserving other columns. Tags and categories are comma-separated; dates are UTC calendar dates. A duplicate or malformed ID, page or header stops the run. Source-provided fullUrl may be relative to your site.
 
-Avoid overlapping runs or editing the sheet during a run. Open Flow and n8n recheck the target row, but the check and write are not atomic. Earlier row updates may remain after a later failure; an uncertain write may have succeeded. Inspect the sheet before retrying. Large collections must fit platform execution limits. The Squarespace public JSON representation must be available on your site. n8n stops before writing if the collection exceeds 100 pages or its pagination is invalid; Open Flow collects pages across invocations. Open Flow starts at the minute boundary; n8n uses a fixed second within the minute.
+Avoid overlapping runs or editing the sheet during a run. Earlier row updates may remain after a later failure; an uncertain write may have succeeded. Inspect the sheet before retrying. Large collections must fit platform execution limits. The Squarespace public JSON representation must be available on your site. Open Flow collects pages across invocations. Open Flow starts at the minute boundary.
+
+<details>
+<summary>In n8n</summary>
+
+Open Flow and n8n recheck the target row, but the check and write are not atomic. n8n stops before writing if the collection exceeds 100 pages or its pagination is invalid. N8n uses a fixed second within the minute.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

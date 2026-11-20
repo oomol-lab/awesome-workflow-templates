@@ -13,11 +13,18 @@ Receive PayPal billing plan activation events.
 
 ## Setup and use
 
-Import the n8n workflow and connect PayPal in **PayPal Trigger**. Activate it to register the billing plan activation webhook; its URL must be publicly reachable by PayPal. For Open Flow enter its webhook URL in **Forward to Open Flow** and enable that node; leave it disabled for n8n alone. Restrict access to the webhook endpoints.
+Connect PayPal in **PayPal Trigger**. Activate it to register the billing plan activation webhook; its URL must be publicly reachable by PayPal. For Open Flow enter its webhook URL in **Forward to Open Flow** and enable that node. Restrict access to the webhook endpoints.
 
 ## Behavior
 
-The trigger asks PayPal to verify each webhook signature before emitting the event. The optional relay forwards each complete event to Open Flow. The Open Flow relay endpoint does not authenticate the sender; restrict access and inspect n8n execution history for verification or relay failures. Event details may appear in execution history.
+The trigger asks PayPal to verify each webhook signature before emitting the event. The optional relay forwards each complete event to Open Flow. The Open Flow relay endpoint does not authenticate the sender. Event details may appear in execution history.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow and connect PayPal in **PayPal Trigger**. Leave it disabled for n8n alone. Restrict access and inspect n8n execution history for verification or relay failures.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

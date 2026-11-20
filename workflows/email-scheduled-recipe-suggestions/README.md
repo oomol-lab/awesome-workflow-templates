@@ -13,15 +13,22 @@ Find random recipes matching dietary and preparation filters and email their lin
 
 ## Setup
 
-Create Edamam Recipe Search v2 credentials for an application that does not require active-user tracking. In Open Flow, create secret Variables for the application ID and application key and bind them as the Basic authentication username and password in **Find random recipes**. Connect Gmail and set the recipient in **Email the recipes**. In n8n, configure HTTP Basic credentials with the Edamam application ID and key, connect SMTP credentials and set the sender and recipient in **Send Recipes**. Run only one format.
+Create Edamam Recipe Search v2 credentials for an application that does not require active-user tracking. In Open Flow, create secret Variables for the application ID and application key and bind them as the Basic authentication username and password in **Find random recipes**. Connect Gmail and set the recipient in **Email the recipes**.
 
 In **Prepare recipe search**, adjust the search term, diet, health filter, calorie and preparation-time ranges, ingredient limit and recipe count (1–20). The default health setting chooses one supported label at random. Review the filter and recipe details yourself when dietary restrictions matter.
 
 ## Behavior
 
-Each day at 10:00 UTC the workflow asks Edamam for a random selection matching the configured filters and emails up to the configured number of recipe links. Edamam returns at most 20 randomized matches and can return fewer results; an empty or malformed result stops without sending. Open Flow uses Gmail and n8n uses SMTP. Open Flow runs on the minute boundary; native n8n Cron uses a fixed second within the minute. Adjust the schedule and time zone as needed.
+Each day at 10:00 UTC the workflow asks Edamam for a random selection matching the configured filters and emails up to the configured number of recipe links. Edamam returns at most 20 randomized matches and can return fewer results; an empty or malformed result stops without sending. Open Flow runs on the minute boundary. Adjust the schedule and time zone as needed.
 
 A failed or uncertain email may already have been sent; check your mail before retrying. No automatic send retry or deduplication is configured. Email acceptance does not prove delivery.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, configure HTTP Basic credentials with the Edamam application ID and key, connect SMTP credentials and set the sender and recipient in **Send Recipes**. Open Flow uses Gmail and n8n uses SMTP. Native n8n Cron uses a fixed second within the minute.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

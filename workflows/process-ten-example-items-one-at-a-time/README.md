@@ -17,7 +17,14 @@ Run the workflow manually. It creates the numbers 0 through 9 and processes one 
 
 ## Behavior
 
-When the tenth item is reached, the workflow returns **No Items Left**. Open Flow additionally returns the numbers it visited in a `visited` object. The n8n example exposes the message on its final Set node.
+When the tenth item is reached, the workflow returns **No Items Left**. Open Flow additionally returns the numbers it visited in a `visited` object.
+
+<details>
+<summary>In n8n</summary>
+
+The n8n example exposes the message on its final Set node.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

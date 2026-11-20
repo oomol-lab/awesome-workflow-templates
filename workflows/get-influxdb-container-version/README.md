@@ -13,11 +13,18 @@ Return the installed InfluxDB version from a running container.
 
 ## Setup
 
-Provide a Docker Engine v1.44 HTTPS gateway that authenticates Bearer tokens and permits only the fixed influxd version exec sequence for the selected containers. Set its URL and expected server domain in **Validate server and request**, and its hostname in **Run version command** HTTP allowlist. Bind INSPECTION_WEBHOOK_AUTH to the incoming Authorization header and DOCKER_GATEWAY_TOKEN to the gateway token. In n8n configure the gateway URL, expected domain and Header Auth credentials. Restrict access to the Docker gateway because exec can run commands in containers.
+Provide a Docker Engine v1.44 HTTPS gateway that authenticates Bearer tokens and permits only the fixed influxd version exec sequence for the selected containers. Set its URL and expected server domain in **Validate server and request**, and its hostname in **Run version command** HTTP allowlist. Bind INSPECTION_WEBHOOK_AUTH to the incoming Authorization header and DOCKER_GATEWAY_TOKEN to the gateway token. Restrict access to the Docker gateway because exec can run commands in containers.
 
 ## Use
 
 POST server_domain, domain and command app_version. The workflow runs influxd version inside the running container named domain plus _influxdb and checks its exit status. A retry can create another short-lived exec instance.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure the gateway URL, expected domain and Header Auth credentials.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

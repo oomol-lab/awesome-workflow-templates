@@ -13,11 +13,18 @@ Issue verifiable certificates for a course and its recipients.
 
 ## Setup and use
 
-Enter the issuer, course, a list of recipients with names and optional email addresses, and a unique request ID. Enable persistent State in Open Flow. In n8n configure the same values and a Data Table with item_key and status text columns. Run one format.
+Enter the issuer, course, a list of recipients with names and optional email addresses, and a unique request ID. Enable persistent State in Open Flow.
 
-The workflow sends one certificate batch to Attestify and returns the service response. Attestify creates public verification pages that display certificate details, including recipient names. Review the information before issuing. The service’s [documentation](https://github.com/novadyne-hq/n8n-nodes-attestify) describes its verification format.
+The workflow sends one certificate batch to Attestify and returns the service response. Attestify creates public verification pages that display certificate details, including recipient names. Review the information before issuing.
 
-If issuance has an unknown result, check Attestify before resolving the pending request in State or the n8n Data Table. Keep the same request ID while investigating and use a new ID for a new batch. Avoid overlapping submissions.
+Keep the same request ID while investigating and use a new ID for a new batch. Avoid overlapping submissions.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure the same values and a Data Table with item_key and status text columns. The service’s [documentation](https://github.com/novadyne-hq/n8n-nodes-attestify) describes its verification format. If issuance has an unknown result, check Attestify before resolving the pending request in State or the n8n Data Table.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

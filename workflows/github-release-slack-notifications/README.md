@@ -15,8 +15,6 @@ Notify a Slack channel when GitHub sends a release event. Each notice includes t
 
 In Open Flow, connect GitHub in **Receive a GitHub release event** and replace its owner and repository values. The Connection must be allowed to manage repository webhooks. Connect Slack in **Post one release message to Slack**, then set the destination channel ID in **Prepare the next Slack message**. The Slack app needs `chat:write` and access to that conversation; invite it to a private channel before activating the workflow.
 
-In n8n, select **GitHub API** access-token credentials on the trigger, set its owner/repository, and select **Slack API** credentials and the channel ID on its send node. Both formats require a publicly reachable HTTPS webhook endpoint and permission to create repository webhooks. Activate only the format you intend to use.
-
 ## Use
 
 Create, publish, edit or otherwise change a release in the repository. The workflow handles every `release` event delivered by GitHub. It does not limit notifications to published releases, so an edited or deleted release can use the source’s “New release is available” wording too. GitHub controls which draft and pre-release activities generate webhook deliveries.
@@ -25,9 +23,16 @@ A null release body is rendered as empty text. Notes are passed as Slack message
 
 Long notices are divided at Unicode codepoint boundaries into numbered messages of at most 4000 characters and posted in order. Join the content after each part label to reconstruct the original notice. No release text is truncated. Posting stops if Slack rejects a request, returns an invalid receipt or leaves the outcome uncertain. Earlier parts may already exist; check the channel before replaying. No workflow retry is added.
 
-Open Flow returns all normalized Slack receipts (`ts` and `channelId`), the count and the release action. n8n retains complete Slack API response envelopes. A receipt confirms the post identifier and channel, rather than independently proving Slack’s rendering. The message identity comes from the selected Slack credentials. The source’s obsolete top-level `as_user` field is not read by the inspected current n8n Slack V1 implementation.
+Open Flow returns all normalized Slack receipts (`ts` and `channelId`), the count and the release action. A receipt confirms the post identifier and channel, rather than independently proving Slack’s rendering. The message identity comes from the selected Slack credentials.
 
-Open Flow identifies deliveries by GitHub’s delivery ID when supplied. n8n adds no workflow-level delivery history. Manual replay, redelivery or an uncertain post can produce duplicates. The complete event, parts and accumulated receipts must fit the inspected Open Flow host’s 1 MiB per-Code input/result budget; oversized data fails without truncation.
+Open Flow identifies deliveries by GitHub’s delivery ID when supplied. Manual replay, redelivery or an uncertain post can produce duplicates. The complete event, parts and accumulated receipts must fit the inspected Open Flow host’s 1 MiB per-Code input/result budget; oversized data fails without truncation.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, select **GitHub API** access-token credentials on the trigger, set its owner/repository, and select **Slack API** credentials and the channel ID on its send node. Both formats require a publicly reachable HTTPS webhook endpoint and permission to create repository webhooks. Activate only the format you intend to use. n8n retains complete Slack API response envelopes. The source’s obsolete top-level `as_user` field is not read by the inspected current n8n Slack V1 implementation. n8n adds no workflow-level delivery history.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

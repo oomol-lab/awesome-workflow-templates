@@ -13,13 +13,20 @@ Send workflow failure details to a Telegram chat.
 
 ## Setup
 
-Connect a Telegram bot that can post to the destination. In Open Flow, set the numeric chat ID or public @channel in **Prepare failure details**, select the published source workflows in **Receive a workflow failure**, then publish and enable this workflow. In n8n, set the chat ID in **Config**, connect Telegram, enable the workflow, and select it as the error workflow in each source workflow’s settings. Enable one format.
+Connect a Telegram bot that can post to the destination. In Open Flow, set the numeric chat ID or public @channel in **Prepare failure details**, select the published source workflows in **Receive a workflow failure**, then publish and enable this workflow.
 
 ## Behavior
 
-An automatic workflow failure sends the workflow name, time, execution reference, failed node and error message to Telegram. Open Flow sends the run ID and, if available, the node ID; n8n sends an execution URL and last node name. Open Flow uses the failure finish time; n8n uses the notification time. Missing node details are shown as not available.
+An automatic workflow failure sends the workflow name, time, execution reference, failed node and error message to Telegram. Open Flow sends the run ID and, if available, the node ID. Open Flow uses the failure finish time. Missing node details are shown as not available.
 
 Error messages can contain sensitive data. Restrict access to the destination chat and workflow history. Telegram limits messages to 4096 characters; Open Flow stops if the alert is too long. A failed or uncertain send may already have been delivered; check the chat before retrying. Avoid assigning the error workflow to itself.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, set the chat ID in **Config**, connect Telegram, enable the workflow, and select it as the error workflow in each source workflow’s settings. N8n sends an execution URL and last node name. N8n uses the notification time.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

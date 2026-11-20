@@ -13,11 +13,18 @@ Post Figma Commit plugin version details to the linked Jira issue.
 
 ## Setup
 
-Connect Jira with permission to read issues and add comments. Deploy the webhook and configure its URL in the [Figma Commit plugin](https://github.com/omid-d3v/Figma-Commit-plugin-with-webhook/tree/b01238619d812f1f4ad3ddde9b429063ad285f7a). Supply a Jira issue key or browse URL, design link, changes, page and status in the plugin. In n8n connect both Jira nodes and configure the plugin with the n8n webhook URL.
+Connect Jira with permission to read issues and add comments. Deploy the webhook and configure its URL in the [Figma Commit plugin](https://github.com/omid-d3v/Figma-Commit-plugin-with-webhook/tree/b01238619d812f1f4ad3ddde9b429063ad285f7a). Supply a Jira issue key or browse URL, design link, changes, page and status in the plugin.
 
 ## Behavior
 
 The plugin sends the details by POST. The workflow reads the linked Jira issue and adds a comment containing page name, version details, design link and current time. The webhook does not authenticate the sender, so restrict access to the endpoint as appropriate. Its acknowledgment confirms receipt; the Jira comment may still fail. The plugin creates Figma version history after a successful webhook response. Repeating a request may create another comment.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n connect both Jira nodes and configure the plugin with the n8n webhook URL.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

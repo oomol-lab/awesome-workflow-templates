@@ -13,11 +13,18 @@ Inspect a random sample image and return its image metadata.
 
 ## Setup and use
 
-In Open Flow connect ImageKit and bind the same account's private key to the secret Variable **IMAGEKIT_PRIVATE_KEY**. Run the workflow manually. In n8n run the manual trigger; its HTTP Request downloads the sample for the Edit Image node.
+In Open Flow connect ImageKit and bind the same account's private key to the secret Variable **IMAGEKIT_PRIVATE_KEY**. Run the workflow manually.
 
 ## Behavior
 
-The sample comes from Picsum's random 200 × 300 image endpoint. Open Flow follows the sample's redirect, uploads the image bytes to ImageKit, reads the uploaded file's metadata, and deletes that file after a successful read. ImageKit and n8n return different metadata fields; common fields include image dimensions and format. The image and base64-encoded upload must each fit the runtime’s 1 MiB request and response limits. The upload creates a temporary file in the ImageKit media library. If upload, metadata retrieval, or deletion fails, inspect the library and remove any remaining sample manually before retrying. An uncertain upload response can also leave a file behind.
+The sample comes from Picsum's random 200 × 300 image endpoint. Open Flow follows the sample's redirect, uploads the image bytes to ImageKit, reads the uploaded file's metadata, and deletes that file after a successful read. The image and base64-encoded upload must each fit the runtime’s 1 MiB request and response limits. The upload creates a temporary file in the ImageKit media library. If upload, metadata retrieval, or deletion fails, inspect the library and remove any remaining sample manually before retrying. An uncertain upload response can also leave a file behind.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n run the manual trigger; its HTTP Request downloads the sample for the Edit Image node. ImageKit and n8n return different metadata fields; common fields include image dimensions and format.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

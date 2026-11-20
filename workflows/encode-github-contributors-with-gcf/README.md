@@ -13,13 +13,18 @@ Fetch GitHub contributors, encode them as GCF, estimate token use and decode the
 
 ## Setup
 
-Connect GitHub in Open Flow and run the workflow manually. The GitHub Action defaults to the first page of up to 100 contributors to n8n; change owner and repository as needed.
-
-For n8n, install the community node [n8n-nodes-gcf](https://github.com/blackwell-systems/gcf-n8n-nodes) version 0.1.3 with its @blackwell-systems/gcf dependency pinned to 2.4.0 and run the imported workflow manually. In a self-hosted installation, add `"overrides": {"n8n-nodes-gcf": {"@blackwell-systems/gcf": "2.4.0"}}` to the community nodes installation package.json and reinstall before starting n8n; check the installed version with `npm ls @blackwell-systems/gcf`. Later codec versions may return Map objects, which n8n JSON output cannot preserve. Community nodes require a compatible n8n installation.
+Connect GitHub in Open Flow and run the workflow manually.
 
 ## Behavior
 
-The workflow batches the API response, encodes it in Graph Compact Format (GCF) and decodes it to the original array. The token comparison is an estimate of one token per four characters, not a model tokenizer measurement. Open Flow exposes the encoded text, estimate and decoded data as outputs. The n8n decode node returns the decoded array; inspect the preceding encode node for its metrics.
+The workflow batches the API response, encodes it in Graph Compact Format (GCF) and decodes it to the original array. The token comparison is an estimate of one token per four characters, not a model tokenizer measurement. Open Flow exposes the encoded text, estimate and decoded data as outputs.
+
+<details>
+<summary>In n8n</summary>
+
+The GitHub Action defaults to the first page of up to 100 contributors to n8n; change owner and repository as needed. For n8n, install the community node [n8n-nodes-gcf](https://github.com/blackwell-systems/gcf-n8n-nodes) version 0.1.3 with its @blackwell-systems/gcf dependency pinned to 2.4.0 and run the imported workflow manually. In a self-hosted installation, add `"overrides": {"n8n-nodes-gcf": {"@blackwell-systems/gcf": "2.4.0"}}` to the community nodes installation package.json and reinstall before starting n8n; check the installed version with `npm ls @blackwell-systems/gcf`. Later codec versions may return Map objects, which n8n JSON output cannot preserve. Community nodes require a compatible n8n installation. The n8n decode node returns the decoded array; inspect the preceding encode node for its metrics.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

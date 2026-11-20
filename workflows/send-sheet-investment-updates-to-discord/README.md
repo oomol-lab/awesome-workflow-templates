@@ -13,13 +13,20 @@ Watch investment security codes and send the complete sheet table to Discord whe
 
 ## Setup
 
-Connect Google Sheets and Discord. Set the spreadsheet ID and the full table range in **Read the full sheet**, and the channel ID in **Send the table to Discord**. Install the Discord bot with permission to post. The sheet must have unique Security Code, Price and Quantity headers. Keep workflow State persistent and avoid overlapping runs. In n8n configure the spreadsheet ID and complete range in **Read the full sheet** and connect Google Sheets; connect a Discord webhook credential in **Send the table to Discord**. Enable one format.
+Connect Google Sheets and Discord. Set the spreadsheet ID and the full table range in **Read the full sheet**, and the channel ID in **Send the table to Discord**. Install the Discord bot with permission to post. The sheet must have unique Security Code, Price and Quantity headers. Keep workflow State persistent and avoid overlapping runs.
 
 ## Behavior
 
 Every minute the workflow reads the complete configured range. The first successful poll saves the current security codes without sending. Later polls send one table containing all current rows when a row appears or a Security Code changes. Changes only to Price or Quantity do not trigger a message. The comparison uses row positions: deleting the final row alone does not trigger a message, while deleting an earlier row can trigger one when later Security Code values shift. Insertions and reordering can likewise change which positions are detected. The message contains Security Code, Price and Quantity. Newlines and backticks in cells are rendered safely. Tables longer than Discord's 2,000-character limit stop before saving the new snapshot or sending.
 
-Open Flow saves the new snapshot before posting; n8n records its static data during the run. A failed or uncertain post may have succeeded and may not be repeated automatically. Inspect Discord and the sheet before resetting state or rerunning. Large tables must fit platform state and execution limits. n8n runs at a fixed second within each minute; Open Flow starts on the minute boundary.
+Open Flow saves the new snapshot before posting. A failed or uncertain post may have succeeded and may not be repeated automatically. Inspect Discord and the sheet before resetting state or rerunning. Large tables must fit platform state and execution limits. Open Flow starts on the minute boundary.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure the spreadsheet ID and complete range in **Read the full sheet** and connect Google Sheets; connect a Discord webhook credential in **Send the table to Discord**. N8n records its static data during the run. n8n runs at a fixed second within each minute.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

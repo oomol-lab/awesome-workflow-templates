@@ -13,13 +13,20 @@ Turn unread or starred inbox messages into Todoist tasks and close tracked tasks
 
 ## Setup
 
-Connect Gmail, Todoist and an OpenAI model. Set the same Todoist project ID in **Match messages and tracked tasks** and **Create a Todoist task**. Run the workflow manually. In n8n connect the same services and set the project ID in both Todoist HTTP nodes and connect Todoist API credentials there. The source's IMAP and schedule triggers remain disabled.
+Connect Gmail, Todoist and an OpenAI model. Set the same Todoist project ID in **Match messages and tracked tasks** and **Create a Todoist task**. Run the workflow manually. The source's IMAP and schedule triggers remain disabled.
 
 ## Behavior
 
 The workflow reads all unread or starred inbox messages and all open tasks in the configured project. For each message without a tracked task, it summarizes the message and suggests actions and a reply, creates a task with the email subject, then marks the email read and starred. A task created by this workflow carries its Gmail message ID in the description. Existing tracked tasks for messages no longer unread or starred in the inbox are closed. Tasks without this marker are not changed. Keep the marker intact and use a dedicated project.
 
 Email content is sent to the model; review suggested actions and replies before using them. Earlier changes can remain after a failure. If a task creation or close has an unknown outcome, inspect Todoist and Gmail before running again. The workflow does not automatically replay uncertain writes.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n connect the same services and set the project ID in both Todoist HTTP nodes and connect Todoist API credentials there.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

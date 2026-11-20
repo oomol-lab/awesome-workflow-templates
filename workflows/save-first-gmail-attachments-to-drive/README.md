@@ -15,13 +15,18 @@ Save the first attachment from each of up to ten Gmail messages in a chosen labe
 
 Connect Gmail in **Find labeled messages**, **Read the email** and **Download the attachment**. Set the Gmail label ID in **Find labeled messages**. Connect Google Drive in **Upload to Google Drive**, and set a writable folder ID in **Prepare the next file**. In **Check attachment bytes**, replace the example HTTP allowlist hostname with your Connector file transit hostname. The Gmail download Action must have file transit configured.
 
-In n8n connect Gmail and Google Drive, select the Gmail label in **Gmail1** and set the Drive folder in **Upload File1**. Run either format manually.
-
 ## Behavior
 
 The workflow reads up to the first 10 messages in the label, including read and unread messages, and uploads only the first attachment of each message. It reads the batch before creating Drive files. Open Flow uses attachment as the filename if the first attachment has no filename. No matching messages creates no files. If a message has no attachment, processing stops at that message and earlier Drive files remain. Drive view links appear in the execution when returned by Drive.
 
-Open Flow uses Gmail's normalized attachment order and stages complete attachment contents before upload; all staged data must fit its 1 MiB Code limits. Downloaded bytes and metadata are checked. n8n uses its own binary storage limits and MIME parser. Restrict access to execution history, transit links and files. A run can create duplicate Drive files when repeated. A failed or uncertain upload may already have created a file; check Drive before retrying. The n8n Drive node uploads content before applying the filename and destination folder, so a later failure can leave a file outside the intended folder.
+Open Flow uses Gmail's normalized attachment order and stages complete attachment contents before upload; all staged data must fit its 1 MiB Code limits. Downloaded bytes and metadata are checked. Restrict access to execution history, transit links and files. A run can create duplicate Drive files when repeated. A failed or uncertain upload may already have created a file; check Drive before retrying.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n connect Gmail and Google Drive, select the Gmail label in **Gmail1** and set the Drive folder in **Upload File1**. Run either format manually. n8n uses its own binary storage limits and MIME parser. The n8n Drive node uploads content before applying the filename and destination folder, so a later failure can leave a file outside the intended folder.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

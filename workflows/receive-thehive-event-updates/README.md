@@ -13,11 +13,18 @@ Receive all TheHive events with their original request details.
 
 ## Setup and use
 
-Import the supplied n8n workflow and configure TheHive to send its webhooks to the production URL of **TheHive Trigger**. For Open Flow set the destination in **Forward to Open Flow** and enable that node before activating n8n. Leave it disabled to use n8n alone. Restrict access to the webhook and relay endpoints.
+Configure TheHive to send its webhooks to the production URL of **TheHive Trigger**. Restrict access to the webhook and relay endpoints.
 
 ## Behavior
 
-TheHive Trigger accepts events with operation and objectType and subscribes to all event types. It emits the normalized event name and the full request body, headers and query. The optional relay forwards that complete trigger output to Open Flow, which exposes it as workflow output for downstream processing. TheHive is acknowledged before forwarding, so inspect n8n execution history for relay failures. Request headers and event details may appear in execution history; restrict access and avoid sending unnecessary secrets.
+TheHive Trigger accepts events with operation and objectType and subscribes to all event types. It emits the normalized event name and the full request body, headers and query. The optional relay forwards that complete trigger output to Open Flow, which exposes it as workflow output for downstream processing. Request headers and event details may appear in execution history; restrict access and avoid sending unnecessary secrets.
+
+<details>
+<summary>In n8n</summary>
+
+Import the supplied n8n workflow and configure TheHive to send its webhooks to the production URL of **TheHive Trigger**. For Open Flow set the destination in **Forward to Open Flow** and enable that node before activating n8n. Leave it disabled to use n8n alone. TheHive is acknowledged before forwarding, so inspect n8n execution history for relay failures.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

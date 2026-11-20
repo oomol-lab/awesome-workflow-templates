@@ -13,13 +13,20 @@ Send a SIGNL4 alert when a city’s current temperature is below 25°C.
 
 ## Setup
 
-Connect OpenWeather in **Get current weather** and set the city name. The starting city is Berlin and the request uses metric units. In SIGNL4, copy the team or integration webhook URL and store the complete URL as a secret Variable. Bind **Send SIGNL4 alert** URL to that Variable after importing. The URL contains the team secret; keep it private. In n8n connect OpenWeather and SIGNL4 credentials, and set the same city in **OpenWeatherMap**. Enable one format only.
+Connect OpenWeather in **Get current weather** and set the city name. The starting city is Berlin and the request uses metric units. In SIGNL4, copy the team or integration webhook URL and store the complete URL as a secret Variable. Bind **Send SIGNL4 alert** URL to that Variable after importing. The URL contains the team secret; keep it private.
 
 ## Behavior
 
-Run manually or every day at 06:15 UTC. The source schedule used the n8n instance timezone; review the timezone before enabling. n8n Schedule Trigger uses a stable second within the minute, while Open Flow runs on the minute boundary. If the current temperature is strictly below 25°C, the workflow sends one alert containing the temperature and the returned latitude and longitude. At exactly 25°C or above it sends none. The alert retains the source title, external ID `weather-alert` and new status.
+Run manually or every day at 06:15 UTC. Open Flow runs on the minute boundary. If the current temperature is strictly below 25°C, the workflow sends one alert containing the temperature and the returned latitude and longitude. At exactly 25°C or above it sends none. The alert retains the source title, external ID `weather-alert` and new status.
 
 An invalid temperature, missing coordinates for an alert, weather request failure or failed alert request stops the run. A successful SIGNL4 response confirms event acceptance, not that a person was notified. An uncertain alert request may have succeeded; check SIGNL4 before retrying. Each triggering run can produce another alert. No automatic retry or resolution is configured. The HTTP request carries the secret in its URL, so restrict access to execution logs.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n connect OpenWeather and SIGNL4 credentials, and set the same city in **OpenWeatherMap**. The source schedule used the n8n instance timezone; review the timezone before enabling. n8n Schedule Trigger uses a stable second within the minute.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

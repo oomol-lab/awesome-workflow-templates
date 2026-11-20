@@ -17,17 +17,22 @@ In Open Flow, connect Typeform in **Receive the contact form** and set its Form 
 
 Connect Airtable in **Create the Airtable contact record**, then set the base and table IDs. The Personal Access Token needs `data.records:write` and access to that base. Create writable columns named exactly `Name` and `Email` with types that accept the answer strings. This workflow does not create columns or coerce their types. Connect Slack in **Notify the Slack channel** and set the channel ID in **Prepare the next contact notice**. The Slack app needs `chat:write` and access to that conversation; invite it to a private channel before activation.
 
-In n8n, select **Typeform API** credentials on the trigger, **Airtable Personal Access Token API** credentials on its create node and **Slack API** credentials on its send node. Set the form/base/table/channel IDs. The two question selectors are at the end of **Read the name and email answers**. Keep raw Typeform response settings and Airtable Append with Add All Fields enabled and type conversion disabled. Activate one format for this process.
-
 ## Use
 
 Complete the form with a name and email address. The workflow creates one Airtable record containing only `Name` and `Email`, as in the source’s Keep Only Set step. Other answers, hidden fields and submission metadata are not stored or posted. Both selected answers must be present, unambiguous and nonempty; the email must have an email-address format. Original whitespace and text are retained.
 
 Slack is notified only after Airtable returns one valid saved record. The notification keeps the source wording: “New Submission”, followed by the name and email. It uses Slack’s default text formatting, including links and mentions. A long notification is divided into numbered messages of at most 4000 characters and posted in order without truncation. Join their content after the labels to reconstruct the complete notice.
 
-Airtable failure, an uncertain creation or an invalid record receipt prevents Slack posting. A Slack failure stops later message parts. The Airtable record and earlier messages may already exist; check both destinations before replaying a failed run. No rollback, workflow retry or cross-run submission history is added. Open Flow identifies trigger deliveries by the Typeform response token. The n8n trigger adds no workflow-level delivery history. Manual replay or uncertain writes can produce duplicates.
+Airtable failure, an uncertain creation or an invalid record receipt prevents Slack posting. A Slack failure stops later message parts. The Airtable record and earlier messages may already exist; check both destinations before replaying a failed run. No rollback, workflow retry or cross-run submission history is added. Open Flow identifies trigger deliveries by the Typeform response token. Manual replay or uncertain writes can produce duplicates.
 
-The result keeps the complete Airtable record and all Slack receipts. Open Flow’s Slack Action exposes `ts` and `channelId`; n8n keeps the API response envelopes. A Slack receipt confirms the post identifier and channel rather than independently verifying its rendering. Full input, notification parts and accumulated receipts must fit the inspected Open Flow host’s 1 MiB per-Code input/result budget; oversized data fails without truncation.
+The result keeps the complete Airtable record and all Slack receipts. Open Flow’s Slack Action exposes `ts` and `channelId`. A Slack receipt confirms the post identifier and channel rather than independently verifying its rendering. Full input, notification parts and accumulated receipts must fit the inspected Open Flow host’s 1 MiB per-Code input/result budget; oversized data fails without truncation.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, select **Typeform API** credentials on the trigger, **Airtable Personal Access Token API** credentials on its create node and **Slack API** credentials on its send node. Set the form/base/table/channel IDs. The two question selectors are at the end of **Read the name and email answers**. Keep raw Typeform response settings and Airtable Append with Add All Fields enabled and type conversion disabled. Activate one format for this process. The n8n trigger adds no workflow-level delivery history. N8n keeps the API response envelopes.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

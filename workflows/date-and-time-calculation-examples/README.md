@@ -13,13 +13,20 @@ Explore date arithmetic and formatting with two date and time examples.
 
 ## Setup and use
 
-Run the workflow manually. It uses the execution environment's local time zone. In n8n, set the workflow time zone to match the host for comparable results.
+Run the workflow manually. It uses the execution environment's local time zone.
 
 ## Behavior
 
 The Set example produces the current time, today's and tomorrow's midnight, a time one hour earlier, and the weekday. The field named “One hour from now” follows the source expression and actually subtracts one hour. It then parses and formats the current date as `yyyy LLL dd`.
 
-The Date & Time branch calculates 12 hours ahead, then formats a fresh current time as `MMMM DD YYYY`. The latter node reads the current time directly rather than the calculated value. Open Flow exposes both the 12-hour result and the final formatted value along with the Set example; in n8n, inspect the first Date & Time node for the intermediate value. Date and time examples use English formatting.
+The Date & Time branch calculates 12 hours ahead, then formats a fresh current time as `MMMM DD YYYY`. The latter node reads the current time directly rather than the calculated value. Open Flow exposes both the 12-hour result and the final formatted value along with the Set example. Date and time examples use English formatting.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, set the workflow time zone to match the host for comparable results. In n8n, inspect the first Date & Time node for the intermediate value.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

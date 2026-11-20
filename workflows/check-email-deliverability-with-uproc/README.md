@@ -15,11 +15,16 @@ Check an email recipient status using Uproc.
 
 The workflow uses Uproc’s legacy v2 process API. In Open Flow, create secret Variables for the Uproc account email and API key and bind them to **Auth Username** and **Auth Password** in **Check the email recipient**. Run with an email address.
 
-In n8n, connect a Uproc API credential and set the email address in **Create Email Item**. Run either format manually.
-
 ## Behavior
 
-Each run asks Uproc for the recipient status. Each response item is marked deliverable only when its `message.response` is exactly `deliverable`, matching the source condition. Open Flow returns each item with a `deliverable` flag in the `results` array. n8n routes matching and nonmatching items to the true and false outputs of **Email Exists?**. An array response is treated as individual items in both formats. The response data is retained without filtering. Request failures stop the run. Open Flow has a 30-second HTTP timeout, a 4 MiB response limit, and a 1 MiB Code output limit.
+Each run asks Uproc for the recipient status. Each response item is marked deliverable only when its `message.response` is exactly `deliverable`, matching the source condition. Open Flow returns each item with a `deliverable` flag in the `results` array. An array response is treated as individual items. The response data is retained without filtering. Request failures stop the run. Open Flow has a 30-second HTTP timeout, a 4 MiB response limit, and a 1 MiB Code output limit.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect a Uproc API credential and set the email address in **Create Email Item**. Run either format manually. n8n routes matching and nonmatching items to the true and false outputs of **Email Exists?**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

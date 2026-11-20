@@ -13,13 +13,20 @@ Send a message and level to Better Stack Logs from a workflow or a manual test.
 
 ## Setup and use
 
-Create a Better Stack Logs source. Replace the example URL in the Open Flow HTTP node with your source's HTTPS ingesting host and bind the source token as a secret Variable. In n8n, set the HTTP node URL to the ingesting host and configure Header Auth with header name `Authorization` and value `Bearer YOUR_SOURCE_TOKEN`. See [Better Stack's ingestion documentation](https://betterstack.com/docs/logs/ingesting-data/http/logs/).
+Create a Better Stack Logs source. Replace the example URL in the Open Flow HTTP node with your source's HTTPS ingesting host and bind the source token as a secret Variable. See [Better Stack's ingestion documentation](https://betterstack.com/docs/logs/ingesting-data/http/logs/).
 
-Call the workflow with string inputs `message` and `level`. To send the original example instead, run Open Flow without inputs or use the manual trigger in n8n; it sends level `error` and message `This is a test log message`.
+Call the workflow with string inputs `message` and `level`.
 
 ## Behavior
 
 Each invocation sends one JSON log with the supplied message and level. The source token identifies the destination. A successful API response confirms acceptance, not downstream processing. If the request outcome is unknown, check the destination before retrying to avoid duplicate logs. The ingest endpoint and token are configured by the user.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, set the HTTP node URL to the ingesting host and configure Header Auth with header name `Authorization` and value `Bearer YOUR_SOURCE_TOKEN`. To send the original example instead, run Open Flow without inputs or use the manual trigger in n8n; it sends level `error` and message `This is a test log message`.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

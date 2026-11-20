@@ -13,13 +13,20 @@ Email diagnostics when a configured workflow fails.
 
 ## Setup
 
-Connect Gmail and configure the recipient. In Open Flow, select the source workflows in **Receive a workflow failure**, publish and enable the error workflow. In n8n, assign this error workflow to each source workflow and activate it. Avoid assigning it to itself. Enable only one format.
+Connect Gmail and configure the recipient. In Open Flow, select the source workflows in **Receive a workflow failure**, publish and enable the error workflow. Avoid assigning it to itself.
 
 ## Behavior
 
-An automatic failure sends a plain-text email with the workflow name and available diagnostics. Open Flow includes the run ID, error code and message, and any node ID, job ID and path supplied by its error event; it does not provide an execution URL or stack trace. n8n includes the execution URL, last node, error message and stack trace when available. Open Flow also reports indeterminate runs. Manual test runs do not represent automatic error dispatch.
+An automatic failure sends a plain-text email with the workflow name and available diagnostics. Open Flow includes the run ID, error code and message, and any node ID, job ID and path supplied by its error event; it does not provide an execution URL or stack trace. Open Flow also reports indeterminate runs. Manual test runs do not represent automatic error dispatch.
 
 Diagnostics may contain sensitive information; restrict the recipient and execution history. A failed or uncertain email may already have been delivered, so check Gmail before retrying.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, assign this error workflow to each source workflow and activate it. n8n includes the execution URL, last node, error message and stack trace when available.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

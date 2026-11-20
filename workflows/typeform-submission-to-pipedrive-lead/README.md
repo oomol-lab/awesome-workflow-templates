@@ -21,13 +21,20 @@ Connect Typeform and Pipedrive and set your form ID. The form needs questions wi
 - `Do you have any *specific questions* about embedding n8n at this stage?` — text
 - `How many employees?` — single choice, with options `< 20`, `20 - 100`, `101 - 500`, `501 - 1000`, `1000+`
 
-In Pipedrive create an organization single-option custom field and find its 40-character field key and the five option IDs. In Open Flow configure these in **Read answers and map company size**. The two creation Code nodes use the Pipedrive connection and each calls its named Action. For n8n set the same field key in **Create Organization** and in the code of **Read answers and map company size**, edit its five option IDs, connect credentials, and set the form ID. Activate one format.
+In Pipedrive create an organization single-option custom field and find its 40-character field key and the five option IDs. In Open Flow configure these in **Read answers and map company size**. The two creation Code nodes use the Pipedrive connection and each calls its named Action.
 
 ## Behavior
 
 Each completed response creates an organization with the mapped company size, then a person linked to it, a lead linked to both, and a note with the question and company size. Missing or invalid answers and incomplete option configuration stop before creating records. The form question and company size are escaped as text in the note.
 
 A failed step stops subsequent steps; earlier creations remain. Repeated submissions or webhook deliveries create new records. An unknown write result may already have created a record, so inspect Pipedrive before replaying.
+
+<details>
+<summary>In n8n</summary>
+
+For n8n set the same field key in **Create Organization** and in the code of **Read answers and map company size**, edit its five option IDs, connect credentials, and set the form ID.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

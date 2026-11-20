@@ -15,23 +15,30 @@ Read records from a public JSON endpoint, normalize names and emails, and identi
 
 The included [JSONPlaceholder users endpoint](https://jsonplaceholder.typicode.com/users) is a public demo and needs no account. Run the workflow manually. The required fields default to `id,name,email`.
 
-In Open Flow, edit the URL in **Fetch API records with retries** and the comma-separated fields in **Normalize and validate records**. If you choose another public HTTPS API, update the read step's allowed HTTP host to match. In n8n, edit `request_url` and `required_fields` in **Set Demo Configuration**.
+In Open Flow, edit the URL in **Fetch API records with retries** and the comma-separated fields in **Normalize and validate records**. If you choose another public HTTPS API, update the read step's allowed HTTP host to match.
 
 The workflow reads one response and does not paginate or write to a destination. To use an authenticated service, configure its platform connector and preserve that service's own request contract.
 
 ## Results
 
-Open Flow returns `outcome`. A completed check has `status: "completed"` and a `records` array. In n8n, **Validated Records** emits one item per record. Each record has its original `source_index`, `record_id`, trimmed `name`, lowercase trimmed `email`, `validation_status`, `missing_fields`, and source `website` value as `source_domain`.
+Open Flow returns `outcome`. A completed check has `status: "completed"` and a `records` array. Each record has its original `source_index`, `record_id`, trimmed `name`, lowercase trimmed `email`, `validation_status`, `missing_fields`, and source `website` value as `source_domain`.
 
 A required field is missing when it is absent from the record, null, or empty after string conversion and trimming. Zero and false count as supplied values. Missing fields mark individual records `invalid`; those records remain in the report. This is a presence check and basic normalization, without email or domain verification.
 
-An empty array, unsupported response shape, or empty field configuration returns a failure record. Failed requests use `upstream_request_failed`; response and configuration failures have separate codes. Messages are fixed text and omit the raw request error, response body, URL, and credentials. Open Flow puts this record in `outcome`; n8n emits it through **Failure Record**.
+An empty array, unsupported response shape, or empty field configuration returns a failure record. Failed requests use `upstream_request_failed`; response and configuration failures have separate codes. Messages are fixed text and omit the raw request error, response body, URL, and credentials. Open Flow puts this record in `outcome`.
 
 ## Requests and failures
 
-Both formats make at most three GET attempts, with three seconds between failed attempts and a ten-second timeout for each attempt. This is three total attempts, including the first request. A successful request is not repeated to repair invalid records. Redirects are rejected. Open Flow's HTTP runtime limits each response to 1 MiB, and the complete read step has a 45-second execution budget. n8n uses its configured HTTP and execution limits.
+The workflow makes at most three GET attempts, with three seconds between failed attempts and a ten-second timeout for each attempt. This is three total attempts, including the first request. A successful request is not repeated to repair invalid records. Redirects are rejected. Open Flow's HTTP runtime limits each response to 1 MiB, and the complete read step has a 45-second execution budget.
 
 Open Flow uses its public HTTP capability to apply the timeout separately to each attempt; a node timeout alone would include the entire retry sequence. Cancelling the Open Flow run stops requests or waiting without creating a successful failure report. A handled failure completes the workflow and returns a failure record for inspection. `retryable` is true for exhausted request attempts and false for response/configuration failures. No later rerun, notification, checkpoint, or synchronization write is configured.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, edit `request_url` and `required_fields` in **Set Demo Configuration**. In n8n, **Validated Records** emits one item per record. N8n emits it through **Failure Record**. n8n uses its configured HTTP and execution limits.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

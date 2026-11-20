@@ -13,11 +13,18 @@ Create a contact in Drift using an email address.
 
 ## Setup
 
-In Open Flow create a secret Variable named `DRIFT_ACCESS_TOKEN` containing a Drift access token with contact write permission. Bind it to **Create Drift contact**, then run with the contact email. In n8n configure Drift credentials and enter an email in the Drift node. Run one format.
+In Open Flow create a secret Variable named `DRIFT_ACCESS_TOKEN` containing a Drift access token with contact write permission. Bind it to **Create Drift contact**, then run with the contact email.
 
 ## Behavior
 
-A manual run creates one Drift contact. Open Flow returns the complete API response; n8n returns its data object. Drift rejects a duplicate email when no external ID is supplied. A failed or uncertain request may already have created a contact; check Drift before retrying.
+A manual run creates one Drift contact. Open Flow returns the complete API response. Drift rejects a duplicate email when no external ID is supplied. A failed or uncertain request may already have created a contact; check Drift before retrying.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure Drift credentials and enter an email in the Drift node. N8n returns its data object.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

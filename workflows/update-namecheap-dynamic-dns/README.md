@@ -13,11 +13,18 @@ Keep Namecheap dynamic DNS host records pointed at the current public IPv4 addre
 
 ## Setup and use
 
-Enable Dynamic DNS and create A+Dynamic DNS records for each host in Namecheap. Set your exact domain and host names in **Select host to update** and bind secret Variable NAMECHEAP_DDNS_PASSWORD to **Update Namecheap host**. Enable persistent State and avoid overlapping runs. In n8n set the domain and host list in the configuration nodes, and configure HTTP Query Auth with name password and the Dynamic DNS password as its value. Activate one format.
+Enable Dynamic DNS and create A+Dynamic DNS records for each host in Namecheap. Set your exact domain and host names in **Select host to update** and bind secret Variable NAMECHEAP_DDNS_PASSWORD to **Update Namecheap host**. Enable persistent State and avoid overlapping runs.
 
 ## Behavior
 
 Every 15 minutes, the workflow checks the public IPv4 address using ipify. The first run updates every configured host; later runs update them when the address changes. An address is remembered only after all updates succeed. An interrupted or failed run may repeat an update on the next schedule. Namecheap receives the password in the HTTPS query as required by its API; protect access to network logs. IPv6 is not supported by Namecheap Dynamic DNS.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n set the domain and host list in the configuration nodes, and configure HTTP Query Auth with name password and the Dynamic DNS password as its value.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

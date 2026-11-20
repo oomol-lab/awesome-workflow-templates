@@ -15,13 +15,18 @@ Animate a product photo, wait for the video and retrieve the file.
 
 Connect Magic Hour in **Generate the video** and **Check the video project**. Set the image URL or uploaded asset path and prompt in **Generate the video**. The template requests a one-second, silent 480p video with ltx-2.5. Allow the video download hostname in **Download the video**; the default is videos.magichour.ai and the returned URL may use another host.
 
-In n8n, install the Magic Hour community node (the source used version 1.0.3), connect its API credential and set the image URL or uploaded asset path and prompt in **Magic Hour**. The model is configured as an expression for ltx-2.5 because version 1.0.3 does not list it in the model menu. Run either format manually.
-
 ## Behavior
 
-The workflow creates one video project and waits 10 seconds between status checks. Open Flow makes at most 60 checks; request time can extend the run beyond 10 minutes. n8n polls for roughly 10 minutes. A completed video is downloaded. Open Flow returns the download URL, project ID and run-owned video artifact; the temporary vendor URL can expire. n8n returns the downloaded binary. Generated videos may differ between runs; review the result.
+The workflow creates one video project and waits 10 seconds between status checks. Open Flow makes at most 60 checks; request time can extend the run beyond 10 minutes. A completed video is downloaded. Open Flow returns the download URL, project ID and run-owned video artifact; the temporary vendor URL can expire. Generated videos may differ between runs; review the result.
 
 Generation, polling or download failure stops the workflow. A lost response or timeout can occur after the project was created. Inspect Magic Hour and use the project ID in the execution before retrying; a new run creates another project. Open Flow accepts MP4 downloads up to 1 MiB, and its artifact is available to subsequent workflow steps. Restrict access to temporary URLs and generated content.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, install the Magic Hour community node (the source used version 1.0.3), connect its API credential and set the image URL or uploaded asset path and prompt in **Magic Hour**. The model is configured as an expression for ltx-2.5 because version 1.0.3 does not list it in the model menu. Run either format manually. n8n polls for roughly 10 minutes. n8n returns the downloaded binary.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -15,13 +15,20 @@ Check an Ethereum USDT balance every five minutes and report whether it changed.
 
 In Open Flow connect Alchemy for Ethereum mainnet, set your wallet in **Get the token balance** and the Telegram chat ID in **Compare and save the balance**, and connect a Telegram bot. Keep workflow State persistent and prevent overlapping runs.
 
-In n8n, create an Etherscan API key with Ethereum token-balance access, set your wallet in **userData**, configure HTTP Query Auth on **Fetch USDT Balance from Etherscan** with name apikey and your API key as its value, and configure the Telegram bot and both chat IDs. The key is sent in the URL query and can appear in upstream or proxy access logs; restrict access to those logs. Activate one format. The default contract is Ethereum mainnet USDT; the display uses six decimal places. If changing the contract, use a compatible six-decimal token. In Open Flow update both the single-entry tokenSpec in **Get the token balance** and contract in **Compare and save the balance** to the same address. In n8n update the contract in **userData**.
+In Open Flow update both the single-entry tokenSpec in **Get the token balance** and contract in **Compare and save the balance** to the same address.
 
 ## Behavior
 
-Every five minutes the workflow reads the latest token balance. Open Flow runs at five-minute boundaries; n8n chooses a fixed second within each scheduled minute. The first valid reading establishes a baseline and sends the unchanged message. Later readings send either the previous and current balances when changed or an unchanged message. Every valid run sends a message, including repeated unchanged readings. Changing the wallet or token establishes a new baseline.
+Every five minutes the workflow reads the latest token balance. Open Flow runs at five-minute boundaries. The first valid reading establishes a baseline and sends the unchanged message. Later readings send either the previous and current balances when changed or an unchanged message. Every valid run sends a message, including repeated unchanged readings. Changing the wallet or token establishes a new baseline.
 
-The saved baseline is the last sampled balance, not the last confirmed notification. Open Flow persists it before the Telegram call. n8n updates static data before sending and normally persists it at execution end, including on error. If Telegram fails, the next run compares against that sampled value and may report unchanged, so the change notification can be lost. Hard crashes and overlapping runs may behave differently. A failed or uncertain message may have been delivered; inspect the chat before retrying. Alchemy or Etherscan errors or invalid data stop before the balance is saved. Wallet addresses and balances appear in messages and run history.
+The saved baseline is the last sampled balance, not the last confirmed notification. Open Flow persists it before the Telegram call. If Telegram fails, the next run compares against that sampled value and may report unchanged, so the change notification can be lost. Hard crashes and overlapping runs may behave differently. A failed or uncertain message may have been delivered; inspect the chat before retrying. Alchemy or Etherscan errors or invalid data stop before the balance is saved. Wallet addresses and balances appear in messages and run history.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, create an Etherscan API key with Ethereum token-balance access, set your wallet in **userData**, configure HTTP Query Auth on **Fetch USDT Balance from Etherscan** with name apikey and your API key as its value, and configure the Telegram bot and both chat IDs. The key is sent in the URL query and can appear in upstream or proxy access logs; restrict access to those logs. Activate one format. The default contract is Ethereum mainnet USDT; the display uses six decimal places. If changing the contract, use a compatible six-decimal token. In n8n update the contract in **userData**. N8n chooses a fixed second within each scheduled minute. n8n updates static data before sending and normally persists it at execution end, including on error.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

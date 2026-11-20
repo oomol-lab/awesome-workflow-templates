@@ -15,11 +15,16 @@ Run cylinder, mass and speed calculations with CalcsLive and email the mass resu
 
 Create three CalcsLive articles with matching input and output symbols: cylinder (D, h → A, V), mass (ρ, V → m), and speed (d, t). Enter their IDs in the matching **Prepare** nodes, bind the secret Variable CALCSLIVE_API_KEY to each HTTP request, and connect Gmail. Set the recipient in **Prepare mass**. Run manually.
 
-For n8n, install the CalcsLive community node package, connect its API credential and Gmail, set the three article IDs and the recipient, then run manually. Use one format.
-
 ## Behavior
 
 The cylinder uses D = 200 mm and h = 20 cm. Its volume and unit feed the mass calculation with density 1,000 kg/m³; the result is emailed. The separate speed calculation uses 360 km and 10 h and remains available in its node result. The source's unused 2 h Set field did not change the speed node; this template exposes the actual 10 h input. Edit the preparation nodes to change these example values. An uncertain email send may have succeeded; check sent mail before rerunning.
+
+<details>
+<summary>In n8n</summary>
+
+For n8n, install the CalcsLive community node package, connect its API credential and Gmail, set the three article IDs and the recipient, then run manually. Use one format.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

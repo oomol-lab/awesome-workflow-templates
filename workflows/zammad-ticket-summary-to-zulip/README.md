@@ -15,15 +15,22 @@ Count Zammad tickets by state and post a support summary to Zulip.
 
 Connect Zammad in **Read one Zammad ticket page** with access to the relevant tickets. The Zammad connection URL must resolve to a public IPv4 address for the Connector. In **Count ticket states**, verify the IDs for new, open, pending reminder and pending close; the starting values are 1, 2, 3 and 7. Zammad state IDs can differ between installations. Set your Zulip channel and topic in **Prepare the Zulip summary**.
 
-In **Send the Zulip summary**, replace the example URL with your Zulip server’s HTTPS `/api/v1/messages` URL. Create secret Variables for the bot email and API key and bind them to the HTTP Basic authentication username and password. In n8n, connect Zammad and Zulip credentials, set the channel and topic in **Notify for Standup**, and update the four IDs in **Ticket Filtering** to match your Zammad instance.
+In **Send the Zulip summary**, replace the example URL with your Zulip server’s HTTPS `/api/v1/messages` URL. Create secret Variables for the bot email and API key and bind them to the HTTP Basic authentication username and password.
 
-Run manually or activate the weekday schedule. Both formats start at 08:30 UTC, while the source used the n8n instance timezone; check the intended timezone before activation.
+Run manually or activate the weekday schedule. The workflow start at 08:30 UTC.
 
 ## Behavior
 
 The workflow reads every page of tickets visible to the Zammad account and counts the four configured state IDs. Other states are excluded from the counts. It posts one summary after all pages are read; no visible tickets means no message. The counts reflect the account’s permissions, and changes during pagination can affect results. Large ticket collections must fit the execution platform’s state limits; a failed page or duplicate ticket stops before posting.
 
 A Zulip failure stops the run. An uncertain post may already have arrived, so check the channel before retrying.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect Zammad and Zulip credentials, set the channel and topic in **Notify for Standup**, and update the four IDs in **Ticket Filtering** to match your Zammad instance. The source used the n8n instance timezone; check the intended timezone before activation.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

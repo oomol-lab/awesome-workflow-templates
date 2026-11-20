@@ -13,11 +13,18 @@ Verify a lead email, look up its customer fit and notify Telegram when its score
 
 ## Setup
 
-In Open Flow connect Hunter and Telegram, set the destination chat in **Notify Telegram**, and create the secret Variable **MADKUDU_AUTHORIZATION** containing the word Basic and a space followed by base64 of your API key and a colon for **Look up customer fit**. Configure a form or client to POST JSON such as {"email":"lead@example.com"} to the workflow webhook. In n8n configure the form, Hunter and Telegram credentials, the chat ID and HTTP Basic credentials with your MadKudu legacy API key as username and an empty password. Activate one format.
+In Open Flow connect Hunter and Telegram, set the destination chat in **Notify Telegram**, and create the secret Variable **MADKUDU_AUTHORIZATION** containing the word Basic and a space followed by base64 of your API key and a colon for **Look up customer fit**. Configure a form or client to POST JSON such as {"email":"lead@example.com"} to the workflow webhook.
 
 ## Behavior
 
 Each submission receives one Hunter assessment. Only the status valid proceeds to MadKudu; only a customer fit score strictly above 60 sends a Telegram message with the email and fit signals. Hunter pending or malformed results and API failures stop without a message. A form submission or webhook acknowledgment does not guarantee processing or notification. The APIs receive the submitted email; restrict access to the webhook and execution history. A failed or uncertain Telegram send may already have succeeded, so check the chat before retrying. No automatic retries or deduplication are added.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure the form, Hunter and Telegram credentials, the chat ID and HTTP Basic credentials with your MadKudu legacy API key as username and an empty password.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -13,13 +13,20 @@ Compare weekly Google Analytics metrics with the same dates in the previous year
 
 ## Setup
 
-Connect Google Analytics, Gmail and Telegram. Set the property ID, report email and Telegram chat ID in **Configure the report**. Configure the two model services; the email Agent can use its isolated JavaScript computation tool. In n8n connect Google Analytics OAuth, OpenAI, an SMTP account and Telegram, then set the property ID in **Configure the report**, and the sender, recipient and chat ID in the send nodes. Activate one format.
+Connect Google Analytics, Gmail and Telegram. Set the property ID, report email and Telegram chat ID in **Configure the report**. Configure the two model services; the email Agent can use its isolated JavaScript computation tool.
 
 ## Behavior
 
 Each Monday at 07:00 UTC, two daily Google Analytics reports compare the seven UTC date labels ending yesterday with corresponding dates in the previous year. Analytics interprets dates in the property timezone; revenue uses the property reporting currency. If the recent end date is February 29 and the previous year has no February 29, the prior end date becomes March 1 and the prior period still spans seven dates. Page views, daily user totals, sessions, purchases and revenue are summed; sessions per user, session duration and revenue per purchase are averages of daily values. Daily users summed across days may count the same person more than once. A zero previous value has no percentage change. The model writes an HTML email and then a plain-text Telegram report; check AI output before relying on it. Limit access to reports and execution history.
 
-Email is sent before Telegram. A later model or Telegram failure can leave the email delivered. A failed or uncertain send may already have succeeded; inspect the destination before retrying. n8n triggers at a fixed second within the scheduled minute; Open Flow triggers at the minute boundary.
+Email is sent before Telegram. A later model or Telegram failure can leave the email delivered. A failed or uncertain send may already have succeeded; inspect the destination before retrying. Open Flow triggers at the minute boundary.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n connect Google Analytics OAuth, OpenAI, an SMTP account and Telegram, then set the property ID in **Configure the report**, and the sender, recipient and chat ID in the send nodes. n8n triggers at a fixed second within the scheduled minute.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

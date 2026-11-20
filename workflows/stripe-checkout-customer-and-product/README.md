@@ -13,13 +13,20 @@ Retrieve customer details and the first line-item description when a Stripe Chec
 
 ## Setup
 
-Connect Stripe in **Receive completed Checkout** and **Read Checkout Session** using the same account. The connection needs permission to manage webhook endpoints and read Checkout Sessions; allow Provider API access for the read. In n8n, connect the same Stripe account to the trigger and HTTP request. Ensure the trigger has a signing secret in its credential or registered webhook; without either, n8n may accept unsigned requests. Enable only one format.
+Connect Stripe in **Receive completed Checkout** and **Read Checkout Session** using the same account. The connection needs permission to manage webhook endpoints and read Checkout Sessions; allow Provider API access for the read. Ensure the trigger has a signing secret in its credential or registered webhook.
 
 ## Behavior
 
 For each `checkout.session.completed` event, the workflow reads that Session with expanded line items and returns the customer name, email and description of the first line item. Missing customer details, an empty line-item list or a missing description are returned as null. It does not summarize additional items. A completed Checkout Session is not proof that an asynchronous payment has settled; check payment status and relevant later events before using the output for fulfillment.
 
-An invalid event, failed read, unexpected response or mismatched Session ID stops the run. No external record is created or updated. Stripe events can be delivered more than once; downstream consumers should handle duplicates. Open Flow's Stripe Provider requests API version 2024-06-20; n8n uses the account's configured API version. Customer information appears in execution data; restrict access.
+An invalid event, failed read, unexpected response or mismatched Session ID stops the run. No external record is created or updated. Stripe events can be delivered more than once; downstream consumers should handle duplicates. Open Flow's Stripe Provider requests API version 2024-06-20. Customer information appears in execution data; restrict access.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect the same Stripe account to the trigger and HTTP request. Without either, n8n may accept unsigned requests. N8n uses the account's configured API version.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

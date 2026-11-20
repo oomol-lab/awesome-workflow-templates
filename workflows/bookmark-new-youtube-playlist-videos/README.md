@@ -15,7 +15,7 @@ Check a YouTube playlist and save newly seen videos to Raindrop.
 
 Connect YouTube in **Read the first 25 playlist items** and enter the playlist ID. Connect Raindrop in **Create the Raindrop bookmark** using a test token from your Raindrop integration. The collection defaults to Unsorted (ID `-1`); enter another writable collection ID if needed. Keep workflow State persistent and prevent overlapping runs. One workflow tracks one playlist; reset its saved video IDs when changing playlists.
 
-In n8n, select YouTube OAuth2 and Raindrop OAuth2 credentials, enter the same playlist and collection IDs, and activate the workflow. Open Flow manual runs update the same persistent State as scheduled runs. n8n saves workflow static data for active trigger executions; manual tests do not persist it. Enable one format to avoid duplicate bookmarks.
+Open Flow manual runs update the same persistent State as scheduled runs. Enable one format to avoid duplicate bookmarks.
 
 ## Behavior
 
@@ -23,7 +23,14 @@ Run manually or on the 30-minute schedule. Each run requests the first 25 playli
 
 As in the source, the workflow saves all selected IDs before creating bookmarks. If a later bookmark fails, some saved IDs may never have been bookmarked and the next run will skip them. An uncertain creation may already exist. Check Raindrop and repair or reset the saved history before replaying. There is no automatic retry or rollback. The history grows and must fit execution state limits; overlapping runs can create duplicates or overwrite state.
 
-The schedule starts in UTC. n8n Cron V1 chooses a fixed randomized second within each scheduled minute while Open Flow uses minute boundaries. Invalid video IDs, missing titles or channel names, or titles over 1000 characters stop before State changes.
+The schedule starts in UTC. Invalid video IDs, missing titles or channel names, or titles over 1000 characters stop before State changes.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, select YouTube OAuth2 and Raindrop OAuth2 credentials, enter the same playlist and collection IDs, and activate the workflow. n8n saves workflow static data for active trigger executions; manual tests do not persist it. n8n Cron V1 chooses a fixed randomized second within each scheduled minute while Open Flow uses minute boundaries.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

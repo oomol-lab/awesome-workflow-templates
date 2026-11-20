@@ -13,11 +13,18 @@ Create a ClickUp task from a Slack slash command and reply with its task ID.
 
 ## Setup and use
 
-Create a Slack slash command pointing to the n8n webhook. Configure the ClickUp workspace, list and credentials in n8n. Set **Execution mode** to n8n or openflow. For Open Flow mode configure the relay URL, deploy the workflow, and connect ClickUp with a list ID. Use one mode. The n8n and Open Flow endpoints do not verify the sender; restrict access.
+For Open Flow mode configure the relay URL, deploy the workflow, and connect ClickUp with a list ID.
 
 ## Behavior
 
-n8n acknowledges the Slack request immediately, then the selected workflow creates a task whose title and description are the command text and posts the task ID to Slack's response URL. Slack requires acknowledgment within three seconds; server latency affects this. The full command, including response URL, may appear in execution history. A lost response from ClickUp may mean the task was created; inspect ClickUp before retrying. A failed Slack confirmation does not undo task creation.
+Slack requires acknowledgment within three seconds; server latency affects this. The full command, including response URL, may appear in execution history. A lost response from ClickUp may mean the task was created; inspect ClickUp before retrying. A failed Slack confirmation does not undo task creation.
+
+<details>
+<summary>In n8n</summary>
+
+Create a Slack slash command pointing to the n8n webhook. Configure the ClickUp workspace, list and credentials in n8n. Set **Execution mode** to n8n or openflow. The n8n and Open Flow endpoints do not verify the sender; restrict access. n8n acknowledges the Slack request immediately, then the selected workflow creates a task whose title and description are the command text and posts the task ID to Slack's response URL.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

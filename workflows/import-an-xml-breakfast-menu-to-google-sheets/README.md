@@ -13,11 +13,18 @@ Download a breakfast menu XML file and create a Google spreadsheet containing it
 
 ## Setup and use
 
-Connect Google Sheets with permission to create and update spreadsheets, then run manually. In n8n configure its Google Sheets credential. Use one format.
+Connect Google Sheets with permission to create and update spreadsheets, then run manually.
 
 ## Behavior
 
 The source URL returned HTTP 403 from the verification environment; successful use depends on the source being accessible from your runtime. The workflow downloads the public W3Schools breakfast menu XML, creates a spreadsheet titled My XML Data, writes food field names as headers and appends one row per food item. It creates a new spreadsheet each run. If a write result is unknown, inspect the new spreadsheet before retrying.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure its Google Sheets credential.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

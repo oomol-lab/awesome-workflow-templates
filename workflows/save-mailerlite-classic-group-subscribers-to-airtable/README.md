@@ -15,13 +15,20 @@ Save MailerLite Classic group subscriber names and emails to Airtable.
 
 Use a MailerLite **Classic** account. This workflow uses Classic's `subscriber.add_to_group` event and payload; it does not accept the differently named event from current MailerLite accounts. Create an Airtable table with `Name` and `Email` fields and connect Airtable. Set the base ID and table name in the Airtable node.
 
-In Open Flow, activate the webhook and register its URL with the [MailerLite Classic webhook API](https://developers-classic.mailerlite.com/docs/webhooks) for `subscriber.add_to_group`. In n8n, connect the MailerLite Classic credential to the trigger and Airtable to the append node; activation registers the trigger.
+In Open Flow, activate the webhook and register its URL with the [MailerLite Classic webhook API](https://developers-classic.mailerlite.com/docs/webhooks) for `subscriber.add_to_group`.
 
 ## Behavior
 
-Each event contributes the subscriber's name and email to a new Airtable record. MailerLite can deliver several events together; Open Flow writes the matching events one at a time in delivery order. In n8n, Airtable V1 may send up to ten records in a request; in Open Flow each request contains one record. A failed or unknown write stops later writes. The workflow does not deduplicate or retry writes, so inspect Airtable before replaying a delivery.
+Each event contributes the subscriber's name and email to a new Airtable record. MailerLite can deliver several events together; Open Flow writes the matching events one at a time in delivery order. In Open Flow each request contains one record. A failed or unknown write stops later writes. The workflow does not deduplicate or retry writes, so inspect Airtable before replaying a delivery.
 
 The source's Classic trigger does not validate the MailerLite signature, and this Open Flow webhook likewise does not authenticate callers. Anyone with its URL can submit records. Use a deployment that restricts access if that is required for your Airtable. The webhook acknowledges admission before downstream writes finish.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect the MailerLite Classic credential to the trigger and Airtable to the append node; activation registers the trigger. In n8n, Airtable V1 may send up to ten records in a request.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

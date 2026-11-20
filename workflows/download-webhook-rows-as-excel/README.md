@@ -13,11 +13,18 @@ Convert a JSON array of row objects into a downloadable Excel workbook.
 
 ## Setup and use
 
-Import the n8n workflow and activate its webhook. Send a POST with a JSON array of row objects; optionally set the `filename` query parameter without an extension. The response is an XLSX download. For Open Flow, deploy it, set **Choose delivery mode** to `relay`, and enter its webhook URL in **Convert with Open Flow**. Leave the mode as `direct` for n8n-only conversion. Use one mode.
+Activate its webhook. Send a POST with a JSON array of row objects; optionally set the `filename` query parameter without an extension. The response is an XLSX download. For Open Flow, deploy it, set **Choose delivery mode** to `relay`, and enter its webhook URL in **Convert with Open Flow**.
 
 ## Behavior
 
-Each input object becomes a row. Nested object and array keys become dot-separated column headers. The default download name is `Export.xlsx`. Both webhooks are unauthenticated; restrict access if the input is sensitive. The Open Flow endpoint returns base64-encoded workbook data to the bundled n8n relay, which returns the XLSX bytes and attachment header to the caller. Requests and workbook outputs are subject to host size limits.
+Each input object becomes a row. Nested object and array keys become dot-separated column headers. The default download name is `Export.xlsx`. Both webhooks are unauthenticated; restrict access if the input is sensitive. Requests and workbook outputs are subject to host size limits.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow and activate its webhook. Leave the mode as `direct` for n8n-only conversion. The Open Flow endpoint returns base64-encoded workbook data to the bundled n8n relay, which returns the XLSX bytes and attachment header to the caller.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

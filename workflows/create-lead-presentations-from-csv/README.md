@@ -13,13 +13,18 @@ Create a tracking sheet and a personalized presentation for each lead in a new C
 
 ## Setup
 
-Configure the n8n Drive trigger for the incoming folder. CSV must have headers First Name, Full Name, Email and Company; the source workflow’s 14 lead columns are retained. XLSX was not connected in the original workflow. Configure Drive, Sheets and Slides credentials, the template and destination folder IDs, and a private n8n Data Table with item_key, status and payload text columns. In Open Flow mode change Use Open Flow? from direct to relay, configure the relay header and LEADS_RELAY_AUTH, and enable persistent State. Configure Header Auth for Resume lead file. The parsed CSV must fit the Code node's 1 MiB input/output limit. Process each source file only once at a time.
+CSV must have headers First Name, Full Name, Email and Company; the source workflow’s 14 lead columns are retained. XLSX was not connected in the original workflow. In Open Flow mode change Use Open Flow? from direct to relay, configure the relay header and LEADS_RELAY_AUTH, and enable persistent State. Configure Header Auth for Resume lead file. The parsed CSV must fit the Code node's 1 MiB input/output limit. Process each source file only once at a time.
 
 A new spreadsheet is created in the configured lead folder and each row receives the ID of its own presentation. Stable row positions replace the original email match, so duplicate email addresses do not mix records. The template placeholders are {COMPANYNAME}, {Testdurchgestrichen} and {nichtdurchgestrichen}.
 
-In n8n configure Resume lead file with Header Auth. For an unknown write inspect its Data Table row. If absent, change pending-create to no row, or pending-move, pending-fill, pending-copy, pending-replace or pending-update to the corresponding ready phase. If confirmed, change pending-create to ready-move and include sheetId in payload; pending-move to ready-fill; pending-fill to ready-copy; pending-copy to ready-replace and include presentationId in payload; pending-replace to ready-update; and pending-update to ready-copy after incrementing index, or done after the last lead. Resume with the original fileId.
-
 If an external write has an unknown result, inspect the matching file and operation in Google Drive, Sheets or Slides. For Open Flow enter its pending key and confirmed or absent in Choose lead step; confirmed creates also require the ID. Clear the recovery fields after resuming.
+
+<details>
+<summary>In n8n</summary>
+
+Configure the n8n Drive trigger for the incoming folder. Configure Drive, Sheets and Slides credentials, the template and destination folder IDs, and a private n8n Data Table with item_key, status and payload text columns. In n8n configure Resume lead file with Header Auth. For an unknown write inspect its Data Table row. If absent, change pending-create to no row, or pending-move, pending-fill, pending-copy, pending-replace or pending-update to the corresponding ready phase. If confirmed, change pending-create to ready-move and include sheetId in payload; pending-move to ready-fill; pending-fill to ready-copy; pending-copy to ready-replace and include presentationId in payload; pending-replace to ready-update; and pending-update to ready-copy after incrementing index, or done after the last lead. Resume with the original fileId.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

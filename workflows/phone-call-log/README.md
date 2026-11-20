@@ -2,6 +2,15 @@
 
 Save completed call details to Google Sheets from a webhook. Your calling service supplies the transcript and summary. The workflow records them and returns the call ID and caller after the row is saved.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/phone-call-log/) [![n8n JSON](../../assets/n8n-json.svg)](templates/phone-call-log.n8n.json)
+<!-- template-actions:end -->
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
+  <img alt="Open Flow workflow" src="preview-light.png">
+</picture>
+
 ## Setup
 
 Create a sheet named `Calls` with these headers in columns A–G:
@@ -10,10 +19,6 @@ Create a sheet named `Calls` with these headers in columns A–G:
 | --- | --- | --- | --- | --- | --- | --- |
 
 For Open Flow, import the JSON, connect Google Sheets in `Record call`, and replace `YOUR_SPREADSHEET_ID`. The default range is `'Calls'!A:G`.
-
-For n8n, configure the Google Sheets account and spreadsheet in `Log to Sheets`.
-
-The n8n Code node uses the `crypto` built-in to create missing call IDs. It is available in n8n Cloud. Self-hosted n8n must [allow the `crypto` module](https://docs.n8n.io/hosting/configuration/configuration-examples/modules-in-code-node/).
 
 Publish and enable the configured workflow and send a POST request to its webhook URL:
 
@@ -30,7 +35,14 @@ Publish and enable the configured workflow and send a POST request to its webhoo
 
 If `call_id` is missing, the workflow generates a UUID. `from` is accepted as a fallback for caller and phone; the caller defaults to `Unknown`. Duration must be a nonnegative number and defaults to zero. The transcript is limited to its first 500 characters. The received timestamp is written in UTC.
 
-The success body is `{"success":true,"callId":"call-001","caller":"Ada"}`. The sheet write retains the source's two-attempt limit with a one-second retry interval. Open Flow retries only failures the platform identifies as safe to retry and stops when a write's result is unknown; n8n retries any node error. Requests append rows without deduplication, even when the same call ID is supplied. Retrying after a write failure or timeout may add a duplicate row. The webhook waits up to 30 seconds in Open Flow; a timeout does not cancel work already running.
+The success body is `{"success":true,"callId":"call-001","caller":"Ada"}`. The sheet write retains the source's two-attempt limit with a one-second retry interval. Open Flow retries only failures the platform identifies as safe to retry and stops when a write's result is unknown. Requests append rows without deduplication, even when the same call ID is supplied. Retrying after a write failure or timeout may add a duplicate row. The webhook waits up to 30 seconds in Open Flow; a timeout does not cancel work already running.
+
+<details>
+<summary>In n8n</summary>
+
+For n8n, configure the Google Sheets account and spreadsheet in `Log to Sheets`. The n8n Code node uses the `crypto` built-in to create missing call IDs. It is available in n8n Cloud. Self-hosted n8n must [allow the `crypto` module](https://docs.n8n.io/hosting/configuration/configuration-examples/modules-in-code-node/). N8n retries any node error.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>
@@ -41,15 +53,6 @@ The success body is `{"success":true,"callId":"call-001","caller":"Ada"}`. The s
 - Bind the response to the parsed call so a Sheets write receipt cannot erase its ID and caller.
 - Write literal sheet values with RAW formatting, preserving phone numbers and transcript text.
 - Replace the server's spreadsheet environment variable with editable template configuration.
-
-<!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/phone-call-log/) [![n8n JSON](../../assets/n8n-json.svg)](templates/phone-call-log.n8n.json)
-<!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 Adapted from [VoiceAgent Lite - Phone Call Logger](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Other_Integrations_and_Use_Cases/VoiceAgent%20Lite%20-%20Phone%20Call%20Logger.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 

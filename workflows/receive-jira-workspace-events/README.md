@@ -13,11 +13,18 @@ Receive supported Jira webhook events.
 
 ## Setup and use
 
-Import the n8n workflow, connect Jira and activate it to register the events supported by the Jira Trigger. For Open Flow, enter its webhook URL in **Forward to Open Flow** and enable that node; leave it disabled for n8n alone. The source trigger is unauthenticated by default; use n8n's optional query authentication where appropriate and restrict access to the webhook endpoints.
+Connect Jira and activate it to register the events supported by the Jira Trigger. For Open Flow, enter its webhook URL in **Forward to Open Flow** and enable that node. The source trigger is unauthenticated by default.
 
 ## Behavior
 
-The n8n trigger emits the complete Jira event body and merges any query parameters into it. The optional relay forwards the resulting object to Open Flow as workflow output. Event details may appear in execution history; inspect n8n for relay failures.
+The optional relay forwards the resulting object to Open Flow as workflow output. Event details may appear in execution history.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow, connect Jira and activate it to register the events supported by the Jira Trigger. Leave it disabled for n8n alone. Use n8n's optional query authentication where appropriate and restrict access to the webhook endpoints. The n8n trigger emits the complete Jira event body and merges any query parameters into it. Inspect n8n for relay failures.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

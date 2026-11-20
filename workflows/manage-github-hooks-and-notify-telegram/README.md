@@ -17,13 +17,18 @@ Bind a GitHub token with webhook administration access as Secret Variable `GITHU
 
 To remove hooks, set the operation to `delete` and run manually. This can delete **all repository webhooks** on each configured repository, including hooks created by other applications, matching the source. Inspect the repository hooks before using it. The incoming webhook has no signature verification; restrict access to its URL.
 
-In n8n, configure the repository lists, callback URL, GitHub Header Auth and Telegram credential/chat ID. Use the manual registration or deletion trigger deliberately; activate the webhook trigger for notifications. Use one format.
-
 ## Behavior
 
-A push reports the first commit's author, message, modified files and URL; a pull request reports its action, number, title and URL. Empty pushes are ignored. Registration subscribes to push and pull request events. Open Flow traverses all hook pages. The n8n deletion branch processes the first page returned by GitHub; run it again if more hooks remain.
+A push reports the first commit's author, message, modified files and URL; a pull request reports its action, number, title and URL. Empty pushes are ignored. Registration subscribes to push and pull request events. Open Flow traverses all hook pages.
 
 In Open Flow, if a GitHub write or Telegram delivery is uncertain, inspect the relevant service before entering the pending key in **Choose hook operation** or the delivery ID in **Prepare GitHub notice**. The acknowledged operation is treated as handled. Do not automatically replay uncertain writes.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, configure the repository lists, callback URL, GitHub Header Auth and Telegram credential/chat ID. Use the manual registration or deletion trigger deliberately; activate the webhook trigger for notifications. Use one format. The n8n deletion branch processes the first page returned by GitHub; run it again if more hooks remain.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

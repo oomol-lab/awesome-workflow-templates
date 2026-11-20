@@ -15,11 +15,16 @@ Post one text message to a Rocket.Chat room, channel or user and return the crea
 
 Select your Rocket.Chat account in **Post Rocket.Chat message** and allow `rocket_chat.post_message`. Configure the workspace URL, user ID and auth token in the connection. Run with **Room Id** and **Text**. The target can be a room ID, a channel name with `#`, or a username with `@`. The connected user must be able to post to that target.
 
-In n8n, select Rocket API credentials in **RocketChat** and replace its channel and text. The credential’s domain is your workspace URL; its auth key is the user’s auth token.
-
-Each run posts one message as the connected user. It adds no attachment, alias, avatar, thread reply or custom field. URL previews follow Rocket.Chat’s default behavior. Open Flow returns the complete created message record, including its ID, room ID and any extra message properties. n8n retains the API response wrapper around that record. The result does not confirm that anyone has read the message.
+Each run posts one message as the connected user. It adds no attachment, alias, avatar, thread reply or custom field. URL previews follow Rocket.Chat’s default behavior. Open Flow returns the complete created message record, including its ID, room ID and any extra message properties. The result does not confirm that anyone has read the message.
 
 A rejected post, missing message ID or request failure stops the run. Each run can post another message; no duplicate check or automatic retry is configured. Check the room before repeating an uncertain request.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, select Rocket API credentials in **RocketChat** and replace its channel and text. The credential’s domain is your workspace URL; its auth key is the user’s auth token. n8n retains the API response wrapper around that record.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

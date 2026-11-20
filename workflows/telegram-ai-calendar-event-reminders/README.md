@@ -13,13 +13,20 @@ Generate friendly Telegram reminders for upcoming calendar events.
 
 ## Setup
 
-Connect Google Calendar and set its calendar ID in **Read upcoming events**. Connect an OpenAI model and the Telegram bot, and set the destination chat ID. Enable persistent State and prevent overlapping runs. In n8n configure Calendar, OpenAI and Telegram credentials. Create a Data Table with text columns event_id and status, select it in the four checkpoint nodes, and enable the disabled schedule trigger. Activate one format.
+Connect Google Calendar and set its calendar ID in **Read upcoming events**. Connect an OpenAI model and the Telegram bot, and set the destination chat ID. Enable persistent State and prevent overlapping runs.
 
 ## Behavior
 
-Every minute the workflow checks up to five events starting between one hour and one hour and one minute ahead. It generates one friendly message per unseen event and sends it to Telegram. The event details are sent to the model and may be retained in execution history. Both formats mark success after Telegram confirms the send. n8n stores pending and sent rows in its Data Table; an existing row prevents automatic resend. Inspect pending rows and Telegram before resolving them. IDs accumulate in State and must fit its limits.
+Every minute the workflow checks up to five events starting between one hour and one hour and one minute ahead. It generates one friendly message per unseen event and sends it to Telegram. The event details are sent to the model and may be retained in execution history. The workflow mark success after Telegram confirms the send. Inspect pending rows and Telegram before resolving them. IDs accumulate in State and must fit its limits.
 
-If a Telegram send fails or its outcome is unknown, inspect the chat. To proceed without automatically resending, enter that event ID in **Select the next reminder → acknowledgeEventId**, run once, then clear it. The event is treated as handled. In n8n inspect pending rows, then mark them sent if already delivered or remove them only when it is safe to permit another send. No automatic retry of pending rows is performed. A one-minute polling window can miss events when execution is delayed or interrupted, and only the first five returned events are considered.
+If a Telegram send fails or its outcome is unknown, inspect the chat. To proceed without automatically resending, enter that event ID in **Select the next reminder → acknowledgeEventId**, run once, then clear it. The event is treated as handled. No automatic retry of pending rows is performed. A one-minute polling window can miss events when execution is delayed or interrupted, and only the first five returned events are considered.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure Calendar, OpenAI and Telegram credentials. Create a Data Table with text columns event_id and status, select it in the four checkpoint nodes, and enable the disabled schedule trigger. n8n stores pending and sent rows in its Data Table; an existing row prevents automatic resend. In n8n inspect pending rows, then mark them sent if already delivered or remove them only when it is safe to permit another send.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

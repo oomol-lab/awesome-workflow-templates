@@ -13,13 +13,20 @@ Analyze incoming email screenshots and headers for phishing indicators, then cre
 
 ## Setup
 
-Connect Gmail, HTML/CSS to Image and Jira. Set the Jira project and issue type in **Choose reporting step**. In the supplied n8n workflow, connect Gmail, HTML/CSS to Image, OpenAI and Jira for direct mode. Set the Jira project and issue type IDs and choose the same Data Table on all checkpoint nodes; it needs text columns item_key and status. For Open Flow, use only the n8n attachment relay: disable the n8n Gmail trigger, configure the webhook header credential with Authorization: Bearer followed by your chosen token, and connect HTML/CSS to Image and Jira for the relay. Set its production HTTPS URL in **Choose reporting step**, and bind Secret Variables `OPENAI_API_KEY` and `N8N_RELAY_TOKEN`. Enable persistent State and prevent overlapping executions. Use one format.
+Connect Gmail, HTML/CSS to Image and Jira. Set the Jira project and issue type in **Choose reporting step**. Set its production HTTPS URL in **Choose reporting step**, and bind Secret Variables `OPENAI_API_KEY` and `N8N_RELAY_TOKEN`. Enable persistent State and prevent overlapping executions.
 
 ## Behavior
 
-Incoming HTML emails are rendered as screenshots and analyzed with their headers. A Jira issue contains the subject, recipient, text and model analysis, with the screenshot attached through n8n. The Outlook trigger in the supplied n8n workflow remains disabled. Email content is sent to HTML/CSS to Image and OpenAI; protect execution history and review the analysis.
+Incoming HTML emails are rendered as screenshots and analyzed with their headers. Email content is sent to HTML/CSS to Image and OpenAI; protect execution history and review the analysis.
 
-If screenshot, issue or attachment creation has an unknown result, inspect the corresponding service. In **Choose reporting step**, enter the pending key and set resolution to confirmed or absent; for a confirmed screenshot enter its URL and for a confirmed issue enter its key. Trigger another poll after resolving it and clear the fields. In n8n, inspect the corresponding service and reconcile the matching pending Data Table row before replay. The two webhook and poll modes must not run in parallel.
+If screenshot, issue or attachment creation has an unknown result, inspect the corresponding service. In **Choose reporting step**, enter the pending key and set resolution to confirmed or absent; for a confirmed screenshot enter its URL and for a confirmed issue enter its key. Trigger another poll after resolving it and clear the fields. The two webhook and poll modes must not run in parallel.
+
+<details>
+<summary>In n8n</summary>
+
+In the supplied n8n workflow, connect Gmail, HTML/CSS to Image, OpenAI and Jira for direct mode. Set the Jira project and issue type IDs and choose the same Data Table on all checkpoint nodes; it needs text columns item_key and status. For Open Flow, use only the n8n attachment relay: disable the n8n Gmail trigger, configure the webhook header credential with Authorization: Bearer followed by your chosen token, and connect HTML/CSS to Image and Jira for the relay. A Jira issue contains the subject, recipient, text and model analysis, with the screenshot attached through n8n. The Outlook trigger in the supplied n8n workflow remains disabled. In n8n, inspect the corresponding service and reconcile the matching pending Data Table row before replay.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

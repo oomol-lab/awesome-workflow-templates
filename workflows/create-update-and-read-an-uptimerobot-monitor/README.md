@@ -13,11 +13,18 @@ Create an HTTP monitor, rename it, and read its details.
 
 ## Setup and use
 
-Connect UptimeRobot with an API key permitted to create and edit monitors. Run Open Flow with the monitored URL, an initial name and the new name. In n8n configure its UptimeRobot credential and replace the example URL and names before running manually. Use one workflow format.
+Connect UptimeRobot with an API key permitted to create and edit monitors. Run Open Flow with the monitored URL, an initial name and the new name.
 
 ## Behavior
 
 Each run creates a real HTTP monitor, changes its name and reads back its details. The monitor remains in your account. If a create or rename result is uncertain, inspect the account before retrying to avoid duplicate monitors or unintended changes.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure its UptimeRobot credential and replace the example URL and names before running manually.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

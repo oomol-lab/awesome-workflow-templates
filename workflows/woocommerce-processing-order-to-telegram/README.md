@@ -13,13 +13,20 @@ Send order details to Telegram when an updated WooCommerce order is processing.
 
 ## Setup
 
-Connect WooCommerce in **Order updated** using REST API credentials with permission to manage webhooks. Deploy a public HTTPS callback and activate the workflow to register an `order.updated` subscription. Connect the Telegram bot and set the destination chat ID in **Send the Telegram notice**. In n8n, connect the WooCommerce and Telegram credentials and set the chat ID in **Telegram**. Enable one format and remove any older manual subscription to avoid duplicate notices.
+Connect WooCommerce in **Order updated** using REST API credentials with permission to manage webhooks. Deploy a public HTTPS callback and activate the workflow to register an `order.updated` subscription. Connect the Telegram bot and set the destination chat ID in **Send the Telegram notice**. Enable one format and remove any older manual subscription to avoid duplicate notices.
 
 ## Behavior
 
 Every order update with status `processing` sends one HTML message with the order ID, billing name, total and currency, creation time in UTC, billing city and phone, customer note, and every product name and quantity. The Telegram destination receives customer information; restrict access to the chat. Other statuses produce no message. Repeated updates while an order remains processing can produce repeated notices; this workflow does not detect status transitions or deduplicate orders.
 
 Malformed required fields or an escaped HTML notice longer than 4096 characters stop before Telegram. The Open Flow integration accepts order payloads up to 64 KiB. A failed or uncertain Telegram send is not automatically repeated; check the chat before retrying. The webhook acknowledgment does not confirm that the Telegram message was delivered.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect the WooCommerce and Telegram credentials and set the chat ID in **Telegram**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

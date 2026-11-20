@@ -15,13 +15,18 @@ Turn a YouTube transcript into a blog draft and generated image, then email both
 
 Connect DumplingAI and grant Provider API Request permission for both DumplingAI nodes. Set the video URL in **Get the YouTube transcript** and choose an available model in **Write the blog draft**. Select the Gmail Action connection and set the recipient in **Email the draft and image**.
 
-In n8n, set the video URL and recipient in **Set Variables**, connect OpenAI and Gmail, and configure Header Auth on both DumplingAI requests with name Authorization and value Bearer followed by a space and your API key. Run either format manually.
-
 ## Behavior
 
-The workflow retrieves available captions, drafts an article and image prompt, generates one FLUX.1-dev image, downloads it and emails it with the draft. Open Flow sends the draft as plain text containing Markdown; n8n converts Markdown to HTML. Gmail downloads the generated image URL as a generic attachment; its 25 MB decoded attachment limit applies. Captions, model output and images can vary, so review the draft and media before publishing. The transcript and prompt are sent to model services.
+The workflow retrieves available captions, drafts an article and image prompt, generates one FLUX.1-dev image, downloads it and emails it with the draft. Open Flow sends the draft as plain text containing Markdown. Gmail downloads the generated image URL as a generic attachment; its 25 MB decoded attachment limit applies. Captions, model output and images can vary, so review the draft and media before publishing. The transcript and prompt are sent to model services.
 
 If captions, drafting, image generation or download fail, no email is sent. A send with an unknown outcome may have succeeded; check Sent mail before retrying. Restrict access to execution data and temporary image URLs.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, set the video URL and recipient in **Set Variables**, connect OpenAI and Gmail, and configure Header Auth on both DumplingAI requests with name Authorization and value Bearer followed by a space and your API key. Run either format manually. N8n converts Markdown to HTML.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -13,15 +13,22 @@ Translate the instructions for a random CocktailDB drink into Italian.
 
 ## Setup
 
-Connect Lingvanex in **Translate to Italian**. In n8n, select a LingvaNex credential. The formats use different Lingvanex API endpoints, so the account must support the endpoint used by the chosen format.
+Connect Lingvanex in **Translate to Italian**. The formats use different Lingvanex API endpoints, so the account must support the endpoint used by the chosen format.
 
-The CocktailDB URL uses its public test key `1`, intended for development and education. Review [CocktailDB API access](https://www.thecocktaildb.com/api.php) for your use and replace the key in **Prepare CocktailDB URL** or the n8n **HTTP Request** node if needed.
+The CocktailDB URL uses its public test key `1`, intended for development and education.
 
 ## Behavior
 
 A manual run fetches one random drink, selects its first instructions field and translates it into Italian. The result contains the source instructions and translated instructions. A missing or empty instructions field, request error or missing translation stops the run. The workflow follows up to 21 HTTP redirects, with a 30-second timeout per request. Open Flow limits each response to 4 MiB.
 
-Open Flow uses the Lingvanex `api-gl.lingvanex.com` endpoint, which includes the API key in the request URL. Protect URL logs. The n8n LingvaNex node uses the legacy `api-b2b.backenster.com` endpoint with a Bearer credential. Both use automatic source-language detection; translation quality and availability depend on the service.
+Open Flow uses the Lingvanex `api-gl.lingvanex.com` endpoint, which includes the API key in the request URL. Protect URL logs. Both use automatic source-language detection; translation quality and availability depend on the service.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, select a LingvaNex credential. Review [CocktailDB API access](https://www.thecocktaildb.com/api.php) for your use and replace the key in **Prepare CocktailDB URL** or the n8n **HTTP Request** node if needed. The n8n LingvaNex node uses the legacy `api-b2b.backenster.com` endpoint with a Bearer credential.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -13,9 +13,9 @@ Read the Hacker News front page for the same UTC calendar day across years, choo
 
 ## Setup
 
-In Open Flow, select a configured `gemini-3.8-flash` model in **Summarize yearly headlines**, connect your Telegram bot in **Send HN lookback**, and replace the chat ID. In n8n, select a Google Gemini credential on **Google Gemini Chat Model** and your bot credential/chat ID on **Telegram**.
+In Open Flow, select a configured `gemini-3.8-flash` model in **Summarize yearly headlines**, connect your Telegram bot in **Send HN lookback**, and replace the chat ID.
 
-Review the schedule, then publish and enable the workflow. Both formats run daily at 21:00 UTC. Dates are calculated in UTC; changing the trigger timezone does not change this calendar basis.
+Review the schedule, then publish and enable the workflow. The workflow runs daily at 21:00 UTC. Dates are calculated in UTC; changing the trigger timezone does not change this calendar basis.
 
 Gemini 3.8 Flash is listed in the [current Gemini model catalog](https://ai.google.dev/gemini-api/docs/models). This adaptation updates the source's Gemini 1.5 Pro model. A different configured text model can change the selected stories and wording; review its results for your audience.
 
@@ -23,11 +23,18 @@ Gemini 3.8 Flash is listed in the [current Gemini model catalog](https://ai.goog
 
 The workflow requests this month and day for every year from the run's year down to 2007, newest year first. It retains the source's 2007-02-19 cutoff. February 29 skips years without that date. If no dates are eligible, no requests, model call, or message are made.
 
-Each date reads one public `/front?day=YYYY-MM-DD` page, without paging through additional archive pages. Both formats use a 30-second per-page timeout and reject redirects. Open Flow waits for each page to finish, then waits three seconds before requesting the next; it limits the collection task to 30 minutes and each response to its HTTP runtime's 1 MiB limit. n8n retains the source's three-second request-start spacing, so slow requests can overlap. Both formats wait for all requested pages before extraction and summarization.
+Each date reads one public `/front?day=YYYY-MM-DD` page, without paging through additional archive pages. The workflow uses a 30-second per-page timeout and reject redirects. Open Flow waits for each page to finish, then waits three seconds before requesting the next; it limits the collection task to 30 minutes and each response to its HTTP runtime's 1 MiB limit. The workflow wait for all requested pages before extraction and summarization.
 
 The archive's title links are kept with their requested date. Absolute HTTP(S) links are preserved; archive-relative links use the Hacker News origin. One model generation step receives the complete dated headline set and the source's summary prompt. The requested 10–15 headlines and themes are model guidance, not a guaranteed count or factual verification.
 
 An HTTP or extraction failure prevents the model and notification. Empty or oversized model output stops before Telegram. The summary is sent using Telegram's Markdown mode and must fit its 4,096-character limit; invalid model-generated Markdown can also fail delivery. No workflow-level retry, persistent checkpoint, or cross-run deduplication is configured. Model adapters and providers can retry transient requests internally. Repeating a run can send another summary.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, select a Google Gemini credential on **Google Gemini Chat Model** and your bot credential/chat ID on **Telegram**. n8n retains the source's three-second request-start spacing, so slow requests can overlap.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

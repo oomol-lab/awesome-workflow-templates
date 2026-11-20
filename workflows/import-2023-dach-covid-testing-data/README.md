@@ -13,11 +13,18 @@ Import 2023 COVID testing records for Germany, Austria and Switzerland into Goog
 
 ## Setup and use
 
-Connect Google Sheets and configure the destination spreadsheet ID and sheet name in Upsert testing rows. The destination header should include unique_key and the ECDC columns. In n8n configure its Google Sheets credential and destination. Use one format.
+Connect Google Sheets and configure the destination spreadsheet ID and sheet name in Upsert testing rows. The destination header should include unique_key and the ECDC columns.
 
 ## Behavior
 
 The workflow downloads ECDC testing data, keeps 2023 rows whose country code is DE, AT or CH, and upserts them by country code and year-week. No matching rows causes no write. It updates existing matching keys and adds new ones. Open Flow adds missing destination columns if needed. If an update outcome is unknown, inspect the destination before retrying. Dataset availability and coverage depend on ECDC.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure its Google Sheets credential and destination.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

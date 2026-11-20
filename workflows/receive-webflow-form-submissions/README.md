@@ -13,11 +13,18 @@ Receive form submission events from a Webflow site.
 
 ## Setup and use
 
-Import the n8n workflow and activate it, then register the **Receive Webflow event** production URL through the Webflow v2 Create Webhook API for the site and form_submission event. The URL must be publicly reachable by Webflow. For Open Flow enter its webhook URL in **Forward to Open Flow** and enable that node; leave it disabled for n8n alone. Restrict access to the webhook endpoints.
+Activate it, then register the **Receive Webflow event** production URL through the Webflow v2 Create Webhook API for the site and form_submission event. The URL must be publicly reachable by Webflow. For Open Flow enter its webhook URL in **Forward to Open Flow** and enable that node. Restrict access to the webhook endpoints.
 
 ## Behavior
 
-The webhook receives form submission events and the optional relay forwards each event to Open Flow as workflow output. Neither endpoint verifies the sender; restrict access and inspect n8n execution history for relay failures. Event data may appear in execution history. Event details may appear in execution history.
+The webhook receives form submission events and the optional relay forwards each event to Open Flow as workflow output. Neither endpoint verifies the sender. Event data may appear in execution history. Event details may appear in execution history.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow and activate it, then register the **Receive Webflow event** production URL through the Webflow v2 Create Webhook API for the site and form_submission event. Leave it disabled for n8n alone. Restrict access and inspect n8n execution history for relay failures.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

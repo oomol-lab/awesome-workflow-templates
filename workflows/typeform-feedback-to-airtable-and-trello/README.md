@@ -15,13 +15,20 @@ Save Typeform product feedback in Airtable and create a Trello card for scores b
 
 Create a Typeform with these exact question titles and answer types: **What is your name?** (short text), **What is your email address?** (email), **What score would you like to give?** (number), and **Anything else you want to share?** (long text). Name and score must be answered; email and description may be left blank. Connect Typeform and configure the form ID. The connection must be able to register a webhook.
 
-Create an Airtable table with fields **Name**, **Email**, **Score** (number), and **Description**. Connect Airtable and set its base and table. Connect Trello and set the destination list ID. In n8n, configure the same form, Airtable and Trello credentials and IDs. Activate one format.
+Create an Airtable table with fields **Name**, **Email**, **Score** (number), and **Description**. Connect Airtable and set its base and table. Connect Trello and set the destination list ID.
 
 ## Behavior
 
 Every completed response creates one Airtable record. When the numeric score is strictly below 7, the workflow then creates a Trello card named `[score] name`, with name, email, score and description in the card. A score of 7 or more creates no card. Missing or invalid required answers stop before Airtable.
 
 Airtable must confirm a record with the submitted values before the Trello branch. If an Airtable write fails or has an uncertain outcome, no card is attempted. If the Trello write fails, the Airtable record remains; inspect both services before retrying. Repeated webhook deliveries can create duplicates.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, configure the same form, Airtable and Trello credentials and IDs.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

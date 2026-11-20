@@ -15,13 +15,18 @@ Generate a product image, wait for it to finish and retrieve the file.
 
 Connect Magic Hour in **Generate the image** and **Check the image project**. Replace the prompt in **Generate the image**. The template requests one square image with flux-2-klein at 640px. Allow the image download hostname in **Download the image**; the default is videos.magichour.ai and the returned URL may use another host.
 
-In n8n, install the Magic Hour community node (the source used version 1.0.3), connect its API credential and replace the prompt in **Magic Hour**. Run either format manually.
-
 ## Behavior
 
-The workflow creates one image project and waits 10 seconds between status checks. Open Flow makes at most 60 checks; request time can extend the run beyond 10 minutes. n8n polls for roughly 10 minutes. A completed image is downloaded. Open Flow returns the download URL, project ID and run-owned image artifact; the temporary vendor URL can expire. n8n returns the downloaded binary. Generated images may differ between runs; review the result.
+The workflow creates one image project and waits 10 seconds between status checks. Open Flow makes at most 60 checks; request time can extend the run beyond 10 minutes. A completed image is downloaded. Open Flow returns the download URL, project ID and run-owned image artifact; the temporary vendor URL can expire. Generated images may differ between runs; review the result.
 
 Generation, polling or download failure stops the workflow. A lost response or timeout can occur after the project was created. Inspect Magic Hour and use the project ID in the execution before retrying; a new run creates another project. Open Flow accepts PNG or JPEG downloads up to 1 MiB, and its artifact is available to subsequent workflow steps. Restrict access to temporary URLs and generated content.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, install the Magic Hour community node (the source used version 1.0.3), connect its API credential and replace the prompt in **Magic Hour**. Run either format manually. n8n polls for roughly 10 minutes. n8n returns the downloaded binary.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

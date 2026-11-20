@@ -13,13 +13,20 @@ Use Airtable field descriptions as prompts to extract values from attached PDF f
 
 ## Setup
 
-Connect Airtable, PDF.co and Gemini; enable persistent State. In n8n set the base, table, public notification URL and File field in **Set Airtable Vars**, run the setup flow once, and enter both returned webhook IDs with the base and table IDs in **Configure notification**. For Open Flow register equivalent webhooks and enter their IDs and the base and table IDs in **Configure Airtable webhooks**. The record webhook must watch updates to the File field only; the field webhook watches field creation and updates. Both must filter source to client. API writes use publicApi and do not trigger these subscriptions. Select a Data Table with item_key and status text columns for every n8n checkpoint. The input attachment column is named File. Add prompts as field descriptions. Avoid overlapping executions. Configure the two webhooks once and inspect Airtable before retrying an uncertain registration to avoid duplicates.
+Connect Airtable, PDF.co and Gemini; enable persistent State. For Open Flow register equivalent webhooks and enter their IDs and the base and table IDs in **Configure Airtable webhooks**. The record webhook must watch updates to the File field only; the field webhook watches field creation and updates. Both must filter source to client. API writes use publicApi and do not trigger these subscriptions. The input attachment column is named File. Add prompts as field descriptions. Avoid overlapping executions. Configure the two webhooks once and inspect Airtable before retrying an uncertain registration to avoid duplicates.
 
 ## Behavior
 
 Record changes fill missing prompted fields. Field creation or changes apply that field to all records with a PDF attachment. The attachment URL and text are sent to PDF.co and the model. Check generated values before relying on them.
 
-If an Airtable update is uncertain, inspect the record, enter its pending key and confirmed or absent in **Choose prompt for record**, and retry the same notification. Clear these fields after recovery. In n8n inspect the pending Data Table row and the record; mark the row done if the write succeeded or delete it only if absent, then retry. Disable concurrent runs for the same webhook. Airtable retains payloads for one week and webhooks expire unless refreshed; arrange periodic webhook refresh. PDF.co receives the attachment URL and the full extracted text is sent to the model. Hosted Code payload size limits apply; oversized PDFs or collections stop the run.
+If an Airtable update is uncertain, inspect the record, enter its pending key and confirmed or absent in **Choose prompt for record**, and retry the same notification. Clear these fields after recovery. Disable concurrent runs for the same webhook. Airtable retains payloads for one week and webhooks expire unless refreshed; arrange periodic webhook refresh. PDF.co receives the attachment URL and the full extracted text is sent to the model. Hosted Code payload size limits apply; oversized PDFs or collections stop the run.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n set the base, table, public notification URL and File field in **Set Airtable Vars**, run the setup flow once, and enter both returned webhook IDs with the base and table IDs in **Configure notification**. Select a Data Table with item_key and status text columns for every n8n checkpoint. In n8n inspect the pending Data Table row and the record; mark the row done if the write succeeded or delete it only if absent, then retry.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

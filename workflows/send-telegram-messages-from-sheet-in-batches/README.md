@@ -15,11 +15,16 @@ Send a message to Telegram chat IDs listed in a Google Sheet, with a pause after
 
 Connect Google Sheets and Telegram. Put the header `Chat ID` in column A and list one chat ID per row. Set the spreadsheet ID and adjust the default range `'Sheet1'!A:A` in **Read recipient chat IDs**. Store long numeric IDs as text. Set your message in **Send the Telegram message**. The bot must be able to message each chat.
 
-In n8n, select the spreadsheet and sheet in **Google Sheets**, connect both services, and edit the message in **Telegram**. Run one format manually.
-
 ## Behavior
 
 The workflow sends one message to each nonempty row in order and waits 30 seconds after every batch of up to 30 recipients. An empty list sends nothing. Repeated IDs receive repeated messages. The sheet is read once at the start. An invalid ID or failed send stops the run; earlier messages may already have arrived. An uncertain send may also have arrived, so check the chats before restarting. Messages use Telegram Markdown. The full sheet data must fit the Open Flow Code input limit.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, select the spreadsheet and sheet in **Google Sheets**, connect both services, and edit the message in **Telegram**. Run one format manually.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

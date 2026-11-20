@@ -15,13 +15,20 @@ Send one Track event to a Segment source. Use an existing application user ID or
 
 Select your Segment write-key connection in **Track event in Segment**. Use a source in the US region; both formats send to `https://api.segment.io/v1/track`. EU sources require a different endpoint.
 
-In Open Flow, run with an **Event** name and optional **User ID**. In n8n, select Segment credentials in **Segment**, replace `YOUR_EVENT_NAME`, and leave **User ID** empty for the source’s anonymous behavior or enter an existing application user ID. Run manually after setup.
+In Open Flow, run with an **Event** name and optional **User ID**. Run manually after setup.
 
 With no user ID, each run generates one UUID and sends it as `anonymousId`. A later run gets a different identity. With a user ID, the workflow sends that exact ID and omits `anonymousId`. No traits, event properties, destination overrides or explicit timestamps are configured. Segment applies the source’s destination settings and server timestamp.
 
-The Open Flow output reports the Action’s HTTP acceptance flag, status and raw API response; n8n returns the raw response. A successful HTTP response does not confirm downstream destination delivery. Use Segment’s Debugger to inspect received events and delivery.
+The Open Flow output reports the Action’s HTTP acceptance flag, status and raw API response. A successful HTTP response does not confirm downstream destination delivery. Use Segment’s Debugger to inspect received events and delivery.
 
 Each manual run sends another event. The workflow keeps no event history and supplies no explicit message ID for retry deduplication. Errors stop the run without an automatic retry. Check Segment before retrying an uncertain request.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, select Segment credentials in **Segment**, replace `YOUR_EVENT_NAME`, and leave **User ID** empty for the source’s anonymous behavior or enter an existing application user ID. N8n returns the raw response.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

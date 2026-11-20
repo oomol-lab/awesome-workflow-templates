@@ -13,13 +13,20 @@ Read multiple feeds and route new links to Telegram chats.
 
 ## Setup
 
-Configure the feed URLs in **Select the next feed**, connect Telegram, and set the three chat IDs in **Select the next article**. Enable persistent State and prevent overlapping runs. Replace HTTP feeds with HTTPS endpoints where available; HTTP feeds can be modified in transit. In n8n configure the RSS Source list, Telegram credentials and chat IDs, and a Data Table with text columns item_key and status selected in all four checkpoint nodes. Activate one format.
+Configure the feed URLs in **Select the next feed**, connect Telegram, and set the three chat IDs in **Select the next article**. Enable persistent State and prevent overlapping runs. Replace HTTP feeds with HTTPS endpoints where available; HTTP feeds can be modified in transit.
 
 ## Behavior
 
 Every ten minutes, each feed is read in order. Links containing techcommunity.microsoft.com go to M365. Other titles matching the source security keywords go to Security; the rest go to IT. Each message contains the title and link. The first run sends every entry returned. A feed URL and article link identify an item, avoiding the source's timestamp collisions. Feed contents and accumulated State must fit runtime limits.
 
-A feed or send error stops the run; earlier sends remain. Inspect Telegram before resolving a pending article. In Open Flow enter the exact pending key shown in the error in **Select the next article → acknowledgeKey**, run once, then clear it. This treats it as handled. In n8n inspect pending Data Table rows and the destination, then mark a row sent if delivered or remove it only when a resend is safe. No uncertain send is automatically replayed.
+A feed or send error stops the run; earlier sends remain. Inspect Telegram before resolving a pending article. In Open Flow enter the exact pending key shown in the error in **Select the next article → acknowledgeKey**, run once, then clear it. This treats it as handled. No uncertain send is automatically replayed.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure the RSS Source list, Telegram credentials and chat IDs, and a Data Table with text columns item_key and status selected in all four checkpoint nodes. In n8n inspect pending Data Table rows and the destination, then mark a row sent if delivered or remove it only when a resend is safe.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

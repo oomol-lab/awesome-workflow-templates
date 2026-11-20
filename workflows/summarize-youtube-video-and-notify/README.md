@@ -13,11 +13,18 @@ Summarize a YouTube transcript, return video details and notify Telegram.
 
 ## Setup and use
 
-Configure a [YTAPI](https://docs.ytapi.dev/transcripts/get/) key as the YTAPI_KEY Secret Variable, an AI model, a Telegram connection and chat ID, and persistent State. POST JSON containing youtubeUrl to the webhook. The HTTP response waits up to 60 seconds and contains id, youtubeUrl, title, description, summary and topics. Import the n8n workflow and configure YTAPI HTTP Header Auth credentials with Authorization set to Bearer followed by the API key, OpenAI, Telegram and a Data Table with item_key and status text columns.
+Configure a [YTAPI](https://docs.ytapi.dev/transcripts/get/) key as the YTAPI_KEY Secret Variable, an AI model, a Telegram connection and chat ID, and persistent State. POST JSON containing youtubeUrl to the webhook. The HTTP response waits up to 60 seconds and contains id, youtubeUrl, title, description, summary and topics. Configure YTAPI HTTP Header Auth credentials with Authorization set to Bearer followed by the API key, OpenAI, Telegram.
 
 ## Behavior
 
 The workflow fetches the video details and available transcript, summarizes its complete text, returns the result, then sends the title and URL to Telegram. Only videos with accessible captions can be processed; transcript availability, external service access and model context limits apply. Review model output for accuracy. Telegram notification is checkpointed per video; inspect Telegram before clearing a pending checkpoint, and clear a completed checkpoint to deliberately notify again. Avoid overlapping runs. Video information and transcript text are sent to the configured services.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow and configure YTAPI HTTP Header Auth credentials with Authorization set to Bearer followed by the API key, OpenAI, Telegram and a Data Table with item_key and status text columns.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

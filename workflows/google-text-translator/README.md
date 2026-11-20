@@ -17,11 +17,18 @@ Enable Cloud Translation API and billing in your Google Cloud project. Set **x-g
 
 In Open Flow, store a valid, short-lived OAuth access token in a secret Variable and bind it to **Auth Token** (`auth.token`). The token needs `https://www.googleapis.com/auth/cloud-translation` or `https://www.googleapis.com/auth/cloud-platform`. Renew the Variable when the token expires. This workflow does not acquire or refresh tokens, and it contains no service-account key. Shared JSON contains no token or Variable binding.
 
-Run with **Text** and a supported **Target** language code, such as `de`. In n8n, select **Google Translate OAuth2 API** credentials in **Translate with Google NMT**, set the same quota-project header and edit `q` and `target` in the JSON body. n8n manages OAuth2 and can refresh its stored tokens. The two formats have different token-management requirements.
+Run with **Text** and a supported **Target** language code, such as `de`. The two formats have different token-management requirements.
 
 Each run sends one input to one target language. The source language is detected automatically. Google’s HTML input format and NMT model defaults are retained; HTML tags are preserved and translated text may contain escaped entities. This template does not decode or rewrite the returned text, use a custom model, translate files or split long text into batches. Google’s request-size and language-support limits apply.
 
 The full single-translation record is returned, including detected source language and any extra properties. A failed request or malformed result stops the run. No workflow retry is configured. Open Flow’s HTTP step has a 30-second execution budget.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, select **Google Translate OAuth2 API** credentials in **Translate with Google NMT**, set the same quota-project header and edit `q` and `target` in the JSON body. n8n manages OAuth2 and can refresh its stored tokens.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -13,11 +13,18 @@ Search the current user’s OneDrive for the text .xlsx and return the first pag
 
 ## Setup and use
 
-Connect Microsoft Excel with OneDrive read access. In Open Flow, allow Provider API Request on the connection. In n8n, connect the Microsoft Excel OAuth credential. Run manually.
+Connect Microsoft Excel with OneDrive read access. In Open Flow, allow Provider API Request on the connection. Run manually.
 
 ## Behavior
 
 The workflow sends a OneDrive search for `.xlsx` with a page size of 100 and returns the first response page. It does not follow a next-page link. Search results are returned as Microsoft Graph provides them, without checking the filename extension or opening the workbook. Results can include other matching items, and the search is not a complete inventory.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect the Microsoft Excel OAuth credential.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

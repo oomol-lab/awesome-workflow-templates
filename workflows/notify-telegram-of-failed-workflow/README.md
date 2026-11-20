@@ -13,11 +13,18 @@ Send a Telegram alert identifying a failed workflow.
 
 ## Setup
 
-Connect Telegram and set the destination chat ID. In Open Flow, choose the published source workflows in **Receive a workflow failure**, then publish and enable this error workflow. In n8n, assign the error workflow to each source workflow and activate it. Avoid assigning the workflow to itself. Enable only one format.
+Connect Telegram and set the destination chat ID. In Open Flow, choose the published source workflows in **Receive a workflow failure**, then publish and enable this error workflow. Avoid assigning the workflow to itself.
 
 ## Behavior
 
-An automatic failure sends a message naming the workflow. Open Flow includes its run ID; n8n includes the execution URL if present. Open Flow does not expose that URL in its error event. Manual test runs do not represent automatic error dispatch. If sending fails or its outcome is unknown, inspect Telegram before retrying because the message may already have been delivered.
+An automatic failure sends a message naming the workflow. Open Flow includes its run ID. Open Flow does not expose that URL in its error event. Manual test runs do not represent automatic error dispatch. If sending fails or its outcome is unknown, inspect Telegram before retrying because the message may already have been delivered.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, assign the error workflow to each source workflow and activate it. N8n includes the execution URL if present.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

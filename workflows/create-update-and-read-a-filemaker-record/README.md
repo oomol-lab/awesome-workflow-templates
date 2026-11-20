@@ -15,11 +15,16 @@ Create a FileMaker contact, update its country, and read the same record.
 
 Enable the FileMaker Data API on a reachable HTTPS server and grant access to the database, layout and fields. In Open Flow obtain a [database session token](https://help.claris.com/en/data-api-guide/content/log-in-database-session.html) and bind it as a secret Variable to the Bearer token of each HTTP node. Sessions expire after inactivity; obtain a fresh token as needed. Enter the server origin, database, layout, first name, last name and country when starting.
 
-In n8n connect FileMaker credentials to the three FileMaker nodes, configure the layout and edit the contact fields and country.
-
 ## Behavior
 
-The workflow creates a record with first and last name, updates its country using the returned record ID, and reads that same record. Open Flow also sends the returned modification ID to guard the update; the n8n FileMaker V1 node ignores the source modId parameter. The source example uses Germany. If a write has an unknown outcome, inspect the database before retrying to avoid duplicates.
+The workflow creates a record with first and last name, updates its country using the returned record ID, and reads that same record. Open Flow also sends the returned modification ID to guard the update. The source example uses Germany. If a write has an unknown outcome, inspect the database before retrying to avoid duplicates.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n connect FileMaker credentials to the three FileMaker nodes, configure the layout and edit the contact fields and country. The n8n FileMaker V1 node ignores the source modId parameter.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

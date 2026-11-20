@@ -13,13 +13,20 @@ Classify new Gmail messages using existing labels and create a sublabel when nee
 
 ## Setup
 
-Import both Open Flow workflows, publish **Label One Gmail Message**, and refresh its interface in **Run one message agent**. Connect Gmail to the trigger and each Gmail tool in **Choose and apply Gmail labels** in the worker, using the same mailbox. Select a tool-capable model. In n8n, connect the trigger and all four Gmail tools to the same mailbox and connect a model. Activate one format.
+Import both Open Flow workflows, publish **Label One Gmail Message**, and refresh its interface in **Run one message agent**. Connect Gmail to the trigger and each Gmail tool in **Choose and apply Gmail labels** in the worker, using the same mailbox. Select a tool-capable model.
 
 ## Behavior
 
 Every five minutes, the workflow checks new messages, waits one hour, and asks an AI agent to reuse an appropriate label or create a sublabel and apply it. The model reads message content and existing label names, which are sent to the configured AI provider. Review labels and model decisions. Drafts, spam and trash are excluded.
 
 Open Flow processes up to 100 events per poll in sequence. A confirmed agent failure skips that message and processing continues with the next; an uncertain write or interrupted worker stops the run. Labels created or applied earlier remain. An uncertain label creation or modification may have succeeded; inspect Gmail before retrying. The model can choose imperfect labels or make no change. Concurrent runs can create conflicting labels.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect the trigger and all four Gmail tools to the same mailbox and connect a model.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

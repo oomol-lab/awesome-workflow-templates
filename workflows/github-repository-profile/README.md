@@ -13,11 +13,18 @@ Read a GitHub repository’s community health score and the detected community f
 
 ## Setup
 
-Select your GitHub account in **Read GitHub community profile** and allow **Provider API** access. This permission is separate from individual Action permissions. Run with the repository **Owner** and **Repo**. Use a GitHub.com repository that is not a fork. A fine-grained token needs **Contents: read** access to the repository. In n8n, edit the owner and repository in the HTTP URL and choose **GitHub API** credentials in **Read GitHub community profile**.
+Select your GitHub account in **Read GitHub community profile** and allow **Provider API** access. This permission is separate from individual Action permissions. Run with the repository **Owner** and **Repo**. Use a GitHub.com repository that is not a fork. A fine-grained token needs **Contents: read** access to the repository.
 
 Each run makes one read request and returns the complete community profile. GitHub’s health percentage measures the presence of recommended community files. Missing files can be `null`; organization-owned repositories can include additional fields. The workflow preserves those values.
 
 A missing or inaccessible repository can return HTTP 404. A failed request or unexpected response stops the run. No repository content is changed, and no workflow retry is configured.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, edit the owner and repository in the HTTP URL and choose **GitHub API** credentials in **Read GitHub community profile**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -17,13 +17,18 @@ Connect PagerDuty, Jira and Mattermost. The PagerDuty user must be allowed to re
 
 Create a secret Variable named MATTERMOST_ACTION_SECRET with at least 24 unpredictable characters and bind it to **Validate the action**. Configure a Mattermost interactive message button using the webhook URL and context keys pagerduty_incident, jira_key and action_secret. Set action_secret to the same secret. Mattermost forwards the context and action channel ID. Restrict who can read the button integration context, webhook URL and workflow history. Use HTTPS and restrict network access where possible. Open Flow’s webhook body fields cover the Mattermost v11.11.1 button request; add any extra fields sent by your server to the webhook definition.
 
-In n8n, connect all three services, set the email, transition ID and announcement channel in **Validate the action**, and make MATTERMOST_ACTION_SECRET available as an environment variable to the Code node. Self-hosted n8n may require enabling node environment access. Configure the button with that same secret and the n8n webhook URL. Enable one format.
-
 ## Behavior
 
 A click immediately receives HTTP 200 with an empty JSON object. The workflow validates the shared secret, resolves the PagerDuty incident, transitions the Jira issue, posts confirmation in the action channel, and then announces the incident in the configured channel. The immediate receipt confirms receipt only; it does not mean the actions have completed.
 
 Each step stops on error. PagerDuty may already be resolved when Jira fails; both may have changed when a post fails. A failed or uncertain write may have succeeded. Inspect PagerDuty, Jira and both channels before retrying. The shared secret is a bearer capability and does not identify individual users; repeated requests are not deduplicated.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect all three services, set the email, transition ID and announcement channel in **Validate the action**, and make MATTERMOST_ACTION_SECRET available as an environment variable to the Code node. Self-hosted n8n may require enabling node environment access. Configure the button with that same secret and the n8n webhook URL. Enable one format.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

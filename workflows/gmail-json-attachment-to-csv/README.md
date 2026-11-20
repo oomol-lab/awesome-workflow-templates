@@ -15,11 +15,16 @@ Find a Gmail message, read a named JSON attachment and export it to CSV.
 
 In **Read Gmail JSON attachment**, enter a Gmail search and the exact attachment filename, and bind a secret Variable containing a Gmail OAuth access token with read permission. Refresh the token when it expires. The first matching message must contain exactly one attachment with that filename. Run manually and download `users_spreadsheet.csv`.
 
-In n8n, connect Gmail, set the same search in **Gmail**, and set the filename in **Select JSON attachment**. Run manually. The source did not specify a search or attachment name and did not download the binary data, so these settings are required.
-
 ## Behavior
 
 The attachment must contain a JSON object or array. Its nested keys are flattened into dot-separated CSV columns, matching the source Spreadsheet File node; the JSON document becomes one CSV row. The workflow does not change the message. Gmail data and the file can contain sensitive information; restrict execution and artifact access. Attachment and request sizes are subject to runtime limits.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect Gmail, set the same search in **Gmail**, and set the filename in **Select JSON attachment**. Run manually. The source did not specify a search or attachment name and did not download the binary data, so these settings are required.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

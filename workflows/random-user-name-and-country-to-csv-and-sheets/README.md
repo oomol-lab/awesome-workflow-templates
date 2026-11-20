@@ -13,11 +13,18 @@ Fetch a random user, create a CSV and append the same fields to Google Sheets.
 
 ## Setup and use
 
-Connect Google Sheets and set the spreadsheet ID and range in **Append user to sheet**. Set the destination headers to name and country, in that order. In n8n connect Google Sheets, select its spreadsheet and sheet, and use the same headers. Run one format manually.
+Connect Google Sheets and set the spreadsheet ID and range in **Append user to sheet**. Set the destination headers to name and country, in that order. Run one format manually.
 
 ## Behavior
 
 Each run requests one example user from Random User, creates a CSV containing the name and country, and appends those fields to the sheet. Open Flow returns the CSV artifact after the sheet write succeeds. Each run appends a new row. If the append result is unknown, inspect the sheet before retrying. Random User availability and returned data depend on the service.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n connect Google Sheets, select its spreadsheet and sheet, and use the same headers.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

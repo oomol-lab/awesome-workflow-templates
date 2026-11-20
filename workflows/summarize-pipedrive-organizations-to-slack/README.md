@@ -15,13 +15,18 @@ Summarize a new organization’s website, save a CRM note and notify Slack.
 
 Create an organization website custom field in Pipedrive. Deploy the workflow, then register a Pipedrive v2 organization-create webhook with HTTP Basic authentication pointing to its webhook URL. Set your numeric company ID and website custom-field key in **Read the organization**. In Open Flow create a secret Variable containing the word Basic, one space, and the Base64 encoding of username:password and bind it to **Authenticate the webhook**. Connect ScrapingBee in **Read the organization website**, Pipedrive in **Create the organization note**, an AI model in **Summarize the organization**, and Slack in **Notify Slack**; set the Slack channel ID. Grant Provider API Request permission for ScrapingBee and Pipedrive.
 
-In n8n, configure the webhook Basic credential, company ID and custom-field key in **Read the organization**, ScrapingBee Query Auth with name api_key, Pipedrive and Slack credentials, and an OpenAI model. Register the n8n webhook separately and enable one format.
-
 ## Behavior
 
 For each authenticated organization-create event, the workflow reads the website URL from the selected custom field, retrieves the page without JavaScript rendering, summarizes the content, creates a note on the same organization and posts the summary to Slack. Missing website data or a failed read/model/note stops before the Slack message. The site content is sent to ScrapingBee and the selected model; review summaries for accuracy and restrict access to execution data.
 
-A note or Slack message may have been created when a response is lost. Check Pipedrive and Slack before replaying; redelivery or overlapping requests can create duplicates. Open Flow waits up to 60 seconds for the webhook response; n8n acknowledges on receipt. A later n8n failure appears in its execution history. Website query credentials may appear in service or network logs.
+A note or Slack message may have been created when a response is lost. Check Pipedrive and Slack before replaying; redelivery or overlapping requests can create duplicates. Open Flow waits up to 60 seconds for the webhook response. Website query credentials may appear in service or network logs.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, configure the webhook Basic credential, company ID and custom-field key in **Read the organization**, ScrapingBee Query Auth with name api_key, Pipedrive and Slack credentials, and an OpenAI model. Register the n8n webhook separately and enable one format. N8n acknowledges on receipt. A later n8n failure appears in its execution history.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

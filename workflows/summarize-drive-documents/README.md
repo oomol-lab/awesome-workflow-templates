@@ -13,13 +13,20 @@ Summarize a supported document stored in Google Drive.
 
 ## Setup
 
-Connect Google Drive in **Download the document**, and set the same file ID there and in **Check document type**. Enable Drive file transit and set the transit and CloudConvert download HTTPS hostnames in the **Read and split document text** HTTP allowlist. Connect CloudConvert in **Convert document to text** and select available models for **Summarize each chunk** and **Combine chunk summaries**. In n8n set the file ID in **Google Drive** and connect Google Drive and OpenAI. Run either format manually.
+Connect Google Drive in **Download the document**, and set the same file ID there and in **Check document type**. Enable Drive file transit and set the transit and CloudConvert download HTTPS hostnames in the **Read and split document text** HTTP allowlist. Connect CloudConvert in **Convert document to text** and select available models for **Summarize each chunk** and **Combine chunk summaries**. Run the workflow manually.
 
 ## Behavior
 
 The workflow reads one Drive document and returns a summary. Open Flow handles PDF, DOCX and EPUB via CloudConvert text conversion and reads TXT, Markdown, CSV and JSON as text. It accepts source files up to 10 MB and extracted text up to 500,000 UTF-8 bytes. A blank or oversized document fails. It divides text into sequential chunks of at most 3,000 UTF-8 bytes, summarizes every chunk and combines the summaries. Long documents can take many model calls; service and execution limits can stop a run.
 
-The original n8n chain uses its own binary document loader, 3,000-token splitter and map-reduce. Byte boundaries, parsing and generated summaries can differ across formats. CSV and JSON are summarized as raw text in Open Flow. Review the result. The document may be sent to CloudConvert and its text to the selected model. Restrict access to execution data and temporary transit URLs. Conversion, download and model failures stop the run.
+Byte boundaries, parsing and generated summaries can differ across formats. CSV and JSON are summarized as raw text in Open Flow. Review the result. The document may be sent to CloudConvert and its text to the selected model. Restrict access to execution data and temporary transit URLs. Conversion, download and model failures stop the run.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n set the file ID in **Google Drive** and connect Google Drive and OpenAI. The original n8n chain uses its own binary document loader, 3,000-token splitter and map-reduce.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

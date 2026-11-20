@@ -25,11 +25,16 @@ In Open Flow, connect Perplexity in **Research with Perplexity**. Use Run and su
 
 `user_prompt` and `domains` are required. `domains` is a comma-separated list of domains or URL prefixes; surrounding spaces and empty entries are removed. Optional `system_prompt` supplies research instructions. The request uses `sonar` and a fixed `month` publication-recency filter.
 
-In n8n, edit the same fields in **Set Params**. Configure a Header Auth credential in **Perplexity Request** with name `Authorization` and value `Bearer YOUR_PERPLEXITY_API_KEY`, then use Execute Workflow. Keep the key in the credential.
-
 Each run makes one synchronous research request and returns `output` and `citations`. If the service omits citations, the list is empty. Missing answer text or a failed request stops the run. There are no automatic retries, stored conversations, or publishing steps.
 
 The template uses Perplexity’s legacy Sonar-compatible completion route. Perplexity may rewrite these requests to its newer service; model behavior and sampling can change. Domain and publication-recency filters constrain search, and do not prove every generated statement. Check the answer against the cited sources before using it.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, edit the same fields in **Set Params**. Configure a Header Auth credential in **Perplexity Request** with name `Authorization` and value `Bearer YOUR_PERPLEXITY_API_KEY`, then use Execute Workflow. Keep the key in the credential.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

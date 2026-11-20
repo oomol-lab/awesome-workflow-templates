@@ -13,11 +13,18 @@ Send three messages to a Discord webhook on separate schedules.
 
 ## Setup and use
 
-Set the secret Variable DISCORD_WEBHOOK to your Discord incoming webhook URL. Edit each message and replace YOUR_PUBLIC_IMAGE_URL in the half-hour message. Configure the timezone on the two weekly schedules; the supplied schedules use UTC. In n8n set each Discord node to your webhook URL, configure its timezone, and replace the image placeholder. Activate one format.
+Set the secret Variable DISCORD_WEBHOOK to your Discord incoming webhook URL. Edit each message and replace YOUR_PUBLIC_IMAGE_URL in the half-hour message. Configure the timezone on the two weekly schedules; the supplied schedules use UTC.
 
 ## Behavior
 
 The source schedules the Wednesday-themed message on Saturday at 09:00, the Friday message on Friday at 09:00, and the good-night message every 30 minutes. These schedules are retained. If a send has an unknown result, the message may already have appeared in Discord; inspect the channel before retrying.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n set each Discord node to your webhook URL, configure its timezone, and replace the image placeholder.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

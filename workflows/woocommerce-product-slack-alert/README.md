@@ -15,11 +15,16 @@ Post new WooCommerce product names, prices, and links to Slack.
 
 Connect WooCommerce in **Product Created**. The store account must be able to create and manage webhooks. Connect Slack in **Post notification to Slack**, set the destination channel ID, and give that account access to the channel.
 
-For n8n, select WooCommerce credentials in **Product Created** and a Slack account and channel in **Send to Slack**. Activate one format after setup; each activated workflow creates its own store subscription.
-
 Each `product.created` event posts one message with the product name, regular price, sale price, permalink, and the store’s creation timestamp. Empty price strings remain empty, as they can be for products without a set price. The workflow does not retrieve product variations or apply a currency conversion.
 
 The message keeps the source’s colored Slack attachment. Dynamic values are escaped for Slack, and timestamps retain the store’s supplied text. The workflow posts once per matching event and keeps no notification history. Duplicate event deliveries or running both formats can produce duplicate messages. A Slack error fails the run; the workflow does not automatically retry or confirm that a person has read the alert.
+
+<details>
+<summary>In n8n</summary>
+
+For n8n, select WooCommerce credentials in **Product Created** and a Slack account and channel in **Send to Slack**. Activate one format after setup; each activated workflow creates its own store subscription.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

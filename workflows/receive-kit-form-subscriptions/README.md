@@ -13,11 +13,18 @@ Receive subscriber events for a Kit form.
 
 ## Setup and use
 
-Import the n8n workflow, connect Kit and set the form ID in **ConvertKit Trigger**. Activate it to register the legacy webhook; its URL must be publicly reachable by Kit. For Open Flow enter its webhook URL in **Forward to Open Flow** and enable that node; leave it disabled for n8n alone. Restrict access to the webhook endpoints.
+Connect Kit and set the form ID in **ConvertKit Trigger**. Activate it to register the legacy webhook; its URL must be publicly reachable by Kit. For Open Flow enter its webhook URL in **Forward to Open Flow** and enable that node. Restrict access to the webhook endpoints.
 
 ## Behavior
 
-The trigger receives legacy form subscription events and the optional relay forwards each complete event to Open Flow as workflow output. Legacy deliveries are not signed or retried; restrict access and inspect n8n execution history for relay failures. Event details may appear in execution history.
+The trigger receives legacy form subscription events and the optional relay forwards each complete event to Open Flow as workflow output. Legacy deliveries are not signed or retried. Event details may appear in execution history.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow, connect Kit and set the form ID in **ConvertKit Trigger**. Leave it disabled for n8n alone. Restrict access and inspect n8n execution history for relay failures.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

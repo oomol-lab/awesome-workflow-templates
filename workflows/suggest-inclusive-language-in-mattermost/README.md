@@ -15,13 +15,20 @@ Suggest inclusive alternatives in a Mattermost channel when a message contains s
 
 Create a Mattermost outgoing webhook for one specified public channel. Set its content type to application/json, leave trigger words empty so it receives all messages in that channel, and use this workflow's webhook URL as its callback. Copy the webhook token. This workflow accepts one token, so use a separate webhook and workflow instance for each additional public channel. Bind each Open Flow instance to its own webhook token; create distinct Variables if the instances share a Variable scope. Connect Mattermost in **Post the suggestion** with permission to post in the selected channel.
 
-Create an Open Flow secret Variable named MATTERMOST_OUTGOING_TOKEN containing that token and bind it to the token input of **Check the message**. In n8n, configure Mattermost credentials and set the same token in the MATTERMOST_OUTGOING_TOKEN environment variable accessible to Code nodes. Self-hosted n8n may require enabling environment access. For multiple n8n workflows in one instance, give each hook token a distinct environment variable and edit that workflow’s **Check the message** code to read its corresponding variable name. Alternatively, use separate n8n environments with the same variable name and different values. Enable one format only. Restrict access to the webhook URL, token, sender and execution history; webhook payloads contain message text and the bearer token.
+Create an Open Flow secret Variable named MATTERMOST_OUTGOING_TOKEN containing that token and bind it to the token input of **Check the message**. Restrict access to the webhook URL, token, sender and execution history; webhook payloads contain message text and the bearer token.
 
 ## Behavior
 
 For each outgoing webhook message, the workflow validates the token and looks for any of these case-sensitive substrings: guys, Guys, bros, Bros, dudes, Dudes, gals or Gals. A match posts one suggestion in the originating channel. Other capitalization does not match; substrings inside longer words also match. It does not reply in a thread. The fixed suggestion contains none of these substrings, so a delivery of that suggestion does not produce another suggestion. The immediate HTTP response is an empty JSON receipt and does not confirm that the suggestion was posted.
 
 A failed or uncertain post may still have taken effect. Check the channel before rerunning; repeated deliveries are not deduplicated.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, configure Mattermost credentials and set the same token in the MATTERMOST_OUTGOING_TOKEN environment variable accessible to Code nodes. Self-hosted n8n may require enabling environment access. For multiple n8n workflows in one instance, give each hook token a distinct environment variable and edit that workflow’s **Check the message** code to read its corresponding variable name. Alternatively, use separate n8n environments with the same variable name and different values.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

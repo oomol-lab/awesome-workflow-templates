@@ -13,13 +13,20 @@ Summarize unassigned new and open Zendesk tickets in one Slack message.
 
 ## Setup
 
-Connect Zendesk to **Search Zendesk tickets**, with search permission and Provider API Request access. Connect Slack and set the channel ID in **Post the summary**. In n8n, configure Zendesk API token and Slack credentials, set your Zendesk subdomain in **Search Zendesk tickets**, and set the Slack channel. Run manually or enable the daily schedule. The source used the n8n instance timezone; both templates start at 16:30 UTC, so check the timezone before activation. Open Flow runs at the minute boundary; n8n Cron V1 chooses a second within that minute.
+Connect Zendesk to **Search Zendesk tickets**, with search permission and Provider API Request access. Connect Slack and set the channel ID in **Post the summary**. Run manually or enable the daily schedule. Open Flow runs at the minute boundary.
 
 ## Behavior
 
 The workflow searches `type:ticket assignee:none status<pending`, collects all available pages, and posts one summary with ticket links, statuses and subjects. No matching tickets means no Slack message. Search indexing can lag, and offset pagination can change while tickets are being updated. Search errors, incomplete results or a result count above Zendesk’s 1,000-result limit stop before posting. Slack messages above 40,000 characters also stop before posting. Subjects have Slack control characters escaped and formatting characters replaced with full-width equivalents to avoid unintended markup. Only Zendesk-hosted ticket URLs are accepted.
 
 A Slack failure stops the run; a message with an uncertain result may already be present, so check the channel before retrying.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, configure Zendesk API token and Slack credentials, set your Zendesk subdomain in **Search Zendesk tickets**, and set the Slack channel. The source used the n8n instance timezone; both templates start at 16:30 UTC, so check the timezone before activation. N8n Cron V1 chooses a second within that minute.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

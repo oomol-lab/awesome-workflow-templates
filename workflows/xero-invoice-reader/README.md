@@ -13,11 +13,18 @@ Read up to 100 invoice records from a connected Xero organization.
 
 ## Setup
 
-Select your Xero OAuth account in **Read Xero invoice records** and grant **Provider API** permission, which is separate from individual Action permissions. The connection needs permission to read invoices for the selected organization. Run with **Tenant Id**, the connected organization’s UUID. In n8n, select Xero OAuth2 credentials and choose your organization in **Xero**.
+Select your Xero OAuth account in **Read Xero invoice records** and grant **Provider API** permission, which is separate from individual Action permissions. The connection needs permission to read invoices for the selected organization. Run with **Tenant Id**, the connected organization’s UUID.
 
 Each run makes one invoice-list request without pagination or filters, and returns its first 100 records in the order supplied by Xero. Invoice properties, nested objects and null values are preserved as returned. This unpaged endpoint returns a contact summary and omits detailed line items. It can transfer more than 100 records before the workflow applies its limit, and Xero rejects requests that would return more than 100,000 invoices. It does not return every invoice or guarantee a newest-first order.
 
 The Open Flow template uses the Xero Provider API to retain these original invoice records. It does not substitute the normalized invoice summaries returned by the invoice search Action. An organization with no invoices returns an empty array. A failed request or invalid response stops the run. The workflow makes no accounting changes and has no automatic retry.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, select Xero OAuth2 credentials and choose your organization in **Xero**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

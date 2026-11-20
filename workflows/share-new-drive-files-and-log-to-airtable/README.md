@@ -13,13 +13,20 @@ Grant a recipient edit access to new files in a Drive folder and log each permis
 
 ## Setup
 
-Select a Google Drive connection with access to the folder in **Watch for new Drive files** and a connection with permission to share its files in **Grant edit access**. Set the folder ID in **Watch for new Drive files**. Set the recipient email, Airtable base ID and table name in **Validate files**. Allow the declared Drive Action in **Grant edit access**. Connect Airtable in **Log file metadata** and allow its declared Action; The table needs fields named `FileId`, `sentId`, `FileName`, `CreatedTime` and `ModifiedTime`; the last two hold date-time values. In n8n, set the folder in **Google Drive**, recipient and Airtable base and table IDs in **Validate files**, and select Google Drive and Airtable credentials.
+Select a Google Drive connection with access to the folder in **Watch for new Drive files** and a connection with permission to share its files in **Grant edit access**. Set the folder ID in **Watch for new Drive files**. Set the recipient email, Airtable base ID and table name in **Validate files**. Allow the declared Drive Action in **Grant edit access**. Connect Airtable in **Log file metadata** and allow its declared Action; The table needs fields named `FileId`, `sentId`, `FileName`, `CreatedTime` and `ModifiedTime`; the last two hold date-time values.
 
 ## Behavior
 
 Every minute the workflow checks for files created directly in the selected folder. For each event batch it grants the configured user writer access to every file in the batch, then creates one Airtable record per file with its ID, name, creation and modification times, and `sentId`, which is the Drive permission ID. Google Drive normally sends the recipient a sharing notification. This changes file access and can notify the recipient; confirm the recipient and sharing policy before enabling.
 
-Open Flow processes up to 50 file candidates per page and uses a continuation checkpoint; n8n collects all native result pages in a poll. With more than 50 files, Open Flow can log one page before sharing the next, while n8n processes its collected batch together. On first activation Open Flow starts from the current time rather than importing older files. Open Flow and n8n use different polling checkpoints and neither guarantees exactly-once handling. Events whose run fails may not automatically replay. Inspect Drive permissions and Airtable before retrying; repeated runs can create duplicate records. Earlier permission changes and records are not rolled back if a later operation fails. A lost response can leave a permission or record created even if the run reports failure. No automatic write retry is configured. Avoid concurrent permission changes on the same file.
+Open Flow processes up to 50 file candidates per page and uses a continuation checkpoint. With more than 50 files, Open Flow can log one page before sharing the next. On first activation Open Flow starts from the current time rather than importing older files. Events whose run fails may not automatically replay. Inspect Drive permissions and Airtable before retrying; repeated runs can create duplicate records. Earlier permission changes and records are not rolled back if a later operation fails. A lost response can leave a permission or record created even if the run reports failure. No automatic write retry is configured. Avoid concurrent permission changes on the same file.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, set the folder in **Google Drive**, recipient and Airtable base and table IDs in **Validate files**, and select Google Drive and Airtable credentials. N8n collects all native result pages in a poll. N8n processes its collected batch together. Open Flow and n8n use different polling checkpoints and neither guarantees exactly-once handling.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

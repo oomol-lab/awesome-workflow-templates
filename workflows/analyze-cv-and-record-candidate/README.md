@@ -13,11 +13,18 @@ Extract CV details for human review and record them in Google Sheets.
 
 ## Setup and use
 
-Import the n8n workflow to host the PDF form, extract text and upload the original CV to Google Drive. Configure its Drive folder and a Data Table with item_key and status text columns; for relay mode also set the Open Flow webhook URL. In n8n set the relay boolean in Choose mode to true for Open Flow or false for direct mode; in relay mode configure a model, spreadsheet and persistent State in Open Flow. For direct mode configure the n8n model and Sheets connection. Create sheet columns Date, Name, Email, Phone, City, Birthdate, Education, Job History, Skills, Summary in that order. Limit access to the webhook and candidate records. The webhook has no built-in caller authentication; restrict it with a trusted gateway or private network.
+Configure the Drive folder. Configure a model, spreadsheet and persistent State in Open Flow. Create sheet columns Date, Name, Email, Phone, City, Birthdate, Education, Job History, Skills, Summary in that order. Limit access to the webhook and candidate records. The webhook has no built-in caller authentication; restrict it with a trusted gateway or private network.
 
 ## Behavior
 
-The form accepts a PDF and saves the original. Relay mode sends extracted text to Open Flow; direct mode analyzes and appends in n8n.  Human review is needed: AI output can be inaccurate and should not determine hiring decisions on its own. CVs and extracted personal data are sent to the configured services. Inspect Drive or Sheets before clearing pending checkpoints after an uncertain write; avoid overlapping executions.
+The form accepts a PDF and saves the original. The workflow processes extracted text. Human review is needed: AI output can be inaccurate and should not determine hiring decisions on its own. CVs and extracted personal data are sent to the configured services. Inspect Drive or Sheets before clearing pending checkpoints after an uncertain write; avoid overlapping executions.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow to host the PDF form, extract text and upload the original CV to Google Drive. Configure its Drive folder and a Data Table with item_key and status text columns; for relay mode also set the Open Flow webhook URL. In n8n set the relay boolean in Choose mode to true for Open Flow or false for direct mode; in relay mode configure a model, spreadsheet and persistent State in Open Flow. For direct mode configure the n8n model and Sheets connection. Relay mode sends extracted text to Open Flow; direct mode analyzes and appends in n8n.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

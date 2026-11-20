@@ -13,11 +13,18 @@ Read up to 50 Help Scout inboxes, including their IDs, names, email addresses an
 
 ## Setup
 
-In Open Flow, open **Read first 50 Help Scout inboxes**, choose your Help Scout account under **Actions**, and allow `helpscout.list_inboxes`. In n8n, choose Help Scout OAuth2 credentials in **HelpScout**. Run the workflow manually. The connected account needs access to the inboxes you want to read.
+In Open Flow, open **Read first 50 Help Scout inboxes**, choose your Help Scout account under **Actions**, and allow `helpscout.list_inboxes`. Run the workflow manually. The connected account needs access to the inboxes you want to read.
 
 The workflow reads inboxes, called mailboxes in the API. It retains complete inbox objects and stops at 50 records or the end of the list. Help Scout normally returns 50 inboxes per page. If a shorter page has more pages, Open Flow reads them in order using Help Scout’s page metadata. Missing or inconsistent pagination information stops the run rather than returning an unverified partial list. An empty account returns an empty array.
 
 This workflow does not read conversations or customers, create inboxes or change their settings. A failed request stops the run without an automatic retry.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, choose Help Scout OAuth2 credentials in **HelpScout**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

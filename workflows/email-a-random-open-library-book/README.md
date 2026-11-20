@@ -13,11 +13,18 @@ Choose a random book from an Open Library subject and email a recommendation.
 
 ## Setup
 
-In Open Flow connect SendGrid and set the verified sender and recipient in both email nodes. Set the subject slug in **Choose the subject**. In n8n connect SMTP to both email nodes, set the addresses, and set the subject in **Set Subject**. Activate one format.
+In Open Flow connect SendGrid and set the verified sender and recipient in both email nodes. Set the subject slug in **Choose the subject**.
 
 ## Behavior
 
-Run manually or every Friday at 11:00 UTC. The workflow counts works in the subject, selects one at random and emails its title, linked authors and available description. If no works are found, it emails a no-book notice. A missing description is shown as unavailable. Open Flow runs on the minute boundary; the n8n Cron V1 trigger uses a fixed second within minute 00. An unknown email outcome may have succeeded; check sent mail before retrying.
+Run manually or every Friday at 11:00 UTC. The workflow counts works in the subject, selects one at random and emails its title, linked authors and available description. If no works are found, it emails a no-book notice. A missing description is shown as unavailable. Open Flow runs on the minute boundary. An unknown email outcome may have succeeded; check sent mail before retrying.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n connect SMTP to both email nodes, set the addresses, and set the subject in **Set Subject**. The n8n Cron V1 trigger uses a fixed second within minute 00.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

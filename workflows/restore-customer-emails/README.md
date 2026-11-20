@@ -13,11 +13,18 @@ Reduce customer records to names and restore each corresponding email address.
 
 ## Setup and use
 
-Provide an array of customer records containing name and email in Open Flow. In n8n run the manual workflow; its training datastore supplies example records.
+Provide an array of customer records containing name and email in Open Flow.
 
 ## Behavior
 
-The first step keeps only names. The next restores each record’s email under **restoreEmail**, using the original item association. Open Flow returns an empty array for empty input. n8n does not execute downstream nodes when the datastore returns no items.
+The first step keeps only names. The next restores each record’s email under **restoreEmail**, using the original item association. Open Flow returns an empty array for empty input.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n run the manual workflow; its training datastore supplies example records. n8n does not execute downstream nodes when the datastore returns no items.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -13,13 +13,20 @@ Post queued sheet rows to X every six hours and remove the posted rows.
 
 ## Setup
 
-Create a Google spreadsheet with a sheet named **Tweets** and a header named **tweet**. Add one post per row. Set the spreadsheet ID and sheet name in **Choose the queue sheet**, connect Google Sheets with edit access to the spreadsheet and connect X with permission to post. In n8n, edit the spreadsheet ID and sheet name in **Choose the queue sheet**, and connect the Google Sheets OAuth2 and X credentials. Enable one format.
+Create a Google spreadsheet with a sheet named **Tweets** and a header named **tweet**. Add one post per row. Set the spreadsheet ID and sheet name in **Choose the queue sheet**, connect Google Sheets with edit access to the spreadsheet and connect X with permission to post.
 
 ## Behavior
 
 Every six hours at 00:00, 06:00, 12:00 and 18:00 UTC, the workflow reads all populated rows and posts their tweet text to X in order. It posts the entire batch before deleting any rows. Empty rows are skipped; a populated row without tweet text stops the batch before posting. After all posts are confirmed, it rechecks the sheet and deletes the posted rows from bottom to top. A changed sheet stops before deletion. Avoid editing the queue or running overlapping copies while it runs; the recheck and deletions are not atomic. Deleting a row removes all of its columns.
 
-An X failure leaves every row in place, although earlier posts may already exist. A deletion failure leaves earlier deletions in place. If a write outcome is uncertain, inspect X and the sheet before restarting; reruns may duplicate posts. Open Flow requires the collected sheet to fit its run limits. The n8n schedule uses a fixed second within the selected minute; Open Flow starts at the minute boundary. n8n OAuth2 may refresh credentials and retry a request once after an HTTP 401.
+An X failure leaves every row in place, although earlier posts may already exist. A deletion failure leaves earlier deletions in place. If a write outcome is uncertain, inspect X and the sheet before restarting; reruns may duplicate posts. Open Flow requires the collected sheet to fit its run limits. Open Flow starts at the minute boundary.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, edit the spreadsheet ID and sheet name in **Choose the queue sheet**, and connect the Google Sheets OAuth2 and X credentials. The n8n schedule uses a fixed second within the selected minute. n8n OAuth2 may refresh credentials and retry a request once after an HTTP 401.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

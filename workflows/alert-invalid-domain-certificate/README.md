@@ -15,13 +15,18 @@ Check a domain certificate with Uproc and alert a Telegram chat when it is outsi
 
 The workflow uses Uproc’s legacy v2 process API with email and API key authentication. In Open Flow, create secret Variables for your Uproc account email and API key and bind them to **Auth Username** and **Auth Password** on **Check with Uproc**. Connect your Telegram bot and set its destination chat ID in **Send a Telegram alert**. Run with a domain name such as `example.com`.
 
-In n8n, set the domain in **Set domain**, connect a Uproc API credential and a Telegram credential, and enter the Telegram chat ID. Run one format at a time.
-
 ## Behavior
 
 A manual run asks Uproc to inspect the domain's certificate on port 443. If its `valid` field is false, it sends one Telegram alert. A true value sends no message. A missing or unrecognized result or request failure stops the workflow without an alert; check the run if no message arrives. Uproc describes `valid` as whether the certificate is currently within its validity dates. This workflow does not independently verify the trust chain, hostname or revocation, and a false value can also mean the certificate is not yet valid.
 
 A Telegram failure stops the run; an uncertain send may already have arrived, so check the chat before retrying. Open Flow applies a 30-second HTTP timeout and a 4 MiB response limit.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, set the domain in **Set domain**, connect a Uproc API credential and a Telegram credential, and enter the Telegram chat ID. Run one format at a time.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

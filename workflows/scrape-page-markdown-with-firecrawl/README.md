@@ -13,11 +13,18 @@ Call Firecrawl to scrape one page and return its Markdown.
 
 ## Setup and use
 
-Connect Firecrawl in Open Flow, then run or call the workflow with a page **url**. In n8n configure an HTTP Header Auth credential with `Authorization: Bearer YOUR_FIRECRAWL_API_KEY`, and call the subworkflow with `{"query":{"url":"https://example.org/page"}}`.
+Connect Firecrawl in Open Flow, then run or call the workflow with a page **url**.
 
 ## Behavior
 
 The workflow requests one page in Markdown and returns it as **response**. Firecrawl determines what it can access and extract. A successful API response may still contain an error page from the target site; inspect its content before relying on it. API failures stop the workflow.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure an HTTP Header Auth credential with `Authorization: Bearer YOUR_FIRECRAWL_API_KEY`, and call the subworkflow with `{"query":{"url":"https://example.org/page"}}`.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

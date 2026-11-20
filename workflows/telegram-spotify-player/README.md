@@ -15,9 +15,7 @@ Send a song description to your Telegram bot. A model turns it into a Spotify se
 
 Connect **Telegram song request** to your bot. Choose the model service on **Identify artist and song query**. Select the same Spotify account on all five Spotify action nodes. Playback controls require Spotify Premium, the `user-modify-playback-state` scope and an active Spotify device; reading the current item requires `user-read-currently-playing`. Open Spotify on that device before sending a request.
 
-For n8n, select Telegram and OpenAI credentials, Spotify credentials on the four native Spotify nodes, and a Spotify OAuth2 credential on the **Currently Playing** HTTP node. That read includes the HTTP status so an empty 204 response can be handled explicitly.
-
-The model is `gpt-4o-mini`, with provider-default generation settings. OpenAI lists its retirement as January 14, 2027; replace it in both formats before that date. This is one generation step. No workflow-level retries are configured; model or managed Provider transports may have their own retry behavior.
+The model is `gpt-4o-mini`, with provider-default generation settings. OpenAI lists its retirement as January 14, 2027; replace it before that date. This is one generation step. No workflow-level retries are configured; model or managed Provider transports may have their own retry behavior.
 
 Anyone allowed to send a request to this bot can control the connected Spotify account. Configure the Telegram trigger’s allowed user/chat IDs for your intended users. Open Flow’s empty lists accept all users/chats, matching the source. The bot does not select a different Spotify account based on the sender.
 
@@ -29,9 +27,16 @@ These requests are awaited in that order. Spotify does not guarantee execution o
 
 An empty search returns `Song not found` without changing playback. A handled search, queue, skip or current-state failure produces a short stage-specific reply. A handled resume failure still proceeds to the current-state read, preserving the source behavior. Open Flow only routes failures the platform marks catchable; ordinary or result-unknown failures stop. Earlier playback changes remain in place. Failed Telegram delivery stops without repeating any playback command. There are no duplicate-message checks, so repeated requests can add the same track or skip again.
 
-Nontext or blank Telegram messages, a blank model query, malformed search/state data and oversized replies stop the run. Replies escape HTML-sensitive characters. Open Flow results and the final n8n result contain the search query, reply and `observed`, `unavailable`, `not_found` or `failed` status.
+Nontext or blank Telegram messages, a blank model query, malformed search/state data and oversized replies stop the run. Replies escape HTML-sensitive characters.
 
 Your message text goes to the configured model service. Spotify receives its generated query and the playback commands. Telegram receives the observed item or a short failure status. The model can misidentify a song; this template uses the first search result without an approval step.
+
+<details>
+<summary>In n8n</summary>
+
+For n8n, select Telegram and OpenAI credentials, Spotify credentials on the four native Spotify nodes, and a Spotify OAuth2 credential on the **Currently Playing** HTTP node. That read includes the HTTP status so an empty 204 response can be handled explicitly. Open Flow results and the final n8n result contain the search query, reply and `observed`, `unavailable`, `not_found` or `failed` status.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -13,11 +13,18 @@ Update a WordPress post’s Rank Math SEO title, description and canonical URL.
 
 ## Setup and use
 
-Install and enable Rank Math and [Rank Math API Manager](https://github.com/Devora-AS/rank-math-api-manager). Configure a WordPress user with permission to edit the target post and an application password. In Open Flow replace the example HTTPS URL with your site's endpoint and bind secret Variables **WORDPRESS_USERNAME** and **WORDPRESS_APP_PASSWORD**. In n8n set the site URL in **Settings** and connect the WordPress credential. Edit the post ID and SEO fields in the HTTP node before running manually.
+Install and enable Rank Math and [Rank Math API Manager](https://github.com/Devora-AS/rank-math-api-manager). Configure a WordPress user with permission to edit the target post and an application password. In Open Flow replace the example HTTPS URL with your site's endpoint and bind secret Variables **WORDPRESS_USERNAME** and **WORDPRESS_APP_PASSWORD**. Edit the post ID and SEO fields in the HTTP node before running manually.
 
 ## Behavior
 
 The sample updates post ID 246 with a demo SEO title, description and canonical URL. Verify the destination and values before running. If the result is unknown, inspect the post before retrying; the update may already have occurred. The example endpoint and values do not identify a real site.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n set the site URL in **Settings** and connect the WordPress credential.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

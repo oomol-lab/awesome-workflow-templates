@@ -13,13 +13,20 @@ Fill a reviewed PDF template with exact field names and return a temporary downl
 
 ## Setup
 
-Configure a JustFill API key using Header Auth in n8n and JUSTFILL_API_KEY in Open Flow for the same account. Import the n8n form, choose one mode and restrict access. Configure a Data Table with item_key and status columns, and enable persistent State in Open Flow. Enter a unique request ID for each submission and prevent concurrent submissions with that ID.
+Enter a unique request ID for each submission and prevent concurrent submissions with that ID.
 
 ## Behavior
 
 Upload a PDF with a saved, reviewed field layout and provide a non-empty JSON object keyed by field names. The workflow uploads the original PDF, opens it, maps normalized exact names to field IDs, and fills the document. Unknown, ambiguous, duplicate or nested values stop the run. The form redirects to a temporary download URL; inspect output mode, warnings and the document before sharing. JustFill processes the PDF and uses the account allowance; output can be watermarked.
 
-If upload, workspace creation or PDF generation has an unknown result, inspect the account and pending Data Table or State before retrying. Mark a confirmed successful submission done; remove a pending record only after confirming no operation occurred and deciding to retry. Do not automatically repeat generation. Open Flow uses n8n for binary upload and opening the PDF; its direct HTTP request is subject to platform timeout and body limits.
+Mark a confirmed successful submission done; remove a pending record only after confirming no operation occurred and deciding to retry. Do not automatically repeat generation.
+
+<details>
+<summary>In n8n</summary>
+
+Configure a JustFill API key using Header Auth in n8n and JUSTFILL_API_KEY in Open Flow for the same account. Import the n8n form, choose one mode and restrict access. Configure a Data Table with item_key and status columns, and enable persistent State in Open Flow. If upload, workspace creation or PDF generation has an unknown result, inspect the account and pending Data Table or State before retrying. Open Flow uses n8n for binary upload and opening the PDF; its direct HTTP request is subject to platform timeout and body limits.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

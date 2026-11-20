@@ -13,11 +13,18 @@ Receive Gumroad sale notifications.
 
 ## Setup and use
 
-Import the n8n workflow and connect Gumroad in **Gumroad Trigger**. Activate it to register the sale subscription; its URL must be publicly reachable by Gumroad. For Open Flow enter its webhook URL in **Forward to Open Flow** and enable that node; leave it disabled for n8n alone. Restrict access to the webhook endpoints.
+Connect Gumroad in **Gumroad Trigger**. Activate it to register the sale subscription; its URL must be publicly reachable by Gumroad. For Open Flow enter its webhook URL in **Forward to Open Flow** and enable that node. Restrict access to the webhook endpoints.
 
 ## Behavior
 
-The trigger receives sale notifications and the optional relay forwards them to Open Flow as workflow output. Neither endpoint authenticates the sender; restrict access and inspect n8n execution history for relay failures. Sale details can appear in execution history. Event details may appear in execution history.
+The trigger receives sale notifications and the optional relay forwards them to Open Flow as workflow output. Neither endpoint authenticates the sender. Sale details can appear in execution history. Event details may appear in execution history.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow and connect Gumroad in **Gumroad Trigger**. Leave it disabled for n8n alone. Restrict access and inspect n8n execution history for relay failures.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -15,13 +15,18 @@ Create an Onfleet delivery task when a selected Google Drive file is updated.
 
 Connect Google Drive and Onfleet. Set the watched file's parent folder ID in **Watch the Drive folder for updates** and its file ID in **Match the watched file**. In **Create the Onfleet task**, enter the destination address and recipient name and phone. Use a Drive account that can read the folder and file.
 
-For n8n connect Google Drive, select the watched file in **Google Drive Trigger**, and configure HTTP Basic credentials in **Create the Onfleet task** with the Onfleet API key as username and an empty password. Set the destination and recipient in its JSON body. Activate one format.
-
 ## Behavior
 
 The workflow checks for updates once a minute and creates one task with the configured destination and recipient when the selected file changes. It does not read the file contents. Open Flow watches the parent folder and filters by file ID; its first poll establishes a baseline and does not process earlier changes. Updates made between polls may be observed as one latest change.
 
 An Onfleet create with an uncertain result may have succeeded. Inspect Onfleet before manually repeating it; the workflow does not automatically replay failed or uncertain creates. The service may update a recipient associated with the same phone number, so configure the recipient carefully.
+
+<details>
+<summary>In n8n</summary>
+
+For n8n connect Google Drive, select the watched file in **Google Drive Trigger**, and configure HTTP Basic credentials in **Create the Onfleet task** with the Onfleet API key as username and an empty password. Set the destination and recipient in its JSON body. Activate one format.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

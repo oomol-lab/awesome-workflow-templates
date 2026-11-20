@@ -13,13 +13,18 @@ Append transfer details to Airtable when a Wise transfer changes state.
 
 ## Setup
 
-Create an Airtable table with text fields `Transfer ID`, `Date`, `Reference` and `Amount`. Connect Airtable and select the base and table in **Append transfer record**. Bind a Wise API token as Secret Variable `WISE_API_TOKEN`. Deploy Open Flow, import the n8n workflow, connect Wise, choose your Wise profile in **Wise Trigger**, set **Choose delivery mode** to `relay`, and set the Open Flow URL in **Forward event to Open Flow**. Restrict access to the Open Flow URL; it does not authenticate the relay.
-
-For direct n8n processing, select `direct`, connect Wise and Airtable, and select the same fields, base and table. Activate one mode.
+Create an Airtable table with text fields `Transfer ID`, `Date`, `Reference` and `Amount`. Connect Airtable and select the base and table in **Append transfer record**. Bind a Wise API token as Secret Variable `WISE_API_TOKEN`. Restrict access to the Open Flow URL; it does not authenticate the relay.
 
 ## Behavior
 
 Each transfer state change reads that transfer and appends its ID, creation date, reference and source amount. Multiple changes for the same transfer create separate rows. A webhook acknowledgment does not confirm the Airtable write. If the result of an Airtable write is unknown, inspect the table before replaying the event.
+
+<details>
+<summary>In n8n</summary>
+
+Deploy Open Flow, import the n8n workflow, connect Wise, choose your Wise profile in **Wise Trigger**, set **Choose delivery mode** to `relay`, and set the Open Flow URL in **Forward event to Open Flow**. For direct n8n processing, select `direct`, connect Wise and Airtable, and select the same fields, base and table. Activate one mode.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

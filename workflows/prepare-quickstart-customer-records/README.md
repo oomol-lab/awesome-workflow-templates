@@ -13,11 +13,18 @@ Prepare customer IDs, names and descriptions for a later workflow step.
 
 ## Setup and use
 
-Provide an array of customers to the Open Flow start node. Each customer has id, name and notes fields. In n8n, run the included manual workflow to use the training datastore, or connect your own customer source to the Edit Fields node.
+Provide an array of customers to the Open Flow start node. Each customer has id, name and notes fields.
 
 ## Behavior
 
 Each input record produces customer_id, customer_name and customer_description, mapped from id, name and notes. These fields are strings; other fields are omitted. Open Flow returns an array of records. The original quickstart stops after this preparation step and does not send or save the result.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, run the included manual workflow to use the training datastore, or connect your own customer source to the Edit Fields node.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

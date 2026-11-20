@@ -15,13 +15,20 @@ Read the latest Phantom output and save lead names, emails and companies to Airt
 
 Connect PhantomBuster with Provider API Request permission in **Read latest output** and **Read container result**, using the same account. Set the Phantom ID in **Set Phantom ID**. Connect Airtable in **Create the Airtable record** and configure its base and table. Create text fields named **Name**, **Email** and **Company**.
 
-The Phantom's latest result must be a JSON object or array of objects with `general.fullName`, `details.mail` and `jobs[0].companyName` strings. Different Phantoms have different output structures; adjust the field mapping if yours differs. In n8n, connect PhantomBuster and Airtable Personal Access Token credentials, set the Phantom ID, and select the Airtable base and table. Run one format.
+The Phantom's latest result must be a JSON object or array of objects with `general.fullName`, `details.mail` and `jobs[0].companyName` strings. Different Phantoms have different output structures; adjust the field mapping if yours differs.
 
 ## Behavior
 
 Each run reads the latest container result and creates one Airtable record per lead. A null result or empty array creates no records. The workflow validates all lead fields before creating records. It does not deduplicate: repeated runs can add the same leads again.
 
-A read or validation failure stops before writes. Open Flow creates records sequentially and stops if a create fails or cannot be confirmed; earlier records can already exist. An uncertain write in either format may have succeeded. Inspect Airtable before retrying. Large results may exceed the Provider API Request response size limit.
+A read or validation failure stops before writes. Open Flow creates records sequentially and stops if a create fails or cannot be confirmed; earlier records can already exist. An uncertain write may have succeeded. Inspect Airtable before retrying. Large results may exceed the Provider API Request response size limit.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect PhantomBuster and Airtable Personal Access Token credentials, set the Phantom ID, and select the Airtable base and table.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

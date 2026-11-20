@@ -13,11 +13,18 @@ Send the current temperature for a chosen city to a Gotify application each morn
 
 ## Setup
 
-Connect OpenWeather in **Read current weather** and set the city query, for example Berlin,DE. Connect a Gotify application in **Send Gotify notification** using its server URL and application token. Open Flow requires a publicly reachable Gotify server. In n8n configure OpenWeatherMap and Gotify credentials and choose the same city. Activate one format and adjust the schedule and timezone as needed.
+Connect OpenWeather in **Read current weather** and set the city query, for example Berlin,DE. Connect a Gotify application in **Send Gotify notification** using its server URL and application token. Open Flow requires a publicly reachable Gotify server. Activate one format and adjust the schedule and timezone as needed.
 
 ## Behavior
 
-Each day at 09:00 UTC the workflow reads the city's current temperature in Celsius and sends a Gotify notification titled Today's Weather Update. The source's city-name lookup remains available in OpenWeather, although OpenWeather recommends geocoding for new integrations. A failed weather lookup stops before sending. An uncertain notification may already have been accepted; inspect Gotify before retrying. No automatic write retry or deduplication is added. Open Flow runs at the minute boundary; n8n uses a fixed second within the scheduled minute.
+Each day at 09:00 UTC the workflow reads the city's current temperature in Celsius and sends a Gotify notification titled Today's Weather Update. The source's city-name lookup remains available in OpenWeather, although OpenWeather recommends geocoding for new integrations. A failed weather lookup stops before sending. An uncertain notification may already have been accepted; inspect Gotify before retrying. No automatic write retry or deduplication is added. Open Flow runs at the minute boundary.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure OpenWeatherMap and Gotify credentials and choose the same city. N8n uses a fixed second within the scheduled minute.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -13,13 +13,20 @@ Send weekday Slack reminders for incomplete Notion database tasks assigned to tw
 
 ## Setup
 
-Connect Notion and Slack. In **Read all tasks and Slack users**, configure the Notion data source ID. In **Match assignees and tasks**, enter two distinct Notion user IDs and the corresponding exact Slack full names. Share the data source with the Notion connection. It must have Task (title), Status (status or select), Due (date), and Notion User (people) properties. Slack needs users:read and chat:write. In n8n, configure the database ID in **Read tasks**, Slack credentials in **Read Slack users** and **Send a Slack reminder**, and the same two mappings in **Match assignees and tasks**. Activate one format.
+Connect Notion and Slack. In **Read all tasks and Slack users**, configure the Notion data source ID. In **Match assignees and tasks**, enter two distinct Notion user IDs and the corresponding exact Slack full names. Share the data source with the Notion connection. It must have Task (title), Status (status or select), Due (date), and Notion User (people) properties. Slack needs users:read and chat:write.
 
 ## Behavior
 
 At 09:00 UTC on weekdays the workflow reads the task data and Slack users, matches each incomplete task to the first configured assignee on the task, and sends one Slack message with its title and due date. Tasks marked Done are excluded. Duplicate or missing configured Slack names stop the run before sending. Task properties and assigned user IDs must be available; incomplete tasks with malformed properties or 25 or more assignees stop before sending because Notion can truncate people properties. No matching tasks means no message.
 
-A failed or uncertain Slack write may have succeeded; inspect Slack before repeating the run. Earlier messages remain if a later send fails. No automatic write retries or cross-run deduplication are added. Large data sets must fit the execution platform limits. Open Flow runs on the minute boundary; n8n uses a fixed second within the minute.
+A failed or uncertain Slack write may have succeeded; inspect Slack before repeating the run. Earlier messages remain if a later send fails. No automatic write retries or cross-run deduplication are added. Large data sets must fit the execution platform limits. Open Flow runs on the minute boundary.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, configure the database ID in **Read tasks**, Slack credentials in **Read Slack users** and **Send a Slack reminder**, and the same two mappings in **Match assignees and tasks**. N8n uses a fixed second within the minute.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

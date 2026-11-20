@@ -15,13 +15,18 @@ Sync selected Notion posts as Webflow drafts and notify Slack.
 
 Connect Notion, Webflow and Slack. Set the Notion data source ID in **Scan posts and collection**, and set the Webflow collection ID and Slack channel ID in **Configure destinations**. Use a Notion data source with a title, a rich-text property named `slug` and a checkbox named `Sync to Webflow?`. Each selected page needs an external cover image. Configure the Webflow collection field slugs used in **Plan and reserve next write**. Enable persistent State.
 
-In n8n configure the Notion database ID, Webflow collection ID, Slack channel and a Data Table with text columns `item_key` and `status`; connect the Notion, Webflow OAuth2 and Slack credentials. Enable one format and avoid overlapping runs or edits.
-
 ## Behavior
 
 Daily at 00:00 UTC, selected pages and their direct blocks are read, matched to Webflow by slug, created or updated as drafts, written back to Notion and reported in Slack. Duplicate selected slugs stop the Open Flow run. It supports paragraphs, headings, quotes, lists, code and images; unsupported or nested blocks stop the run. Webflow list pages are fetched until a page contains fewer than 100 items. Concurrent collection changes can affect offset pagination.
 
-Before each write a pending record is saved. If a response is uncertain, inspect the destination before retrying. In Open Flow enter the pending key and confirmed or absent in **Plan and reserve next write**; for a confirmed Webflow write also enter its item ID. Restore the earlier page content if it changed while pending. During a recovery run, already completed pages are skipped. Clear recovery fields after use to resume regular daily syncs. In n8n inspect the pending Data Table row and the destination; complete or repair the operation manually before deleting the row. Earlier writes may remain after later failure.
+Before each write a pending record is saved. If a response is uncertain, inspect the destination before retrying. In Open Flow enter the pending key and confirmed or absent in **Plan and reserve next write**; for a confirmed Webflow write also enter its item ID. Restore the earlier page content if it changed while pending. During a recovery run, already completed pages are skipped. Clear recovery fields after use to resume regular daily syncs. Earlier writes may remain after later failure.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure the Notion database ID, Webflow collection ID, Slack channel and a Data Table with text columns `item_key` and `status`; connect the Notion, Webflow OAuth2 and Slack credentials. Enable one format and avoid overlapping runs or edits. In n8n inspect the pending Data Table row and the destination; complete or repair the operation manually before deleting the row.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

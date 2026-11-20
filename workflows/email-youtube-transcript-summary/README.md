@@ -15,13 +15,18 @@ Summarize a YouTube transcript and email the result.
 
 Create a [YouTube Transcript API token](https://www.youtube-transcript.io/) and store the complete authorization value `Basic YOUR_TOKEN` as Secret Variable `YOUTUBE_TRANSCRIPT_AUTH`. Configure an AI model and Gmail connection. Run with a YouTube URL and recipient email address.
 
-In n8n set the video URL, select an HTTP Header Auth credential named `Authorization` containing `Basic YOUR_TOKEN`, connect an OpenAI model, and configure SMTP sender and recipient in **Send Email**. Run manually.
-
 ## Behavior
 
 The workflow requests the first available transcript track and asks the model for a structured summary, then emails the title and text. The video must be public and have captions available to the transcript service. The transcript is sent to your AI provider and may appear in execution history. Long transcripts must fit model and workflow limits.
 
 If the transcript is missing or a request fails, the workflow stops before sending. If email delivery is unknown, inspect the mailbox before rerunning; another run can send another email.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n set the video URL, select an HTTP Header Auth credential named `Authorization` containing `Basic YOUR_TOKEN`, connect an OpenAI model, and configure SMTP sender and recipient in **Send Email**. Run manually.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

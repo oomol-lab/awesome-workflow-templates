@@ -13,13 +13,20 @@ Send the current city temperature by SMS every morning.
 
 ## Setup and use
 
-Connect OpenWeather and Vonage. Set the city in **Get current weather**; the example uses Berlin and metric units. Replace the example phone number in **Send Vonage SMS** with your destination in E.164 digits without the plus sign. Check that the sender ID is allowed for the destination. In n8n configure the OpenWeather and Vonage credentials and set the destination. Enable one format to avoid duplicate messages.
+Connect OpenWeather and Vonage. Set the city in **Get current weather**; the example uses Berlin and metric units. Replace the example phone number in **Send Vonage SMS** with your destination in E.164 digits without the plus sign. Check that the sender ID is allowed for the destination. Enable one format to avoid duplicate messages.
 
-The initial schedule is 09:00 UTC daily. The source used the n8n instance timezone; adjust the schedule and timezone to your preference.
+The initial schedule is 09:00 UTC daily.
 
 ## Behavior
 
 Each run reads the current temperature in Celsius and sends one SMS from the configured sender. If the weather read fails, no notification is sent. If the notification result is unknown, check Vonage before retrying to avoid duplicates.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure the OpenWeather and Vonage credentials and set the destination. The source used the n8n instance timezone; adjust the schedule and timezone to your preference.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

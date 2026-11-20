@@ -15,13 +15,20 @@ Create a Wise quote and transfer, fund it from balance, and read its status.
 
 This workflow sends money from a Wise balance when run. Use a Wise profile that permits API balance funding, a valid recipient account, sufficient balance and a supported currency route. Wise restricts personal-token funding by account region and may require strong customer authentication. Bind Secret Variable `WISE_API_TOKEN`, enable persistent State and prevent overlapping runs.
 
-Start Open Flow manually with the profile and recipient IDs, positive source amount, three-letter source and target currencies, payment reference and a unique transaction UUID for this payment. For n8n, import the workflow, connect Wise, configure these values in **Configure payment**, create an n8n Data Table with text column `transaction_id`, and set its ID in the two checkpoint nodes. Activate only one format.
+Start Open Flow manually with the profile and recipient IDs, positive source amount, three-letter source and target currencies, payment reference and a unique transaction UUID for this payment.
 
 ## Behavior
 
 A manual run requests a quote, creates a transfer, funds it from the Wise balance, then reads that transfer. A completed funding response confirms funding, not final delivery to the recipient. No real payment is made by importing the template.
 
-If creation or funding fails or the outcome is uncertain, inspect the Wise transfer before taking further action. The Open Flow transaction UUID and n8n Data Table checkpoint prevent automatic replay. Do not clear checkpoints or use a new UUID for an unresolved payment. If Wise requests additional authentication, complete the payment using Wise's supported authentication flow; this Open Flow template does not automate that challenge.
+If creation or funding fails or the outcome is uncertain, inspect the Wise transfer before taking further action. Do not clear checkpoints or use a new UUID for an unresolved payment. If Wise requests additional authentication, complete the payment using Wise's supported authentication flow; this Open Flow template does not automate that challenge.
+
+<details>
+<summary>In n8n</summary>
+
+For n8n, import the workflow, connect Wise, configure these values in **Configure payment**, create an n8n Data Table with text column `transaction_id`, and set its ID in the two checkpoint nodes. The Open Flow transaction UUID and n8n Data Table checkpoint prevent automatic replay.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

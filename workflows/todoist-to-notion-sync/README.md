@@ -26,13 +26,18 @@ For Open Flow:
 | Prepare task label and link updates | Edit Sent Label if needed; it defaults to `sent`. |
 | Update Todoist tasks in order | Select the same Todoist account through Actions. |
 
-For n8n, configure Todoist OAuth2 in both Todoist nodes and Notion in **Add to Notion database**. Select the source label, destination database, and the **Todoist ID** rich-text property. Set the completed label in the last line of **Prepare task updates** if needed. The n8n Notion node uses the older database API, so use a database containing one data source. Its database ID differs from the data source ID used by Open Flow.
+Enable the workflow after setup. Each run reads up to 50 matching active tasks by default, following cursors as needed to fill that batch. It validates all titles, IDs, and label arrays before any page creation. Titles must contain 1–2,000 characters. With no tasks, it does not call Notion or update Todoist.
 
-Open Flow checks every minute and n8n checks every 30 seconds, both on an explicit UTC schedule. Enable the workflow after setup. Each run reads up to 50 matching active tasks by default, following cursors as needed to fill that batch. It validates all titles, IDs, and label arrays before any page creation. Titles must contain 1–2,000 characters. With no tasks, it does not call Notion or update Todoist.
-
-All Notion rows are created in task order before any Todoist task is updated. Each row contains the task title and full task ID. Each update removes the configured source label, adds `sent`, keeps other labels, and prepends `Notion Link: <page URL>` to the existing description. Open Flow returns the task-to-page associations and updated task records; n8n returns update confirmations.
+All Notion rows are created in task order before any Todoist task is updated. Each row contains the task title and full task ID. Each update removes the configured source label, adds `sent`, keeps other labels, and prepends `Notion Link: <page URL>` to the existing description. Open Flow returns the task-to-page associations and updated task records.
 
 This sequence is not atomic. A page-creation error leaves earlier rows in Notion and all task labels unchanged. An update error leaves later tasks with their routing label even though their Notion rows already exist. A later poll, overlapping run, or manual retry can create duplicate rows. Check and reconcile the two services before retrying an uncertain run. The workflow does not query for existing Notion rows or automatically replay failed calls.
+
+<details>
+<summary>In n8n</summary>
+
+For n8n, configure Todoist OAuth2 in both Todoist nodes and Notion in **Add to Notion database**. Select the source label, destination database, and the **Todoist ID** rich-text property. Set the completed label in the last line of **Prepare task updates** if needed. The n8n Notion node uses the older database API, so use a database containing one data source. Its database ID differs from the data source ID used by Open Flow. Open Flow checks every minute and n8n checks every 30 seconds, both on an explicit UTC schedule. N8n returns update confirmations.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

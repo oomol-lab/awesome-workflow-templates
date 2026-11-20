@@ -17,13 +17,18 @@ Connect Typeform in **Receive Typeform quiz**, select your form and activate the
 
 Set the opt-in process ID and four distinct KlickTipp custom field IDs in **Validate and map quiz answers**. Obtain a Management API session cookie for a dedicated KlickTipp API user and store the complete name=value pair in secret Variable **KLICKTIPP_SESSION_COOKIE**; renew it when the session expires. This is separate from the Listbuilding API key.
 
-In n8n, install KlickTipp community node 1.0.48, connect Typeform and KlickTipp credentials, choose the form and configure the opt-in process and custom field IDs. Activate one format.
-
 ## Behavior
 
-Each response creates or updates the subscriber with the contact details and quiz answers. Birthday is converted to a UTC Unix timestamp, the phone is normalized to digits with 00 for a leading plus, multiple choices are joined with commas, and the numeric answer is multiplied by 100. The three quiz answers become tags, with each selected choice treated as a tag. Open Flow deduplicates tag names, creates missing tags sequentially and assigns them together. n8n processes existing and newly created tags in separate branches.
+Each response creates or updates the subscriber with the contact details and quiz answers. Birthday is converted to a UTC Unix timestamp, the phone is normalized to digits with 00 for a leading plus, multiple choices are joined with commas, and the numeric answer is multiplied by 100. The three quiz answers become tags, with each selected choice treated as a tag. Open Flow deduplicates tag names, creates missing tags sequentially and assigns them together.
 
-A failed or uncertain write may already have changed KlickTipp. Inspect the contact and tags before retrying. Open Flow uses Typeform's managed signed webhook and a manually renewed session cookie; n8n manages Typeform registration and refreshes its KlickTipp session and retries a request after HTTP 403. Open Flow stops on that response.
+A failed or uncertain write may already have changed KlickTipp. Inspect the contact and tags before retrying. Open Flow uses Typeform's managed signed webhook and a manually renewed session cookie. Open Flow stops on that response.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, install KlickTipp community node 1.0.48, connect Typeform and KlickTipp credentials, choose the form and configure the opt-in process and custom field IDs. Activate one format. n8n processes existing and newly created tags in separate branches. N8n manages Typeform registration and refreshes its KlickTipp session and retries a request after HTTP 403.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

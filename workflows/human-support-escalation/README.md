@@ -21,8 +21,6 @@ In Open Flow, use Run with:
 {"chatInput":"I need help with my account. Please contact ada@example.com."}
 ```
 
-In n8n, select a Slack API credential and your channel in **Notify Human Support**. Edit **Support Request**, then run **Run Support Handoff**. Another workflow can call **Execute Workflow Trigger** with a `chatInput` string.
-
 ## Behavior
 
 The workflow retains the source's permissive email-pattern check. It looks for an email-like substring in the supplied text; it does not verify address ownership or deliverability. The source field name `chatInput` is ordinary request text here.
@@ -32,6 +30,13 @@ If no email-like substring is present, no Slack request is made. The `response` 
 With an email-like substring, the workflow submits one [Slack message request](https://docs.slack.dev/reference/methods/chat.postMessage/) containing the source support prefix followed by the supplied text. The question and contact address therefore go to the chosen channel. The Open Flow Slack connector trims whitespace at the end of the outgoing message. Slack controls message formatting, link handling and display. The workflow returns the source confirmation text after Slack acknowledges the post. It does not wait for a human reply or send email.
 
 Blank input is rejected. A message destined for Slack must fit the 40,000-character budget including the prefix. Slack failures or missing acknowledgment fields stop the run without a successful confirmation. There are no workflow-level retries, duplicate-request checks or persistent state. Repeating an email-bearing request can post it again.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, select a Slack API credential and your channel in **Notify Human Support**. Edit **Support Request**, then run **Run Support Handoff**. Another workflow can call **Execute Workflow Trigger** with a `chatInput` string.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

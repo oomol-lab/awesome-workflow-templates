@@ -26,15 +26,20 @@ Use Run and supply a `variables` object. For a prompt containing `Write about {{
 }
 ```
 
-For n8n, edit **Set Prompt Settings**, connect the **GitHub** node, and configure the **Ollama Chat Model** credential for an Ollama service reachable from n8n. Confirm that the service provides [`llama3.2`](https://ollama.com/library/llama3.2), or choose another available text model in both formats. Execute the manual workflow and read `promptResponse` from **Prompt Output**.
-
 ## Behavior
 
 The selected file must be a regular UTF-8 text file, at most 1 MiB. [GitHub's Contents API](https://docs.github.com/en/rest/repos/contents#get-repository-content) serves these small files with their encoded content. Files with empty or undecodable text, and directory paths, stop before the model.
 
-Placeholders use `{{ key }}` or a dotted form such as `{{ profile.company }}`. Matching is case-sensitive and uses the final dotted key, so the latter reads `variables.company`. All values must be strings; extra variables are allowed. Substitution is one pass over single-line placeholders, uses only explicitly supplied keys, and treats inserted values as text. It does not evaluate n8n or JavaScript expressions. Missing keys stop before generation and are listed in the error.
+Placeholders use `{{ key }}` or a dotted form such as `{{ profile.company }}`. Matching is case-sensitive and uses the final dotted key, so the latter reads `variables.company`. All values must be strings; extra variables are allowed. Substitution is one pass over single-line placeholders, uses only explicitly supplied keys, and treats inserted values as text. Missing keys stop before generation and are listed in the error.
 
 Each successful run reads one file and has one model generation step. The model receives the completed prompt as its user message, keeps the source's default assistant system message, and returns `promptResponse`. The workflow does not write to GitHub or publish the response. No workflow-level retries are configured; the model adapter and provider can retry transient requests internally. Output quality depends on the prompt and selected model.
+
+<details>
+<summary>In n8n</summary>
+
+For n8n, edit **Set Prompt Settings**, connect the **GitHub** node, and configure the **Ollama Chat Model** credential for an Ollama service reachable from n8n. Confirm that the service provides [`llama3.2`](https://ollama.com/library/llama3.2), or choose another available text model in both formats. Execute the manual workflow and read `promptResponse` from **Prompt Output**. It does not evaluate n8n or JavaScript expressions.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

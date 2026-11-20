@@ -15,11 +15,16 @@ Email the current Hacker News front-page titles and links in a spreadsheet attac
 
 Connect Excel and OneDrive for the same Microsoft account and connect SendGrid with a verified sender. Configure **Prepare the attachment** HTTP capability to allow your connector transit storage host. Start Open Flow with the sender and recipient email addresses. Each run leaves a uniquely named workbook in the OneDrive root; remove it when no longer needed.
 
-In n8n connect an SMTP account and configure the sender and recipient in **Send email notification**.
-
 ## Behavior
 
-The workflow reads the Hacker News front page and emails a spreadsheet of titles and links. Open Flow creates an XLSX workbook in OneDrive and sends it through SendGrid; n8n creates the attachment in memory and sends it through SMTP. A workbook creation or email send with an unknown outcome may have succeeded; inspect OneDrive or sent mail before retrying. The page and workbook must fit the execution limits.
+The workflow reads the Hacker News front page and emails a spreadsheet of titles and links. Open Flow creates an XLSX workbook in OneDrive and sends it through SendGrid. A workbook creation or email send with an unknown outcome may have succeeded; inspect OneDrive or sent mail before retrying. The page and workbook must fit the execution limits.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n connect an SMTP account and configure the sender and recipient in **Send email notification**. N8n creates the attachment in memory and sends it through SMTP.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

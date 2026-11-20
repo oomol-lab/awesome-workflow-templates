@@ -23,9 +23,12 @@ Run manually once to create the public channel, add the configured user and post
 
 Each step confirms its response before starting the next write. A failure or uncertain response stops later steps. The channel or membership may already exist even when the run fails; a welcome post may also have been accepted. Inspect Mattermost before replaying. There is no workflow retry, lookup/reuse of an existing channel, rollback or cleanup. Running again with the same channel handle can fail because it already exists. Complete configuration and accumulated responses must fit the current Code host’s 1 MiB input/result budgets.
 
-## n8n
+<details>
+<summary>In n8n</summary>
 
 Set the same values in **Choose team, user and channel**, then select the same Mattermost credentials on all three Mattermost nodes. Configure the instance URL and Personal Access Token in those credentials. The native Mattermost V1 node creates a public channel by default; this export sets that choice explicitly. The native authentication helper can automatically send a request once more after HTTP 401; other inspected HTTP errors and unknown writes are not automatically repeated. Open Flow’s Provider/Proxy rejects 401 after one request. This transport difference does not provide a safe workflow replay mechanism.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

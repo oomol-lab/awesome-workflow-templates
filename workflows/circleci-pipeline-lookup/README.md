@@ -15,9 +15,14 @@ Read one CircleCI pipeline by its project and pipeline number, including its sta
 
 Select your CircleCI account in **Read CircleCI pipeline by number** and grant **Provider API** permission. This permission is separate from individual Action permissions. The account needs read access to a CircleCI Cloud project using GitHub OAuth or Bitbucket Cloud. Run with **Vcs** set to `github` or `bitbucket`, **Project Slug** in `organization/repository` form, and a positive **Pipeline Number**. The number is the project’s pipeline number, rather than the pipeline UUID.
 
+Each run makes one read request and returns the complete pipeline object. A pipeline in an errored state is still a valid lookup result; inspect its `state` and `errors`. The workflow does not trigger, retry or modify a pipeline. A missing pipeline, inaccessible project or failed request stops the run. No workflow retry is configured.
+
+<details>
+<summary>In n8n</summary>
+
 In n8n, select CircleCI credentials, choose the source-control provider and set the project slug and pipeline number in **CircleCI**. The default pipeline number is `1`; replace it with the pipeline you need.
 
-Each run makes one read request and returns the complete pipeline object. A pipeline in an errored state is still a valid lookup result; inspect its `state` and `errors`. The workflow does not trigger, retry or modify a pipeline. A missing pipeline, inaccessible project or failed request stops the run. No workflow retry is configured.
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -15,11 +15,16 @@ Parse and validate a phone number using Uproc.
 
 The workflow uses Uproc’s legacy v2 process API. In Open Flow, create secret Variables for the Uproc account email and API key and bind them to **Auth Username** and **Auth Password** in **Parse the phone number**. Run with a phone number, including its international prefix.
 
-In n8n, connect a Uproc API credential and set the phone number in **Create Phone Item**. Run either format manually.
-
 ## Behavior
 
-Each run submits a phone number for Uproc to parse and check its format and prefix. Each response item is marked valid when its `message.valid` value converted to text equals `true`, matching the source condition. Open Flow returns each item with a `valid` flag in the `results` array. n8n routes matching and nonmatching items to the true and false outputs of **Phone is Valid?**. An array response is treated as individual items in both formats. The response data is retained without filtering. Request failures stop the run. Open Flow has a 30-second HTTP timeout, a 4 MiB response limit, and a 1 MiB Code output limit.
+Each run submits a phone number for Uproc to parse and check its format and prefix. Each response item is marked valid when its `message.valid` value converted to text equals `true`, matching the source condition. Open Flow returns each item with a `valid` flag in the `results` array. An array response is treated as individual items. The response data is retained without filtering. Request failures stop the run. Open Flow has a 30-second HTTP timeout, a 4 MiB response limit, and a 1 MiB Code output limit.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect a Uproc API credential and set the phone number in **Create Phone Item**. Run either format manually. n8n routes matching and nonmatching items to the true and false outputs of **Phone is Valid?**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

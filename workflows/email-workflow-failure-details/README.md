@@ -13,13 +13,20 @@ Email diagnostic details when a configured workflow fails.
 
 ## Setup
 
-Connect Gmail and set the alert recipient in **Send the failure email**. In Open Flow, select the published source workflows in **Receive a workflow failure**, then publish and enable this workflow. In n8n, connect Gmail and set the recipient in **Gmail**, enable this workflow, and select it as the error workflow in each source workflow's settings. Enable one format and avoid assigning the error workflow to itself.
+Connect Gmail and set the alert recipient in **Send the failure email**. In Open Flow, select the published source workflows in **Receive a workflow failure**, then publish and enable this workflow. Enable one format and avoid assigning the error workflow to itself.
 
 ## Behavior
 
-An automatic workflow failure sends a plain-text email with the workflow name and available diagnostic details. Open Flow also reports indeterminate runs. Open Flow includes the run ID, error code and message, and any node ID, job ID and path supplied by its error event. Open Flow's event does not provide an execution URL or stack trace. n8n includes the execution URL, last node, error message and stack trace when those fields are available. Missing details are shown as not available. Both formats remove line breaks from the email subject.
+An automatic workflow failure sends a plain-text email with the workflow name and available diagnostic details. Open Flow also reports indeterminate runs. Open Flow includes the run ID, error code and message, and any node ID, job ID and path supplied by its error event. Open Flow's event does not provide an execution URL or stack trace. Missing details are shown as not available. The workflow removes line breaks from the email subject.
 
 Error details and stack traces may contain sensitive information. Restrict the recipient and workflow history. A failed or uncertain email send may already have been delivered; check Gmail before retrying.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect Gmail and set the recipient in **Gmail**, enable this workflow, and select it as the error workflow in each source workflow's settings. n8n includes the execution URL, last node, error message and stack trace when those fields are available.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

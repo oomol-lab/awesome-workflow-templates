@@ -13,23 +13,30 @@ Inspect the complete JSON update received by a Telegram bot. The bot sends the f
 
 ## Setup
 
-Connect the same Telegram bot in **Receive the Telegram update** and **Send one private JSON part**. In n8n, select the same **Telegram API** bot credentials on its trigger and send node. Activate one format for this bot. Telegram supports one webhook destination per bot, so another active workflow can prevent registration or replace its destination.
+Connect the same Telegram bot in **Receive the Telegram update** and **Send one private JSON part**. Telegram supports one webhook destination per bot, so another active workflow can prevent registration or replace its destination.
 
 Use a dedicated bot for this debugger and start a private conversation with it before testing. The response goes to `message.from.id`, as in the source. A group message is echoed privately to its sender, rather than posted back to the group. The bot must be allowed to message that sender.
 
-Keep the trigger’s default update selection and file downloading disabled. Open Flow keeps pending updates when registering the webhook; the n8n trigger uses version 1.2, which also keeps pending updates and checks the webhook secret header.
+Keep the trigger’s default update selection and file downloading disabled. Open Flow keeps pending updates when registering the webhook.
 
 ## Use
 
 Send a text message, sticker, emoji, photo, voice note, document or forwarded message to the bot. The response shows the entire update as JSON with two-space indentation, including message and media metadata. File contents are not downloaded. The JSON includes the data present in the received update, such as sender/chat information and file identifiers.
 
-The processor requires a new `message` update with a valid sender ID. The default Telegram subscription can also deliver other update types, such as edited messages, channel posts and callbacks. Those updates do not have the source’s `message.from.id` path and are rejected before an echo can be sent, or handled by the trigger itself. n8n’s native trigger can route its own approval callbacks to its platform handler without running this echo workflow. Open Flow may filter unsupported update types. The echo processor does not choose another recipient.
+The processor requires a new `message` update with a valid sender ID. The default Telegram subscription can also deliver other update types, such as edited messages, channel posts and callbacks. Those updates do not have the source’s `message.from.id` path and are rejected before an echo can be sent, or handled by the trigger itself. Open Flow may filter unsupported update types. The echo processor does not choose another recipient.
 
 JSON is escaped inside an HTML code block so backticks, markup and special characters in message content remain literal. A long update is divided into numbered parts, sent in order. Each encoded message stays within 4096 characters, including its markup. Join the JSON content after each part label to reconstruct the full update. No fields or text are truncated.
 
 Each returned message is checked for its ID, private recipient and complete rendered part text before the next part is sent. Errors, missing receipts or uncertain sends stop later parts. Earlier messages can already have been sent; check the conversation before replaying a failed run. No workflow retry or cross-run echo history is added.
 
-Open Flow identifies webhook deliveries by the Telegram update ID. The n8n trigger adds no workflow-level delivery history. Manual replays or uncertain sends can produce duplicate messages. Complete updates, encoded parts and accumulated receipts must fit the inspected Open Flow host’s 1 MiB per-Code input/result budget; oversized data fails without truncation. The Open Flow result keeps all normalized message receipts (`messageId`, `chat`, `text` and other returned fields) plus a count. n8n keeps the Telegram API response envelopes.
+Open Flow identifies webhook deliveries by the Telegram update ID. Manual replays or uncertain sends can produce duplicate messages. Complete updates, encoded parts and accumulated receipts must fit the inspected Open Flow host’s 1 MiB per-Code input/result budget; oversized data fails without truncation. The Open Flow result keeps all normalized message receipts (`messageId`, `chat`, `text` and other returned fields) plus a count.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, select the same **Telegram API** bot credentials on its trigger and send node. The n8n trigger uses version 1.2, which also keeps pending updates and checks the webhook secret header. n8n’s native trigger can route its own approval callbacks to its platform handler without running this echo workflow. The n8n trigger adds no workflow-level delivery history. n8n keeps the Telegram API response envelopes.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -17,13 +17,18 @@ Create a Google Form with a dropdown and a text question. Link its responses to 
 
 In Open Flow, connect Google Sheets and Google Forms. Set the choices spreadsheet and range in **Read dropdown choices**, the form ID in **Read current form**, and its dropdown item ID in **Prepare dropdown update**. Configure **New form responses** with the linked response spreadsheet and sheet. Enable persistent State.
 
-In n8n, connect the two Google Sheets triggers and **Get all values** to Google Sheets. Configure both choices nodes for the same source sheet and **New form responses** for the linked response sheet. Add a generic OAuth2 credential with Google Forms body read and write access to both HTTP nodes. Set the same form ID in their URLs and in **Prepare dropdown update**, and set its item ID there. Select one Data Table with text columns `item_key` and `status` in all checkpoint nodes.
-
 ## Behavior
 
 The workflow reads the current choices and form, then updates the specified dropdown only if the values changed. Google Forms revision control rejects a stale update. The linked response sheet supplies new submissions to **Submitted form data**; connect that output to your own processing. The response trigger establishes a baseline on activation and does not replay old rows. Avoid overlapping sync runs.
 
-If an update result is uncertain, inspect the form. In Open Flow, a matching form clears the pending marker automatically. If the desired update is absent, enter the pending key `sheet-form:<form ID>:<item ID>` in **Prepare dropdown update**, rerun once, then clear the acknowledgement. In n8n, inspect the form and remove its pending Data Table row after reconciliation, then rerun. Confirm the form contents before clearing a pending marker.
+If an update result is uncertain, inspect the form. In Open Flow, a matching form clears the pending marker automatically. If the desired update is absent, enter the pending key `sheet-form:<form ID>:<item ID>` in **Prepare dropdown update**, rerun once, then clear the acknowledgement. Confirm the form contents before clearing a pending marker.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect the two Google Sheets triggers and **Get all values** to Google Sheets. Configure both choices nodes for the same source sheet and **New form responses** for the linked response sheet. Add a generic OAuth2 credential with Google Forms body read and write access to both HTTP nodes. Set the same form ID in their URLs and in **Prepare dropdown update**, and set its item ID there. Select one Data Table with text columns `item_key` and `status` in all checkpoint nodes. In n8n, inspect the form and remove its pending Data Table row after reconciliation, then rerun.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

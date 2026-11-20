@@ -32,11 +32,11 @@ In Open Flow, import `templates/newsletter-subscriber-enrollment.openflow.json`:
 
 `topic` must contain text, `email` must be one address without an apostrophe, and `frequency` must be `daily`, `weekly` or `surprise me`. The stored interval for `surprise me` is `surprise`. `Start Day` is the English weekday at signup processing time in UTC. This template records a preference; it does not schedule or send the newsletter itself.
 
-In n8n, import `templates/newsletter-subscriber-enrollment.n8n.json`. Configure the base and table IDs in **Prepare Newsletter Subscription**, select Airtable credentials in **Create Subscriber**, and Gmail credentials in the send node. Activate the workflow and share its production form URL. The form retains the source topic, email and frequency fields and waits for the workflow result. Open Flow accepts JSON rather than hosting this form. See [n8n Form Trigger](https://docs.n8n.io/integrations/builtin/core-nodes/n8n-nodes-base.formtrigger/).
+Open Flow accepts JSON rather than hosting this form.
 
 ## Behavior
 
-The first request is an atomic Airtable `performUpsert` by `Email`, writing the five subscription fields. If Airtable reports that more than one record matches the email, the workflow reads every matching page and updates the first returned record, preserving the source’s default duplicate behavior. It does not update every duplicate or merge records. Keep emails unique where possible. The native source fallback interpolates email into a single-quoted formula without escaping. Both formats reject addresses containing an apostrophe before any API call.
+The first request is an atomic Airtable `performUpsert` by `Email`, writing the five subscription fields. If Airtable reports that more than one record matches the email, the workflow reads every matching page and updates the first returned record, preserving the source’s default duplicate behavior. It does not update every duplicate or merge records. Keep emails unique where possible. The native source fallback interpolates email into a single-quoted formula without escaping. The workflow rejects addresses containing an apostrophe before any API call.
 
 The workflow verifies the returned subscription fields before sending one confirmation with the original subject and topic/frequency text. After Gmail returns a message ID, the Open Flow response is:
 
@@ -47,6 +47,13 @@ The workflow verifies the returned subscription fields before sending one confir
 This confirms Gmail’s acceptance for processing. It does not confirm inbox delivery, email ownership, consent verification or a double opt-in. Expose signup access according to your audience and email policy. See [Gmail message sending](https://developers.google.com/workspace/gmail/api/reference/rest/v1/users.messages/send).
 
 A request failure, unexpected saved record, failed lookup or email error stops the run. There is no workflow retry or rollback. Airtable may already contain the subscription when sending fails, and a repeated signup can send another confirmation. The Open Flow webhook waits up to 60 seconds; processing can outlast the caller’s response window. Check Airtable and Gmail before repeating an uncertain request.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, import `templates/newsletter-subscriber-enrollment.n8n.json`. Configure the base and table IDs in **Prepare Newsletter Subscription**, select Airtable credentials in **Create Subscriber**, and Gmail credentials in the send node. Activate the workflow and share its production form URL. The form retains the source topic, email and frequency fields and waits for the workflow result. See [n8n Form Trigger](https://docs.n8n.io/integrations/builtin/core-nodes/n8n-nodes-base.formtrigger/).
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

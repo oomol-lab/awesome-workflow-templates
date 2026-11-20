@@ -13,11 +13,18 @@ Summarize excerpts from the daily podcast charts and email a digest.
 
 ## Setup
 
-Configure a Taddy account, its user ID and API key, a Gmail connection and recipient, and an AI model. In Open Flow bind secret variables TADDY_USER_ID and TADDY_API_KEY to the X-USER-ID header and authentication token respectively on both Taddy HTTP nodes, and enable persistent State. In n8n configure TADDY_USER_ID as a variable, a Header Auth credential named X-API-KEY on both HTTP nodes, and a Data Table with item_key and status text columns. Set the genre, recipient, and schedule in each platform. Update the recipient in both the Gmail node and the digest checkpoint key. [Taddy-generated transcripts](https://taddy.org/developers/podcast-api/episode-transcripts) require a Pro or Business account with available transcript credits; podcast-provided transcripts are available on free accounts.
+Configure a Taddy account, its user ID and API key, a Gmail connection and recipient, and an AI model. In Open Flow bind secret variables TADDY_USER_ID and TADDY_API_KEY to the X-USER-ID header and authentication token respectively on both Taddy HTTP nodes, and enable persistent State. Set the genre, recipient, and schedule in each platform. Update the recipient in both the Gmail node and the digest checkpoint key. [Taddy-generated transcripts](https://taddy.org/developers/podcast-api/episode-transcripts) require a Pro or Business account with available transcript credits; podcast-provided transcripts are available on free accounts.
 
 ## Behavior
 
 At 08:00 UTC, fetch up to ten US episodes for the configured genre. For each episode, select transcript segments overlapping 08:00–24:00 and summarize that excerpt, then email one digest. Segment boundaries may include nearby words, and dynamic advertisements can shift transcript timecodes. If an episode has no timecoded transcript or a request fails, the run stops instead of sending an incomplete digest. No email is sent for an empty chart. Taddy charts update around 09:00 Pacific time, so adjust the schedule to receive a newly updated chart. Transcript text is sent to the model. Prevent overlapping runs; inspect Gmail before clearing a pending checkpoint after an uncertain send.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure TADDY_USER_ID as a variable, a Header Auth credential named X-API-KEY on both HTTP nodes, and a Data Table with item_key and status text columns.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

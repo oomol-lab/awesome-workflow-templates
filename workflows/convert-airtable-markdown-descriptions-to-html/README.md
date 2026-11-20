@@ -13,13 +13,20 @@ Convert one Airtable video description or the first three descriptions from Mark
 
 ## Setup
 
-Connect Airtable with access to the same base and table in **Read the requested records** and **Update the same record**. Set the base and table IDs in both nodes. Create a Markdown text field named `📥 Video Description` and a text field named `Video description HTML`. In n8n connect Airtable and set the same base and table in the read and update nodes. Activate one format.
+Connect Airtable with access to the same base and table in **Read the requested records** and **Update the same record**. Set the base and table IDs in both nodes. Create a Markdown text field named `📥 Video Description` and a text field named `Video description HTML`.
 
 ## Use
 
 Send a GET request to the workflow webhook. Include `recordId` as a query parameter to convert that record; omit it to convert the first three records returned by Airtable. The one-record path enables simplified autolinks, while the three-record path uses the converter defaults, matching the source. The HTML is stored in the same record. Markdown can contain raw HTML; sanitize the result before using it in an untrusted web page.
 
 The endpoint can trigger Airtable writes. The webhook acknowledgment does not confirm the updates. A failed or uncertain update may have succeeded, and earlier updates remain; inspect the table before replaying. No automatic retry is added.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n connect Airtable and set the same base and table in the read and update nodes.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -13,13 +13,20 @@ Send an HTTP GET to each configured URL every 15 minutes.
 
 ## Setup
 
-Replace the example list in **Prepare the next URL** with the HTTP or HTTPS URLs to contact. In n8n, edit the array in **URLs List**. Configure only destinations you intend to contact, without embedded credentials. Activate one format.
+Replace the example list in **Prepare the next URL** with the HTTP or HTTPS URLs to contact. Configure only destinations you intend to contact, without embedded credentials.
 
 ## Behavior
 
 Every 15 minutes the workflow requests each URL. It follows up to 21 redirects and attempts the remaining URLs after a request error or a non-2xx final response. As in the source, those errors do not by themselves fail the run. An empty list makes no requests. This workflow sends no alert; inspect individual request results to see failures. Each run repeats the requests, and a GET endpoint may itself have side effects.
 
-Open Flow checks URLs sequentially; n8n may issue requests concurrently. Open Flow applies a 30-second timeout per redirect hop and a 4 MiB response limit; exceeding that limit stops the run immediately. Redirect targets must be HTTP or HTTPS without credentials. n8n uses its HTTP node defaults. Both schedules use UTC as a starting point; the source inherited its n8n instance timezone.
+Open Flow checks URLs sequentially. Open Flow applies a 30-second timeout per redirect hop and a 4 MiB response limit; exceeding that limit stops the run immediately. Redirect targets must be HTTP or HTTPS without credentials. Both schedules use UTC as a starting point.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, edit the array in **URLs List**. N8n may issue requests concurrently. n8n uses its HTTP node defaults. The source inherited its n8n instance timezone.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -13,11 +13,18 @@ Research global search volume, competition and bid metrics for a keyword and rel
 
 ## Setup
 
-Connect OpenAI and a DataForSEO account with Provider API permission. Enter a keyword request and run the workflow. In n8n configure Google Gemini and HTTP Basic credentials for DataForSEO, then open the chat. Each run makes two billable DataForSEO requests and two model requests.
+Connect OpenAI and a DataForSEO account with Provider API permission. Enter a keyword request and run the workflow. Each run makes two billable DataForSEO requests and two model requests.
 
 ## Behavior
 
 The workflow extracts one keyword, requests worldwide Google Ads search volume and relevant keyword suggestions, selects up to ten related terms, and formats their search volume, paid competition and low/high top-of-page bid estimates. Missing values remain null in the structured output. Generated prose may contain errors; check it against the structured values. Queries and results are shared with the connected providers.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure Google Gemini and HTTP Basic credentials for DataForSEO, then open the chat.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

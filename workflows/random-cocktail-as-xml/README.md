@@ -17,9 +17,16 @@ The request uses TheCocktailDB’s public test key `1`, intended for development
 
 ## Behavior
 
-Run manually to retrieve one random recipe. The XML contains the returned `drinks` fields, including empty elements for missing values, and is available as `data`. Open Flow expects the documented flat drink fields; an unexpected nested field or invalid XML character stops conversion. The n8n version uses its XML node. A service failure stops the run.
+Run manually to retrieve one random recipe. The XML contains the returned `drinks` fields, including empty elements for missing values, and is available as `data`. Open Flow expects the documented flat drink fields; an unexpected nested field or invalid XML character stops conversion. A service failure stops the run.
 
 Recipe data: [TheCocktailDB](https://www.thecocktaildb.com/). Check its access terms and the returned licensing metadata before redistributing content.
+
+<details>
+<summary>In n8n</summary>
+
+The n8n version uses its XML node.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

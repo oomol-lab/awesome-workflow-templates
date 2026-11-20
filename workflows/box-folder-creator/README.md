@@ -13,11 +13,18 @@ Create one named folder in Box and return its metadata.
 
 ## Setup
 
-Select your Box account in **Create Box folder**. Edit the folder name and parent folder ID. The defaults preserve the source example: `n8n-rocks` in root folder `0`. The connected account must be allowed to create a folder in that destination. In n8n, configure the same name, parent and account in **Box**. Run manually after setup.
+Select your Box account in **Create Box folder**. Edit the folder name and parent folder ID. The defaults preserve the source example: `n8n-rocks` in root folder `0`. The connected account must be allowed to create a folder in that destination. Run manually after setup.
 
-Each run makes one creation request. Open Flow returns the folder metadata with the Action’s additional normalized fields; n8n returns Box’s folder record. No files are uploaded and no local folders are created.
+Each run makes one creation request. Open Flow returns the folder metadata with the Action’s additional normalized fields. No files are uploaded and no local folders are created.
 
 Box can reject a name that already exists in the parent, typically with HTTP 409. The workflow does not reuse, rename, update or search for an existing folder. Errors stop the run without a retry or rollback. Check Box before rerunning an uncertain request.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, configure the same name, parent and account in **Box**. N8n returns Box’s folder record.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

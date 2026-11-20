@@ -13,13 +13,20 @@ Get a daily email of Show HN stories currently on the Hacker News front page.
 
 ## Setup
 
-In Open Flow connect ScrapingBee and an IMAP Mailbox configured to send through SMTP. Set the recipient in **Email the digest**; the connection determines the sender. In n8n configure SMTP credentials, sender and recipient in **Send Email**. Activate one format and adjust the schedule and timezone if needed.
+In Open Flow connect ScrapingBee and an IMAP Mailbox configured to send through SMTP. Set the recipient in **Email the digest**; the connection determines the sender. Activate one format and adjust the schedule and timezone if needed.
 
 ## Behavior
 
-Each day at 13:00 UTC the workflow reads the current Hacker News front page and emails the rank, title and link of every story whose title contains Show HN:. If there are no matching stories, it sends nothing. Open Flow uses ScrapingBee without JavaScript rendering; n8n reads the page directly. The service receives the public page URL, and its network access or extraction may differ from n8n. Page structure changes or a failed read can stop the run. Open Flow stops if the story list or required story fields are missing.
+Each day at 13:00 UTC the workflow reads the current Hacker News front page and emails the rank, title and link of every story whose title contains Show HN:. If there are no matching stories, it sends nothing. Open Flow uses ScrapingBee without JavaScript rendering. Page structure changes or a failed read can stop the run. Open Flow stops if the story list or required story fields are missing.
 
-SMTP acceptance does not guarantee delivery. If a send fails or its outcome is uncertain, inspect the mailbox before retrying. No automatic write retry or cross-run deduplication is added. Open Flow runs at the minute boundary; n8n uses a fixed second within that minute.
+SMTP acceptance does not guarantee delivery. If a send fails or its outcome is uncertain, inspect the mailbox before retrying. No automatic write retry or cross-run deduplication is added. Open Flow runs at the minute boundary.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure SMTP credentials, sender and recipient in **Send Email**. N8n reads the page directly. The service receives the public page URL, and its network access or extraction may differ from n8n. N8n uses a fixed second within that minute.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

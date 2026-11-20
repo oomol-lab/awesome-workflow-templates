@@ -13,13 +13,20 @@ Classify campaign email replies and create a Pipedrive deal for interested conta
 
 ## Setup
 
-Connect each Gmail trigger and its matching **Read mailbox** node to the same mailbox, and connect Pipedrive. On **Read the campaign field**, set the Pipedrive custom field key; set the same key and its option ID for `True` in **Check campaign membership**. Bind the Pipedrive connection to the single Action in **Create the deal**. Configure an AI model and use a campaign field named `in_campaign` with a `True` option in n8n. Connect both Gmail accounts, Pipedrive and OpenAI in n8n. Activate one format.
+Connect each Gmail trigger and its matching **Read mailbox** node to the same mailbox, and connect Pipedrive. On **Read the campaign field**, set the Pipedrive custom field key; set the same key and its option ID for `True` in **Check campaign membership**. Bind the Pipedrive connection to the single Action in **Create the deal**.
 
 ## Behavior
 
 Each minute, new emails in the two mailboxes are matched by sender email to the first exact Pipedrive person. Only people whose campaign field equals the configured option are classified for interest in a meeting or call. An interested reply creates a deal linked to that person. Unmatched, out-of-campaign or uninterested replies create no deal. Email content is sent to the configured AI model; review its decisions.
 
 The workflows do not deduplicate deals. An uncertain creation may have succeeded; inspect Pipedrive before retrying. Existing deals and repeated replies can create duplicates. Multiple people sharing an address can cause the first match to be used.
+
+<details>
+<summary>In n8n</summary>
+
+Configure an AI model and use a campaign field named `in_campaign` with a `True` option in n8n. Connect both Gmail accounts, Pipedrive and OpenAI in n8n.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -15,13 +15,18 @@ Receive new-list events from Affinity and retrieve the complete list record.
 
 Connect an Affinity API key in **Read list from Affinity** and allow Provider API access. Deploy the POST webhook over HTTPS. Create an Affinity webhook subscription for `list.created` with that URL using the [Affinity API](https://api-docs.affinity.co/#create-a-new-webhook-subscription). The service sends a sample event during registration. Remove the subscription in Affinity when the webhook is no longer used. Affinity permits three subscriptions per instance.
 
-In n8n, connect the Affinity API credential and activate the trigger. n8n creates and removes the subscription itself.
-
 ## Behavior
 
 For each `list.created` event, the workflow looks up the list using its ID and returns the full V1 list record with the event type. Sample events and other event types do not trigger a lookup. The webhook acknowledges receipt before the lookup completes; acknowledgment does not confirm a successful lookup. A failed lookup stops that run. Affinity may retry undelivered callbacks.
 
 The template does not verify the caller. Protect the webhook URL and execution history because list data may be sensitive. Use the subscription URL only with trusted recipients.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect the Affinity API credential and activate the trigger. n8n creates and removes the subscription itself.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

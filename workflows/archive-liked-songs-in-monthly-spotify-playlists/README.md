@@ -15,13 +15,18 @@ Save recently liked songs in NocoDB and add them to a matching monthly Spotify p
 
 Connect Spotify and store the NocoDB API token as Secret Variable `NOCODB_TOKEN`. Spotify requires saved-track and playlist permissions and Extended Quota Mode for playlist tracks. In **Choose monthly sync step**, enter the public HTTPS NocoDB URL, base ID, song table ID, playlist table ID, and Spotify user ID. Create song fields `uri`, `added_at`, and `playlistName`, and playlist fields `uri`, `name`, and `description`. Enable persistent State and prevent overlapping runs. The schedule uses UTC.
 
-In n8n, connect Spotify and NocoDB and replace the base and table IDs in every NocoDB node. Set the workflow timezone. Run one format only.
-
 ## Behavior
 
 Every minute, inspect the ten latest liked tracks, save previously unseen URIs in the songs table, find or create a playlist named for the current month, and add missing songs assigned to that month. Open Flow reads pages and stops if matching playlist names or database records are ambiguous.
 
 If an Open Flow write has an unknown result, inspect Spotify or NocoDB and enter the pending key in **Choose monthly sync step** after resolving it. For an uncertain playlist creation, provide its confirmed Spotify playlist ID. The acknowledgement treats the write as completed.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect Spotify and NocoDB and replace the base and table IDs in every NocoDB node. Set the workflow timezone. Run one format only.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

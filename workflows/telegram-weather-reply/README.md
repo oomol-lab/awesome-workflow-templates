@@ -15,11 +15,16 @@ Reply to each incoming Telegram message with the current weather, temperature, a
 
 In Open Flow, select the same Telegram bot account in **Receive Telegram message** and **Reply with current weather**. Connect OpenWeather in **Read configured city weather** and edit its city query, for example `berlin,de` or `london,gb`. Keep Units set to `metric` for the Celsius reply.
 
-In n8n, connect the same Telegram bot in **Telegram Trigger** and **Telegram**. Connect OpenWeather in **OpenWeatherMap**, choose the city, and keep Metric format. The trigger uses version 1.2.
-
 Enable one format with this bot at a time: Telegram supports one active webhook per bot. Send it a message in a private chat, or a message it can receive in a group. Every delivered message triggers one weather lookup and one reply to that message’s chat. The reply always describes the configured city; message text is not interpreted as a city query.
 
 Queued updates are retained when the webhook is created. Open Flow’s optional chat/user filters are initially empty, matching the source’s unrestricted message trigger. A malformed update, incomplete weather response, or service error stops the run without a reply or retry. Replaying an event can send another reply.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect the same Telegram bot in **Telegram Trigger** and **Telegram**. Connect OpenWeather in **OpenWeatherMap**, choose the city, and keep Metric format. The trigger uses version 1.2.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

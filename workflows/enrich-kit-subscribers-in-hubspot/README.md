@@ -13,13 +13,20 @@ Enrich Kit subscribers and their companies in HubSpot.
 
 ## Setup
 
-Use an existing Clearbit account with Person and Company API access. Connect HubSpot, and bind secret Variables CLEARBIT_API_KEY and HUBSPOT_PRIVATE_APP_TOKEN for the same HubSpot account. Enable persistent State and prevent overlapping executions. One configured form and subscriber email form the processing identity; repeated subscriptions for that email are treated as already processed until reconciled. In n8n connect Kit, Clearbit and HubSpot, set the form ID in **ConvertKit Trigger**; choose one Data Table for checkpoint nodes with text columns item_key and status. For Open Flow enable the n8n forwarding node and disconnect the direct path. Use one format.
+Use an existing Clearbit account with Person and Company API access. Connect HubSpot, and bind secret Variables CLEARBIT_API_KEY and HUBSPOT_PRIVATE_APP_TOKEN for the same HubSpot account. Enable persistent State and prevent overlapping executions. One configured form and subscriber email form the processing identity; repeated subscriptions for that email are treated as already processed until reconciled.
 
 ## Behavior
 
 Business subscribers are enriched by email. If a company domain is found, the company is enriched and searched in HubSpot. An existing company is updated; a new company is created and the contact is associated with it. Without a company domain, the contact is upserted. The source excludes several personal email providers. Clearbit errors do not produce a contact.
 
-If a write result is unknown, inspect HubSpot before replay. In **Choose enrichment step**, enter the pending key and choose confirmed or absent; supply the created company or contact ID when confirmed. In n8n, inspect the matching pending row and HubSpot. If some writes succeeded, complete the remaining writes manually and mark the row done; if none succeeded, delete the row before replay. Protect webhook access and execution history, which contain personal information.
+If a write result is unknown, inspect HubSpot before replay. In **Choose enrichment step**, enter the pending key and choose confirmed or absent; supply the created company or contact ID when confirmed. If some writes succeeded, complete the remaining writes manually and mark the row done; if none succeeded, delete the row before replay. Protect webhook access and execution history, which contain personal information.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n connect Kit, Clearbit and HubSpot, set the form ID in **ConvertKit Trigger**; choose one Data Table for checkpoint nodes with text columns item_key and status. For Open Flow enable the n8n forwarding node and disconnect the direct path. In n8n, inspect the matching pending row and HubSpot.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

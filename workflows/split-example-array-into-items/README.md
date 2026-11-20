@@ -13,11 +13,18 @@ Learn how to turn an example array into individual workflow items.
 
 ## Setup and use
 
-Run the workflow manually. To experiment, edit the sample array in **Split the array** in Open Flow or **Mock Data** in n8n.
+Run the workflow manually. To experiment, edit the sample array in **Split the array**.
 
 ## Behavior
 
-The example converts `item-1`, `item-2`, `item-3`, and `item-4` into objects with a `data` field. Open Flow returns one array of four objects; n8n emits four items.
+The example converts `item-1`, `item-2`, `item-3`, and `item-4` into objects with a `data` field. Open Flow returns one array of four objects.
+
+<details>
+<summary>In n8n</summary>
+
+To experiment, edit the sample array in **Split the array** in Open Flow or **Mock Data** in n8n. N8n emits four items.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

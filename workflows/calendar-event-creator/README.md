@@ -15,9 +15,14 @@ Create one event in a Google Calendar you can edit. Run the workflow manually af
 
 For Open Flow, import the JSON, connect Google Calendar in **Create calendar event**, and replace `YOUR_CALENDAR_ID`. Edit the event object’s `summary`, `start`, and `end`. Use timestamps with explicit UTC offsets; the example event is January 1, 2030, 09:00–10:00 UTC.
 
-For n8n, connect Google Calendar in **Google Calendar**, select the calendar, and edit Start, End, and Summary. The workflow timezone is UTC.
+Run once to create the event. Open Flow returns its ID and a web link when Google supplies one. Each run creates a new event with the configured details. There are no attendees, recurrence rules, or extra notifications configured. Existing calendar reminder defaults apply.
 
-Run once to create the event. Open Flow returns its ID and a web link when Google supplies one; n8n shows the created event in the final node output. Each run creates a new event with the configured details. There are no attendees, recurrence rules, or extra notifications configured. Existing calendar reminder defaults apply.
+<details>
+<summary>In n8n</summary>
+
+For n8n, connect Google Calendar in **Google Calendar**, select the calendar, and edit Start, End, and Summary. The workflow timezone is UTC. N8n shows the created event in the final node output.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

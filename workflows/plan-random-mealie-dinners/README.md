@@ -13,15 +13,22 @@ Choose random recipes from a Mealie category and create dinner plans for consecu
 
 ## Setup
 
-Provide a Mealie server URL and optional category ID in **Configure Mealie**. Leave the category ID empty to include all categories. Create a secret Variable containing a Mealie API token and bind it to **Read recipes** and **Create a dinner plan**. In **Choose dinner plans**, set the number of recipes and the offset in days. In n8n, set these values in **Configure Mealie** and configure HTTP Header Auth with name `Authorization` and value `Bearer YOUR_MEALIE_TOKEN` on both HTTP nodes. Use HTTPS to protect the token. Activate one format.
+Provide a Mealie server URL and optional category ID in **Configure Mealie**. Leave the category ID empty to include all categories. Create a secret Variable containing a Mealie API token and bind it to **Read recipes** and **Create a dinner plan**. In **Choose dinner plans**, set the number of recipes and the offset in days. Use HTTPS to protect the token.
 
 ## Behavior
 
 Run manually or every Friday at 20:00 UTC. The workflow reads the first 100 recipes in the selected category, or across all categories if none is set, chooses distinct recipes at random and creates one dinner entry per consecutive date. Defaults are five recipes starting three days from the run date. The count can be 1–100 and the offset 0–365 days. If fewer recipes are available than requested, it stops before creating any entries. Existing meal plans are not checked; running twice can create duplicates.
 
-Dates use UTC. The source schedule inherited its n8n instance timezone and its date code used the execution environment's local time. Verify the schedule and dates for your household. The source n8n schedule uses a stable second within the minute; Open Flow uses the minute boundary.
+Dates use UTC. Verify the schedule and dates for your household. Open Flow uses the minute boundary.
 
 Entries are created one at a time. If a request fails or its outcome is unknown, earlier entries remain and the current entry may have been created. Check Mealie before rerunning. No automatic retry or rollback is configured. HTTP timeouts and response-size limits can stop a run; the first 100 recipes do not necessarily include every matching recipe.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, set these values in **Configure Mealie** and configure HTTP Header Auth with name `Authorization` and value `Bearer YOUR_MEALIE_TOKEN` on both HTTP nodes. The source schedule inherited its n8n instance timezone and its date code used the execution environment's local time. The source n8n schedule uses a stable second within the minute.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

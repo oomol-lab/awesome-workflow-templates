@@ -13,13 +13,20 @@ Add an AI summary to recent WordPress posts, log each update and notify Slack.
 
 ## Setup
 
-Connect WordPress, Google Sheets and Slack. Supply the same public HTTPS WordPress site URL and credentials with edit permission to the WordPress connection and the edit-context HTTP node. Set the sheet ID and Slack channel. Use a sheet with columns post_id, summary, post_link, edit_link, summarized_date in that order. Enable persistent State and avoid overlapping runs. In n8n configure the WordPress, Sheets, OpenAI and Slack credentials and a Data Table with item_key and status columns. Use only one format.
+Connect WordPress, Google Sheets and Slack. Supply the same public HTTPS WordPress site URL and credentials with edit permission to the WordPress connection and the edit-context HTTP node. Set the sheet ID and Slack channel. Use a sheet with columns post_id, summary, post_link, edit_link, summarized_date in that order. Enable persistent State and avoid overlapping runs.
 
 ## Behavior
 
-A manual run reads the five most recent posts. A post already logged by ID or judged to contain an AI Summary is skipped. For each remaining post, the model prepares four points in its language. A Gutenberg HTML block is prepended to the original raw content, and the rendered excerpt is preserved. The workflow then appends the matching audit row and sends a Slack notification. HTML is reduced to text for Open Flow model input; n8n uses the original Markdown conversion. Model output is escaped and should be reviewed. The original disabled schedule and webhook paths are disconnected and do not run.
+A manual run reads the five most recent posts. A post already logged by ID or judged to contain an AI Summary is skipped. For each remaining post, the model prepares four points in its language. A Gutenberg HTML block is prepended to the original raw content, and the rendered excerpt is preserved. The workflow then appends the matching audit row and sends a Slack notification. HTML is reduced to text for Open Flow model input. Model output is escaped and should be reviewed. The original disabled schedule and webhook paths are disconnected and do not run.
 
-Each WordPress update, sheet append and Slack message is reserved independently. An interrupted or uncertain step requires inspection of the corresponding destination before resolving its pending checkpoint; do not blindly replay it. In Open Flow inspect persistent State keys wp-summary:POST_ID:PHASE. In n8n the Data Table retains each reservation as an attempt record, including successful attempts. Check the destination and complete any remaining actions manually; remove a record for retry only after confirming that its action did not occur.
+Each WordPress update, sheet append and Slack message is reserved independently. An interrupted or uncertain step requires inspection of the corresponding destination before resolving its pending checkpoint; do not blindly replay it. In Open Flow inspect persistent State keys wp-summary:POST_ID:PHASE. Check the destination and complete any remaining actions manually; remove a record for retry only after confirming that its action did not occur.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure the WordPress, Sheets, OpenAI and Slack credentials and a Data Table with item_key and status columns. N8n uses the original Markdown conversion. In n8n the Data Table retains each reservation as an attempt record, including successful attempts.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

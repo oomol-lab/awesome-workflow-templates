@@ -13,13 +13,20 @@ Classify unflagged Outlook messages using Airtable categories and contacts, and 
 
 ## Setup and use
 
-Connect Outlook, Monday and Airtable, configure the folder, board and group IDs, Airtable base/table names, and model. Categories need a Name field. Monday contact name and the second and seventh column values are mapped to Airtable First Name, Last Name, Type and Email; adapt those column positions to your board. In n8n configure the corresponding credentials, tables, Outlook folder and Monday board/group. Run mail classification manually; contact sync runs daily at 00:00 UTC in Open Flow. n8n uses its workflow timezone and source schedule.
+Connect Outlook, Monday and Airtable, configure the folder, board and group IDs, Airtable base/table names, and model. Categories need a Name field. Monday contact name and the second and seventh column values are mapped to Airtable First Name, Last Name, Type and Email; adapt those column positions to your board. Run mail classification manually; contact sync runs daily at 00:00 UTC in Open Flow.
 
 ## Behavior
 
 Each manual run reads up to 10 unflagged, uncategorized messages and uses matching contact, categories and delete rules as model context. It applies one allowed category and sets importance high for Action. The model can be wrong; review changes. The source reads Rules but does not include it in the model prompt. Contact sync reads all available Monday pages for the selected group and upserts by Email. Duplicate Email matches or write errors stop the run. Message and contact data are sent to the model.
 
 An update with an unknown outcome may already have succeeded; check Outlook or Airtable before rerunning. A scheduled contact sync can retry a previously uncertain upsert on its next run.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure the corresponding credentials, tables, Outlook folder and Monday board/group. n8n uses its workflow timezone and source schedule.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

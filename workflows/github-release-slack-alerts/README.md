@@ -21,9 +21,16 @@ For Open Flow, import the JSON and configure:
 | Read latest releases | Edit the repositories array and connect GitHub in the node’s Actions settings. |
 | Send release alerts | Replace `YOUR_SLACK_CHANNEL_ID`, connect Slack in Actions, and invite the bot to the channel. |
 
-The example repositories are `n8n-io/n8n` and `home-assistant/core`. For n8n, edit the list in **RepoConfig**, connect Slack in **Send Message**, and replace its channel ID. GitHub reads use the public latest-release API; add a GitHub credential on the HTTP node if your repository requires authentication.
+The example repositories are `n8n-io/n8n` and `home-assistant/core`. GitHub reads use the public latest-release API; add a GitHub credential on the HTTP node if your repository requires authentication.
 
 Enable the workflow after setup. It reads one latest release per repository, in list order, before sending any notifications. An empty list or no recent releases sends no messages. A read failure stops all notifications; a Slack failure stops later messages. Rerunning can send duplicate alerts, and an earlier Slack message may already have been delivered. GitHub’s latest-release endpoint omits drafts and prereleases; a repository with no published release fails that read.
+
+<details>
+<summary>In n8n</summary>
+
+For n8n, edit the list in **RepoConfig**, connect Slack in **Send Message**, and replace its channel ID.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

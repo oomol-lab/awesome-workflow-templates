@@ -13,11 +13,18 @@ Group timesheet entries by person and task and create an HTML report with avatar
 
 ## Setup and use
 
-In Open Flow, run the workflow with an array of records containing UserName, UserAvatar (HTTPS URL), TaskTitle, date, note and numeric hours. Download the resulting report.html. In n8n, edit the sample records in **GetTimesheetRecords**, then run the workflow and download the binary report.
+In Open Flow, run the workflow with an array of records containing UserName, UserAvatar (HTTPS URL), TaskTitle, date, note and numeric hours. Download the resulting report.html.
 
 ## Behavior
 
 The report sorts records by person, task and date, shows each person's avatar, lists entries and totals hours per task. The report generation date is UTC. Avatar images are referenced by URL and require network access when opening the report. The source's email node is disabled and no email is sent.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, edit the sample records in **GetTimesheetRecords**, then run the workflow and download the binary report.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

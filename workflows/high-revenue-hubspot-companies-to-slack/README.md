@@ -13,15 +13,22 @@ Notify a Slack user about recently modified HubSpot companies with annual revenu
 
 ## Setup
 
-Connect HubSpot in **Find recently modified companies** with company search access. Connect the same Slack account in **Open sales rep DM** and **Notify the sales rep**, and set the recipient Slack user ID in **Open sales rep DM**. Grant the account permission to open and send direct messages. In n8n connect HubSpot and Slack credentials and choose the recipient user in **Notify sales rep**. Enable one format only.
+Connect HubSpot in **Find recently modified companies** with company search access. Connect the same Slack account in **Open sales rep DM** and **Notify the sales rep**, and set the recipient Slack user ID in **Open sales rep DM**. Grant the account permission to open and send direct messages.
 
 ## Behavior
 
 Every five minutes, the workflow finds companies modified in the preceding five minutes, then sends one Slack direct message per company whose annual revenue, converted to an integer by truncating its fractional part, is strictly greater than 5,000,000. For example, 5,000,000.9 does not qualify. It includes company name, website, revenue and employee count. The original node uses HubSpot’s recently modified companies endpoint, so updates can trigger alerts as well as new companies. The source label says leads created, but the endpoint includes modifications.
 
-Open Flow searches HubSpot using last modification time and follows pages before opening a DM. It stops before Slack if the search fails, a cursor repeats, the search reaches 10,000 results, or a required company value is invalid. HubSpot search is indexed and can lag behind updates; the moving five-minute window can miss late-indexed changes. Overlapping runs or multiple changes can also produce duplicate messages. There is no persistent checkpoint or deduplication. n8n includes its default link to the workflow in each message; Open Flow does not add that link.
+Open Flow searches HubSpot using last modification time and follows pages before opening a DM. It stops before Slack if the search fails, a cursor repeats, the search reaches 10,000 results, or a required company value is invalid. HubSpot search is indexed and can lag behind updates; the moving five-minute window can miss late-indexed changes. Overlapping runs or multiple changes can also produce duplicate messages. There is no persistent checkpoint or deduplication. Open Flow does not add that link.
 
-The source schedule used the n8n instance timezone. Open Flow starts at five-minute UTC boundaries; n8n retains its Schedule Trigger with a stable second within each minute. If a Slack call fails or its outcome is uncertain, earlier messages may already have been sent; check Slack before rerunning. No automatic retry or rollback is configured.
+Open Flow starts at five-minute UTC boundaries. If a Slack call fails or its outcome is uncertain, earlier messages may already have been sent; check Slack before rerunning. No automatic retry or rollback is configured.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n connect HubSpot and Slack credentials and choose the recipient user in **Notify sales rep**. n8n includes its default link to the workflow in each message. The source schedule used the n8n instance timezone. N8n retains its Schedule Trigger with a stable second within each minute.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

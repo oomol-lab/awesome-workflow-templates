@@ -13,11 +13,18 @@ Add an ID and name to a Stackby table and list its records.
 
 ## Setup
 
-Use a Stackby API key and a table with positive numeric **ID** and text **Name** columns. In Open Flow, create a secret Variable for the API key and bind **Auth Token** on **Add the record** and **Read a table page**. Run with the stack ID, table name, positive numeric ID and name. Table names may contain letters, digits, spaces, underscores and hyphens. In n8n, create an HTTP Header Auth credential with header name `api-key` and your Stackby API key as its value, connect it to both HTTP nodes, and edit **Set record details**.
+Use a Stackby API key and a table with positive numeric **ID** and text **Name** columns. In Open Flow, create a secret Variable for the API key and bind **Auth Token** on **Add the record** and **Read a table page**. Run with the stack ID, table name, positive numeric ID and name. Table names may contain letters, digits, spaces, underscores and hyphens.
 
 ## Behavior
 
-Each run inserts one record and reads the table in pages of 100 until Stackby returns an empty page. Open Flow pauses 300 ms before each page to reduce request rate; n8n pauses 250 ms between pages. The table may change during paging, so the list is not a snapshot. Open Flow returns an array of records and stops with an error if 100 nonempty pages are reached; n8n returns individual records and has no equivalent page limit. An error stops the run. No retry, rollback or duplicate check is performed; after an uncertain insert, inspect the table before retrying.
+Each run inserts one record and reads the table in pages of 100 until Stackby returns an empty page. Open Flow pauses 300 ms before each page to reduce request rate. The table may change during paging, so the list is not a snapshot. Open Flow returns an array of records and stops with an error if 100 nonempty pages are reached. An error stops the run. No retry, rollback or duplicate check is performed; after an uncertain insert, inspect the table before retrying.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, create an HTTP Header Auth credential with header name `api-key` and your Stackby API key as its value, connect it to both HTTP nodes, and edit **Set record details**. N8n pauses 250 ms between pages. N8n returns individual records and has no equivalent page limit.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

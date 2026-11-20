@@ -13,13 +13,20 @@ Read up to 50 open Shopify orders.
 
 ## Setup and use
 
-Connect a Shopify account with `read_orders` and access to the legacy Admin REST API. Connect Shopify in both formats before running manually. Shopify may restrict access to protected customer fields and older orders.
+Connect a Shopify account with `read_orders` and access to the legacy Admin REST API. Connect Shopify before running manually. Shopify may restrict access to protected customer fields and older orders.
 
 ## Behavior
 
-The source's default operation reads the first page of up to 50 open orders, without requesting specific fields. Open Flow returns an array of the records; n8n emits one item per order. The result can be empty. Shopify normally limits order access to the most recent 60 days unless the app has additional approval. This workflow does not fetch subsequent pages. Protect execution history containing order or customer data.
+The source's default operation reads the first page of up to 50 open orders, without requesting specific fields. Open Flow returns an array of the records. The result can be empty. Shopify normally limits order access to the most recent 60 days unless the app has additional approval. This workflow does not fetch subsequent pages. Protect execution history containing order or customer data.
 
-The Admin REST API is legacy. Open Flow uses the version configured by its Shopify connection; n8n's Shopify node requests its own configured API version, and Shopify may serve a supported version if that version has retired. API access and fields depend on the app's permissions.
+The Admin REST API is legacy. Open Flow uses the version configured by its Shopify connection. API access and fields depend on the app's permissions.
+
+<details>
+<summary>In n8n</summary>
+
+N8n emits one item per order. N8n's Shopify node requests its own configured API version, and Shopify may serve a supported version if that version has retired.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

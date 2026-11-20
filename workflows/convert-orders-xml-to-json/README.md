@@ -13,11 +13,18 @@ Convert an example ORDERS05 XML document to JSON, retaining attributes.
 
 ## Setup and use
 
-Run the workflow manually to convert the supplied ORDERS05 example. Edit the XML in **Convert XML to JSON** in Open Flow or **Set** in n8n to convert a different document.
+Run the workflow manually to convert the supplied ORDERS05 example.
 
 ## Behavior
 
-The result retains the root element and places attributes under `$`. Repeated elements become arrays; a single element is represented directly. Invalid XML stops the run. Open Flow returns the object as `result`; n8n emits it as an item.
+The result retains the root element and places attributes under `$`. Repeated elements become arrays; a single element is represented directly. Invalid XML stops the run. Open Flow returns the object as `result`.
+
+<details>
+<summary>In n8n</summary>
+
+Edit the XML in **Convert XML to JSON** in Open Flow or **Set** in n8n to convert a different document. N8n emits it as an item.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

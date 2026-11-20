@@ -13,13 +13,20 @@ Check a website every five minutes and send a Telegram alert when its HTTP statu
 
 ## Setup
 
-Connect Telegram and set the chat ID in **Send the Telegram alert**. In Open Flow, set the target URL in **Check the website** and add the target hostname and every possible redirect hostname to that Code node’s HTTP capability allowlist (up to 20 host patterns). In n8n, set the URL in **Chiama il sito**, connect Telegram and set the chat ID. Run one format with persistent workflow state and avoid overlapping executions.
+Connect Telegram and set the chat ID in **Send the Telegram alert**. In Open Flow, set the target URL in **Check the website** and add the target hostname and every possible redirect hostname to that Code node’s HTTP capability allowlist (up to 20 host patterns). Run one format with persistent workflow state and avoid overlapping executions.
 
 ## Behavior
 
 Every five minutes, the workflow GETs the website, following up to 21 redirects within a ten-second total request budget. HTTP 5xx is down; other HTTP statuses are up. The first up check is silent. A transition to down sends a red alert; a subsequent transition back up sends a green alert. Repeated results send nothing. A network error or timeout stops the run without changing state or sending a status alert.
 
-Both formats save a changed state after Telegram confirms the alert. A failed or uncertain send leaves the old state, so the next check tries the transition again. An uncertain send may have arrived and the retry can duplicate it; inspect the chat before manually retrying. Persistent state is scoped to the workflow, so use a separate workflow for each website. In Open Flow an unlisted redirect hostname or an HTTP response larger than 1 MiB stops the run without changing state.
+The workflow save a changed state after Telegram confirms the alert. A failed or uncertain send leaves the old state, so the next check tries the transition again. An uncertain send may have arrived and the retry can duplicate it; inspect the chat before manually retrying. Persistent state is scoped to the workflow, so use a separate workflow for each website. In Open Flow an unlisted redirect hostname or an HTTP response larger than 1 MiB stops the run without changing state.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, set the URL in **Chiama il sito**, connect Telegram and set the chat ID.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

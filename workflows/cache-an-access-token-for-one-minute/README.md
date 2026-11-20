@@ -13,13 +13,20 @@ Demonstrate how workflow state can retain a short-lived access token.
 
 ## Setup
 
-Enable persistent State. Set the HTTPS token endpoint in **Refresh cached token if needed** and add its host to that node's HTTP allowlist. The example expects a GET response with a nonempty JSON string field named `AccessToken`. Adjust the request and response mapping to match your issuer. In n8n set the endpoint and any required authentication on **get new accessToken**, activate the workflow, and use the production webhook or schedule.
+Enable persistent State. Set the HTTPS token endpoint in **Refresh cached token if needed** and add its host to that node's HTTP allowlist. The example expects a GET response with a nonempty JSON string field named `AccessToken`. Adjust the request and response mapping to match your issuer.
 
 ## Behavior
 
 The schedule checks every minute and the GET webhook can trigger an additional check. A missing or at least one-minute-old token is fetched and stored with its timestamp; a fresh token is reused. Open Flow returns only the cache status. This example ends after caching; adapt the workflow to use the stored token for your own operation. Prevent overlapping runs if your issuer requires a single refresh.
 
-State and n8n execution data can contain the token. Restrict access and retention. The source webhook has no authentication; restrict its exposure to trusted callers. The webhook acknowledges before the cache operation finishes.
+Restrict access and retention. The source webhook has no authentication; restrict its exposure to trusted callers. The webhook acknowledges before the cache operation finishes.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n set the endpoint and any required authentication on **get new accessToken**, activate the workflow, and use the production webhook or schedule. State and n8n execution data can contain the token.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

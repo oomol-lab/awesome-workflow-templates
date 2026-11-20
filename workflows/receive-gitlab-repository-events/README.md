@@ -13,11 +13,18 @@ Receive webhook events from a GitLab project.
 
 ## Setup and use
 
-Import the n8n workflow, connect GitLab and set the project owner and repository in **Gitlab Trigger**. Activate it to register the supported project webhook events. For Open Flow, enter its webhook URL in **Forward to Open Flow** and enable that node; leave it disabled for n8n alone. Restrict access to the relay endpoint.
+Connect GitLab and set the project owner and repository in **Gitlab Trigger**. Activate it to register the supported project webhook events. For Open Flow, enter its webhook URL in **Forward to Open Flow** and enable that node. Restrict access to the relay endpoint.
 
 ## Behavior
 
-The trigger emits the complete event body and request metadata. The optional relay forwards the body, query and headers to Open Flow after removing the x-gitlab-token header. The fixed n8n trigger checks the token when a webhook secret is stored; if that state is missing it accepts the event. It registers GitLab hooks with TLS certificate verification disabled. The original trigger exposes incoming headers to n8n execution history, including this token; protect that history. Inspect n8n for relay failures.
+The trigger emits the complete event body and request metadata. The optional relay forwards the body, query and headers to Open Flow after removing the x-gitlab-token header. It registers GitLab hooks with TLS certificate verification disabled.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow, connect GitLab and set the project owner and repository in **Gitlab Trigger**. Leave it disabled for n8n alone. The fixed n8n trigger checks the token when a webhook secret is stored; if that state is missing it accepts the event. The original trigger exposes incoming headers to n8n execution history, including this token; protect that history. Inspect n8n for relay failures.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

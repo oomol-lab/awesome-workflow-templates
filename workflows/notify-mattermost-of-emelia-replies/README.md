@@ -13,13 +13,20 @@ Send a Mattermost notice when a contact replies to a legacy Emelia email campaig
 
 ## Setup and use
 
-Connect Mattermost and set the channel ID in **Prepare the reply notice**. Deploy the webhook and register its HTTPS URL for the legacy email campaign using Emelia's [webhook API](https://docs.emelia.io/docs/webhooks). Create a registration with the campaign ID, the webhook URL as `hookUrl`, and `events: ["REPLIED"]`; omit the `type` field for a legacy email campaign. In n8n, configure the Mattermost credential and channel, replace the webhook path with a hard-to-guess value, activate it, and register its URL in the same way. Remove the registration in Emelia when the workflow is no longer used.
+Connect Mattermost and set the channel ID in **Prepare the reply notice**. Deploy the webhook and register its HTTPS URL for the legacy email campaign using Emelia's [webhook API](https://docs.emelia.io/docs/webhooks). Create a registration with the campaign ID, the webhook URL as `hookUrl`, and `events: ["REPLIED"]`; omit the `type` field for a legacy email campaign. Remove the registration in Emelia when the workflow is no longer used.
 
 Emelia does not sign these deliveries. Keep the webhook URL hard to guess and limit the Mattermost account's permissions. Anyone with the URL can send a notification.
 
 ## Behavior
 
-For a `REPLIED` event, the workflow posts the contact's first name and company to the configured channel. The legacy event is sent for a contact's first reply. Emelia can retry network errors, so duplicate notifications are possible; HTTP error responses are not retried. Inspect Mattermost before replaying an uncertain post. Open Flow rejects other event types; register only `REPLIED` in either format.
+For a `REPLIED` event, the workflow posts the contact's first name and company to the configured channel. The legacy event is sent for a contact's first reply. Emelia can retry network errors, so duplicate notifications are possible; HTTP error responses are not retried. Inspect Mattermost before replaying an uncertain post. Open Flow rejects other event types; register only `REPLIED`.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, configure the Mattermost credential and channel, replace the webhook path with a hard-to-guess value, activate it, and register its URL in the same way.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

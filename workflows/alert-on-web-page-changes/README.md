@@ -13,11 +13,18 @@ Compare two page responses five minutes apart and notify a Telegram chat when th
 
 ## Setup
 
-Connect Telegram and set the destination chat ID in **Notify in Telegram**. Set the same public page URL in **Fetch the page** and **Fetch the page again**. In n8n configure the same URL in both HTTP nodes and the Telegram connection and chat ID. Enable one format.
+Connect Telegram and set the destination chat ID in **Notify in Telegram**. Set the same public page URL in **Fetch the page** and **Fetch the page again**.
 
 ## Behavior
 
-Every five minutes, each run fetches the page, waits five minutes and fetches it again. It sends “Something got changed” when the two response texts differ; unchanged text sends nothing. Pages containing timestamps or other dynamic content can trigger frequent alerts. The schedule can start another run while the previous run is waiting. Open Flow starts at the minute boundary; n8n uses a fixed second within that minute. Requests must succeed. Open Flow does not follow redirects, so use the final page URL; n8n follows its HTTP node settings. A failed or uncertain Telegram send is not automatically repeated. Check the destination before rerunning.
+Every five minutes, each run fetches the page, waits five minutes and fetches it again. It sends “Something got changed” when the two response texts differ; unchanged text sends nothing. Pages containing timestamps or other dynamic content can trigger frequent alerts. The schedule can start another run while the previous run is waiting. Open Flow starts at the minute boundary. Requests must succeed. Open Flow does not follow redirects, so use the final page URL. A failed or uncertain Telegram send is not automatically repeated. Check the destination before rerunning.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure the same URL in both HTTP nodes and the Telegram connection and chat ID. N8n uses a fixed second within that minute. N8n follows its HTTP node settings.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

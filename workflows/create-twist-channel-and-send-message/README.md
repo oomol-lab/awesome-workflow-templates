@@ -15,13 +15,18 @@ Create a channel, update its description and send a message to an existing Twist
 
 In Open Flow, create a secret Variable containing a Twist OAuth access token and bind it to all three HTTP nodes. Refresh or replace the token when necessary. Run with the workspace ID, user ID to add and mention, and an existing conversation ID in that workspace. The conversation is the message destination; it is separate from the channel being created.
 
-In n8n, connect the same Twist OAuth credential to all three Twist nodes. Configure the workspace and user in **Twist**, and the same workspace and the existing conversation in **Twist2**. Run one format at a time.
-
 ## Behavior
 
-The workflow creates an `n8n-docs` channel with the selected member, updates its description to `Discussion for documentation`, then sends the selected conversation a message mentioning the member and naming the created channel. The message includes a button linking to the n8n documentation. The displayed mention label is `Recipient`.
+The workflow creates an `n8n-docs` channel with the selected member, updates its description to `Discussion for documentation`, then sends the selected conversation a message mentioning the member and naming the created channel. The displayed mention label is `Recipient`.
 
 A failure or uncertain request can leave a created channel, an updated channel or a sent message. Inspect Twist before retrying; the workflow does not roll back or replay writes. Open Flow returns the full message response. Twist says the service will shut down on March 1, 2027; check its [migration guidance](https://06.twist.com/help/articles/welcome-to-twist-Ndgp3sInM) before relying on this workflow.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect the same Twist OAuth credential to all three Twist nodes. Configure the workspace and user in **Twist**, and the same workspace and the existing conversation in **Twist2**. Run one format at a time. The message includes a button linking to the n8n documentation.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

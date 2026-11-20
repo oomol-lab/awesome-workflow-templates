@@ -13,11 +13,18 @@ Find available 30-minute weekday interview times in an Eastern Time calendar.
 
 ## Setup
 
-Connect Google Calendar with read access and set its calendar ID in **Read calendar events**. In n8n select a calendar and Google Calendar credentials in **Read calendar events**, then call the workflow from another n8n workflow or run it manually.
+Connect Google Calendar with read access and set its calendar ID in **Read calendar events**.
 
 ## Behavior
 
 Starting 24 hours from the run and ending seven days from the run, return complete 30-minute slots within that window on weekdays from 09:00 through 17:00 America/New_York. Output includes a comma-separated `availableSlots` string and a list in Open Flow. Events overlapping a slot and all-day events block it. Times account for Eastern daylight saving time. This reads a calendar and does not book a meeting. Calendar state may change after a result is returned.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n select a calendar and Google Calendar credentials in **Read calendar events**, then call the workflow from another n8n workflow or run it manually.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

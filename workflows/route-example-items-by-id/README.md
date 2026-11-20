@@ -13,11 +13,18 @@ Learn how a condition routes two example items and assigns a name on each branch
 
 ## Setup and use
 
-Run the workflow manually. Edit the sample IDs in **Route and name items** in Open Flow or **Function** in n8n to explore the branches.
+Run the workflow manually.
 
 ## Behavior
 
-The sample creates two items with IDs 0 and 1. The condition compares each ID with 0. The matching item receives the name `n8n`; the other receives `nodemation`. Open Flow returns the two branch results as separate arrays. In n8n, inspect the outputs of **Set** and **Set1**.
+The sample creates two items with IDs 0 and 1. The condition compares each ID with 0. The matching item receives the name `n8n`; the other receives `nodemation`. Open Flow returns the two branch results as separate arrays.
+
+<details>
+<summary>In n8n</summary>
+
+Edit the sample IDs in **Route and name items** in Open Flow or **Function** in n8n to explore the branches. In n8n, inspect the outputs of **Set** and **Set1**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -13,11 +13,18 @@ Read up to five published WordPress posts, ordered by publication date with the 
 
 ## Setup
 
-Select your WordPress account in **Read published WordPress posts**. Configure the site URL, username and application password in the connection. The site must expose the WordPress REST API. In n8n, choose WordPress credentials in **Wordpress** and run manually.
+Select your WordPress account in **Read published WordPress posts**. Configure the site URL, username and application password in the connection. The site must expose the WordPress REST API.
 
 Each run makes one read request for the first five published posts. It returns complete post objects, including rendered HTML where WordPress provides it. Open Flow also returns the total count and page count from response headers; these values are `null` if the site omits the headers. An empty site returns an empty posts array.
 
-This template reads one page. It does not collect every post, create content or modify the site. Change the limit and filters in the Action or n8n node to read another selection. A failed request stops the run, with no workflow retry configured.
+This template reads one page. It does not collect every post, create content or modify the site. A failed request stops the run, with no workflow retry configured.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, choose WordPress credentials in **Wordpress** and run manually. Change the limit and filters in the Action or n8n node to read another selection.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

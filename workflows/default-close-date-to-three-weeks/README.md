@@ -13,11 +13,18 @@ Keep a date-like close date or default it to 21 calendar days from now.
 
 ## Setup and use
 
-Run Open Flow with a close-date string. In n8n, edit **Set Close Date** and run manually. The source example uses an ISO date string.
+Run Open Flow with a close-date string. The source example uses an ISO date string.
 
 ## Behavior
 
 If the input contains a substring shaped like `YYYY-MM-DD`, the workflow returns the entire original string unchanged. It does not validate whether that substring is a real calendar date. Otherwise, it adds 21 calendar days to the execution time and returns the result as an ISO timestamp. The date calculation uses the execution environment's local time zone, so daylight-saving changes can affect the exact elapsed hours.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, edit **Set Close Date** and run manually.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

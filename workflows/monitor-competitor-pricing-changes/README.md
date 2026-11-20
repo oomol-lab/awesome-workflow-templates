@@ -13,13 +13,20 @@ Compare competitor pricing pages with saved summaries and notify a Slack channel
 
 ## Setup
 
-Connect Google Sheets and Slack, set the spreadsheet ID on **Read pricing pages** and **Update pricing and time**, and set a Slack channel in **Notify pricing change**. The sheet needs unique headers `Pricing URL`, `Pricing` and `Time`. Set the sheet name in the read range and **Identify pricing rows**. Create secret Variable AIRTOP_API_KEY and bind it to each Airtop request. In n8n connect Airtop, Sheets and Slack and select the same spreadsheet and sheet. Run one format.
+Connect Google Sheets and Slack, set the spreadsheet ID on **Read pricing pages** and **Update pricing and time**, and set a Slack channel in **Notify pricing change**. The sheet needs unique headers `Pricing URL`, `Pricing` and `Time`. Set the sheet name in the read range and **Identify pricing rows**. Create secret Variable AIRTOP_API_KEY and bind it to each Airtop request.
 
 ## Behavior
 
 For each nonempty pricing URL, Airtop reads the page and compares its plans with the saved summary. A result whose status does not contain `SIMILAR` updates that row's Pricing and Time cells and sends its differences to Slack. Similar results leave the row unchanged. Model output can miss or misinterpret a plan; review the page and the result.
 
 Open Flow processes rows in order, updates before notifying and closes successful Airtop sessions. Earlier changes remain if a later step fails. Check the sheet and Slack before retrying an uncertain write. Avoid overlapping runs or reordering rows during a run. Airtop requests have a 30-second HTTP timeout and 4 MiB response limit; browser readiness is checked up to 60 times at five-second intervals. Errors before session close can leave a session until its idle timeout.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n connect Airtop, Sheets and Slack and select the same spreadsheet and sheet.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

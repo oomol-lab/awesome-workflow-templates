@@ -15,11 +15,16 @@ Read all completed sales orders from Unleashed.
 
 In Open Flow, bind your Unleashed API key to secret Variable **UNLEASHED_API_KEY** and API ID to secret Variable **UNLEASHED_API_ID** in **Read order pages**. Set **clientType** to your lowercase account/application identifier.
 
-In n8n, create a Custom Auth credential with headers `api-auth-id` containing your API ID and `api-auth-signature` containing the base64 HMAC-SHA256 of the exact string `orderStatus=Completed&pageSize=100` using your API key. The Custom Auth JSON is `{"headers":{"api-auth-id":"YOUR_API_ID","api-auth-signature":"YOUR_SIGNATURE"}}`. Select that credential and set the **client-type** header in **Read completed orders**. If you change the filter, page size, query order, or API key, recompute the signature over the exact new query string and update both the URL and pagination next URL to match. Run manually. Keep both the key and the reusable signature private.
-
 ## Behavior
 
-The workflow retrieves every page of completed sales orders, 100 at a time. If an Open Flow request fails at the transport layer, it restarts the read with one order per page. Open Flow limits each response to 1 MiB, so a single larger order still fails. Open Flow returns a result object containing a base64-encoded gzip file; decode and decompress it to obtain a JSON array of orders. n8n returns one item per order. The response keeps the original order fields and converts Unleashed's serialized dates to ISO strings. An empty result produces a gzip file containing an empty JSON array in Open Flow and no items in n8n. Results are held in execution memory and orders can change while pages are read; very large accounts may exceed runtime limits.
+The workflow retrieves every page of completed sales orders, 100 at a time. If an Open Flow request fails at the transport layer, it restarts the read with one order per page. Open Flow limits each response to 1 MiB, so a single larger order still fails. Open Flow returns a result object containing a base64-encoded gzip file; decode and decompress it to obtain a JSON array of orders. The response keeps the original order fields and converts Unleashed's serialized dates to ISO strings. Results are held in execution memory and orders can change while pages are read; very large accounts may exceed runtime limits.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, create a Custom Auth credential with headers `api-auth-id` containing your API ID and `api-auth-signature` containing the base64 HMAC-SHA256 of the exact string `orderStatus=Completed&pageSize=100` using your API key. The Custom Auth JSON is `{"headers":{"api-auth-id":"YOUR_API_ID","api-auth-signature":"YOUR_SIGNATURE"}}`. Select that credential and set the **client-type** header in **Read completed orders**. If you change the filter, page size, query order, or API key, recompute the signature over the exact new query string and update both the URL and pagination next URL to match. Run manually. Keep both the key and the reusable signature private. n8n returns one item per order. An empty result produces a gzip file containing an empty JSON array in Open Flow and no items in n8n.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

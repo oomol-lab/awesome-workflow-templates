@@ -15,9 +15,14 @@ Upsert manufacturers and optional logos from a Google Sheet.
 
 Connect Google Sheets and choose a spreadsheet and Sheet1. Include name, website, description and logo_url headers and up to three sets of translation_language_code_N, translation_name_N and translation_description_N. Names must be unique. Logo URLs must be publicly accessible HTTPS URLs with a filename extension. Configure the Shopware base URL in Prepare next manufacturer and Prepare logo upload. Bind SHOPWARE_ACCESS_TOKEN to a current Admin API bearer token with manufacturer and media write privileges; refresh it before expiry. Enable persistent State.
 
-Start an import with a unique stable run ID. The workflow creates deterministic manufacturer and media IDs from each name, upserts translations and uploads the optional logo. Completed rows are skipped on a repeated run ID. If a result is uncertain, inspect the manufacturer and logo in Shopware and the pending shopware:<run ID>:<manufacturer ID> checkpoint. Mark the checkpoint done only after confirming all required writes, or remove it only after verifying the writes did not happen; then retry the same run ID. In n8n reconcile the same item_key row in the Data Table. Do not start a new run until previous writes are reconciled. A changed name creates a different ID. Do not run overlapping imports.
+Start an import with a unique stable run ID. The workflow creates deterministic manufacturer and media IDs from each name, upserts translations and uploads the optional logo. Completed rows are skipped on a repeated run ID. If a result is uncertain, inspect the manufacturer and logo in Shopware and the pending shopware:<run ID>:<manufacturer ID> checkpoint. Mark the checkpoint done only after confirming all required writes, or remove it only after verifying the writes did not happen; then retry the same run ID. Do not start a new run until previous writes are reconciled. A changed name creates a different ID. Do not run overlapping imports.
 
-In n8n configure Google Sheets, Shopware OAuth2 credentials, Settings and a Data Table with item_key and status columns. Enter a stable run ID before each import. In self-hosted n8n enable NODE_FUNCTION_ALLOW_BUILTIN=crypto,url.
+<details>
+<summary>In n8n</summary>
+
+In n8n reconcile the same item_key row in the Data Table. In n8n configure Google Sheets, Shopware OAuth2 credentials, Settings and a Data Table with item_key and status columns. Enter a stable run ID before each import. In self-hosted n8n enable NODE_FUNCTION_ALLOW_BUILTIN=crypto,url.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

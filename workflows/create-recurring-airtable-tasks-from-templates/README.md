@@ -13,7 +13,7 @@ Create task records from Airtable automation templates.
 
 ## Setup
 
-Connect Airtable. In the Airtable trigger, choose the automation table and the view containing records ready for their first task; configure its Last Modified field named `updated_at`. Set the same base and the relevant automation, task, template, team and client table IDs in the corresponding Airtable nodes. In n8n, configure the trigger and the **Airtable Base ID's** node and connect an Airtable personal access token. Activate one format.
+Connect Airtable. In the Airtable trigger, choose the automation table and the view containing records ready for their first task; configure its Last Modified field named `updated_at`. Set the same base and the relevant automation, task, template, team and client table IDs in the corresponding Airtable nodes.
 
 The automation table needs linked-record fields `Template`, `Assigned Team Member`, and `Client`, plus `First Task Created`, `Start Date`, `Last Task Created`, `Time Value`, `Days for Soft Due Date` and `Next Task Creation Date`. The template table needs `Template Name` and `Description`. The task table needs `Status`, `Task Name`, `Task Description`, `Kickoff Date`, `Soft Due Date`, `Hard Due Date`, `Assignee`, `Template` and `Client`. Match linked-field types to the chosen tables. The first-task field must accept the string `true`.
 
@@ -22,6 +22,13 @@ The automation table needs linked-record fields `Template`, `Assigned Team Membe
 Each minute, a changed record in the selected view supplies linked template, team member and client IDs. The workflow creates one task using those records and calculates kickoff, soft and hard dates in UTC, then updates the automation record. It uses the first linked item in each field. Missing data or invalid dates stop before task creation. Open Flow starts polling with an initial baseline; changes observed during initial setup may not be emitted. Schedule activation and field visibility affect polling.
 
 A failed or uncertain create or update stops processing. A task may already exist when its response is lost; check Airtable before retrying. Completed writes are not rolled back. Avoid overlapping runs for the same automation. The selected view should exclude completed automations to avoid repeated creation. Poll batches must fit runtime limits.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, configure the trigger and the **Airtable Base ID's** node and connect an Airtable personal access token.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

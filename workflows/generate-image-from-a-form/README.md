@@ -13,11 +13,18 @@ Generate an image from a prompt and selected size.
 
 ## Setup and use
 
-Bind the secret Variable OPENAI_API_KEY to **Generate images**. Run with a prompt and size (1024x1024, 1024x1536, or 1536x1024). In n8n connect the OpenAI credential and use the included form. Download the resulting image files. Use one format.
+Bind the secret Variable OPENAI_API_KEY to **Generate images**. Run with a prompt and size (1024x1024, 1024x1536, or 1536x1024). Download the resulting image files.
 
 ## Behavior
 
-The workflow requests one image from GPT Image and converts the returned base64 image to a PNG file. The n8n form returns the file for download; Open Flow returns it as an artifact. Generation consumes API credits and can take time. A failed or interrupted request may have incurred charges; inspect the provider before retrying.
+The workflow requests one image from GPT Image and converts the returned base64 image to a PNG file. Open Flow returns it as an artifact. Generation consumes API credits and can take time. A failed or interrupted request may have incurred charges; inspect the provider before retrying.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n connect the OpenAI credential and use the included form. The n8n form returns the file for download.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

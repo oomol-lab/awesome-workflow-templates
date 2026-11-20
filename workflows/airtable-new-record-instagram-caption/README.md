@@ -13,15 +13,22 @@ Create Instagram captions for new Airtable editorial records using audience back
 
 ## Setup
 
-Connect Airtable to the trigger and all Airtable nodes. Set the same base and editorial table in the trigger, read and update nodes; set the background table and record ID in **Read audience background**. The editorial table needs a created-time field named `created_at`, a text field `Briefing`, a caption field `SoMe_Text_KI`, and checkbox fields `Posten` and `Werbeanzeige`. Put target-audience and tone details in the background record. Connect OpenAI. Configure the same base, tables and background record in n8n and connect Airtable and OpenAI.
+Connect Airtable to the trigger and all Airtable nodes. Set the same base and editorial table in the trigger, read and update nodes; set the background table and record ID in **Read audience background**. The editorial table needs a created-time field named `created_at`, a text field `Briefing`, a caption field `SoMe_Text_KI`, and checkbox fields `Posten` and `Werbeanzeige`. Put target-audience and tone details in the background record. Connect OpenAI.
 
-Activate one format. Open Flow establishes a baseline during its initial Airtable query; create new records after that query completes. Records created during the initial query can be absorbed into the baseline. n8n retains its original trigger behavior.
+Open Flow establishes a baseline during its initial Airtable query; create new records after that query completes. Records created during the initial query can be absorbed into the baseline.
 
 ## Behavior
 
 Each minute, new editorial records are processed. The workflow waits at least one minute before reading the briefing, obtains the audience background, generates a caption, and updates the same record with the caption while setting both checkboxes to false. In Open Flow records in one poll batch are processed sequentially, so later records wait longer. Background and briefing are sent to OpenAI and may be retained in run history. Review generated captions before publication.
 
 Errors stop the run. If an update has an unknown outcome, inspect the record before replaying. Prior successful updates are not rolled back.
+
+<details>
+<summary>In n8n</summary>
+
+Configure the same base, tables and background record in n8n and connect Airtable and OpenAI. n8n retains its original trigger behavior.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

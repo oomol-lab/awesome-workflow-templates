@@ -13,11 +13,18 @@ Return a demo routing result using the company size associated with a submitted 
 
 ## Setup and use
 
-Bind the secret Variable DATAGMA_API_KEY to **Look up company** and deploy the webhook. Send a POST JSON object containing an email field. In n8n configure **Enrich with Datagma** with HTTP Query Auth named apiId, using the Datagma key as its value, and activate the webhook. Configure the form client to use one endpoint. The Open Flow webhook is public; restrict access to its URL. Datagma receives the API key in the HTTPS query, so protect access to network logs.
+Bind the secret Variable DATAGMA_API_KEY to **Look up company** and deploy the webhook. Send a POST JSON object containing an email field. Configure the form client to use one endpoint. The Open Flow webhook is public; restrict access to its URL. Datagma receives the API key in the HTTPS query, so protect access to network logs.
 
 ## Behavior
 
 The workflow looks up the email domain with Datagma and returns {"result":1} for more than 100 employees or {"result":2} otherwise. The calling form selects the corresponding one-to-one or group demo link. A missing employee count stops the run. Datagma may charge for lookups. The source uses a Webflow form; the form and scheduling links are not included. The Open Flow endpoint allows cross-origin browser requests, matching the source's wildcard origin policy.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure **Enrich with Datagma** with HTTP Query Auth named apiId, using the Datagma key as its value, and activate the webhook.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

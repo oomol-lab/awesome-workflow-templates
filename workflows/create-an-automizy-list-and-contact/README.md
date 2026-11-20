@@ -13,11 +13,18 @@ Create a list, add and tag a contact, and retrieve the list contacts.
 
 ## Setup and use
 
-Bind the Automizy API token as the secret Variable AUTOMIZY_TOKEN. Run Open Flow with a list name and an email address. In n8n configure the Automizy credential and edit the list name and contact email. Use one format.
+Bind the Automizy API token as the secret Variable AUTOMIZY_TOKEN. Run Open Flow with a list name and an email address.
 
 ## Behavior
 
 The workflow creates a list, adds an active contact, tags it reviewer, and retrieves all contacts on the new list. These are real writes. If a write result is uncertain, inspect the list and contact before retrying.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure the Automizy credential and edit the list name and contact email.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

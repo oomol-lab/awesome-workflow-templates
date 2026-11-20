@@ -13,11 +13,18 @@ Create a Pipedrive call activity and ask for meeting notes in Slack after a Cale
 
 ## Setup and use
 
-Import n8n, connect Calendly and configure its invitee.created trigger. Configure **Execution mode** as n8n or openflow; in openflow mode set the relay URL and deploy the Open Flow workflow. In Open Flow bind CALENDLY_TOKEN with event type read access and PIPEDRIVE_TOKEN as secret Variables. In n8n configure HTTP Bearer Auth for Calendly and HTTP Header Auth named x-api-token with the Pipedrive API token. Connect Slack and set the destination channel in either format. Set the call notes URL. Use one execution mode.
+Connect Calendly and configure its invitee.created trigger. In openflow mode set the relay URL and deploy the Open Flow workflow. In Open Flow bind CALENDLY_TOKEN with event type read access and PIPEDRIVE_TOKEN as secret Variables. Connect Slack and set the destination channel. Set the call notes URL. Use one execution mode.
 
 ## Behavior
 
 For each created invitee, the workflow reads its Calendly event type, creates a Pipedrive call activity with meeting name, invitee and start time, and asks the first assigned host in Slack to add notes 15 minutes after the scheduled end. Meetings already past that time send the reminder immediately. It handles Calendly's current event payload; cancellation and rescheduling do not cancel an already scheduled reminder. The Calendly trigger and relay acknowledge before downstream work and do not validate the sender. Restrict access and inspect execution history. Pipedrive and Slack writes are separate; inspect both services before retrying an uncertain execution.
+
+<details>
+<summary>In n8n</summary>
+
+Import n8n, connect Calendly and configure its invitee.created trigger. Configure **Execution mode** as n8n or openflow. In n8n configure HTTP Bearer Auth for Calendly and HTTP Header Auth named x-api-token with the Pipedrive API token.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

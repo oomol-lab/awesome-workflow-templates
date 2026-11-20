@@ -13,11 +13,18 @@ Learn to turn a sample array of people into individual workflow items.
 
 ## Setup and use
 
-Run the workflow manually. Edit the sample array in **Split the people array** in Open Flow or **Mock Data** in n8n to try other records.
+Run the workflow manually.
 
 ## Behavior
 
-The example splits three people, Jim, Stefan and Hans, retaining their respective IDs 1, 2 and 3. Open Flow returns an array of three objects; n8n emits three separate items in the original order.
+The example splits three people, Jim, Stefan and Hans, retaining their respective IDs 1, 2 and 3. Open Flow returns an array of three objects.
+
+<details>
+<summary>In n8n</summary>
+
+Edit the sample array in **Split the people array** in Open Flow or **Mock Data** in n8n to try other records. N8n emits three separate items in the original order.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

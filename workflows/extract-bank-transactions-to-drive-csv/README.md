@@ -13,15 +13,22 @@ Extract and categorize bank statement transactions from PDFs or images, then sav
 
 ## Setup
 
-Import the n8n workflow and connect Google Drive and a vision-capable Gemini model. Configure the watched folder in **Get PDF or Images**, and the destination folder in both Drive upload nodes. Use one Data Table with text columns item_key and status in every checkpoint node. Prevent overlapping runs.
+Connect Google Drive and a vision-capable Gemini model. Configure the watched folder in **Get PDF or Images**, and the destination folder in both Drive upload nodes. Prevent overlapping runs.
 
-For Open Flow set **Choose processing mode** to relay, configure **Forward statement text** with the Open Flow webhook URL, enable **CSV upload webhook**, and configure its Header Auth credential as Authorization: Bearer followed by a secret. Set the upload webhook URL in **Prepare CSV upload** and bind the secret variable N8N_RELAY_TOKEN. Configure an AI model and persistent State. Restrict access to the Open Flow webhook at your deployment boundary; it has no built-in authentication. For direct n8n leave the mode as direct, keep the upload webhook disabled, and connect the Gemini model. Use one mode only.
+Configure **Forward statement text** with the Open Flow webhook URL, enable **CSV upload webhook**, and configure its Header Auth credential as Authorization: Bearer followed by a secret. Set the upload webhook URL in **Prepare CSV upload** and bind the secret variable N8N_RELAY_TOKEN. Configure an AI model and persistent State. Restrict access to the Open Flow webhook at your deployment boundary; it has no built-in authentication.
 
 ## Behavior
 
-New PDF or image files in the watched folder are processed one at a time. n8n extracts text from PDFs or transcribes an image with the vision model. The AI converts the complete text to transaction rows and assigns categories; the CSV is saved to the destination Drive folder. PDFs must contain extractable text; scanned PDFs require OCR. Model output can omit or misread transactions: review every CSV against the original statement. Financial data is sent to the configured models and appears in execution histories. Protect access and retention. Open Flow requires the complete text and enclosing data to fit its 1 MiB per-Code input/output limit.
+New PDF or image files in the watched folder are processed one at a time. The AI converts the complete text to transaction rows and assigns categories; the CSV is saved to the destination Drive folder. PDFs must contain extractable text; scanned PDFs require OCR. Model output can omit or misread transactions: review every CSV against the original statement. Financial data is sent to the configured models and appears in execution histories. Protect access and retention. Open Flow requires the complete text and enclosing data to fit its 1 MiB per-Code input/output limit.
 
-If a Drive upload has an unknown outcome, inspect the destination before retrying. In Open Flow enter the pending key in **Prepare CSV upload** and set resolution to confirmed if uploaded or absent if not, replay the same file event, then clear the fields. In n8n inspect its pending Data Table row, mark it done if the file exists, or delete it only after confirming no file was created.
+If a Drive upload has an unknown outcome, inspect the destination before retrying. In Open Flow enter the pending key in **Prepare CSV upload** and set resolution to confirmed if uploaded or absent if not, replay the same file event, then clear the fields.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow and connect Google Drive and a vision-capable Gemini model. Use one Data Table with text columns item_key and status in every checkpoint node. For Open Flow set **Choose processing mode** to relay, configure **Forward statement text** with the Open Flow webhook URL, enable **CSV upload webhook**, and configure its Header Auth credential as Authorization: Bearer followed by a secret. For direct n8n leave the mode as direct, keep the upload webhook disabled, and connect the Gemini model. n8n extracts text from PDFs or transcribes an image with the vision model. In n8n inspect its pending Data Table row, mark it done if the file exists, or delete it only after confirming no file was created.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -13,11 +13,18 @@ Send each name in a supplied list to an authenticated HTTP endpoint.
 
 ## Setup
 
-Configure a destination that accepts a JSON object containing name and checks an api-key request header. In Open Flow set its URL and bind the API key as a secret Variable on **Post the name**. Start with an array of names. In n8n configure the names in **Enter names**, the destination URL and a Header Auth credential named api-key.
+Configure a destination that accepts a JSON object containing name and checks an api-key request header. In Open Flow set its URL and bind the API key as a secret Variable on **Post the name**. Start with an array of names.
 
 ## Behavior
 
 Each name is sent in its own POST request, in order. An empty list makes no requests. A failed or uncertain request stops processing; inspect the destination before retrying because a previous request may have succeeded.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure the names in **Enter names**, the destination URL and a Header Auth credential named api-key.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

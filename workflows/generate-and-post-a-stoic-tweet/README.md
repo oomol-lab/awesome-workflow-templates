@@ -13,11 +13,18 @@ Generate a tweet using an influencer profile and post it manually or every six h
 
 ## Setup and use
 
-Connect OpenAI and X. Edit the niche, style and inspiration in Prepare influencer profile. The schedule defaults to every six hours in UTC; adjust the timezone and minute to suit your account. In n8n configure OpenAI and X credentials and edit Configure your influencer profile. Use one format.
+Connect OpenAI and X. Edit the niche, style and inspiration in Prepare influencer profile. The schedule defaults to every six hours in UTC; adjust the timezone and minute to suit your account.
 
 ## Behavior
 
 The workflow generates a tweet, regenerates it when its text is longer than 280 characters, and posts the result. Each run can incur model charges and publishes publicly. If a post result is unknown, inspect the X account before retrying.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure OpenAI and X credentials and edit Configure your influencer profile.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

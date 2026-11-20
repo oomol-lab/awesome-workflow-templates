@@ -15,13 +15,18 @@ Create a release for one Sentry project, then retrieve all pages of releases in 
 
 Connect both Provider API Request nodes to the same Sentry OAuth Connection. Grant `project:releases` and Provider API Request access. In **Configure the release**, enter the organization slug, project slug, release version and public HTTPS release URL.
 
-In n8n, select Sentry OAuth2 credentials on both nodes. Set the same organization, project, version and release URL in **Sentry.io**, and the same organization in **Sentry.io1**. Keep Return All enabled. Run one format for each intended release.
-
 ## Behavior
 
-Run manually. The workflow creates the release, then follows Sentry’s next-page cursor until the organization release list is complete. Open Flow returns the create response, all release records and their count. n8n returns the listed releases; its creation response remains in the preceding node. The list is organization-wide and can include other projects.
+Run manually. The workflow creates the release, then follows Sentry’s next-page cursor until the organization release list is complete. Open Flow returns the create response, all release records and their count. The list is organization-wide and can include other projects.
 
 An existing version may be returned by Sentry as an already-existing release rather than a new one. Neither format adds a workflow-level retry or rollback after an unknown create result or a failed list. The release may already exist; inspect Sentry before replaying. Open Flow rejects repeated or malformed cursors instead of looping. Full pages and accumulated results must fit current execution limits. Sentry API access and OAuth permissions must be configured for the selected organization and project.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, select Sentry OAuth2 credentials on both nodes. Set the same organization, project, version and release URL in **Sentry.io**, and the same organization in **Sentry.io1**. Keep Return All enabled. Run one format for each intended release. n8n returns the listed releases; its creation response remains in the preceding node.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

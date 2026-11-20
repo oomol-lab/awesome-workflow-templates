@@ -17,11 +17,16 @@ Enable the Books API for your Google project and authorize a user for `https://w
 
 In Open Flow, store a valid OAuth access token in the **GOOGLE_BOOKS_ACCESS_TOKEN** Variable and bind it to **Auth Token** in all three HTTP nodes. Run with **Volume ID** and **Shelf ID**. The token is short-lived: update the Variable when it expires. This template does not acquire or refresh tokens, and an API key cannot authorize the private bookshelf write. Keep the token out of run inputs and shared JSON.
 
-In n8n, edit **Configure book and shelf** and select the same Google Books OAuth2 account in both **Google Books** nodes and **Add volume to My Library**. n8n uses managed OAuth2 credentials and can refresh tokens. The two formats have different token management requirements.
-
-Each run gets one volume, adds the returned volume ID to the selected shelf, then lists up to 40 shelf volumes. It does not page through the rest or prove that the added book appears on the first page. Open Flow returns the fetched volume, complete first-page response, items and count; n8n returns one item per listed volume. An empty shelf produces an empty items array in Open Flow and no n8n result items.
+Each run gets one volume, adds the returned volume ID to the selected shelf, then lists up to 40 shelf volumes. It does not page through the rest or prove that the added book appears on the first page. Open Flow returns the fetched volume, complete first-page response, items and count.
 
 A failed read stops the write. A failed write stops the list. If listing fails after addition, the shelf change remains. There is no rollback or duplicate check. No workflow retry is configured. Check My Library before rerunning an uncertain write.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, edit **Configure book and shelf** and select the same Google Books OAuth2 account in both **Google Books** nodes and **Add volume to My Library**. n8n uses managed OAuth2 credentials and can refresh tokens. The two formats have different token management requirements. N8n returns one item per listed volume. An empty shelf produces an empty items array in Open Flow and no n8n result items.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

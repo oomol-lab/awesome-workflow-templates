@@ -13,13 +13,20 @@ Fetch a webpage and return its named entities using Google Cloud Natural Languag
 
 ## Setup
 
-Enable Cloud Natural Language API in Google Cloud and create a restricted API key. In Open Flow create a secret Variable `GOOGLE_LANGUAGE_API_KEY` and bind it to **Analyze entities**. In n8n select an HTTP Header Auth credential named `X-Goog-Api-Key` with the API key as its value on **Google Entities**. Enable one format and send a POST JSON body such as `{"url":"https://example.com"}` to its webhook. The endpoint has no authentication; restrict access to trusted callers.
+Enable Cloud Natural Language API in Google Cloud and create a restricted API key. In Open Flow create a secret Variable `GOOGLE_LANGUAGE_API_KEY` and bind it to **Analyze entities**. Enable one format and send a POST JSON body such as `{"url":"https://example.com"}` to its webhook. The endpoint has no authentication; restrict access to trusted callers.
 
 ## Behavior
 
 The workflow fetches the webpage, takes at most the first 100,000 JavaScript characters of its HTML, and sends that HTML to Google's V1 entity analysis API. It returns Google's full JSON response, including entity types, mentions and salience when provided. Google receives the page content. Unsupported content or service errors fail the run.
 
-Open Flow follows up to 21 HTTP redirects, accepts only HTTP(S) targets without credentials, limits each response to 4 MiB and each request to 30 seconds. Its Code input limit can reject a large page before the 100,000-character trim. Its webhook waits up to 60 seconds. n8n uses its HTTP node defaults. Restrict webhook access and destination URLs to pages you intend to fetch.
+Open Flow follows up to 21 HTTP redirects, accepts only HTTP(S) targets without credentials, limits each response to 4 MiB and each request to 30 seconds. Its Code input limit can reject a large page before the 100,000-character trim. Its webhook waits up to 60 seconds. Restrict webhook access and destination URLs to pages you intend to fetch.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n select an HTTP Header Auth credential named `X-Goog-Api-Key` with the API key as its value on **Google Entities**. n8n uses its HTTP node defaults.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

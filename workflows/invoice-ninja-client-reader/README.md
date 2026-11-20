@@ -15,9 +15,14 @@ Read up to 50 clients from an Invoice Ninja v5 instance, including their contact
 
 Select your Invoice Ninja account in **Read first 50 Invoice Ninja clients** and allow `invoice_ninja.list_clients`. Configure the v5 instance URL and API token in the connection. Your account needs permission to view clients. For hosted v5, the instance URL is `https://invoicing.co`; use your own HTTPS instance root for a self-hosted installation. The connection accepts the origin or its `/api/v1` URL; it does not support an installation under another path.
 
+Each run reads the first page of up to 50 clients, without search, ordering or related-resource filters. It retains the complete v5 client objects returned by the server. Open Flow also returns pagination metadata. An empty account returns an empty clients array. The workflow does not collect every page, create invoices or modify clients. A failed request stops the run without an automatic retry.
+
+<details>
+<summary>In n8n</summary>
+
 In n8n, select Invoice Ninja credentials in **Invoice Ninja**. Keep **API Version** set to **Version 5** and use a v5 API token. The optional credential secret can remain empty for this client read; Invoice Ninja uses that secret on its login route. Run manually. Both formats target v5; they do not connect to a v4 deployment.
 
-Each run reads the first page of up to 50 clients, without search, ordering or related-resource filters. It retains the complete v5 client objects returned by the server. Open Flow also returns pagination metadata. An empty account returns an empty clients array. The workflow does not collect every page, create invoices or modify clients. A failed request stops the run without an automatic retry.
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

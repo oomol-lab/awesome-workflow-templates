@@ -13,7 +13,7 @@ Create a Stripe customer for a Pipedrive organization when a deal’s won time c
 
 ## Setup
 
-Connect Pipedrive and Stripe with access to read organizations and search/create customers. In Open Flow, create a secret Variable containing the full Basic authorization header and bind it in **Authenticate and inspect the deal**; set your Pipedrive company ID there. In n8n, configure Basic Auth credentials on the webhook and set the same company ID in **Inspect deal change**. Create a Pipedrive webhook for version 2.0, entity `deal`, action `change`, pointing to the chosen format's HTTPS URL with the matching Basic credentials. Use a webhook owner with access to the deals. Run one format.
+Connect Pipedrive and Stripe with access to read organizations and search/create customers. In Open Flow, create a secret Variable containing the full Basic authorization header and bind it in **Authenticate and inspect the deal**; set your Pipedrive company ID there. Create a Pipedrive webhook for version 2.0, entity `deal`, action `change`, pointing to the chosen format's HTTPS URL with the matching Basic credentials. Use a webhook owner with access to the deals.
 
 Organization countries can be ISO alpha-2 codes or English country names. For other names, set the `countryMap` input in Open Flow or edit `countryMap:{}` in the n8n **Prepare customer lookup** Code, for example `{ "États-Unis": "US" }`. Unknown or ambiguous names stop before creation. Restrict execution history access because incoming request headers can contain the authorization value.
 
@@ -21,7 +21,14 @@ Organization countries can be ISO alpha-2 codes or English country names. For ot
 
 A Pipedrive deal-change event whose `won_time` changes reads the associated organization. It searches Stripe for that organization name and creates a customer with its name and address only when the search is empty. This includes a cleared or edited won time, as in the source. Other deal changes do nothing. Search is name-based: two different organizations with the same name may be treated as one customer. Stripe Search is eventually consistent and may not find a recent customer; concurrent events and redelivery can create duplicates. Review Stripe before repeating an uncertain request.
 
-Open Flow responds after processing, with a 60-second response timeout; Pipedrive may redeliver after a failed or timed-out response. n8n acknowledges the webhook on receipt, so a later failure is visible in its execution history rather than in the webhook response. A failed or unknown create may already have succeeded. The workflow adds no deduplication or write retry. Verify the customer before replaying an event.
+Open Flow responds after processing, with a 60-second response timeout; Pipedrive may redeliver after a failed or timed-out response. A failed or unknown create may already have succeeded. The workflow adds no deduplication or write retry. Verify the customer before replaying an event.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, configure Basic Auth credentials on the webhook and set the same company ID in **Inspect deal change**. n8n acknowledges the webhook on receipt, so a later failure is visible in its execution history rather than in the webhook response.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

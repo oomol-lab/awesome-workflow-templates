@@ -13,11 +13,18 @@ Check whether Airtable email domains have MX records and update each record.
 
 ## Setup
 
-Connect Airtable to both Airtable nodes, and set the same base and table IDs. Create a text field `Email` and a checkbox field `Valid`. Connect a UserCheck account to **Check email MX**. In n8n configure the same Airtable table with personal access token credentials on both Airtable nodes and a Header Auth credential named `Authorization` with value `Bearer YOUR_USERCHECK_API_KEY` on **Check email MX**. Run one format manually.
+Connect Airtable to both Airtable nodes, and set the same base and table IDs. Create a text field `Email` and a checkbox field `Valid`. Connect a UserCheck account to **Check email MX**. Run one format manually.
 
 ## Behavior
 
 The workflow reads all records, checks each email's domain for MX records, then writes the resulting boolean to that record's `Valid` field. MX records indicate domain mail routing; they do not prove that a mailbox exists or accepts mail. Empty tables cause no writes. A failed or incomplete lookup stops before updates. If an update fails or its result is uncertain, earlier records may already have changed; inspect the table before retrying. The complete record list and results must fit Open Flow's Code input limit.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure the same Airtable table with personal access token credentials on both Airtable nodes and a Header Auth credential named `Authorization` with value `Bearer YOUR_USERCHECK_API_KEY` on **Check email MX**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

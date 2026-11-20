@@ -13,11 +13,18 @@ Receive change events for a Trello list.
 
 ## Setup and use
 
-Import the n8n workflow, configure Trello credentials and set the list model ID in **Trello Trigger**. n8n registers a Trello webhook when activated; its URL must be reachable by Trello. For Open Flow set the destination in **Forward to Open Flow** and enable that node. Leave it disabled to use n8n alone. Restrict access to the webhook endpoints.
+Configure Trello credentials and set the list model ID in **Trello Trigger**. For Open Flow set the destination in **Forward to Open Flow** and enable that node. Restrict access to the webhook endpoints.
 
 ## Behavior
 
-The Trello trigger emits the complete webhook payload for changes on the configured model. The optional relay forwards it to Open Flow as workflow output. The n8n trigger acknowledges requests before forwarding and does not validate Trello signatures; restrict access and inspect n8n execution history for relay failures. Event details may appear in execution history.
+The Trello trigger emits the complete webhook payload for changes on the configured model. The optional relay forwards it to Open Flow as workflow output. Event details may appear in execution history.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow, configure Trello credentials and set the list model ID in **Trello Trigger**. n8n registers a Trello webhook when activated; its URL must be reachable by Trello. Leave it disabled to use n8n alone. The n8n trigger acknowledges requests before forwarding and does not validate Trello signatures; restrict access and inspect n8n execution history for relay failures.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

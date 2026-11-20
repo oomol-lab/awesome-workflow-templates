@@ -15,13 +15,20 @@ Analyze recent repeat-visitor paths with an OpenRouter model and save the report
 
 In **Read recent Matomo visits**, set your public HTTPS Matomo `index.php` URL and site ID. Create a read-only Matomo token. Store the form text `token_auth=YOUR_URL_ENCODED_TOKEN` as a secret Variable and bind **Body** to it. URL-encode the token value; POST-only tokens are supported.
 
-Connect OpenRouter in **Analyze visitor paths** and set a currently available model ID. Model availability depends on your account and provider. Connect Baserow Cloud in **Save report to Baserow**, set the table ID and create fields named `Date`, `Note` and `Blog`; set your site label in **Prepare report row**. In n8n configure the same Matomo URL and site ID with an HTTP Query Auth credential named `token_auth` and a token that permits URL authentication, OpenRouter HTTP Header Auth credential with name `Authorization` and value `Bearer YOUR_OPENROUTER_API_KEY`, and a model ID, Baserow database-token credentials and field IDs, and replace `YOUR_BLOG_NAME` in the **Prepare report row** Code node. The n8n request sends the token in the URL, where proxies or server logs may record it; restrict log access. POST-only tokens may not work with n8n. Use HTTPS and a token with the least required permissions. Enable one format only.
+Connect OpenRouter in **Analyze visitor paths** and set a currently available model ID. Model availability depends on your account and provider. Connect Baserow Cloud in **Save report to Baserow**, set the table ID and create fields named `Date`, `Note` and `Blog`; set your site label in **Prepare report row**. Use HTTPS and a token with the least required permissions.
 
 ## Behavior
 
-A manual run or a weekly Sunday run reads at most 100 visits from the last 30 calendar days including today in the Matomo site timezone, with more than three visits. It asks the model for paths, popular pages, engagement and recommendations, then saves one report row. It does not calculate or compare two weekly periods. An empty visit list creates no report. The source left its weekly hour and minute unspecified and used the n8n instance timezone. Both formats start at Sunday 00:00 UTC; n8n uses a stable second while Open Flow runs on the minute boundary. The report date is UTC.
+A manual run or a weekly Sunday run reads at most 100 visits from the last 30 calendar days including today in the Matomo site timezone, with more than three visits. It asks the model for paths, popular pages, engagement and recommendations, then saves one report row. It does not calculate or compare two weekly periods. An empty visit list creates no report. The report date is UTC.
 
 Visitor IDs, page titles, URLs and time spent are sent to OpenRouter; Matomo also returns visitor IP addresses to the workflow. Ensure your analytics and model provider settings permit that transfer and restrict access to run history. The model’s conclusions can be inaccurate; review them before acting. A read error, invalid visit data, empty or truncated model response or failed save stops the run. A Baserow request with an uncertain outcome may already have created a row; inspect the table before replaying. No automatic retry or duplicate check is configured.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure the same Matomo URL and site ID with an HTTP Query Auth credential named `token_auth` and a token that permits URL authentication, OpenRouter HTTP Header Auth credential with name `Authorization` and value `Bearer YOUR_OPENROUTER_API_KEY`, and a model ID, Baserow database-token credentials and field IDs, and replace `YOUR_BLOG_NAME` in the **Prepare report row** Code node. The n8n request sends the token in the URL, where proxies or server logs may record it; restrict log access. POST-only tokens may not work with n8n. The source left its weekly hour and minute unspecified and used the n8n instance timezone. Both formats start at Sunday 00:00 UTC; n8n uses a stable second while Open Flow runs on the minute boundary.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

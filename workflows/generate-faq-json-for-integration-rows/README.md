@@ -13,11 +13,18 @@ Generate an integration FAQ JSON file and mark its source sheet row done.
 
 ## Setup
 
-Connect Google Drive and Sheets, configure an AI model and persistent State. Run with a name, kind, sheet name, row number, status column letter, spreadsheet ID and destination folder ID, and a reviewed pricing answer. Kind must be Single Integration Native, Single Integration Cred-only, Single Integration Non-native or Categories. The corresponding n8n workflow uses an Execute Workflow trigger, a source sheet with a status header at the supplied column, and a Data Table with item_key and status columns.
+Connect Google Drive and Sheets, configure an AI model and persistent State. Run with a name, kind, sheet name, row number, status column letter, spreadsheet ID and destination folder ID, and a reviewed pricing answer. Kind must be Single Integration Native, Single Integration Cred-only, Single Integration Non-native or Categories.
 
 ## Behavior
 
 The callable component drafts four FAQ answers, includes the supplied pricing answer, saves a JSON file in the specified Drive folder and writes done to the specified row's status cell. Review generated answers against the integration documentation before publishing. The original spreadsheet-scanning parent is not included; call the component once per intended row. Prevent overlapping runs. After an uncertain Drive or Sheets write, inspect the destination before clearing the pending checkpoint.
+
+<details>
+<summary>In n8n</summary>
+
+The corresponding n8n workflow uses an Execute Workflow trigger, a source sheet with a status header at the supplied column, and a Data Table with item_key and status columns.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

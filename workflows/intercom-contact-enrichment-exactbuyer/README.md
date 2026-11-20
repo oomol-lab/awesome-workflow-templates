@@ -14,16 +14,22 @@ Enrich newly created Intercom user contacts with ExactBuyer social profiles, pho
 ## Setup
 
 1. Create two secret variables in Open Flow:
-   - `EXACTBUYER_API_KEY`: Your ExactBuyer API key (sent in the `X-API-Key` header).
-   - `INTERCOM_ACCESS_TOKEN`: Your Intercom Bearer access token with contact write permissions.
+- `EXACTBUYER_API_KEY`: Your ExactBuyer API key (sent in the `X-API-Key` header).
+- `INTERCOM_ACCESS_TOKEN`: Your Intercom Bearer access token with contact write permissions.
 2. Register this workflow's webhook URL in your Intercom Developer Hub webhook settings and subscribe to the `contact.user.created` topic.
-3. For the n8n template, configure Header Auth credentials for ExactBuyer (`X-API-Key`) and Intercom (`Authorization: Bearer <token>`).
 
 ## Behavior
 
 - Filters incoming Intercom webhook payloads for `topic === "contact.user.created"` with a non-empty contact `id` and `email`; other webhook topics exit without external API calls.
 - Queries `GET https://api.exactbuyer.com/v1/enrich` with `email` and `required=work_email,personal_email,email`.
 - If ExactBuyer returns a matching profile, formats `social_profiles`, `location`, `phone`, `avatar`, `name`, and `email`, then updates the contact via `PUT https://api.intercom.io/contacts/{id}` with `Intercom-Version: 2.10`. Non-2xx or empty ExactBuyer responses stop cleanly without updating Intercom.
+
+<details>
+<summary>In n8n</summary>
+
+For the n8n template, configure Header Auth credentials for ExactBuyer (`X-API-Key`) and Intercom (`Authorization: Bearer <token>`).
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -13,11 +13,18 @@ Extract each fieldData object from a FileMaker Data API response.
 
 ## Setup and use
 
-Supply a FileMaker Data API response object to Open Flow. In n8n run the manual workflow with its fictional example response, or replace that example with your own response.
+Supply a FileMaker Data API response object to Open Flow.
 
 ## Behavior
 
-Each entry in response.data contributes its complete fieldData object. Open Flow returns an array; n8n emits an item for each record. Record metadata and portal data are not included. This example does not fetch further FileMaker pages.
+Each entry in response.data contributes its complete fieldData object. Open Flow returns an array. Record metadata and portal data are not included. This example does not fetch further FileMaker pages.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n run the manual workflow with its fictional example response, or replace that example with your own response. N8n emits an item for each record.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

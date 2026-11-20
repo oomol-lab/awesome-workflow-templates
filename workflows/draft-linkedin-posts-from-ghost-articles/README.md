@@ -13,11 +13,18 @@ Draft LinkedIn promotional copy for recent Ghost posts and record it in Google S
 
 ## Setup
 
-Connect Ghost Content API, Gemini and Google Sheets. Set a unique namespace for each Ghost site and destination sheet in **Select next article**, configure the spreadsheet and range, and optionally add your own signature. The sheet columns are id, title, featured_image, excerpt, content, clean_content and linkedin_post. Enable persistent State. In n8n set the namespace in each Data Table checkpoint filter and reserve node, configure the same Data Table with text columns item_key and status, connect Ghost Content API, Google Gemini and Google Sheets, and set the spreadsheet and sheet IDs. For an uncertain append, inspect the sheet by post ID: set the matching Data Table status to done if confirmed, or delete the checkpoint if absent. Avoid overlapping executions.
+Connect Ghost Content API, Gemini and Google Sheets. Set a unique namespace for each Ghost site and destination sheet in **Select next article**, configure the spreadsheet and range, and optionally add your own signature. The sheet columns are id, title, featured_image, excerpt, content, clean_content and linkedin_post. Enable persistent State. Avoid overlapping executions.
 
 ## Behavior
 
 Run manually to read up to three recent published Ghost posts. Review the generated drafts in the sheet before publishing. For an uncertain sheet append, inspect the row by post ID. Enter the pending key and confirmed or absent in **Select next article**, run again and clear the recovery fields afterward. Avoid overlapping runs for the same site.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n set the namespace in each Data Table checkpoint filter and reserve node, configure the same Data Table with text columns item_key and status, connect Ghost Content API, Google Gemini and Google Sheets, and set the spreadsheet and sheet IDs. For an uncertain append, inspect the sheet by post ID: set the matching Data Table status to done if confirmed, or delete the checkpoint if absent.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

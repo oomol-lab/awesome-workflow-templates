@@ -13,13 +13,20 @@ Create a YOURLS short URL and read its link statistics.
 
 ## Setup
 
-Use a YOURLS instance accessible over HTTPS and its API signature. In Open Flow, create a secret Variable for the signature and bind **Auth Token** on both HTTP nodes. Run with the instance base URL, destination URL and link title. In n8n, connect the YOURLS credential to both nodes and edit **Set link details**.
+Use a YOURLS instance accessible over HTTPS and its API signature. In Open Flow, create a secret Variable for the signature and bind **Auth Token** on both HTTP nodes. Run with the instance base URL, destination URL and link title.
 
 The signature is sent in the request query, as in the source node. Server and proxy URL logs may contain it; protect those logs. Use only a trusted YOURLS instance.
 
 ## Behavior
 
 Each run asks YOURLS to shorten the destination and uses the returned short URL to retrieve its statistics. YOURLS controls whether an existing short URL is returned. Failure stops subsequent steps; a lost response may mean creation succeeded, so check YOURLS before retrying. No automatic retry or rollback is performed.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect the YOURLS credential to both nodes and edit **Set link details**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

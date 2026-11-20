@@ -13,11 +13,18 @@ Notify a Mattermost channel when a contact replies to an Emelia email campaign.
 
 ## Setup
 
-Connect Mattermost and set the channel ID. Deploy the webhook and register it with Emelia using POST https://api.emelia.io/webhook and JSON containing hookUrl, campaignId and events set to [REPLIED]; omit type for a legacy email campaign. Authenticate with your Emelia API key in the Authorization header; see the [webhook API](https://docs.emelia.io/docs/webhooks/create-webhook) and [legacy email events](https://docs.emelia.io/docs/webhooks/legacy-email-activity). Configure the same registration and Mattermost connection for n8n. Use one workflow format.
+Connect Mattermost and set the channel ID. Deploy the webhook and register it with Emelia using POST https://api.emelia.io/webhook and JSON containing hookUrl, campaignId and events set to [REPLIED]; omit type for a legacy email campaign. Authenticate with your Emelia API key in the Authorization header; see the [webhook API](https://docs.emelia.io/docs/webhooks/create-webhook) and [legacy email events](https://docs.emelia.io/docs/webhooks/legacy-email-activity).
 
 ## Behavior
 
 Emelia sends a POST when a contact first replies. The message names the contact and company; either may be absent. Emelia's legacy email webhook has no signature, so restrict access as appropriate. A webhook acknowledgment confirms receipt, not Mattermost delivery. Repeated deliveries can create duplicate messages. The full webhook payload, including reply text and contact details, can appear in execution history.
+
+<details>
+<summary>In n8n</summary>
+
+Configure the same registration and Mattermost connection for n8n.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

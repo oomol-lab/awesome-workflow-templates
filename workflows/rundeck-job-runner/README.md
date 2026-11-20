@@ -15,11 +15,18 @@ Request a run of an existing Rundeck job and return its execution ID and complet
 
 In **Request Rundeck execution**, replace the example URL with your HTTPS Rundeck server URL and job ID, retaining `/api/17/job/JOB_ID/run`. Keep any server context path before `/api/17`. The server must support API 17, have a valid TLS certificate, and be reachable by the execution platform. The token’s account needs permission to run the job and its target nodes. Required job options must already have defaults; this template supplies no option values or node filter.
 
-In Open Flow, store your Rundeck API token in a secret Variable and bind **Auth Token** (`auth.token`) to it. The HTTP step sends `X-Rundeck-Auth-Token`. Shared files contain no token or Variable binding. In n8n, select **HTTP Header Auth** credentials with header name `X-Rundeck-Auth-Token` and the API token as its value. Edit the same server URL and job ID.
+In Open Flow, store your Rundeck API token in a secret Variable and bind **Auth Token** (`auth.token`) to it. The HTTP step sends `X-Rundeck-Auth-Token`. Shared files contain no token or Variable binding. Edit the same server URL and job ID.
 
 Each manual run makes one request with an empty argument string and returns the full execution record. An execution ID confirms that Rundeck accepted the request. The returned status may already reflect a fast job’s outcome; the workflow does not wait for completion, collect logs, cancel jobs or confirm success.
 
 The Open Flow HTTP step has a 30-second execution budget. A rejected request or missing execution ID stops the run. No duplicate check or automatic retry is configured. The job can change remote systems; check Rundeck before repeating a request whose result is uncertain.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, select **HTTP Header Auth** credentials with header name `X-Rundeck-Auth-Token` and the API token as its value.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

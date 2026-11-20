@@ -13,11 +13,18 @@ Fetch a webpage and return its Markdown content, optionally replacing links and 
 
 ## Setup and use
 
-Connect Firecrawl in Open Flow. In n8n configure the HTTP Request node with a header credential named Authorization whose value is Bearer followed by a space and your Firecrawl key. Call the workflow with a query string such as ?url=https%3A%2F%2Fexample.com&method=full. The optional maxlimit defaults to 70000 characters.
+Connect Firecrawl in Open Flow. Call the workflow with a query string such as ?url=https%3A%2F%2Fexample.com&method=full. The optional maxlimit defaults to 70000 characters.
 
 ## Behavior
 
 The worker returns page_content and page_length. full preserves links and images; simplified replaces their destinations with NOURL and NOIMG. When content reaches maxlimit it returns an error message instead. Firecrawl fetches the page and produces Markdown; its rendering and supported sites can differ from a direct HTML request. Only fetch pages you are permitted to access. The source chat interface is excluded.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure the HTTP Request node with a header credential named Authorization whose value is Bearer followed by a space and your Firecrawl key.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

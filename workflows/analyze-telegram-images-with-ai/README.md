@@ -15,13 +15,18 @@ Describe photos sent to a Telegram bot and reply in the same chat.
 
 Connect the same Telegram bot to **Receive a Telegram message**, **Identify the connected bot**, **Get the photo path**, **Ask for an image** and **Send the analysis**. Create a secret Variable for that bot token and bind it to **Verify the download token** and **Download the photo**. Grant Telegram Provider API Request permission and HTTP access to api.telegram.org. Restrict the trigger to intended chats or users. Connect OpenAI in **Analyze the image** and choose a vision-capable model.
 
-In n8n, connect Telegram and OpenAI and select a vision-capable model in **Analyze image**. Only one Telegram webhook can be active per bot; enable one format.
-
 ## Behavior
 
-A Telegram photo is downloaded and analyzed with the prompt “What's in this image?”; the description goes back to the same chat. Open Flow selects the last Telegram photo variant. n8n selects the third variant when present and otherwise the first, following its trigger default. A message without a photo receives “Please Upload an Image ....” after three hours, matching the source Wait node's default unit. The delay can be adjusted in the Wait node.
+A Telegram photo is downloaded and analyzed with the prompt “What's in this image?”; the description goes back to the same chat. Open Flow selects the last Telegram photo variant. A message without a photo receives “Please Upload an Image....” after three hours, matching the source Wait node's default unit. The delay can be adjusted in the Wait node.
 
-Open Flow verifies that the download token identifies the connected bot. Its webhook verifies the Telegram secret; the n8n 1.1 Telegram trigger also checks its configured secret header. Open Flow accepts JPEG photos up to 700,000 bytes so the image and Base64 representation fit host limits. Oversized, invalid or failed downloads stop; n8n has its own service limits. Images and descriptions can appear in execution data; restrict access. Check Telegram before repeating an uncertain reply.
+Open Flow verifies that the download token identifies the connected bot. Its webhook verifies the Telegram secret. Open Flow accepts JPEG photos up to 700,000 bytes so the image and Base64 representation fit host limits. Oversized, invalid or failed downloads stop. Images and descriptions can appear in execution data; restrict access. Check Telegram before repeating an uncertain reply.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect Telegram and OpenAI and select a vision-capable model in **Analyze image**. Only one Telegram webhook can be active per bot; enable one format. n8n selects the third variant when present and otherwise the first, following its trigger default. The n8n 1.1 Telegram trigger also checks its configured secret header. N8n has its own service limits.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

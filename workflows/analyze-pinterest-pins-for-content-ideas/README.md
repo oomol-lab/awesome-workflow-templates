@@ -13,11 +13,18 @@ Collect Pinterest pins in Airtable and email content ideas based on their metada
 
 ## Setup
 
-Configure the Pinterest token, Airtable base and table, Gmail recipient and model. Airtable fields: pin_id, created_at, title, description, link, type. Enable persistent State and avoid overlapping runs. In n8n configure a Data Table with item_key and status text fields, the Pinterest Header Auth credential, Airtable tool, Gmail and model.
+Configure the Pinterest token, Airtable base and table, Gmail recipient and model. Airtable fields: pin_id, created_at, title, description, link, type. Enable persistent State and avoid overlapping runs.
 
 ## Behavior
 
 Every Monday at 08:00 UTC, collect account pins, create or update records by pin_id, analyze the table and email suggestions. Pinterest metadata is sent to the model. Pin metadata does not contain performance metrics, so suggestions are ideas rather than evidence of audience or engagement trends. Inspect Airtable or Gmail before resolving a pending checkpoint after an uncertain write.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure a Data Table with item_key and status text fields, the Pinterest Header Auth credential, Airtable tool, Gmail and model.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

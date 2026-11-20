@@ -13,11 +13,18 @@ Publish a configured image and message to a LinkedIn personal profile.
 
 ## Setup and use
 
-In Open Flow connect LinkedIn with permission to post as your personal profile. Set your person URN and message in **Configure the post**. Supply a LinkedIn access token for the same member as secret Variable **LINKEDIN_UPLOAD_TOKEN** in **Download and upload image** and **Check image processing**. Set your directly accessible HTTPS image URL in **Download and upload image**, and change its host check and HTTP capability to match. Use an image you have permission to share. In n8n configure the LinkedIn credential on the three LinkedIn HTTP nodes, set the same person ID in **Initialize image upload** and **Publish image post**, and set the message and image URL.
+In Open Flow connect LinkedIn with permission to post as your personal profile. Set your person URN and message in **Configure the post**. Supply a LinkedIn access token for the same member as secret Variable **LINKEDIN_UPLOAD_TOKEN** in **Download and upload image** and **Check image processing**. Set your directly accessible HTTPS image URL in **Download and upload image**, and change its host check and HTTP capability to match. Use an image you have permission to share.
 
 ## Behavior
 
-A manual run downloads an image, uploads it to LinkedIn and publishes a public image post. Open Flow accepts image responses up to 1 MiB and does not follow redirects. LinkedIn processes images asynchronously. Both formats check for an available image before posting and stop if processing fails or times out. If upload or post results are unknown, inspect LinkedIn before retrying to avoid a duplicate post.
+A manual run downloads an image, uploads it to LinkedIn and publishes a public image post. Open Flow accepts image responses up to 1 MiB and does not follow redirects. LinkedIn processes images asynchronously. The workflow checks for an available image before posting and stop if processing fails or times out. If upload or post results are unknown, inspect LinkedIn before retrying to avoid a duplicate post.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure the LinkedIn credential on the three LinkedIn HTTP nodes, set the same person ID in **Initialize image upload** and **Publish image post**, and set the message and image URL.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

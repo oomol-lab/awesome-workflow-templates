@@ -15,13 +15,20 @@ Create a semester project and connect each team member to the project and curren
 
 Connect Notion with access to users, semesters and projects data sources. Configure all three data source IDs in **Create project and connect members**. The user source needs Name (title), Email (email), Semesters and Project (relations); the semesters source needs Is Current? (checkbox) and Projects (relation); the projects source needs Name (title), Semesters (relation) and Project Idea (rich text).
 
-Set secret Variable TEAM_BASIC_AUTH to a full HTTP Basic Authorization value and send an HTTPS POST JSON request with projectName, projectIdea and teamMembers, an array of objects with name and email. In n8n configure Basic Auth on the webhook, the three IDs in **Prepare team**, and a Notion credential on **Call Notion**. Restrict execution history access because it can contain authorization headers and member data. Activate one format.
+Set secret Variable TEAM_BASIC_AUTH to a full HTTP Basic Authorization value and send an HTTPS POST JSON request with projectName, projectIdea and teamMembers, an array of objects with name and email. Restrict execution history access because it can contain authorization headers and member data.
 
 ## Behavior
 
 The workflow requires one current semester. It creates a project, using Project Group followed by the next project count when projectName is empty. For each distinct member email it finds or creates a user and adds the current semester and new project while preserving existing relations. Duplicate user matches stop processing. Relation properties are read page by page. Notion allows at most 100 relations in a single update; a larger combined relation stops before that update. Platform execution limits apply.
 
-Writes are sequential and not atomic. A failed or uncertain write may already have succeeded, and earlier project or member writes remain. Inspect Notion before repeating a request. Concurrent requests can create duplicate users or overwrite relation updates. Open Flow responds after processing with a 60-second timeout; n8n acknowledges before processing.
+Writes are sequential and not atomic. A failed or uncertain write may already have succeeded, and earlier project or member writes remain. Inspect Notion before repeating a request. Concurrent requests can create duplicate users or overwrite relation updates. Open Flow responds after processing with a 60-second timeout.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure Basic Auth on the webhook, the three IDs in **Prepare team**, and a Notion credential on **Call Notion**. N8n acknowledges before processing.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

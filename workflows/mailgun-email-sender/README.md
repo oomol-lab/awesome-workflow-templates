@@ -15,11 +15,16 @@ Send a plain-text email through Mailgun and return the message ID and complete q
 
 Select your Mailgun account in **Send Mailgun email** and allow `mailgun.send_email`. Configure its API key and US or EU API base URL to match the sending domain’s region. Run with **Domain**, **From**, **To**, **Subject** and **Text**. **To** is an array of recipient addresses or Mailgun-supported friendly-name addresses. Use a verified sending domain; sandbox domains can send only to authorized recipients.
 
-In n8n, select Mailgun credentials, set the API region and sending domain in those credentials, and replace the sender, recipients, subject and text in **Mailgun**. Separate multiple recipients with commas.
-
 Each run makes one send request with the configured recipients and plain text. It adds no attachment, template, CC or BCC. The result preserves the API’s message ID and other returned fields. Queue acceptance does not confirm inbox delivery. Sending can consume your Mailgun plan allowance.
 
 This template sends real email and leaves tracking and delivery settings at Mailgun’s account defaults. No duplicate check or automatic retry is configured. A rejected request, missing message ID or request failure stops the run; check Mailgun before repeating an uncertain send.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, select Mailgun credentials, set the API region and sending domain in those credentials, and replace the sender, recipients, subject and text in **Mailgun**. Separate multiple recipients with commas.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

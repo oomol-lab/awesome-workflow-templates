@@ -13,13 +13,20 @@ Email recent company news for today’s matching calendar meetings.
 
 ## Setup
 
-Connect Google Calendar and Gmail. Set the calendar ID in **Find today’s company meetings**, the recipient in **Get news for next meeting**, and bind a secret Variable containing a NewsAPI key. Set the lookback days and maximum article count as needed. The NewsAPI plan must support the requested search. In n8n connect Google Calendar and Gmail, set the calendar and recipient in **Get meetings for today** and **Setup**, and configure an HTTP Header Auth credential with header `X-Api-Key` and your NewsAPI key on **Get latest news**. Activate one format.
+Connect Google Calendar and Gmail. Set the calendar ID in **Find today’s company meetings**, the recipient in **Get news for next meeting**, and bind a secret Variable containing a NewsAPI key. Set the lookback days and maximum article count as needed. The NewsAPI plan must support the requested search.
 
 ## Behavior
 
 Every day at 07:00 UTC the workflow checks that UTC day’s calendar. Each event whose summary begins with “call with” or “meeting with” gets a separate email with English title-search results using the configured lookback and limit (10 days and 20 articles by default). The rest of the summary is used as the company search term. No matching meetings means no email. Source results can be incomplete or inaccurate; inspect linked articles. Change the timezone and day-boundary logic together if needed.
 
 A failed lookup stops the run. An uncertain email send may already have succeeded; inspect sent mail before rerunning. Earlier emails are not rolled back.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n connect Google Calendar and Gmail, set the calendar and recipient in **Get meetings for today** and **Setup**, and configure an HTTP Header Auth credential with header `X-Api-Key` and your NewsAPI key on **Get latest news**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

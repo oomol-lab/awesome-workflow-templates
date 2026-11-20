@@ -13,11 +13,18 @@ Upload a vehicle image and extract the front-most license plate as text.
 
 ## Setup
 
-Import the n8n workflow and connect a vision-capable OpenRouter model for direct use. For Open Flow, deploy its webhook, connect OpenAI and grant Provider API Request permission, and configure the n8n upload credential and Open Flow connection for the same OpenAI project so both can access the uploaded file. Set the Open Flow webhook URL in Forward image to Open Flow. Enable either the direct form or the Open Flow form, then activate the workflow. Restrict access to trusted users.
+Connect a vision-capable OpenRouter model for direct use. Set the Open Flow webhook URL in Forward image to Open Flow. Enable either the direct form or the Open Flow form, then activate the workflow. Restrict access to trusted users.
 
 ## Behavior
 
-Upload a JPG or PNG image on the selected form. The vision model reads the plate on the front-most car and displays its result on the completion page. Check the result against the image: recognition may be inaccurate. Open Flow uses an n8n frontend to upload the image to OpenAI Files with purpose vision and passes the file ID to the Open Flow workflow. Images and uploaded files are sent to the model provider and retained according to its settings. If an upload outcome is uncertain, inspect the account before submitting again.
+Upload a JPG or PNG image on the selected form. The vision model reads the plate on the front-most car and displays its result on the completion page. Check the result against the image: recognition may be inaccurate. Images and uploaded files are sent to the model provider and retained according to its settings. If an upload outcome is uncertain, inspect the account before submitting again.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow and connect a vision-capable OpenRouter model for direct use. For Open Flow, deploy its webhook, connect OpenAI and grant Provider API Request permission, and configure the n8n upload credential and Open Flow connection for the same OpenAI project so both can access the uploaded file. Open Flow uses an n8n frontend to upload the image to OpenAI Files with purpose vision and passes the file ID to the Open Flow workflow.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

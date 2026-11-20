@@ -13,11 +13,18 @@ Create a Matrix room, invite members of another room and send a welcome message.
 
 ## Setup and use
 
-Bind the Matrix access token as secret Variable MATRIX_ACCESS_TOKEN in each HTTP node. Run with the homeserver base URL, source room ID, new room name and alias. In n8n configure Matrix credentials, replace the source room ID and new alias, and run manually. Use one format.
+Bind the Matrix access token as secret Variable MATRIX_ACCESS_TOKEN in each HTTP node. Run with the homeserver base URL, source room ID, new room name and alias.
 
 ## Behavior
 
 The workflow creates a public room, reads the source room members, invites everyone except the authenticated account and sends a welcome message after each invitation. The source room may include former or invited members; check membership before running. These actions create a room and notify people. If a write outcome is unknown, inspect the room and invitations before retrying.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure Matrix credentials, replace the source room ID and new alias, and run manually.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

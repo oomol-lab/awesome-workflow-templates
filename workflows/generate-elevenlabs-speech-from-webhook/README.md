@@ -13,13 +13,20 @@ Generate speech from text and return the audio bytes.
 
 ## Setup
 
-Configure an ElevenLabs connection with access to eleven_multilingual_v2 and the selected voice. In n8n configure Header Auth with xi-api-key, choose n8n or Open Flow mode and set its webhook URL. Configure a Data Table with item_key and status columns and enable persistent State for Open Flow. Restrict webhook access; requests use your ElevenLabs account.
+Configure an ElevenLabs connection with access to eleven_multilingual_v2 and the selected voice. Restrict webhook access; requests use your ElevenLabs account.
 
 ## Use
 
-POST JSON with voice_id, text and a unique request_id. The n8n endpoint returns MP3 audio bytes. Open Flow synthesizes the audio and n8n downloads its transit file for the response. Open Flow transit URLs are public to anyone with the link; use only content suitable for that exposure. Text is sent to ElevenLabs. The model supports up to 10,000 characters per request.
+POST JSON with voice_id, text and a unique request_id. Open Flow transit URLs are public to anyone with the link; use only content suitable for that exposure. Text is sent to ElevenLabs. The model supports up to 10,000 characters per request.
 
-A pending generation may have succeeded; inspect ElevenLabs and the pending State or Data Table row before retrying. Open Flow returns the same recorded transit file for the same ID and inputs after success while that URL remains valid. Prevent overlapping requests with the same ID.
+Open Flow returns the same recorded transit file for the same ID and inputs after success while that URL remains valid. Prevent overlapping requests with the same ID.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure Header Auth with xi-api-key, choose n8n or Open Flow mode and set its webhook URL. Configure a Data Table with item_key and status columns and enable persistent State for Open Flow. The n8n endpoint returns MP3 audio bytes. Open Flow synthesizes the audio and n8n downloads its transit file for the response. A pending generation may have succeeded; inspect ElevenLabs and the pending State or Data Table row before retrying.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

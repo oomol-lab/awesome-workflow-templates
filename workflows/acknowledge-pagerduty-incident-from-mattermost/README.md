@@ -17,13 +17,18 @@ Connect PagerDuty in **Acknowledge the incident** and Mattermost in **Post confi
 
 Configure a Mattermost interactive message button with the webhook URL and a context containing pagerduty_incident and action_secret. The action_secret must equal the secret Variable. Mattermost forwards the context and channel ID when the button is clicked. Open Flow’s webhook body fields cover the Mattermost v11.11.1 button request; add any extra fields sent by your server to the webhook definition. Anyone able to read the button’s integration context can obtain the shared secret, so restrict who can read or create the post, the webhook URL and workflow history. Use HTTPS and restrict network access where possible.
 
-In n8n, connect PagerDuty and Mattermost, set the PagerDuty email in **Validate the action**, and configure MATTERMOST_ACTION_SECRET as an environment variable accessible to the Code node. Self-hosted n8n may require enabling environment access for nodes. Configure the button with that same secret and the n8n webhook URL. Enable only one format.
-
 ## Behavior
 
 A button click returns HTTP 200 with an empty JSON object as an immediate receipt. The workflow then validates the shared secret and required incident and channel IDs, acknowledges the PagerDuty incident, checks the returned ID and acknowledged status, and posts a confirmation in the action’s channel. The immediate receipt confirms receipt only; it does not mean PagerDuty has completed the update.
 
 A failed or uncertain PagerDuty update can still have taken effect. A later Mattermost post may fail after acknowledgement. Inspect PagerDuty and the channel before retrying. This shared secret is a bearer capability and does not identify individual users; repeated requests are not deduplicated.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect PagerDuty and Mattermost, set the PagerDuty email in **Validate the action**, and configure MATTERMOST_ACTION_SECRET as an environment variable accessible to the Code node. Self-hosted n8n may require enabling environment access for nodes. Configure the button with that same secret and the n8n webhook URL. Enable only one format.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

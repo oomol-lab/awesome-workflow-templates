@@ -13,11 +13,18 @@ Fetch a random cocktail and translate its preparation instructions into French.
 
 ## Setup and use
 
-Connect DeepL, then run the workflow manually. The CocktailDB random endpoint supplies one recipe; DeepL translates its English instructions into French. Configure the DeepL credential in n8n and use one workflow format.
+Connect DeepL, then run the workflow manually. The CocktailDB random endpoint supplies one recipe; DeepL translates its English instructions into French.
 
 ## Behavior
 
 The result contains the translation of the first returned cocktail's instructions. A missing or invalid recipe stops the Open Flow run. Cocktail data and translated text may appear in execution history; DeepL usage may be billed.
+
+<details>
+<summary>In n8n</summary>
+
+Configure the DeepL credential in n8n and use one workflow format.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

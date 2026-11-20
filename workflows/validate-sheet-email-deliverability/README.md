@@ -13,13 +13,20 @@ Validate changed email addresses and write deliverability results to their Googl
 
 ## Setup
 
-Connect Google Sheets and Mails. Set the same spreadsheet ID and the worksheet range in both sheet-read nodes and the spreadsheet ID in the write node. Set the worksheet name in **Prepare the status cell**. The first row needs unique **Email** and **Status** headers. In n8n set the same spreadsheet ID in the read, recheck and write HTTP nodes, the worksheet range in both read nodes, and the worksheet name in **Prepare the status cell**. Set a Google Sheets OAuth2 credential on those three nodes and a Header Auth credential with header name **x-mails-api-key** and your Mails key on **Validate the email**. Enable one format, preserve workflow State, and prevent concurrent runs or edits while a run is in progress.
+Connect Google Sheets and Mails. Set the same spreadsheet ID and the worksheet range in both sheet-read nodes and the spreadsheet ID in the write node. Set the worksheet name in **Prepare the status cell**. The first row needs unique **Email** and **Status** headers. Set a Google Sheets OAuth2 credential on those three nodes and a Header Auth credential with header name **x-mails-api-key** and your Mails key on **Validate the email**. Enable one format, preserve workflow State, and prevent concurrent runs or edits while a run is in progress.
 
 ## Behavior
 
 The first successful poll records the current rows. Each later poll checks changed or newly added rows with an email and blank Status. The workflow validates each distinct selected email once per poll, re-reads the sheet, verifies the email and blank status still occupy the same row, and writes only that Status cell. Mails returns deliverable, undeliverable, risky or unknown; unknown is not a successful deliverability claim.
 
-Open Flow starts on the minute boundary; n8n runs at a fixed second within that minute. Open Flow saves the observed snapshot after all selected rows finish. On a later poll it can retry rows whose Status is still blank after a failed or uncertain update. n8n records the observed snapshot during the run and may skip failed or remaining rows on a later poll. Inspect the sheet and provider before manually retrying an uncertain write. Keep rows stable during each run and ensure the full table and snapshot fit platform state and execution limits.
+Open Flow starts on the minute boundary. Open Flow saves the observed snapshot after all selected rows finish. On a later poll it can retry rows whose Status is still blank after a failed or uncertain update. Inspect the sheet and provider before manually retrying an uncertain write. Keep rows stable during each run and ensure the full table and snapshot fit platform state and execution limits.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n set the same spreadsheet ID in the read, recheck and write HTTP nodes, the worksheet range in both read nodes, and the worksheet name in **Prepare the status cell**. N8n runs at a fixed second within that minute. n8n records the observed snapshot during the run and may skip failed or remaining rows on a later poll.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

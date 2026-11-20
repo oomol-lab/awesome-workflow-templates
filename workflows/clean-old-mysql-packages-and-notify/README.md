@@ -13,15 +13,22 @@ Mark old received packages in two MySQL databases and send a Telegram notificati
 
 ## Setup
 
-Import the supplied n8n workflow and connect each MySQL node to its corresponding database. Both databases must have the source's `i_objeto` schema and support the included SQL. Configure both Telegram nodes with your bot and destination chat.
+Connect each MySQL node to its corresponding database. Both databases must have the source's `i_objeto` schema and support the included SQL. Configure both Telegram nodes with your bot and destination chat.
 
-For direct n8n operation enable **Cron** and **Webhook**, and leave the relay webhook disabled. For Open Flow, disable those two n8n triggers, enable the MySQL relay webhook, and set its production URL in **Run both database updates**. Connect Telegram and configure both chat IDs in Open Flow. Activate one format. The original GET webhook and the POST relay have no authentication; restrict access to their URLs.
+Connect Telegram and configure both chat IDs in Open Flow. The original GET webhook and the POST relay have no authentication; restrict access to their URLs.
 
 ## Behavior
 
-Every day at 08:00 UTC or on a GET webhook, each database marks package records older than one month in state `TRANSPORTE-RECEBIDO` by changing `modulo` to `DELETE`. Each confirmed update sends its matching Telegram notification. The source inherited the n8n instance timezone; adjust UTC if needed. The relay attempts both databases and reports their separate outcomes; only a confirmed update gets its matching notification. If a notification result is unknown, later notifications require manual reconciliation.
+Every day at 08:00 UTC or on a GET webhook, each database marks package records older than one month in state `TRANSPORTE-RECEBIDO` by changing `modulo` to `DELETE`. Each confirmed update sends its matching Telegram notification. The relay attempts both databases and reports their separate outcomes; only a confirmed update gets its matching notification. If a notification result is unknown, later notifications require manual reconciliation.
 
 Enable persistent State and prevent overlapping Open Flow runs. If a database update or notification is uncertain, inspect both databases and Telegram, complete any outstanding work manually, and enter the pending run ID shown in the error in **Check cleanup state** before a later run. Do not automatically replay an uncertain write.
+
+<details>
+<summary>In n8n</summary>
+
+Import the supplied n8n workflow and connect each MySQL node to its corresponding database. For direct n8n operation enable **Cron** and **Webhook**, and leave the relay webhook disabled. For Open Flow, disable those two n8n triggers, enable the MySQL relay webhook, and set its production URL in **Run both database updates**. The source inherited the n8n instance timezone; adjust UTC if needed.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -13,13 +13,20 @@ Collect recent RSS articles, post a weekly Trello comment, and email a reviewer.
 
 ## Setup
 
-Configure the three feed URLs, connect Trello and set the card ID in **Post Trello comment**, then connect Gmail and set the reviewer email. Enable persistent State and prevent overlapping runs. In n8n configure the three RSS nodes, Trello credential and card ID, and Gmail credential and recipient. Activate one format.
+Configure the three feed URLs, connect Trello and set the card ID in **Post Trello comment**, then connect Gmail and set the reviewer email. Enable persistent State and prevent overlapping runs.
 
 ## Behavior
 
-Every Monday at 07:00 UTC, the workflow combines the feeds, selects up to ten articles newer than seven days, sorts newest first, and adds a Markdown comment to the card. After a confirmed comment it emails the reviewer. If there are no qualifying articles, nothing is sent. Change the schedule timezone to match your team; the source inherited the n8n instance timezone.
+Every Monday at 07:00 UTC, the workflow combines the feeds, selects up to ten articles newer than seven days, sorts newest first, and adds a Markdown comment to the card. After a confirmed comment it emails the reviewer. If there are no qualifying articles, nothing is sent. Change the schedule timezone to match your team.
 
 If a write fails or its result is unknown, inspect Trello and Gmail and complete the report manually before entering the pending scheduled timestamp in **Select recent articles** to acknowledge it. Inspect before any replay.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure the three RSS nodes, Trello credential and card ID, and Gmail credential and recipient. The source inherited the n8n instance timezone.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

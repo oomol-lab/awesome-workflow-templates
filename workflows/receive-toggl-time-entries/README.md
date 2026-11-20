@@ -13,11 +13,18 @@ Poll Toggl for time entries on a schedule.
 
 ## Setup and use
 
-Connect Toggl in the supplied n8n workflow and configure its polling schedule. For Open Flow enable persistent State, bind secret Variable TOGGL_API_TOKEN as the HTTP Basic username, leave the password as api_token, and adjust the schedule. Prevent overlapping runs. Use one format.
+For Open Flow enable persistent State, bind secret Variable TOGGL_API_TOKEN as the HTTP Basic username, leave the password as api_token, and adjust the schedule. Prevent overlapping runs.
 
 ## Behavior
 
 The first poll starts at the current UTC date; later polls start at the previous successful poll time and end at the current time. The workflow returns the full entries in each window. Like the original trigger, the query selects by entry start time, so entries backdated before the window can be missed. Toggl limits this endpoint to 1,000 entries. Open Flow stops without advancing the cursor if it receives 1,000 or more; set **Prepare time window** recoveryEnd to a timestamp after the saved cursor and before now, run once, and repeat with later timestamps until caught up. Then clear recoveryEnd. Full entries may appear in execution history.
+
+<details>
+<summary>In n8n</summary>
+
+Connect Toggl in the supplied n8n workflow and configure its polling schedule.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

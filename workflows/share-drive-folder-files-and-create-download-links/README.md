@@ -13,13 +13,20 @@ Grant public reader access to files in a Google Drive folder and create download
 
 ## Setup
 
-Connect Google Drive with permission to list and share the files. In Open Flow allow both declared Drive actions and run with the folder ID. In n8n set the folder ID in **Set Folder ID**, select Google Drive credentials on both Drive nodes, and run manually.
+Connect Google Drive with permission to list and share the files. In Open Flow allow both declared Drive actions and run with the folder ID.
 
 ## Behavior
 
-The workflow lists up to 100 items directly in the folder, ordered by modification time, grants each anyone-with-the-link reader access, and returns its name and download link. This makes the items publicly accessible to anyone with the link. Check the contents and your sharing policy before running. Open Flow follows additional pages when a page contains fewer than 100 items; n8n uses the source’s single page. Google Drive and organization restrictions can prevent sharing or downloading; Google Workspace files and folders may not support direct download through these links.
+The workflow lists up to 100 items directly in the folder, ordered by modification time, grants each anyone-with-the-link reader access, and returns its name and download link. This makes the items publicly accessible to anyone with the link. Check the contents and your sharing policy before running. Open Flow follows additional pages when a page contains fewer than 100 items. Google Drive and organization restrictions can prevent sharing or downloading; Google Workspace files and folders may not support direct download through these links.
 
 If sharing fails or a response is unknown, earlier permissions remain. Inspect Drive permissions before rerunning. There is no automatic write retry.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n set the folder ID in **Set Folder ID**, select Google Drive credentials on both Drive nodes, and run manually. N8n uses the source’s single page.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

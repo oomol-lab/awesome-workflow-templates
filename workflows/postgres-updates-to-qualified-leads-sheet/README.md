@@ -13,11 +13,18 @@ Filter updated Postgres users and upsert qualified leads in Google Sheets.
 
 ## Setup and use
 
-Configure Postgres credentials, schema and table in the n8n trigger. Its UPDATE notification must include id, username and email. Configure the Google Sheet and credentials, with id, username and email headers. For n8n mode enable **Postgres Trigger**; for Open Flow mode disable it, enable **Postgres Trigger (Open Flow)**, configure **Forward to Open Flow**, and deploy Open Flow with its own Google Sheets connection and sheet ID. The trigger creates a database trigger and notification function; its database account needs the required privileges. Choose one mode and restrict access to the Open Flow endpoint, which does not authenticate callers.
+Its UPDATE notification must include id, username and email. Configure the Google Sheet and credentials, with id, username and email headers. For Open Flow mode disable it, enable **Postgres Trigger (Open Flow)**, configure **Forward to Open Flow**, and deploy Open Flow with its own Google Sheets connection and sheet ID. The trigger creates a database trigger and notification function; its database account needs the required privileges. Choose one mode and restrict access to the Open Flow endpoint, which does not authenticate callers.
 
 ## Behavior
 
 For each update, the workflow reads the new row from the notification payload. If email does not contain `n8n.io`, it updates or adds a sheet row keyed by id with username and email. Postgres notifications and the relay are not a durable queue; inspect execution history and reconcile affected rows after outages or failed deliveries. If a Sheets write response is lost, inspect the row before retrying.
+
+<details>
+<summary>In n8n</summary>
+
+Configure Postgres credentials, schema and table in the n8n trigger. For n8n mode enable **Postgres Trigger**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

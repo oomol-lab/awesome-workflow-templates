@@ -13,11 +13,18 @@ Collect up to ten Product Hunt posts for a UTC day and maintain a Google Sheets 
 
 ## Setup
 
-Bind PRODUCT_HUNT_TOKEN as a secret, connect Google Sheets, set the spreadsheet ID on the three Sheets nodes and create a Products sheet with id, name, tagline, description and next_url headers. Set a unique sheet namespace in **Select next product**. Enable persistent State. In n8n configure the date for manual runs in **Choose manual date** and the namespace in **Prepare Product Hunt query**, connect an HTTP Header Auth credential with Authorization set to Bearer followed by your Product Hunt token, set the spreadsheet and sheet IDs, and select a Data Table with item_key and status text columns. After an uncertain sheet write, inspect the post ID: set the matching pending row to done if confirmed or delete it if absent, then run for the original UTC day.
+Bind PRODUCT_HUNT_TOKEN as a secret, connect Google Sheets, set the spreadsheet ID on the three Sheets nodes and create a Products sheet with id, name, tagline, description and next_url headers. Set a unique sheet namespace in **Select next product**. Enable persistent State. After an uncertain sheet write, inspect the post ID: set the matching pending row to done if confirmed or delete it if absent, then run for the original UTC day.
 
 ## Behavior
 
 The workflow reads up to ten posts for the current UTC day and resolves each Product Hunt website redirect. It updates existing rows by post ID or appends new rows. The daily schedule runs at 00:05 UTC and collects the preceding complete UTC day. For a manual run, enter a date as YYYY-MM-DD, or leave it blank for today. Avoid overlapping runs and edits. If a sheet write is uncertain, inspect the post ID in the sheet, enter the pending key and confirmed or absent in **Select next product**, run for the original UTC day, then clear recovery fields.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure the date for manual runs in **Choose manual date** and the namespace in **Prepare Product Hunt query**, connect an HTTP Header Auth credential with Authorization set to Bearer followed by your Product Hunt token, set the spreadsheet and sheet IDs, and select a Data Table with item_key and status text columns.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

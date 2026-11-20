@@ -13,11 +13,18 @@ Read the first and last name available to a Facebook user access token.
 
 ## Setup and use
 
-Connect Meta using a Facebook user access token authorized to read the user's profile. In Open Flow, allow Provider API Request on the connection. In n8n, configure the Facebook Graph API credential with a user access token. Run manually. The token determines which user is queried; a Page or system-user token represents a different identity.
+Connect Meta using a Facebook user access token authorized to read the user's profile. In Open Flow, allow Provider API Request on the connection. Run manually. The token determines which user is queried; a Page or system-user token represents a different identity.
 
 ## Behavior
 
-The workflow requests `last_name,first_name` from the token's `/me` profile and returns the response object. Availability depends on the token, account and API permissions. Open Flow uses the Meta connection's Graph API version; n8n uses its default Graph API version.
+The workflow requests `last_name,first_name` from the token's `/me` profile and returns the response object. Availability depends on the token, account and API permissions. Open Flow uses the Meta connection's Graph API version.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, configure the Facebook Graph API credential with a user access token. N8n uses its default Graph API version.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

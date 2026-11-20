@@ -13,15 +13,20 @@ Search Meta ad interests from an authorized Telegram command and return a CSV do
 
 ## Setup
 
-Connect the Telegram bot and Meta account with permission to search ad interests. Set the allowed numeric chat ID in **Select authorized interest search**. Import the supplied n8n workflow, connect the relay Telegram node to the same bot, disable **Get interest name**, enable **CSV delivery webhook**, and enter its production URL in **Deliver CSV through n8n**. Restrict access to the relay URL. Enable persistent State and prevent overlapping runs.
-
-For direct n8n use, enable **Get interest name**, disable the relay webhook, configure its authorized chat ID and connect the Meta and Telegram credentials. A bot supports only one active webhook; activate one format.
+Connect the Telegram bot and Meta account with permission to search ad interests. Set the allowed numeric chat ID in **Select authorized interest search**. Restrict access to the relay URL. Enable persistent State and prevent overlapping runs.
 
 ## Behavior
 
 Send `#interest topic` from the configured chat. The workflow searches Meta and returns `report.csv` with names, audience bounds, paths, descriptions and topics. Empty results produce no document. Results and available fields depend on Meta access and response limits; the source requests up to 1,000,000 results.
 
 If delivery fails or is uncertain, inspect the Telegram chat before entering that update ID in **Select authorized interest search** to acknowledge it. The command is then treated as handled and queued commands continue. Do not automatically replay an uncertain document send.
+
+<details>
+<summary>In n8n</summary>
+
+Import the supplied n8n workflow, connect the relay Telegram node to the same bot, disable **Get interest name**, enable **CSV delivery webhook**, and enter its production URL in **Deliver CSV through n8n**. For direct n8n use, enable **Get interest name**, disable the relay webhook, configure its authorized chat ID and connect the Meta and Telegram credentials. A bot supports only one active webhook; activate one format.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

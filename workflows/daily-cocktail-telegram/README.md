@@ -13,9 +13,9 @@ Send one random cocktail photo to Telegram each day, with its available preparat
 
 ## Setup
 
-Connect your bot in **Send cocktail photo to Telegram** and replace the destination chat ID or channel username. The bot must be allowed to post there; a user must have started the bot before it can send them a private message. In n8n, configure the equivalent **Telegram** node.
+Connect your bot in **Send cocktail photo to Telegram** and replace the destination chat ID or channel username. The bot must be allowed to post there; a user must have started the bot before it can send them a private message.
 
-Both formats run daily at **20:00 UTC**. Change the schedule’s time zone in Open Flow or the workflow time zone in n8n for a different local time. Activate one format after setup.
+The workflow runs daily at **20:00 UTC**. Activate one format after setup.
 
 The API URL uses TheCocktailDB’s public test key `1`, which its documentation permits for development and education. Review [TheCocktailDB API access](https://www.thecocktaildb.com/api.php) for your deployment and replace the key in the request URL when needed. Public app-store releases require a production key.
 
@@ -23,7 +23,14 @@ Each run reads one random result and sends its first drink’s photo and English
 
 Telegram fetches the public photo URL; this workflow does not download or store a local file. The image must meet Telegram’s photo requirements. The API can select the same drink again on another run. There is no history, deduplication or automatic retry. An API or Telegram error stops the run; check the destination before retrying an uncertain send.
 
-Open Flow returns the sent message ID, chat and caption; n8n returns Telegram’s response.
+Open Flow returns the sent message ID, chat and caption.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, configure the equivalent **Telegram** node. Change the schedule’s time zone in Open Flow or the workflow time zone in n8n for a different local time. N8n returns Telegram’s response.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

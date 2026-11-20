@@ -15,13 +15,18 @@ Use a Google Sheet to generate blog content by stage and publish scheduled posts
 
 Connect Google Sheets, OpenRouter and WordPress. Configure the same spreadsheet ID in the read and write nodes and enable persistent State. Use Schedule, Config and Log worksheets. Schedule needs unique ID, Action, Status, Scheduled, Title and final headers; set Scheduled to UTC in YYYY-MM-DD HH:mm:ss format. Config contains Key and Value columns with prompt_<action> and prompt_<action>_model entries. Placeholders can refer to Schedule columns or Config keys. Supply prompts that request a JSON object; generated fields that match Schedule headers are merged into the row.
 
-In n8n configure the three worksheet names, Sheets credentials and an OpenAI-compatible OpenRouter credential for the model node, plus WordPress credentials. Select a Data Table with text columns `item_key` and `status` in all checkpoint nodes. If a checkpoint remains, inspect WordPress and both sheet writes, complete or repair the row and log manually, and remove the checkpoint only when safe.
-
 ## Behavior
 
 Every hour or on manual start, rows with different Action and Status are processed. An authoring action uses its configured prompt and model; a due publish action creates a published WordPress post. The workflow logs the operation and updates the original row. Avoid overlapping runs or editing rows while a run is in progress.
 
 Before each external write the workflow records a pending checkpoint. If a result is uncertain, inspect the destination, enter the pending key and confirmed or absent in **Plan and reserve article step**, and run again with the original row unchanged. Clear those fields after recovery.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure the three worksheet names, Sheets credentials and an OpenAI-compatible OpenRouter credential for the model node, plus WordPress credentials. Select a Data Table with text columns `item_key` and `status` in all checkpoint nodes. If a checkpoint remains, inspect WordPress and both sheet writes, complete or repair the row and log manually, and remove the checkpoint only when safe.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

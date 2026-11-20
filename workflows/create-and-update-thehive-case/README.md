@@ -13,13 +13,20 @@ Create a TheHive 4 case, change its severity and read it back.
 
 ## Setup
 
-Connect the same TheHive 4 instance and API key in **Create the case**, **Set severity to high** and **Read the updated case**. Allow case create, update and read and Provider API Request access. The instance must be publicly reachable by the Connector. Run the Open Flow workflow with a title, description and valid owner login. In n8n, connect TheHive credentials, select **TheHive 4+ (api v1)**, and replace the values in **Set case details**.
+Connect the same TheHive 4 instance and API key in **Create the case**, **Set severity to high** and **Read the updated case**. Allow case create, update and read and Provider API Request access. The instance must be publicly reachable by the Connector. Run the Open Flow workflow with a title, description and valid owner login.
 
 ## Behavior
 
 Each run creates a case with severity 1, current start time, TLP 2, flag false and the security tag, then updates that same case to severity 3 and reads it back. The workflow checks the returned ID and final severity. These are real writes; each run creates another case. Check that the inputs and owner are appropriate before running.
 
 A failure stops later steps. A case can already exist when creation or update returns an uncertain result, and an update can succeed before its response is lost. Inspect TheHive before retrying. The workflow does not retry or roll back writes.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect TheHive credentials, select **TheHive 4+ (api v1)**, and replace the values in **Set case details**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -13,13 +13,20 @@ Add whole-document context to each Google Doc section and index its embedding in
 
 ## Setup and use
 
-Import the n8n workflow, connect Google Drive, Gemini and Pinecone and configure its OpenRouter credentials and model. Activate the document relay. In Open Flow set the Google Doc ID, relay URL, OpenRouter model and Pinecone index host, bind OPENROUTER_API_KEY, and connect Gemini and Pinecone. Use a Pinecone index with 3072 dimensions and the default namespace. The relay does not authenticate callers; restrict access to trusted senders. Use the same index and embedding model when querying.
+Connect Google Drive, Gemini and Pinecone and configure its OpenRouter credentials and model. Activate the document relay. In Open Flow set the Google Doc ID, relay URL, OpenRouter model and Pinecone index host, bind OPENROUTER_API_KEY, and connect Gemini and Pinecone. Use a Pinecone index with 3072 dimensions and the default namespace. The relay does not authenticate callers; restrict access to trusted senders. Use the same index and embedding model when querying.
 
 ## Behavior
 
-Run either format manually. The Google Doc is exported as text and split at the source's explicit SECTIONEND separator. For each section the workflow asks OpenRouter to place it in the context of the full document, embeds the resulting context plus section, and stores a vector with the combined text. Open Flow also records the document ID and section index as vector metadata. Each section must fit the selected model's input limits and the full document must fit the context model and workflow limits. Gemini 001 output is configured for 3072 dimensions; create a matching index and re-embed documents when changing models.
+Run the workflow manually. The Google Doc is exported as text and split at the source's explicit SECTIONEND separator. For each section the workflow asks OpenRouter to place it in the context of the full document, embeds the resulting context plus section, and stores a vector with the combined text. Open Flow also records the document ID and section index as vector metadata. Each section must fit the selected model's input limits and the full document must fit the context model and workflow limits. Gemini 001 output is configured for 3072 dimensions; create a matching index and re-embed documents when changing models.
 
 Pinecone inserts use new IDs on each run. If a write response is lost, inspect the index before retrying because a vector may already exist.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow, connect Google Drive, Gemini and Pinecone and configure its OpenRouter credentials and model.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

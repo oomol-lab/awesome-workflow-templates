@@ -13,13 +13,20 @@ Download a Google Sheets range as an HTML table through a webhook.
 
 ## Setup
 
-Connect Google Sheets. In Open Flow set the spreadsheet ID and range in **Read the sheet**. In n8n configure the spreadsheet, sheet and range in **Read from Google Sheets** and connect the account. Deploy and enable one format, then request its GET webhook URL.
+Connect Google Sheets. In Open Flow set the spreadsheet ID and range in **Read the sheet**. Deploy and enable one format, then request its GET webhook URL.
 
 The webhook is unauthenticated: anyone who can reach the URL can download the configured sheet data. Use only data intended for those callers or protect the endpoint with a trusted access-control layer.
 
 ## Behavior
 
-A request reads the configured range and returns an HTML table file. Open Flow uses the first row as headers and escapes sheet values before placing them in HTML. Its response downloads as `sheet.html` with a `text/plain` response type; opening the saved file renders the table. n8n returns the spreadsheet node's HTML binary file. Empty ranges produce an empty table in Open Flow. Sheet data and generated output must fit the workflow's execution limits. A read or generation failure stops the request.
+A request reads the configured range and returns an HTML table file. Open Flow uses the first row as headers and escapes sheet values before placing them in HTML. Its response downloads as `sheet.html` with a `text/plain` response type; opening the saved file renders the table. Empty ranges produce an empty table in Open Flow. Sheet data and generated output must fit the workflow's execution limits. A read or generation failure stops the request.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure the spreadsheet, sheet and range in **Read from Google Sheets** and connect the account. n8n returns the spreadsheet node's HTML binary file.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

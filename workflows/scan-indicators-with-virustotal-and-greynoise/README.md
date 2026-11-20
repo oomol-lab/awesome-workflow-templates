@@ -13,11 +13,18 @@ Scan submitted URLs or IPs, enrich results with GreyNoise and send a report.
 
 ## Setup and use
 
-Import the n8n workflow and configure VirusTotal, Slack and Gmail connections and HTTP Header Auth with header name key and your GreyNoise API key. Set **Webhook execution mode** and **Form execution mode** to n8n or openflow. For Open Flow set both relay URLs to its webhook. Bind secret Variables VIRUSTOTAL_API_KEY and GREYNOISE_API_KEY, connect VirusTotal, Slack and Gmail, and set the Slack channel. Use one mode.
+Configure VirusTotal, Slack and Gmail connections and HTTP Header Auth with header name key and your GreyNoise API key. For Open Flow set both relay URLs to its webhook. Bind secret Variables VIRUSTOTAL_API_KEY and GREYNOISE_API_KEY, connect VirusTotal, Slack and Gmail, and set the Slack channel.
 
 ## Behavior
 
 Each submission contains an email and one or more URL or IP indicators. For a domain the workflow uses Google DNS to select an IPv4 address. It submits URLs to VirusTotal's URL scan and bare IPs to its IP reanalysis endpoint, then polls every five seconds until completed, and queries GreyNoise RIOT and context. It reports VirusTotal counts, BlockList and OpenPhish verdicts and GreyNoise context to Slack and email. VirusTotal states submitted indicators become available to its community; do not submit confidential or personal data. Both entrances acknowledge before processing; restrict access and inspect execution history. If a scan or report write has an unknown result, inspect the service before retrying. A Slack report may have been sent before an email failure.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow and configure VirusTotal, Slack and Gmail connections and HTTP Header Auth with header name key and your GreyNoise API key. Set **Webhook execution mode** and **Form execution mode** to n8n or openflow.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

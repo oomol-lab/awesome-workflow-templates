@@ -13,13 +13,20 @@ Check a YouTube channel every 30 minutes and send newly found videos to Telegram
 
 ## Setup
 
-Connect YouTube and set a channel ID in **Search the YouTube channel**. Connect a Telegram bot in **Send a Telegram notice** and set its chat ID in **Find new videos**. The bot must be able to post in that chat. Keep the workflow deployed with persistent State and prevent overlapping runs. In n8n, configure the YouTube channel and Telegram chat and connect both credentials. Activate one format. n8n manual tests do not persist workflow static data and can repeat the latest notices.
+Connect YouTube and set a channel ID in **Search the YouTube channel**. Connect a Telegram bot in **Send a Telegram notice** and set its chat ID in **Find new videos**. The bot must be able to post in that chat. Keep the workflow deployed with persistent State and prevent overlapping runs.
 
 ## Behavior
 
 Each run searches the channel for up to four videos ordered by date. The first nonempty run sends all returned videos, newest first. Later runs scan the returned order until the first previously seen video, then send only the videos before it. An empty result sends nothing and leaves the prior IDs unchanged. The workflow stores only the latest nonempty result IDs, so more than four videos between checks, changes in result order, indexing delays or downtime can cause missed or repeated notices. YouTube search consumes API quota.
 
-Open Flow saves the IDs before sending. n8n saves changed static data at execution end even if a send fails. Consequently an unsuccessful or unknown Telegram send can be skipped on the next run; inspect the chat before retrying. Overlapping runs and hard crashes can behave differently. Open Flow checks at UTC half-hour boundaries; the source and n8n interval start from activation, so their phase may differ.
+Open Flow saves the IDs before sending. Consequently an unsuccessful or unknown Telegram send can be skipped on the next run; inspect the chat before retrying. Overlapping runs and hard crashes can behave differently. Open Flow checks at UTC half-hour boundaries.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, configure the YouTube channel and Telegram chat and connect both credentials. n8n manual tests do not persist workflow static data and can repeat the latest notices. n8n saves changed static data at execution end even if a send fails. The source and n8n interval start from activation, so their phase may differ.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

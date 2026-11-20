@@ -13,11 +13,18 @@ Create a Mautic contact when a Shopify customer is created.
 
 ## Setup
 
-Enable the Mautic API and Basic Authentication. Set MAUTIC_URL to your Mautic base URL and secret Variables MAUTIC_USERNAME and MAUTIC_PASSWORD to a user with permission to create contacts. Deploy the Open Flow webhook and subscribe to Shopify's customers/create topic using the Shopify app or admin API. Use the current full customer payload. In n8n configure the Shopify Trigger and Mautic credentials. Use one workflow format.
+Enable the Mautic API and Basic Authentication. Set MAUTIC_URL to your Mautic base URL and secret Variables MAUTIC_USERNAME and MAUTIC_PASSWORD to a user with permission to create contacts. Deploy the Open Flow webhook and subscribe to Shopify's customers/create topic using the Shopify app or admin API. Use the current full customer payload.
 
 ## Behavior
 
 The workflow sends the customer's email, first name and last name to Mautic. The Open Flow webhook does not verify the sender; restrict access as appropriate. Webhook acknowledgement confirms receipt, not that Mautic created the contact. Retries or an unknown write result can lead to repeated requests; inspect Mautic before retrying. Customer details can appear in execution history.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure the Shopify Trigger and Mautic credentials.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

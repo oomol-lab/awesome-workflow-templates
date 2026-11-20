@@ -13,11 +13,18 @@ Receive complete Amazon SNS notification events.
 
 ## Setup and use
 
-Import the n8n workflow, connect AWS credentials in **AWS-SNS-Trigger**, and replace the topic ARN. Activate the workflow to subscribe its publicly reachable HTTPS endpoint. Confirm that the subscription becomes confirmed in SNS. To use Open Flow, enter its webhook URL in **Forward to Open Flow** and enable that node; leave it disabled for n8n alone. Restrict access to both endpoints.
+Connect AWS credentials in **AWS-SNS-Trigger**, and replace the topic ARN. Activate the workflow to subscribe its publicly reachable HTTPS endpoint. Confirm that the subscription becomes confirmed in SNS. To use Open Flow, enter its webhook URL in **Forward to Open Flow** and enable that node. Restrict access to both endpoints.
 
 ## Behavior
 
-The trigger confirms subscriptions and emits complete SNS notification bodies. It does not verify SNS message signatures. The optional relay forwards each event to Open Flow. Event details may appear in execution history. Inspect n8n history for forwarding failures.
+The trigger confirms subscriptions and emits complete SNS notification bodies. It does not verify SNS message signatures. The optional relay forwards each event to Open Flow. Event details may appear in execution history.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow, connect AWS credentials in **AWS-SNS-Trigger**, and replace the topic ARN. Leave it disabled for n8n alone. Inspect n8n history for forwarding failures.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

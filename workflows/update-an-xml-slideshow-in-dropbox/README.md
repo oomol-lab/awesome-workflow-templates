@@ -13,11 +13,18 @@ Fetch the sample XML slideshow, change its title and save the XML to Dropbox.
 
 ## Setup and use
 
-Connect Dropbox. Set the title in **Change the slideshow title** and the destination path in **Save XML to Dropbox**. In n8n, connect Dropbox and configure the title in **Change title** and the destination path. Run manually.
+Connect Dropbox. Set the title in **Change the slideshow title** and the destination path in **Save XML to Dropbox**. Run manually.
 
 ## Behavior
 
 Fetch the sample slideshow from httpbin, replace the slideshow title and save the result as XML. Open Flow expects a slideshow root with one title attribute; it preserves the rest of the fetched document. The Dropbox add operation fails if the path already exists. An unknown upload outcome may have succeeded; inspect Dropbox before retrying.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect Dropbox and configure the title in **Change title** and the destination path.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

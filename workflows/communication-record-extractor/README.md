@@ -21,13 +21,18 @@ For Open Flow, select your configured `mistral-nemo:latest` model in **Extract c
 }
 ```
 
-For n8n, edit **Set Communication Text**, connect **Ollama Chat Model** to an Ollama service reachable from n8n, and use Execute Workflow. Both model steps use that connection and temperature `0.1`. You can choose another available model in both formats; extraction quality may differ.
-
 The result has `status`, `record`, `repaired`, and `error`. A successful record requires string `name` and `commtype`, with communication type `email`, `phone`, or `other`. Optional string fields are `surname`, `contacts`, `timestamp`, and `subject`. A supplied timestamp must be a date-time with timezone. Current UTC time is included in the extraction instructions.
 
-A valid first result uses one extraction step with `repaired: false`. Invalid JSON or fields trigger one correction step. A second invalid result returns `status: failed` and no record. Model request failures do not trigger a format correction without a completion; handled failures return a failed result, and fatal platform failures stop the run. n8n’s model adapter can retry transient requests with backoff within a step. No workflow-level retries are configured.
+A valid first result uses one extraction step with `repaired: false`. Invalid JSON or fields trigger one correction step. A second invalid result returns `status: failed` and no record. Model request failures do not trigger a format correction without a completion; handled failures return a failed result, and fatal platform failures stop the run. No workflow-level retries are configured.
 
 Submitted text and any correction completion are sent to the selected model service. The workflow returns the record and does not save it to a contact system. Check extracted values against the original text; the instruction to include contacts only when provided is model guidance.
+
+<details>
+<summary>In n8n</summary>
+
+For n8n, edit **Set Communication Text**, connect **Ollama Chat Model** to an Ollama service reachable from n8n, and use Execute Workflow. Both model steps use that connection and temperature `0.1`. You can choose another available model in both formats; extraction quality may differ. n8n’s model adapter can retry transient requests with backoff within a step.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

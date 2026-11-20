@@ -15,13 +15,18 @@ Classify new Gmail messages and apply a priority, work or promotion label.
 
 Create three Gmail labels for priority, work and promotions and obtain their label IDs. Connect the same mailbox in **Check Gmail every minute**, **Read the message** and **Add the Gmail label**. In **Prepare classification**, set the organization name and the three label IDs. Configure the AI model.
 
-In n8n, connect Gmail and the classifier model, set the organization in the classifier's work category description, and select the corresponding existing label in each of the three Gmail nodes. Activate only one format.
-
 ## Behavior
 
 Every minute the workflow reads new messages and classifies their body as high priority, organization work, promotion or other. It adds the corresponding label for the first three; other messages are unchanged. It does not send or draft replies. Classification is probabilistic and can be wrong; review labels before relying on them. Message content is sent to the configured model, so restrict model and execution-history access.
 
-Both formats exclude drafts, spam, trash and outgoing-only messages. n8n also filters scheduled messages. Each poll handles up to 50 messages; Open Flow processes them sequentially and checks each returned message ID. A missing body, model error or Gmail failure stops the current run. Earlier labels can already be applied; check the mailbox before retrying an uncertain write. Gmail poll checkpoint behavior, overlapping runs and model limits can affect delivery; this is not an exactly-once guarantee.
+The workflow excludes drafts, spam, trash and outgoing-only messages. Each poll handles up to 50 messages; Open Flow processes them sequentially and checks each returned message ID. A missing body, model error or Gmail failure stops the current run. Earlier labels can already be applied; check the mailbox before retrying an uncertain write. Gmail poll checkpoint behavior, overlapping runs and model limits can affect delivery; this is not an exactly-once guarantee.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect Gmail and the classifier model, set the organization in the classifier's work category description, and select the corresponding existing label in each of the three Gmail nodes. Activate only one format. n8n also filters scheduled messages.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

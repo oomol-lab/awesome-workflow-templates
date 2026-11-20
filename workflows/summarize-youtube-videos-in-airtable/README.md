@@ -13,11 +13,18 @@ Summarize a pending YouTube video and update its Airtable record with the main i
 
 ## Setup
 
-Connect Airtable to both nodes and select the same base and table. Create a Source URL field, a Type single-select field with Youtube Video, a Status checkbox, and Main Idea and Takeaways text fields. Connect DumplingAI, grant Provider API Request permission, and select an AI model. In n8n configure Airtable, DumplingAI header authentication and the model. Use one format at a time.
+Connect Airtable to both nodes and select the same base and table. Create a Source URL field, a Type single-select field with Youtube Video, a Status checkbox, and Main Idea and Takeaways text fields. Connect DumplingAI, grant Provider API Request permission, and select an AI model.
 
 ## Behavior
 
-Every minute in UTC, the workflow selects at most one unchecked Youtube Video record. It requests its transcript, summarizes it and updates that same record with the main idea, newline-separated takeaways and checked Status. No match causes no update. Videos need an available transcript; errors stop processing and leave the record unchecked. Check the record before retrying an uncertain update. A pending update checkpoint blocks a later attempt for the same record. Check Airtable after an uncertain update, then clear its checkpoint only after deciding whether to retry. Create an n8n Data Table with item_key and status text fields, and configure it on the checkpoint nodes. Avoid overlapping runs. Transcripts must fit model and execution limits, and are sent to the model provider.
+Every minute in UTC, the workflow selects at most one unchecked Youtube Video record. It requests its transcript, summarizes it and updates that same record with the main idea, newline-separated takeaways and checked Status. No match causes no update. Videos need an available transcript; errors stop processing and leave the record unchecked. Check the record before retrying an uncertain update. A pending update checkpoint blocks a later attempt for the same record. Check Airtable after an uncertain update, then clear its checkpoint only after deciding whether to retry. Avoid overlapping runs. Transcripts must fit model and execution limits, and are sent to the model provider.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure Airtable, DumplingAI header authentication and the model. Create an n8n Data Table with item_key and status text fields, and configure it on the checkpoint nodes.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

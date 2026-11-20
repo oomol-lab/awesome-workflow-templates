@@ -13,11 +13,18 @@ Generate an X post from your chosen niche and writing profile, and publish it ma
 
 ## Setup and use
 
-Connect X with permission to create posts and configure an available model in **Generate the post**. Edit the niche, style and inspiration inputs in **Prepare influencer profile**. Run manually or enable the six-hour schedule after choosing its minute and timezone. The n8n format uses its workflow timezone and chooses a random minute when the schedule is registered. Open Flow defaults to minute zero in UTC; set its schedule to your preferred minute and timezone.
+Connect X with permission to create posts and configure an available model in **Generate the post**. Edit the niche, style and inspiration inputs in **Prepare influencer profile**. Run manually or enable the six-hour schedule after choosing its minute and timezone. Open Flow defaults to minute zero in UTC; set its schedule to your preferred minute and timezone.
 
 The workflow asks for one post and regenerates when its JavaScript string length exceeds 280. X uses its own character-counting rules, so a post that passes this check can still be rejected. Empty or malformed model output stops Open Flow. Review the profile and account before enabling automated publication. Model text may be inaccurate, and publication does not guarantee engagement.
 
-Open Flow checks the returned post ID and has no automatic post retry. The n8n X credential helper may refresh and resend after an authentication failure. Inspect X before replaying an uncertain post; neither format guarantees exactly-once delivery.
+Open Flow checks the returned post ID and has no automatic post retry. Inspect X before replaying an uncertain post; neither format guarantees exactly-once delivery.
+
+<details>
+<summary>In n8n</summary>
+
+The n8n format uses its workflow timezone and chooses a random minute when the schedule is registered. The n8n X credential helper may refresh and resend after an authentication failure.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

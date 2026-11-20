@@ -17,15 +17,20 @@ In Open Flow, create a secret Variable containing only your Vancine API key. Bin
 
 Run with a currently supported Vancine **Model**, **Prompt** and **Size**, such as `1280x720` where supported by that model. The source used `Doubao-Seedance-1.5-pro`; the current first-party starter uses `Doubao-Seedance-2.5`. This template requires your model choice instead of assuming either ID is available to your account. The API host is fixed to `https://vancine.com`.
 
-In n8n, edit **Configure Video Request** and choose the same supported model, prompt and size. Create one HTTP Header Auth credential with name `Authorization` and value `Bearer YOUR_VANCINE_API_KEY`, and select it on both HTTP Request nodes.
-
 ## Run
 
-Each run submits exactly one video task. It waits five seconds before the first status request and between subsequent requests, for at most 120 polls by default. Change the Open Flow Wait duration and the `maxPolls` input in **Check task status and poll limit**, or the corresponding n8n settings, to adjust those limits. The total run time includes request latency as well as waits. Your runtime must support the full duration.
+Each run submits exactly one video task. It waits five seconds before the first status request and between subsequent requests, for at most 120 polls by default. The total run time includes request latency as well as waits. Your runtime must support the full duration.
 
 The workflow reads the current `data.status`, `data.result_url` and `data.fail_reason` fields first, with the source’s older response shapes retained as fallbacks. Completion requires a result URL. A failed task, malformed response, HTTP error or exhausted polling limit stops the run. The result contains the task ID, reported status, URL and poll count. It does not download the video or verify its quality.
 
 No submission or status request is automatically retried. A lost submission response may leave a task running; check Vancine before starting another run. Polling timeout and workflow cancellation stop local polling and do not cancel the remote generation. Open Flow allows 30 seconds per HTTP execution and enforces Code input/result budgets, including 1 MiB for each in the inspected host. Each poll is an independent HTTP execution; the workflow does not put all polls inside one Code invocation.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, edit **Configure Video Request** and choose the same supported model, prompt and size. Create one HTTP Header Auth credential with name `Authorization` and value `Bearer YOUR_VANCINE_API_KEY`, and select it on both HTTP Request nodes. Change the Open Flow Wait duration and the `maxPolls` input in **Check task status and poll limit**, or the corresponding n8n settings, to adjust those limits.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

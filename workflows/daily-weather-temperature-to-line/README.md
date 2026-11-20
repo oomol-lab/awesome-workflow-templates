@@ -13,13 +13,20 @@ Send the current city temperature to LINE every morning.
 
 ## Setup and use
 
-Connect OpenWeather and a LINE Messaging API channel. Set the city in **Get current weather**; the example uses Berlin and metric units. Set your LINE recipient user, group or room ID in **Send LINE message**. In n8n configure OpenWeather and Header Auth with `Authorization: Bearer YOUR_CHANNEL_TOKEN`, then set the recipient in the HTTP node. Enable one format to avoid duplicate messages.
+Connect OpenWeather and a LINE Messaging API channel. Set the city in **Get current weather**; the example uses Berlin and metric units. Set your LINE recipient user, group or room ID in **Send LINE message**. Enable one format to avoid duplicate messages.
 
-The initial schedule is 09:00 UTC daily. The source used the n8n instance timezone; adjust the schedule and timezone to your preference.
+The initial schedule is 09:00 UTC daily.
 
 ## Behavior
 
 Each run reads the current temperature in Celsius and sends one LINE text message. If the weather read fails, no notification is sent. If the notification result is unknown, check LINE before retrying to avoid duplicates.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure OpenWeather and Header Auth with `Authorization: Bearer YOUR_CHANNEL_TOKEN`, then set the recipient in the HTTP node. The source used the n8n instance timezone; adjust the schedule and timezone to your preference.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

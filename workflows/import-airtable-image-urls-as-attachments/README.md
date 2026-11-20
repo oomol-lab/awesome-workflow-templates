@@ -15,13 +15,18 @@ Find Airtable records with image URLs and replace each record’s attachment fie
 
 Connect Airtable with read and write permission for the same base and table in both Airtable nodes. Configure the base and table IDs in both nodes. Create a text field named `Image source URL` and an attachment field named `Image attachment`. Each source URL must directly serve the image publicly without credentials so Airtable can fetch it.
 
-In n8n, connect an Airtable Personal Access Token and configure the same base and table in both Airtable nodes. Run one format for each intended operation.
-
 ## Behavior
 
 A manual run searches all records whose `Image source URL` is nonempty, then updates each matching record by ID. Each update replaces the entire `Image attachment` field with the image at that record’s URL. Existing attachments in that field are removed; review your table before running. No matching records causes no updates.
 
 Airtable fetches each image after accepting the update. An accepted request does not guarantee that Airtable could download the image. Check the attachment field when URLs may be inaccessible or expired. A failed or uncertain update stops the run; earlier updates remain and an uncertain update may have succeeded. Check the table before retrying. The workflow does not add retries or deduplication. Collected records must fit the host execution limits.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect an Airtable Personal Access Token and configure the same base and table in both Airtable nodes. Run one format for each intended operation.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

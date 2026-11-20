@@ -13,11 +13,18 @@ Post a Lemlist email reply to a Mattermost channel.
 
 ## Setup
 
-Connect Mattermost and set the channel ID. In Open Flow, add any fields present in your Lemlist deliveries that are not already listed as optional body fields in **Receive Lemlist reply**. The example field industry is included. Lemlist merges contact fields into the event root; undeclared fields cause the webhook to reject the event, so update the field list when your contact schema changes. Deploy the webhook and register it for the campaign's emailsReplied event using the [Lemlist webhook API](https://developer.lemlist.com/api-reference/endpoints/webhooks/add-webhook). In n8n connect Lemlist and Mattermost, set the campaign and channel, and activate the workflow. Use one format.
+Connect Mattermost and set the channel ID. In Open Flow, add any fields present in your Lemlist deliveries that are not already listed as optional body fields in **Receive Lemlist reply**. The example field industry is included. Lemlist merges contact fields into the event root; undeclared fields cause the webhook to reject the event, so update the field list when your contact schema changes. Deploy the webhook and register it for the campaign's emailsReplied event using the [Lemlist webhook API](https://developer.lemlist.com/api-reference/endpoints/webhooks/add-webhook).
 
 ## Behavior
 
 The notification includes the contact's first name, campaign name and reply text. The Open Flow endpoint does not validate a sender; restrict access appropriately. Receipt does not confirm the Mattermost post. Repeated events may create duplicate messages. Reply text and contact details can appear in execution history.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n connect Lemlist and Mattermost, set the campaign and channel, and activate the workflow.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

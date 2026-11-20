@@ -13,17 +13,24 @@ Publish a photo or video to one selected social platform through Upload-Post.
 
 ## Setup
 
-Connect the intended social account to an Upload-Post profile and create an API key. In n8n configure Header Auth as Authorization: Apikey followed by the key. Select a Data Table with item_key and status text columns, and prevent overlapping runs. Direct mode accepts one JPG or MP4 file.
+Connect the intended social account to an Upload-Post profile and create an API key.
 
-For Open Flow select relay mode in **Prepare upload**, provide a public HTTPS URL to the JPG or MP4 and its MIME type in the form, and configure the deployed webhook URL. Bind UPLOAD_POST_AUTHORIZATION as a secret containing Apikey followed by the key, enable persistent State, and restrict webhook access to trusted n8n. The URL must be reachable by Upload-Post and should not contain private content. Use one mode.
+The URL must be reachable by Upload-Post and should not contain private content.
 
 ## Behavior
 
-Select instagram, linkedin, facebook, x, tiktok or threads, enter the Upload-Post profile and caption, and supply the image or video. Facebook requires its Page ID. Direct n8n sends the original file bytes; Open Flow sends a public URL for Upload-Post to fetch. Only a selected platform's explicit success is reported as published. A background response includes a request ID; check Upload-Post status for its final platform result. Platform features and media limits vary.
+Select instagram, linkedin, facebook, x, tiktok or threads, enter the Upload-Post profile and caption, and supply the image or video. Facebook requires its Page ID. Open Flow sends a public URL for Upload-Post to fetch. Only a selected platform's explicit success is reported as published. A background response includes a request ID; check Upload-Post status for its final platform result. Platform features and media limits vary.
 
-A publication is reserved before the external request. If the result is unknown, failed or processing, inspect Upload-Post and the target platform before retrying. In Open Flow enter the pending key and confirmed or absent in **Reserve publication**, replay the same submission and clear the fields. In n8n inspect the pending Data Table row, mark done after confirmed publication, or delete only after confirming no publication occurred.
+A publication is reserved before the external request. If the result is unknown, failed or processing, inspect Upload-Post and the target platform before retrying. In Open Flow enter the pending key and confirmed or absent in **Reserve publication**, replay the same submission and clear the fields.
 
 See [Upload-Post photo](https://docs.upload-post.com/api/upload-photo/) and [video](https://docs.upload-post.com/api/upload-video/) documentation.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure Header Auth as Authorization: Apikey followed by the key. Select a Data Table with item_key and status text columns, and prevent overlapping runs. Direct mode accepts one JPG or MP4 file. For Open Flow select relay mode in **Prepare upload**, provide a public HTTPS URL to the JPG or MP4 and its MIME type in the form, and configure the deployed webhook URL. Bind UPLOAD_POST_AUTHORIZATION as a secret containing Apikey followed by the key, enable persistent State, and restrict webhook access to trusted n8n. Direct n8n sends the original file bytes. In n8n inspect the pending Data Table row, mark done after confirmed publication, or delete only after confirming no publication occurred.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

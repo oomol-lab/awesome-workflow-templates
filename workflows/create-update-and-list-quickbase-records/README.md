@@ -13,11 +13,18 @@ Create a Quickbase record, update its age field and list up to 50 records.
 
 ## Setup
 
-Use a Quickbase table with a text name field, numeric age field and the standard Record ID# field 3 as its table key. Find the field IDs in the table settings. Connect Quickbase with access to create, update and query records. In Open Flow select the connection and allow the declared Action on **Create record**, **Update record age** and **List table records**. Run with the table ID, field IDs, name and both age values. In n8n, configure the same values in **Set record details** and connect the Quick Base credential to each Quick Base node.
+Use a Quickbase table with a text name field, numeric age field and the standard Record ID# field 3 as its table key. Find the field IDs in the table settings. Connect Quickbase with access to create, update and query records. In Open Flow select the connection and allow the declared Action on **Create record**, **Update record age** and **List table records**. Run with the table ID, field IDs, name and both age values.
 
 ## Behavior
 
 Each run creates one record, updates that same Record ID# with the new age, then returns up to 50 table records. The source uses the Quickbase node's default limit of 50. This is not a full-table export. The workflow checks write results and stops on errors. Earlier writes are not rolled back; inspect Quickbase before retrying an unknown outcome. Avoid concurrent deletion or modification of the new record. Quickbase's update endpoint is an upsert, so a missing merge key can create a record; the workflow checks the returned ID and rejects an unexpected creation, but cannot undo it.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, configure the same values in **Set record details** and connect the Quick Base credential to each Quick Base node.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

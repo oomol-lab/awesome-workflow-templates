@@ -13,11 +13,18 @@ Verify a Groundhogg contact’s US mailing address and send a deliverability tag
 
 ## Setup and use
 
-Configure a Groundhogg funnel Webhook action to send the contact fields id, address, city, state and zip_code, with optional address2, to the supplied n8n webhook. Import the n8n workflow and set **Choose execution mode** to n8n for its native path or openflow to relay the complete received event to Open Flow. For n8n configure Lob HTTP Basic Auth using the API key as username and an empty password, and set both Groundhogg listener URLs. For Open Flow connect Lob, set both listener URLs, and set the Open Flow webhook URL in **Forward to Open Flow**. Activate n8n and use one mode. Groundhogg's Webhook action can send JSON or form data; n8n accepts either.
+For Open Flow connect Lob, set both listener URLs, and set the Open Flow webhook URL in **Forward to Open Flow**. Groundhogg's Webhook action can send JSON or form data.
 
 ## Behavior
 
 Lob verifies the US address. Exactly deliverable sends Mailing Address Deliverable; every other returned deliverability sends Mailing Address NOT Deliverable. The listener receives the original contact id and tag. Configure the listener to map those fields and apply the tag. Both webhook entrances acknowledge before the downstream work and do not authenticate the sender; restrict access and inspect execution history. Address and contact details can appear in execution history. If a listener request has an unknown outcome, inspect Groundhogg before retrying.
+
+<details>
+<summary>In n8n</summary>
+
+Configure a Groundhogg funnel Webhook action to send the contact fields id, address, city, state and zip_code, with optional address2, to the supplied n8n webhook. Import the n8n workflow and set **Choose execution mode** to n8n for its native path or openflow to relay the complete received event to Open Flow. For n8n configure Lob HTTP Basic Auth using the API key as username and an empty password, and set both Groundhogg listener URLs. Activate n8n and use one mode. N8n accepts either.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

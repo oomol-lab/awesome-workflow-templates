@@ -13,13 +13,20 @@ Publish up to five recent WordPress posts to Medium.
 
 ## Setup
 
-Connect a WordPress site with REST API access to **Read recent published posts**. Create a secret Variable containing an existing Medium integration token and bind it to both **Read Medium author** and **Publish to Medium**. Medium no longer issues new API tokens, but says existing tokens continue to work. In n8n, connect WordPress and configure the same Header Auth credential on both Medium HTTP nodes with name `Authorization` and value `Bearer YOUR_MEDIUM_TOKEN`. Run one format manually.
+Connect a WordPress site with REST API access to **Read recent published posts**. Create a secret Variable containing an existing Medium integration token and bind it to both **Read Medium author** and **Publish to Medium**. Medium no longer issues new API tokens, but says existing tokens continue to work. Run one format manually.
 
 ## Behavior
 
-The workflow reads up to five recently published posts, newest first, and publishes their rendered HTML to your Medium profile one at a time. Each post is public with the source's three email-marketing tags and follower notification disabled. Configure the tags in **Prepare the next post** in Open Flow or **Publish to Medium** in n8n for your content. Use only content you have permission to republish.
+The workflow reads up to five recently published posts, newest first, and publishes their rendered HTML to your Medium profile one at a time. Each post is public with the source's three email-marketing tags and follower notification disabled. Use only content you have permission to republish.
 
 A failure stops the run; earlier posts remain published. No deduplication or automatic retry is configured. If a publish result is uncertain, check Medium before retrying; another run can publish duplicates. Open Flow HTTP requests have a 30-second limit and stop on redirects. Its combined five-post input must fit the execution size limit; unusual HTML entities in titles require review before publishing.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect WordPress and configure the same Header Auth credential on both Medium HTTP nodes with name `Authorization` and value `Bearer YOUR_MEDIUM_TOKEN`. Configure the tags in **Prepare the next post** in Open Flow or **Publish to Medium** in n8n for your content.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

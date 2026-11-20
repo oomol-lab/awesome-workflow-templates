@@ -13,13 +13,20 @@ Read the first page of Bubble user records with the Data API.
 
 ## Setup
 
-Enable the Data API and expose the user data type in Bubble. In Open Flow, set the app's HTTPS Data API URL in **Read Bubble users** and bind a secret Variable containing the Bubble token. The example URL uses Bubble's test environment; adjust it for your app and environment. In n8n, set the URL and configure a Header Auth credential whose name is `Authorization` and whose value is `Bearer YOUR_TOKEN`. Run either format manually.
+Enable the Data API and expose the user data type in Bubble. In Open Flow, set the app's HTTPS Data API URL in **Read Bubble users** and bind a secret Variable containing the Bubble token. The example URL uses Bubble's test environment; adjust it for your app and environment. Run the workflow manually.
 
 A Bubble API token authenticates as an administrator and bypasses privacy rules. A user token has the permissions of that user. Choose the intended access, restrict the token and protect workflow execution data.
 
 ## Behavior
 
 Each run makes one authenticated GET for the `user` data type and returns Bubble's JSON response, including its results and pagination fields. Without a limit, Bubble returns up to 100 records on the first page. This workflow does not fetch later pages; inspect `remaining` in the response. A failed request stops the run.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, set the URL and configure a Header Auth credential whose name is `Authorization` and whose value is `Bearer YOUR_TOKEN`.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

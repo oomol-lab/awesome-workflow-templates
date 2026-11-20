@@ -13,11 +13,18 @@ Transcribe a bank statement PDF and extract deposit rows.
 
 ## Setup
 
-Connect Google Drive and Gemini, and set the connector transit hostname in **Prepare PDF transcription**. Enter a Drive file ID at the start. In n8n select the Drive file and connect Gemini credentials. Use one format at a time.
+Connect Google Drive and Gemini, and set the connector transit hostname in **Prepare PDF transcription**. Enter a Drive file ID at the start.
 
 ## Behavior
 
 The PDF is sent to Gemini for visual transcription, including scanned pages. A second call extracts deposit rows from the transcript. Review both outputs against the statement; models can omit or misread amounts. Entire PDF bytes and encoded request must fit Open Flow's 1 MiB HTTP and Code limits. Transcription can stop on long documents. The complete statement is sent to Gemini; restrict execution history and transit URL access.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n select the Drive file and connect Gemini credentials.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

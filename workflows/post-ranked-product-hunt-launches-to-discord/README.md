@@ -13,15 +13,22 @@ Post recent Product Hunt launches to a Discord channel every hour.
 
 ## Setup
 
-Create a Product Hunt API access token with public read access. In Open Flow, store it as a secret Variable and bind it to **Read ranked launches**. In n8n, create a Header Auth credential with the Authorization value Bearer YOUR_PRODUCT_HUNT_TOKEN and select it on **Read ranked launches**. Connect a Discord bot that can post to the destination channel. Set the channel ID on **Post the launch** in Open Flow; in n8n select the Discord Bot credential, server and channel. Enable one format.
+Create a Product Hunt API access token with public read access. In Open Flow, store it as a secret Variable and bind it to **Read ranked launches**. Connect a Discord bot that can post to the destination channel. Set the channel ID on **Post the launch** in Open Flow.
 
 [Product Hunt's API terms](https://api.producthunt.com/v2/docs) prohibit commercial use without its permission; contact Product Hunt before using the API for a business.
 
 ## Behavior
 
-During minute 00 of each hour, the workflow requests up to five Product Hunt posts from the preceding 24 hours, ordered by Product Hunt ranking. It sends one Discord message per post in that order with its name, description and vote count. An empty result sends nothing. Product Hunt's ranking can change, so the same launch may be posted again on later runs. Open Flow starts at the minute boundary; n8n chooses a fixed second at registration. Both formats use UTC.
+During minute 00 of each hour, the workflow requests up to five Product Hunt posts from the preceding 24 hours, ordered by Product Hunt ranking. It sends one Discord message per post in that order with its name, description and vote count. An empty result sends nothing. Product Hunt's ranking can change, so the same launch may be posted again on later runs. Open Flow starts at the minute boundary. The workflow uses UTC.
 
 A GraphQL error, missing product field or message longer than Discord's 2,000-character limit stops the run before any messages are sent. A failed or uncertain Discord send can leave earlier messages delivered; check the channel before retrying. User and role mentions are neutralized in product text.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, create a Header Auth credential with the Authorization value Bearer YOUR_PRODUCT_HUNT_TOKEN and select it on **Read ranked launches**. In n8n select the Discord Bot credential, server and channel. N8n chooses a fixed second at registration.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

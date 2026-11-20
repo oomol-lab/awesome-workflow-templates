@@ -15,13 +15,18 @@ Create a Stripe product and payment link from a title and EUR price.
 
 Create Secret Variable `STRIPE_SECRET_KEY` with a Stripe key allowed to create products and payment links. Deploy the Open Flow webhook over HTTPS and POST JSON such as `{"title":"Example","price":12.50}`. The webhook is public and accepts requests without authentication; restrict access to its URL. Use Stripe test mode while configuring.
 
-Import the included n8n workflow for its browser form. To use Open Flow, deploy it, set **Choose delivery mode** to `relay`, and configure the Open Flow webhook URL in **Forward to Open Flow**. To run n8n directly, leave the mode as `direct` and connect a Stripe credential to both Stripe HTTP nodes. Activate one mode only.
-
 ## Behavior
 
-Each submission creates a Stripe product with a one-time EUR price, creates a payment link for quantity one, then returns the link. Open Flow returns the URL to the included n8n form relay; the form redirects the browser to the payment link. In direct mode n8n creates the link itself and performs the same redirect. The price must be positive and use whole euro cents; Stripe also enforces its currency-specific amount limits. The link is not proof of payment; Stripe processes payment separately. The original form did not authenticate submissions.
+Each submission creates a Stripe product with a one-time EUR price, creates a payment link for quantity one, then returns the link. The price must be positive and use whole euro cents; Stripe also enforces its currency-specific amount limits. The link is not proof of payment; Stripe processes payment separately. The original form did not authenticate submissions.
 
 These are two external writes. If product creation succeeds and link creation fails, the product remains. An uncertain response may mean a write succeeded; inspect Stripe before retrying to avoid duplicates. A timeout does not prove that creation failed. No automatic write retry is configured.
+
+<details>
+<summary>In n8n</summary>
+
+Import the included n8n workflow for its browser form. To use Open Flow, deploy it, set **Choose delivery mode** to `relay`, and configure the Open Flow webhook URL in **Forward to Open Flow**. To run n8n directly, leave the mode as `direct` and connect a Stripe credential to both Stripe HTTP nodes. Open Flow returns the URL to the included n8n form relay; the form redirects the browser to the payment link. In direct mode n8n creates the link itself and performs the same redirect.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

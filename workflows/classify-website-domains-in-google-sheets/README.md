@@ -13,11 +13,18 @@ Read website domains from a sheet, classify each site and update the matching ro
 
 ## Setup and use
 
-Connect Google Sheets and OpenAI. Set the same spreadsheet ID on **Read domain rows** and all four update nodes. Set the sheet tab in the read range and **Select next domain**. The first row must contain Domain, Market, Industry, Value Proposition and Target Audience headers. Domain values are hostnames without a scheme or www prefix. In n8n select your spreadsheet and sheet on both Sheets nodes and configure OpenAI HTTP Bearer Auth. Use one format.
+Connect Google Sheets and OpenAI. Set the same spreadsheet ID on **Read domain rows** and all four update nodes. Set the sheet tab in the read range and **Select next domain**. The first row must contain Domain, Market, Industry, Value Proposition and Target Audience headers. Domain values are hostnames without a scheme or www prefix.
 
 ## Behavior
 
 The workflow fetches each website, extracts and truncates its text to 10,000 characters, asks OpenAI for the source classification, and writes the four results to that row. Open Flow writes the four cells separately and waits one second before the next row. Model outputs can be inaccurate; review the results. Websites and the model may receive the domain and website content. A failed request stops the run; some cells or earlier rows may already be updated. Inspect the sheet before retrying.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n select your spreadsheet and sheet on both Sheets nodes and configure OpenAI HTTP Bearer Auth.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -15,13 +15,18 @@ Extract an invoice total from an incoming email attachment and notify finance an
 
 In Open Flow, connect the same IMAP account in **Find an unread message**, **Read the message**, **Mark message read** and **Download the first attachment**. Connect SMTP in **Email finance manager** and Slack in **Notify Slack**; set the finance recipient and Slack channel ID. Create a Mindee V2 Invoice model retaining total_amount. Set its model ID in **Submit the invoice**, create a secret Variable MINDEE_API_KEY and bind it to each Mindee Code node. Mindee must be able to fetch the attachment's HTTPS transit URL directly without authentication or redirects; the file is temporarily accessible through that URL.
 
-In n8n, connect the IMAP trigger, SMTP sender and Slack. Configure finance sender, recipient and Slack channel. Set the same model ID in **Submit the receipt to Mindee** and configure an HTTP Header Auth credential named Authorization on the three Mindee HTTP nodes. n8n uploads the attachment bytes directly. Activate one format to avoid duplicate delivery.
-
 ## Behavior
 
-Open Flow checks unread messages every minute; n8n listens for incoming messages. Messages are marked read and inspected for the word invoice in their plain text. The first attachment is submitted for invoice extraction. For totals above 1000, finance receives the attachment before Slack is notified. Other matching invoices go directly to Slack. Slack receives the amount, sender, subject and date. The threshold does not convert currencies.
+Open Flow checks unread messages every minute. Messages are marked read and inspected for the word invoice in their plain text. The first attachment is submitted for invoice extraction. For totals above 1000, finance receives the attachment before Slack is notified. Other matching invoices go directly to Slack. Slack receives the amount, sender, subject and date. The threshold does not convert currencies.
 
 Mindee polling stops after 200 checks at three-second intervals. A processing failure can leave a message marked read; inspect your inbox and deliveries before replaying. Concurrent Open Flow runs can select the same unread message and duplicate notifications. Unknown sends are not automatically retried.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect the IMAP trigger, SMTP sender and Slack. Configure finance sender, recipient and Slack channel. Set the same model ID in **Submit the receipt to Mindee** and configure an HTTP Header Auth credential named Authorization on the three Mindee HTTP nodes. n8n uploads the attachment bytes directly. Activate one format to avoid duplicate delivery. N8n listens for incoming messages.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

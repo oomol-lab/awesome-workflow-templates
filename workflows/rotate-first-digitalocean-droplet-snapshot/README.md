@@ -13,11 +13,18 @@ Periodically request a snapshot of the first DigitalOcean Droplet and remove its
 
 ## Setup and use
 
-Bind secret Variable DIGITALOCEAN_TOKEN to each HTTP node. The token needs Droplet read and update, and snapshot read and delete permissions. In n8n configure HTTP Bearer Auth on the requests. Enable persistent State and prevent overlapping runs. In n8n create a Data Table with text columns operation and status and select it in the five checkpoint nodes. Activate one format. This changes snapshots.
+Bind secret Variable DIGITALOCEAN_TOKEN to each HTTP node. The token needs Droplet read and update, and snapshot read and delete permissions. Enable persistent State and prevent overlapping runs. This changes snapshots.
 
 ## Behavior
 
-Every 48 hours, the workflow selects the first Droplet returned on the first page, lists its snapshots, removes the oldest when at least four exist, then requests a new snapshot. Fewer than four snapshots are retained and a new one is requested. The 200-item snapshot listing must contain the complete list or the run stops before writing. Configure the provider account accordingly. A successful creation request starts an asynchronous action; inspect DigitalOcean for its completion. Each write is marked pending before it is sent. If a run stops with a pending operation, later runs stop before writing. Inspect the account and action history. In Open Flow, enter the exact pending ID shown in the error in Check pending operation → acknowledge. That run immediately starts a new rotation, so confirm only when another deletion and snapshot request are appropriate; then clear acknowledge. In n8n, mark the pending Data Table row resolved after inspection. The next scheduled run starts a new rotation, so resolve only when another deletion and snapshot request are appropriate. Deletion is permanent and occurs before the new snapshot completes.
+Every 48 hours, the workflow selects the first Droplet returned on the first page, lists its snapshots, removes the oldest when at least four exist, then requests a new snapshot. Fewer than four snapshots are retained and a new one is requested. The 200-item snapshot listing must contain the complete list or the run stops before writing. Configure the provider account accordingly. A successful creation request starts an asynchronous action; inspect DigitalOcean for its completion. Each write is marked pending before it is sent. If a run stops with a pending operation, later runs stop before writing. Inspect the account and action history. In Open Flow, enter the exact pending ID shown in the error in Check pending operation → acknowledge. That run immediately starts a new rotation, so confirm only when another deletion and snapshot request are appropriate; then clear acknowledge. The next scheduled run starts a new rotation, so resolve only when another deletion and snapshot request are appropriate. Deletion is permanent and occurs before the new snapshot completes.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure HTTP Bearer Auth on the requests. In n8n create a Data Table with text columns operation and status and select it in the five checkpoint nodes. In n8n, mark the pending Data Table row resolved after inspection.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

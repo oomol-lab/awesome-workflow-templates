@@ -13,13 +13,20 @@ Create or update an Iterable user, set their Name field and read the profile.
 
 ## Setup
 
-Use an email-based Iterable project and a server-side API key with user read and write access. In Open Flow, create a secret Variable for the key and bind **Auth Token** on all three HTTP nodes. Run with the user's email, the value for the case-sensitive **Name** field, and region `us` or `eu` matching the Iterable project. In n8n, connect Iterable credentials to all three nodes, choose the same project region in the credential and edit **Set user details**.
+Use an email-based Iterable project and a server-side API key with user read and write access. In Open Flow, create a secret Variable for the key and bind **Auth Token** on all three HTTP nodes. Run with the user's email, the value for the case-sensitive **Name** field, and region `us` or `eu` matching the Iterable project.
 
 Make sure your project permits the **Name** field and that you are authorized to update the user. Creating a profile can trigger project automations; check your project's messaging and consent settings.
 
 ## Behavior
 
 The workflow makes two ordered user upserts for the same email. The first sends only the email; the second sets **Name**. It reads the user and checks that the email and field match. Iterable may drop an unrecognized field depending on project schema settings; the final check reports that case. An error stops subsequent steps. There is no automatic retry or rollback; after a lost response, inspect the profile before retrying.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect Iterable credentials to all three nodes, choose the same project region in the credential and edit **Set user details**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

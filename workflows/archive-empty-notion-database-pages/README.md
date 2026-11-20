@@ -13,13 +13,20 @@ Find database pages with empty properties and empty paragraph content and move t
 
 ## Setup
 
-Connect Notion with read and update access only to the databases you want to clean. The workflow scans all data sources visible to that connection and can move pages to trash. Review access and run during a maintenance window without concurrent edits. Enable one format.
+Connect Notion with read and update access only to the databases you want to clean. The workflow scans all data sources visible to that connection and can move pages to trash. Review access and run during a maintenance window without concurrent edits.
 
 ## Behavior
 
 At 02:00 UTC each day, inspect database pages and move a page to the Notion trash only if its supported properties are empty and its blocks are absent or consist solely of empty paragraphs without children. A page with a populated property, other property type, other block type or nested block is preserved. Search covers data sources visible to the connection and is subject to Notion's indexing and permission limits. Large runs must fit platform execution limits.
 
-Open Flow rereads each page before checking its blocks. The read and trash operations are not atomic; avoid concurrent edits or runs. A failed or uncertain archive may have succeeded; inspect Notion before retrying. Earlier archived pages remain if a later operation fails. No workflow-level write retry is added. Open Flow runs at the minute boundary; n8n uses a fixed second within the minute.
+Open Flow rereads each page before checking its blocks. The read and trash operations are not atomic; avoid concurrent edits or runs. A failed or uncertain archive may have succeeded; inspect Notion before retrying. Earlier archived pages remain if a later operation fails. No workflow-level write retry is added. Open Flow runs at the minute boundary.
+
+<details>
+<summary>In n8n</summary>
+
+N8n uses a fixed second within the minute.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

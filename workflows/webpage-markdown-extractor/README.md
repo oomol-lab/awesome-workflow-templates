@@ -19,11 +19,16 @@ Connect Firecrawl on **Scrape page as Markdown**. Use Run and supply one URL:
 { "url": "https://example.com/page" }
 ```
 
-In n8n, select an HTTP Header Auth credential on **FireCrawl**, with name `Authorization` and value `Bearer <your Firecrawl API key>`. Call the imported workflow through Execute Sub-workflow with the string field `url`. The workflow returns the Markdown as `response` and the target website’s reported HTTP status as `pageStatus`, or `null` when no valid status was supplied.
-
 Each run has one scrape step. It requests main content in Markdown, with a 30-second Firecrawl timeout and `maxAge: 0` to request fresh content. Firecrawl manages rendering, target redirects and extraction. Extraction is subject to the website and your Firecrawl account’s limits and API allowance. The URL is sent to Firecrawl. This workflow does not crawl linked pages, generate a summary or write the extracted content to another service.
 
 A successful Firecrawl request can contain a target error page such as HTTP 404. This template preserves that content and exposes `pageStatus` so callers can decide how to use it. Firecrawl request failures, unsuccessful service responses and missing or blank Markdown stop the run. There are no workflow-level retries configured; provider request retries remain service controlled.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, select an HTTP Header Auth credential on **FireCrawl**, with name `Authorization` and value `Bearer <your Firecrawl API key>`. Call the imported workflow through Execute Sub-workflow with the string field `url`. The workflow returns the Markdown as `response` and the target website’s reported HTTP status as `pageStatus`, or `null` when no valid status was supplied.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

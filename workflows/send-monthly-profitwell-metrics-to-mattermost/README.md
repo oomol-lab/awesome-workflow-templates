@@ -13,11 +13,18 @@ Post monthly ProfitWell customer and recurring revenue metrics to a Mattermost c
 
 ## Setup
 
-Create a ProfitWell Metrics API token. In Open Flow store it as a secret Variable named PROFITWELL_API_TOKEN and bind it to **Get monthly ProfitWell metrics**. Connect Mattermost and set the channel ID in **Format the monthly metrics**. In n8n connect ProfitWell and Mattermost credentials and set the Mattermost channel ID. Activate one format.
+Create a ProfitWell Metrics API token. In Open Flow store it as a secret Variable named PROFITWELL_API_TOKEN and bind it to **Get monthly ProfitWell metrics**. Connect Mattermost and set the channel ID in **Format the monthly metrics**.
 
-Both formats run on the first day of each month during 09:00 UTC. Open Flow runs at the minute boundary; n8n selects a fixed second within that minute. Check that UTC matches your reporting needs. The workflow reads the last value in each returned series for active customers, active trialing customers, new customers, growth rate and recurring revenue, and posts one message. It preserves the source label “Trailing Customers” for the active trialing customer metric. Metric history and timing depend on ProfitWell. Open Flow stops before posting if a required metric is missing or malformed; a null value is displayed as null.
+The workflow runs on the first day of each month during 09:00 UTC. Open Flow runs at the minute boundary. Check that UTC matches your reporting needs. The workflow reads the last value in each returned series for active customers, active trialing customers, new customers, growth rate and recurring revenue, and posts one message. It preserves the source label “Trailing Customers” for the active trialing customer metric. Metric history and timing depend on ProfitWell. Open Flow stops before posting if a required metric is missing or malformed; a null value is displayed as null.
 
 The API token grants whatever permissions your ProfitWell account assigns it; protect the secret and restrict access to run history containing financial metrics. If the Mattermost request fails or its outcome is uncertain, check the channel before retrying because the message may already have been posted.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n connect ProfitWell and Mattermost credentials and set the Mattermost channel ID. N8n selects a fixed second within that minute.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

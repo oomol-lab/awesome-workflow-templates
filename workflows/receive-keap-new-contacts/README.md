@@ -13,11 +13,18 @@ Receive notifications when Keap contacts are added.
 
 ## Setup and use
 
-Import the n8n workflow and connect Keap in **Keap Trigger**. Activate it to register the contact.add hook; its URL must be publicly reachable by Keap. Confirm the subscription is verified in Keap. For Open Flow enter its webhook URL in **Forward to Open Flow** and enable that node; leave it disabled for n8n alone. Restrict access to the webhook endpoints.
+Connect Keap in **Keap Trigger**. Activate it to register the contact.add hook; its URL must be publicly reachable by Keap. Confirm the subscription is verified in Keap. For Open Flow enter its webhook URL in **Forward to Open Flow** and enable that node. Restrict access to the webhook endpoints.
 
 ## Behavior
 
-Keap batches changed contacts; the trigger emits each contact ID, event type, timestamp and optional API URL separately. It responds to the registration handshake but does not authenticate later events. The optional relay forwards each event to Open Flow. Restrict endpoint access and inspect n8n execution history for relay failures. Event details may appear in execution history.
+Keap batches changed contacts; the trigger emits each contact ID, event type, timestamp and optional API URL separately. It responds to the registration handshake but does not authenticate later events. The optional relay forwards each event to Open Flow. Event details may appear in execution history.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow and connect Keap in **Keap Trigger**. Leave it disabled for n8n alone. Restrict endpoint access and inspect n8n execution history for relay failures.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

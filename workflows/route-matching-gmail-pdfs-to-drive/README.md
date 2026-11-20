@@ -13,11 +13,18 @@ Classify PDF attachments from Gmail by their content and upload matching files t
 
 ## Setup and use
 
-Import the n8n workflow, connect Gmail and Google Drive, set the matching term and Drive folder ID in **Configure**, and configure an available OpenAI model for direct mode. Set **Choose mode** to direct for n8n-only execution or relay for Open Flow classification. In relay mode deploy Open Flow, configure its model and set its webhook URL in **Classify PDF with Open Flow**, and set the n8n upload relay webhook URL in **Upload original attachment**. Activate one mode.
-
 ## Behavior
 
-The workflow polls Gmail every minute, iterates attachments, extracts PDF text, and classifies it using the configured term, filename and text. Matching original PDFs are uploaded to the configured Drive folder; non-PDF and nonmatching files are skipped. PDFs above the source's text-length limit are skipped. The supplied n8n workflow performs the Gmail trigger, PDF extraction and binary upload in both modes. In Open Flow mode a matching classification invokes the n8n upload relay, which refetches the original Gmail message by ID and uploads the same indexed attachment. Set the Gmail credentials on the relay as well. PDF contents are shared with the model. Neither webhook authenticates callers; restrict access to trusted senders. A lost Drive response may represent a completed upload; inspect the destination before retrying.
+The workflow polls Gmail every minute, iterates attachments, extracts PDF text, and classifies it using the configured term, filename and text. Matching original PDFs are uploaded to the configured Drive folder; non-PDF and nonmatching files are skipped. PDFs above the source's text-length limit are skipped. Set the Gmail credentials on the relay as well. PDF contents are shared with the model. Neither webhook authenticates callers; restrict access to trusted senders. A lost Drive response may represent a completed upload; inspect the destination before retrying.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow, connect Gmail and Google Drive, set the matching term and Drive folder ID in **Configure**, and configure an available OpenAI model for direct mode. Set **Choose mode** to direct for n8n-only execution or relay for Open Flow classification. In relay mode deploy Open Flow, configure its model and set its webhook URL in **Classify PDF with Open Flow**, and set the n8n upload relay webhook URL in **Upload original attachment**. The supplied n8n workflow performs the Gmail trigger, PDF extraction and binary upload in both modes. In Open Flow mode a matching classification invokes the n8n upload relay, which refetches the original Gmail message by ID and uploads the same indexed attachment.
+
+Connect Gmail and Google Drive, set the matching term and Drive folder ID in **Configure**, and configure an available OpenAI model for direct mode.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

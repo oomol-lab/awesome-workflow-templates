@@ -13,15 +13,20 @@ Classify contact messages, email the right department, and log each request.
 
 ## Setup
 
-Import the n8n workflow, connect OpenAI, SMTP and Google Sheets, and configure the sender and five department addresses in **Prepare routing**. Set a Data Table with item_key and status text columns. Configure a Sheet with columns DATA, NOME, EMAIL, RICHIESTA, CATEGORIA, TO in that order. Prevent overlapping executions.
-
-For Open Flow select relay mode in **Prepare contact**, enter the deployed webhook URL, configure the five recipients in **Reserve department email**, set the spreadsheet and range in **Reserve contact row**, connect Google Sheets, and bind a Gmail OAuth access token with permission to send as GMAIL_ACCESS_TOKEN. Enable persistent State and restrict webhook access to trusted n8n. Direct mode uses SMTP in n8n. Use one mode.
+Connect OpenAI, SMTP and Google Sheets, and configure the sender and five department addresses in **Prepare routing**. Configure a Sheet with columns DATA, NOME, EMAIL, RICHIESTA, CATEGORIA, TO in that order. Prevent overlapping executions.
 
 ## Behavior
 
 The message is classified as Request Quote, Product info, General problem, Order or Other, then emailed to the corresponding department with the customer's address as Reply-To. After successful delivery, the request, category and recipient are appended to the sheet. AI classification may be wrong; review messages. Personal data is sent to the model and may appear in execution history; protect access and retention. Open Flow Code inputs and outputs must fit 1 MiB each.
 
-If email delivery or sheet append is uncertain, inspect Gmail/SMTP or the sheet before retrying. In Open Flow enter the pending key and confirmed or absent in the corresponding reserve node, replay the same submission, then clear the fields. In n8n inspect pending Data Table rows, complete missing work manually and mark done after confirmation; delete a row only if its write did not occur.
+If email delivery or sheet append is uncertain, inspect Gmail/SMTP or the sheet before retrying. In Open Flow enter the pending key and confirmed or absent in the corresponding reserve node, replay the same submission, then clear the fields.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow, connect OpenAI, SMTP and Google Sheets, and configure the sender and five department addresses in **Prepare routing**. Set a Data Table with item_key and status text columns. For Open Flow select relay mode in **Prepare contact**, enter the deployed webhook URL, configure the five recipients in **Reserve department email**, set the spreadsheet and range in **Reserve contact row**, connect Google Sheets, and bind a Gmail OAuth access token with permission to send as GMAIL_ACCESS_TOKEN. Enable persistent State and restrict webhook access to trusted n8n. Direct mode uses SMTP in n8n. In n8n inspect pending Data Table rows, complete missing work manually and mark done after confirmation; delete a row only if its write did not occur.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

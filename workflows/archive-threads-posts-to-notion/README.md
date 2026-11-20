@@ -13,13 +13,20 @@ Archive recent Threads posts and your replies as Notion pages.
 
 ## Setup
 
-Configure the Threads user ID and username in **Select next Threads request**. Bind a Threads long-lived user token with posts and replies read permissions as the secret variable THREADS_ACCESS_TOKEN; refresh and replace it before expiration. Connect Notion and set the same data source ID in **Find existing Notion page** and **Reserve Notion archive**. The data source requires Name (title), Threads ID and Username (rich text), Post Date (date), Source (multi-select) and Import Check (checkbox). Enable persistent State and avoid overlapping runs. In n8n set the Threads user ID in **Get Post**, **Threads / Comments** and their pagination expressions, and username in **Combine post and replies**. Connect an HTTP Header Auth credential containing the Threads bearer token to the three Threads HTTP nodes; connect Notion to **Threads ID** and select the database. Set the data source ID in **Prepare Notion page**, and connect a Notion HTTP Header Auth credential to **Create Notion archive**. Select a Data Table with item_key and status text columns in all checkpoint nodes.
+Configure the Threads user ID and username in **Select next Threads request**. Bind a Threads long-lived user token with posts and replies read permissions as the secret variable THREADS_ACCESS_TOKEN; refresh and replace it before expiration. Connect Notion and set the same data source ID in **Find existing Notion page** and **Reserve Notion archive**. The data source requires Name (title), Threads ID and Username (rich text), Post Date (date), Source (multi-select) and Import Check (checkbox). Enable persistent State and avoid overlapping runs. Connect an HTTP Header Auth credential containing the Threads bearer token to the three Threads HTTP nodes; connect Notion to **Threads ID** and select the database. Set the data source ID in **Prepare Notion page**, and connect a Notion HTTP Header Auth credential to **Create Notion archive**.
 
 ## Behavior
 
 Every day the workflow reads recent posts and their conversations, retaining replies from the configured username. It creates one Notion page with text and media embeds for each missing post. Results can contain private information and media URLs may expire. Posts over 100 blocks stop for manual handling.
 
-Before creating a page, a pending marker is saved. If creation has an unknown result, inspect Notion, enter its pending key and confirmed or absent in **Reserve Notion archive**, then rerun and clear those fields. A confirmed page must be visible in Notion. In n8n inspect the pending Data Table row and Notion; mark it done if the page exists or delete it only if creation did not occur, then retry.
+Before creating a page, a pending marker is saved. If creation has an unknown result, inspect Notion, enter its pending key and confirmed or absent in **Reserve Notion archive**, then rerun and clear those fields. A confirmed page must be visible in Notion.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n set the Threads user ID in **Get Post**, **Threads / Comments** and their pagination expressions, and username in **Combine post and replies**. Select a Data Table with item_key and status text columns in all checkpoint nodes. In n8n inspect the pending Data Table row and Notion; mark it done if the page exists or delete it only if creation did not occur, then retry.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -13,15 +13,22 @@ Extract euro amounts from selected Google Keep exports and upsert the notes in G
 
 ## Setup
 
-Export Google Keep via Google Takeout and place the extracted JSON files in a Google Drive folder. In the n8n workflow configure the folder in **Search in "Keep" folder** and a spreadsheet with columns fileId, textContent, Edited, Created, isArchived and Amount in that order. Connect Google Drive, Google Sheets and OpenAI. Select the same Data Table in the checkpoint nodes, with text columns item_key and status. Run manually and prevent overlapping runs.
+Export Google Keep via Google Takeout and place the extracted JSON files in a Google Drive folder. Connect Google Drive, Google Sheets and OpenAI. Run manually and prevent overlapping runs.
 
-For Open Flow set the n8n **Prepare Keep note** mode to relay and configure the Open Flow webhook URL. Connect Google Sheets, select a model, set the same spreadsheet ID in all sheet nodes, and set the range and sheet name. Enable persistent State. Restrict access to the Open Flow webhook at the deployment boundary; it has no built-in authentication. For direct n8n leave the mode in **Prepare Keep note** set to direct. Use one mode and one format.
+Connect Google Sheets, select a model, set the same spreadsheet ID in all sheet nodes, and set the range and sheet name. Enable persistent State. Restrict access to the Open Flow webhook at the deployment boundary; it has no built-in authentication. Use one mode and one format.
 
 ## Behavior
 
 Each run lists the first two Drive files from the source folder, processes JSON files, and selects notes whose HTML contains the case-sensitive text dépensé or depense and whose isArchived value is false. The model extracts a euro amount from the note text. The workflow writes the file ID, text, edited and created timestamps, archive flag and amount; an existing file ID is updated and a new one is appended. Timestamps are ISO UTC. Review AI output, which can be inaccurate. Note content is sent to the model and may be present in execution history. Open Flow Code ports must each fit within 1 MiB.
 
-If a sheet write or relay result is unknown, inspect the sheet and downstream execution before rerunning. In Open Flow enter the pending key in **Reserve note upsert** and select confirmed if applied or absent if not; replay the same note and clear both fields. In n8n reconcile the pending Data Table row, mark it done after the write, or remove it only if no write occurred. The workflow refuses duplicate file IDs in Open Flow.
+If a sheet write or relay result is unknown, inspect the sheet and downstream execution before rerunning. In Open Flow enter the pending key in **Reserve note upsert** and select confirmed if applied or absent if not; replay the same note and clear both fields. The workflow refuses duplicate file IDs in Open Flow.
+
+<details>
+<summary>In n8n</summary>
+
+In the n8n workflow configure the folder in **Search in "Keep" folder** and a spreadsheet with columns fileId, textContent, Edited, Created, isArchived and Amount in that order. Select the same Data Table in the checkpoint nodes, with text columns item_key and status. For Open Flow set the n8n **Prepare Keep note** mode to relay and configure the Open Flow webhook URL. For direct n8n leave the mode in **Prepare Keep note** set to direct. In n8n reconcile the pending Data Table row, mark it done after the write, or remove it only if no write occurred.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

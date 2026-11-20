@@ -17,9 +17,14 @@ Create an Airtable table with text fields named `Hashtag` and `Content`.
 
 For Open Flow, import the JSON, edit the hashtag list in **Choose hashtag**, select a configured `gpt-4o-mini` model in **Generate tweet draft**, and connect Airtable in **Save draft**. Replace the base and table IDs.
 
+Run the workflow manually. One run selects one hashtag and creates one Airtable record. It does not publish to X. Review facts, tone, hashtag choice, and length before using the draft. The prompt asks for fewer than 100 characters; that length is not enforced. Repeating a run creates another record.
+
+<details>
+<summary>In n8n</summary>
+
 For n8n, edit the list in **FunctionItem**, connect OpenAI in **HTTP Request**, and select an Airtable access-token credential, base, and table in **Airtable**. The OpenAI node keeps its original source name.
 
-Run the workflow manually. One run selects one hashtag and creates one Airtable record. It does not publish to X. Review facts, tone, hashtag choice, and length before using the draft. The prompt asks for fewer than 100 characters; that length is not enforced. Repeating a run creates another record.
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

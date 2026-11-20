@@ -15,13 +15,20 @@ Extract the same information from a Drive PDF with Claude and Gemini and compare
 
 Connect Google Drive, Anthropic and Gemini. Provide a Drive file ID and a prompt, for example “Extract the VAT numbers for each country”. The selected PDF must be accessible to the Drive Connection. Set the HTTP host on **Prepare complete PDF requests** to the hostname of your deployment's connector transit URL. Anyone with access to the transit URL can retrieve the PDF while it remains available. Both model services receive the complete PDF and prompt.
 
-The configured models are claude-sonnet-5-5 and gemini-3.8-flash. Choose models supported by your accounts if needed. In n8n set the Google Drive, Anthropic and Gemini credentials and choose the file and prompt. Both model calls are enabled; disable either n8n node only if you want one response.
+The configured models are claude-sonnet-5-5 and gemini-3.8-flash. Choose models supported by your accounts if needed. Both model calls are enabled.
 
 ## Behavior
 
-Open Flow downloads the PDF into connector transit, checks the byte count when supplied and sends the same Base64 bytes to Claude and Gemini. It returns both provider responses. Calls run in order and a failure stops the run; review usage before repeating. The source n8n workflow fans out from the binary conversion and exposes each response separately. Model outputs can differ and should be checked against the PDF.
+Open Flow downloads the PDF into connector transit, checks the byte count when supplied and sends the same Base64 bytes to Claude and Gemini. It returns both provider responses. Calls run in order and a failure stops the run; review usage before repeating. Model outputs can differ and should be checked against the PDF.
 
 Complete PDF bytes and encoded requests must fit Open Flow's HTTP and Code budgets. This does not compare model accuracy or guarantee extraction. Verify authorization to send the document to both services.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n set the Google Drive, Anthropic and Gemini credentials and choose the file and prompt. Disable either n8n node only if you want one response. The source n8n workflow fans out from the binary conversion and exposes each response separately.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

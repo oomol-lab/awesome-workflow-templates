@@ -15,13 +15,18 @@ Check servers listed in Google Sheets every minute, log their status and email a
 
 Connect Google Sheets and Gmail. Set the same spreadsheet ID in all three Sheets nodes. Create a `Server_List` sheet with one `Server` column containing hostnames or IP addresses, optionally with ports and paths. Create `Server_Status_Alive` and `Server_Status_Down` sheets with columns in this order: `Server IP Address`, `TimeStamp`, `Status`. Set the alert email in **Email the down alert**. The deployed host must be able to reach each listed HTTP server.
 
-In n8n, connect Google Sheets and Gmail, select the same spreadsheet and three sheets, and set the Gmail recipient. Activate one format.
-
 ## Behavior
 
-Each minute the workflow reads the server list and sends an HTTP GET to `http://` plus each address. Redirects are followed up to 21 hops; final 2xx responses are logged as Alive. A failed request triggers a Gmail alert followed by a Down log entry. Open Flow applies a 30-second timeout to each request hop; n8n applies a 30-second request timeout. Empty lists produce no writes or alerts. This checks HTTP responses, not ICMP ping. Configure addresses that are safe and intended to be contacted.
+Each minute the workflow reads the server list and sends an HTTP GET to `http://` plus each address. Redirects are followed up to 21 hops; final 2xx responses are logged as Alive. A failed request triggers a Gmail alert followed by a Down log entry. Open Flow applies a 30-second timeout to each request hop. Empty lists produce no writes or alerts. This checks HTTP responses, not ICMP ping. Configure addresses that are safe and intended to be contacted.
 
-Both formats use UTC for log and alert timestamps. Open Flow follows redirects explicitly and checks servers sequentially; n8n processes its items according to its execution order. A log or Gmail failure stops the run; earlier actions are not undone. A lost response may hide a completed write or email, so inspect the destination before replaying. There is no deduplication between runs. In Open Flow, a response larger than 4 MiB stops the run without a down alert, and the server list must fit execution limits.
+The workflow uses UTC for log and alert timestamps. Open Flow follows redirects explicitly and checks servers sequentially. A log or Gmail failure stops the run; earlier actions are not undone. A lost response may hide a completed write or email, so inspect the destination before replaying. There is no deduplication between runs. In Open Flow, a response larger than 4 MiB stops the run without a down alert, and the server list must fit execution limits.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect Google Sheets and Gmail, select the same spreadsheet and three sheets, and set the Gmail recipient. Activate one format. N8n applies a 30-second request timeout. N8n processes its items according to its execution order.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

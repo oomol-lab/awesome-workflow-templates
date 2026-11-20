@@ -17,8 +17,6 @@ In **Create the task in Asana**, connect an Asana Personal Access Token to its A
 
 Enable the workflow webhook and copy its URL. The endpoint accepts GET requests. No authentication is configured; anyone with the webhook URL can create a task using the configured Asana account. Restrict access to the endpoint.
 
-In n8n, select **Asana API** Personal Access Token credentials on the HTTP Request node, and replace the workspace/project IDs in its JSON body expression. This uses PAT authentication in both formats; the source export used an unconfigured Asana OAuth2 credential. Keep the fixed Asana URL, `opt_fields`, POST body structure, JSON response mode and redirect settings. Activate one format for this endpoint.
-
 ## Use
 
 Supply a single URL-encoded `parameter` query value:
@@ -35,9 +33,16 @@ Created Asana Task:  https://app.asana.com/…
 
 The link comes from Asana’s saved task response. The workflow does not construct a task URL. The task name is trimmed at its edges; empty, missing or repeated values fail before any Asana request. Internal spaces, Unicode and special characters remain in the name. No assignee, due date, comment or other task mutation is added.
 
-Open Flow waits up to 60 seconds for the workflow response. The n8n Asana HTTP request has a 30-second timeout. Asana errors, invalid receipts or a missing permalink fail the run. A task can already have been created when its response is lost, incomplete or delayed beyond the response window. Check the configured project before repeating such a request. Repeating a request can create another task; the workflow keeps no task history or custom deduplication and adds no retry.
+Open Flow waits up to 60 seconds for the workflow response. Asana errors, invalid receipts or a missing permalink fail the run. A task can already have been created when its response is lost, incomplete or delayed beyond the response window. Check the configured project before repeating such a request. Repeating a request can create another task; the workflow keeps no task history or custom deduplication and adds no retry.
 
 The workflow result also keeps the task object returned by the API. The HTTP response contains only the confirmation text.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, select **Asana API** Personal Access Token credentials on the HTTP Request node, and replace the workspace/project IDs in its JSON body expression. This uses PAT authentication in both formats; the source export used an unconfigured Asana OAuth2 credential. Keep the fixed Asana URL, `opt_fields`, POST body structure, JSON response mode and redirect settings. Activate one format for this endpoint. The n8n Asana HTTP request has a 30-second timeout.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

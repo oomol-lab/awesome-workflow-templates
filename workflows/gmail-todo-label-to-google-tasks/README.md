@@ -15,15 +15,20 @@ Create a Google Task for each new Gmail message matching `label:To-Do`.
 
 Create the `To-Do` label in Gmail and apply it to messages that should become tasks. Connect the same Gmail mailbox to **New To-Do Gmail messages** and **Fetch the message snippet**. Connect Google Tasks in **Create the task** and set the task list ID in **Prepare the Google Task**; `@default` selects the primary list.
 
-In n8n, select Gmail OAuth2 and Google Tasks credentials and choose the task list in **Google Tasks**. Activate only one format to avoid duplicate tasks.
-
 ## Behavior
 
-Every minute, the workflow checks new messages with the `To-Do` label. Open Flow resolves that label name to its Gmail ID; n8n uses the source query `label:To-Do`. It creates one task per delivered message, using the subject as title and the Gmail snippet as notes. The snippet is a preview rather than the full body. A missing or blank subject stops before task creation.
+Every minute, the workflow checks new messages with the `To-Do` label. Open Flow resolves that label name to its Gmail ID. It creates one task per delivered message, using the subject as title and the Gmail snippet as notes. The snippet is a preview rather than the full body. A missing or blank subject stops before task creation.
 
 The task is scheduled for the next UTC calendar date at the time it is processed. [Google Tasks stores the date and discards the time portion](https://developers.google.com/workspace/tasks/reference/rest/v1/tasks). This is a scheduled day, not an hourly deadline. The workflow starts from the current mailbox position; adding the label to an older message does not guarantee a task. It does not remove the label, mark mail read or deduplicate tasks.
 
-Both formats exclude drafts, spam, trash and outgoing-only messages. n8n also excludes scheduled messages; Open Flow does not add that filter. Open Flow uses Gmail history checkpoints and n8n uses a time cursor with a bounded backlog queue. Each page has up to 50 messages. A failed or uncertain create stops later items; earlier tasks may already exist. Inspect the list before replaying. No exactly-once or automatic failed-run replay is promised. Full fetched messages and Code inputs must fit execution limits.
+The workflow excludes drafts, spam, trash and outgoing-only messages. Open Flow does not add that filter. Each page has up to 50 messages. A failed or uncertain create stops later items; earlier tasks may already exist. Inspect the list before replaying. No exactly-once or automatic failed-run replay is promised. Full fetched messages and Code inputs must fit execution limits.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, select Gmail OAuth2 and Google Tasks credentials and choose the task list in **Google Tasks**. Activate only one format to avoid duplicate tasks. N8n uses the source query `label:To-Do`. n8n also excludes scheduled messages. Open Flow uses Gmail history checkpoints and n8n uses a time cursor with a bounded backlog queue.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

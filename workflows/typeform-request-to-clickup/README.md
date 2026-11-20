@@ -26,9 +26,7 @@ Prepare four ClickUp lists and a Typeform form using these exact question titles
 
 In Open Flow, connect Typeform in **Receive a completed request**, configure its `formId`, and connect a ClickUp **Personal API Token** in **Create the ClickUp request task**. In **Route and format the request**, replace each `listIds` placeholder with the matching list’s numeric ID as a string.
 
-In n8n, select **Typeform API** credentials in the trigger and **ClickUp API** credentials in **Create the ClickUp request task**. Use a ClickUp Personal API Token. Set the trigger’s form ID and the four list IDs at the start of **Route and format the request**. Keep **Simplify Answers** and **Only Answers** disabled so the shared request parser can use the complete response. The native request uses the current `description` field and credentials manage the Authorization header.
-
-Deploy a public HTTPS callback and activate one format to register a fresh signed Typeform webhook. Remove any older unsigned subscription for the same n8n callback before activation. Activating both formats registers two subscriptions and can create two tasks. The account needs access to the form, webhook management and all destination lists.
+Deploy a public HTTPS callback and activate one format to register a fresh signed Typeform webhook. Activating both formats registers two subscriptions and can create two tasks. The account needs access to the form, webhook management and all destination lists.
 
 ## Behavior
 
@@ -37,6 +35,13 @@ A completed response in one of the four categories creates one task in that cate
 Missing fields, ambiguous question titles, invalid urgency or an unconfigured destination stop before writing. API, permission and malformed-result errors stop the run. A successful run returns the complete created task after checking its ID. The workflow does not search for duplicates, assign users, set dates or send a separate message. ClickUp’s own notifications follow its defaults.
 
 Repeated delivery can create another task. No workflow retry or exactly-once guarantee is added. Check ClickUp before replaying a write with an unknown result. Webhook acknowledgment does not confirm the later task creation.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, select **Typeform API** credentials in the trigger and **ClickUp API** credentials in **Create the ClickUp request task**. Use a ClickUp Personal API Token. Set the trigger’s form ID and the four list IDs at the start of **Route and format the request**. Keep **Simplify Answers** and **Only Answers** disabled so the shared request parser can use the complete response. The native request uses the current `description` field and credentials manage the Authorization header. Remove any older unsigned subscription for the same n8n callback before activation.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

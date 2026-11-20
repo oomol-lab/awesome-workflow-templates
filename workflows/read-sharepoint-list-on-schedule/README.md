@@ -15,13 +15,18 @@ Read all items from a SharePoint list on a daily schedule.
 
 Register a Microsoft Entra application with Microsoft Graph application permission **Sites.Read.All** and administrator consent. In **Read the SharePoint list**, set the tenant ID, client ID, site ID and list ID. Store the application secret in Secret Variable `MICROSOFT_CLIENT_SECRET`.
 
-In n8n, set the same site and list IDs in **Configure list**. Configure an OAuth2 API credential for client credentials with your tenant's token URL, client ID, client secret and scope `https://graph.microsoft.com/.default`, and set Authentication to **Body**; select it in **Read Graph list pages**. Activate one format.
-
 ## Behavior
 
 At 00:00 UTC each day, fetch all pages of the list using Microsoft Graph and return the items with their expanded fields. The source's schedule used the instance timezone; this version uses UTC. The outputs can be used by later workflow steps or inspected in execution history. The list contents may contain sensitive information. Results reflect the application's permissions and can change during pagination. Large lists must fit workflow execution limits.
 
 A token or list request failure stops the run. No records are modified.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, set the same site and list IDs in **Configure list**. Configure an OAuth2 API credential for client credentials with your tenant's token URL, client ID, client secret and scope `https://graph.microsoft.com/.default`, and set Authentication to **Body**; select it in **Read Graph list pages**. Activate one format.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

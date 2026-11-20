@@ -13,11 +13,18 @@ Send one sample email to two recipients using Amazon SES.
 
 ## Setup
 
-Verify the sender in Amazon SES and check that your SES account can send to the selected recipients. In Open Flow, configure the SES region and bind access key ID and secret access key as secret Variables in **Sign SES request**. For temporary credentials, bind the same session token Variable to **Sign SES request** and **Send with Amazon SES** → **X-Amz-Security-Token**. Leave both unset for long-lived credentials. Run with the verified sender address and a list of recipient addresses. In n8n, configure the sender and both recipients in **AWS SES** and connect AWS credentials. Run one format at a time.
+Verify the sender in Amazon SES and check that your SES account can send to the selected recipients. In Open Flow, configure the SES region and bind access key ID and secret access key as secret Variables in **Sign SES request**. For temporary credentials, bind the same session token Variable to **Sign SES request** and **Send with Amazon SES** → **X-Amz-Security-Token**. Leave both unset for long-lived credentials. Run with the verified sender address and a list of recipient addresses.
 
 ## Behavior
 
 The workflow sends one plain-text message with subject `n8n Rocks` and the source sample body. The source example has two recipients; Open Flow accepts a recipient list. Each run sends a new email. If the send result is uncertain, inspect SES before retrying because the message may already have been accepted.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, configure the sender and both recipients in **AWS SES** and connect AWS credentials.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

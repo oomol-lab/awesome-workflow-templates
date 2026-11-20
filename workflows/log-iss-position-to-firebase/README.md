@@ -15,13 +15,18 @@ Append the current International Space Station position to Firebase Realtime Dat
 
 In Open Flow, use a Firebase Realtime Database that already has a legacy database secret. Set its HTTPS database URL ending in /iss.json in **Prepare the Firebase record**. Create a secret Variable with that database secret and bind it to **Auth Token** in **Push the position**. Legacy database secrets are administrative credentials; restrict access to the Variable and database. The Firebase REST API still supports them, but they are not the same as Firebase API keys or user ID tokens.
 
-In n8n, connect a Google Firebase Realtime Database OAuth2 credential and select the database in **Google Cloud Realtime Database**. The configured account must be permitted to write /iss. Activate one format.
-
 ## Behavior
 
-Each minute the workflow requests the ISS position for the current Unix second and appends latitude, longitude and timestamp under /iss with a generated Firebase key. A malformed position, API failure or missing returned key stops the run. The workflow uses UTC as its schedule starting point; the source inherited the n8n instance timezone. n8n Cron V1 selects a fixed second within the minute; Open Flow uses the minute boundary.
+Each minute the workflow requests the ISS position for the current Unix second and appends latitude, longitude and timestamp under /iss with a generated Firebase key. A malformed position, API failure or missing returned key stops the run. The workflow uses UTC as its schedule starting point. Open Flow uses the minute boundary.
 
-A failed or uncertain push may have reached Firebase. Check /iss before retrying; the workflow does not assign a deduplication ID or add a workflow retry, and repeated runs can create duplicates. Open Flow sends its legacy secret in the request URL; URLs may appear in service or proxy logs. n8n sends an OAuth2 bearer token. Open Flow does not follow redirects and applies a 30-second timeout and 4 MiB response limit; n8n uses its HTTP node defaults.
+A failed or uncertain push may have reached Firebase. Check /iss before retrying; the workflow does not assign a deduplication ID or add a workflow retry, and repeated runs can create duplicates. Open Flow sends its legacy secret in the request URL; URLs may appear in service or proxy logs. Open Flow does not follow redirects and applies a 30-second timeout and 4 MiB response limit.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect a Google Firebase Realtime Database OAuth2 credential and select the database in **Google Cloud Realtime Database**. The configured account must be permitted to write /iss. Activate one format. The source inherited the n8n instance timezone. n8n Cron V1 selects a fixed second within the minute. n8n sends an OAuth2 bearer token. N8n uses its HTTP node defaults.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

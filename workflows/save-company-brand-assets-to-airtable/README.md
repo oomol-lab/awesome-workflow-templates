@@ -15,13 +15,18 @@ Look up a company by domain and save its name, icon URL and logo URL in Airtable
 
 Connect Brandfetch using an API key with brand lookup access. Set the company domain in **Get the company brand**. Connect Airtable with permission to create records, and set its base and table in **Save one Airtable record**. Create writable text or URL fields named `Name`, `Icon URL` and `Logo URL`.
 
-In n8n, configure a Header Auth credential named `Authorization` with value `Bearer YOUR_BRANDFETCH_API_KEY` on **Get the company brand**, and set the domain in its URL. Select an Airtable Personal Access Token credential and set the base and table on **Save one Airtable record**. Run one format for each intended record.
-
 ## Behavior
 
 A manual run retrieves a brand profile and selects the first HTTP(S) format URL for its first usable icon and logo. It creates one Airtable record containing those URLs and the brand name. Missing names or either asset, invalid URLs, and lookup errors stop before creation. URLs are links to Brandfetch assets; this workflow does not upload image files.
 
 A failed or uncertain Airtable write can have created a record. Check the table before running again; the workflow does not retry or deduplicate.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, configure a Header Auth credential named `Authorization` with value `Bearer YOUR_BRANDFETCH_API_KEY` on **Get the company brand**, and set the domain in its URL. Select an Airtable Personal Access Token credential and set the base and table on **Save one Airtable record**. Run one format for each intended record.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

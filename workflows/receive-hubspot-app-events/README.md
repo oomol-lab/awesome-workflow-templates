@@ -13,11 +13,18 @@ Receive events from a HubSpot app subscription.
 
 ## Setup and use
 
-Import and activate the n8n workflow. Configure your HubSpot app to deliver its selected legacy webhook subscriptions to the **Receive HubSpot events** production URL. Store the app client secret as HUBSPOT_CLIENT_SECRET in the n8n environment and allow the workflow to access it. For Open Flow, enter its webhook URL in **Forward to Open Flow** and enable that node; leave it disabled for n8n alone. Restrict access to the relay endpoint.
+Configure your HubSpot app to deliver its selected legacy webhook subscriptions to the **Receive HubSpot events** production URL. For Open Flow, enter its webhook URL in **Forward to Open Flow** and enable that node. Restrict access to the relay endpoint.
 
 ## Behavior
 
-The n8n workflow checks the v1 SHA-256 signature over the original request bytes and emits each event from the batch. As in the source, contact, company, deal and ticket object IDs are mapped to their corresponding named ID field. Unsafe integers become decimal strings. The optional relay forwards each event to Open Flow. Inspect n8n execution history for forwarding failures. Events may contain personal information.
+As in the source, contact, company, deal and ticket object IDs are mapped to their corresponding named ID field. Unsafe integers become decimal strings. The optional relay forwards each event to Open Flow. Events may contain personal information.
+
+<details>
+<summary>In n8n</summary>
+
+Import and activate the n8n workflow. Store the app client secret as HUBSPOT_CLIENT_SECRET in the n8n environment and allow the workflow to access it. Leave it disabled for n8n alone. The n8n workflow checks the v1 SHA-256 signature over the original request bytes and emits each event from the batch. Inspect n8n execution history for forwarding failures.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

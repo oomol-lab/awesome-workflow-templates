@@ -15,13 +15,18 @@ Check Google Contacts each morning and send a Slack reminder for each birthday t
 
 Enable the People API in your Google Cloud project and obtain OAuth client credentials plus an offline refresh token with `https://www.googleapis.com/auth/contacts.readonly` consent. In Open Flow, create secret Variables for the client ID, client secret and refresh token, and bind them in **Read every contacts page**. Connect Slack and set the channel ID in **Prepare the next reminder**. The workflow reads the authenticated user’s contacts.
 
-In n8n, connect Google Contacts and Slack, and select the Slack channel. Both the schedule and birthday comparison use UTC. Activate one format.
-
 ## Behavior
 
-At 08:00 UTC each day, the workflow reads contacts, matches structured birthday month and day, and sends one Slack reminder per matching contact. A missing birth year does not prevent a match; February 29 matches only on February 29. Names use the primary display name, then given and family names, a nickname or “your friend”. No matches send nothing. Open Flow compares the scheduled occurrence date; n8n compares the execution date, so a run delayed across UTC midnight can differ.
+At 08:00 UTC each day, the workflow reads contacts, matches structured birthday month and day, and sends one Slack reminder per matching contact. A missing birth year does not prevent a match; February 29 matches only on February 29. Names use the primary display name, then given and family names, a nickname or “your friend”. No matches send nothing. Open Flow compares the scheduled occurrence date.
 
 Open Flow refreshes its Google access token for each contacts page. A page error or invalid or repeated page token stops before reminders; each response must fit the 1 MiB Code fetch limit and the collected contacts must fit the run’s execution limits. Google OAuth refresh tokens can expire or be revoked. A Slack failure stops later reminders; earlier sends are not undone, and rerunning can duplicate them.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect Google Contacts and Slack, and select the Slack channel. Both the schedule and birthday comparison use UTC. Activate one format. N8n compares the execution date, so a run delayed across UTC midnight can differ.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

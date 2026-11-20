@@ -13,11 +13,18 @@ Find or create Salesforce accounts and upsert workbook contacts by email.
 
 ## Setup and use
 
-In Open Flow, connect Excel and Salesforce. Put your workbook in OneDrive, then set its workbook item ID and worksheet name in **Read contact workbook**. The first row needs Company Name, First Name, Last Name and Email columns. In n8n, set **Download file** to the HTTPS URL of your workbook and connect Salesforce. Salesforce Contact Email must be configured as an external ID for upserts. Run manually.
+In Open Flow, connect Excel and Salesforce. Put your workbook in OneDrive, then set its workbook item ID and worksheet name in **Read contact workbook**. The first row needs Company Name, First Name, Last Name and Email columns. Salesforce Contact Email must be configured as an external ID for upserts. Run manually.
 
 ## Behavior
 
 Find each company account by exact name, create it when absent, and upsert each contact by email, associating it with the resolved account. Open Flow processes rows sequentially, reuses resolved accounts and stops on ambiguous names or invalid rows. A write with unknown outcome may already have succeeded; inspect Salesforce before retrying.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, set **Download file** to the HTTPS URL of your workbook and connect Salesforce.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

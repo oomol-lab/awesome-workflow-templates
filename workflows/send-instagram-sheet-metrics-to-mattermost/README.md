@@ -13,11 +13,18 @@ Send a daily Mattermost message for each Instagram metrics row in a Google Sheet
 
 ## Setup
 
-Connect Google Sheets and Mattermost. Set the spreadsheet ID and an entire range including unique headers Compte, Followers and Posts in **Read the sheet**. Set the destination channel ID in **Prepare sheet rows**. In n8n configure the sheet, range and channel in the respective nodes. Activate only one format.
+Connect Google Sheets and Mattermost. Set the spreadsheet ID and an entire range including unique headers Compte, Followers and Posts in **Read the sheet**. Set the destination channel ID in **Prepare sheet rows**.
 
 ## Behavior
 
 At 08:00 UTC every day, read the sheet and send one French message per data row, in sheet order, with account, followers, posts and the current date and weekday. Header-only or empty sheets send nothing. A failed post stops later messages; an uncertain post may already have been delivered. Check the channel before retrying. Sheet contents and messages must fit execution limits.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure the sheet, range and channel in the respective nodes.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

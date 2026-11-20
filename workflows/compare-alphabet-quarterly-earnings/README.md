@@ -13,11 +13,18 @@ Index earnings PDFs from Drive and append a comparison to an existing Google Doc
 
 ## Setup
 
-In n8n configure the Sheets, Drive, Docs, model and Pinecone credentials and select a 3072-dimensional Pinecone index. Configure a Data Table with item_key and status text columns, and use a unique run ID in **Configure earnings run**. For Open Flow enable the PDF extraction webhook, configure its Header Auth as Authorization: Bearer plus a secret and bind N8N_RELAY_TOKEN. Enter its URL, the Pinecone index host in both Pinecone nodes, workbook, range and existing destination document. Bind GEMINI_API_KEY for batch embeddings, connect Gemini, Pinecone, Sheets and Docs, and enable persistent State. Configure a 3072-dimensional Pinecone index and prevent concurrent executions for a run ID. Protect both webhook endpoints at your deployment boundary.
+For Open Flow enable the PDF extraction webhook, configure its Header Auth as Authorization: Bearer plus a secret and bind N8N_RELAY_TOKEN. Enter its URL, the Pinecone index host in both Pinecone nodes, workbook, range and existing destination document. Bind GEMINI_API_KEY for batch embeddings, connect Gemini, Pinecone, Sheets and Docs, and enable persistent State. Configure a 3072-dimensional Pinecone index and prevent concurrent executions for a run ID. Protect both webhook endpoints at your deployment boundary.
 
 The sheet needs File URL and 10Q columns containing Drive PDF URLs and labels. Provide at least three distinct quarterly reports. Every listed file is indexed and searched. PDFs need extractable text; scanned files require OCR. Open Flow indexes up to four text chunks at a time; each Code input/output must fit 1 MiB. A new run ID isolates its Pinecone namespace. Keep the selected PDFs and sheet rows unchanged while resuming a run; allow for Pinecone index propagation before retrying an empty search. Review the generated analysis and every number against the source PDFs before relying on the report.
 
-The source's file-indexing chain has no incoming trigger; this version runs it before generating the report. Open Flow retrieves passages separately for each file, uses Gemini 3072-dimensional embeddings, and appends Markdown as text. In n8n the run namespace is shared by indexing and retrieval. If an index upsert or document update has an unknown result, inspect Pinecone or the document. In Open Flow enter the pending key and confirmed or absent in **Select next earnings step**, then clear the fields. In n8n inspect the matching Data Table row, mark done after confirming success or delete the pending row only after confirming absence. Do not retry before checking.
+The source's file-indexing chain has no incoming trigger; this version runs it before generating the report. Open Flow retrieves passages separately for each file, uses Gemini 3072-dimensional embeddings, and appends Markdown as text. If an index upsert or document update has an unknown result, inspect Pinecone or the document. In Open Flow enter the pending key and confirmed or absent in **Select next earnings step**, then clear the fields. Do not retry before checking.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure the Sheets, Drive, Docs, model and Pinecone credentials and select a 3072-dimensional Pinecone index. Configure a Data Table with item_key and status text columns, and use a unique run ID in **Configure earnings run**. In n8n the run namespace is shared by indexing and retrieval. In n8n inspect the matching Data Table row, mark done after confirming success or delete the pending row only after confirming absence.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

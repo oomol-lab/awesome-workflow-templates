@@ -13,11 +13,18 @@ Detect and crop objects in an image, then index their URLs and labels.
 
 ## Setup
 
-In Open Flow configure AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY and ELASTICSEARCH_API_KEY as secret variables, set the Cloudinary cloud name and unsigned upload preset and Elasticsearch index URL. Configure each Code node HTTP host allowlist for your Cloudinary delivery host, AWS region and Elasticsearch host. Enable persistent State. In n8n configure AWS and Elasticsearch credentials, the image URL and Cloudinary preset, and a Data Table with item_key and status text columns. Supply an HTTPS JPEG or PNG image URL.
+In Open Flow configure AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY and ELASTICSEARCH_API_KEY as secret variables, set the Cloudinary cloud name and unsigned upload preset and Elasticsearch index URL. Configure each Code node HTTP host allowlist for your Cloudinary delivery host, AWS region and Elasticsearch host. Enable persistent State. Supply an HTTPS JPEG or PNG image URL.
 
 ## Behavior
 
 The workflow uploads the source once to Cloudinary, then sends that fixed asset to Rekognition. Rekognition returns object boxes with confidence at least 90%. Cloudinary hosts the source and produces cropped URLs, and Elasticsearch stores each crop URL, source URL, label and box metadata. Inspect external services before clearing a pending checkpoint after an uncertain write. Avoid overlapping runs. A pending record covers the whole image, so reconcile all uploaded and indexed objects before clearing it. The original image is sent to Cloudinary and AWS. Rekognition accepts JPEG or PNG up to 5 MiB.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure AWS and Elasticsearch credentials, the image URL and Cloudinary preset, and a Data Table with item_key and status text columns.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

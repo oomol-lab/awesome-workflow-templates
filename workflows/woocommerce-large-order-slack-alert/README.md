@@ -15,11 +15,16 @@ Post a Slack alert when a new WooCommerce order total is at least 100.
 
 Connect WooCommerce in **Order Created**. The store account must be able to create and manage webhooks. Connect Slack in **Post notification to Slack**, set the destination channel ID, and give that account access to the channel.
 
-For n8n, select WooCommerce credentials in **Order Created** and a Slack account and channel in **Send to Slack**. Activate one format after setup; each activated workflow creates its own store subscription.
-
-Each `order.created` event checks whether the order total is at least **100**, including exactly 100. The threshold uses that order’s currency units without currency conversion. Change the threshold in **Order total at least 100** in Open Flow or **Price over 100** in n8n. Matching events post the order ID, status, total, API self link, creation timestamp, and transaction ID. The self link is a REST API endpoint and can require store access.
+Each `order.created` event checks whether the order total is at least **100**, including exactly 100. The threshold uses that order’s currency units without currency conversion. Change the threshold in **Order total at least 100**. Matching events post the order ID, status, total, API self link, creation timestamp, and transaction ID. The self link is a REST API endpoint and can require store access.
 
 The message keeps the source’s colored Slack attachment. Dynamic values are escaped for Slack, and timestamps retain the store’s supplied text. If the payload has no currency symbol, the total uses its ISO currency code. The workflow posts once per matching event and keeps no notification history. Duplicate event deliveries or running both formats can produce duplicate messages. A Slack error fails the run; the workflow does not automatically retry or confirm that a person has read the alert.
+
+<details>
+<summary>In n8n</summary>
+
+For n8n, select WooCommerce credentials in **Order Created** and a Slack account and channel in **Send to Slack**. Activate one format after setup; each activated workflow creates its own store subscription. Change the threshold in **Order total at least 100** in Open Flow or **Price over 100** in n8n.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

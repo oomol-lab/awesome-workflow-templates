@@ -13,11 +13,18 @@ Run a SuiteQL query supplied to a webhook and return matching NetSuite records.
 
 ## Setup and use
 
-Connect NetSuite using token-based credentials with SuiteTalk REST and SuiteQL permission. Deploy the Open Flow webhook and send a GET request with a URL-encoded `suiteql` query parameter, for example `?suiteql=SELECT%20id%20FROM%20customer`. The response is an array of matching rows. For n8n, install the [NetSuite community node](https://www.npmjs.com/package/n8n-nodes-netsuite), connect its credential, activate the webhook and use the same query parameter. Use one format. The n8n manual path has a **Set manual query** node for testing.
+Connect NetSuite using token-based credentials with SuiteTalk REST and SuiteQL permission. Deploy the Open Flow webhook and send a GET request with a URL-encoded `suiteql` query parameter, for example `?suiteql=SELECT%20id%20FROM%20customer`. The response is an array of matching rows.
 
 ## Behavior
 
 The workflow returns up to 100 rows, following pages as needed, matching the source node's default limit. NetSuite applies the permissions of the connected role. This webhook accepts queries without authentication; anyone who can reach it can query data accessible to that role. Restrict access to trusted callers and avoid sensitive query values in URLs or logs. Query or service errors return an HTTP failure.
+
+<details>
+<summary>In n8n</summary>
+
+For n8n, install the [NetSuite community node](https://www.npmjs.com/package/n8n-nodes-netsuite), connect its credential, activate the webhook and use the same query parameter. The n8n manual path has a **Set manual query** node for testing.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -15,13 +15,18 @@ Track recent seed and Series A/B funding rounds with company details in Google S
 
 Create a Piloterr API key and bind the secret Variable PILOTERR_API_KEY to both Piloterr Code nodes. Connect Google Sheets and set the spreadsheet ID and sheet name in **Upsert funding round**. The first row must have these headers: `company_name`, `website_url`, `type`, `money_raised`, `linkedin_url`, `announced_on`, `funding_total`, `employee_count`, `investment_type`, `monthly_traffic_semrush`, `country`, `link`, `event_link`, `founded_date`.
 
-In n8n, connect an HTTP Header Auth credential with header `x-api-key` to all Piloterr nodes, and connect Google Sheets with the same headers and destination. Enable one format.
-
 ## Behavior
 
 At 08:00 UTC each day, query funding rounds announced in the last day for seed, Series A and Series B. Piloterr currently returns at most 15 results per request, so a category can be incomplete. Each round is enriched with its company details and upserted by its event permalink. If enrichment fails, the funding row is saved with blank company details. Piloterr's current documented funding response does not always include the round amount or announcement date; those cells are blank when unavailable. Review data before use.
 
 A failed funding lookup stops the run. A Sheets write with an unknown result may already have succeeded; inspect the event row before rerunning. Changing the sheet during a run can affect matching.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect an HTTP Header Auth credential with header `x-api-key` to all Piloterr nodes, and connect Google Sheets with the same headers and destination. Enable one format.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

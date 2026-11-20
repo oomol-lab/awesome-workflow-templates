@@ -15,13 +15,20 @@ Collect public Trustpilot reviews into general and HelpfulCrowd-format sheets.
 
 Obtain a Trustpilot API key with access to the public Business Units API and [find your business unit ID](https://developers.trustpilot.com/business-units-api-overview/). Connect Google Sheets. In **Configure the review export**, set the business unit ID, spreadsheet ID, two different sheet names and page limit. Create a secret Variable **TRUSTPILOT_API_KEY** and bind it to **Read a Trustpilot review page**.
 
-The general sheet requires unique headers: Date, Author, Body, Heading, Rating, Location, review_id. The HelpfulCrowd sheet requires unique headers: title, comment, rating*, status*, verified, feedback*, review_id, product_id*, review_date*, customer_email, customer_name*. Configure the same values in n8n, connect Sheets, and use a Header Auth credential with header name `apikey` for the Trustpilot request. Set the n8n request's maximum pages to match the configured page limit. Enable one format.
+The general sheet requires unique headers: Date, Author, Body, Heading, Rating, Location, review_id. The HelpfulCrowd sheet requires unique headers: title, comment, rating*, status*, verified, feedback*, review_id, product_id*, review_date*, customer_email, customer_name*.
 
 ## Behavior
 
 Run manually or daily at 00:00 UTC. Read up to the configured number of API pages, default 100, then match public reviews by review_id and update both sheets. Requests are spaced five seconds apart; Open Flow also waits five seconds before its first request. Ratings and verification are preserved. The Location column contains Trustpilot's reviewer display location, which may be a city and country rather than a country code. Date and review_date use the API's review creation time. HelpfulCrowd rows describe business reviews, so product ID is left blank; status is published, and customer email and comment remain blank as in the source. HelpfulCrowd dates use yyyy/mm/dd. At the page limit the workflow keeps the pages returned in API order, which need not match the website's most recent reviews. Reviews removed upstream are not removed from the sheets; [reconcile Trustpilot deletions](https://developers.trustpilot.com/data-solutions-how-to/) at least every 28 days. Zero-star values from the API are preserved; check those rows before importing them into HelpfulCrowd.
 
-Only the listed cells are changed, preserving other columns. Avoid concurrent sheet edits or overlapping runs; row checks and writes are not atomic. Earlier writes may remain after an error and an uncertain write may have succeeded. Inspect the sheet before retrying. Open Flow starts at the minute boundary; n8n uses a fixed second within the minute.
+Only the listed cells are changed, preserving other columns. Avoid concurrent sheet edits or overlapping runs; row checks and writes are not atomic. Earlier writes may remain after an error and an uncertain write may have succeeded. Inspect the sheet before retrying. Open Flow starts at the minute boundary.
+
+<details>
+<summary>In n8n</summary>
+
+Configure the same values in n8n, connect Sheets, and use a Header Auth credential with header name `apikey` for the Trustpilot request. Set the n8n request's maximum pages to match the configured page limit. N8n uses a fixed second within the minute.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

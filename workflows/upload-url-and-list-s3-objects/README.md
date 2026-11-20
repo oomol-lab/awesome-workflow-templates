@@ -13,11 +13,18 @@ Upload a public file to an S3 bucket and list the bucket objects.
 
 ## Setup and use
 
-Connect AWS S3 with permission to upload the object and list the bucket. In Open Flow set the bucket in **Set bucket** and the object key and public file URL in **Upload the file**. In n8n set the URL in **HTTP Request**, the same bucket in both S3 nodes, and connect S3 credentials. The downloaded file's name is used as its S3 key.
+Connect AWS S3 with permission to upload the object and list the bucket. In Open Flow set the bucket in **Set bucket** and the object key and public file URL in **Upload the file**. The downloaded file's name is used as its S3 key.
 
 ## Behavior
 
-A manual run uploads the file, then lists all pages of objects in the bucket. Open Flow returns the list as an array; n8n emits objects individually. The listing must fit the workflow's execution and output limits. If the upload result is unknown, inspect the object before retrying. A failed later listing does not undo the upload.
+A manual run uploads the file, then lists all pages of objects in the bucket. Open Flow returns the list as an array. The listing must fit the workflow's execution and output limits. If the upload result is unknown, inspect the object before retrying. A failed later listing does not undo the upload.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n set the URL in **HTTP Request**, the same bucket in both S3 nodes, and connect S3 credentials. N8n emits objects individually.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

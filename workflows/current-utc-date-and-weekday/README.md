@@ -13,9 +13,16 @@ Return the current UTC timestamp and its matching English weekday when you run t
 
 ## Use
 
-Run either format manually. No inputs, accounts or external services are required. The result contains `date_today`, an ISO 8601 UTC timestamp such as `2026-11-10T08:30:00.000Z`, and `day_today`, such as `Tuesday`. The timestamp includes the time; it is not a date-only string.
+Run the workflow manually. No inputs, accounts or external services are required. The result contains `date_today`, an ISO 8601 UTC timestamp such as `2026-11-10T08:30:00.000Z`, and `day_today`, such as `Tuesday`. The timestamp includes the time; it is not a date-only string.
 
-Both values use one system-clock reading and UTC. They do not use the browser, city or n8n instance’s local timezone. Check the execution machine’s clock when using the result in another process. As a reusable data step, it takes no input and produces a timestamp and weekday at execution time; it does not format an input date, schedule a job or read a calendar service.
+Both values use one system-clock reading and UTC. Check the execution machine’s clock when using the result in another process. As a reusable data step, it takes no input and produces a timestamp and weekday at execution time; it does not format an input date, schedule a job or read a calendar service.
+
+<details>
+<summary>In n8n</summary>
+
+They do not use the browser, city or n8n instance’s local timezone.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -35,9 +35,9 @@ Use these synthetic references to exercise the example:
 | `SYN-PIPE-200` | CHF 85.50 |
 | `SYN-SEAL-300` | CHF 32.40 |
 
-The sample adds 15% to the materials subtotal, CHF 95 per labor hour, CHF 45 when travel is requested, and 8.1% VAT on the resulting net amount. These are demonstration settings. Replace the catalog and rates in **Match catalog and calculate** (Open Flow) or **Exact Match and Calculate** (n8n), and update the reference validation in the validation node to fit your catalog.
+The sample adds 15% to the materials subtotal, CHF 95 per labor hour, CHF 45 when travel is requested, and 8.1% VAT on the resulting net amount. These are demonstration settings.
 
-For real requests, supply a trusted, authenticated catalog and approved business rules, configure webhook access controls, and add human approval before sending any quote. This template does not include a production catalog connection, an approval action, or outgoing quote delivery. The sample webhook has no configured authentication; n8n supports configuring Header Auth or JWT Auth on its Webhook node. Configure access controls supported by your Open Flow deployment before exposing that endpoint.
+For real requests, supply a trusted, authenticated catalog and approved business rules, configure webhook access controls, and add human approval before sending any quote. This template does not include a production catalog connection, an approval action, or outgoing quote delivery. The sample webhook has no configured authentication. Configure access controls supported by your Open Flow deployment before exposing that endpoint.
 
 ## Results
 
@@ -52,6 +52,13 @@ Responses include `Cache-Control: no-store`. A `claimed_unit_price_chf` never se
 The request ID must match `quote-` followed by 3–40 letters, digits, or hyphens, without regard to case. `source_description` must contain 1–1,000 characters. Labor accepts 0–24 hours with up to two decimal places; travel must be a boolean. Supply 1–10 items, each with a case-sensitive reference matching `SYN-[A-Z]+-[0-9]{3}` and an integer quantity from 1 to 20. A supplied claimed price must be a finite number. The description is recorded as untrusted context for validation; it does not drive pricing or reference matching.
 
 Calculations use integer cents for line totals and round the material margin, labor, and VAT to the nearest cent using JavaScript's `Math.round`. No records are saved and no external calls or automatic retries are made. Reusing a request ID recomputes the assessment; it does not deduplicate requests. Open Flow waits up to 30 seconds for a response. Malformed JSON or requests rejected by the hosting platform's HTTP contract use that platform's error response.
+
+<details>
+<summary>In n8n</summary>
+
+Replace the catalog and rates in **Match catalog and calculate** (Open Flow) or **Exact Match and Calculate** (n8n), and update the reference validation in the validation node to fit your catalog. N8n supports configuring Header Auth or JWT Auth on its Webhook node.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

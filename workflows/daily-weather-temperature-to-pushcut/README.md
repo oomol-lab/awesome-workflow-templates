@@ -13,13 +13,20 @@ Send the current city temperature to Pushcut every morning.
 
 ## Setup and use
 
-Connect OpenWeather and create a Pushcut notification named `n8n`. Set the city in **Get current weather**; the example uses Berlin and metric units. Bind the Pushcut API key to a secret Variable in **Send Pushcut notification**. In n8n configure the OpenWeather and Pushcut credentials. Enable one format to avoid duplicate messages.
+Connect OpenWeather and create a Pushcut notification named `n8n`. Set the city in **Get current weather**; the example uses Berlin and metric units. Bind the Pushcut API key to a secret Variable in **Send Pushcut notification**. Enable one format to avoid duplicate messages.
 
-The initial schedule is 09:00 UTC daily. The source used the n8n instance timezone; adjust the schedule and timezone to your preference.
+The initial schedule is 09:00 UTC daily.
 
 ## Behavior
 
 Each run reads the current temperature in Celsius and sends one notification titled “Today's Weather Update”. If the weather read fails, no notification is sent. If the notification result is unknown, check Pushcut before retrying to avoid duplicates.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure the OpenWeather and Pushcut credentials. The source used the n8n instance timezone; adjust the schedule and timezone to your preference.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

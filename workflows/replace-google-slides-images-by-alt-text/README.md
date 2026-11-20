@@ -13,11 +13,18 @@ Replace matching images across a Google Slides presentation using an image URL.
 
 ## Setup
 
-Connect Google Slides with read and edit permission for the presentation. Set each target image's alt-text description to a unique key. Deploy the webhook and POST JSON with presentation_id, image_key and image_url. Google Slides must be able to fetch the image URL. In n8n connect both Google Slides HTTP nodes and deploy its webhook.
+Connect Google Slides with read and edit permission for the presentation. Set each target image's alt-text description to a unique key. Deploy the webhook and POST JSON with presentation_id, image_key and image_url. Google Slides must be able to fetch the image URL.
 
 ## Behavior
 
 The workflow finds all images whose alt-text description equals image_key and replaces each with a center-cropped image, retaining the key. A successful response confirms the update. Open Flow submits all matching replacements in a single atomic batch and fails when none match. The endpoint does not authenticate callers; restrict access appropriately. If the update's result is unknown, inspect the presentation before retrying.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n connect both Google Slides HTTP nodes and deploy its webhook.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

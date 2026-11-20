@@ -13,11 +13,18 @@ Create a QuestDB table, insert a sample row, and read it back.
 
 ## Setup and use
 
-Enable Basic Authentication on the QuestDB HTTP API and bind secret Variables QUESTDB_USER and QUESTDB_PASSWORD. Run with the QuestDB base URL. In n8n configure the QuestDB PostgreSQL connection and run manually. Use one format.
+Enable Basic Authentication on the QuestDB HTTP API and bind secret Variables QUESTDB_USER and QUESTDB_PASSWORD. Run with the QuestDB base URL.
 
 ## Behavior
 
 The workflow creates a table named test with id INT and name STRING, inserts the example row (0, Alex), then reads the table. It fails if test already exists. Both operations change the database; if a result is uncertain, inspect the table before retrying.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure the QuestDB PostgreSQL connection and run manually.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

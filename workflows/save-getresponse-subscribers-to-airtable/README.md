@@ -13,11 +13,18 @@ Append subscribers from a GetResponse campaign to an Airtable table.
 
 ## Setup
 
-Connect Airtable and select a base and table with Name and Email fields in **Append subscriber**. Set the GetResponse campaign ID in **Select campaign**, deploy the webhook, and configure the account callback URL for subscription events in GetResponse. In n8n connect GetResponse and Airtable and select the campaign, base and table. GetResponse callbacks are configured at the account level; check an existing callback before replacing it.
+Connect Airtable and select a base and table with Name and Email fields in **Append subscriber**. Set the GetResponse campaign ID in **Select campaign**, deploy the webhook, and configure the account callback URL for subscription events in GetResponse. GetResponse callbacks are configured at the account level; check an existing callback before replacing it.
 
 ## Behavior
 
 The endpoint accepts GetResponse GET callbacks and appends the subscriber's name and email when the action is subscribe and the campaign ID matches. A missing name becomes empty. Other actions and campaigns do not create a record. The endpoint does not authenticate the caller. Its acknowledgment confirms receipt rather than Airtable completion; GetResponse callbacks have a four-second timeout and are not retried. Repeated events can create duplicate rows.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n connect GetResponse and Airtable and select the campaign, base and table.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

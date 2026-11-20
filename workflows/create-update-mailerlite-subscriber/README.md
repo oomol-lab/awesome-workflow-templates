@@ -13,13 +13,20 @@ Create or update a MailerLite subscriber, set their city and read their profile.
 
 ## Setup
 
-Use a current MailerLite account and API key with subscriber access. In Open Flow, connect MailerLite to **Create or update subscriber**, **Update city** and **Read subscriber**, and allow the named Actions. Run with the subscriber's email, name and city. In n8n, connect the same current MailerLite credential to all three nodes, turn off **Classic API** in the credential, and edit **Set subscriber details**.
+Use a current MailerLite account and API key with subscriber access. In Open Flow, connect MailerLite to **Create or update subscriber**, **Update city** and **Read subscriber**, and allow the named Actions. Run with the subscriber's email, name and city.
 
 Only add people who have agreed to receive your messages. Check the account's API double opt-in settings and automations; MailerLite determines subscriber status and may send a confirmation email or trigger automations.
 
 ## Behavior
 
 The workflow creates or updates a subscriber by email, updates that same subscriber's city and reads the profile. The create operation can update an existing subscriber's name. It does not request a status change or resubscription. MailerLite controls the resulting status. A failure stops later steps; there is no retry or rollback. Check MailerLite before retrying an uncertain write.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect the same current MailerLite credential to all three nodes, turn off **Classic API** in the credential, and edit **Set subscriber details**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

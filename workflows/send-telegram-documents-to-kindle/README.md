@@ -15,13 +15,20 @@ Email a Telegram document to a Kindle address and reply in the original chat.
 
 Connect the same Telegram bot to **Receive a Telegram message**, **Identify the connected bot**, **Get the document path**, **Ask for a document**, and **Confirm in Telegram**. Create secret Variable TELEGRAM_DOCUMENT_BOT_TOKEN with the same bot token and bind it to **Verify the download token** and **Download the document**. Allow api.telegram.org HTTP capability and Telegram Provider API Request. Configure chat or user filters in the trigger so only intended senders can use the bot.
 
-Set the Kindle email in **Check the message and destination**. Connect the same Outlook account to **Create an Outlook draft**, **Attach the document** and **Send the Outlook draft**, with Mail.ReadWrite and Mail.Send permissions. The Kindle address must accept mail from that Outlook sender and support the document type. In n8n connect Telegram and Outlook and replace the destination email in the Outlook node. Only one Telegram webhook may be active per bot; enable one format.
+Set the Kindle email in **Check the message and destination**. Connect the same Outlook account to **Create an Outlook draft**, **Attach the document** and **Send the Outlook draft**, with Mail.ReadWrite and Mail.Send permissions. The Kindle address must accept mail from that Outlook sender and support the document type. Only one Telegram webhook may be active per bot; enable one format.
 
 ## Behavior
 
-A message with a document downloads its complete bytes, sends the file as an email attachment, then replies to the original message. A message without a document receives a request to send a file. Open Flow checks that the download token matches the connected bot. Its webhook verifies the Telegram secret; the source n8n V1 trigger does not, so protect its callback URL.
+A message with a document downloads its complete bytes, sends the file as an email attachment, then replies to the original message. A message without a document receives a request to send a file. Open Flow checks that the download token matches the connected bot. Its webhook verifies the Telegram secret.
 
 Open Flow's file bytes and Base64 representation must fit the host's 1 MiB fetch and Code input/output limits. Oversized files fail rather than being truncated. Open Flow creates an Outlook draft, attaches the file and sends it; a failure can leave a draft or an already sent message. Check Outlook and Telegram before retrying an uncertain operation. The final Telegram reply means the mail service accepted sending, not that Kindle imported the document. Restrict access to runs, which can contain document contents.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n connect Telegram and Outlook and replace the destination email in the Outlook node. The source n8n V1 trigger does not, so protect its callback URL.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

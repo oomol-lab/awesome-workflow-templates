@@ -13,11 +13,18 @@ Analyze a landing page and suggest ten conversion improvements.
 
 ## Setup and use
 
-Set a public landing page URL in **Fetch landing page**, configure the model, and run the workflow. In n8n connect an OpenAI model and submit the included form. Use one format.
+Set a public landing page URL in **Fetch landing page**, configure the model, and run the workflow.
 
 ## Behavior
 
 The workflow fetches the page HTML and sends it to the model for a candid conversion review and ten tailored recommendations. The review is available in the workflow output. Model results can be inaccurate and do not inspect the rendered page or its interactive behavior. Only send content you are authorized to share with the model provider.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n connect an OpenAI model and submit the included form.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

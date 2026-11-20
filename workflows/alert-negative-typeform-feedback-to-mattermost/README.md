@@ -15,13 +15,18 @@ Analyze Typeform feedback and post negative responses to Mattermost.
 
 Connect Typeform and select the form in **Receive feedback**. Set the exact title of its text feedback question in **Select the feedback answer**. Bind AWS access key ID and secret access key as secret Variables in **Analyze feedback sentiment**; bind a session token when using temporary credentials. Grant `comprehend:DetectSentiment`. The default region and allowed HTTP host are `us-east-1`; update both together for another region. Connect Mattermost and set the destination channel ID in **Post to Mattermost**.
 
-In n8n select the form and credentials, set the exact question title in **Select the feedback answer**, connect AWS and Mattermost, and set the Mattermost channel. Activate one format.
-
 ## Behavior
 
 Each form response is sent to Amazon Comprehend as English text. Only the exact `NEGATIVE` sentiment causes a Mattermost post, containing the negative score and original feedback. Other sentiments send no post. Feedback is shared with AWS and, for negative results, the configured Mattermost channel. AWS accepts up to 5 KB of UTF-8 feedback text. The hosted Mattermost Connector requires a public HTTPS instance with a public IPv4 address.
 
-Missing answers, analysis errors and post errors stop the run. An uncertain post may already have succeeded; check the channel before retrying. Repeated form deliveries can produce repeated posts. The n8n Mattermost credential helper may repeat a request once after a 401 response.
+Missing answers, analysis errors and post errors stop the run. An uncertain post may already have succeeded; check the channel before retrying. Repeated form deliveries can produce repeated posts.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n select the form and credentials, set the exact question title in **Select the feedback answer**, connect AWS and Mattermost, and set the Mattermost channel. Activate one format. The n8n Mattermost credential helper may repeat a request once after a 401 response.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

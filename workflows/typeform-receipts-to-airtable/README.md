@@ -17,13 +17,18 @@ Create a Typeform with one File Upload question titled `Upload receipt` and allo
 
 In Mindee V2, create a Receipt model retaining `total_amount`, `supplier_name`, `date`, `time` and `purchase_category`. In Open Flow, set its model ID in **Submit the receipt to Mindee**, create a secret Variable named `MINDEE_API_KEY`, and bind it in all three Mindee Code nodes. Connect Airtable, set the base and table, and create compatible fields `Amount`, `Merchant`, `Date`, `Time`, `Receipt URL` and `Category`.
 
-In n8n, set the form and connect Typeform. Configure a Header Auth credential with name `Authorization` and the Mindee V2 API key as its value on all three Mindee HTTP nodes. Set the Receipt model ID in **Submit the receipt to Mindee**, and connect Airtable with its Personal Access Token and matching base/table. Activate only one format.
-
 ## Behavior
 
-Each completed form submits its receipt URL to the Mindee model, waits for processing, and saves the extracted amount, merchant, date, time, category and original receipt URL in one Airtable record. Missing model fields or a failed job stop before the Airtable write. Individual fields that Mindee could not recognize can be empty. Category values follow the current Mindee Receipt model and can differ from the legacy model. Both formats stop polling after 200 attempts at three-second intervals.
+Each completed form submits its receipt URL to the Mindee model, waits for processing, and saves the extracted amount, merchant, date, time, category and original receipt URL in one Airtable record. Missing model fields or a failed job stop before the Airtable write. Individual fields that Mindee could not recognize can be empty. Category values follow the current Mindee Receipt model and can differ from the legacy model. The workflow stop polling after 200 attempts at three-second intervals.
 
 If Mindee cannot fetch the file, check the URL’s access and redirect behavior. An uncertain Mindee submission may already have created a job. An uncertain Airtable write may already have created a record; inspect both services before retrying. The workflow adds no automatic write retries or deduplication.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, set the form and connect Typeform. Configure a Header Auth credential with name `Authorization` and the Mindee V2 API key as its value on all three Mindee HTTP nodes. Set the Receipt model ID in **Submit the receipt to Mindee**, and connect Airtable with its Personal Access Token and matching base/table. Activate only one format.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

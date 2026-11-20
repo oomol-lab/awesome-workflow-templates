@@ -16,13 +16,19 @@ Replicate line items from a won HubSpot deal onto a newly created deal via webho
 1. Configure a `HUBSPOT_ACCESS_TOKEN` secret variable in Open Flow (from a HubSpot Private App with CRM deals, line items, and products read/write scopes).
 2. Connect your Slack account and replace `YOUR_SLACK_CHANNEL_ID` in **Notify Slack channel** with your target channel ID.
 3. In your HubSpot Deal workflow (for example, when a deal moves to Closed Won and creates a renewal deal), add a **Send webhook** GET action pointing to this workflow's webhook URL with query parameters `deal_id_won` and `deal_id_created`.
-4. For the n8n template, configure your HubSpot App Token and Slack credentials, and update the Slack channel ID.
 
 ## Behavior
 
 - Receives `deal_id_won` and `deal_id_created` from the webhook query string (supporting both plain numeric IDs and `0-3-<id>` HubSpot object strings).
 - Reads associated line item IDs from `deal_id_won`, fetches their `hs_sku` values, looks up matching HubSpot products by SKU, and batch-creates new line items (quantity `1`) associated to `deal_id_created` using association type ID `20`.
 - Skips downstream calls cleanly if no line items, SKUs, or products are found; sends a Slack summary only after line items are created.
+
+<details>
+<summary>In n8n</summary>
+
+For the n8n template, configure your HubSpot App Token and Slack credentials, and update the Slack channel ID.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

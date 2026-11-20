@@ -13,11 +13,18 @@ Receive JSON events from a server-sent events stream.
 
 ## Setup and use
 
-Import the n8n workflow and set the stream URL in **SSE Trigger**. Activate it to keep the event stream open. For Open Flow enter its webhook URL in **Forward to Open Flow** and enable that node; leave it disabled for n8n alone. Restrict access to the webhook endpoints.
+Set the stream URL in **SSE Trigger**. Activate it to keep the event stream open. For Open Flow enter its webhook URL in **Forward to Open Flow** and enable that node. Restrict access to the webhook endpoints.
 
 ## Behavior
 
-The SSE Trigger parses each message data value as JSON and emits it separately. The optional relay forwards each event to Open Flow. The Open Flow relay endpoint does not authenticate the sender; restrict access and inspect n8n execution history for relay failures. Delivery and replay depend on the stream provider. Event details may appear in execution history.
+The SSE Trigger parses each message data value as JSON and emits it separately. The optional relay forwards each event to Open Flow. The Open Flow relay endpoint does not authenticate the sender. Delivery and replay depend on the stream provider. Event details may appear in execution history.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow and set the stream URL in **SSE Trigger**. Leave it disabled for n8n alone. Restrict access and inspect n8n execution history for relay failures.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -13,13 +13,20 @@ Start an automatic-language Amazon Transcribe job for each nonempty object in an
 
 ## Setup
 
-Connect AWS S3 and configure the bucket and AWS region in **Read the next S3 object**. Bind secret Variables for AWS access key ID and secret access key in **Start the Transcribe job**; bind a session token too when using temporary credentials. The credentials need s3:ListBucket, s3:GetObject and transcribe:StartTranscriptionJob permissions; the bucket must be in the Transcribe region. For another region, change the allowed HTTP host to that region's Transcribe endpoint. In n8n configure the same bucket in **AWS S3** and AWS credentials on both AWS nodes. Enable one format.
+Connect AWS S3 and configure the bucket and AWS region in **Read the next S3 object**. Bind secret Variables for AWS access key ID and secret access key in **Start the Transcribe job**; bind a session token too when using temporary credentials. The credentials need s3:ListBucket, s3:GetObject and transcribe:StartTranscriptionJob permissions; the bucket must be in the Transcribe region. For another region, change the allowed HTTP host to that region's Transcribe endpoint.
 
 ## Behavior
 
 A manual run lists the whole bucket, including nested prefixes, and submits one Transcribe job per nonempty object, with automatic language identification. The bucket should contain supported audio or video media; objects are not filtered by extension; zero-byte objects and folder markers are skipped as in the source. Submission only starts jobs; it does not wait for or download completed transcripts. When no output bucket is specified, Amazon Transcribe supplies a service-managed transcript location.
 
 Each job name is a deterministic hash of the bucket and object key. Re-running for the same object can conflict with an existing job; inspect AWS before retrying or delete/rename the earlier job if appropriate. A failed or uncertain submission may already have succeeded, and earlier jobs remain if a later object fails. No automatic submission retry is added. Large buckets are handled page by page within platform execution limits.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n configure the same bucket in **AWS S3** and AWS credentials on both AWS nodes.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

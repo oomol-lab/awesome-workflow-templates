@@ -13,13 +13,18 @@ Summarize a channel’s new video captions and post the video to Discord.
 
 ## Setup
 
-Import n8n and set the RSS feed channel ID. Configure YouTube OAuth with the owner of that channel; caption download requires appropriate access. For Open Flow, enable the alternate RSS frontend and authenticated caption relay, set their URLs and matching N8N_CAPTION_RELAY_TOKEN, configure the model and persistent State, and bind the Post to Discord URL input to a secret variable DISCORD_WEBHOOK_URL including ?wait=true so Discord returns a message ID. In direct n8n mode configure the original RSS, YouTube OAuth, model, Discord webhook and a Data Table with item_key and status text columns. Use one mode and avoid overlapping runs.
+Set the RSS feed channel ID. Configure YouTube OAuth with the owner of that channel; caption download requires appropriate access. For Open Flow, enable the alternate RSS frontend and authenticated caption relay, set their URLs and matching N8N_CAPTION_RELAY_TOKEN, configure the model and persistent State, and bind the Post to Discord URL input to a secret variable DISCORD_WEBHOOK_URL including ?wait=true so Discord returns a message ID. Use one mode and avoid overlapping runs.
 
 ## Behavior
 
 Every minute, the RSS feed checks for new channel videos. The first English caption track is downloaded and converted to text, summarized in three bullets and posted with that video’s title and link. Videos without an English track produce no post. Transcripts are sent to the model. Verify generated summaries.
 
-If a Discord post has an unknown result, inspect Discord and resolve the pending State or Data Table record before retrying.
+<details>
+<summary>In n8n</summary>
+
+Import n8n and set the RSS feed channel ID. In direct n8n mode configure the original RSS, YouTube OAuth, model, Discord webhook and a Data Table with item_key and status text columns. If a Discord post has an unknown result, inspect Discord and resolve the pending State or Data Table record before retrying.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

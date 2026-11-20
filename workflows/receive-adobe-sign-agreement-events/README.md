@@ -13,11 +13,18 @@ Receive Adobe Sign agreement notifications and expose agreement details.
 
 ## Setup
 
-Import the bundled n8n workflow and activate it. Register its shared GET and POST webhook URL with Adobe Acrobat Sign. The n8n workflow answers Adobe's verification request by echoing the `x-adobesign-clientid` header. In **Choose delivery mode**, select `relay` and set the Open Flow webhook URL in **Forward agreement to Open Flow**. Use `direct` to keep agreement details in n8n without forwarding. Use one mode.
+Activate it. Register its shared GET and POST webhook URL with Adobe Acrobat Sign.
 
 ## Behavior
 
-A notification is acknowledged by n8n, then its original body, agreement ID, participant sets and status are available as workflow results. Relay mode sends the complete original event to Open Flow. Configure the Adobe webhook to include agreement details and participant sets. Verification GET requests are acknowledged without an agreement. The Open Flow webhook is unauthenticated and accepts events from callers with its URL; restrict access to trusted callers. A failed relay happens after Adobe receives its response, so inspect n8n executions and replay deliberately if needed. Agreement details may contain sensitive information.
+Configure the Adobe webhook to include agreement details and participant sets. Verification GET requests are acknowledged without an agreement. The Open Flow webhook is unauthenticated and accepts events from callers with its URL; restrict access to trusted callers. Agreement details may contain sensitive information.
+
+<details>
+<summary>In n8n</summary>
+
+Import the bundled n8n workflow and activate it. The n8n workflow answers Adobe's verification request by echoing the `x-adobesign-clientid` header. In **Choose delivery mode**, select `relay` and set the Open Flow webhook URL in **Forward agreement to Open Flow**. Use `direct` to keep agreement details in n8n without forwarding. A notification is acknowledged by n8n, then its original body, agreement ID, participant sets and status are available as workflow results. Relay mode sends the complete original event to Open Flow. A failed relay happens after Adobe receives its response, so inspect n8n executions and replay deliberately if needed.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

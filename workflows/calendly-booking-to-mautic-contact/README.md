@@ -15,9 +15,7 @@ Create a contact in Mautic, or update the matching contact’s first-name field,
 
 In Open Flow, connect a Calendly **Personal Access Token** in **Receive a new Calendly booking**, and a Mautic account in **Create or update the Mautic contact**. The Calendly account needs access to manage webhooks for its own user. Keep **Scope** set to `user` and **Event Types** set to `invitee.created`. OAuth application signing keys are not supported by this Open Flow trigger.
 
-In n8n, choose **Personal Access Token** credentials in **On new event** and **Mautic API** credentials in **Create/update contact**. Use the Mautic instance’s HTTPS base URL, username and password. Enable REST API and Basic authentication, and grant that account contact-create/edit permission. Configure email as a unique Mautic field so the server matches existing contacts by email. No contact search or separate update request is added.
-
-Deploy with a public HTTPS callback and activate the workflow to register its signed Calendly subscription. Use a fresh signed subscription; remove an older unsigned subscription for the same n8n callback before activation. Both formats manage their own subscription. Activate one format for this business process to avoid two separate updates from the same booking.
+Deploy with a public HTTPS callback and activate the workflow to register its signed Calendly subscription. Use a fresh signed subscription. The workflow manages their own subscription.
 
 ## Behavior
 
@@ -25,9 +23,16 @@ A new `invitee.created` delivery supplies the invitee’s email and name. The wo
 
 As in the source, the full Calendly `name` is written to Mautic’s `firstname` field. It does not split a full name or infer a family name. The source’s other standard name/company fields are sent as blank values; Mautic’s default behavior skips blanks on an existing contact. Keep `overwriteWithBlank` unset. Existing-contact matching depends on your instance’s unique-field configuration.
 
-Open Flow returns **Contact**; n8n returns that contact as one item. Email/name validation failure prevents the write. API errors or a missing saved ID stop the run. No workflow retry or exactly-once guarantee is added: a repeated booking delivery can update the contact again and may trigger server-side Mautic automations. Check Mautic before replaying a write with an unknown result.
+Open Flow returns **Contact**. Email/name validation failure prevents the write. API errors or a missing saved ID stop the run. No workflow retry or exactly-once guarantee is added: a repeated booking delivery can update the contact again and may trigger server-side Mautic automations. Check Mautic before replaying a write with an unknown result.
 
-Both newly registered subscriptions verify Calendly signatures. Open Flow accepts signature timestamps within three minutes; the native n8n trigger uses a five-minute window. Keep the execution server’s clock accurate. A successful webhook acknowledgment does not prove that the later CRM write succeeded.
+Both newly registered subscriptions verify Calendly signatures. Open Flow accepts signature timestamps within three minutes. Keep the execution server’s clock accurate. A successful webhook acknowledgment does not prove that the later CRM write succeeded.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, choose **Personal Access Token** credentials in **On new event** and **Mautic API** credentials in **Create/update contact**. Use the Mautic instance’s HTTPS base URL, username and password. Enable REST API and Basic authentication, and grant that account contact-create/edit permission. Configure email as a unique Mautic field so the server matches existing contacts by email. No contact search or separate update request is added. Remove an older unsigned subscription for the same n8n callback before activation. N8n returns that contact as one item. The native n8n trigger uses a five-minute window.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

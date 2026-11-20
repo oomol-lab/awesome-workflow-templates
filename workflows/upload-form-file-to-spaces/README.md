@@ -13,11 +13,18 @@ Upload a form file to DigitalOcean Spaces and return its CDN link.
 
 ## Setup and use
 
-Import the n8n workflow and configure its S3 credentials for your DigitalOcean Spaces endpoint and bucket. Enable the Spaces CDN. Set **Execution mode** to n8n or openflow. For Open Flow mode configure the relay URL, deploy the workflow and set your CDN base in **Build CDN link**. Publish the n8n form and choose one mode. Restrict access to the Open Flow endpoint, which does not authenticate callers.
+Configure its S3 credentials for your DigitalOcean Spaces endpoint and bucket. Enable the Spaces CDN. For Open Flow mode configure the relay URL, deploy the workflow and set your CDN base in **Build CDN link**. Restrict access to the Open Flow endpoint, which does not authenticate callers.
 
 ## Behavior
 
-n8n receives one file and uploads its bytes with the **public-read** ACL, then the selected branch shows its CDN URL on the form completion page. Public-read permits anyone with the link to read the object. Spaces CDN must be enabled; a prior cached object may take time to refresh. The Open Flow path receives the form's file metadata after n8n completes the upload. If an upload result is unknown, inspect the bucket before retrying; a later link or form failure does not undo the upload.
+Public-read permits anyone with the link to read the object. Spaces CDN must be enabled; a prior cached object may take time to refresh. If an upload result is unknown, inspect the bucket before retrying; a later link or form failure does not undo the upload.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow and configure its S3 credentials for your DigitalOcean Spaces endpoint and bucket. Set **Execution mode** to n8n or openflow. Publish the n8n form and choose one mode. n8n receives one file and uploads its bytes with the **public-read** ACL, then the selected branch shows its CDN URL on the form completion page. The Open Flow path receives the form's file metadata after n8n completes the upload.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

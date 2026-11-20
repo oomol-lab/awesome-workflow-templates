@@ -15,11 +15,16 @@ Copy a Google Docs template and replace placeholders with submitted fields.
 
 Connect Google Docs with access to copy and edit the template. Set the document ID in **Prepare form fields**. The Open Flow webhook is public and accepts submissions without authentication; restrict access to its URL. Deploy it over HTTPS and submit JSON such as `{"name":"Example","fields":{"address":"123 Main St"}}`. The document title is `name`; each string field replaces its case-sensitive placeholder such as `{{name}}` or `{{address}}`.
 
-For n8n, import the workflow, enable Basic Auth on **Form**, select Google Drive and Docs credentials, and select your template in **Copy template file**. Add any extra form fields on **Form** and corresponding placeholders to the template. Activate one format.
-
 ## Behavior
 
-Each submission creates a separate copy and replaces matching text in that copy. Open Flow accepts extra fields in the JSON `fields` object; n8n uses fields configured in its form. Placeholder names and values are case-sensitive strings. The webhook acknowledgment does not confirm document creation. Restrict access to execution history containing form data. If copying or replacement fails or its result is unknown, inspect Google Drive and the copy before retrying; the copy can remain partially filled and replay can create another document.
+Each submission creates a separate copy and replaces matching text in that copy. Open Flow accepts extra fields in the JSON `fields` object. Placeholder names and values are case-sensitive strings. The webhook acknowledgment does not confirm document creation. Restrict access to execution history containing form data. If copying or replacement fails or its result is unknown, inspect Google Drive and the copy before retrying; the copy can remain partially filled and replay can create another document.
+
+<details>
+<summary>In n8n</summary>
+
+For n8n, import the workflow, enable Basic Auth on **Form**, select Google Drive and Docs credentials, and select your template in **Copy template file**. Add any extra form fields on **Form** and corresponding placeholders to the template. Activate one format. N8n uses fields configured in its form.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -13,9 +13,16 @@ Create one Trello card in a list you can edit. The card contains the name and de
 
 ## Setup
 
-For Open Flow, import the JSON, connect Trello in **Create Trello card**, and replace `YOUR_TRELLO_LIST_ID`. Edit Name and Description. For n8n, configure the same fields and account in **Trello**.
+For Open Flow, import the JSON, connect Trello in **Create Trello card**, and replace `YOUR_TRELLO_LIST_ID`. Edit Name and Description.
 
 Run the workflow manually. It returns the created card record, including the card URL when Trello supplies one. Each run creates another card. Labels, members, due dates, and attachments are not configured.
+
+<details>
+<summary>In n8n</summary>
+
+For n8n, configure the same fields and account in **Trello**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

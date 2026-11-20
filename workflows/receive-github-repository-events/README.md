@@ -13,11 +13,18 @@ Receive webhook events from a GitHub repository.
 
 ## Setup and use
 
-Import the n8n workflow, connect GitHub and set the repository owner and name in **Github Trigger**. Activate it to register the webhook for all repository events. For Open Flow, enter its webhook URL in **Forward to Open Flow** and enable that node; leave it disabled for n8n alone. Restrict access to the relay endpoint.
+Connect GitHub and set the repository owner and name in **Github Trigger**. Activate it to register the webhook for all repository events. For Open Flow, enter its webhook URL in **Forward to Open Flow** and enable that node. Restrict access to the relay endpoint.
 
 ## Behavior
 
-The trigger receives non-ping repository events and emits their complete body, request headers and query. The optional relay forwards the same object to Open Flow as workflow output. GitHub delivers event types according to its webhook subscription and repository permissions. The fixed n8n trigger verifies GitHub signatures. Monitor n8n for relay failures; event content and headers may appear in execution history.
+The trigger receives non-ping repository events and emits their complete body, request headers and query. The optional relay forwards the same object to Open Flow as workflow output. GitHub delivers event types according to its webhook subscription and repository permissions.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow, connect GitHub and set the repository owner and name in **Github Trigger**. Leave it disabled for n8n alone. The fixed n8n trigger verifies GitHub signatures. Monitor n8n for relay failures; event content and headers may appear in execution history.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

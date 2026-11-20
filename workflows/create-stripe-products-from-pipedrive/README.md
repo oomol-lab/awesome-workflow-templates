@@ -13,13 +13,20 @@ Create a Stripe product and prices for a new Pipedrive product.
 
 ## Setup
 
-Connect Stripe with product and price creation access. In Open Flow configure the company ID and bind a secret Variable containing the full Basic authorization header in **Authenticate product event**. Register a Pipedrive v2 product-create webhook with matching Basic credentials. Keep State persistent and prevent overlapping executions. In n8n connect Pipedrive and Stripe, replace YOUR_COMPANY_ID in **Prepare product**, and choose a Data Table with text columns item_key and status. Activate one format.
+Connect Stripe with product and price creation access. In Open Flow configure the company ID and bind a secret Variable containing the full Basic authorization header in **Authenticate product event**. Register a Pipedrive v2 product-create webhook with matching Basic credentials. Keep State persistent and prevent overlapping executions.
 
 ## Behavior
 
 For each added product, create a Stripe product with its name and description and create one Stripe price for each currency in the event. A stable Stripe product ID includes the company and Pipedrive product IDs, so every price stays associated with that product. The workflow follows the source conversion of price × 100; this is appropriate only for currencies with two decimal places. Do not use it for zero-decimal currencies without adjusting the conversion to Stripe currency rules. Validate price amounts before enabling it.
 
-Each write is reserved before it starts. If its result is unknown, inspect Stripe before replaying. In Open Flow enter the pending key and either absent or confirmed in the matching reserve node; for a confirmed product also enter its Stripe ID in confirmedId. Replay the same event and clear the recovery fields after it completes. In n8n inspect the pending Data Table row and the Stripe account. Mark that row done only after confirming the write, or delete it only after confirming it did not happen. The stable product ID appears in the pending product's Pipedrive record ID and configured company ID. The workflow then continues remaining prices on replay. Store executions securely because product data and webhook headers can be sensitive.
+Each write is reserved before it starts. If its result is unknown, inspect Stripe before replaying. In Open Flow enter the pending key and either absent or confirmed in the matching reserve node; for a confirmed product also enter its Stripe ID in confirmedId. Replay the same event and clear the recovery fields after it completes. Mark that row done only after confirming the write, or delete it only after confirming it did not happen. The stable product ID appears in the pending product's Pipedrive record ID and configured company ID. The workflow then continues remaining prices on replay. Store executions securely because product data and webhook headers can be sensitive.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n connect Pipedrive and Stripe, replace YOUR_COMPANY_ID in **Prepare product**, and choose a Data Table with text columns item_key and status. In n8n inspect the pending Data Table row and the Stripe account.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>
