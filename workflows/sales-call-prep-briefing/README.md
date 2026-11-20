@@ -13,10 +13,6 @@ Research an external meeting prospect from their company domain, generate a stru
 - Configured AI model on the Open Flow AI Agent node
 - Publicly reachable prospect company website URL derived from attendee email domain
 
-## Template
-
-- Open Flow: [templates/sales-call-prep-briefing.openflow.json](templates/sales-call-prep-briefing.openflow.json)
-
 ## Setup
 
 1. Import `templates/sales-call-prep-briefing.openflow.json` into Open Flow.

@@ -13,10 +13,6 @@
 - 已在 Open Flow AI Agent 节点上配置 AI 模型
 - 由 Webhook 调用方发送 orderId、customerEmail、amountUsd、daysSincePurchase 和 reason
 
-## 模板
-
-- Open Flow: [templates/refund-policy-precheck.openflow.json](../../templates/refund-policy-precheck.openflow.json)
-
 ## 配置步骤
 
 1. 将 `templates/refund-policy-precheck.openflow.json` 导入 Open Flow。

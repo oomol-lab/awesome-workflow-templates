@@ -13,10 +13,6 @@ Scan Reddit discussions on a schedule, filter high-intent buyer or feedback post
 - Configured AI model on the Open Flow AI Agent node
 - Target subreddit, search query, and product positioning configured on the Start/Defaults node
 
-## Template
-
-- Open Flow: [templates/reddit-intent-monitor.openflow.json](templates/reddit-intent-monitor.openflow.json)
-
 ## Setup
 
 1. Import `templates/reddit-intent-monitor.openflow.json` into Open Flow.

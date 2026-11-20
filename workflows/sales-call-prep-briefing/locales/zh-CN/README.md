@@ -13,10 +13,6 @@
 - 已在 Open Flow AI Agent 节点上配置 AI 模型
 - 可公开访问的潜在客户公司网站 URL（根据参会人邮箱域名推导）
 
-## 模板
-
-- Open Flow: [templates/sales-call-prep-briefing.openflow.json](../../templates/sales-call-prep-briefing.openflow.json)
-
 ## 配置步骤
 
 1. 将 `templates/sales-call-prep-briefing.openflow.json` 导入 Open Flow。

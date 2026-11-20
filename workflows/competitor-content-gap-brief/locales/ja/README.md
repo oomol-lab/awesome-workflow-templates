@@ -13,10 +13,6 @@
 - Open Flow AI Agent ノードに設定済みの AI モデル
 - 公開アクセス可能な競合の RSS または Atom フィード URL
 
-## テンプレート
-
-- Open Flow: [templates/competitor-content-gap-brief.openflow.json](../../templates/competitor-content-gap-brief.openflow.json)
-
 ## セットアップ
 
 1. `templates/competitor-content-gap-brief.openflow.json` を Open Flow にインポートします。

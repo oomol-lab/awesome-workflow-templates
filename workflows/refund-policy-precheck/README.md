@@ -13,10 +13,6 @@ Validate incoming refund requests against deterministic policy rules, score risk
 - Configured AI model on the Open Flow AI Agent node
 - Webhook caller sending orderId, customerEmail, amountUsd, daysSincePurchase, and reason
 
-## Template
-
-- Open Flow: [templates/refund-policy-precheck.openflow.json](templates/refund-policy-precheck.openflow.json)
-
 ## Setup
 
 1. Import `templates/refund-policy-precheck.openflow.json` into Open Flow.

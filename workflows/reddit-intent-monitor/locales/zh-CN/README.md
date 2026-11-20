@@ -13,10 +13,6 @@
 - 已在 Open Flow AI Agent 节点上配置 AI 模型
 - 已在 Start/Defaults 节点上配置目标 subreddit、搜索词和产品定位
 
-## 模板
-
-- Open Flow: [templates/reddit-intent-monitor.openflow.json](../../templates/reddit-intent-monitor.openflow.json)
-
 ## 配置步骤
 
 1. 将 `templates/reddit-intent-monitor.openflow.json` 导入 Open Flow。

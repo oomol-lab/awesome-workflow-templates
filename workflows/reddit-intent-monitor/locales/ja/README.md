@@ -13,10 +13,6 @@ Reddit の議論を定期的にスキャンし、AI で購買意向やフィー�
 - Open Flow AI Agent ノードに設定済みの AI モデル
 - Start/Defaults ノードに設定した対象 subreddit、検索クエリ、製品のポジショニング
 
-## テンプレート
-
-- Open Flow: [templates/reddit-intent-monitor.openflow.json](../../templates/reddit-intent-monitor.openflow.json)
-
 ## セットアップ
 
 1. `templates/reddit-intent-monitor.openflow.json` を Open Flow にインポートします。

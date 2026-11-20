@@ -13,10 +13,6 @@ Fetch a competitor RSS feed, analyze recent topics for SEO content gaps, and pos
 - Configured AI model on the Open Flow AI Agent node
 - Publicly accessible competitor RSS or Atom feed URL
 
-## Template
-
-- Open Flow: [templates/competitor-content-gap-brief.openflow.json](templates/competitor-content-gap-brief.openflow.json)
-
 ## Setup
 
 1. Import `templates/competitor-content-gap-brief.openflow.json` into Open Flow.

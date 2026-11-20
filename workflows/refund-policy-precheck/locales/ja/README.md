@@ -13,10 +13,6 @@
 - Open Flow AI Agent ノードに設定済みの AI モデル
 - orderId、customerEmail、amountUsd、daysSincePurchase、reason を送信する Webhook 呼び出し元
 
-## テンプレート
-
-- Open Flow: [templates/refund-policy-precheck.openflow.json](../../templates/refund-policy-precheck.openflow.json)
-
 ## セットアップ
 
 1. `templates/refund-policy-precheck.openflow.json` を Open Flow にインポートします。

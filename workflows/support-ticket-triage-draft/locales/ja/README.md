@@ -13,10 +13,6 @@
 - Open Flow AI Agent ノードに設定済みの AI モデル
 - ticketId、customerEmail、subject、body、planTier を送信するヘルプデスクまたはフォームの Webhook
 
-## テンプレート
-
-- Open Flow: [templates/support-ticket-triage-draft.openflow.json](../../templates/support-ticket-triage-draft.openflow.json)
-
 ## セットアップ
 
 1. `templates/support-ticket-triage-draft.openflow.json` を Open Flow にインポートします。

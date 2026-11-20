@@ -13,10 +13,6 @@
 - Open Flow AI Agent ノードに設定済みの AI モデル
 - 参加者のメールドメインから導出した、公開アクセス可能な見込み客の企業サイト URL
 
-## テンプレート
-
-- Open Flow: [templates/sales-call-prep-briefing.openflow.json](../../templates/sales-call-prep-briefing.openflow.json)
-
 ## セットアップ
 
 1. `templates/sales-call-prep-briefing.openflow.json` を Open Flow にインポートします。

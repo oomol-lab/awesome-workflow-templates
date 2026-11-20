@@ -13,10 +13,6 @@
 - 已在 Open Flow AI Agent 节点上配置 AI 模型
 - 由帮助台或表单 Webhook 发送 ticketId、customerEmail、subject、body 和 planTier
 
-## 模板
-
-- Open Flow: [templates/support-ticket-triage-draft.openflow.json](../../templates/support-ticket-triage-draft.openflow.json)
-
 ## 配置步骤
 
 1. 将 `templates/support-ticket-triage-draft.openflow.json` 导入 Open Flow。

@@ -13,10 +13,6 @@ Classify incoming support tickets by category and urgency, draft a customer repl
 - Configured AI model on the Open Flow AI Agent node
 - Helpdesk or form webhook posting ticketId, customerEmail, subject, body, and planTier
 
-## Template
-
-- Open Flow: [templates/support-ticket-triage-draft.openflow.json](templates/support-ticket-triage-draft.openflow.json)
-
 ## Setup
 
 1. Import `templates/support-ticket-triage-draft.openflow.json` into Open Flow.

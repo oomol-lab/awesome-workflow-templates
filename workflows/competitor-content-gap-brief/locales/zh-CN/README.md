@@ -13,10 +13,6 @@
 - 已在 Open Flow AI Agent 节点上配置 AI 模型
 - 可公开访问的竞品 RSS 或 Atom 订阅源 URL
 
-## 模板
-
-- Open Flow: [templates/competitor-content-gap-brief.openflow.json](../../templates/competitor-content-gap-brief.openflow.json)
-
 ## 配置步骤
 
 1. 将 `templates/competitor-content-gap-brief.openflow.json` 导入 Open Flow。
