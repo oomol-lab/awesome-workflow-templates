@@ -2,12 +2,14 @@
 
 Find meetings without subsequent email, suggest available slots and book only after a human response.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/review-meeting-follow-up-suggestions/) [![n8n JSON](../../assets/n8n-json.svg)](templates/review-meeting-follow-up-suggestions.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/review-meeting-follow-up-suggestions.openflow.json) · [n8n JSON](templates/review-meeting-follow-up-suggestions.n8n.json)
 
 ## Setup
 

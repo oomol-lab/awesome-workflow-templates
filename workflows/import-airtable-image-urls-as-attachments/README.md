@@ -2,12 +2,14 @@
 
 Find Airtable records with image URLs and replace each record’s attachment field with its image.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/import-airtable-image-urls-as-attachments/) [![n8n JSON](../../assets/n8n-json.svg)](templates/import-airtable-image-urls-as-attachments.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/import-airtable-image-urls-as-attachments.openflow.json) · [n8n JSON](templates/import-airtable-image-urls-as-attachments.n8n.json)
 
 ## Setup
 

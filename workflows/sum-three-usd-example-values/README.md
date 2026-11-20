@@ -2,12 +2,14 @@
 
 Learn how to sum three example USD amounts in a workflow.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/sum-three-usd-example-values/) [![n8n JSON](../../assets/n8n-json.svg)](templates/sum-three-usd-example-values.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/sum-three-usd-example-values.openflow.json) · [n8n JSON](templates/sum-three-usd-example-values.n8n.json)
 
 ## Setup and use
 

@@ -2,12 +2,14 @@
 
 Run the workflow manually to generate the current six-digit time-based one-time password for an existing account.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/generate-current-totp-code/) [![n8n JSON](../../assets/n8n-json.svg)](templates/generate-current-totp-code.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/generate-current-totp-code.openflow.json) · [n8n JSON](templates/generate-current-totp-code.n8n.json)
 
 ## Setup
 

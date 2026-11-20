@@ -2,12 +2,14 @@
 
 Send a plain-text email when a new file is created directly inside a selected Google Drive folder.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/google-drive-new-file-email-alert/) [![n8n JSON](../../assets/n8n-json.svg)](templates/google-drive-new-file-email-alert.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/google-drive-new-file-email-alert.openflow.json) · [n8n JSON](templates/google-drive-new-file-email-alert.n8n.json)
 
 ## Setup
 

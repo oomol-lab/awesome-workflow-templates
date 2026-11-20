@@ -2,12 +2,14 @@
 
 Collect a PDF application, prepare an advisory assessment for HR, and send a receipt to the applicant.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/review-software-engineer-applications/) [![n8n JSON](../../assets/n8n-json.svg)](templates/review-software-engineer-applications.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/review-software-engineer-applications.openflow.json) · [n8n JSON](templates/review-software-engineer-applications.n8n.json)
 
 ## Setup
 

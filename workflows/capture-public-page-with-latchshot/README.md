@@ -2,12 +2,14 @@
 
 Render a public web page as a PNG using a chosen viewport.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/capture-public-page-with-latchshot/) [![n8n JSON](../../assets/n8n-json.svg)](templates/capture-public-page-with-latchshot.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/capture-public-page-with-latchshot.openflow.json) · [n8n JSON](templates/capture-public-page-with-latchshot.n8n.json)
 
 ## Setup
 

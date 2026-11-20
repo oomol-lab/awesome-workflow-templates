@@ -2,12 +2,14 @@
 
 Track recent seed and Series A/B funding rounds with company details in Google Sheets.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/track-crunchbase-funding-rounds-in-sheets/) [![n8n JSON](../../assets/n8n-json.svg)](templates/track-crunchbase-funding-rounds-in-sheets.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/track-crunchbase-funding-rounds-in-sheets.openflow.json) · [n8n JSON](templates/track-crunchbase-funding-rounds-in-sheets.n8n.json)
 
 ## Setup
 

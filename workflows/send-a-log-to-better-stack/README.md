@@ -2,12 +2,14 @@
 
 Send a message and level to Better Stack Logs from a workflow or a manual test.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/send-a-log-to-better-stack/) [![n8n JSON](../../assets/n8n-json.svg)](templates/send-a-log-to-better-stack.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/send-a-log-to-better-stack.openflow.json) · [n8n JSON](templates/send-a-log-to-better-stack.n8n.json)
 
 ## Setup and use
 

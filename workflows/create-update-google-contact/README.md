@@ -2,12 +2,14 @@
 
 Create a Google contact, set their organization and read the updated contact.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/create-update-google-contact/) [![n8n JSON](../../assets/n8n-json.svg)](templates/create-update-google-contact.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/create-update-google-contact.openflow.json) · [n8n JSON](templates/create-update-google-contact.n8n.json)
 
 ## Setup
 

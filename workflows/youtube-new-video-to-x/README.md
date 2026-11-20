@@ -2,12 +2,14 @@
 
 Check a YouTube channel every 30 minutes and publish an AI-written X post when the search returns a recent video.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/youtube-new-video-to-x/) [![n8n JSON](../../assets/n8n-json.svg)](templates/youtube-new-video-to-x.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/youtube-new-video-to-x.openflow.json) · [n8n JSON](templates/youtube-new-video-to-x.n8n.json)
 
 ## Setup and use
 

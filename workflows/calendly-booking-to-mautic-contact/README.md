@@ -2,12 +2,14 @@
 
 Create a contact in Mautic, or update the matching contact’s first-name field, when an invitee books a Calendly meeting.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/calendly-booking-to-mautic-contact/) [![n8n JSON](../../assets/n8n-json.svg)](templates/calendly-booking-to-mautic-contact.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/calendly-booking-to-mautic-contact.openflow.json) · [n8n JSON](templates/calendly-booking-to-mautic-contact.n8n.json)
 
 ## Setup
 

@@ -2,12 +2,14 @@
 
 Select a batch of messages with one Gmail label, remove that label, and add a destination label.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/gmail-label-switcher/) [![n8n JSON](../../assets/n8n-json.svg)](templates/gmail-label-switcher.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/gmail-label-switcher.openflow.json) · [n8n JSON](templates/gmail-label-switcher.n8n.json)
 
 ## Setup
 

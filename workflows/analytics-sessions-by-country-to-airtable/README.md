@@ -2,12 +2,14 @@
 
 Read Google Analytics sessions by country and add the results to Airtable.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/analytics-sessions-by-country-to-airtable/) [![n8n JSON](../../assets/n8n-json.svg)](templates/analytics-sessions-by-country-to-airtable.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/analytics-sessions-by-country-to-airtable.openflow.json) · [n8n JSON](templates/analytics-sessions-by-country-to-airtable.n8n.json)
 
 ## Setup
 

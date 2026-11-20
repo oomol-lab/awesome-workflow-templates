@@ -2,12 +2,14 @@
 
 Summarize Nostr hashtag posts and send a themes overview and detailed report by email and Telegram.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/report-nostr-hashtag-themes/) [![n8n JSON](../../assets/n8n-json.svg)](templates/report-nostr-hashtag-themes.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/report-nostr-hashtag-themes.openflow.json) · [n8n JSON](templates/report-nostr-hashtag-themes.n8n.json)
 
 ## Setup
 

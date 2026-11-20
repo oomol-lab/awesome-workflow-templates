@@ -2,12 +2,14 @@
 
 Generate a video title, description and tags using a transcript and channel reference document.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/generate-youtube-metadata-from-transcript-and-doc/) [![n8n JSON](../../assets/n8n-json.svg)](templates/generate-youtube-metadata-from-transcript-and-doc.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/generate-youtube-metadata-from-transcript-and-doc.openflow.json) · [n8n JSON](templates/generate-youtube-metadata-from-transcript-and-doc.n8n.json)
 
 ## Setup
 

@@ -2,12 +2,14 @@
 
 Send a message to one configured Telegram private chat through a GET endpoint. After Telegram confirms the message, the endpoint returns the recipient’s first name and the original message text.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/send-telegram-message-from-webhook/) [![n8n JSON](../../assets/n8n-json.svg)](templates/send-telegram-message-from-webhook.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/send-telegram-message-from-webhook.openflow.json) · [n8n JSON](templates/send-telegram-message-from-webhook.n8n.json)
 
 ## Setup
 

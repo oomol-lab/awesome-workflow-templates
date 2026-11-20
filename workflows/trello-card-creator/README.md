@@ -2,12 +2,14 @@
 
 Create one Trello card in a list you can edit. The card contains the name and description you configure.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/trello-card-creator/) [![n8n JSON](../../assets/n8n-json.svg)](templates/trello-card-creator.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/trello-card-creator.openflow.json) · [n8n JSON](templates/trello-card-creator.n8n.json)
 
 ## Setup
 

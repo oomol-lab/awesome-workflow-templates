@@ -47,12 +47,14 @@ The success body is `{"success":true,"clientId":"CF-…","name":"Ada"}`. The wel
 - Write literal sheet values with RAW formatting, including names or project text starting with `=`.
 - Replace server environment variables with editable template configuration.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/client-onboarding/) [![n8n JSON](../../assets/n8n-json.svg)](templates/client-onboarding.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/client-onboarding.openflow.json) · [n8n JSON](templates/client-onboarding.n8n.json)
 
 Adapted from [ClientFlow Lite - Client Onboarding Automation](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Other_Integrations_and_Use_Cases/ClientFlow%20Lite%20-%20Client%20Onboarding%20Automation.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 

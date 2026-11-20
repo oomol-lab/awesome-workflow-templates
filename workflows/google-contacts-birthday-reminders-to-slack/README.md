@@ -2,12 +2,14 @@
 
 Check Google Contacts each morning and send a Slack reminder for each birthday today.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/google-contacts-birthday-reminders-to-slack/) [![n8n JSON](../../assets/n8n-json.svg)](templates/google-contacts-birthday-reminders-to-slack.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/google-contacts-birthday-reminders-to-slack.openflow.json) · [n8n JSON](templates/google-contacts-birthday-reminders-to-slack.n8n.json)
 
 ## Setup
 

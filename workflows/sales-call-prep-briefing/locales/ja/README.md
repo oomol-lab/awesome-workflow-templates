@@ -2,6 +2,10 @@
 
 社外ミーティングの見込み客を会社ドメインから調査し、構造化された商談準備ブリーフを作成して Slack に投稿します。
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../../../assets/view-in-openflow.svg)](https://openflow.run/templates/sales-call-prep-briefing/)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="../../preview-dark.png">
   <img alt="商談準備ブリーフィング ワークフローのプレビュー" src="../../preview-light.png">

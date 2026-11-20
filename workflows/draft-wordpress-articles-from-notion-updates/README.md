@@ -2,12 +2,14 @@
 
 Draft an SEO article from a Notion page update, email its link and update the page.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/draft-wordpress-articles-from-notion-updates/) [![n8n JSON](../../assets/n8n-json.svg)](templates/draft-wordpress-articles-from-notion-updates.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/draft-wordpress-articles-from-notion-updates.openflow.json) · [n8n JSON](templates/draft-wordpress-articles-from-notion-updates.n8n.json)
 
 ## Setup
 

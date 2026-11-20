@@ -2,12 +2,14 @@
 
 Send a Vonage SMS when a Kafka JSON message reports a temperature above 50.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/kafka-temperature-alert-vonage-sms/) [![n8n JSON](../../assets/n8n-json.svg)](templates/kafka-temperature-alert-vonage-sms.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/kafka-temperature-alert-vonage-sms.openflow.json) · [n8n JSON](templates/kafka-temperature-alert-vonage-sms.n8n.json)
 
 ## Setup
 

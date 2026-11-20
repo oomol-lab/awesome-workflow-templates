@@ -42,12 +42,14 @@ The success body is `{"success":true,"callId":"call-001","caller":"Ada"}`. The s
 - Write literal sheet values with RAW formatting, preserving phone numbers and transcript text.
 - Replace the server's spreadsheet environment variable with editable template configuration.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/phone-call-log/) [![n8n JSON](../../assets/n8n-json.svg)](templates/phone-call-log.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/phone-call-log.openflow.json) · [n8n JSON](templates/phone-call-log.n8n.json)
 
 Adapted from [VoiceAgent Lite - Phone Call Logger](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Other_Integrations_and_Use_Cases/VoiceAgent%20Lite%20-%20Phone%20Call%20Logger.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 

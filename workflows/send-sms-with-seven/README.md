@@ -2,12 +2,14 @@
 
 Send an SMS to numbers, contacts or groups using seven.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/send-sms-with-seven/) [![n8n JSON](../../assets/n8n-json.svg)](templates/send-sms-with-seven.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/send-sms-with-seven.openflow.json) · [n8n JSON](templates/send-sms-with-seven.n8n.json)
 
 ## Setup
 

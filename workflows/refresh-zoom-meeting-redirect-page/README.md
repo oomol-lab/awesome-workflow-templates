@@ -2,12 +2,14 @@
 
 Create a recurring Zoom meeting, update a WordPress redirect page, and notify Slack every 360 days.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/refresh-zoom-meeting-redirect-page/) [![n8n JSON](../../assets/n8n-json.svg)](templates/refresh-zoom-meeting-redirect-page.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/refresh-zoom-meeting-redirect-page.openflow.json) · [n8n JSON](templates/refresh-zoom-meeting-redirect-page.n8n.json)
 
 ## Setup
 

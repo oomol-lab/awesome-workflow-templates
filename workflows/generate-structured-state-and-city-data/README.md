@@ -2,12 +2,14 @@
 
 Generate a structured example of US states, cities and populations.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/generate-structured-state-and-city-data/) [![n8n JSON](../../assets/n8n-json.svg)](templates/generate-structured-state-and-city-data.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/generate-structured-state-and-city-data.openflow.json) · [n8n JSON](templates/generate-structured-state-and-city-data.n8n.json)
 
 ## Setup and use
 

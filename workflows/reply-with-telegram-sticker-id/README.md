@@ -2,12 +2,14 @@
 
 Reply to Telegram messages with the sticker file ID and set name.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/reply-with-telegram-sticker-id/) [![n8n JSON](../../assets/n8n-json.svg)](templates/reply-with-telegram-sticker-id.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/reply-with-telegram-sticker-id.openflow.json) · [n8n JSON](templates/reply-with-telegram-sticker-id.n8n.json)
 
 ## Setup
 

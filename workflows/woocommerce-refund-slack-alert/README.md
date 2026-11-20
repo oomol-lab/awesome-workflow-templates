@@ -2,12 +2,14 @@
 
 Notify Slack when an updated WooCommerce order is refunded and its order total is at least 100.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/woocommerce-refund-slack-alert/) [![n8n JSON](../../assets/n8n-json.svg)](templates/woocommerce-refund-slack-alert.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/woocommerce-refund-slack-alert.openflow.json) · [n8n JSON](templates/woocommerce-refund-slack-alert.n8n.json)
 
 ## Setup
 

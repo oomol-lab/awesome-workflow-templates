@@ -2,12 +2,14 @@
 
 Inspect the complete JSON update received by a Telegram bot. The bot sends the formatted JSON privately to the original message sender.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/telegram-message-json-debugger/) [![n8n JSON](../../assets/n8n-json.svg)](templates/telegram-message-json-debugger.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/telegram-message-json-debugger.openflow.json) · [n8n JSON](templates/telegram-message-json-debugger.n8n.json)
 
 ## Setup
 

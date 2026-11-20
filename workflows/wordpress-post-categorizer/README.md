@@ -2,12 +2,14 @@
 
 Classify WordPress post titles into one of your existing categories, validate the whole batch and replace each post’s category assignment.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/wordpress-post-categorizer/) [![n8n JSON](../../assets/n8n-json.svg)](templates/wordpress-post-categorizer.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/wordpress-post-categorizer.openflow.json) · [n8n JSON](templates/wordpress-post-categorizer.n8n.json)
 
 ## Setup
 

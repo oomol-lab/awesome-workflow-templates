@@ -2,12 +2,14 @@
 
 Fetch posts, select three fields from the first ten, and deliver each item to an HTTP endpoint.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/fetch-transform-and-deliver-posts/) [![n8n JSON](../../assets/n8n-json.svg)](templates/fetch-transform-and-deliver-posts.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/fetch-transform-and-deliver-posts.openflow.json) · [n8n JSON](templates/fetch-transform-and-deliver-posts.n8n.json)
 
 ## Setup and use
 

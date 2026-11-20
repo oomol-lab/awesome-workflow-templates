@@ -2,12 +2,14 @@
 
 Browse an n8n instance’s workflows and render their node connections as Mermaid diagrams.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/browse-n8n-workflows-with-mermaid/) [![n8n JSON](../../assets/n8n-json.svg)](templates/browse-n8n-workflows-with-mermaid.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/browse-n8n-workflows-with-mermaid.openflow.json) · [n8n JSON](templates/browse-n8n-workflows-with-mermaid.n8n.json)
 
 ## Setup
 

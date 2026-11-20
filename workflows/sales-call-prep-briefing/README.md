@@ -2,6 +2,10 @@
 
 Research an external meeting prospect from their company domain, generate a structured call prep brief, and post it to Slack.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/sales-call-prep-briefing/)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Sales Call Prep Briefing workflow preview" src="preview-light.png">

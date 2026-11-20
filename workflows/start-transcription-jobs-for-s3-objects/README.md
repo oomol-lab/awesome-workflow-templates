@@ -2,12 +2,14 @@
 
 Start an automatic-language Amazon Transcribe job for each nonempty object in an S3 bucket.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/start-transcription-jobs-for-s3-objects/) [![n8n JSON](../../assets/n8n-json.svg)](templates/start-transcription-jobs-for-s3-objects.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/start-transcription-jobs-for-s3-objects.openflow.json) · [n8n JSON](templates/start-transcription-jobs-for-s3-objects.n8n.json)
 
 ## Setup
 

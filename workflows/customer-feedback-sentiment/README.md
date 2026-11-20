@@ -2,12 +2,14 @@
 
 Classify customer feedback with AI and append the feedback and sentiment to Google Sheets. The model returns a text assessment; the workflow does not force a fixed sentiment vocabulary.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/customer-feedback-sentiment/) [![n8n JSON](../../assets/n8n-json.svg)](templates/customer-feedback-sentiment.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/customer-feedback-sentiment.openflow.json) · [n8n JSON](templates/customer-feedback-sentiment.n8n.json)
 
 ## Setup
 

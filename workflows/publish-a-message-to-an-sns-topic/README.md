@@ -2,12 +2,14 @@
 
 Publish a message with a subject to an Amazon SNS topic.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/publish-a-message-to-an-sns-topic/) [![n8n JSON](../../assets/n8n-json.svg)](templates/publish-a-message-to-an-sns-topic.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/publish-a-message-to-an-sns-topic.openflow.json) · [n8n JSON](templates/publish-a-message-to-an-sns-topic.n8n.json)
 
 ## Setup
 

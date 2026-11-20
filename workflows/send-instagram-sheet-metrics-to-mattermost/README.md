@@ -2,12 +2,14 @@
 
 Send a daily Mattermost message for each Instagram metrics row in a Google Sheet.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/send-instagram-sheet-metrics-to-mattermost/) [![n8n JSON](../../assets/n8n-json.svg)](templates/send-instagram-sheet-metrics-to-mattermost.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/send-instagram-sheet-metrics-to-mattermost.openflow.json) · [n8n JSON](templates/send-instagram-sheet-metrics-to-mattermost.n8n.json)
 
 ## Setup
 

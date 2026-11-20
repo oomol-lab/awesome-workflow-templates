@@ -2,12 +2,14 @@
 
 Learn to collect sample workflow items into an array of people.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/collect-example-people-into-an-array/) [![n8n JSON](../../assets/n8n-json.svg)](templates/collect-example-people-into-an-array.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/collect-example-people-into-an-array.openflow.json) · [n8n JSON](templates/collect-example-people-into-an-array.n8n.json)
 
 ## Setup and use
 

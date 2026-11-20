@@ -2,12 +2,14 @@
 
 Generate a styled FLUX image and save it to an S3 bucket.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/generate-styled-flux-images-to-s3/) [![n8n JSON](../../assets/n8n-json.svg)](templates/generate-styled-flux-images-to-s3.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/generate-styled-flux-images-to-s3.openflow.json) · [n8n JSON](templates/generate-styled-flux-images-to-s3.n8n.json)
 
 ## Setup and use
 

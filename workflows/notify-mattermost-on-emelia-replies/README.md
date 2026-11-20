@@ -2,12 +2,14 @@
 
 Notify a Mattermost channel when a contact replies to an Emelia email campaign.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/notify-mattermost-on-emelia-replies/) [![n8n JSON](../../assets/n8n-json.svg)](templates/notify-mattermost-on-emelia-replies.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/notify-mattermost-on-emelia-replies.openflow.json) · [n8n JSON](templates/notify-mattermost-on-emelia-replies.n8n.json)
 
 ## Setup
 

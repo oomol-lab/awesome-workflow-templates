@@ -2,12 +2,14 @@
 
 Extract the same information from a Drive PDF with Claude and Gemini and compare their responses.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/compare-pdf-extraction-claude-gemini/) [![n8n JSON](../../assets/n8n-json.svg)](templates/compare-pdf-extraction-claude-gemini.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/compare-pdf-extraction-claude-gemini.openflow.json) · [n8n JSON](templates/compare-pdf-extraction-claude-gemini.n8n.json)
 
 ## Setup
 

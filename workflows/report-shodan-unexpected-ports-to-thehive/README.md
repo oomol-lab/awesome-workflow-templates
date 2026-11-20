@@ -2,12 +2,14 @@
 
 Check a configured IP allowlist against Shodan and create TheHive alerts for unexpected ports.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/report-shodan-unexpected-ports-to-thehive/) [![n8n JSON](../../assets/n8n-json.svg)](templates/report-shodan-unexpected-ports-to-thehive.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/report-shodan-unexpected-ports-to-thehive.openflow.json) · [n8n JSON](templates/report-shodan-unexpected-ports-to-thehive.n8n.json)
 
 ## Setup
 

@@ -2,12 +2,14 @@
 
 Send a configured MSG91 Flow SMS to one recipient.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/send-an-approved-sms-with-msg91/) [![n8n JSON](../../assets/n8n-json.svg)](templates/send-an-approved-sms-with-msg91.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/send-an-approved-sms-with-msg91.openflow.json) · [n8n JSON](templates/send-an-approved-sms-with-msg91.n8n.json)
 
 ## Setup
 

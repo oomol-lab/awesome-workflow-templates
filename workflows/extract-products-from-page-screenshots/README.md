@@ -2,12 +2,14 @@
 
 Read page URLs from Google Sheets, extract product details from screenshots and append the results.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/extract-products-from-page-screenshots/) [![n8n JSON](../../assets/n8n-json.svg)](templates/extract-products-from-page-screenshots.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/extract-products-from-page-screenshots.openflow.json) · [n8n JSON](templates/extract-products-from-page-screenshots.n8n.json)
 
 ## Setup and use
 

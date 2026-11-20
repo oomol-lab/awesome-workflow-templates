@@ -2,12 +2,14 @@
 
 Check a website every five minutes and send an SMS when its HTTP status is not 200.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/alert-on-http-status-by-sms/) [![n8n JSON](../../assets/n8n-json.svg)](templates/alert-on-http-status-by-sms.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/alert-on-http-status-by-sms.openflow.json) · [n8n JSON](templates/alert-on-http-status-by-sms.n8n.json)
 
 ## Setup
 

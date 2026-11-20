@@ -2,6 +2,10 @@
 
 Reddit の議論を定期的にスキャンし、AI で購買意向やフィードバックの強い投稿を絞り込んで、Slack にダイジェストを送信します。
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../../../assets/view-in-openflow.svg)](https://openflow.run/templates/reddit-intent-monitor/)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="../../preview-dark.png">
   <img alt="Reddit ブランド・購買意向レーダー ワークフローのプレビュー" src="../../preview-light.png">

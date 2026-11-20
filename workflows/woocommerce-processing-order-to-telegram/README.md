@@ -2,12 +2,14 @@
 
 Send order details to Telegram when an updated WooCommerce order is processing.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/woocommerce-processing-order-to-telegram/) [![n8n JSON](../../assets/n8n-json.svg)](templates/woocommerce-processing-order-to-telegram.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/woocommerce-processing-order-to-telegram.openflow.json) · [n8n JSON](templates/woocommerce-processing-order-to-telegram.n8n.json)
 
 ## Setup
 

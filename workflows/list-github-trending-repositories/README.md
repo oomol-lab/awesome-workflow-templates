@@ -2,12 +2,14 @@
 
 Read GitHub Trending and return repository names, descriptions and languages.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/list-github-trending-repositories/) [![n8n JSON](../../assets/n8n-json.svg)](templates/list-github-trending-repositories.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/list-github-trending-repositories.openflow.json) · [n8n JSON](templates/list-github-trending-repositories.n8n.json)
 
 ## Setup and use
 

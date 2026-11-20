@@ -2,12 +2,14 @@
 
 Archive older unstarred inbox messages on workdays while keeping starred messages in the inbox.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/archive-old-unstarred-gmail/) [![n8n JSON](../../assets/n8n-json.svg)](templates/archive-old-unstarred-gmail.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/archive-old-unstarred-gmail.openflow.json) · [n8n JSON](templates/archive-old-unstarred-gmail.n8n.json)
 
 ## Setup
 

@@ -2,12 +2,14 @@
 
 Check Bitcoin’s USD ticker every 15 minutes. Send one Telegram message when its 24-hour change is at least +5% or at most −5%. The message also includes the current USD price and seven-day change.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/bitcoin-price-alert/) [![n8n JSON](../../assets/n8n-json.svg)](templates/bitcoin-price-alert.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/bitcoin-price-alert.openflow.json) · [n8n JSON](templates/bitcoin-price-alert.n8n.json)
 
 ## Setup
 

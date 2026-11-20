@@ -2,12 +2,14 @@
 
 Find learning resources in Ask HN comments and email a categorized summary.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/learn-with-hacker-news-recommendations/) [![n8n JSON](../../assets/n8n-json.svg)](templates/learn-with-hacker-news-recommendations.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/learn-with-hacker-news-recommendations.openflow.json) · [n8n JSON](templates/learn-with-hacker-news-recommendations.n8n.json)
 
 ## Setup
 

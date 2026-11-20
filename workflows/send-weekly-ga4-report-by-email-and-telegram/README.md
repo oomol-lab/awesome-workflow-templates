@@ -2,12 +2,14 @@
 
 Compare daily GA4 metrics with the same dates a year earlier and send a weekly report.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/send-weekly-ga4-report-by-email-and-telegram/) [![n8n JSON](../../assets/n8n-json.svg)](templates/send-weekly-ga4-report-by-email-and-telegram.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/send-weekly-ga4-report-by-email-and-telegram.openflow.json) · [n8n JSON](templates/send-weekly-ga4-report-by-email-and-telegram.n8n.json)
 
 ## Setup
 

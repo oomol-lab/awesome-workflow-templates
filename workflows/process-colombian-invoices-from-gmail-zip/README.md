@@ -2,12 +2,14 @@
 
 Extract Colombian invoice details from ZIP attachments and organize their PDFs and spreadsheet rows.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/process-colombian-invoices-from-gmail-zip/) [![n8n JSON](../../assets/n8n-json.svg)](templates/process-colombian-invoices-from-gmail-zip.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/process-colombian-invoices-from-gmail-zip.openflow.json) · [n8n JSON](templates/process-colombian-invoices-from-gmail-zip.n8n.json)
 
 ## Setup
 

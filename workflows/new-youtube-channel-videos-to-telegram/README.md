@@ -2,12 +2,14 @@
 
 Check a YouTube channel every 30 minutes and send newly found videos to Telegram.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/new-youtube-channel-videos-to-telegram/) [![n8n JSON](../../assets/n8n-json.svg)](templates/new-youtube-channel-videos-to-telegram.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/new-youtube-channel-videos-to-telegram.openflow.json) · [n8n JSON](templates/new-youtube-channel-videos-to-telegram.n8n.json)
 
 ## Setup
 

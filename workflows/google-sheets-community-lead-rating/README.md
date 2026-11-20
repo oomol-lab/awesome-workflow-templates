@@ -2,12 +2,14 @@
 
 Qualify new community applications using the original team-responsibility and email-domain criteria, preserving every lead and updating only Rating.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/google-sheets-community-lead-rating/) [![n8n JSON](../../assets/n8n-json.svg)](templates/google-sheets-community-lead-rating.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/google-sheets-community-lead-rating.openflow.json) · [n8n JSON](templates/google-sheets-community-lead-rating.n8n.json)
 
 ## Setup
 

@@ -2,12 +2,14 @@
 
 Extract a policy PDF and index its text chunks in a vector table.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/index-policy-pdf-vectors/) [![n8n JSON](../../assets/n8n-json.svg)](templates/index-policy-pdf-vectors.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/index-policy-pdf-vectors.openflow.json) · [n8n JSON](templates/index-policy-pdf-vectors.n8n.json)
 
 ## Setup and use
 

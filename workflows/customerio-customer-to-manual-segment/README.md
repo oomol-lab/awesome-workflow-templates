@@ -2,12 +2,14 @@
 
 Identify a customer and add the customer ID to an existing manual segment in Customer.io.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/customerio-customer-to-manual-segment/) [![n8n JSON](../../assets/n8n-json.svg)](templates/customerio-customer-to-manual-segment.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/customerio-customer-to-manual-segment.openflow.json) · [n8n JSON](templates/customerio-customer-to-manual-segment.n8n.json)
 
 ## Setup
 

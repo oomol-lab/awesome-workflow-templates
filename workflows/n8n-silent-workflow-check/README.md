@@ -2,12 +2,14 @@
 
 Find active n8n workflows whose latest observed execution is older than a configured threshold, or which have no execution in the inspected page. The workflow returns a report every morning. It sends no notifications and changes no workflows.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/n8n-silent-workflow-check/) [![n8n JSON](../../assets/n8n-json.svg)](templates/n8n-silent-workflow-check.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/n8n-silent-workflow-check.openflow.json) · [n8n JSON](templates/n8n-silent-workflow-check.n8n.json)
 
 ## Setup
 

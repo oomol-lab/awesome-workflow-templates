@@ -2,12 +2,14 @@
 
 Return a city’s current and feels-like temperature in Celsius through a GET webhook.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/return-current-weather-for-a-city/) [![n8n JSON](../../assets/n8n-json.svg)](templates/return-current-weather-for-a-city.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/return-current-weather-for-a-city.openflow.json) · [n8n JSON](templates/return-current-weather-for-a-city.n8n.json)
 
 ## Setup and use
 

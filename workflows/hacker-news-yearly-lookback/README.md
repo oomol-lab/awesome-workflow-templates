@@ -2,12 +2,14 @@
 
 Read the Hacker News front page for the same UTC calendar day across years, choose 10–15 interesting headlines with Gemini, and send one themed Markdown summary to Telegram.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/hacker-news-yearly-lookback/) [![n8n JSON](../../assets/n8n-json.svg)](templates/hacker-news-yearly-lookback.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/hacker-news-yearly-lookback.openflow.json) · [n8n JSON](templates/hacker-news-yearly-lookback.n8n.json)
 
 ## Setup
 

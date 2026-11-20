@@ -2,12 +2,14 @@
 
 Summarize company inquiries and send knowledge-grounded replies through IMAP and SMTP.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/reply-company-inquiries-with-knowledge/) [![n8n JSON](../../assets/n8n-json.svg)](templates/reply-company-inquiries-with-knowledge.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/reply-company-inquiries-with-knowledge.openflow.json) · [n8n JSON](templates/reply-company-inquiries-with-knowledge.n8n.json)
 
 ## Setup
 

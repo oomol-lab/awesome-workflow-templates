@@ -2,12 +2,14 @@
 
 Fetch a webpage and return its named entities using Google Cloud Natural Language.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/extract-webpage-entities-with-google-language/) [![n8n JSON](../../assets/n8n-json.svg)](templates/extract-webpage-entities-with-google-language.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/extract-webpage-entities-with-google-language.openflow.json) · [n8n JSON](templates/extract-webpage-entities-with-google-language.n8n.json)
 
 ## Setup
 

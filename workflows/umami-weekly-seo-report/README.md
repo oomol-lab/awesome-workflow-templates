@@ -2,12 +2,14 @@
 
 Review two rolling weeks of self-hosted Umami analytics. Generate a traffic summary and a page-visitor comparison with SEO suggestions, then save both in one Baserow row.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/umami-weekly-seo-report/) [![n8n JSON](../../assets/n8n-json.svg)](templates/umami-weekly-seo-report.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/umami-weekly-seo-report.openflow.json) · [n8n JSON](templates/umami-weekly-seo-report.n8n.json)
 
 
 ## Setup

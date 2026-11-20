@@ -2,12 +2,14 @@
 
 Grant public reader access to files in a Google Drive folder and create download links.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/share-drive-folder-files-and-create-download-links/) [![n8n JSON](../../assets/n8n-json.svg)](templates/share-drive-folder-files-and-create-download-links.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/share-drive-folder-files-and-create-download-links.openflow.json) · [n8n JSON](templates/share-drive-folder-files-and-create-download-links.n8n.json)
 
 ## Setup
 

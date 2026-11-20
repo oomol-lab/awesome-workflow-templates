@@ -2,12 +2,14 @@
 
 Analyze a domain’s SerpBear keyword rankings and save a report to Baserow.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/analyze-serpbear-rankings-to-baserow/) [![n8n JSON](../../assets/n8n-json.svg)](templates/analyze-serpbear-rankings-to-baserow.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/analyze-serpbear-rankings-to-baserow.openflow.json) · [n8n JSON](templates/analyze-serpbear-rankings-to-baserow.n8n.json)
 
 ## Setup
 

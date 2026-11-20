@@ -2,12 +2,14 @@
 
 Read Zoho CRM accounts and return up to five records.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/get-five-zoho-crm-accounts/) [![n8n JSON](../../assets/n8n-json.svg)](templates/get-five-zoho-crm-accounts.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/get-five-zoho-crm-accounts.openflow.json) · [n8n JSON](templates/get-five-zoho-crm-accounts.n8n.json)
 
 ## Setup and use
 

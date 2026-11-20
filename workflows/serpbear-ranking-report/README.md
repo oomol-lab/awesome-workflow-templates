@@ -2,12 +2,14 @@
 
 Read a domain’s SERPBear rankings, ask OpenRouter for an SEO analysis and save one dated report row in Baserow.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/serpbear-ranking-report/) [![n8n JSON](../../assets/n8n-json.svg)](templates/serpbear-ranking-report.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/serpbear-ranking-report.openflow.json) · [n8n JSON](templates/serpbear-ranking-report.n8n.json)
 
 ## Setup
 

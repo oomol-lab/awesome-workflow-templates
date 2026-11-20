@@ -2,12 +2,14 @@
 
 Transcribe new Drive recordings with Amazon Transcribe and append the results to Google Sheets.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/transcribe-new-drive-recordings-to-sheets/) [![n8n JSON](../../assets/n8n-json.svg)](templates/transcribe-new-drive-recordings-to-sheets.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/transcribe-new-drive-recordings-to-sheets.openflow.json) · [n8n JSON](templates/transcribe-new-drive-recordings-to-sheets.n8n.json)
 
 ## Setup
 

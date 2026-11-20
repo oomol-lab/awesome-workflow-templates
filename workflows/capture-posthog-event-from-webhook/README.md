@@ -2,12 +2,14 @@
 
 Capture a named PostHog event when a webhook is requested.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/capture-posthog-event-from-webhook/) [![n8n JSON](../../assets/n8n-json.svg)](templates/capture-posthog-event-from-webhook.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/capture-posthog-event-from-webhook.openflow.json) · [n8n JSON](templates/capture-posthog-event-from-webhook.n8n.json)
 
 ## Setup and use
 

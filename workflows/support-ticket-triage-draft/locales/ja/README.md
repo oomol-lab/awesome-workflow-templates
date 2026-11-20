@@ -2,6 +2,10 @@
 
 受信したサポートチケットをカテゴリと緊急度で分類し、顧客への返信を下書きして、緊急案件を Slack にエスカレーションします。
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../../../assets/view-in-openflow.svg)](https://openflow.run/templates/support-ticket-triage-draft/)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="../../preview-dark.png">
   <img alt="サポートチケットのトリアージと返信下書き ワークフローのプレビュー" src="../../preview-light.png">

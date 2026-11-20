@@ -2,12 +2,14 @@
 
 Look up German synonym groups in [OpenThesaurus](https://www.openthesaurus.de/). The source example searches for `Hallo`.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/german-synonym-lookup/) [![n8n JSON](../../assets/n8n-json.svg)](templates/german-synonym-lookup.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/german-synonym-lookup.openflow.json) · [n8n JSON](templates/german-synonym-lookup.n8n.json)
 
 ## Setup
 

@@ -2,12 +2,14 @@
 
 Create a Notion database page for a new Clockify invoice.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/clockify-invoice-to-notion/) [![n8n JSON](../../assets/n8n-json.svg)](templates/clockify-invoice-to-notion.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/clockify-invoice-to-notion.openflow.json) · [n8n JSON](templates/clockify-invoice-to-notion.n8n.json)
 
 ## Setup
 

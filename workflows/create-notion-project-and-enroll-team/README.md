@@ -2,12 +2,14 @@
 
 Create a semester project and connect each team member to the project and current semester in Notion.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/create-notion-project-and-enroll-team/) [![n8n JSON](../../assets/n8n-json.svg)](templates/create-notion-project-and-enroll-team.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/create-notion-project-and-enroll-team.openflow.json) · [n8n JSON](templates/create-notion-project-and-enroll-team.n8n.json)
 
 ## Setup
 

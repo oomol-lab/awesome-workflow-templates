@@ -2,12 +2,14 @@
 
 Synchronize Calendly invitees and guests with KlickTipp on bookings and cancellations.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/sync-calendly-guests-with-klicktipp/) [![n8n JSON](../../assets/n8n-json.svg)](templates/sync-calendly-guests-with-klicktipp.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/sync-calendly-guests-with-klicktipp.openflow.json) · [n8n JSON](templates/sync-calendly-guests-with-klicktipp.n8n.json)
 
 ## Setup
 

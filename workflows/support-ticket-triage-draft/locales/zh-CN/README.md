@@ -2,6 +2,10 @@
 
 按类别和紧急程度对收到的支持工单分类，起草客户回复，并将紧急工单升级到 Slack。
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../../../assets/view-in-openflow.svg)](https://openflow.run/templates/support-ticket-triage-draft/)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="../../preview-dark.png">
   <img alt="支持工单分诊与回复草稿 工作流预览" src="../../preview-light.png">

@@ -2,12 +2,14 @@
 
 Return Docker inspection details for an n8n container.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/inspect-n8n-container/) [![n8n JSON](../../assets/n8n-json.svg)](templates/inspect-n8n-container.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/inspect-n8n-container.openflow.json) · [n8n JSON](templates/inspect-n8n-container.n8n.json)
 
 ## Setup
 

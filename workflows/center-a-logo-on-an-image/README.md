@@ -2,12 +2,14 @@
 
 Center a transparent logo over a background image.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/center-a-logo-on-an-image/) [![n8n JSON](../../assets/n8n-json.svg)](templates/center-a-logo-on-an-image.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/center-a-logo-on-an-image.openflow.json) · [n8n JSON](templates/center-a-logo-on-an-image.n8n.json)
 
 ## Setup
 

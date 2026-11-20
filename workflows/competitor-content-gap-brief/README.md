@@ -2,6 +2,10 @@
 
 Fetch a competitor RSS feed, analyze recent topics for SEO content gaps, and post 3 article outlines to Slack.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/competitor-content-gap-brief/)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Competitor Content Gap Brief workflow preview" src="preview-light.png">

@@ -2,6 +2,10 @@
 
 根据公司域名调研外部会议的潜在客户，生成结构化的通话准备简报，并发送到 Slack。
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../../../assets/view-in-openflow.svg)](https://openflow.run/templates/sales-call-prep-briefing/)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="../../preview-dark.png">
   <img alt="销售通话准备简报 工作流预览" src="../../preview-light.png">

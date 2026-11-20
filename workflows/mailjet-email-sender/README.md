@@ -2,12 +2,14 @@
 
 Send one plain-text email to one recipient through Mailjet and return the Send API’s acceptance result.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/mailjet-email-sender/) [![n8n JSON](../../assets/n8n-json.svg)](templates/mailjet-email-sender.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/mailjet-email-sender.openflow.json) · [n8n JSON](templates/mailjet-email-sender.n8n.json)
 
 ## Setup
 

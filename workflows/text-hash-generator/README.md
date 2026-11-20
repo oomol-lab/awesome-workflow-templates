@@ -2,12 +2,14 @@
 
 Generate an MD5 checksum of UTF-8 text and return its 32-character lowercase hexadecimal value as `data`.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/text-hash-generator/) [![n8n JSON](../../assets/n8n-json.svg)](templates/text-hash-generator.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/text-hash-generator.openflow.json) · [n8n JSON](templates/text-hash-generator.n8n.json)
 
 ## Usage
 

@@ -2,12 +2,14 @@
 
 Turn French text into French speech, transcribe that audio, translate the transcript into English and synthesize the English text in the same ElevenLabs voice.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/french-to-english-audio/) [![n8n JSON](../../assets/n8n-json.svg)](templates/french-to-english-audio.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/french-to-english-audio.openflow.json) · [n8n JSON](templates/french-to-english-audio.n8n.json)
 
 ## Setup and use
 

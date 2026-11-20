@@ -38,12 +38,14 @@ Open Flow sends each reminder through a separate Connector execution in the visi
 - Send plain-text email so the Italian message retains its paragraphs.
 - Provide the required sheet headers, spreadsheet placeholder, signature, and explicit UTC starting timezone.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/invoice-payment-reminders/) [![n8n JSON](../../assets/n8n-json.svg)](templates/invoice-payment-reminders.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/invoice-payment-reminders.openflow.json) · [n8n JSON](templates/invoice-payment-reminders.n8n.json)
 
 Adapted from [Automatic payment reminders from Google Sheets (Italian)](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Google_Drive_and_Google_Sheets/Automatic%20payment%20reminders%20from%20Google%20Sheets%20(Italian).json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 

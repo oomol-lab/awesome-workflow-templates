@@ -2,12 +2,14 @@
 
 Create telli contacts and schedule voice-agent calls for new Airtable records.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/schedule-telli-calls-from-airtable/) [![n8n JSON](../../assets/n8n-json.svg)](templates/schedule-telli-calls-from-airtable.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/schedule-telli-calls-from-airtable.openflow.json) · [n8n JSON](templates/schedule-telli-calls-from-airtable.n8n.json)
 
 ## Setup
 

@@ -2,12 +2,14 @@
 
 Scan four integration sheets and generate a FAQ JSON for each unfinished row.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/scan-integration-sheets-and-generate-faq/) [![n8n JSON](../../assets/n8n-json.svg)](templates/scan-integration-sheets-and-generate-faq.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/scan-integration-sheets-and-generate-faq.openflow.json) · [n8n JSON](templates/scan-integration-sheets-and-generate-faq.n8n.json)
 
 ## Setup
 

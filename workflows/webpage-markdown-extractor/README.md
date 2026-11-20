@@ -2,12 +2,14 @@
 
 Fetch one page through Firecrawl and return its main content as Markdown.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/webpage-markdown-extractor/) [![n8n JSON](../../assets/n8n-json.svg)](templates/webpage-markdown-extractor.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/webpage-markdown-extractor.openflow.json) · [n8n JSON](templates/webpage-markdown-extractor.n8n.json)
 
 ## Setup and use
 

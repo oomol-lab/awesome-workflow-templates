@@ -2,12 +2,14 @@
 
 Generate a caption for a remote image and overlay it on the original.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/caption-and-overlay-remote-image/) [![n8n JSON](../../assets/n8n-json.svg)](templates/caption-and-overlay-remote-image.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/caption-and-overlay-remote-image.openflow.json) · [n8n JSON](templates/caption-and-overlay-remote-image.n8n.json)
 
 ## Setup
 

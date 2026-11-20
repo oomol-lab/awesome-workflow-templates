@@ -2,12 +2,14 @@
 
 Compare a linked PDF resume with your full job description. Return a matching score, concise assessment and reasons for and against the match for a recruiter to review.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/cv-job-match-report/) [![n8n JSON](../../assets/n8n-json.svg)](templates/cv-job-match-report.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/cv-job-match-report.openflow.json) · [n8n JSON](templates/cv-job-match-report.n8n.json)
 
 
 ## Configure and run

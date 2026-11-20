@@ -2,6 +2,10 @@
 
 定时扫描 Reddit 讨论，用 AI 筛选高购买意向或产品反馈帖子，并发送 Slack 摘要。
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../../../assets/view-in-openflow.svg)](https://openflow.run/templates/reddit-intent-monitor/)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="../../preview-dark.png">
   <img alt="Reddit 品牌与意向雷达 工作流预览" src="../../preview-light.png">

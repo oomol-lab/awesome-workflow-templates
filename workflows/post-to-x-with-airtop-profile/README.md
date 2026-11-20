@@ -2,12 +2,14 @@
 
 Use an authenticated Airtop browser profile to submit text to X.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/post-to-x-with-airtop-profile/) [![n8n JSON](../../assets/n8n-json.svg)](templates/post-to-x-with-airtop-profile.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/post-to-x-with-airtop-profile.openflow.json) · [n8n JSON](templates/post-to-x-with-airtop-profile.n8n.json)
 
 ## Setup
 

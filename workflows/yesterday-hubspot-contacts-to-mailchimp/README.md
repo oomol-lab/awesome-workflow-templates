@@ -2,12 +2,14 @@
 
 Add up to 100 HubSpot contacts created yesterday to a Mailchimp audience.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/yesterday-hubspot-contacts-to-mailchimp/) [![n8n JSON](../../assets/n8n-json.svg)](templates/yesterday-hubspot-contacts-to-mailchimp.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/yesterday-hubspot-contacts-to-mailchimp.openflow.json) · [n8n JSON](templates/yesterday-hubspot-contacts-to-mailchimp.n8n.json)
 
 ## Setup
 

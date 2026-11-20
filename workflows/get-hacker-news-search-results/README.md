@@ -2,12 +2,14 @@
 
 Retrieve up to 100 Hacker News search results from Algolia.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/get-hacker-news-search-results/) [![n8n JSON](../../assets/n8n-json.svg)](templates/get-hacker-news-search-results.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/get-hacker-news-search-results.openflow.json) · [n8n JSON](templates/get-hacker-news-search-results.n8n.json)
 
 ## Setup
 

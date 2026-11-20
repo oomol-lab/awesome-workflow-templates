@@ -2,12 +2,14 @@
 
 Create a profile, enrich it with a resume, and retrieve its hiring persona for review.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/create-and-enrich-humantic-profile/) [![n8n JSON](../../assets/n8n-json.svg)](templates/create-and-enrich-humantic-profile.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/create-and-enrich-humantic-profile.openflow.json) · [n8n JSON](templates/create-and-enrich-humantic-profile.n8n.json)
 
 ## Setup
 

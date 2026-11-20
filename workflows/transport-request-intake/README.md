@@ -2,12 +2,14 @@
 
 Normalize pickup and delivery postcodes, pickup date, and shipment weight. The webhook returns a readiness status and a list of fields that need review.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/transport-request-intake/) [![n8n JSON](../../assets/n8n-json.svg)](templates/transport-request-intake.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/transport-request-intake.openflow.json) · [n8n JSON](templates/transport-request-intake.n8n.json)
 
 ## Use
 

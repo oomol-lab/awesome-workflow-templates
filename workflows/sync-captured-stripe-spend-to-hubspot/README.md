@@ -2,12 +2,14 @@
 
 Sum captured Stripe charges by customer email and update a HubSpot contact property.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/sync-captured-stripe-spend-to-hubspot/) [![n8n JSON](../../assets/n8n-json.svg)](templates/sync-captured-stripe-spend-to-hubspot.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/sync-captured-stripe-spend-to-hubspot.openflow.json) · [n8n JSON](templates/sync-captured-stripe-spend-to-hubspot.n8n.json)
 
 ## Setup
 

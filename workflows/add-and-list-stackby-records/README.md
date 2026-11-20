@@ -2,12 +2,14 @@
 
 Add an ID and name to a Stackby table and list its records.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/add-and-list-stackby-records/) [![n8n JSON](../../assets/n8n-json.svg)](templates/add-and-list-stackby-records.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/add-and-list-stackby-records.openflow.json) · [n8n JSON](templates/add-and-list-stackby-records.n8n.json)
 
 ## Setup
 

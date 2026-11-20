@@ -2,12 +2,14 @@
 
 Scan submitted URLs or IPs, enrich results with GreyNoise and send a report.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/scan-indicators-with-virustotal-and-greynoise/) [![n8n JSON](../../assets/n8n-json.svg)](templates/scan-indicators-with-virustotal-and-greynoise.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/scan-indicators-with-virustotal-and-greynoise.openflow.json) · [n8n JSON](templates/scan-indicators-with-virustotal-and-greynoise.n8n.json)
 
 ## Setup and use
 

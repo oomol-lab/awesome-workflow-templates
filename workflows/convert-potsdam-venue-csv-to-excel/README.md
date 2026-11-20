@@ -2,12 +2,14 @@
 
 Download Potsdam venue data as CSV and convert it to an Excel workbook.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/convert-potsdam-venue-csv-to-excel/) [![n8n JSON](../../assets/n8n-json.svg)](templates/convert-potsdam-venue-csv-to-excel.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/convert-potsdam-venue-csv-to-excel.openflow.json) · [n8n JSON](templates/convert-potsdam-venue-csv-to-excel.n8n.json)
 
 ## Setup and use
 

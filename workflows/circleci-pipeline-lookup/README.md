@@ -2,12 +2,14 @@
 
 Read one CircleCI pipeline by its project and pipeline number, including its state, errors and version-control details.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/circleci-pipeline-lookup/) [![n8n JSON](../../assets/n8n-json.svg)](templates/circleci-pipeline-lookup.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/circleci-pipeline-lookup.openflow.json) · [n8n JSON](templates/circleci-pipeline-lookup.n8n.json)
 
 ## Setup
 

@@ -2,12 +2,14 @@
 
 Classify an incoming request and return a route, priority, and one-sentence summary. Routes are support, sales, technical, and general. The workflow does not create tickets or contact a team.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/webhook-request-classifier/) [![n8n JSON](../../assets/n8n-json.svg)](templates/webhook-request-classifier.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/webhook-request-classifier.openflow.json) · [n8n JSON](templates/webhook-request-classifier.n8n.json)
 
 ## Setup
 

@@ -2,12 +2,14 @@
 
 Read the three most recent unread messages in the Fastmail inbox.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/get-the-latest-unread-fastmail-messages/) [![n8n JSON](../../assets/n8n-json.svg)](templates/get-the-latest-unread-fastmail-messages.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/get-the-latest-unread-fastmail-messages.openflow.json) · [n8n JSON](templates/get-the-latest-unread-fastmail-messages.n8n.json)
 
 ## Setup and use
 

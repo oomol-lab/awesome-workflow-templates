@@ -2,12 +2,14 @@
 
 Read matching Gmail snippets, summarize the key points and named action items, and send one HTML email to your configured recipient and CC list.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/daily-gmail-summary-email/) [![n8n JSON](../../assets/n8n-json.svg)](templates/daily-gmail-summary-email.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/daily-gmail-summary-email.openflow.json) · [n8n JSON](templates/daily-gmail-summary-email.n8n.json)
 
 ## Setup
 

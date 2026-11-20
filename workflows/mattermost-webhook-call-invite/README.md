@@ -2,12 +2,14 @@
 
 Post a Whereby room invite to a Mattermost channel from a webhook request.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/mattermost-webhook-call-invite/) [![n8n JSON](../../assets/n8n-json.svg)](templates/mattermost-webhook-call-invite.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/mattermost-webhook-call-invite.openflow.json) · [n8n JSON](templates/mattermost-webhook-call-invite.n8n.json)
 
 ## Setup
 

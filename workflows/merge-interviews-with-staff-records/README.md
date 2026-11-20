@@ -2,12 +2,14 @@
 
 Join interview records with staff records using the first interviewer ID.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/merge-interviews-with-staff-records/) [![n8n JSON](../../assets/n8n-json.svg)](templates/merge-interviews-with-staff-records.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/merge-interviews-with-staff-records.openflow.json) · [n8n JSON](templates/merge-interviews-with-staff-records.n8n.json)
 
 ## Setup and use
 

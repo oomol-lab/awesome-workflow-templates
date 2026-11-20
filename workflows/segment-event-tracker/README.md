@@ -2,12 +2,14 @@
 
 Send one Track event to a Segment source. Use an existing application user ID or leave it empty to generate a new anonymous identity for the run.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/segment-event-tracker/) [![n8n JSON](../../assets/n8n-json.svg)](templates/segment-event-tracker.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/segment-event-tracker.openflow.json) · [n8n JSON](templates/segment-event-tracker.n8n.json)
 
 ## Setup
 

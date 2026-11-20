@@ -2,6 +2,10 @@
 
 競合の RSS フィードを取得し、最近のトピックから SEO のコンテンツギャップを分析して、記事アウトラインを 3 本 Slack に投稿します。
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../../../assets/view-in-openflow.svg)](https://openflow.run/templates/competitor-content-gap-brief/)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="../../preview-dark.png">
   <img alt="競合コンテンツギャップ・ブリーフ ワークフローのプレビュー" src="../../preview-light.png">

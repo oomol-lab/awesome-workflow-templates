@@ -2,12 +2,14 @@
 
 Monitor a recent X search and post new results to a Mattermost channel.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/forward-x-search-to-mattermost/) [![n8n JSON](../../assets/n8n-json.svg)](templates/forward-x-search-to-mattermost.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/forward-x-search-to-mattermost.openflow.json) · [n8n JSON](templates/forward-x-search-to-mattermost.n8n.json)
 
 ## Setup
 

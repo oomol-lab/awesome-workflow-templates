@@ -2,12 +2,14 @@
 
 Reply to each incoming Telegram message with the current weather, temperature, and feels-like temperature for a city you configure. The example city is Berlin, Germany.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/telegram-weather-reply/) [![n8n JSON](../../assets/n8n-json.svg)](templates/telegram-weather-reply.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/telegram-weather-reply.openflow.json) · [n8n JSON](templates/telegram-weather-reply.n8n.json)
 
 ## Setup
 

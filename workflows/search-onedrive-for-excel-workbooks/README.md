@@ -2,12 +2,14 @@
 
 Search the current user’s OneDrive for the text .xlsx and return the first page of results.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/search-onedrive-for-excel-workbooks/) [![n8n JSON](../../assets/n8n-json.svg)](templates/search-onedrive-for-excel-workbooks.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/search-onedrive-for-excel-workbooks.openflow.json) · [n8n JSON](templates/search-onedrive-for-excel-workbooks.n8n.json)
 
 ## Setup and use
 

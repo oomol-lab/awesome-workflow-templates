@@ -2,12 +2,14 @@
 
 Save positive form feedback as a Strapi entry. Google Cloud Natural Language analyzes the submitted text, and only scores greater than `0.4` create an entry.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/form-testimonial-capture/) [![n8n JSON](../../assets/n8n-json.svg)](templates/form-testimonial-capture.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/form-testimonial-capture.openflow.json) · [n8n JSON](templates/form-testimonial-capture.n8n.json)
 
 ## Setup
 

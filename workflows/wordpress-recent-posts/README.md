@@ -2,12 +2,14 @@
 
 Read up to five published WordPress posts, ordered by publication date with the newest first.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/wordpress-recent-posts/) [![n8n JSON](../../assets/n8n-json.svg)](templates/wordpress-recent-posts.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/wordpress-recent-posts.openflow.json) · [n8n JSON](templates/wordpress-recent-posts.n8n.json)
 
 ## Setup
 

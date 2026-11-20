@@ -2,6 +2,10 @@
 
 Every morning at 09:00 in `Asia/Jerusalem`, find open invoices exactly 7, 14 or 30 calendar days overdue. Send the corresponding Hebrew message through your WAHA WhatsApp session, then record that reminder in Google Sheets.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/hebrew-whatsapp-invoice-reminders/) [![n8n JSON](../../assets/n8n-json.svg)](templates/hebrew-whatsapp-invoice-reminders.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img src="preview-light.png" alt="Hebrew WhatsApp invoice reminders workflow">

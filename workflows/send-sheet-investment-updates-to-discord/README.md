@@ -2,12 +2,14 @@
 
 Watch investment security codes and send the complete sheet table to Discord when rows are added or codes change.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/send-sheet-investment-updates-to-discord/) [![n8n JSON](../../assets/n8n-json.svg)](templates/send-sheet-investment-updates-to-discord.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/send-sheet-investment-updates-to-discord.openflow.json) · [n8n JSON](templates/send-sheet-investment-updates-to-discord.n8n.json)
 
 ## Setup
 

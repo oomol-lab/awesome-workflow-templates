@@ -2,12 +2,14 @@
 
 Find company social profiles by exploring their websites and save the results to Supabase.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/crawl-company-social-profiles/) [![n8n JSON](../../assets/n8n-json.svg)](templates/crawl-company-social-profiles.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/crawl-company-social-profiles.openflow.json) · [n8n JSON](templates/crawl-company-social-profiles.n8n.json)
 
 ## Setup
 

@@ -34,12 +34,14 @@ OpenAI lists this snapshot for [shutdown on January 14, 2027](https://developers
 - Generate the HTML report directly in the model step, retaining the sentiment and improvement brief while removing the intermediate Markdown conversion.
 - Replace the retired `gpt-4-turbo-preview` default with `gpt-4.1-2025-04-14`, an officially documented compatible replacement, retaining temperature `0.3` and the report instructions. See [OpenAI's deprecation guidance](https://developers.openai.com/api/docs/deprecations/) and [GPT-4.1 model details](https://developers.openai.com/api/docs/models/gpt-4.1).
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/event-feedback-report/) [![n8n JSON](../../assets/n8n-json.svg)](templates/event-feedback-report.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/event-feedback-report.openflow.json) · [n8n JSON](templates/event-feedback-report.n8n.json)
 
 Adapted from [Summarize Google Sheets form feedback via OpenAI_s GPT-4](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Google_Drive_and_Google_Sheets/Summarize%20Google%20Sheets%20form%20feedback%20via%20OpenAI_s%20GPT-4.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 

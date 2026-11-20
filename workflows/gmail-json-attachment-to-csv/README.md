@@ -2,12 +2,14 @@
 
 Find a Gmail message, read a named JSON attachment and export it to CSV.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/gmail-json-attachment-to-csv/) [![n8n JSON](../../assets/n8n-json.svg)](templates/gmail-json-attachment-to-csv.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/gmail-json-attachment-to-csv.openflow.json) · [n8n JSON](templates/gmail-json-attachment-to-csv.n8n.json)
 
 ## Setup
 

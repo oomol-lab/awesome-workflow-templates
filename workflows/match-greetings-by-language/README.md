@@ -2,12 +2,14 @@
 
 Learn to match example names and greetings by language.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/match-greetings-by-language/) [![n8n JSON](../../assets/n8n-json.svg)](templates/match-greetings-by-language.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/match-greetings-by-language.openflow.json) · [n8n JSON](templates/match-greetings-by-language.n8n.json)
 
 ## Setup and use
 

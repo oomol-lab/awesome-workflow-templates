@@ -2,12 +2,14 @@
 
 Download a Google Sheets range as an HTML table through a webhook.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/download-sheet-as-html-table/) [![n8n JSON](../../assets/n8n-json.svg)](templates/download-sheet-as-html-table.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/download-sheet-as-html-table.openflow.json) · [n8n JSON](templates/download-sheet-as-html-table.n8n.json)
 
 ## Setup
 

@@ -2,12 +2,14 @@
 
 Ask a model for state and city data and repair an answer that does not match the required JSON format.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/repair-structured-state-data-with-ai/) [![n8n JSON](../../assets/n8n-json.svg)](templates/repair-structured-state-data-with-ai.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/repair-structured-state-data-with-ai.openflow.json) · [n8n JSON](templates/repair-structured-state-data-with-ai.n8n.json)
 
 ## Setup and use
 

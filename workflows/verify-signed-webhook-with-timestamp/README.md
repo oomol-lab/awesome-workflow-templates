@@ -2,12 +2,14 @@
 
 Verify exact webhook bytes and a signed timestamp before accepting an event.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/verify-signed-webhook-with-timestamp/) [![n8n JSON](../../assets/n8n-json.svg)](templates/verify-signed-webhook-with-timestamp.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/verify-signed-webhook-with-timestamp.openflow.json) · [n8n JSON](templates/verify-signed-webhook-with-timestamp.n8n.json)
 
 ## Setup
 

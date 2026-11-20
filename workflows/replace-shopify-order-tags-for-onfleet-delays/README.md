@@ -2,12 +2,14 @@
 
 Replace the configured Shopify order tags when its mapped Onfleet task is delayed.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/replace-shopify-order-tags-for-onfleet-delays/) [![n8n JSON](../../assets/n8n-json.svg)](templates/replace-shopify-order-tags-for-onfleet-delays.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/replace-shopify-order-tags-for-onfleet-delays.openflow.json) · [n8n JSON](templates/replace-shopify-order-tags-for-onfleet-delays.n8n.json)
 
 ## Setup
 

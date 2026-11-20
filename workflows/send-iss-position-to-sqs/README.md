@@ -2,12 +2,14 @@
 
 Send the current ISS position as a JSON message to an Amazon SQS queue every minute.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/send-iss-position-to-sqs/) [![n8n JSON](../../assets/n8n-json.svg)](templates/send-iss-position-to-sqs.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/send-iss-position-to-sqs.openflow.json) · [n8n JSON](templates/send-iss-position-to-sqs.n8n.json)
 
 ## Setup and use
 

@@ -2,12 +2,14 @@
 
 Convert text into an MP3 using OpenAI speech synthesis.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/generate-an-openai-speech-mp3/) [![n8n JSON](../../assets/n8n-json.svg)](templates/generate-an-openai-speech-mp3.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/generate-an-openai-speech-mp3.openflow.json) · [n8n JSON](templates/generate-an-openai-speech-mp3.n8n.json)
 
 ## Setup and use
 

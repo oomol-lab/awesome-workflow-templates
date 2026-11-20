@@ -2,12 +2,14 @@
 
 Update an existing Google Sheet with recently changed Airtable contacts. Match rows by Email and insert new contacts without interpreting cell text as formulas.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/airtable-contacts-to-google-sheets/) [![n8n JSON](../../assets/n8n-json.svg)](templates/airtable-contacts-to-google-sheets.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/airtable-contacts-to-google-sheets.openflow.json) · [n8n JSON](templates/airtable-contacts-to-google-sheets.n8n.json)
 
 ## Setup and run
 

@@ -2,12 +2,14 @@
 
 Announce newly created WooCommerce products on X and Telegram using their names and permalinks.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/woocommerce-product-to-x-and-telegram/) [![n8n JSON](../../assets/n8n-json.svg)](templates/woocommerce-product-to-x-and-telegram.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/woocommerce-product-to-x-and-telegram.openflow.json) · [n8n JSON](templates/woocommerce-product-to-x-and-telegram.n8n.json)
 
 ## Setup
 

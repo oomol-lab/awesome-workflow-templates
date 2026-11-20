@@ -2,12 +2,14 @@
 
 Create an example document, update its name, and read it back from Firestore.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/create-update-read-firestore-document/) [![n8n JSON](../../assets/n8n-json.svg)](templates/create-update-read-firestore-document.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/create-update-read-firestore-document.openflow.json) · [n8n JSON](templates/create-update-read-firestore-document.n8n.json)
 
 ## Setup
 

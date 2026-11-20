@@ -2,12 +2,14 @@
 
 Verify a Groundhogg contact’s US mailing address and send a deliverability tag to its webhook listener.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/verify-groundhogg-contact-mailing-address/) [![n8n JSON](../../assets/n8n-json.svg)](templates/verify-groundhogg-contact-mailing-address.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/verify-groundhogg-contact-mailing-address.openflow.json) · [n8n JSON](templates/verify-groundhogg-contact-mailing-address.n8n.json)
 
 ## Setup and use
 

@@ -2,12 +2,14 @@
 
 Classify errors from an n8n execution without calling a model or an external service. The result lists affected nodes, groups failures by category, and suggests investigation steps. It does not retry or modify the failed workflow.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/n8n-execution-diagnostics/) [![n8n JSON](../../assets/n8n-json.svg)](templates/n8n-execution-diagnostics.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/n8n-execution-diagnostics.openflow.json) · [n8n JSON](templates/n8n-execution-diagnostics.n8n.json)
 
 ## Use
 

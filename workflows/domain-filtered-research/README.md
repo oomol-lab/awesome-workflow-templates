@@ -2,12 +2,14 @@
 
 Ask a research question using Perplexity web search, restrict search to your chosen domains, and request sources published within the last month. The result contains the first answer and its citation URLs.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/domain-filtered-research/) [![n8n JSON](../../assets/n8n-json.svg)](templates/domain-filtered-research.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/domain-filtered-research.openflow.json) · [n8n JSON](templates/domain-filtered-research.n8n.json)
 
 ## Setup and use
 

@@ -2,12 +2,14 @@
 
 Classify top-level Inbox tasks and set their Todoist priorities from a configurable category map.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/assign-inbox-task-priorities-with-ai/) [![n8n JSON](../../assets/n8n-json.svg)](templates/assign-inbox-task-priorities-with-ai.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/assign-inbox-task-priorities-with-ai.openflow.json) · [n8n JSON](templates/assign-inbox-task-priorities-with-ai.n8n.json)
 
 ## Setup
 

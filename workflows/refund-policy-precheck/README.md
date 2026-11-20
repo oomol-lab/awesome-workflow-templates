@@ -2,6 +2,10 @@
 
 Validate incoming refund requests against deterministic policy rules, score risk with AI, and post an approval summary to Slack.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/refund-policy-precheck/)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Refund Policy Pre-Check & Approval workflow preview" src="preview-light.png">

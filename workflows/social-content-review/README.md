@@ -2,12 +2,14 @@
 
 Generate a set of social content, then review grammar, tone, formatting, and hashtags with a second model call. The result includes an X draft, LinkedIn post, Reddit title and body, and Instagram caption.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/social-content-review/) [![n8n JSON](../../assets/n8n-json.svg)](templates/social-content-review.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/social-content-review.openflow.json) · [n8n JSON](templates/social-content-review.n8n.json)
 
 ## Setup
 

@@ -2,6 +2,10 @@
 
 受信した返金リクエストを確定的なポリシールールで検証し、AI でリスクを評価して、承認用の概要を Slack に投稿します。
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../../../assets/view-in-openflow.svg)](https://openflow.run/templates/refund-policy-precheck/)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="../../preview-dark.png">
   <img alt="返金ポリシーの事前チェックと承認 ワークフローのプレビュー" src="../../preview-light.png">

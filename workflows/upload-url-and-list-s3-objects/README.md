@@ -2,12 +2,14 @@
 
 Upload a public file to an S3 bucket and list the bucket objects.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/upload-url-and-list-s3-objects/) [![n8n JSON](../../assets/n8n-json.svg)](templates/upload-url-and-list-s3-objects.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/upload-url-and-list-s3-objects.openflow.json) · [n8n JSON](templates/upload-url-and-list-s3-objects.n8n.json)
 
 ## Setup and use
 

@@ -2,12 +2,14 @@
 
 Read the books table from MySQL each week and append matching columns to Google Sheets.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/append-mysql-books-to-google-sheets-weekly/) [![n8n JSON](../../assets/n8n-json.svg)](templates/append-mysql-books-to-google-sheets-weekly.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/append-mysql-books-to-google-sheets-weekly.openflow.json) · [n8n JSON](templates/append-mysql-books-to-google-sheets-weekly.n8n.json)
 
 ## Setup
 

@@ -2,12 +2,14 @@
 
 Save one Airtable record when someone completes the selected Typeform form.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/typeform-answers-to-airtable/) [![n8n JSON](../../assets/n8n-json.svg)](templates/typeform-answers-to-airtable.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/typeform-answers-to-airtable.openflow.json) · [n8n JSON](templates/typeform-answers-to-airtable.n8n.json)
 
 ## Setup
 

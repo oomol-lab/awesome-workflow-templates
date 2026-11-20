@@ -2,12 +2,14 @@
 
 Read every page of HubSpot contacts and return the collected records.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/list-all-hubspot-contacts-with-pagination/) [![n8n JSON](../../assets/n8n-json.svg)](templates/list-all-hubspot-contacts-with-pagination.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/list-all-hubspot-contacts-with-pagination.openflow.json) · [n8n JSON](templates/list-all-hubspot-contacts-with-pagination.n8n.json)
 
 ## Setup
 

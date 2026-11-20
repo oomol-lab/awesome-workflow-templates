@@ -2,12 +2,14 @@
 
 Research a query with Perplexity Sonar and return the answer.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/research-a-query-with-perplexity-sonar/) [![n8n JSON](../../assets/n8n-json.svg)](templates/research-a-query-with-perplexity-sonar.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/research-a-query-with-perplexity-sonar.openflow.json) · [n8n JSON](templates/research-a-query-with-perplexity-sonar.n8n.json)
 
 ## Setup and use
 

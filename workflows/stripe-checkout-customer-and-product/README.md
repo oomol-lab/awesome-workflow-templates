@@ -2,12 +2,14 @@
 
 Retrieve customer details and the first line-item description when a Stripe Checkout Session completes.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/stripe-checkout-customer-and-product/) [![n8n JSON](../../assets/n8n-json.svg)](templates/stripe-checkout-customer-and-product.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/stripe-checkout-customer-and-product.openflow.json) · [n8n JSON](templates/stripe-checkout-customer-and-product.n8n.json)
 
 ## Setup
 

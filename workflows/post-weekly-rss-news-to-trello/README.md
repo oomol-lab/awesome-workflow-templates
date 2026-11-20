@@ -2,12 +2,14 @@
 
 Collect recent RSS articles, post a weekly Trello comment, and email a reviewer.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/post-weekly-rss-news-to-trello/) [![n8n JSON](../../assets/n8n-json.svg)](templates/post-weekly-rss-news-to-trello.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/post-weekly-rss-news-to-trello.openflow.json) · [n8n JSON](templates/post-weekly-rss-news-to-trello.n8n.json)
 
 ## Setup
 

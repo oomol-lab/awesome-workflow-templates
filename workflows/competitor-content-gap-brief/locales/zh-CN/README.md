@@ -2,6 +2,10 @@
 
 获取竞品 RSS 订阅源，分析近期主题中的 SEO 内容缺口，并将 3 篇文章大纲发送到 Slack。
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../../../assets/view-in-openflow.svg)](https://openflow.run/templates/competitor-content-gap-brief/)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="../../preview-dark.png">
   <img alt="竞品内容缺口简报 工作流预览" src="../../preview-light.png">

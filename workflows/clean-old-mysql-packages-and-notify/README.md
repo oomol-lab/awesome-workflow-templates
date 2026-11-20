@@ -2,12 +2,14 @@
 
 Mark old received packages in two MySQL databases and send a Telegram notification for each confirmed update.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/clean-old-mysql-packages-and-notify/) [![n8n JSON](../../assets/n8n-json.svg)](templates/clean-old-mysql-packages-and-notify.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/clean-old-mysql-packages-and-notify.openflow.json) · [n8n JSON](templates/clean-old-mysql-packages-and-notify.n8n.json)
 
 ## Setup
 

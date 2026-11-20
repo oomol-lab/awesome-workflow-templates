@@ -2,12 +2,14 @@
 
 Extract an invoice total from an incoming email attachment and notify finance and Slack.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/notify-invoice-emails-in-slack/) [![n8n JSON](../../assets/n8n-json.svg)](templates/notify-invoice-emails-in-slack.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/notify-invoice-emails-in-slack.openflow.json) · [n8n JSON](templates/notify-invoice-emails-in-slack.n8n.json)
 
 ## Setup
 

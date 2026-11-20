@@ -2,12 +2,14 @@
 
 Route one submitted feedback message to a department in Discord. The model writes a short instruction for customer success, IT, or customer support, and the workflow sends it to that department’s channel.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/discord-feedback-router/) [![n8n JSON](../../assets/n8n-json.svg)](templates/discord-feedback-router.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/discord-feedback-router.openflow.json) · [n8n JSON](templates/discord-feedback-router.n8n.json)
 
 ## Setup and use
 

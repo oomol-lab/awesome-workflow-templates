@@ -2,12 +2,14 @@
 
 Create Outlook events for new Google Calendar events and delete their matching copies when cancelled.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/mirror-google-calendar-events-to-outlook/) [![n8n JSON](../../assets/n8n-json.svg)](templates/mirror-google-calendar-events-to-outlook.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/mirror-google-calendar-events-to-outlook.openflow.json) · [n8n JSON](templates/mirror-google-calendar-events-to-outlook.n8n.json)
 
 ## Setup
 

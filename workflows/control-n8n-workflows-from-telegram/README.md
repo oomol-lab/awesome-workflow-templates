@@ -2,12 +2,14 @@
 
 Start or stop two configured n8n workflows from an authorized Telegram chat.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/control-n8n-workflows-from-telegram/) [![n8n JSON](../../assets/n8n-json.svg)](templates/control-n8n-workflows-from-telegram.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/control-n8n-workflows-from-telegram.openflow.json) · [n8n JSON](templates/control-n8n-workflows-from-telegram.n8n.json)
 
 ## Setup
 

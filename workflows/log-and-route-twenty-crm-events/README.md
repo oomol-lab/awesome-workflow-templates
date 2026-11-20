@@ -2,12 +2,14 @@
 
 Log signed Twenty CRM record events and notify email for deletions or Slack for other changes.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/log-and-route-twenty-crm-events/) [![n8n JSON](../../assets/n8n-json.svg)](templates/log-and-route-twenty-crm-events.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/log-and-route-twenty-crm-events.openflow.json) · [n8n JSON](templates/log-and-route-twenty-crm-events.n8n.json)
 
 ## Setup
 

@@ -2,12 +2,14 @@
 
 Generate French speech from text, transcribe it, translate the transcript into English and generate English speech in the same voice.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/translate-french-speech-to-english-audio/) [![n8n JSON](../../assets/n8n-json.svg)](templates/translate-french-speech-to-english-audio.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/translate-french-speech-to-english-audio.openflow.json) · [n8n JSON](templates/translate-french-speech-to-english-audio.n8n.json)
 
 ## Setup and use
 

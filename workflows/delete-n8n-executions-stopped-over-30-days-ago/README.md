@@ -2,12 +2,14 @@
 
 Delete n8n execution records stopped before the date 30 days ago on a schedule or manually.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/delete-n8n-executions-stopped-over-30-days-ago/) [![n8n JSON](../../assets/n8n-json.svg)](templates/delete-n8n-executions-stopped-over-30-days-ago.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/delete-n8n-executions-stopped-over-30-days-ago.openflow.json) · [n8n JSON](templates/delete-n8n-executions-stopped-over-30-days-ago.n8n.json)
 
 ## Setup and use
 

@@ -2,12 +2,14 @@
 
 Reply to a Telegram message with a random cocktail photo and name.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/reply-with-a-random-cocktail-photo/) [![n8n JSON](../../assets/n8n-json.svg)](templates/reply-with-a-random-cocktail-photo.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/reply-with-a-random-cocktail-photo.openflow.json) · [n8n JSON](templates/reply-with-a-random-cocktail-photo.n8n.json)
 
 ## Setup
 

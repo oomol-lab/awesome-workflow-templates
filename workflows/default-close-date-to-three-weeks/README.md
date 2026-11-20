@@ -2,12 +2,14 @@
 
 Keep a date-like close date or default it to 21 calendar days from now.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/default-close-date-to-three-weeks/) [![n8n JSON](../../assets/n8n-json.svg)](templates/default-close-date-to-three-weeks.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/default-close-date-to-three-weeks.openflow.json) · [n8n JSON](templates/default-close-date-to-three-weeks.n8n.json)
 
 ## Setup and use
 

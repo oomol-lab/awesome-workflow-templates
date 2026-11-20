@@ -2,12 +2,14 @@
 
 Classify an unflagged Outlook message and move it to a matching folder.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/categorize-outlook-email-with-ai/) [![n8n JSON](../../assets/n8n-json.svg)](templates/categorize-outlook-email-with-ai.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/categorize-outlook-email-with-ai.openflow.json) · [n8n JSON](templates/categorize-outlook-email-with-ai.n8n.json)
 
 ## Setup
 

@@ -2,12 +2,14 @@
 
 Search a Confluence knowledge base and return the first matching result's title, article link, and excerpt.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/confluence-knowledge-search/) [![n8n JSON](../../assets/n8n-json.svg)](templates/confluence-knowledge-search.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/confluence-knowledge-search.openflow.json) · [n8n JSON](templates/confluence-knowledge-search.n8n.json)
 
 ## Setup and use
 

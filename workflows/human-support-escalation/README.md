@@ -2,12 +2,14 @@
 
 Check a supplied support request for an email address. Forward the request to a Slack support channel when it includes contact details, or return a prompt asking for an email address.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/human-support-escalation/) [![n8n JSON](../../assets/n8n-json.svg)](templates/human-support-escalation.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/human-support-escalation.openflow.json) · [n8n JSON](templates/human-support-escalation.n8n.json)
 
 ## Setup and use
 

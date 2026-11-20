@@ -4,6 +4,10 @@ Receive invoice data through a POST webhook protected by HTTP Basic authorizatio
 
 This template provides the original workflow's `send_email: false` path. Omit that field or set it to `false`. Other values return HTTP 422 before any Pennylane request. The source also contains an email delivery path with minute-long waits; that path is outside this template.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/pennylane-invoice-creator/) [![n8n JSON](../../assets/n8n-json.svg)](templates/pennylane-invoice-creator.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img src="preview-light.png" alt="Protected Pennylane invoice creation workflow">

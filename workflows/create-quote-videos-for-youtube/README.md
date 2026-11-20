@@ -2,12 +2,14 @@
 
 Combine a quote with a random video and music, upload a portrait clip and update its source sheet.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/create-quote-videos-for-youtube/) [![n8n JSON](../../assets/n8n-json.svg)](templates/create-quote-videos-for-youtube.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/create-quote-videos-for-youtube.openflow.json) · [n8n JSON](templates/create-quote-videos-for-youtube.n8n.json)
 
 ## Setup
 

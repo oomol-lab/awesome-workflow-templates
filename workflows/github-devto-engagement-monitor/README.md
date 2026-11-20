@@ -2,12 +2,14 @@
 
 Collect stars, forks, and open issue counts for two GitHub repositories, plus reactions and comments for one Dev.to article. The workflow produces one summary at 00:00 and 12:00 UTC.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/github-devto-engagement-monitor/) [![n8n JSON](../../assets/n8n-json.svg)](templates/github-devto-engagement-monitor.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/github-devto-engagement-monitor.openflow.json) · [n8n JSON](templates/github-devto-engagement-monitor.n8n.json)
 
 ## Setup
 

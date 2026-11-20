@@ -2,12 +2,14 @@
 
 Read the fields of all published entries in a Contentful environment.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/list-contentful-entry-fields/) [![n8n JSON](../../assets/n8n-json.svg)](templates/list-contentful-entry-fields.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/list-contentful-entry-fields.openflow.json) · [n8n JSON](templates/list-contentful-entry-fields.n8n.json)
 
 ## Setup and use
 

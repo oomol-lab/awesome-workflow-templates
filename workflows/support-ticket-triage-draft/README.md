@@ -2,6 +2,10 @@
 
 Classify incoming support tickets by category and urgency, draft a customer reply, and escalate urgent cases to Slack.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/support-ticket-triage-draft/)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Support Ticket Triage & Draft Reply workflow preview" src="preview-light.png">

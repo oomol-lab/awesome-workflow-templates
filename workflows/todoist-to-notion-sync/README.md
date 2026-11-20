@@ -2,12 +2,14 @@
 
 Copy labeled Todoist tasks into a Notion table. After creating the rows, add each Notion page link to its Todoist task and replace the routing label with `sent`.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/todoist-to-notion-sync/) [![n8n JSON](../../assets/n8n-json.svg)](templates/todoist-to-notion-sync.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/todoist-to-notion-sync.openflow.json) · [n8n JSON](templates/todoist-to-notion-sync.n8n.json)
 
 ## Setup
 

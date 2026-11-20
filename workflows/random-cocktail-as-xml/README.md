@@ -2,12 +2,14 @@
 
 Fetch a random cocktail from TheCocktailDB and return its recipe as XML.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/random-cocktail-as-xml/) [![n8n JSON](../../assets/n8n-json.svg)](templates/random-cocktail-as-xml.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/random-cocktail-as-xml.openflow.json) · [n8n JSON](templates/random-cocktail-as-xml.n8n.json)
 
 ## Setup
 

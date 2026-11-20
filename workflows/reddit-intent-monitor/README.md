@@ -2,6 +2,10 @@
 
 Scan Reddit discussions on a schedule, filter high-intent buyer or feedback posts with AI, and send a Slack digest.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/reddit-intent-monitor/)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Reddit Brand & Intent Radar workflow preview" src="preview-light.png">

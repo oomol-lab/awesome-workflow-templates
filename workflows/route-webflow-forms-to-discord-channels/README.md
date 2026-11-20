@@ -2,12 +2,14 @@
 
 Send each Webflow form submission to a matching Discord channel.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/route-webflow-forms-to-discord-channels/) [![n8n JSON](../../assets/n8n-json.svg)](templates/route-webflow-forms-to-discord-channels.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/route-webflow-forms-to-discord-channels.openflow.json) · [n8n JSON](templates/route-webflow-forms-to-discord-channels.n8n.json)
 
 ## Setup
 

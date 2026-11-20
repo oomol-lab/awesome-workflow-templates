@@ -2,12 +2,14 @@
 
 Send a SIGNL4 alert when a city’s current temperature is below 25°C.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/weather-temperature-to-signl4-alert/) [![n8n JSON](../../assets/n8n-json.svg)](templates/weather-temperature-to-signl4-alert.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/weather-temperature-to-signl4-alert.openflow.json) · [n8n JSON](templates/weather-temperature-to-signl4-alert.n8n.json)
 
 ## Setup
 

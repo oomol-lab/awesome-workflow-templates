@@ -22,12 +22,14 @@ There is one read and no pagination, automatic retry or stored history. A non-20
 - Use the canonical HTTPS endpoint in n8n's native HTTP step. The original Hacker News node used HTTP.
 - Read the plain `title` field instead of highlight markup, preserve missing text/points as `null`, and return a defined empty snapshot. Check the response before returning data. Add the item count alongside the JSON string.
 
+<!-- template-actions:start -->
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/hacker-news-popular-items/) [![n8n JSON](../../assets/n8n-json.svg)](templates/hacker-news-popular-items.n8n.json)
+<!-- template-actions:end -->
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow Hacker News snapshot workflow" src="preview-light.png">
 </picture>
-
-[Open Flow JSON](templates/hacker-news-popular-items.openflow.json) · [n8n JSON](templates/hacker-news-popular-items.n8n.json)
 
 Adapted from the independent Hacker News data branch of [AI chat with any data source (using the n8n workflow tool)](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/OpenAI_and_LLMs/AI%20chat%20with%20any%20data%20source%20(using%20the%20n8n%20workflow%20tool).json) in [Enes Cingoz's awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates), pinned to `827110332c21cbe000ab13f6d292d5adb1f1f8db`. Source collection notice: © 2024–2026 Enes Cingoz, [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). The export does not identify a separate template author or license. See [repository licensing](../../README.md#licensing).
 
