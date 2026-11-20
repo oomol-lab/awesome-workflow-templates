@@ -8,7 +8,7 @@ Analyze failed n8n executions with AI and email a diagnostic report.
 
 ## Setup
 
-Set the n8n instance URL in **Read execution ID**, bind the n8n API key as Secret Variable `N8N_API_KEY`, and connect an OpenAI model and Gmail. Set the recipient in **Email the report**; configure CC and BCC there if needed. Deploy the Open Flow webhook. In n8n create an error workflow with an Error Trigger and an HTTP Request that POSTs the complete error event as JSON to this webhook (set JSON Body to `={{ $json }}`), then select that error workflow in the source workflows. Do not assign the relay to itself. The webhook is a public entry point that triggers API reads, model calls and email.
+Set the n8n instance URL in **Read execution ID**, bind the n8n API key as Secret Variable `N8N_API_KEY`, and connect an OpenAI model and Gmail. Set the recipient in **Email the report**; configure CC and BCC there if needed. In n8n create an error workflow with an Error Trigger and an HTTP Request that POSTs the complete error event as JSON to this webhook (set JSON Body to `={{ $json }}`), then select that error workflow in the source workflows. Do not assign the relay to itself. The webhook is a public entry point that triggers API reads, model calls and email.
 
 For the n8n format, connect n8n API, OpenAI and Gmail credentials, set the recipient and optional CC/BCC, activate the workflow, and select it as the error workflow in the source workflows. Use one format for a given failure.
 
@@ -23,7 +23,7 @@ Execution data is read from n8n and may contain sensitive information in workflo
 
 ## Changes to the source
 
-- Open Flow accepts a relayed n8n error event and reads that n8n execution through its HTTP API; n8n retains its native error trigger.
+- the workflow accepts a relayed n8n error event and reads that n8n execution through its HTTP API; n8n retains its native error trigger.
 - Omit raw trigger data, credentials, node parameters and stacks from the model input; combine all matched node diagnoses into one plain-text email.
 
 Adapted from [Error Alert and Summarizer](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Error/0945_Error_Code_Send_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source report links to Real Simple Solutions; no separate original template license is stated.

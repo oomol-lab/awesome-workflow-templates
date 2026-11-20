@@ -3,16 +3,28 @@
 Receive webhook events from a GitLab project.
 
 <!-- template-actions:start -->
-[![n8n JSON](../../assets/n8n-json.svg)](templates/receive-gitlab-repository-events.n8n.json)
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/receive-gitlab-repository-events/) [![n8n JSON](../../assets/n8n-json.svg)](templates/receive-gitlab-repository-events.n8n.json)
 <!-- template-actions:end -->
 
-## Setup and use
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
+  <img alt="Open Flow workflow" src="preview-light.png">
+</picture>
 
-Connect GitLab and set the project owner and repository in **Gitlab Trigger**. Activate it to register the supported project webhook events.
+## Setup
+
+Connect gitlab in **Receive gitlab event** and configure the required resource IDs or event filters.
 
 ## Behavior
 
-The trigger emits the complete event body and request metadata. It registers GitLab hooks with TLS certificate verification disabled.
+The workflow triggers automatically on matching gitlab events and returns the normalized event payload as workflow output.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow, connect gitlab, and activate the trigger node.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

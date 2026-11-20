@@ -3,8 +3,13 @@
 Return a short text excerpt from a webhook request.
 
 <!-- template-actions:start -->
-[![n8n JSON](../../assets/n8n-json.svg)](templates/truncate-text-summary-webhook.n8n.json)
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/truncate-text-summary-webhook/) [![n8n JSON](../../assets/n8n-json.svg)](templates/truncate-text-summary-webhook.n8n.json)
 <!-- template-actions:end -->
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
+  <img alt="Open Flow workflow" src="preview-light.png">
+</picture>
 
 ## Setup and use
 
@@ -12,12 +17,23 @@ Neither endpoint verifies callers; restrict access as needed.
 
 ## Behavior
 
-Trim the text and return it as summary. Text longer than 240 characters is truncated to the first 240 characters followed by an ellipsis. Missing or empty text uses the source's example phrase.
+Trim the text and return it as summary. Text longer than 240 characters is truncated to the first 240 characters followed by an ellipsis. Missing or empty text uses the source's example phrase. The Open Flow webhook waits up to 60 seconds.
 
 The source also contains a disabled, disconnected OpenAI node. The default workflow uses the local truncation step and does not call an AI model.
 
 <details>
+<summary>In n8n</summary>
+
+Import the supplied n8n workflow. For n8n mode enable **Webhook** and disable **Open Flow relay webhook**. For Open Flow mode disable **Webhook**, enable the relay, set the deployed Open Flow webhook URL in **Forward complete request**, and activate n8n. Send a JSON POST containing text to the selected n8n production webhook. The n8n relay forwards the complete JSON body and waits for the Open Flow response.
+
+</details>
+
+<details>
 <summary>Inspiration &amp; credits</summary>
+
+## Changes to the source
+
+- Add an n8n relay for complete arbitrary JSON requests and synchronous Open Flow responses.
 
 Adapted from [Text summary webhook](https://github.com/Zie619/n8n-workflows/blob/94007c1445d9258a7da116646b79473e7c7c3282/workflows/Templates/9004_AI_Summarizer_Template_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

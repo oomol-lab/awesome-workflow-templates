@@ -8,7 +8,7 @@ Reactivate inactive n8n workflows tagged auto_resume:true.
 
 ## Setup and use
 
-Connect n8n with an API key allowed to list and activate workflows. Add the exact tag auto_resume:true to workflows you want this automation to manage. Run manually or enable the four-hour schedule; Open Flow uses UTC. Configure the n8n credential in the n8n format and use one format.
+Connect n8n with an API key allowed to list and activate workflows. Add the exact tag auto_resume:true to workflows you want this automation to manage. Configure the n8n credential in the n8n format and use one format.
 
 ## Behavior
 
@@ -19,7 +19,7 @@ Each run lists all pages of workflows with the tag and activates those reported 
 
 ## Changes to the source
 
-- Open Flow follows the n8n cursor and uses a UTC four-hour schedule.
+- the workflow follows the n8n cursor and uses a UTC four-hour schedule.
 
 Adapted from [Automatically resume tagged n8n workflows](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/1901_Manual_Filter_Automate_Scheduled.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

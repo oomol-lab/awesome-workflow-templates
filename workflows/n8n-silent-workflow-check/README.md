@@ -8,7 +8,7 @@ Find active n8n workflows whose latest observed execution is older than a config
 
 ## Setup
 
-For Open Flow, select the same n8n API connection in **Read workflow page** and **Read execution page**. Configure that connection with your instance address and API key, with read access to workflows and executions. Set `staleHours` in **Find silent workflows**; it starts at 26 hours. Confirm the schedule and timezone in **Every morning**, initially 08:00 UTC.
+Configure that connection with your instance address and API key, with read access to workflows and executions. Set `staleHours` in **Find silent workflows**; it starts at 26 hours. Confirm the schedule and timezone in **Every morning**, initially 08:00 UTC.
 
 For n8n, set `baseUrl` without a trailing slash and `staleHours` in **Configuration**. On **Get workflows** and **Get executions**, select a Header Auth credential with name `X-N8N-API-KEY` and your API key as its value. Confirm the workflow timezone before enabling it; the template starts at UTC.
 
@@ -23,10 +23,10 @@ This is a report based on observed execution history. It does not establish whet
 
 ## Changes to the source
 
-- Use native n8n Connector Actions in Open Flow, with authentication managed by the connection.
+- Use native n8n Connector Actions in the workflow, with authentication managed by the connection.
 - Return a consistent report for both empty and nonempty findings, and expose whether each response contains another cursor.
 - Reject a nonpositive or invalid silence threshold instead of silently substituting a default.
-- Set an explicit UTC schedule; the Open Flow check uses the scheduled timestamp as its observation time.
+- Set an explicit UTC schedule; the the workflow check uses the scheduled timestamp as its observation time.
 
 Adapted from [n8n Silent Workflow Check](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/devops/n8n%20Silent%20Workflow%20Check.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 

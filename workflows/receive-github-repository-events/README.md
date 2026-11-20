@@ -3,16 +3,28 @@
 Receive webhook events from a GitHub repository.
 
 <!-- template-actions:start -->
-[![n8n JSON](../../assets/n8n-json.svg)](templates/receive-github-repository-events.n8n.json)
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/receive-github-repository-events/) [![n8n JSON](../../assets/n8n-json.svg)](templates/receive-github-repository-events.n8n.json)
 <!-- template-actions:end -->
 
-## Setup and use
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
+  <img alt="Open Flow workflow" src="preview-light.png">
+</picture>
 
-Connect GitHub and set the repository owner and name in **Github Trigger**. Activate it to register the webhook for all repository events.
+## Setup
+
+Connect github in **Receive github event** and configure the required resource IDs or event filters.
 
 ## Behavior
 
-The trigger receives non-ping repository events and emits their complete body, request headers and query. GitHub delivers event types according to its webhook subscription and repository permissions.
+The workflow triggers automatically on matching github events and returns the normalized event payload as workflow output.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow, connect github, and activate the trigger node.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

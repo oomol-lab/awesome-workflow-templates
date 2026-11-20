@@ -19,7 +19,7 @@ The workflow follows every execution-list cursor and exports the available execu
 
 ## Changes to the source
 
-- Open Flow uses the n8n HTTP API and returns CSV text. The source's n8n format produces a binary CSV file.
+- the workflow uses the n8n HTTP API and returns CSV text. The source's n8n format produces a binary CSV file.
 
 Adapted from [Export n8n executions as CSV](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Converttofile/0508_Converttofile_Manual_Process_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

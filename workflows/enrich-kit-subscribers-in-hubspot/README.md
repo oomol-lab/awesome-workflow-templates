@@ -19,7 +19,7 @@ If a write result is unknown, inspect HubSpot before replay. In **Choose enrichm
 <details>
 <summary>Inspiration &amp; credits</summary>
 
-Added a Kit relay for Open Flow and checkpoints for writes.
+Added a Kit relay for the workflow and checkpoints for writes.
 
 Adapted from [Enrich Kit subscribers in HubSpot](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Filter/0431_Filter_Convertkit_Create_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

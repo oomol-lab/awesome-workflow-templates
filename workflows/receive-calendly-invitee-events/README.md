@@ -3,16 +3,28 @@
 Receive Calendly booking and cancellation events.
 
 <!-- template-actions:start -->
-[![n8n JSON](../../assets/n8n-json.svg)](templates/receive-calendly-invitee-events.n8n.json)
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/receive-calendly-invitee-events/) [![n8n JSON](../../assets/n8n-json.svg)](templates/receive-calendly-invitee-events.n8n.json)
 <!-- template-actions:end -->
 
-## Setup and use
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
+  <img alt="Open Flow workflow" src="preview-light.png">
+</picture>
 
-Connect Calendly. Select the subscription scope in **Calendly Trigger** and activate the workflow to register both booking and cancellation events. Calendly webhook availability depends on the account plan and permissions. Restrict access to the webhook endpoints.
+## Setup
+
+Connect calendly in **Receive calendly event** and configure the required resource IDs or event filters.
 
 ## Behavior
 
-The trigger emits the complete event for each invitee booking or cancellation. Events may contain personal information.
+The workflow triggers automatically on matching calendly events and returns the normalized event payload as workflow output.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow, connect calendly, and activate the trigger node.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

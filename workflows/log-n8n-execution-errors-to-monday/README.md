@@ -8,7 +8,7 @@ Create a Monday item for an n8n execution error and save its details in board co
 
 ## Setup
 
-Connect Monday and set the same board ID in **Create error item** and **Write error columns**, and the group ID in **Create error item**. Set four distinct column IDs for workflow name (text), escaped stack (long text), error message (text) and date (text) in **Prepare error details**. Deploy the Open Flow webhook. In the bundled n8n workflow, set **Choose delivery mode** to `relay` and configure the Open Flow URL in **Forward error to Open Flow**. Select this workflow as the error workflow for the workflows to monitor. Do not assign it to itself.
+Connect Monday and set the same board ID in **Create error item** and **Write error columns**, and the group ID in **Create error item**. Set four distinct column IDs for workflow name (text), escaped stack (long text), error message (text) and date (text) in **Prepare error details**. Select this workflow as the error workflow for the workflows to monitor. Do not assign it to itself.
 
 For n8n-only operation select `direct`, connect Monday, set its board and group, and configure the four column IDs in **Prepare Monday columns**. Use one mode. The webhook is unauthenticated and can create Monday items; restrict access to trusted callers.
 
@@ -21,7 +21,7 @@ An error event creates an item named with its execution ID, then fills columns w
 
 ## Changes to the source
 
-- Replace private board and placeholder columns with required configuration, use valid JSON for column values and add an optional n8n error-event relay for Open Flow.
+- Replace private board and placeholder columns with required configuration, use valid JSON for column values and add an optional n8n error-event relay for the workflow.
 
 Adapted from [Log n8n errors to Monday](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Error/0395_Error_Mondaycom_Update_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

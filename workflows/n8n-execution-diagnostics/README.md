@@ -8,7 +8,7 @@ Classify errors from an n8n execution without calling a model or an external ser
 
 ## Use
 
-In Open Flow, import the JSON and run it with two object inputs, `workflow` and `execution`. Another Open Flow workflow can supply these inputs through a Workflow step. In n8n, import it as a sub-workflow and pass one JSON item with the same two fields through Execute Sub-workflow. If multiple items are supplied to the n8n Code step, only the first is analyzed, matching the source.
+In n8n, import it as a sub-workflow and pass one JSON item with the same two fields through Execute Sub-workflow. If multiple items are supplied to the n8n Code step, only the first is analyzed, matching the source.
 
 ```json
 {
@@ -38,7 +38,7 @@ Common secret-like strings in error messages are redacted, whitespace is normali
 
 ## Changes to the source
 
-- Expose the two input objects and diagnosis fields as an Open Flow workflow contract while retaining the n8n sub-workflow entry.
+- Expose the two input objects and diagnosis fields as an the workflow workflow contract while retaining the n8n sub-workflow entry.
 - Reject an array supplied as the execution object.
 - Redact the complete token in an Authorization Bearer message before applying general key/value redaction.
 

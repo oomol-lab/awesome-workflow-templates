@@ -3,19 +3,35 @@
 Save ideas from a Slack slash command to Google Sheets and reply with a details link.
 
 <!-- template-actions:start -->
-[![n8n JSON](../../assets/n8n-json.svg)](templates/slack-ideas-to-google-sheets.n8n.json)
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/slack-ideas-to-google-sheets/) [![n8n JSON](../../assets/n8n-json.svg)](templates/slack-ideas-to-google-sheets.n8n.json)
 <!-- template-actions:end -->
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
+  <img alt="Open Flow workflow" src="preview-light.png">
+</picture>
 
 ## Setup and use
 
-Configure its Google Sheets URL and credentials. The sheet must have Name and Creator columns.
+Configure its Google Sheets URL and credentials. For Open Flow, set the relay URL in **Forward to Open Flow**, connect Google Sheets, and set the spreadsheet ID, sheet name and link. The sheet must have Name and Creator columns.
 
 ## Behavior
 
-The selected workflow upserts by Name, then posts a private response to Slack’s response URL. Slack response URLs and event data may appear in execution history. Slack has deprecated user_name; Creator depends on that field being present. If the sheet write or Slack response is uncertain, inspect the sheet and conversation before retrying. The command must receive Slack's acknowledgment within three seconds; network and server latency affect this.
+The Open Flow mode relays the entire form payload as JSON inside event. The selected workflow upserts by Name, then posts a private response to Slack’s response URL. Slack response URLs and event data may appear in execution history. Slack has deprecated user_name; Creator depends on that field being present. If the sheet write or Slack response is uncertain, inspect the sheet and conversation before retrying. The command must receive Slack's acknowledgment within three seconds; network and server latency affect this.
+
+<details>
+<summary>In n8n</summary>
+
+Create a Slack slash command named /idea pointing to the n8n webhook URL. Import the n8n workflow and configure its Google Sheets URL and credentials. Set executionMode in **Set me up** to n8n to process there, or openflow to forward the complete Slack form payload to Open Flow. Activate the n8n webhook and choose one mode. n8n accepts the slash command and acknowledges it before executing the selected branch. The n8n webhook and Open Flow relay do not verify the sender; restrict access to both endpoints.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>
+
+## Changes to the source
+
+- Add an n8n mode selector and full-event relay for Open Flow, replace the sample spreadsheet and retain Name-keyed upsert.
 
 Adapted from [Slack ideas to Google Sheets](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Http/0441_HTTP_GoogleSheets_Create_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

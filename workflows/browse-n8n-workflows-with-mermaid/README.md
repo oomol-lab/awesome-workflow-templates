@@ -8,11 +8,11 @@ Browse an n8n instance’s workflows and render their node connections as Mermai
 
 ## Setup
 
-Connect an n8n API account with permission to read workflows on a publicly reachable HTTPS instance, set the n8n instance URL in **Render dashboard or diagram**, and deploy the Open Flow GET webhook. In the bundled n8n workflow set **Fetch Open Flow response** to the deployed Open Flow webhook URL, enable **Open Flow dashboard webhook**, and open its production URL. Restrict both webhook URLs to intended dashboard users. The relay serves the HTML and Mermaid text responses; the direct Open Flow endpoint returns text/plain. The n8n sandbox gives the page an opaque origin, so its diagram requests use Origin null; allow that origin and use access restrictions that do not require browser cookies. For the direct n8n format set the instance URL in **Render dashboard**, connect its API credential to **List workflows** and **Single workflow**, activate its separate webhook, and restrict access. Use one format.
+Restrict both webhook URLs to intended dashboard users. The n8n sandbox gives the page an opaque origin, so its diagram requests use Origin null; allow that origin and use access restrictions that do not require browser cookies. For the direct n8n format set the instance URL in **Render dashboard**, connect its API credential to **List workflows** and **Single workflow**, activate its separate webhook, and restrict access. Use one format.
 
 ## Use
 
-Open the webhook URL to see workflow names. Select **Show workflow** to fetch the selected graph and render it with Mermaid. The page loads Mermaid from jsDelivr. The list follows all available pages; Open Flow stops above 10,000 workflows instead of truncating. Sticky notes are omitted from diagrams. The dashboard shares workflow names and node connections with anyone who can access the webhook; node credentials and parameters are not included in its output. Workflow execution histories can contain the retrieved configuration.
+Open the webhook URL to see workflow names. Select **Show workflow** to fetch the selected graph and render it with Mermaid. The page loads Mermaid from jsDelivr. Sticky notes are omitted from diagrams. The dashboard shares workflow names and node connections with anyone who can access the webhook; node credentials and parameters are not included in its output. Workflow execution histories can contain the retrieved configuration.
 
 <details>
 <summary>Inspiration &amp; credits</summary>

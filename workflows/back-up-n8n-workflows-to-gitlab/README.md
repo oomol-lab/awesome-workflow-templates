@@ -8,11 +8,11 @@ Back up tagged n8n workflows to GitLab on demand or weekly, writing only new or 
 
 ## Setup
 
-Connect n8n with workflow read access and GitLab with repository API read/write permission. In **Configure the backup**, set the GitLab owner, project, existing directory path and one or more comma-separated n8n tags to match. A workflow must have all listed tags. The GitLab project must have a **main** branch. In n8n, configure the same values and connections. Run manually or activate the weekly schedule; activate one format. Both schedules use Saturday 21:30 UTC as a starting point. Open Flow runs on the minute boundary; n8n uses a fixed second within that minute.
+Connect n8n with workflow read access and GitLab with repository API read/write permission. In **Configure the backup**, set the GitLab owner, project, existing directory path and one or more comma-separated n8n tags to match. A workflow must have all listed tags. The GitLab project must have a **main** branch. In n8n, configure the same values and connections. Run manually or activate the weekly schedule; activate one format. Both schedules use Saturday 21:30 UTC as a starting point.
 
 ## Behavior
 
-The workflow lists matching n8n workflows, keeps ASCII letters and digits from each name to form a JSON filename, then creates or updates files under the directory on the main branch. Unchanged files are skipped. Empty or colliding filenames stop the run before any writes. Open Flow checks the GitLab project and branch and uses the last known commit ID when updating; a concurrent file edit causes the update to fail. The n8n GitLab node does not supply that precondition, so avoid concurrent edits when using n8n. Backups can contain sensitive workflow data; use a private repository with suitable access. Collected workflow data and each file response must fit the execution limits.
+The workflow lists matching n8n workflows, keeps ASCII letters and digits from each name to form a JSON filename, then creates or updates files under the directory on the main branch. Unchanged files are skipped. Empty or colliding filenames stop the run before any writes. The n8n GitLab node does not supply that precondition, so avoid concurrent edits when using n8n. Backups can contain sensitive workflow data; use a private repository with suitable access. Collected workflow data and each file response must fit the execution limits.
 
 A failed or uncertain write may already have committed, and earlier writes are not rolled back. Inspect the repository before retrying. Concurrent runs can still race on new files; no automatic write retries are added.
 
@@ -22,7 +22,7 @@ A failed or uncertain write may already have committed, and earlier writes are n
 ## Changes to the source
 
 - Replace repository defaults, use an explicit UTC schedule, follow all matching workflow pages and reject colliding filenames. The commit message is fixed rather than including run mode and time.
-- Open Flow uses the GitLab Provider API Request for repository files because the formal catalog has no file Actions; it verifies the project and branch before treating a missing file as new and uses the last commit ID on updates.
+- the workflow uses the GitLab Provider API Request for repository files because the formal catalog has no file Actions; it verifies the project and branch before treating a missing file as new and uses the last commit ID on updates.
 
 Adapted from [Back Up n8n Workflows to GitLab](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Gitlab/0557_Gitlab_Filter_Create_Scheduled.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n community listing](https://n8n.io/workflows/2376-backup-tag-selected-workflows-to-gitlab/) credits Hubschrauber. The original template does not state a separate license.
 

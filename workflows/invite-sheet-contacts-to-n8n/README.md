@@ -16,7 +16,7 @@ In n8n select Sheets and n8n credentials, set the sheet and n8n URL, and name th
 
 At 00:00 UTC daily, compare email addresses against all n8n users and invite missing users as members. Email addresses are normalized to lowercase and duplicate rows are processed once. Invitations can send email and add users to the instance. The API key and account must have the required user-management access.
 
-Checkpoint records persist and prevent a later automatic invitation for the same address even if that user is removed; clear a confirmed record deliberately when reinvitation is wanted. Pending checkpoints prevent an automatic resend when an invitation fails or has an unknown outcome. Inspect n8n before resolving it. In Open Flow enter the pending email in **Select next invitation → acknowledgeEmail** to mark it handled after checking, then clear the field. In n8n mark the Data Table row sent if handled or delete it only after confirming that a retry is safe. The results include whether each email was sent and may include an invitation link when email delivery is unavailable; protect the results and execution history.
+Checkpoint records persist and prevent a later automatic invitation for the same address even if that user is removed; clear a confirmed record deliberately when reinvitation is wanted. Pending checkpoints prevent an automatic resend when an invitation fails or has an unknown outcome. Inspect n8n before resolving it. In n8n mark the Data Table row sent if handled or delete it only after confirming that a retry is safe. The results include whether each email was sent and may include an invitation link when email delivery is unavailable; protect the results and execution history.
 
 <details>
 <summary>Inspiration &amp; credits</summary>
@@ -24,7 +24,7 @@ Checkpoint records persist and prevent a later automatic invitation for the same
 ## Changes to the source
 
 - Configure the sheet and instance, normalize duplicate addresses, and reserve each invitation before writing.
-- Open Flow uses UTC; the original schedule used the n8n instance timezone.
+- the workflow uses UTC; the original schedule used the n8n instance timezone.
 
 Adapted from [Invite spreadsheet contacts to n8n](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Code/0794_Code_Schedule_Create_Scheduled.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

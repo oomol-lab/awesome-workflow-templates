@@ -12,9 +12,9 @@ Connect Google Drive with access to My Drive and enable persistent State. Set th
 
 ## Behavior
 
-At 00:00 UTC each day, list n8n workflows, find or create the root folders n8n_backups and n8n_old, move existing JSON backups into n8n_old and write current workflow JSON into n8n_backups.  Duplicate folder names stop the Open Flow run for manual resolution. Workflow definitions may contain sensitive operational information; protect State, the Drive folders and execution history.
+At 00:00 UTC each day, list n8n workflows, find or create the root folders n8n_backups and n8n_old, move existing JSON backups into n8n_old and write current workflow JSON into n8n_backups. Workflow definitions may contain sensitive operational information; protect State, the Drive folders and execution history.
 
-Each Drive write is checkpointed before it is attempted. If an outcome is unknown, inspect the relevant Drive file or folder before clearing the pending State entry in Open Flow or resolving the pending Data Table row in n8n. Earlier writes remain. Runs must not overlap.
+Each Drive write is checkpointed before it is attempted. Earlier writes remain. Runs must not overlap.
 
 The source includes an unconnected 30-day cleanup chain. It is not scheduled here.
 
@@ -23,7 +23,7 @@ The source includes an unconnected 30-day cleanup chain. It is not scheduled her
 
 ## Changes to the source
 
-- Fix the folder association, use the current n8n HTTP API in Open Flow, paginate reads, and add write checkpoints. Set the schedule to UTC.
+- Fix the folder association, use the current n8n HTTP API in the workflow, paginate reads, and add write checkpoints. Set the schedule to UTC.
 
 Adapted from [Back up n8n workflows to Google Drive](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Code/0605_Code_Itemlists_Create_Scheduled.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source credits Nuntius Creative Hub. No separate original template license is stated.
 

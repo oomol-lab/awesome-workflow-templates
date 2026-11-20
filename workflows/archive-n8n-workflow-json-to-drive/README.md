@@ -12,9 +12,9 @@ Connect n8n's public API and Google Drive, set the existing folder ID in **Reser
 
 ## Behavior
 
-The manual trigger or daily 02:30 UTC schedule lists all workflow pages, reads each workflow by ID, and uploads its JSON to the selected Drive folder. Each file is named using its workflow name and ID to distinguish duplicate names. Open Flow creates at most one backup per workflow per UTC day. Configure the schedule timezone for your environment. Workflow exports can contain private configuration, pinned data and credential references; restrict folder and execution-history access. Open Flow Code input/output and the accumulated workflow list must each fit 1 MiB.
+The manual trigger or daily 02:30 UTC schedule lists all workflow pages, reads each workflow by ID, and uploads its JSON to the selected Drive folder. Each file is named using its workflow name and ID to distinguish duplicate names. Configure the schedule timezone for your environment. Workflow exports can contain private configuration, pinned data and credential references; restrict folder and execution-history access.
 
-If a Drive upload result is unknown, inspect the folder before retrying. In Open Flow enter the pending key and confirmed or absent in **Reserve Drive backup**, rerun that UTC day, then clear the fields. In n8n inspect the pending Data Table row, complete missing work manually, mark done only after confirmation, or delete only if no upload occurred. Earlier uploads remain.
+If a Drive upload result is unknown, inspect the folder before retrying. In n8n inspect the pending Data Table row, complete missing work manually, mark done only after confirmation, or delete only if no upload occurred. Earlier uploads remain.
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -3,19 +3,35 @@
 Sync invitees and guests to KlickTipp when a Calendly event is booked or canceled.
 
 <!-- template-actions:start -->
-[![n8n JSON](../../assets/n8n-json.svg)](templates/sync-calendly-bookings-to-klicktipp.n8n.json)
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/sync-calendly-bookings-to-klicktipp/) [![n8n JSON](../../assets/n8n-json.svg)](templates/sync-calendly-bookings-to-klicktipp.n8n.json)
 <!-- template-actions:end -->
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
+  <img alt="Open Flow workflow" src="preview-light.png">
+</picture>
 
 ## Setup and use
 
-Set the opt-in process, booking and cancellation tags, and custom fields on each KlickTipp node. Activate the workflow to register Calendly booking and cancellation webhooks. Replace YOUR_FIELD214142_ID in the cancellation expressions with the configured guest field ID. Configure matching custom field types in KlickTipp; the guests field stores a JSON array.
+Set the opt-in process, booking and cancellation tags, and custom fields on each KlickTipp node. Activate the workflow to register Calendly booking and cancellation webhooks. Disconnect **New Calendly event** from **Convert data for KlickTipp** when using the relay. Replace YOUR_FIELD214142_ID in the cancellation expressions with the configured guest field ID. Configure matching custom field types in KlickTipp; the guests field stores a JSON array.
 
 ## Behavior
 
-On booking, the workflow writes the invitee's appointment fields and guest addresses, then updates each guest. On cancellation it reads the saved addresses, applies the cancellation tag to the invitee and guests, and clears the guest list unless the booking was rescheduled. The Calendly trigger does not verify webhook signatures; restrict endpoint access. Event and contact details may appear in execution history. A failed or unknown write may have already changed contacts; inspect KlickTipp before retrying.
+On booking, the workflow writes the invitee's appointment fields and guest addresses, then updates each guest. On cancellation it reads the saved addresses, applies the cancellation tag to the invitee and guests, and clears the guest list unless the booking was rescheduled. The Calendly trigger does not verify webhook signatures; restrict endpoint access. Each Open Flow HTTP request must receive its complete response within 30 seconds. Event and contact details may appear in execution history. A failed or unknown write may have already changed contacts; inspect KlickTipp before retrying.
+
+<details>
+<summary>In n8n</summary>
+
+Configure the Calendly Trigger and KlickTipp community node in n8n. For Open Flow, bind the secret Variables KLICKTIPP_USERNAME and KLICKTIPP_PASSWORD, configure the IDs and field names in **Sync invitee and guests**, and enable **Forward to Open Flow** in n8n. Reconnect it and disable the relay when using n8n directly.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>
+
+## Changes to the source
+
+- Add an optional n8n relay and replace account-specific identifiers with placeholders. Store guest addresses as JSON, handle missing guests and reminder numbers, map guest rescheduling to the reschedule URL, and use the local date fields for the invitee.
 
 Adapted from [Calendly bookings to KlickTipp](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Calendly/0660_Calendly_Noop_Create_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The [original n8n template](https://n8n.io/workflows/2620-calendly-to-klicktipp-integration/) credits KlickTipp as its author. The source export does not identify a separate template license.
 

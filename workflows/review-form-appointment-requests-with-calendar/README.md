@@ -19,7 +19,7 @@ If a write outcome is unknown, inspect Gmail or Calendar before retrying. Enter 
 <details>
 <summary>Inspiration &amp; credits</summary>
 
-Retain the form and human approval in n8n and use the approved decision to trigger the matching Open Flow action. Include the year and timezone in selected dates and correct the meeting duration to 30 minutes.
+Retain the form and human approval in n8n and use the approved decision to trigger the matching the workflow action. Include the year and timezone in selected dates and correct the meeting duration to 30 minutes.
 
 Adapted from [Appointment request with AI qualification and human approval](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Googlecalendar/1620_GoogleCalendar_Form_Automation_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

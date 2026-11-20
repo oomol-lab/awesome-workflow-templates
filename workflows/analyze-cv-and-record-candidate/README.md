@@ -21,7 +21,7 @@ Adapted from [AI Automated HR Workflow for CV Analysis and Candidate Evaluation]
 
 Source collection notice: © 2024–2026 Enes Cingoz, [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). The source export does not identify a separate template author or license. See [repository licensing](../../README.md#licensing) for the scope of OOMOL contributions and third-party material.
 
-Changes from source: Fix the form name and candidate field mappings, consolidate factual extraction and summary, remove automated candidate scoring, update the model and add an Open Flow relay with write checkpoints.
+Changes from source: Fix the form name and candidate field mappings, consolidate factual extraction and summary, remove automated candidate scoring, update the model.
 
 Collection license notice:
 

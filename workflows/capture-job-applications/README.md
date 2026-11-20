@@ -21,7 +21,7 @@ Adapted from [HR Job Posting and Evaluation with AI](https://github.com/enescing
 
 Source collection notice: © 2024–2026 Enes Cingoz, [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). The source export does not identify a separate template author or license. See [repository licensing](../../README.md#licensing) for the scope of OOMOL contributions and third-party material.
 
-Changes from source: Isolate form intake, remove automated scoring and hiring decisions, add Open Flow relay and write checkpoints, and preserve phone numbers as text.
+Changes from source: Isolate form intake, remove automated scoring and hiring decisions, add the workflow relay and write checkpoints, and preserve phone numbers as text.
 
 Collection license notice:
 

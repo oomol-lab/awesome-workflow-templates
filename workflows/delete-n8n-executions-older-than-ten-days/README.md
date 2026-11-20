@@ -19,7 +19,7 @@ The workflow collects execution IDs from every page, then permanently deletes th
 
 ## Changes to the source
 
-- Open Flow collects pages before deletion and uses the n8n REST API to list and delete executions.
+- the workflow collects pages before deletion and uses the n8n REST API to list and delete executions.
 
 Adapted from [Delete n8n executions older than ten days](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/0662_Manual_Schedule_Automation_Scheduled.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

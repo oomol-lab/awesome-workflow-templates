@@ -3,16 +3,28 @@
 Receive workspace events from ClickUp.
 
 <!-- template-actions:start -->
-[![n8n JSON](../../assets/n8n-json.svg)](templates/receive-clickup-workspace-events.n8n.json)
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/receive-clickup-workspace-events/) [![n8n JSON](../../assets/n8n-json.svg)](templates/receive-clickup-workspace-events.n8n.json)
 <!-- template-actions:end -->
 
-## Setup and use
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
+  <img alt="Open Flow workflow" src="preview-light.png">
+</picture>
 
-Connect ClickUp and set the workspace ID in **ClickUp Trigger**.
+## Setup
+
+Connect clickup in **Receive clickup event** and configure the required resource IDs or event filters.
 
 ## Behavior
 
-The trigger emits each complete ClickUp event for the configured workspace. Event details may appear in execution history.
+The workflow triggers automatically on matching clickup events and returns the normalized event payload as workflow output.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow, connect clickup, and activate the trigger node.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

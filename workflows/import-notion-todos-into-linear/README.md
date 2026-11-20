@@ -3,12 +3,17 @@
 Create Linear issues from unchecked Notion to-dos, including their nested contents, and add issue links back.
 
 <!-- template-actions:start -->
-[![n8n JSON](../../assets/n8n-json.svg)](templates/import-notion-todos-into-linear.n8n.json)
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/import-notion-todos-into-linear/) [![n8n JSON](../../assets/n8n-json.svg)](templates/import-notion-todos-into-linear.n8n.json)
 <!-- template-actions:end -->
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
+  <img alt="Open Flow workflow" src="preview-light.png">
+</picture>
 
 ## Setup
 
-Connect Notion and Linear. Configure the AI model. For both Linear HTTP nodes configure HTTP Header Auth with name `Authorization` and your Linear API key as its value.
+Connect Notion and Linear. Set the secret Variable LINEAR_API_KEY to a Linear API key for reading teams and members, and use the same Linear account for issue creation. Configure the AI model.
 
 ## Behavior
 
@@ -17,7 +22,18 @@ Enter a Notion page URL and an exact Linear team name. Unchecked to-do blocks wi
 Before each Linear write the to-do is marked [In Linear pending]. An interrupted or uncertain write may have created the issue. Inspect Linear and the Notion block, then manually add the issue link if it exists or remove the pending marker if it does not. Do not overlap imports or edit those blocks during an import.
 
 <details>
+<summary>In n8n</summary>
+
+Import the n8n workflow to use its form.
+
+</details>
+
+<details>
 <summary>Inspiration &amp; credits</summary>
+
+## Changes to the source
+
+- Match team names exactly and assign only unique member matches. Paginate Notion reads, match team names exactly and mark pending before issue creation. Open Flow paginates Linear members; n8n considers the first 100 team members. The two Linear lookups use HTTP POST requests with Header Auth.
 
 Adapted from [Import Notion design reviews into Linear](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Code/0438_Code_Filter_Create_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

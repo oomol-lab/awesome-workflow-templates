@@ -3,18 +3,30 @@
 Review GitLab merge request changes and send the findings to the merge request and team.
 
 <!-- template-actions:start -->
-[![n8n JSON](../../assets/n8n-json.svg)](templates/review-gitlab-merge-requests-and-notify.n8n.json)
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/review-gitlab-merge-requests-and-notify/) [![n8n JSON](../../assets/n8n-json.svg)](templates/review-gitlab-merge-requests-and-notify.n8n.json)
 <!-- template-actions:end -->
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
+  <img alt="Open Flow workflow" src="preview-light.png">
+</picture>
 
 ## Setup
 
-Connect GitLab, an AI model and Gmail. Enable TLS verification on the registered GitLab webhook. Protect execution history, which may contain the GitLab webhook token, source code and report.
+Connect GitLab, an AI model and Gmail. Use one mode and restrict access to the relay webhook. Enable TLS verification on the registered GitLab webhook. Protect execution history, which may contain the GitLab webhook token, source code and report.
 
 ## Behavior
 
-A merge request event fetches its changes. Empty changes produce no report. The AI report includes risks, recommendations, issues, a diff table and QA test cases. It is sent to the merge request and configured team, including the last commit author when supplied. Review the analysis before acting; the model does not execute tests. Source code is sent to the model. The changes and each Code input/output must fit 1 MiB.
+A merge request event fetches its changes. Empty changes produce no report. The AI report includes risks, recommendations, issues, a diff table and QA test cases. It is sent to the merge request and configured team, including the last commit author when supplied. Review the analysis before acting; the model does not execute tests. Source code is sent to the model. The changes and each Code input/output must fit 1 MiB. Open Flow checkpoints by project, merge request, commit and operation; repeated events for the same commit are not re-posted.
 
-If a comment or email outcome is unknown, inspect GitLab or Gmail. Prevent overlapping runs for the same merge request.
+If a comment or email outcome is unknown, inspect GitLab or Gmail. In the corresponding Open Flow reserve node, enter the pending key and confirmed or absent, replay the event and clear both fields. Prevent overlapping runs for the same merge request.
+
+<details>
+<summary>In n8n</summary>
+
+Import n8n and connect GitLab, an AI model and Gmail. Set the GitLab project and team recipients, then choose a Data Table with item_key and status text columns. For Open Flow, choose relay mode in n8n, set its deployed webhook URL, connect GitLab and Gmail, select an AI model, configure project-specific and global recipients in **Select recipients**, and enable persistent State. In n8n mark the pending Data Table row done only after confirmation, or delete it only after confirming no write.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

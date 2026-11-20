@@ -12,7 +12,7 @@ Connect n8n and Telegram. Set the n8n workflow ID in **Get the selected workflow
 
 ## Behavior
 
-The workflow reads the selected n8n workflow's execution history and sends one Telegram message listing executions that started in the past seven days and have status `error` or `crashed`. Waiting, running and successful executions are excluded. No matches send nothing. Execution history depends on the n8n instance's retention and API access. Open Flow uses the scheduled occurrence as the end of the seven-day window; n8n uses its actual execution time, so delayed runs can differ. Open Flow keeps the read pages in the run and is subject to its execution limits. A report longer than 4,096 characters stops rather than silently truncating. A lost Telegram response may still mean a message was delivered; inspect the chat before replaying.
+The workflow reads the selected n8n workflow's execution history and sends one Telegram message listing executions that started in the past seven days and have status `error` or `crashed`. Waiting, running and successful executions are excluded. No matches send nothing. Execution history depends on the n8n instance's retention and API access. A report longer than 4,096 characters stops rather than silently truncating. A lost Telegram response may still mean a message was delivered; inspect the chat before replaying.
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -3,16 +3,28 @@
 Receive change events for an Asana task or project.
 
 <!-- template-actions:start -->
-[![n8n JSON](../../assets/n8n-json.svg)](templates/receive-asana-resource-events.n8n.json)
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/receive-asana-resource-events/) [![n8n JSON](../../assets/n8n-json.svg)](templates/receive-asana-resource-events.n8n.json)
 <!-- template-actions:end -->
 
-## Setup and use
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
+  <img alt="Open Flow workflow" src="preview-light.png">
+</picture>
 
-Connect Asana and set the task or project ID in **Asana-Trigger**. Activate it to register the webhook; its URL must be publicly reachable by Asana. Restrict access to the webhook endpoints.
+## Setup
+
+Connect asana in **Receive asana event** and configure the required resource IDs or event filters.
 
 ## Behavior
 
-Asana may deliver several events together. Event details may appear in execution history.
+The workflow triggers automatically on matching asana events and returns the normalized event payload as workflow output.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow, connect asana, and activate the trigger node.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

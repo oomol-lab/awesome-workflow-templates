@@ -3,15 +3,35 @@
 Generate an audio response from text and an ElevenLabs voice ID.
 
 <!-- template-actions:start -->
-[![n8n JSON](../../assets/n8n-json.svg)](templates/elevenlabs-voice-generation-webhook.n8n.json)
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/elevenlabs-voice-generation-webhook/) [![n8n JSON](../../assets/n8n-json.svg)](templates/elevenlabs-voice-generation-webhook.n8n.json)
 <!-- template-actions:end -->
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
+  <img alt="Open Flow workflow" src="preview-light.png">
+</picture>
+
+## Setup and use
+
+For Open Flow connect ElevenLabs and set its webhook URL in **Forward to Open Flow**.
 
 ## Behavior
 
-The selected path synthesizes speech and returns the audio bytes to the caller. Both webhooks do not authenticate callers; restrict access because calls use ElevenLabs. The text and transit URL can appear in execution history. If a response is lost, generation may already have occurred; inspect ElevenLabs before retrying.
+The selected path synthesizes speech and returns the audio bytes to the caller. The Open Flow webhook waits up to 60 seconds; long requests may exceed that window and still complete. Both webhooks do not authenticate callers; restrict access because calls use ElevenLabs. The text and transit URL can appear in execution history. If a response is lost, generation may already have occurred; inspect ElevenLabs before retrying.
+
+<details>
+<summary>In n8n</summary>
+
+Import the supplied n8n workflow. Set **Choose execution mode** to n8n for its native path or openflow to send the complete request to Open Flow. Configure ElevenLabs HTTP Header Auth in n8n with header name xi-api-key and your API key as its value. Activate n8n and POST JSON containing voice_id and text to its webhook. Open Flow returns the generated transit file URL to n8n, which downloads the bytes and returns them.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>
+
+## Changes to the source
+
+- Fix input checks and request serialization, explicitly request binary audio in n8n, and add a full-request Open Flow relay with a binary response bridge.
 
 Adapted from [Generate Text-to-Speech Using Elevenlabs via API](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Http/1473_HTTP_Respondtowebhook_Create_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source credits The n8Ninja. No separate original template license was found.
 

@@ -14,7 +14,7 @@ Create a dedicated Google Drive parent folder used only for these backups. **Cle
 
 Every four hours or on manual execution, the workflow creates a new backup folder and saves each n8n workflow as a JSON file. After every upload succeeds, it lists up to the first 50 folders named with the prefix `Workflow Backups ` in the parent folder and permanently deletes the returned old backup folders, keeping the new folder. More matching folders can remain outside that first page. Ordinary files and nonmatching folders are not deleted. If no workflows are returned, it leaves the new empty folder and does not delete anything. A later read or upload failure can leave a partial new folder; cleanup does not start. A later cleanup failure can leave some prior items already deleted.
 
-A failed or uncertain create, upload or deletion may have succeeded. Inspect Drive before retrying. Open Flow reads and uploads one workflow at a time; a workflow that exceeds its per-node size limit fails before cleanup. Backup JSON can contain sensitive workflow data; restrict Drive access. Concurrent runs or external changes in the parent folder can cause data loss, so keep runs non-overlapping and the folder dedicated. Open Flow uses UTC minute boundaries; n8n uses a fixed second within the scheduled minute. n8n retains the source's automatic retry for reading workflows; Open Flow does not add a read retry.
+A failed or uncertain create, upload or deletion may have succeeded. Inspect Drive before retrying. Backup JSON can contain sensitive workflow data; restrict Drive access. Concurrent runs or external changes in the parent folder can cause data loss, so keep runs non-overlapping and the folder dedicated.
 
 <details>
 <summary>Inspiration &amp; credits</summary>

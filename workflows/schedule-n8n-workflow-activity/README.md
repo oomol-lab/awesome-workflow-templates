@@ -8,11 +8,11 @@ Activate an n8n workflow each morning and deactivate it each evening.
 
 ## Setup
 
-Connect n8n with permission to activate and deactivate the target workflow. In Open Flow, create a Variable named `N8N_TARGET_WORKFLOW_ID` containing its workflow ID and bind it to both **Validate activation target** and **Validate deactivation target**. In n8n, set the target ID in **Workflow ID** and connect the n8n credential to both action nodes. The target must be a different workflow from this scheduler, or deactivation would stop the scheduler itself. Activate one format.
+Connect n8n with permission to activate and deactivate the target workflow. In n8n, set the target ID in **Workflow ID** and connect the n8n credential to both action nodes. The target must be a different workflow from this scheduler, or deactivation would stop the scheduler itself. Activate one format.
 
 ## Behavior
 
-The workflow activates the selected n8n workflow daily at 08:00 UTC and deactivates it daily at 20:00 UTC. Open Flow runs at the minute boundary; n8n uses a fixed second within that minute selected at registration. Adjust both schedules and time zones to your operating hours. Both actions check the returned workflow ID and active state. In n8n 2.x, these API operations publish and unpublish a workflow. Review the target draft and version before enabling this schedule. Access to the n8n public API and permission for the target are required; availability depends on the n8n plan and instance configuration.
+The workflow activates the selected n8n workflow daily at 08:00 UTC and deactivates it daily at 20:00 UTC. Adjust both schedules and time zones to your operating hours. Both actions check the returned workflow ID and active state. In n8n 2.x, these API operations publish and unpublish a workflow. Review the target draft and version before enabling this schedule. Access to the n8n public API and permission for the target are required; availability depends on the n8n plan and instance configuration.
 
 A failed or lost response may still mean the requested status change occurred. Check the target in n8n before retrying. This schedule controls activation; it does not stop executions already running or guarantee that scheduled jobs were processed while the target was inactive.
 

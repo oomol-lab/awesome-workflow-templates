@@ -3,20 +3,30 @@
 Save unread email PDF invoices to Drive and append extracted invoice details to a reconciliation sheet.
 
 <!-- template-actions:start -->
-[![n8n JSON](../../assets/n8n-json.svg)](templates/archive-gmail-invoices-in-drive-and-sheets.n8n.json)
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/archive-gmail-invoices-in-drive-and-sheets/) [![n8n JSON](../../assets/n8n-json.svg)](templates/archive-gmail-invoices-in-drive-and-sheets.n8n.json)
 <!-- template-actions:end -->
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
+  <img alt="Open Flow workflow" src="preview-light.png">
+</picture>
 
 ## Setup
 
-Connect Gmail and Google Drive. Configure the destination folder, a Google Sheet with Invoice date, Invoice Description, Total price and Fichero columns. Prevent overlapping runs.
-
-Protect the webhook at your deployment boundary.
+Connect Gmail, Encodian, Google Drive, Google Sheets and the AI model. Set the destination Drive folder ID in **Choose the next attachment**, configure your transit hostname in **Verify complete attachment**, and set the target `spreadsheetId` and `range` in **Prepare reconciliation row**. Enable persistent State.
 
 ## Behavior
 
-Each unread message with a PDF saves its first PDF to Drive, extracts readable text, records the date, saved filename, total and Drive link, then marks the message read. Messages with no PDF are marked read without creating a row. Review extracted values; model output can be wrong. Scanned PDFs need OCR. Invoice text goes to the model; execution histories and Drive/Sheets contain sensitive data. Restrict access and apply retention rules.
+The workflow polls unread Gmail messages every minute, downloads each PDF attachment, uploads the original file to Google Drive, extracts its text layer via Encodian, uses the AI model to extract the invoice date and total, appends the reconciliation row to Google Sheets, and marks the message read. Non-PDF attachments are skipped.
 
-If a write has an unknown outcome, inspect Drive, Sheets and Gmail before retrying. Do not overlap executions.
+Review extracted values; model output can be wrong, and scanned PDFs without a text layer require OCR. Extracted PDF text must fit within 15,800 characters and the 1 MiB Code execution limit.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow and connect Gmail, Google Drive, OpenAI and Google Sheets. Set the destination folder ID in **Save invoice PDF** and the target spreadsheet ID in **Append to Reconciliation Sheet**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

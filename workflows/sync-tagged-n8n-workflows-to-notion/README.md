@@ -12,7 +12,7 @@ Connect n8n and Notion with access to the chosen data source. In **Prepare the n
 
 ## Behavior
 
-Every 15 minutes in UTC, the workflow reads all pages of tagged n8n workflows and finds a Notion entry by exact env id internal- followed by the workflow ID. It creates an entry if absent or updates its fields if exactly one exists. A duplicate match stops before that workflow's write. The data source must fit execution limits. Open Flow starts on the minute boundary; n8n uses a fixed second within the minute.
+Every 15 minutes in UTC, the workflow reads all pages of tagged n8n workflows and finds a Notion entry by exact env id internal- followed by the workflow ID. It creates an entry if absent or updates its fields if exactly one exists. A duplicate match stops before that workflow's write. The data source must fit execution limits.
 
 A failed or uncertain Notion write may have completed. Inspect the data source before retrying; earlier entries remain. Concurrent runs or edits can create duplicates, so do not run multiple copies at once. Removing a tag or deleting a source workflow does not delete existing inventory entries.
 

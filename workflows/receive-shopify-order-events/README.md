@@ -3,16 +3,28 @@
 Receive new Shopify orders with their original large integer IDs preserved.
 
 <!-- template-actions:start -->
-[![n8n JSON](../../assets/n8n-json.svg)](templates/receive-shopify-order-events.n8n.json)
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/receive-shopify-order-events/) [![n8n JSON](../../assets/n8n-json.svg)](templates/receive-shopify-order-events.n8n.json)
 <!-- template-actions:end -->
 
-## Setup and use
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
+  <img alt="Open Flow workflow" src="preview-light.png">
+</picture>
 
-Register its **Receive Shopify order** production webhook for the Shopify app's orders/create topic.
+## Setup
+
+Connect shopify in **Receive shopify event** and configure the required resource IDs or event filters.
 
 ## Behavior
 
-The full order object is emitted; integer values outside JavaScript's safe integer range become decimal strings to preserve their exact values. Other fields are retained. Orders may contain personal information.
+The workflow triggers automatically on matching shopify events and returns the normalized event payload as workflow output.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow, connect shopify, and activate the trigger node.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

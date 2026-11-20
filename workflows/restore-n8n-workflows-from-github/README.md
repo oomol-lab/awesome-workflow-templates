@@ -8,7 +8,7 @@ Restore missing n8n workflows from JSON backups in a GitHub directory.
 
 ## Setup
 
-Connect GitHub with read access to the repository and n8n with workflow read/create permissions. In Open Flow, permit the n8n Provider API Request and run with the repository owner, name and existing directory path (without leading or trailing slash). In n8n, configure the same repository in **Configure the backup directory** and connect GitHub and n8n. Run one format.
+Connect GitHub with read access to the repository and n8n with workflow read/create permissions. In n8n, configure the same repository in **Configure the backup directory** and connect GitHub and n8n. Run one format.
 
 ## Behavior
 
@@ -22,7 +22,7 @@ Earlier creates remain if a later create fails. A lost response may mean a workf
 ## Changes to the source
 
 - Compare the workflow name inside each backup with existing names, rather than assuming the filename is the workflow name; reject duplicate backup names.
-- Replace repository defaults, validate backups and keep only fields accepted by the n8n create API. Open Flow uses the n8n Provider API Request because the catalog has no create-workflow Action.
+- Replace repository defaults, validate backups and keep only fields accepted by the n8n create API. the workflow uses the n8n Provider API Request because the catalog has no create-workflow Action.
 
 Adapted from [Restore Backups](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Github/1988_GitHub_Manual_Automate_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The matching [n8n community listing](https://n8n.io/workflows/2289-restore-backed-up-workflows-from-github-to-n8n/) credits Agent Studio. The original template does not state a separate license.
 

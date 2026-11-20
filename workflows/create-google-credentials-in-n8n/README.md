@@ -12,14 +12,14 @@ Create a Google OAuth client for your n8n instance. In **Create n8n credential**
 
 ## Behavior
 
-The workflow creates credentials for Google Docs, Sheets, Slides, Drive, Gmail, Calendar and Contacts, naming each with the email and credential type. The credentials still require Google sign-in in n8n. Each creation is separate; if a run fails or a response is lost, earlier credentials may already exist. Inspect n8n before rerunning to avoid duplicates. Open Flow returns the created record IDs and names.
+The workflow creates credentials for Google Docs, Sheets, Slides, Drive, Gmail, Calendar and Contacts, naming each with the email and credential type. The credentials still require Google sign-in in n8n. Each creation is separate; if a run fails or a response is lost, earlier credentials may already exist. Inspect n8n before rerunning to avoid duplicates.
 
 <details>
 <summary>Inspiration &amp; credits</summary>
 
 ## Changes to the source
 
-- Use Secret Variables for the Google client secret and n8n API key in Open Flow. Make seven API requests sequentially and return their record IDs.
+- Use Secret Variables for the Google client secret and n8n API key in the workflow. Make seven API requests sequentially and return their record IDs.
 
 Adapted from [Create Google Creds](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/1853_Manual_N8N_Create_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

@@ -14,9 +14,9 @@ Workflow exports can contain private configuration, references and pinned data. 
 
 ## Behavior
 
-Every day at 23:59 UTC, the workflow lists n8n workflows and checks the backup directory. It reads each workflow and creates `<workflow name>.json` when absent, or updates it when its top-level sorted JSON differs. Unchanged files are left alone. GitHub commits use its default branch. n8n schedules a fixed second within the minute; Open Flow starts at the minute boundary.
+Every day at 23:59 UTC, the workflow lists n8n workflows and checks the backup directory. It reads each workflow and creates `<workflow name>.json` when absent, or updates it when its top-level sorted JSON differs. Unchanged files are left alone. GitHub commits use its default branch.
 
-The directory must exist and contain fewer than 1,000 entries, the GitHub directory API limit. Unsafe or duplicate workflow names stop before writes. Open Flow stops on a repeated n8n pagination cursor; n8n follows its native paginator. A workflow or directory error, existing non-JSON backup, or uncertain write stops the run; earlier commits remain. Check GitHub before retrying. Open Flow updates using the compared file SHA, so a concurrent edit causes a conflict. n8n fetches the SHA again immediately before editing; a concurrent edit after comparison can be overwritten. The selected n8n account controls which workflows are visible. Open Flow requires a publicly reachable HTTPS n8n instance and collected data must fit its run limits.
+The directory must exist and contain fewer than 1,000 entries, the GitHub directory API limit. Unsafe or duplicate workflow names stop before writes. A workflow or directory error, existing non-JSON backup, or uncertain write stops the run; earlier commits remain. Check GitHub before retrying. n8n fetches the SHA again immediately before editing; a concurrent edit after comparison can be overwritten. The selected n8n account controls which workflows are visible.
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -19,7 +19,7 @@ The workflow reads all active workflows and reports workflow, node and parameter
 
 ## Changes to the source
 
-- Open Flow follows cursor pages and returns the combined matches.
+- the workflow follows cursor pages and returns the combined matches.
 
 Adapted from [Find parameters affected by n8n v1 expression changes](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/2037_Manual_N8N_Automation_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

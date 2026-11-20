@@ -3,16 +3,28 @@
 Receive Zendesk Support ticket notifications.
 
 <!-- template-actions:start -->
-[![n8n JSON](../../assets/n8n-json.svg)](templates/receive-zendesk-ticket-updates.n8n.json)
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/receive-zendesk-ticket-updates/) [![n8n JSON](../../assets/n8n-json.svg)](templates/receive-zendesk-ticket-updates.n8n.json)
 <!-- template-actions:end -->
 
-## Setup and use
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
+  <img alt="Open Flow workflow" src="preview-light.png">
+</picture>
 
-Connect Zendesk and configure at least one valid Support condition in **Zendesk Trigger**. Activate it to register the Zendesk trigger and webhook; its URL must be publicly reachable by Zendesk. Restrict access to the webhook endpoints.
+## Setup
+
+Connect zendesk in **Receive zendesk event** and configure the required event filters.
 
 ## Behavior
 
-The trigger sends the ticket ID by default; configure its optional fields for more details. Neither endpoint authenticates the sender. Ticket details may appear in execution history. Event details may appear in execution history.
+The workflow triggers automatically on matching zendesk events and returns the normalized event payload as workflow output.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow, connect zendesk, and activate the trigger node.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

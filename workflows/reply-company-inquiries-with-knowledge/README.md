@@ -3,18 +3,30 @@
 Summarize company inquiries and send knowledge-grounded replies through IMAP and SMTP.
 
 <!-- template-actions:start -->
-[![n8n JSON](../../assets/n8n-json.svg)](templates/reply-company-inquiries-with-knowledge.n8n.json)
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/reply-company-inquiries-with-knowledge/) [![n8n JSON](../../assets/n8n-json.svg)](templates/reply-company-inquiries-with-knowledge.n8n.json)
 <!-- template-actions:end -->
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
+  <img alt="Open Flow workflow" src="preview-light.png">
+</picture>
 
 ## Setup
 
 Configure Qdrant and OpenAI with an existing company-knowledge collection whose documents use text-embedding-3-large with 1536 dimensions and content/metadata payloads. The separate Drive indexing and collection refresh from the source are not included.
 
-For native mode configure Qdrant and OpenAI credentials.
+For Open Flow import **Company inquiry response** and **Retrieve company knowledge**, publish the retrieval workflow and refresh the tool. Enable only one IMAP trigger: the native mode or the disabled Open Flow relay trigger. For native mode configure Qdrant and OpenAI credentials.
 
 ## Behavior
 
-Summarize each email and classify company information requests. The agent retrieves relevant knowledge and prepares a concise reply; other emails receive no response. Avoid concurrent processing of the same mailbox. Email and retrieved content are sent to the configured model. Review generated responses and knowledge for accuracy.
+Summarize each email and classify company information requests. The agent retrieves relevant knowledge and prepares a concise reply; other emails receive no response. The relay sends through SMTP. Avoid concurrent processing of the same mailbox. Email and retrieved content are sent to the configured model. Review generated responses and knowledge for accuracy.
+
+<details>
+<summary>In n8n</summary>
+
+Configure IMAP and SMTP credentials, a Data Table with item_key and status text columns, and an AI model. Deploy the webhook behind an authenticated gateway or private network, and configure its URL in the n8n relay. An uncertain send leaves a pending message ID: inspect the sent mailbox and reconcile the Data Table record before retrying.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

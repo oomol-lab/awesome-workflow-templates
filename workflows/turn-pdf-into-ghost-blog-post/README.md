@@ -19,7 +19,7 @@ A pending checkpoint stops a repeated uncertain Ghost write. Avoid overlapping r
 <details>
 <summary>Inspiration &amp; credits</summary>
 
-Add stable submission IDs and write checkpoints, provide a protected Open Flow relay, and use Gemini for article generation.
+Add stable submission IDs and write checkpoints.
 
 Adapted from [📄🛠️PDF2Blog](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Code/1837_Code_Ghost_Automation_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). Attribution: Zie619 / n8n-workflows.
 

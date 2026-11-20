@@ -12,9 +12,9 @@ Connect the n8n public API. Set the HTTPS WebDAV URL of an existing Nextcloud fo
 
 ## Behavior
 
-The manual trigger or schedule lists all workflows, retrieves each by ID and uploads its JSON. The source cron expression runs every minute during the 00, 06, 12 and 18 UTC hours, 240 times daily. Adjust the schedule to suit your needs. Each upload replaces the file at its path. Filenames include both workflow name and ID to prevent collisions between workflows with the same name; renamed workflows leave the previous filename in place. Workflow JSON can contain private configuration and credential references, so restrict folder and execution history access. Open Flow Code input/output and the accumulated workflow list must each fit 1 MiB.
+The manual trigger or schedule lists all workflows, retrieves each by ID and uploads its JSON. The source cron expression runs every minute during the 00, 06, 12 and 18 UTC hours, 240 times daily. Adjust the schedule to suit your needs. Each upload replaces the file at its path. Filenames include both workflow name and ID to prevent collisions between workflows with the same name; renamed workflows leave the previous filename in place. Workflow JSON can contain private configuration and credential references, so restrict folder and execution history access.
 
-If an upload result is unknown, inspect the Nextcloud file before retrying. In Open Flow enter the pending key and confirmed or absent in **Reserve Nextcloud backup**, rerun, then clear the fields. In n8n mark the pending Data Table row done only after confirming the file, or delete it only after confirming no upload occurred. Subsequent runs overwrite the file again.
+If an upload result is unknown, inspect the Nextcloud file before retrying. In n8n mark the pending Data Table row done only after confirming the file, or delete it only after confirming no upload occurred. Subsequent runs overwrite the file again.
 
 <details>
 <summary>Inspiration &amp; credits</summary>

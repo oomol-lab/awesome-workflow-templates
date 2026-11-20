@@ -23,7 +23,7 @@ See [Upload-Post photo](https://docs.upload-post.com/api/upload-photo/) and [vid
 <details>
 <summary>Inspiration &amp; credits</summary>
 
-Add URL-based Open Flow mode and checkpoints, use the documented Facebook Page field, and distinguish background processing from publication.
+Add URL-based the workflow mode and checkpoints, use the documented Facebook Page field, and distinguish background processing from publication.
 
 Adapted from [Social Media Publisher](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Form/1968_Form_Stickynote_Automation_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

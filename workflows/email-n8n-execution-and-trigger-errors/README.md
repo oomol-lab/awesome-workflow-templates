@@ -8,13 +8,13 @@ Email detailed n8n execution errors and trigger failures.
 
 ## Setup
 
-Connect Gmail and set the alert recipient in **Send the error email**. Optionally set the n8n base URL and error handler ID and name in **Format the error report**. Deploy the Open Flow webhook.
+Connect Gmail and set the alert recipient in **Send the error email**. Optionally set the n8n base URL and error handler ID and name in **Format the error report**.
 
-Import the n8n workflow and configure **Choose delivery mode**. Choose `direct` to send with the n8n Gmail credential, or `relay` to POST the complete error event to your Open Flow webhook. Set the corresponding recipient or Open Flow URL and assign the workflow as the error workflow in n8n. Choose one mode so one event produces one email.
+Import the n8n workflow and configure **Choose delivery mode**. Choose one mode so one event produces one email.
 
 ## Behavior
 
-Execution errors and trigger failures produce a plain-text email with the workflow, error type, handler information and the error event. Known credential fields and common secret patterns are redacted, but error messages and context can still contain sensitive data; restrict the mailbox and execution history. The Open Flow webhook accepts public requests without authentication; restrict access to its URL. Its acknowledgment does not confirm email delivery. If the send outcome is unknown, inspect Gmail before replaying an event.
+Execution errors and trigger failures produce a plain-text email with the workflow, error type, handler information and the error event. Known credential fields and common secret patterns are redacted, but error messages and context can still contain sensitive data; restrict the mailbox and execution history. Its acknowledgment does not confirm email delivery. If the send outcome is unknown, inspect Gmail before replaying an event.
 
 <details>
 <summary>Inspiration &amp; credits</summary>
@@ -22,7 +22,7 @@ Execution errors and trigger failures produce a plain-text email with the workfl
 ## Changes to the source
 
 - Use a plain-text report for both error types, remove the example recipient, and redact common secret fields.
-- Provide an n8n relay mode for Open Flow and preserve the complete incoming event.
+- Provide an n8n relay mode for the workflow and preserve the complete incoming event.
 
 Adapted from [Detailed n8n error email](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Error/1991_Error_Code_Automation_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source credits [Olek](https://n8n.io/creators/olek/) and says it extends [Send email via Gmail on workflow error](https://n8n.io/workflows/696-send-email-via-gmail-on-workflow-error/). The original template does not state a separate license.
 

@@ -14,7 +14,7 @@ In n8n, set the `repo_owner`, `repo_name`, and `repo_path` variables (end the pa
 
 ## Behavior
 
-Run manually or daily at 01:33 UTC. Each workflow is stored under `YYYY/MM/ID.json` using its creation date. Existing JSON is compared by top-level keys; changed files are updated and missing files created. Slack receives start, completion, and individual failure notices. Open Flow requests large files as raw content.
+Run manually or daily at 01:33 UTC. Each workflow is stored under `YYYY/MM/ID.json` using its creation date. Existing JSON is compared by top-level keys; changed files are updated and missing files created. Slack receives start, completion, and individual failure notices.
 
 If a GitHub or Slack write has an unknown result, inspect the service and enter the pending key in **Choose backup step** only after resolving it; acknowledgement treats that write as completed.
 
@@ -24,7 +24,7 @@ If a GitHub or Slack write has an unknown result, inspect the service and enter 
 ## Changes to the source
 
 - Use explicit UTC and user-provided repository and channel configuration.
-- Open Flow paginates workflow reads, preserves unfinished pages, and pauses on uncertain writes.
+- the workflow paginates workflow reads, preserves unfinished pages, and pauses on uncertain writes.
 - Correct n8n repository expressions, distinguish missing files from read failures, and read large files as text for comparison.
 
 Adapted from [Backup n8n workflows to GitHub](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Code/0182_Code_GitHub_Create_Scheduled.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.

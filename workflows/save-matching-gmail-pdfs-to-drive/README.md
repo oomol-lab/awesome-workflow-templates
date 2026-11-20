@@ -1,18 +1,30 @@
 # Save Matching Gmail PDFs to Drive
 
-Classify incoming PDF attachments and save matching originals to Google Drive.
+Classify email PDF attachments by text and save matching originals to Google Drive.
 
 <!-- template-actions:start -->
-[![n8n JSON](../../assets/n8n-json.svg)](templates/save-matching-gmail-pdfs-to-drive.n8n.json)
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/save-matching-gmail-pdfs-to-drive/) [![n8n JSON](../../assets/n8n-json.svg)](templates/save-matching-gmail-pdfs-to-drive.n8n.json)
 <!-- template-actions:end -->
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
+  <img alt="Open Flow workflow" src="preview-light.png">
+</picture>
 
 ## Setup
 
-Set the desired document type in Configure PDF matching. Use one mode only and prevent overlapping runs for the same message.
+Connect Gmail, Encodian, Gemini and Google Drive. Set the destination folder ID in **Choose the next attachment** and the document type in **Prepare PDF classification**. Configure Gmail file transit and replace the example hostname in **Verify complete attachment** with your transit hostname. Enable persistent State.
 
-Every PDF attachment is examined separately. The text must be extractable and satisfy the source estimate of at most 15,800 characters; scanned PDFs need OCR. Non-PDF and over-limit attachments are skipped. The source used length() on a string; this version uses length. The classifier may be wrong, so review the results. PDF text and filename are sent to the model.
+## Behavior
 
-If upload is uncertain, inspect the destination before retrying.
+The workflow checks Gmail every minute, examines each PDF attachment separately, extracts its text layer via Encodian, and uploads the original file to Google Drive when Gemini matches the configured document type. Non-PDF attachments are skipped.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow, connect Gmail, OpenAI and Google Drive, select the destination folder, and set the document type in **Configure PDF matching**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

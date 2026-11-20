@@ -16,7 +16,7 @@ In n8n, configure the Telegram and n8n credentials, set the same chat and workfl
 
 From the configured chat, send `/start marketing`, `/stop marketing`, `/start sales` or `/stop sales`. Other chats and messages are ignored. These commands change whether the selected workflows run. There is no confirmation message.
 
-An uncertain action remains pending and is not automatically repeated. Inspect n8n before resolving it. In Open Flow set **acknowledgeId** to the pending Telegram update ID after inspection, then send another authorized command; queued commands continue and the acknowledged command is treated as handled. Clear that field afterward. In n8n mark its pending Data Table row done if handled or remove it only when a retry is safe. Processed IDs accumulate until deliberately cleared. Telegram delivery and activation state are not an exactly-once guarantee.
+An uncertain action remains pending and is not automatically repeated. Inspect n8n before resolving it. Clear that field afterward. In n8n mark its pending Data Table row done if handled or remove it only when a retry is safe. Processed IDs accumulate until deliberately cleared. Telegram delivery and activation state are not an exactly-once guarantee.
 
 <details>
 <summary>Inspiration &amp; credits</summary>

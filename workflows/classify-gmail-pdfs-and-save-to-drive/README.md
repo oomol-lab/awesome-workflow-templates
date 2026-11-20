@@ -3,20 +3,32 @@
 Classify incoming PDF attachments and save matching originals to Google Drive.
 
 <!-- template-actions:start -->
-[![n8n JSON](../../assets/n8n-json.svg)](templates/classify-gmail-pdfs-and-save-to-drive.n8n.json)
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/classify-gmail-pdfs-and-save-to-drive/) [![n8n JSON](../../assets/n8n-json.svg)](templates/classify-gmail-pdfs-and-save-to-drive.n8n.json)
 <!-- template-actions:end -->
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
+  <img alt="Open Flow workflow" src="preview-light.png">
+</picture>
 
 ## Setup
 
-Connect Gmail, Encodian, Gemini and Google Drive. Set the destination folder ID in **Choose the next attachment** and the document type in **Prepare PDF classification**. Configure Gmail file transit and replace the example hostname in **Verify complete attachment** with your transit hostname.
+Connect Gmail, Encodian, Gemini and Google Drive. Set the destination folder ID in **Choose the next attachment** and the document type in **Prepare PDF classification**. Configure Gmail file transit and replace the example hostname in **Verify complete attachment** with your transit hostname. Enable persistent State.
 
 ## Behavior
 
 The workflow checks Gmail every minute, examines each PDF attachment separately and uploads the original file when its extracted text matches the configured document type. Non-PDF attachments are skipped. PDF text must be extractable; scanned PDFs need OCR. Gemini classification can be wrong. Encodian receives PDF bytes, and Gemini receives the extracted text and filename. Restrict access to transit URLs, email data and execution history.
 
-An empty or failed text extraction or text longer than 15,800 characters stops the run. Earlier matching files may already have been uploaded.
+Open Flow processes at most 50 messages per poll and requires attachment bytes to fit its 1 MiB fetch and execution limits. An empty or failed text extraction or text longer than 15,800 characters stops the run. Earlier matching files may already have been uploaded.
 
-If an upload is uncertain, inspect Drive before retrying. Avoid overlapping runs; checkpoints are not atomic locks.
+If an upload is uncertain, inspect Drive before retrying. In Open Flow enter `gmail-pdf:<message ID>:<attachment index>` and `confirmed` or `absent` in **Reserve matching PDF upload**, run **Retry a Gmail message** with the original message ID, then clear the recovery fields. Avoid overlapping runs; checkpoints are not atomic locks.
+
+<details>
+<summary>In n8n</summary>
+
+In n8n, connect Gmail, Gemini and Google Drive, select the destination folder in **Upload matching PDF**, and set the document type in **Configure PDF matching**. Select one Data Table with text columns `item_key` and `status` in all checkpoint nodes. Keep relay mode disabled; the direct path processes the attachment in n8n. Use one format at a time. n8n skips text over that limit. In n8n set the matching pending Data Table row to `done` if uploaded or delete it if absent, enable the authenticated **Resume email** webhook and POST the original `messageId`.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

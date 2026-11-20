@@ -21,7 +21,7 @@ Partial insertion needs manual reconciliation.
 <details>
 <summary>Inspiration &amp; credits</summary>
 
-Process pages separately and stop on uncertain writes; Open Flow uses character windows.
+Process pages separately and stop on uncertain writes; the workflow uses character windows.
 
 Adapted from [Store Notion pages as vector documents](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Filter/1414_Filter_Summarize_Automation_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

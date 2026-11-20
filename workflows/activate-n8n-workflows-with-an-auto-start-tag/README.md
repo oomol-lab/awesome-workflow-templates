@@ -19,7 +19,7 @@ The workflow lists every page and activates workflows whose tags include Auto st
 
 ## Changes to the source
 
-- Open Flow follows n8n API cursors and applies the same exact tag test.
+- the workflow follows n8n API cursors and applies the same exact tag test.
 
 Adapted from [Activate imported n8n workflows by tag](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/0928_Manual_N8N_Automate_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

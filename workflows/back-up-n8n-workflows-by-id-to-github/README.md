@@ -14,7 +14,7 @@ Configure the n8n HTTPS URL, GitHub owner, repository and folder in **Choose bac
 
 Run manually or every two hours (UTC). Workflows are saved as `<folder>/<ID>.json`. Existing content is compared with top-level keys ordered; unchanged files are skipped, missing files created, and changed files updated. Large GitHub files are read as raw text.
 
-When a GitHub write has an unknown result, inspect the repository before acknowledging the pending key in Open Flow or resolving the pending Data Table row in n8n. Do not retry until the actual outcome is known.
+Do not retry until the actual outcome is known.
 
 <details>
 <summary>Inspiration &amp; credits</summary>

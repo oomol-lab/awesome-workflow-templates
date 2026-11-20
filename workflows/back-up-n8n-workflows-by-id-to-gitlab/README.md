@@ -12,9 +12,9 @@ Connect n8n and GitLab, set owner, project, branch and path in **Configure the b
 
 ## Behavior
 
-Each workflow is saved as its ID plus .json. Existing JSON is compared recursively while ignoring updatedAt and global fields, including when the keys differ. The source compared object key counts before ignoring these fields. Unchanged files are skipped. Backups may contain sensitive configuration; restrict access to the repository and execution history. Open Flow Code inputs, outputs and accumulated list must fit 1 MiB.
+Each workflow is saved as its ID plus .json. Existing JSON is compared recursively while ignoring updatedAt and global fields, including when the keys differ. The source compared object key counts before ignoring these fields. Unchanged files are skipped. Backups may contain sensitive configuration; restrict access to the repository and execution history.
 
-If a write has an unknown result, inspect GitLab. In **Resolve pending backup**, enter its pending key and either confirmed or absent, rerun, and clear these fields. In n8n inspect the pending Data Table row; mark done only when confirmed or delete only when absent. Earlier successful files are not rolled back. Open Flow stops on a read error; n8n reports the affected item and continues.
+If a write has an unknown result, inspect GitLab. In **Resolve pending backup**, enter its pending key and either confirmed or absent, rerun, and clear these fields. In n8n inspect the pending Data Table row; mark done only when confirmed or delete only when absent. Earlier successful files are not rolled back.
 
 <details>
 <summary>Inspiration &amp; credits</summary>

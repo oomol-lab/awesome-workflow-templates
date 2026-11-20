@@ -3,16 +3,28 @@
 Receive Pipedrive change notifications.
 
 <!-- template-actions:start -->
-[![n8n JSON](../../assets/n8n-json.svg)](templates/receive-pipedrive-changes.n8n.json)
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/receive-pipedrive-changes/) [![n8n JSON](../../assets/n8n-json.svg)](templates/receive-pipedrive-changes.n8n.json)
 <!-- template-actions:end -->
 
-## Setup and use
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
+  <img alt="Open Flow workflow" src="preview-light.png">
+</picture>
 
-Activate it, then register the **Receive Pipedrive event** production URL with Pipedrive Webhooks API v2, setting event_action and event_object to * and giving it a name. The URL must be publicly reachable by Pipedrive. Restrict access to the webhook endpoints.
+## Setup
+
+Connect pipedrive in **Receive pipedrive event** and configure the required resource IDs or event filters.
 
 ## Behavior
 
-Pipedrive v2 reports a merge as separate delete and change events, and uses data for the current object. Neither endpoint verifies the sender. Event data may appear in execution history. Event details may appear in execution history.
+The workflow triggers automatically on matching pipedrive events and returns the normalized event payload as workflow output.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow, connect pipedrive, and activate the trigger node.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

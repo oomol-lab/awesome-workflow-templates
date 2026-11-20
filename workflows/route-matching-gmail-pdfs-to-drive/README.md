@@ -3,12 +3,28 @@
 Classify PDF attachments from Gmail by their content and upload matching files to Google Drive.
 
 <!-- template-actions:start -->
-[![n8n JSON](../../assets/n8n-json.svg)](templates/route-matching-gmail-pdfs-to-drive.n8n.json)
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/route-matching-gmail-pdfs-to-drive/) [![n8n JSON](../../assets/n8n-json.svg)](templates/route-matching-gmail-pdfs-to-drive.n8n.json)
 <!-- template-actions:end -->
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
+  <img alt="Open Flow workflow" src="preview-light.png">
+</picture>
+
+## Setup
+
+Connect Gmail, Encodian, Gemini and Google Drive. Set the destination folder ID in **Choose the next attachment** and the matching term in **Prepare PDF classification**. Configure Gmail file transit and replace the example hostname in **Verify complete attachment** with your transit hostname. Enable persistent State.
 
 ## Behavior
 
-The workflow polls Gmail every minute, iterates attachments, extracts PDF text, and classifies it using the configured term, filename and text. Matching original PDFs are uploaded to the configured Drive folder; non-PDF and nonmatching files are skipped. PDFs above the source's text-length limit are skipped. PDF contents are shared with the model. Neither webhook authenticates callers; restrict access to trusted senders. A lost Drive response may represent a completed upload; inspect the destination before retrying.
+The workflow polls Gmail every minute, downloads each PDF attachment, extracts its text layer via Encodian, classifies it with Gemini, and uploads matching original PDFs to Google Drive. Non-PDF attachments are skipped.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow, connect Gmail, OpenAI and Google Drive, set the matching term and Drive folder ID in **Configure**, and activate the trigger.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>
