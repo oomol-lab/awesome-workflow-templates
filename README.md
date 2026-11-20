@@ -64,6 +64,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Events](#events)
 - [Ecommerce](#ecommerce)
 - [Contribute](#contribute)
+- [Translations](#translations)
 - [Licensing](#licensing)
 
 ## Sales
@@ -1212,6 +1213,18 @@ A growing collection of automation workflows for connecting apps and getting rep
 ## Contribute
 
 Share a workflow that saves you time. [Suggest a template](https://github.com/oomol-lab/awesome-workflow-templates/issues/new) or [open a pull request](https://github.com/oomol-lab/awesome-workflow-templates/compare).
+
+## Translations
+
+Some workflows include translations in a `locales/<locale>/` folder, such as `locales/zh-CN/` or `locales/ja/`. The English files in the workflow folder remain the source of truth.
+
+| File | Contents |
+| --- | --- |
+| `meta.json` | Translated `name`, `description` and `requirements` |
+| `README.md` | Translated README that links to the shared templates and previews |
+| `strings.json` | Optional node names and descriptions, keyed by node ID |
+
+Template JSON, prompts, code, tags and previews are not translated. Missing translations fall back to English.
 
 ## Licensing
 
