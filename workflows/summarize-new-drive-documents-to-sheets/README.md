@@ -42,7 +42,6 @@ Adapted from [Summarize the New Documents from Google Drive and Save Summary in 
 
 Source collection notice: © 2024–2026 Enes Cingoz, [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). The original [WeblineIndia workflow](https://github.com/weblineindia/n8n-Summarize-New-Documents-from-Google-Drive-and-Save-Summary-in-Google-Sheet/blob/c0ea4dc318e77d9e9404db4b026d1b3d752fafdd/Fetch_the_Most_Recent_Document_from_Google_Drive.json) is licensed under MIT; its notice is reproduced below. See [repository licensing](../../README.md#licensing) for the scope of OOMOL contributions and third-party material.
 
-
 Original workflow notice:
 
 > MIT License

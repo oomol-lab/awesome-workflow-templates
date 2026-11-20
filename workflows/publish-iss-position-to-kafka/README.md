@@ -3,35 +3,19 @@
 Publish the current International Space Station position to a Kafka topic every minute.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/publish-iss-position-to-kafka/) [![n8n JSON](../../assets/n8n-json.svg)](templates/publish-iss-position-to-kafka.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/publish-iss-position-to-kafka.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup and use
 
-Connect both Kafka nodes with access to the iss-position topic. Use one mode to avoid duplicate messages. The relay does not authenticate callers; restrict access to its webhook.
+Connect both Kafka nodes with access to the iss-position topic. Use one mode to avoid duplicate messages.
 
 ## Behavior
 
 Every minute, read the current ISS position and publish JSON with Name, Latitude, Longitude and Timestamp as strings. The source producer uses no broker acknowledgements by default, so a successful response does not establish broker delivery. If an acknowledgement or Kafka send is uncertain, the topic may already contain the message.
 
 <details>
-<summary>In n8n</summary>
-
-Import the supplied n8n workflow and connect both Kafka nodes with access to the iss-position topic. To run in n8n, enable **Cron** and disable **Kafka relay webhook**. To run in Open Flow, disable **Cron**, enable **Kafka relay webhook**, activate the n8n workflow and put the production webhook URL in **Send to n8n Kafka relay**. In Open Flow mode, n8n responds after the Kafka producer finishes sending; a producer error returns an HTTP failure.
-
-</details>
-
-<details>
 <summary>Inspiration &amp; credits</summary>
-
-## Changes to the source
-
-- Request the current-position endpoint instead of passing a millisecond timestamp to the positions endpoint. Add an n8n webhook relay so Open Flow can use the source Kafka node.
 
 Adapted from [ISS position to Kafka](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Http/1226_HTTP_Kafka_Update_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

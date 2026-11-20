@@ -3,35 +3,19 @@
 Filter updated Postgres users and upsert qualified leads in Google Sheets.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/postgres-updates-to-qualified-leads-sheet/) [![n8n JSON](../../assets/n8n-json.svg)](templates/postgres-updates-to-qualified-leads-sheet.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/postgres-updates-to-qualified-leads-sheet.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup and use
 
-Its UPDATE notification must include id, username and email. Configure the Google Sheet and credentials, with id, username and email headers. For Open Flow mode disable it, enable **Postgres Trigger (Open Flow)**, configure **Forward to Open Flow**, and deploy Open Flow with its own Google Sheets connection and sheet ID. The trigger creates a database trigger and notification function; its database account needs the required privileges. Choose one mode and restrict access to the Open Flow endpoint, which does not authenticate callers.
+Its UPDATE notification must include id, username and email. Configure the Google Sheet and credentials, with id, username and email headers. The trigger creates a database trigger and notification function; its database account needs the required privileges.
 
 ## Behavior
 
-For each update, the workflow reads the new row from the notification payload. If email does not contain `n8n.io`, it updates or adds a sheet row keyed by id with username and email. Postgres notifications and the relay are not a durable queue; inspect execution history and reconcile affected rows after outages or failed deliveries. If a Sheets write response is lost, inspect the row before retrying.
-
-<details>
-<summary>In n8n</summary>
-
-Configure Postgres credentials, schema and table in the n8n trigger. For n8n mode enable **Postgres Trigger**.
-
-</details>
+For each update, the workflow reads the new row from the notification payload. If email does not contain `n8n.io`, it updates or adds a sheet row keyed by id with username and email. If a Sheets write response is lost, inspect the row before retrying.
 
 <details>
 <summary>Inspiration &amp; credits</summary>
-
-## Changes to the source
-
-- Read the Postgres trigger's notification payload rather than the example's top-level mock fields; replace source-specific sheet and table identifiers and add an optional relay.
 
 Adapted from [Postgres qualified leads](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Code/0307_Code_Postgres_Automate_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

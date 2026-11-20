@@ -39,7 +39,6 @@ For the n8n template, configure your HubSpot App Token and Slack credentials, an
 - Added guards for empty line items, SKUs, and products, and supported plain numeric `deal_id_created` values alongside `0-3-<id>` format.
 - Bound HubSpot authentication to a `HUBSPOT_ACCESS_TOKEN` secret variable in Open Flow.
 
-
 Adapted from [Replicate Line Items on New Deal in HubSpot Workflow](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Http/0550_HTTP_Slack_Create_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). Attribution: Zie619 / n8n-workflows.
 
 The collection’s [MIT notice](https://github.com/Zie619/n8n-workflows/blob/94007c1445d9258a7da116646b79473e7c7c3282/LICENSE) is pinned at a later revision. This is the collection notice at that revision; it does not establish a separate original template author's license. Our changes are listed above; see [repository licensing](../../README.md#licensing).

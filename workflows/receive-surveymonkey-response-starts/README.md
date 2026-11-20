@@ -3,28 +3,16 @@
 Receive notifications when a survey response begins.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/receive-surveymonkey-response-starts/) [![n8n JSON](../../assets/n8n-json.svg)](templates/receive-surveymonkey-response-starts.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/receive-surveymonkey-response-starts.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup and use
 
-Register its **Receive SurveyMonkey event** production URL with the SurveyMonkey v3 Webhooks API for response_created and your survey ID. For Open Flow, enter its webhook URL in **Forward to Open Flow** and enable that node. Restrict access to the relay endpoint.
+Register its **Receive SurveyMonkey event** production URL with the SurveyMonkey v3 Webhooks API for response_created and your survey ID.
 
 ## Behavior
 
-The webhook answers the registration HEAD request and checks each POST HMAC-SHA1 signature over the original bytes before parsing. It emits the complete event; unsafe integer values become decimal strings. The optional relay forwards each event to Open Flow. Events may contain personal information.
-
-<details>
-<summary>In n8n</summary>
-
-Import and activate the n8n workflow. Store the app client ID and secret as SURVEYMONKEY_CLIENT_ID and SURVEYMONKEY_CLIENT_SECRET in the n8n environment and allow the workflow to access them. Leave it disabled for n8n alone. Inspect n8n execution history for forwarding failures.
-
-</details>
+The webhook answers the registration HEAD request and checks each POST HMAC-SHA1 signature over the original bytes before parsing. It emits the complete event; unsafe integer values become decimal strings. Events may contain personal information.
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -3,30 +3,18 @@
 Check selected XHTML report tags and draft an email reply with the findings.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/check-csrd-xhtml-reports-by-email/) [![n8n JSON](../../assets/n8n-json.svg)](templates/check-csrd-xhtml-reports-by-email.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/check-csrd-xhtml-reports-by-email.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup
 
-Connect Gmail and configure an AI model. Connect Gmail to the attachment relay, enable **XHTML attachment webhook**, and set its production HTTPS URL in **Choose report step**. Configure its Header Auth credential as Authorization: Bearer followed by a secret, and bind the same secret as the Open Flow variable N8N_RELAY_TOKEN. Enable persistent State and prevent overlapping executions.
+Connect Gmail and configure an AI model.
 
 ## Behavior
 
 For each incoming message whose subject contains the case-sensitive text CSRD Reporting, the workflow extracts the first Gmail attachment as text, counts selected XHTML tags and duplicates, asks the model to summarize the findings, and replies to the original message. Attach an XHTML report as the first attachment. These pattern checks are a limited heuristic, not a CSRD or XBRL compliance audit. Review the generated reply.
 
 If a reply outcome is unknown, inspect Gmail Sent before retrying. In **Choose report step**, enter the pending key and set resolution to confirmed if sent or absent if not, run another poll, and clear the fields.
-
-<details>
-<summary>In n8n</summary>
-
-Import the bundled n8n workflow, connect Gmail to the attachment relay, enable **XHTML attachment webhook**, and set its production HTTPS URL in **Choose report step**. Disable the direct n8n email trigger when using Open Flow. For direct n8n use, leave the relay disabled, connect Gmail and OpenAI, and select one Data Table with text columns item_key and status in the checkpoint nodes. Use only one format. Report contents and findings are processed by n8n and the model provider; protect execution history. In n8n inspect the pending Data Table row, mark it done if sent or delete it only after confirming no reply was sent.
-
-</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

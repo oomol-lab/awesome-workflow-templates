@@ -33,8 +33,6 @@ Adapted from [Store Notion's Pages as Vector Documents into Supabase with OpenAI
 
 Source collection notice: © 2024–2026 Enes Cingoz, [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). The source export does not identify a separate template author or license. See [repository licensing](../../README.md#licensing) for the scope of OOMOL contributions and third-party material.
 
-
-
 Changes from source: Use current Notion rich text, paginate block reads, process each page separately, select text-embedding-3-small and add insert checkpoints.
 
 Collection license notice:

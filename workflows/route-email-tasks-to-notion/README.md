@@ -33,8 +33,6 @@ Adapted from [Turn Emails into AI-Enhanced Tasks in Notion (Multi-User Support) 
 
 Source collection notice: © 2024–2026 Enes Cingoz, [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). The source export does not identify a separate template author or license. See [repository licensing](../../README.md#licensing) for the scope of OOMOL contributions and third-party material.
 
-
-
 Changes from source: Update the model, keep per-user Notion tokens inside request handling, use explicit user routes and checkpoints, and deactivate routes on confirmed authorization rejection rather than uncertain failures.
 
 Collection license notice:

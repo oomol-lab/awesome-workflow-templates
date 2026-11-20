@@ -3,13 +3,8 @@
 Collect a PDF application, prepare an advisory assessment for HR, and send a receipt to the applicant.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/review-software-engineer-applications/) [![n8n JSON](../../assets/n8n-json.svg)](templates/review-software-engineer-applications.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/review-software-engineer-applications.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup
 
@@ -17,16 +12,9 @@ Configure a Google Sheet with columns CV, Full Name, E-mail, Expectation, Linked
 
 ## Behavior
 
-A PDF with extractable text is assessed for the Software Engineer role. The sheet and HR message contain an advisory score and rationale; a person must evaluate the application and make any hiring decision. The applicant receives a receipt. Model output can be wrong. Scanned PDFs need OCR. Extracted text and enclosing data must fit the 1 MiB Code input/output limit in Open Flow. Personal information is sent to the configured AI provider and stored in the sheet and execution history; restrict access and set retention.
+A PDF with extractable text is assessed for the Software Engineer role. The sheet and HR message contain an advisory score and rationale; a person must evaluate the application and make any hiring decision. The applicant receives a receipt. Model output can be wrong. Scanned PDFs need OCR. Personal information is sent to the configured AI provider and stored in the sheet and execution history; restrict access and set retention.
 
-Each external write is reserved before execution. If a result is unknown, inspect the sheet or Gmail before retrying. In Open Flow enter the pending key and confirmed or absent in the corresponding reserve node, replay the same submission, then clear the fields.
-
-<details>
-<summary>In n8n</summary>
-
-Import the n8n workflow. Set the HR recipient and choose a Data Table with item_key and status text columns. For Open Flow select relay mode in **Prepare application**, configure its webhook URL, connect Google Sheets and Gmail, set the spreadsheet ID, range and HR email in each reserve node, and enable persistent State. Restrict the webhook to trusted n8n. The default direct mode runs entirely in n8n. In n8n inspect pending Data Table rows, complete missing actions manually, mark done after confirmation, or delete only when no write occurred.
-
-</details>
+Each external write is reserved before execution. If a result is unknown, inspect the sheet or Gmail before retrying.
 
 <details>
 <summary>Inspiration &amp; credits</summary>

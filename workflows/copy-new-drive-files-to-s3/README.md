@@ -3,35 +3,15 @@
 Copy updated Google Drive files to S3 when their names are absent from the bucket.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/copy-new-drive-files-to-s3/) [![n8n JSON](../../assets/n8n-json.svg)](templates/copy-new-drive-files-to-s3.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/copy-new-drive-files-to-s3.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
-
-## Setup and use
-
-For Open Flow configure the same bucket and S3 connection in **List S3 objects**, set the URL in **Ask Open Flow**, and enable that relay. Restrict access to the Open Flow endpoint, which does not authenticate the sender.
 
 ## Behavior
 
-The Drive trigger polls for updated files. Each file name is compared with all S3 object keys. Open Flow skips any existing name. The check and upload are separate operations, so concurrent runs can race. A lost upload response may mean the object was written; inspect S3 before retrying. Relay or download failures require inspecting and manually recovering affected events.
-
-<details>
-<summary>In n8n</summary>
-
-Configure the Google Drive folder, AWS S3 bucket and credentials in n8n. Enable only one of the n8n-only or Open Flow decision branches. Activate the n8n workflow. If absent, n8n downloads the Drive file and uploads its bytes with source=gdrive tagging and AES256 server-side encryption. The n8n-only S3 V1 listing omits zero-byte objects, so those names can be uploaded again.
-
-</details>
+The Drive trigger polls for updated files. Each file name is compared with all S3 object keys. The check and upload are separate operations, so concurrent runs can race. A lost upload response may mean the object was written; inspect S3 before retrying.
 
 <details>
 <summary>Inspiration &amp; credits</summary>
-
-## Changes to the source
-
-- Connect the S3 listing, compare the actual file names, and add Drive download before binary upload. Add an optional Open Flow decision relay.
 
 Adapted from [Drive folder to S3](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Awss3/0151_Awss3_GoogleDrive_Import_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

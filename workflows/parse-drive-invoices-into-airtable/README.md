@@ -3,30 +3,18 @@
 Parse new Google Drive invoices and create linked Airtable invoice and line-item records.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/parse-drive-invoices-into-airtable/) [![n8n JSON](../../assets/n8n-json.svg)](templates/parse-drive-invoices-into-airtable.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/parse-drive-invoices-into-airtable.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup
 
-For relay, set YOUR_OPEN_FLOW_WEBHOOK_URL in **Relay Llama event to Open Flow**. For direct, connect OpenAI and Airtable and set the base and table IDs.
+For direct, connect OpenAI and Airtable and set the base and table IDs.
 
-In Open Flow set the Airtable base and table names in **Choose invoice step**, connect Airtable, enable persistent State, and bind Secret Variables `LLAMA_CLOUD_API_KEY` and `OPENAI_API_KEY`. The Airtable invoice table must support blank records; the line table needs Description, Qty, Unit price, Amount, and Invoices linked to the invoice table. Prevent overlapping executions. Use one mode to avoid duplicate writes.
+The Airtable invoice table must support blank records; the line table needs Description, Qty, Unit price, Amount, and Invoices linked to the invoice table. Prevent overlapping executions. Use one mode to avoid duplicate writes.
 
 ## Behavior
 
 New invoices are uploaded to LlamaParse, then the completed job is retrieved and passed to OpenAI for line extraction. One Airtable invoice is created with linked line items. Uploaded documents and parsed content are sent to the configured services; review model output against the invoice. If a write result is unknown, inspect Airtable. In **Choose invoice step**, enter its pending key and `confirmed` or `absent` as the resolution; for a confirmed invoice also enter its Airtable record ID. Run the same callback again, then clear these fields.
-
-<details>
-<summary>In n8n</summary>
-
-In the supplied n8n workflow, select the Drive folder and credential, bind a LlamaCloud HTTP bearer credential to **Upload File**, **Create parse job**, and **Read parse result**, and replace YOUR_PUBLIC_N8N_WEBHOOK_URL in **Create parse job** with the production URL of **Webhook**. In **Choose processing mode**, replace YOUR_MODE with relay or direct. Set the same Data Table on every checkpoint node; it needs text columns item_key and status. In n8n inspect Airtable or LlamaParse and resolve the matching pending Data Table row only after checking the outcome.
-
-</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

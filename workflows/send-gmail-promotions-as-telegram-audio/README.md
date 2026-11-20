@@ -3,17 +3,12 @@
 Summarize new promotional emails and send the summary as Telegram audio.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/send-gmail-promotions-as-telegram-audio/) [![n8n JSON](../../assets/n8n-json.svg)](templates/send-gmail-promotions-as-telegram-audio.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/send-gmail-promotions-as-telegram-audio.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup
 
-Connect Gmail and an AI model. Set the Telegram chat ID in **Checkpoint audio delivery** and enable persistent State. Restrict access to the relay URL. Prevent overlapping Open Flow runs.
+Connect Gmail and an AI model.
 
 ## Behavior
 
@@ -22,19 +17,11 @@ Every minute, new messages in Gmail's Promotions category are summarized and sen
 If audio delivery fails or is uncertain, inspect Telegram before entering the Gmail message ID in **Select next email** to acknowledge it. The message is treated as handled and queued emails continue. Do not automatically replay uncertain sends.
 
 <details>
-<summary>In n8n</summary>
-
-Import the supplied n8n workflow, connect its relay Telegram node to your bot, disable **Gmail trigger**, enable **Audio relay webhook**, and set its production URL in **Send audio through n8n**. For direct n8n use, enable **Gmail trigger**, disable **Audio relay webhook**, set the Telegram chat ID, and connect Gmail, OpenAI and Telegram credentials. Activate one format.
-
-</details>
-
-<details>
 <summary>Inspiration &amp; credits</summary>
 
 ## Changes to the source
 
 - Use the current redirected speech endpoint and validate TLS.
-- Replace the private chat ID and provide an n8n binary audio relay for Open Flow.
 
 Adapted from [Convert Gmail promotions into Telegram audio](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Telegram/0481_Telegram_Code_Automation_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

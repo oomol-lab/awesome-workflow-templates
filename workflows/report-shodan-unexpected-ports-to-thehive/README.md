@@ -3,32 +3,20 @@
 Check a configured IP allowlist against Shodan and create TheHive alerts for unexpected ports.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/report-shodan-unexpected-ports-to-thehive/) [![n8n JSON](../../assets/n8n-json.svg)](templates/report-shodan-unexpected-ports-to-thehive.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/report-shodan-unexpected-ports-to-thehive.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup
 
 Configure **Get watched IPs & Ports** with an endpoint returning an array of objects with ip and ports, where ports is the list of allowed port numbers. The schedule runs Monday at 05:00 UTC; change its timezone or schedule if needed. Prevent overlapping runs.
 
-Connect Shodan and TheHive, enable persistent State, and restrict webhook access. The watchlist endpoint is your own service and is not included.
+The watchlist endpoint is your own service and is not included.
 
 ## Behavior
 
 For each watched IP, Shodan host data is checked against its allowed port list. An alert lists services on ports outside that list; no alert is created when all returned ports are allowed. Shodan is a third-party snapshot and does not actively scan on demand; missing or stale data is not proof a port is closed. The source's filter was reversed and its loop could stop after an IP with no findings; both are corrected. Review service banners before sharing because they may contain sensitive data.
 
-If alert creation or relay completion is uncertain, inspect TheHive before retrying. In Open Flow enter the pending key and confirmed or absent in **Find and reserve unexpected ports**, replay the same IP and week, then clear those fields. TheHive source references identify the IP and week.
-
-<details>
-<summary>In n8n</summary>
-
-Connect Shodan and TheHive 4, and select a Data Table with item_key and status text columns in each checkpoint node. For Open Flow choose relay mode and set its webhook URL. Direct mode runs in n8n; use one mode. In n8n inspect the pending Data Table row and TheHive; mark done after confirming the alert or delete only if none was created.
-
-</details>
+TheHive source references identify the IP and week.
 
 <details>
 <summary>Inspiration &amp; credits</summary>

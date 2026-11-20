@@ -3,32 +3,20 @@
 Enrich business contacts and email those at B2B companies with at least 500 employees.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/qualify-contact-form-leads-with-clearbit/) [![n8n JSON](../../assets/n8n-json.svg)](templates/qualify-contact-form-leads-with-clearbit.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/qualify-contact-form-leads-with-clearbit.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup
 
 Use an existing Clearbit account with Person and Company API access. Set your signature in **Prepare acknowledgment** and **Send Email**.
 
-For Open Flow, set **Choose processing mode** to relay and configure the deployed webhook URL in **Forward contact to Open Flow**. Bind CLEARBIT_API_KEY as a secret, connect Gmail and enable persistent State. Protect the webhook at the deployment boundary.
+Protect the webhook at the deployment boundary.
 
 ## Behavior
 
 A form asks for role and business email. The source's literal personal-email substring exclusions run first. Clearbit finds the person by email and the company by employment domain. Only companies tagged B2B with more than 499 employees receive the personalized acknowledgment. The role is collected but not used in qualification. Missing enrichment stops processing; it is not treated as a match. Contact details are sent to Clearbit and may be retained in execution history.
 
-If email delivery is uncertain, inspect Gmail before retrying. In Open Flow replay the same submission with the pending key in **Prepare acknowledgment** and resolution confirmed if sent or absent if not, then clear both fields. Inspect the Open Flow run if forwarding is uncertain.
-
-<details>
-<summary>In n8n</summary>
-
-Configure the n8n contact form and Gmail connection. For direct n8n, leave direct mode and connect Clearbit and Gmail. Select one Data Table with item_key and status text columns in all checkpoint nodes; prevent overlapping executions. In n8n inspect the pending Data Table row and sent mail, mark done if sent, or delete it only if no email was sent. In relay mode, n8n records webhook acceptance rather than downstream completion.
-
-</details>
+If email delivery is uncertain, inspect Gmail before retrying.
 
 <details>
 <summary>Inspiration &amp; credits</summary>

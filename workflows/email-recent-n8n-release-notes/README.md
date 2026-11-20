@@ -3,35 +3,19 @@
 Check the latest n8n GitHub release daily and email its release notes when it is less than one day old.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/email-recent-n8n-release-notes/) [![n8n JSON](../../assets/n8n-json.svg)](templates/email-recent-n8n-release-notes.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/email-recent-n8n-release-notes.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup and use
 
-Configure SMTP credentials and sender and recipient addresses on both email nodes. The relay does not authenticate callers; restrict access to it. The workflow uses UTC by default; change their schedules to your timezone if desired.
+Configure SMTP credentials and sender and recipient addresses on both email nodes. The workflow uses UTC by default; change their schedules to your timezone if desired.
 
 ## Behavior
 
-Daily at midnight, fetch the latest n8n release. When published less than 24 hours ago, convert its Markdown notes to HTML and send an email with the subject New n8n release. The relay responds after SMTP submission; a lost response may mean the email was already sent. Inspect your mail before rerunning.
-
-<details>
-<summary>In n8n</summary>
-
-Import the supplied n8n workflow and configure SMTP credentials and sender and recipient addresses on both email nodes. For n8n mode enable **Daily Trigger** and disable **SMTP relay webhook**. For Open Flow mode disable **Daily Trigger**, enable the relay, activate n8n and enter its production URL in **Send notes to SMTP relay**.
-
-</details>
+Daily at midnight, fetch the latest n8n release. When published less than 24 hours ago, convert its Markdown notes to HTML and send an email with the subject New n8n release. Inspect your mail before rerunning.
 
 <details>
 <summary>Inspiration &amp; credits</summary>
-
-## Changes to the source
-
-- Replace sample sender and recipient addresses with placeholders, set UTC explicitly and add an n8n SMTP relay for Open Flow.
 
 Adapted from [Email new n8n release notes](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Splitout/0652_Splitout_Schedule_Create_Scheduled.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

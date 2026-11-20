@@ -3,13 +3,8 @@
 Receive application details and save a CV link for human review.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/capture-job-applications/) [![n8n JSON](../../assets/n8n-json.svg)](templates/capture-job-applications.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/capture-job-applications.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup and use
 
@@ -20,20 +15,11 @@ Set the Drive folder, Airtable base and table. Create Airtable columns Name, Ema
 Each submission uploads the PDF and records the supplied details and Drive link. People review applications; this component does not score or shortlist candidates. Personal data and CVs are stored in Drive and Airtable. Avoid overlapping runs and inspect the destination before clearing a pending checkpoint after an uncertain write.
 
 <details>
-<summary>In n8n</summary>
-
-Import the n8n workflow to host the application form and upload PDFs to Google Drive. Set the Drive folder, Airtable base and table, and a Data Table with item_key, status and file_id text columns. In Choose mode set relay to true to send the application to Open Flow, or false to write directly from n8n. In relay mode configure the Open Flow URL, Airtable connection and persistent State. Restrict the Open Flow webhook to the n8n sender using a private network or authenticated gateway; it has no built-in caller authentication.
-
-</details>
-
-<details>
 <summary>Inspiration &amp; credits</summary>
 
 Adapted from [HR Job Posting and Evaluation with AI](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/HR_and_Recruitment/HR%20Job%20Posting%20and%20Evaluation%20with%20AI.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 
 Source collection notice: © 2024–2026 Enes Cingoz, [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). The source export does not identify a separate template author or license. See [repository licensing](../../README.md#licensing) for the scope of OOMOL contributions and third-party material.
-
-
 
 Changes from source: Isolate form intake, remove automated scoring and hiring decisions, add Open Flow relay and write checkpoints, and preserve phone numbers as text.
 

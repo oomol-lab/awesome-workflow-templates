@@ -3,17 +3,12 @@
 Extract a resume PDF sent to a Telegram bot, format its details, and return a new PDF.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/reformat-telegram-resume-pdf/) [![n8n JSON](../../assets/n8n-json.svg)](templates/reformat-telegram-resume-pdf.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/reformat-telegram-resume-pdf.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup
 
-Connect the Telegram nodes to your bot. Configure a reachable [Gotenberg](https://gotenberg.dev/) service in both PDF conversion nodes. Connect Telegram, select an AI model, set the allowed numeric chat ID in **Select authorized resume**, enable persistent State, and prevent overlapping runs. Restrict access to both relay URLs.
+Connect the Telegram nodes to your bot. Configure a reachable [Gotenberg](https://gotenberg.dev/) service in both PDF conversion nodes.
 
 ## Behavior
 
@@ -22,18 +17,10 @@ Send a PDF resume to the bot from the configured chat. The workflow extracts rea
 If PDF delivery is uncertain, inspect the Telegram chat before entering the update ID in **Select authorized resume** to acknowledge it. The command is treated as handled and queued resumes continue. Do not automatically replay an uncertain document send.
 
 <details>
-<summary>In n8n</summary>
-
-Import the supplied n8n workflow and connect the Telegram nodes to your bot. For Open Flow, disable **Telegram trigger**, enable **Resume text webhook** and **Resume delivery webhook**, activate n8n, and set their production URLs in the two Open Flow HTTP nodes. For direct n8n use, enable **Telegram trigger**, disable the two relay webhooks, set the authorized chat ID in **Auth**, and connect the OpenAI and Telegram credentials. A bot supports only one active webhook, so activate one format. Resume text is sent to the configured model and n8n/Gotenberg services.
-
-</details>
-
-<details>
 <summary>Inspiration &amp; credits</summary>
 
 ## Changes to the source
 
-- Supply n8n binary relays for PDF extraction and delivery while Open Flow performs the AI extraction and formatting.
 - Configure the private chat ID and repair the parsed-data mapping for the direct n8n path.
 
 Adapted from [Extract and reformat a resume from a Telegram PDF](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Telegram/0462_Telegram_Code_Create_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.

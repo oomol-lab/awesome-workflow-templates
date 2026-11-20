@@ -3,13 +3,8 @@
 Route a webhook ping or send its payload to an HTTP service and return a JSON response.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/route-webhook-ping-or-process/) [![n8n JSON](../../assets/n8n-json.svg)](templates/route-webhook-ping-or-process.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/route-webhook-ping-or-process.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup and use
 
@@ -17,21 +12,10 @@ Configure the service URL in **HTTP Service A** or **Call service A**. The defau
 
 ## Behavior
 
-Missing action defaults to ping and returns ok and pong. Action process sends payload to the service and returns ok, source and the service's json field. Missing payload defaults to an example object. Unsupported actions do not produce a successful response. If the service response is lost, the request may already have been processed; inspect the service before retrying. The Open Flow webhook waits up to 60 seconds for its response.
-
-<details>
-<summary>In n8n</summary>
-
-Import the supplied n8n workflow. For n8n mode enable **Webhook** and disable **Open Flow relay webhook**. For Open Flow mode disable **Webhook**, enable the relay, set the deployed Open Flow webhook URL in **Forward complete request**, and activate n8n. Send your JSON POST to the selected n8n production webhook. The n8n relay forwards the complete request body as JSON text and waits for the Open Flow response.
-
-</details>
+Missing action defaults to ping and returns ok and pong. Action process sends payload to the service and returns ok, source and the service's json field. Missing payload defaults to an example object. Unsupported actions do not produce a successful response. If the service response is lost, the request may already have been processed; inspect the service before retrying.
 
 <details>
 <summary>Inspiration &amp; credits</summary>
-
-## Changes to the source
-
-- Fix the default payload expression and add an n8n relay for complete arbitrary JSON requests and synchronous Open Flow responses.
 
 Adapted from [Scalable webhook orchestrator](https://github.com/Zie619/n8n-workflows/blob/94007c1445d9258a7da116646b79473e7c7c3282/workflows/Templates/9001_Scalable_Webhook_Orchestrator_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

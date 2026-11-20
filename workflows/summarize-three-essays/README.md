@@ -3,28 +3,16 @@
 Read the first three essay links from Paul Graham’s article index and summarize each page.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/summarize-three-essays/) [![n8n JSON](../../assets/n8n-json.svg)](templates/summarize-three-essays.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/summarize-three-essays.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup
 
-Configure an AI model. Use one format and protect the relay.
+Configure an AI model.
 
 ## Behavior
 
-Fetch the index, take its first three nested-table links, fetch each essay and return its title, URL and summary. The workflow sends page content to the model. Open Flow summarizes every 4,000-character chunk and combines those summaries. Summaries can differ and require review. Very large pages must fit workflow input and model limits.
-
-<details>
-<summary>In n8n</summary>
-
-In Open Flow, import the n8n workflow, enable its **HTML parsing relay**, configure a Header Auth credential and bind the matching secret N8N_HTML_RELAY_TOKEN and relay URL in both parser nodes. Configure the model in n8n for direct use. N8n uses its recursive document splitter and summarization chain.
-
-</details>
+Fetch the index, take its first three nested-table links, fetch each essay and return its title, URL and summary. The workflow sends page content to the model. Summaries can differ and require review. Very large pages must fit workflow input and model limits.
 
 <details>
 <summary>Inspiration &amp; credits</summary>

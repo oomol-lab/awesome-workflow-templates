@@ -3,32 +3,20 @@
 Audit a landing page for technical SEO and content improvements and email the findings.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/email-landing-page-seo-audit/) [![n8n JSON](../../assets/n8n-json.svg)](templates/email-landing-page-seo-audit.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/email-landing-page-seo-audit.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup
 
 Prevent overlapping executions.
 
-Configure the deployed webhook URL, connect Gmail, select an AI model, configure **Reserve audit email** and enable persistent State. Submit a public HTTP(S) landing page URL. Deploy with network controls that prevent access to private or internal hosts, including redirects.
+Submit a public HTTP(S) landing page URL. Deploy with network controls that prevent access to private or internal hosts, including redirects.
 
 ## Behavior
 
 The workflow fetches the requested page and produces a technical audit followed by a content audit. It emails the findings to the configured recipient with the page URL in the subject. Model findings are suggestions, not measured rankings or performance; review them. HTML is sent to the model and may appear in execution history. The page and each Code input/output must fit 1 MiB.
 
-If delivery is uncertain, inspect Gmail before replay. In Open Flow enter the pending key and confirmed or absent in **Reserve audit email**, replay the same submission and clear both fields.
-
-<details>
-<summary>In n8n</summary>
-
-Import the n8n workflow, connect OpenAI and Gmail, set the audit recipient in **Gmail**, and choose a Data Table with item_key and status text columns. For Open Flow set **Prepare audit** to relay, configure the deployed webhook URL, connect Gmail, select an AI model, configure **Reserve audit email** and enable persistent State. Restrict the webhook to trusted n8n. Direct mode runs in n8n; use one mode. In n8n inspect the pending Data Table row, mark it done after confirming delivery or delete it only if no email was sent.
-
-</details>
+If delivery is uncertain, inspect Gmail before replay.
 
 <details>
 <summary>Inspiration &amp; credits</summary>

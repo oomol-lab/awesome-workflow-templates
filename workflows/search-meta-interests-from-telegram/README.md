@@ -3,17 +3,12 @@
 Search Meta ad interests from an authorized Telegram command and return a CSV document.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/search-meta-interests-from-telegram/) [![n8n JSON](../../assets/n8n-json.svg)](templates/search-meta-interests-from-telegram.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/search-meta-interests-from-telegram.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup
 
-Connect the Telegram bot and Meta account with permission to search ad interests. Set the allowed numeric chat ID in **Select authorized interest search**. Restrict access to the relay URL. Enable persistent State and prevent overlapping runs.
+Connect the Telegram bot and Meta account with permission to search ad interests. Set the allowed numeric chat ID in **Select authorized interest search**.
 
 ## Behavior
 
@@ -22,19 +17,11 @@ Send `#interest topic` from the configured chat. The workflow searches Meta and 
 If delivery fails or is uncertain, inspect the Telegram chat before entering that update ID in **Select authorized interest search** to acknowledge it. The command is then treated as handled and queued commands continue. Do not automatically replay an uncertain document send.
 
 <details>
-<summary>In n8n</summary>
-
-Import the supplied n8n workflow, connect the relay Telegram node to the same bot, disable **Get interest name**, enable **CSV delivery webhook**, and enter its production URL in **Deliver CSV through n8n**. For direct n8n use, enable **Get interest name**, disable the relay webhook, configure its authorized chat ID and connect the Meta and Telegram credentials. A bot supports only one active webhook; activate one format.
-
-</details>
-
-<details>
 <summary>Inspiration &amp; credits</summary>
 
 ## Changes to the source
 
 - Replace the private chat ID with configuration and retain the chat filter.
-- Use Meta's current Provider API and a supplied n8n relay to turn rows into a CSV attachment; skip the source's paging metadata when building rows.
 
 Adapted from [Search Meta ad interests from Telegram](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Telegram/0388_Telegram_Code_Create_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

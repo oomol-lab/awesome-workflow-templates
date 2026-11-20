@@ -29,8 +29,6 @@ Adapted from [Automate SIEM Alert Enrichment with MITRE ATT&CK, Qdrant & Zendesk
 
 Source collection notice: © 2024–2026 Enes Cingoz, [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). The source export does not identify a separate template author or license. See [repository licensing](../../README.md#licensing) for the scope of OOMOL contributions and third-party material.
 
-
-
 Changes: isolate the Drive indexing path, configure the input and collection, align the embedding model and dimensions with retrieval, and use deterministic Open Flow point IDs.
 
 Collection license notice:

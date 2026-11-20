@@ -39,7 +39,6 @@ For the n8n template, configure the feed URL in **RSS Feed Read** and your Masto
 - Fixed the n8n `HTTP Request` status expression to reference each filtered item (`$json.title` and `$json.url`) instead of always reading the first item of `RSS Feed Read`.
 - Moved the Mastodon token from a URL query parameter to a Bearer `MASTODON_ACCESS_TOKEN` secret variable in Open Flow and updated the checkpoint only after each status post succeeds.
 
-
 Adapted from [post to mattermost v2](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Http/0752_HTTP_Rssfeedread_Automation_Scheduled.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). Attribution: Zie619 / n8n-workflows.
 
 The collection’s [MIT notice](https://github.com/Zie619/n8n-workflows/blob/94007c1445d9258a7da116646b79473e7c7c3282/LICENSE) is pinned at a later revision. This is the collection notice at that revision; it does not establish a separate original template author's license. Our changes are listed above; see [repository licensing](../../README.md#licensing).

@@ -3,35 +3,19 @@
 Convert a JSON array of row objects into a downloadable Excel workbook.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/download-webhook-rows-as-excel/) [![n8n JSON](../../assets/n8n-json.svg)](templates/download-webhook-rows-as-excel.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/download-webhook-rows-as-excel.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup and use
 
-Activate its webhook. Send a POST with a JSON array of row objects; optionally set the `filename` query parameter without an extension. The response is an XLSX download. For Open Flow, deploy it, set **Choose delivery mode** to `relay`, and enter its webhook URL in **Convert with Open Flow**.
+Activate its webhook. Send a POST with a JSON array of row objects; optionally set the `filename` query parameter without an extension. The response is an XLSX download.
 
 ## Behavior
 
 Each input object becomes a row. Nested object and array keys become dot-separated column headers. The default download name is `Export.xlsx`. Both webhooks are unauthenticated; restrict access if the input is sensitive. Requests and workbook outputs are subject to host size limits.
 
 <details>
-<summary>In n8n</summary>
-
-Import the n8n workflow and activate its webhook. Leave the mode as `direct` for n8n-only conversion. The Open Flow endpoint returns base64-encoded workbook data to the bundled n8n relay, which returns the XLSX bytes and attachment header to the caller.
-
-</details>
-
-<details>
 <summary>Inspiration &amp; credits</summary>
-
-## Changes to the source
-
-- Add mutually exclusive direct and Open Flow relay paths while preserving the binary download.
 
 Adapted from [Export JSON rows to an Excel file](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Respondtowebhook/0163_Respondtowebhook_Spreadsheetfile_Automate_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

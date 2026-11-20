@@ -52,7 +52,6 @@ The collection’s [MIT notice](https://github.com/Zie619/n8n-workflows/blob/940
 > OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 > SOFTWARE.
 
-
 Open Flow includes htmlparser2 10.0.0 and bundled dependencies. Their license notices follow.
 
 ```text

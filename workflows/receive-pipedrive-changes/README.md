@@ -3,35 +3,19 @@
 Receive Pipedrive change notifications.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/receive-pipedrive-changes/) [![n8n JSON](../../assets/n8n-json.svg)](templates/receive-pipedrive-changes.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/receive-pipedrive-changes.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup and use
 
-Activate it, then register the **Receive Pipedrive event** production URL with Pipedrive Webhooks API v2, setting event_action and event_object to * and giving it a name. The URL must be publicly reachable by Pipedrive. For Open Flow enter its webhook URL in **Forward to Open Flow** and enable that node. Restrict access to the webhook endpoints.
+Activate it, then register the **Receive Pipedrive event** production URL with Pipedrive Webhooks API v2, setting event_action and event_object to * and giving it a name. The URL must be publicly reachable by Pipedrive. Restrict access to the webhook endpoints.
 
 ## Behavior
 
-Pipedrive v2 reports a merge as separate delete and change events, and uses data for the current object. The webhook receives Pipedrive change events and the optional relay forwards each event to Open Flow as workflow output. Neither endpoint verifies the sender. Event data may appear in execution history. Event details may appear in execution history.
-
-<details>
-<summary>In n8n</summary>
-
-Import the n8n workflow and activate it, then register the **Receive Pipedrive event** production URL with Pipedrive Webhooks API v2, setting event_action and event_object to * and giving it a name. Leave it disabled for n8n alone. Restrict access and inspect n8n execution history for relay failures.
-
-</details>
+Pipedrive v2 reports a merge as separate delete and change events, and uses data for the current object. Neither endpoint verifies the sender. Event data may appear in execution history. Event details may appear in execution history.
 
 <details>
 <summary>Inspiration &amp; credits</summary>
-
-## Changes to the source
-
-- Use a manually registered n8n Webhook with Pipedrive v2, whose registration requires a name, and add an optional relay.
 
 Adapted from [Pipedrive change events](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Pipedrive/0071_Pipedrive_Update_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

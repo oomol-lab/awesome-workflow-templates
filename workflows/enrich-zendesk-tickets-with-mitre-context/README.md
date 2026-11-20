@@ -33,8 +33,6 @@ Adapted from [Automate SIEM Alert Enrichment with MITRE ATT&CK, Qdrant & Zendesk
 
 Source collection notice: © 2024–2026 Enes Cingoz, [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). The source export does not identify a separate template author or license. See [repository licensing](../../README.md#licensing) for the scope of OOMOL contributions and third-party material.
 
-
-
 Changes from source: isolate the Zendesk enrichment entry from the chat and Drive indexing paths, add a manual trigger and pagination, require matching embedding model and dimensions, and add update checkpoints.
 
 Collection license notice:

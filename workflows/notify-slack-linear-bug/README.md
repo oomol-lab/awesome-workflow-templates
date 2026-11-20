@@ -3,35 +3,19 @@
 Send a Slack notification for Linear issue events that match the configured bug filter.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/notify-slack-linear-bug/) [![n8n JSON](../../assets/n8n-json.svg)](templates/notify-slack-linear-bug.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/notify-slack-linear-bug.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup and use
 
-For Open Flow mode disable it, enable **Linear Trigger (Open Flow)**, configure **Forward to Open Flow**, and deploy the Open Flow workflow. Configure the Slack connection and destination channel for the chosen mode. The Open Flow endpoint does not authenticate callers; restrict access.
+Configure the Slack connection and destination channel for the chosen mode.
 
 ## Behavior
 
 The original filter matches events whose priority is at least 3 and whose first label is exactly `bug`. The source calls these urgent bugs, but Linear priority values of 3 and higher need not mean urgent. The message uses the issue URL and title-cased title and mentions the channel. The trigger accepts issue events without checking the action. Inspect Slack before retrying an unknown send result.
 
 <details>
-<summary>In n8n</summary>
-
-Configure the Linear team and credentials in the n8n trigger. For n8n mode enable **Linear Trigger**. n8n computes the title and forwards the complete Linear event in Open Flow mode.
-
-</details>
-
-<details>
 <summary>Inspiration &amp; credits</summary>
-
-## Changes to the source
-
-- Replace the example team, channel and mock personal data with configuration, and add an optional n8n relay.
 
 Adapted from [Linear bug notifications](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Code/0309_Code_Filter_Automate_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

@@ -3,32 +3,20 @@
 Embed new Notion page text and store the vectors and page metadata in Supabase.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/embed-notion-pages-to-supabase-store/) [![n8n JSON](../../assets/n8n-json.svg)](templates/embed-notion-pages-to-supabase-store.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/embed-notion-pages-to-supabase-store.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup
 
 Create a Supabase table with content text, metadata jsonb and embedding vector(1536) columns, and allow your API role to insert rows. Name the database title property Page, or adjust the title extraction in **Prepare page text**. Prevent overlapping runs.
 
-For Open Flow set **Choose indexing mode** to relay and configure the webhook URL. Bind OPENAI_API_KEY, SUPABASE_API_KEY and SUPABASE_AUTHORIZATION as secret Variables; the last value includes the Bearer prefix. Set the Supabase REST table URL in **Insert page vectors**, and enable persistent State. Restrict access to the Open Flow webhook.
+Bind OPENAI_API_KEY, SUPABASE_API_KEY and SUPABASE_AUTHORIZATION as secret Variables; the last value includes the Bearer prefix.
 
 ## Behavior
 
-New Notion database pages are handled individually. The workflow reads direct page blocks, excludes images and video, joins available text and stores chunks with page ID, creation time and title. Child blocks are not recursively retrieved. Open Flow uses 1,000-character windows with 120-character overlap and accepts at most 20 chunks per page. Open Flow uses text-embedding-ada-002 and validates 1,536 dimensions. Match the table vector dimension to your configured model. No vector search is included. Page content is sent to OpenAI and Supabase and can appear in execution history. Code input and output ports must each fit 1 MiB.
+New Notion database pages are handled individually. The workflow reads direct page blocks, excludes images and video, joins available text and stores chunks with page ID, creation time and title. Child blocks are not recursively retrieved. Match the table vector dimension to your configured model. No vector search is included. Page content is sent to OpenAI and Supabase and can appear in execution history. Code input and output ports must each fit 1 MiB.
 
-If insertion or relay completion is uncertain, inspect the table for the page ID before retrying. In Open Flow enter the pending key in **Reserve page indexing**, choose confirmed if all rows exist or absent only if none exist, replay the same page and clear the fields. Partial insertion needs manual reconciliation.
-
-<details>
-<summary>In n8n</summary>
-
-Configure Notion database access, Supabase and OpenAI credentials in n8n. Select one Data Table with item_key and status text columns in all checkpoint nodes. Direct mode runs in n8n; use one mode. n8n uses the source 256-token splitter with 30-token overlap. In n8n inspect the pending row and vector table, mark done after all chunks are present or delete the reservation only when none were inserted.
-
-</details>
+Partial insertion needs manual reconciliation.
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -3,19 +3,14 @@
 Create a destination Grist row for each confirmed source row that is not already present.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/copy-confirmed-grist-rows-once/) [![n8n JSON](../../assets/n8n-json.svg)](templates/copy-confirmed-grist-rows-once.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/copy-confirmed-grist-rows-once.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup
 
 In Grist, create a source table with a boolean **Confirmed** column and a destination table with a **Source** column that stores source row IDs. Configure a Grist webhook for source row additions and updates.
 
-For Open Flow, deploy the workflow, connect Grist and set the destination document and table IDs in **Check the next source row**. Store the same Grist API key as Secret Variable `GRIST_API_KEY` for **Create destination row**. Both webhooks accept requests without authentication; restrict access to their URLs.
+Both webhooks accept requests without authentication; restrict access to their URLs.
 
 ## Behavior
 
@@ -24,19 +19,11 @@ Each webhook can contain multiple source rows. For each row whose Confirmed valu
 This is a lookup followed by a create, not an atomic uniqueness guarantee. Avoid concurrent runs for the same source row, or enforce uniqueness in the destination. Acknowledgment confirms webhook receipt rather than creation. If a lookup or write fails, later rows in that batch may remain unprocessed; earlier rows remain. An uncertain write may have succeeded, so inspect Grist before replaying.
 
 <details>
-<summary>In n8n</summary>
-
-Import the included n8n workflow and configure its webhook URL in Grist. Set **Choose delivery mode** to `relay` and the Open Flow URL in **Forward to Open Flow**. To run directly in n8n, leave the mode at `direct`, connect Grist in **get existing** and **Create Row**, and set the destination IDs in both.
-
-</details>
-
-<details>
 <summary>Inspiration &amp; credits</summary>
 
 ## Changes to the source
 
 - Process every row in a Grist webhook batch rather than only the first.
-- Add a relay for Open Flow because Grist sends a top-level JSON array.
 
 Adapted from [Transfer confirmed Grist rows](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Grist/0479_Grist_Stickynote_Create_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

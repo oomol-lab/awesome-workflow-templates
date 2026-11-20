@@ -59,8 +59,6 @@ The collection’s [MIT notice](https://github.com/Zie619/n8n-workflows/blob/940
 > OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 > SOFTWARE.
 
-
-
 Open Flow bundles [fflate 0.7.4](https://github.com/101arrowz/fflate), copyright 2020 Arjun Barrett, under the MIT License. The complete notice is included in the Code node.
 
 </details>

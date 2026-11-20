@@ -3,28 +3,16 @@
 Parse uploaded files and index their translated and analyzed text.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/index-translated-document-analysis-in-pinecone/) [![n8n JSON](../../assets/n8n-json.svg)](templates/index-translated-document-analysis-in-pinecone.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/index-translated-document-analysis-in-pinecone.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup
 
-Configure LlamaCloud, Gemini, Mistral and a 1024-dimensional Pinecone index. In Choose form mode select direct, or relay to send uploaded file IDs to Open Flow; for relay set the Open Flow URL and Header Auth credential. In Open Flow set the Pinecone host, bind DOCUMENT_RELAY_AUTH to that same Authorization header, bind LLAMA_CLOUD_API_KEY, connect Gemini, Mistral and Pinecone, and enable persistent State. The workflow uses the default Pinecone namespace.
+Configure LlamaCloud, Gemini, Mistral and a 1024-dimensional Pinecone index. The workflow uses the default Pinecone namespace.
 
 ## Use
 
-Submit one or two files, an email address and a unique Request ID. Use the same ID when retrying. Text is sent to LlamaCloud, Gemini, Mistral and Pinecone. Protect execution history and the index. Avoid overlapping runs with the same ID. For an unknown parse creation or Pinecone write, inspect the destination. In Choose document processing step enter the pending key and confirmed or absent; for a confirmed parse also enter its job ID, then replay the original request. Clear recovery fields after resuming. The relay acknowledges admission, not completion.
-
-<details>
-<summary>In n8n</summary>
-
-In n8n connect Gemini, Mistral and Pinecone credentials and select the Pinecone index. Set a LlamaCloud Bearer Header Auth credential on the parsing and upload HTTP nodes, and select a Data Table with item_key and status text columns in the checkpoint nodes. In n8n inspect LlamaCloud and Pinecone and manually repair any partial ingestion before clearing the Data Table checkpoint.
-
-</details>
+Submit one or two files, an email address and a unique Request ID. Use the same ID when retrying. Text is sent to LlamaCloud, Gemini, Mistral and Pinecone. Protect execution history and the index. Avoid overlapping runs with the same ID. For an unknown parse creation or Pinecone write, inspect the destination. In Choose document processing step enter the pending key and confirmed or absent; for a confirmed parse also enter its job ID, then replay the original request. Clear recovery fields after resuming.
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -3,26 +3,14 @@
 Extract and categorize statement transactions from new PDFs or images into Drive CSV files.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/extract-drive-statements-to-csv/) [![n8n JSON](../../assets/n8n-json.svg)](templates/extract-drive-statements-to-csv.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/extract-drive-statements-to-csv.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup and use
 
-Use separate Google Drive input and output folders. Configure Google Drive, OpenAI and Gemini connections. Configure the relay HTTP header credential with your Gemini API key. Protect the PDF relay with an authenticated gateway or private network.
+Use separate Google Drive input and output folders. Configure Google Drive, OpenAI and Gemini connections.
 
 The workflow processes each new PDF or PNG, JPEG, WebP, HEIC or HEIF image, extracts transaction rows and a category column, validates the CSV, and uploads a CSV file. PDF text extraction requires selectable text. Review results against the original statement; model output can omit or misread transactions. Statement content is sent to the configured model, and images are temporarily uploaded to Gemini Files. Other image formats stop with an explicit error. An uncertain upload leaves a pending file ID; inspect the output folder before clearing the checkpoint and retrying. Avoid overlapping runs.
-
-<details>
-<summary>In n8n</summary>
-
-Both the Gemini connector and n8n relay must use the same Gemini project. Configure the input and destination folder IDs, persistent State and protected n8n PDF text and image upload webhooks. In n8n connect Drive, configure OpenAI and Gemini HTTP header credentials, set the same folder IDs, select a Data Table with item_key and status columns, and use a model available to your account.
-
-</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>
@@ -30,8 +18,6 @@ Both the Gemini connector and n8n relay must use the same Gemini project. Config
 Adapted from [Extract text from PDF and image using Vertex AI (Gemini) into CSV](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/PDF_and_Document_Processing/Extract%20text%20from%20PDF%20and%20image%20using%20Vertex%20AI%20(Gemini)%20into%20CSV.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 
 Source collection notice: © 2024–2026 Enes Cingoz, [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). The source export does not identify a separate template author or license. See [repository licensing](../../README.md#licensing) for the scope of OOMOL contributions and third-party material.
-
-
 
 Changes: update retired models, remove the download-once behavior, process each source file independently, validate CSV and guard uncertain uploads.
 

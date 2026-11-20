@@ -3,35 +3,19 @@
 Add Gumroad buyers to a MailerLite group and record their sales in Google Sheets.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/save-gumroad-sales-to-mailerlite-and-sheets/) [![n8n JSON](../../assets/n8n-json.svg)](templates/save-gumroad-sales-to-mailerlite-and-sheets.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/save-gumroad-sales-to-mailerlite-and-sheets.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup
 
-Create a MailerLite group and a Google Sheet with columns `date`, `product name`, `email`, and `country` in that order. Bind a secret Variable MAILERLITE_API_KEY to both HTTP nodes, set the group ID in **Prepare group assignment**, and connect Google Sheets with its spreadsheet ID and range in **Append sale to sheet**.
+Create a MailerLite group and a Google Sheet with columns `date`, `product name`, `email`, and `country` in that order.
 
 ## Behavior
 
 A sale upserts the buyer by email with the country, assigns that subscriber to the group, and appends the sale date, product, email and country. The webhook acknowledges before these operations finish. If a write fails or its response is lost, inspect MailerLite and the sheet before replaying; an earlier write may already have succeeded. The webhook does not authenticate callers and can create subscribers and rows, so restrict access to trusted callers.
 
 <details>
-<summary>In n8n</summary>
-
-In the bundled n8n workflow connect Gumroad, set **Choose delivery mode** to `relay`, and set the Open Flow webhook URL in **Forward sale to Open Flow**. For n8n-only operation choose `direct`, connect the current MailerLite and Google Sheets credentials, set the MailerLite group ID in **Assign to group**, and set the spreadsheet and sheet in **append row in CRM**. Use one mode. Only add buyers who consent to receive messages; MailerLite may trigger a group automation and its account settings control opt-in.
-
-</details>
-
-<details>
 <summary>Inspiration &amp; credits</summary>
-
-## Changes to the source
-
-- Replace private group and sheet IDs with configuration and add an optional n8n relay.
 
 Adapted from [Gumroad sale trigger](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Mailerlite/1874_Mailerlite_Gumroad_Automation_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

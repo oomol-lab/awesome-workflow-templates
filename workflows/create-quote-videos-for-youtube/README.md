@@ -3,30 +3,14 @@
 Combine a quote with a random video and music, upload a portrait clip and update its source sheet.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/create-quote-videos-for-youtube/) [![n8n JSON](../../assets/n8n-json.svg)](templates/create-quote-videos-for-youtube.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/create-quote-videos-for-youtube.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
-
-## Setup
-
-In Open Flow configure the Drive folder IDs, spreadsheet, sheet names and Cloudinary connection. Enable persistent State.
 
 ## Behavior
 
 Run with a unique random request ID of 16–128 letters, numbers, underscores or hyphens. It selects an unused quote and random video and music, records the background inventory, creates a portrait clip with quote and author, uploads it publicly to YouTube, and marks the quote and selected video as used. The source sheet has Index, Qoute, Author, CreateStatus and YoutubeURL columns; background sheets have URL and status columns. The first 100 files in each folder are considered. Cloudinary receives the selected media and text, and its delivery URL includes the quote and author. Use a preset restricted to the intended uploads and protect execution history.
 
 An uncertain write leaves the request pending. Inspect the inventory sheets, Cloudinary assets, YouTube and status cells. After completing or repairing all effects, enter the pending key and confirmed in **Select and reserve clip** and rerun; use absent only after verifying no prior effects remain. Clear these recovery fields afterward. Avoid overlapping runs and edits to the source sheets during a run. Uploaded videos are public; review source content before running.
-
-<details>
-<summary>In n8n</summary>
-
-Activate the n8n workflow, configure the upload and status webhook URLs, and bind AUTOCLIP_RELAY_TOKEN to the token used by their Header Auth credentials as an Authorization: Bearer header. In n8n configure the Drive and Sheets credentials and folder and sheet IDs, the YouTube OAuth credential, and the Cloudinary cloud name and restricted unsigned video upload preset in both upload nodes. Select one Data Table with text columns item_key, status and video_id in all checkpoint and relay nodes. For a direct n8n run set a new request ID in **Configure request ID**. The relay returns admission while upload continues; Open Flow polls for the result. In n8n remove the Data Table checkpoint only after all effects are reconciled.
-
-</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

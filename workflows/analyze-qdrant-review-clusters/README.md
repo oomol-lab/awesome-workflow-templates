@@ -35,8 +35,6 @@ Adapted from [Customer Insights with Qdrant, Python and Information Extractor](h
 
 Source collection notice: © 2024–2026 Enes Cingoz, [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). The source export does not identify a separate template author or license. See [repository licensing](../../README.md#licensing) for the scope of OOMOL contributions and third-party material.
 
-
-
 Changes from source: Publish the independently callable analysis path, read Qdrant in small pages up to the original 500-record limit, use JavaScript K-means and add sheet-write checkpoints.
 
 Collection license notice:

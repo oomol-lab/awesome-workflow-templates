@@ -3,13 +3,8 @@
 Clear and rebuild a Qdrant knowledge collection from a Google Drive folder.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/rebuild-company-knowledge-from-drive/) [![n8n JSON](../../assets/n8n-json.svg)](templates/rebuild-company-knowledge-from-drive.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/rebuild-company-knowledge-from-drive.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup
 
@@ -20,20 +15,11 @@ The collection is cleared completely on each new rebuild. Use a dedicated collec
 Drive is listed before deletion; an empty folder clears the collection and indexes nothing. Do not overlap rebuilds. A pending record means the deletion or insertion outcome may be unknown; inspect Qdrant and reconcile before retrying, reusing the same rebuild ID. Rebuilding is not transactional and searches can see a partial collection until completion.
 
 <details>
-<summary>In n8n</summary>
-
-Configure the Drive folder, Qdrant host and company-knowledge collection, OpenAI text-embedding-3-large at 1536 dimensions, and n8n credentials. In Open Flow configure QDRANT_API_KEY, persistent State, and the private n8n document extraction webhook. In n8n set up a Data Table with item_key and status columns, configure the same folder and collection, and use only one mode per rebuild. In the n8n Code task runner install @n8n/ai-utilities 0.40.0, @langchain/textsplitters 1.0.2 and their parser dependencies d3-dsv 2.0.0, epub2 3.0.2, html-to-text 9.0.5, mammoth 1.12.1 and pdf-parse 2.4.5. Set NODE_FUNCTION_ALLOW_EXTERNAL=@n8n/ai-utilities,@langchain/textsplitters. Supply a unique rebuild ID in Open Flow, or configure the same stable ID in the n8n manual path. A confirmed deletion is followed by parsing through the n8n binary loader and Open Flow embedding and indexing, including Google Docs exported as text.
-
-</details>
-
-<details>
 <summary>Inspiration &amp; credits</summary>
 
 Adapted from [AI-Powered Email Automation for Business: Summarize & Respond with RAG](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/OpenAI_and_LLMs/AI-Powered%20Email%20Automation%20for%20Business_%20Summarize%20%26%20Respond%20with%20RAG.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 
 Source collection notice: © 2024–2026 Enes Cingoz, [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). The source export does not identify a separate template author or license. See [repository licensing](../../README.md#licensing) for the scope of OOMOL contributions and third-party material.
-
-
 
 Changes: isolate Drive rebuild, list all pages before clearing, align model and dimensions with inquiry retrieval, and add rebuild checkpoints.
 

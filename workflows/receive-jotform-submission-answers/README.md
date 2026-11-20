@@ -3,35 +3,19 @@
 Receive answers when a Jotform form is submitted.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/receive-jotform-submission-answers/) [![n8n JSON](../../assets/n8n-json.svg)](templates/receive-jotform-submission-answers.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/receive-jotform-submission-answers.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup and use
 
-Connect Jotform and choose the form in **JotForm Trigger**. Activate it to register the webhook; its URL must be publicly reachable by Jotform. For Open Flow enter its webhook URL in **Forward to Open Flow** and enable that node. Restrict access to the webhook endpoints.
+Connect Jotform and choose the form in **JotForm Trigger**. Activate it to register the webhook; its URL must be publicly reachable by Jotform. Restrict access to the webhook endpoints.
 
 ## Behavior
 
-The trigger resolves form question names and returns answers only, as in the source defaults. The optional relay forwards those answers to Open Flow. Neither endpoint verifies the sender. Submission answers may appear in execution history. Event details may appear in execution history.
-
-<details>
-<summary>In n8n</summary>
-
-Import the n8n workflow, connect Jotform and choose the form in **JotForm Trigger**. Leave it disabled for n8n alone. Restrict access and inspect n8n execution history for relay failures.
-
-</details>
+The trigger resolves form question names and returns answers only, as in the source defaults. Neither endpoint verifies the sender. Submission answers may appear in execution history. Event details may appear in execution history.
 
 <details>
 <summary>Inspiration &amp; credits</summary>
-
-## Changes to the source
-
-- Replace the example form ID and add an optional n8n relay.
 
 Adapted from [Jotform submission answers](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Jotform/1010_Jotform_Automate_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

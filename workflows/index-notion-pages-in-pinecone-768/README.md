@@ -3,34 +3,20 @@
 Embed new Notion page text and store the vectors and page metadata in Pinecone.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/index-notion-pages-in-pinecone-768/) [![n8n JSON](../../assets/n8n-json.svg)](templates/index-notion-pages-in-pinecone-768.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/index-notion-pages-in-pinecone-768.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup
 
 Create a new Pinecone dense index with 768 dimensions. Configure Notion database access and name its title property Name, or adjust **Prepare page text**. Prevent overlapping runs.
 
-Restrict access to the Open Flow webhook.
-
 ## Behavior
 
 Each new page is processed separately. Direct page blocks are read, images and video excluded, and text split into 1,000-character windows with 120-character overlap, up to 20 chunks per page. Gemini Embedding 2 generates 768-dimensional vectors; Pinecone records contain the page ID, creation time, title and chunk text. Existing vectors from other embedding models cannot be compared with these vectors; re-embed into a fresh index. Page content is sent to Gemini and Pinecone and may appear in execution history. Code input and output ports must each fit 1 MiB. No vector search is included.
 
-If the upsert or relay result is unknown, inspect the index for each page chunk before retrying. In Open Flow enter the pending key in **Reserve page indexing** and select confirmed if all chunks exist or absent only if none exist, replay the same page and clear the fields. Reconcile partial writes manually.
+Reconcile partial writes manually.
 
 The source model text-embedding-004 was retired. The replacement changes the embedding space; both formats explicitly request 768 dimensions. See [Google's embedding documentation](https://ai.google.dev/gemini-api/docs/embeddings) and [Pinecone's upsert API](https://docs.pinecone.io/reference/api/2025-10/data-plane/upsert).
-
-<details>
-<summary>In n8n</summary>
-
-In n8n configure two HTTP Header Auth credentials: x-goog-api-key for Gemini and Api-Key for Pinecone. Set the Pinecone index host, and select one Data Table with item_key and status text columns. For Open Flow set **Choose indexing mode** to relay, configure the webhook URL and Pinecone index host, bind GEMINI_API_KEY and PINECONE_API_KEY as secrets and enable persistent State. Direct mode runs in n8n; use one mode. In n8n mark the pending Data Table row done after all chunks are present or delete it only when none were written.
-
-</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

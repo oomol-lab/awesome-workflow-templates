@@ -3,28 +3,16 @@
 Resolve article tags in WordPress and create a tagged draft from RSS content.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/generate-and-resolve-wordpress-tags/) [![n8n JSON](../../assets/n8n-json.svg)](templates/generate-and-resolve-wordpress-tags.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/generate-and-resolve-wordpress-tags.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup
 
-Import both Open Flow workflows, connect WordPress to both actions in Resolve WordPress Tags and the draft action, publish the worker, and refresh the Resolve generated tags capability in the main workflow. Configure a model and persistent State. Choose one RSS trigger and set its feed URL. The Open Flow webhook accepts id, title and content; restrict it to trusted senders.
+Choose one RSS trigger and set its feed URL.
 
 ## Behavior
 
-The callable worker accepts one or more tag names, finds matching WordPress slugs, creates missing tags and returns their IDs. The RSS demo uses each entry’s GUID or link as its stable ID, generates tags from its title and content, and creates a tagged draft. A pending tag or post checkpoint blocks a retry after an uncertain write. Inspect WordPress before clearing a checkpoint. Do not overlap runs.
-
-<details>
-<summary>In n8n</summary>
-
-Set the feed URL in the n8n RSS frontend and its Open Flow webhook URL. In n8n set the same workflow ID in Auto-Tag Posts in WordPress, configure the WordPress site URL and credentials, and create a Data Table with item_key and status text fields for both tag and post checkpoints.
-
-</details>
+The RSS demo uses each entry’s GUID or link as its stable ID, generates tags from its title and content, and creates a tagged draft. A pending tag or post checkpoint blocks a retry after an uncertain write. Inspect WordPress before clearing a checkpoint. Do not overlap runs.
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -3,35 +3,19 @@
 Receive Mailjet email sent events with exact message IDs.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/receive-mailjet-sent-events/) [![n8n JSON](../../assets/n8n-json.svg)](templates/receive-mailjet-sent-events.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/receive-mailjet-sent-events.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup and use
 
-The URL must be publicly reachable by Mailjet. For Open Flow enter its webhook URL in **Forward to Open Flow** and enable that node. Restrict access to the webhook endpoints.
+The URL must be publicly reachable by Mailjet. Restrict access to the webhook endpoints.
 
 ## Behavior
 
-Mailjet may send multiple events in one request. Integers outside JavaScript’s safe range become decimal strings to preserve exact IDs. The optional relay forwards each event to Open Flow. Neither endpoint authenticates the sender. Event details may appear in execution history.
-
-<details>
-<summary>In n8n</summary>
-
-Import and activate the n8n workflow, then register the **Receive Mailjet events** production webhook URL in Mailjet for the sent event. Leave it disabled for n8n alone. The n8n workflow reads the original bytes and emits each event separately. Restrict access and inspect n8n execution history for relay failures.
-
-</details>
+Mailjet may send multiple events in one request. Integers outside JavaScript’s safe range become decimal strings to preserve exact IDs. Neither endpoint authenticates the sender. Event details may appear in execution history.
 
 <details>
 <summary>Inspiration &amp; credits</summary>
-
-## Changes to the source
-
-- Replace automatic trigger registration with a manually registered raw webhook and preserve large numeric IDs as strings; add an optional n8n relay.
 
 Adapted from [Mailjet sent events](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Mailjet/0994_Mailjet_Automate_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

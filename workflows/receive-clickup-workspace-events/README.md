@@ -3,35 +3,19 @@
 Receive workspace events from ClickUp.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/receive-clickup-workspace-events/) [![n8n JSON](../../assets/n8n-json.svg)](templates/receive-clickup-workspace-events.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/receive-clickup-workspace-events.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup and use
 
-Connect ClickUp and set the workspace ID in **ClickUp Trigger**. For Open Flow, enter its webhook URL in **Forward to Open Flow** and enable that node. Restrict access to the relay endpoint.
+Connect ClickUp and set the workspace ID in **ClickUp Trigger**.
 
 ## Behavior
 
 The trigger emits each complete ClickUp event for the configured workspace. Event details may appear in execution history.
 
 <details>
-<summary>In n8n</summary>
-
-Import the n8n workflow, connect ClickUp and set the workspace ID in **ClickUp Trigger**. n8n registers a webhook for all events on activation. Leave it disabled for n8n alone. n8n validates the ClickUp signature before the optional relay forwards the event to Open Flow as workflow output. The fixed n8n trigger computes the signature using the parsed body serialized as JSON; a delivery with different original JSON formatting can fail validation. Monitor n8n execution history for relay failures.
-
-</details>
-
-<details>
 <summary>Inspiration &amp; credits</summary>
-
-## Changes to the source
-
-- Add an optional n8n relay for complete ClickUp payloads in Open Flow.
 
 Adapted from [ClickUp workspace events](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Clickup/0047_Clickup_Update_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

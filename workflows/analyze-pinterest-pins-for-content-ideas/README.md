@@ -33,8 +33,6 @@ Adapted from [Automate Pinterest Analysis & AI-Powered Content Suggestions With 
 
 Source collection notice: © 2024–2026 Enes Cingoz, [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). The source export does not identify a separate template author or license. See [repository licensing](../../README.md#licensing) for the scope of OOMOL contributions and third-party material.
 
-
-
 Changes from source: configure account and recipient, use pin_id for upserts, serialize writes before analysis, page Pinterest data and add write checkpoints. The schedule is explicitly Monday in UTC. Open Flow reads the table before analysis; n8n uses its Airtable tool and separate summarizer.
 
 Collection license notice:

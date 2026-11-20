@@ -3,13 +3,8 @@
 Archive Telegram receipt images in S3 and save extracted expense fields in Airtable.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/archive-telegram-receipts-with-textract/) [![n8n JSON](../../assets/n8n-json.svg)](templates/archive-telegram-receipts-with-textract.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/archive-telegram-receipts-with-textract.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup
 
@@ -19,21 +14,10 @@ Connect the Telegram bot and activate it. The source leaves the Airtable field s
 
 ## Behavior
 
-Send the bot a receipt image or document it can download. The original file is uploaded under its Telegram filename while Textract analyzes the same bytes; the configured matching summary fields are appended to Airtable. The branches run independently, so one can succeed when the other fails. Reusing a filename can overwrite the S3 object. The webhook acknowledges before the work finishes. Check both destinations before replaying an uncertain write. Receipts and execution data may contain sensitive information. The Open Flow webhook does not authenticate callers; restrict access to trusted callers. Runtime request and file size limits apply.
-
-<details>
-<summary>In n8n</summary>
-
-Import the n8n workflow, connect the Telegram bot and activate it. Set **Choose delivery mode** to `relay` and configure the Open Flow webhook in **Forward receipt**. For n8n-only operation choose `direct`, connect AWS and Airtable, configure the bucket and table, and select the same field names in **Airtable**.
-
-</details>
+Send the bot a receipt image or document it can download. The original file is uploaded under its Telegram filename while Textract analyzes the same bytes; the configured matching summary fields are appended to Airtable. The branches run independently, so one can succeed when the other fails. Reusing a filename can overwrite the S3 object. The webhook acknowledges before the work finishes. Check both destinations before replaying an uncertain write. Receipts and execution data may contain sensitive information. Runtime request and file size limits apply.
 
 <details>
 <summary>Inspiration &amp; credits</summary>
-
-## Changes to the source
-
-- Replace private destinations with configuration, require an explicit Airtable field selection, and provide an optional n8n receipt relay.
 
 Adapted from [Telegram receipt expense extraction](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Awstextract/0148_Awstextract_Telegram_Automate_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

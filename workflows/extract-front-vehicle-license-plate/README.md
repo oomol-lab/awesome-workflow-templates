@@ -3,13 +3,8 @@
 Extract the front-most vehicle license plate from an uploaded image.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/extract-front-vehicle-license-plate/) [![n8n JSON](../../assets/n8n-json.svg)](templates/extract-front-vehicle-license-plate.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/extract-front-vehicle-license-plate.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup
 
@@ -20,13 +15,6 @@ Upload a JPG or PNG through the form.
 The vision model reads the license plate of the front-most vehicle and displays the result on the form completion page. It may misread characters or return UNREADABLE; a person should verify the image. The uploaded image remains in the OpenAI account until deleted according to that account's file retention settings. Images, results and execution history can contain personal information; protect them.
 
 See the [OpenAI image input documentation](https://platform.openai.com/docs/guides/images-vision).
-
-<details>
-<summary>In n8n</summary>
-
-Import the n8n workflow and upload a JPG or PNG through the form. Direct mode uses the original OpenRouter vision model and credentials. For Open Flow set **Choose vision mode** to relay, configure the Open Flow webhook URL and OpenAI Header Auth in **Upload image artifact** as Authorization: Bearer followed by your OpenAI key. Bind the same account's OPENAI_API_KEY in Open Flow, and select a Data Table with item_key and status text columns. Restrict the Open Flow webhook to trusted n8n. Relay mode uploads the original binary to OpenAI Files with purpose vision and passes only its file ID to Open Flow for the Responses API; image bytes do not pass through a Code port. If the artifact upload or relay result is unknown, inspect the OpenAI Files account and n8n execution before retrying. Reconcile the pending Data Table row and manually remove any unneeded artifact; delete the row only after confirming no upload occurred.
-
-</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

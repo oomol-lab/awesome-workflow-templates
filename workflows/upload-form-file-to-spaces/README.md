@@ -3,35 +3,19 @@
 Upload a form file to DigitalOcean Spaces and return its CDN link.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/upload-form-file-to-spaces/) [![n8n JSON](../../assets/n8n-json.svg)](templates/upload-form-file-to-spaces.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/upload-form-file-to-spaces.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup and use
 
-Configure its S3 credentials for your DigitalOcean Spaces endpoint and bucket. Enable the Spaces CDN. For Open Flow mode configure the relay URL, deploy the workflow and set your CDN base in **Build CDN link**. Restrict access to the Open Flow endpoint, which does not authenticate callers.
+Configure its S3 credentials for your DigitalOcean Spaces endpoint and bucket. Enable the Spaces CDN.
 
 ## Behavior
 
 Public-read permits anyone with the link to read the object. Spaces CDN must be enabled; a prior cached object may take time to refresh. If an upload result is unknown, inspect the bucket before retrying; a later link or form failure does not undo the upload.
 
 <details>
-<summary>In n8n</summary>
-
-Import the n8n workflow and configure its S3 credentials for your DigitalOcean Spaces endpoint and bucket. Set **Execution mode** to n8n or openflow. Publish the n8n form and choose one mode. n8n receives one file and uploads its bytes with the **public-read** ACL, then the selected branch shows its CDN URL on the form completion page. The Open Flow path receives the form's file metadata after n8n completes the upload.
-
-</details>
-
-<details>
 <summary>Inspiration &amp; credits</summary>
-
-## Changes to the source
-
-- Configure the form for one file, correct its binary field and filename mapping, replace sample identifiers and add an optional Open Flow link relay; n8n retains the form, binary upload and public-read ACL.
 
 Adapted from [Upload a file to public Spaces](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Form/1371_Form_S3_Import_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

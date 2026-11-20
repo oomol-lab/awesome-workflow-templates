@@ -3,32 +3,20 @@
 Classify eligible Linear bugs and route them to a responsible team or notify Slack.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/triage-linear-bugs-by-team-responsibility/) [![n8n JSON](../../assets/n8n-json.svg)](templates/triage-linear-bugs-by-team-responsibility.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/triage-linear-bugs-by-team-responsibility.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup
 
 Set the state and bug label IDs in **Only tickets that need to be classified**, and list your exact Linear team names and responsibilities in **Set me up**. Configure the model, Linear and Slack credentials and Slack channel.
 
-For Open Flow set mode to relay, configure its webhook URL and matching state, label and team descriptions, bind LINEAR_AUTHORIZATION as a secret for the teams GraphQL query, connect Linear and Slack and enable persistent State. Set a Slack channel ID.
+Set a Slack channel ID.
 
 ## Behavior
 
-Issue events with the configured state and label and a description without the placeholder are classified against your team descriptions. An exact unique team name updates that issue; Other sends a Slack notification. Invalid or ambiguous team names stop the run. The Linear teams query uses the API default first page. Model results can be wrong; review assignments. Issue contents are sent to the model and may appear in execution history. Open Flow Code ports must each fit within 1 MiB.
+Issue events with the configured state and label and a description without the placeholder are classified against your team descriptions. An exact unique team name updates that issue; Other sends a Slack notification. Invalid or ambiguous team names stop the run. The Linear teams query uses the API default first page. Model results can be wrong; review assignments. Issue contents are sent to the model and may appear in execution history.
 
-If a Linear update or Slack notification has an unknown result, inspect the issue or channel before retrying. In Open Flow enter the pending key and confirmed or absent in **Reserve triage action**, replay the same event, and clear both fields.
-
-<details>
-<summary>In n8n</summary>
-
-Configure the Linear team and credentials on the n8n trigger. Select one Data Table with item_key and status text columns for checkpoints and prevent overlapping executions. The source n8n Linear trigger accepts webhook requests without signature verification; restrict network access to both trigger and relay endpoints. In n8n inspect the pending row and downstream result, mark done if applied, or delete only if the action did not occur.
-
-</details>
+If a Linear update or Slack notification has an unknown result, inspect the issue or channel before retrying.
 
 <details>
 <summary>Inspiration &amp; credits</summary>

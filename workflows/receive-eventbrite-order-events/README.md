@@ -3,35 +3,19 @@
 Receive Eventbrite order events and fetch the order details.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/receive-eventbrite-order-events/) [![n8n JSON](../../assets/n8n-json.svg)](templates/receive-eventbrite-order-events.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/receive-eventbrite-order-events.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup and use
 
-Configure the Eventbrite organization and event in **Eventbrite Trigger**, and connect Eventbrite. In **Fetch order**, create an HTTP Header Auth credential named Authorization with value Bearer YOUR_EVENTBRITE_TOKEN. Activate the workflow to register the webhook; its URL must be publicly reachable by Eventbrite. For Open Flow enter its webhook URL in **Forward to Open Flow** and enable that node. Restrict access to the webhook endpoints.
+Configure the Eventbrite organization and event in **Eventbrite Trigger**, and connect Eventbrite. In **Fetch order**, create an HTTP Header Auth credential named Authorization with value Bearer YOUR_EVENTBRITE_TOKEN. Activate the workflow to register the webhook; its URL must be publicly reachable by Eventbrite. Restrict access to the webhook endpoints.
 
 ## Behavior
 
-The trigger receives placed, updated and refunded order notifications. It accepts only Eventbrite order API URLs before fetching the order; the optional relay sends the resulting order to Open Flow. Neither endpoint authenticates the sender. Order details may appear in execution history. Event details may appear in execution history.
-
-<details>
-<summary>In n8n</summary>
-
-Import the n8n workflow, configure the Eventbrite organization and event in **Eventbrite Trigger**, and connect Eventbrite. Leave it disabled for n8n alone. Restrict access and inspect n8n execution history for fetch or relay failures.
-
-</details>
+The trigger receives placed, updated and refunded order notifications. Neither endpoint authenticates the sender. Order details may appear in execution history. Event details may appear in execution history.
 
 <details>
 <summary>Inspiration &amp; credits</summary>
-
-## Changes to the source
-
-- Replace organization and event IDs with placeholders, fetch only Eventbrite order URLs with an explicit HTTP node, and add an optional n8n relay.
 
 Adapted from [Eventbrite order events](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Eventbrite/1007_Eventbrite_Automate_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

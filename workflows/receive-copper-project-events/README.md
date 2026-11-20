@@ -3,35 +3,19 @@
 Receive new project notifications from Copper.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/receive-copper-project-events/) [![n8n JSON](../../assets/n8n-json.svg)](templates/receive-copper-project-events.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/receive-copper-project-events.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup and use
 
-Connect Copper in **Copper Trigger**. Activate it to register the webhook; its URL must be publicly reachable by Copper. For Open Flow enter its webhook URL in **Forward to Open Flow** and enable that node. Restrict access to the webhook endpoints.
+Connect Copper in **Copper Trigger**. Activate it to register the webhook; its URL must be publicly reachable by Copper. Restrict access to the webhook endpoints.
 
 ## Behavior
 
-The trigger checks the Copper shared secret and emits project creation notifications with their IDs. The optional relay removes the secret before forwarding to Open Flow. The Open Flow relay endpoint itself does not authenticate the sender; restrict access. Event details may appear in execution history.
-
-<details>
-<summary>In n8n</summary>
-
-Import the n8n workflow and connect Copper in **Copper Trigger**. Leave it disabled for n8n alone. The secret can appear in n8n execution history; restrict access to it and inspect history for relay failures.
-
-</details>
+The trigger checks the Copper shared secret and emits project creation notifications with their IDs. Event details may appear in execution history.
 
 <details>
 <summary>Inspiration &amp; credits</summary>
-
-## Changes to the source
-
-- Add an optional n8n relay that removes the webhook secret.
 
 Adapted from [Copper project creation notifications](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Copper/1006_Copper_Automate_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

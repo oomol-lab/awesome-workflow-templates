@@ -3,28 +3,16 @@
 Publish publicly downloadable Drive videos as Instagram Reels.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/publish-drive-reels-to-instagram/) [![n8n JSON](../../assets/n8n-json.svg)](templates/publish-drive-reels-to-instagram.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/publish-drive-reels-to-instagram.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup
 
-Configure an Instagram Professional account, Page access token, Google Drive and Google Sheets. Videos must be public, satisfy Meta Reel specifications, and have a direct, publicly retrievable download URL. Use a Posts sheet with File ID, Name, Caption, Video URL and Thumbnail columns. Configure Header Auth on Resume video and set your Instagram account ID. To use Open Flow, change mode in Prepare Reel to relay, configure the Open Flow URL and matching Header Auth on Forward video to Open Flow, connect Google Sheets, set REEL_RELAY_AUTH to that Authorization header and META_PAGE_ACCESS_TOKEN to the Page token, and enable persistent State. Prevent concurrent runs for the same file and tracker edits.
+Configure an Instagram Professional account, Page access token, Google Drive and Google Sheets. Videos must be public, satisfy Meta Reel specifications, and have a direct, publicly retrievable download URL. Use a Posts sheet with File ID, Name, Caption, Video URL and Thumbnail columns. Configure Header Auth on Resume video and set your Instagram account ID. Prevent concurrent runs for the same file and tracker edits.
 
-The workflow records the caption and video under its file ID, creates a Reel container, checks for FINISHED and publishes it. If processing is incomplete, POST the same fileId to the authenticated Resume video webhook later. A public download may return an interstitial instead of video and will be rejected. Unknown sheet, container or publication results stop the workflow. Inspect the service before retrying. In Open Flow enter the pending key and confirmed or absent in Select Reel step; for confirmed container creation also enter its ID, then clear the recovery fields. Resume the same file only after verification. Never replay an unknown publication. The caption is generated from the filename and should be reviewed.
+The workflow records the caption and video under its file ID, creates a Reel container, checks for FINISHED and publishes it. If processing is incomplete, POST the same fileId to the authenticated Resume video webhook later. A public download may return an interstitial instead of video and will be rejected. Unknown sheet, container or publication results stop the workflow. Inspect the service before retrying. Resume the same file only after verification. Never replay an unknown publication. The caption is generated from the filename and should be reviewed.
 
 The source used a browser-view link as video and attempted to publish immediately. This workflow requires a publicly accessible video download and waits for container readiness. Only Reels are configured by the source. Public sharing exposes the video.
-
-<details>
-<summary>In n8n</summary>
-
-In n8n configure the Drive trigger folder, Google Drive OAuth, Google Sheets, the two Facebook Graph API nodes, and Header Auth containing the Page token for Check container status. Create a private Data Table with item_key, status and payload text columns and select it on every Data Table node. Direct mode is the default. n8n compares streaming SHA-256 hashes of the original Drive video and the public URL before either mode proceeds; keep the file unchanged while Meta fetches it. In direct n8n mode inspect the Data Table row: for an absent operation change pending-sheet, pending-create or pending-publish to ready-sheet, ready-create or ready-publish; for a confirmed sheet set ready-create, for a confirmed container put containerId in its payload and set ready-status, and for confirmed publication set done.
-
-</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

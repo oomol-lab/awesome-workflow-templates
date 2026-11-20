@@ -3,35 +3,19 @@
 Save the current International Space Station position to TimescaleDB every minute.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/save-iss-position-to-timescaledb/) [![n8n JSON](../../assets/n8n-json.svg)](templates/save-iss-position-to-timescaledb.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/save-iss-position-to-timescaledb.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup and use
 
-Create an iss table with latitude, longitude and timestamp columns compatible with the numeric values and Unix timestamp. Connect both TimescaleDB nodes to that database. The relay does not authenticate callers; restrict access to it.
+Create an iss table with latitude, longitude and timestamp columns compatible with the numeric values and Unix timestamp. Connect both TimescaleDB nodes to that database.
 
 ## Behavior
 
 Every minute, read the current ISS position and insert its latitude, longitude and Unix timestamp. If a response is lost, a row may already have been inserted.
 
 <details>
-<summary>In n8n</summary>
-
-Import the supplied n8n workflow and connect both TimescaleDB nodes to that database. For n8n mode enable **Cron** and disable **TimescaleDB relay webhook**. For Open Flow mode disable **Cron**, enable the relay webhook, activate n8n and enter its production URL in **Send to TimescaleDB relay**. In Open Flow mode the n8n relay responds after the insert completes; a database error returns an HTTP failure.
-
-</details>
-
-<details>
 <summary>Inspiration &amp; credits</summary>
-
-## Changes to the source
-
-- Request the current-position endpoint instead of passing a millisecond timestamp to the positions endpoint. Add an n8n webhook bridge to use the source TimescaleDB connection from Open Flow.
 
 Adapted from [ISS position to TimescaleDB](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Http/1192_HTTP_Timescaledb_Automation_Scheduled.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

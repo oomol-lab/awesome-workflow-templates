@@ -3,35 +3,19 @@
 Send a Vonage SMS when a RabbitMQ JSON message reports a temperature above 50.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/rabbitmq-temperature-alert-vonage-sms/) [![n8n JSON](../../assets/n8n-json.svg)](templates/rabbitmq-temperature-alert-vonage-sms.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/rabbitmq-temperature-alert-vonage-sms.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup
 
-Connect the RabbitMQ credential. Set the queue in **RabbitMQ** and send JSON messages with a numeric `temp` field. For Open Flow, connect Vonage, set the sender and destination in **Send temperature alert**, set **Choose delivery mode** to `relay` and configure the Open Flow URL in **Forward RabbitMQ message**. The sender must be permitted for the destination.
+Connect the RabbitMQ credential. Set the queue in **RabbitMQ** and send JSON messages with a numeric `temp` field. The sender must be permitted for the destination.
 
 ## Behavior
 
-A temperature strictly above 50 sends one SMS with the value; 50 and below send nothing. The source trigger acknowledges messages immediately, before downstream processing. The Open Flow webhook acknowledges before processing, so a later relay or SMS failure is visible in the respective execution. An uncertain SMS may have been sent; inspect Vonage before replaying.
-
-<details>
-<summary>In n8n</summary>
-
-Import the bundled n8n workflow and connect the RabbitMQ credential. For n8n-only operation leave the mode as `direct`, connect Vonage and set its sender and destination. Activate one mode. The Open Flow webhook is unauthenticated and may send SMS messages to the configured recipient; restrict access to trusted callers.
-
-</details>
+A temperature strictly above 50 sends one SMS with the value; 50 and below send nothing. The source trigger acknowledges messages immediately, before downstream processing. An uncertain SMS may have been sent; inspect Vonage before replaying.
 
 <details>
 <summary>Inspiration &amp; credits</summary>
-
-## Changes to the source
-
-- Replace the missing SMS sender and recipient with configuration and add an optional RabbitMQ trigger relay.
 
 Adapted from [Receive messages from a queue via RabbitMQ and send an SMS](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Noop/0291_Noop_Rabbitmq_Send_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

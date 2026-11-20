@@ -3,39 +3,24 @@
 Mark old received packages in two MySQL databases and send a Telegram notification for each confirmed update.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/clean-old-mysql-packages-and-notify/) [![n8n JSON](../../assets/n8n-json.svg)](templates/clean-old-mysql-packages-and-notify.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/clean-old-mysql-packages-and-notify.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup
 
 Connect each MySQL node to its corresponding database. Both databases must have the source's `i_objeto` schema and support the included SQL. Configure both Telegram nodes with your bot and destination chat.
 
-Connect Telegram and configure both chat IDs in Open Flow. The original GET webhook and the POST relay have no authentication; restrict access to their URLs.
-
 ## Behavior
 
-Every day at 08:00 UTC or on a GET webhook, each database marks package records older than one month in state `TRANSPORTE-RECEBIDO` by changing `modulo` to `DELETE`. Each confirmed update sends its matching Telegram notification. The relay attempts both databases and reports their separate outcomes; only a confirmed update gets its matching notification. If a notification result is unknown, later notifications require manual reconciliation.
+Every day at 08:00 UTC or on a GET webhook, each database marks package records older than one month in state `TRANSPORTE-RECEBIDO` by changing `modulo` to `DELETE`. Each confirmed update sends its matching Telegram notification. If a notification result is unknown, later notifications require manual reconciliation.
 
-Enable persistent State and prevent overlapping Open Flow runs. If a database update or notification is uncertain, inspect both databases and Telegram, complete any outstanding work manually, and enter the pending run ID shown in the error in **Check cleanup state** before a later run. Do not automatically replay an uncertain write.
-
-<details>
-<summary>In n8n</summary>
-
-Import the supplied n8n workflow and connect each MySQL node to its corresponding database. For direct n8n operation enable **Cron** and **Webhook**, and leave the relay webhook disabled. For Open Flow, disable those two n8n triggers, enable the MySQL relay webhook, and set its production URL in **Run both database updates**. The source inherited the n8n instance timezone; adjust UTC if needed.
-
-</details>
+If a database update or notification is uncertain, inspect both databases and Telegram, complete any outstanding work manually, and enter the pending run ID shown in the error in **Check cleanup state** before a later run. Do not automatically replay an uncertain write.
 
 <details>
 <summary>Inspiration &amp; credits</summary>
 
 ## Changes to the source
 
-- Use a synchronous n8n webhook to retain the source MySQL operations from Open Flow.
 - Replace the private chat ID with configuration, and explicitly use UTC.
 
 Adapted from [Clean old packages in two MySQL databases](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Telegram/0140_Telegram_Webhook_Automation_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.

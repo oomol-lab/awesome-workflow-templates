@@ -3,30 +3,18 @@
 Create a profile, enrich it with a resume, and retrieve its hiring persona for review.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/create-and-enrich-humantic-profile/) [![n8n JSON](../../assets/n8n-json.svg)](templates/create-and-enrich-humantic-profile.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/create-and-enrich-humantic-profile.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup
 
-Connect a Humantic API subscription and provide its API key as HUMANTIC_API_KEY. Configure a query-auth credential whose key is apikey, enable its authenticated resume relay and set RELAY_TOKEN and the relay URL in Open Flow. Enable persistent State. Use one mode and prevent overlapping runs.
+Connect a Humantic API subscription and provide its API key as HUMANTIC_API_KEY. Use one mode and prevent overlapping runs.
 
 ## Behavior
 
 One manual run creates a profile for the supplied LinkedIn URL, uploads the matching resume, then requests the hiring persona for that same identifier. Humantic processes updates asynchronously, so an immediate fetch may report in progress; retrieve it later rather than repeating writes. The resume and inferred personality profile are sensitive, and are sent to Humantic. Review the result with appropriate safeguards and make any employment decision independently.
 
 A pending create or update may have succeeded. The workflow does not automatically repeat writes.
-
-<details>
-<summary>In n8n</summary>
-
-Import the n8n workflow, configure a query-auth credential whose key is apikey, enable its authenticated resume relay and set RELAY_TOKEN and the relay URL in Open Flow. In n8n-only mode configure the profile URL, resume URL, unique request ID and Data Table. Use a PDF or DOCX URL accessible to n8n. Inspect Humantic and the pending State or Data Table record before any retry.
-
-</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

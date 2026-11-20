@@ -29,8 +29,6 @@ Adapted from [AI web researcher for sales](https://github.com/enescingoz/awesome
 
 Source collection notice: © 2024–2026 Enes Cingoz, [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). The source export does not identify a separate template author or license. See [repository licensing](../../README.md#licensing) for the scope of OOMOL contributions and third-party material.
 
-
-
 Original workflow by lempire. Changes: use Firecrawl for page text, repair structured outputs and row association, and add update checkpoints.
 
 Collection license notice:

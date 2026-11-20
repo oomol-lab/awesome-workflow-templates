@@ -3,35 +3,19 @@
 Receive supported Jira webhook events.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/receive-jira-workspace-events/) [![n8n JSON](../../assets/n8n-json.svg)](templates/receive-jira-workspace-events.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/receive-jira-workspace-events.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup and use
 
-Connect Jira and activate it to register the events supported by the Jira Trigger. For Open Flow, enter its webhook URL in **Forward to Open Flow** and enable that node. The source trigger is unauthenticated by default.
+Connect Jira and activate it to register the events supported by the Jira Trigger. The source trigger is unauthenticated by default.
 
 ## Behavior
 
-The optional relay forwards the resulting object to Open Flow as workflow output. Event details may appear in execution history.
-
-<details>
-<summary>In n8n</summary>
-
-Import the n8n workflow, connect Jira and activate it to register the events supported by the Jira Trigger. Leave it disabled for n8n alone. Use n8n's optional query authentication where appropriate and restrict access to the webhook endpoints. The n8n trigger emits the complete Jira event body and merges any query parameters into it. Inspect n8n for relay failures.
-
-</details>
+Event details may appear in execution history.
 
 <details>
 <summary>Inspiration &amp; credits</summary>
-
-## Changes to the source
-
-- Add an optional n8n relay for complete Jira payloads in Open Flow.
 
 Adapted from [Jira webhook events](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Jira/1035_Jira_Automate_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

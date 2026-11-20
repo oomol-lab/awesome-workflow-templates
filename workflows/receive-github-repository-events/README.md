@@ -3,35 +3,19 @@
 Receive webhook events from a GitHub repository.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/receive-github-repository-events/) [![n8n JSON](../../assets/n8n-json.svg)](templates/receive-github-repository-events.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/receive-github-repository-events.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup and use
 
-Connect GitHub and set the repository owner and name in **Github Trigger**. Activate it to register the webhook for all repository events. For Open Flow, enter its webhook URL in **Forward to Open Flow** and enable that node. Restrict access to the relay endpoint.
+Connect GitHub and set the repository owner and name in **Github Trigger**. Activate it to register the webhook for all repository events.
 
 ## Behavior
 
-The trigger receives non-ping repository events and emits their complete body, request headers and query. The optional relay forwards the same object to Open Flow as workflow output. GitHub delivers event types according to its webhook subscription and repository permissions.
-
-<details>
-<summary>In n8n</summary>
-
-Import the n8n workflow, connect GitHub and set the repository owner and name in **Github Trigger**. Leave it disabled for n8n alone. The fixed n8n trigger verifies GitHub signatures. Monitor n8n for relay failures; event content and headers may appear in execution history.
-
-</details>
+The trigger receives non-ping repository events and emits their complete body, request headers and query. GitHub delivers event types according to its webhook subscription and repository permissions.
 
 <details>
 <summary>Inspiration &amp; credits</summary>
-
-## Changes to the source
-
-- Replace the source repository coordinates with placeholders and add an optional n8n relay to Open Flow.
 
 Adapted from [GitHub repository events](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Github/0997_GitHub_Automate_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

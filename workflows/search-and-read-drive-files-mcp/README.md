@@ -3,28 +3,16 @@
 Search Drive files and read supported file contents through MCP tools.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/search-and-read-drive-files-mcp/) [![n8n JSON](../../assets/n8n-json.svg)](templates/search-and-read-drive-files-mcp.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/search-and-read-drive-files-mcp.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup
 
-Set Bearer Auth on the MCP trigger and Header Auth on the binary extraction webhook with Authorization: Bearer followed by a secret token, and configure the Google Drive and OpenAI credentials. The MCP server exposes SearchFiles and ReadFile. Configure the client with the authenticated MCP endpoint. For Open Flow set mode to relay in Prepare tool request, configure its URL and matching Header Auth, bind DRIVE_MCP_AUTH to that exact Authorization header, and bind DRIVE_BINARY_RELAY_TOKEN to the binary webhook secret without the Bearer prefix, and connect Google Drive. Restrict both endpoints to trusted callers.
+Set Bearer Auth on the MCP trigger and Header Auth on the binary extraction webhook with Authorization: Bearer followed by a secret token, and configure the Google Drive and OpenAI credentials. The MCP server exposes SearchFiles and ReadFile. Configure the client with the authenticated MCP endpoint. Restrict both endpoints to trusted callers.
 
-Search matches file names in My Drive and returns up to ten files. ReadFile downloads the requested file and extracts PDF text or CSV rows, describes an image or transcribes audio. The original folderId input did not constrain the read. Video and Google Docs exported as plain text had no result branch in the source and are reported as unsupported. CSV aggregates all rows and escapes quotes; the original single-execution setting could drop rows. Images and audio are sent to the configured AI service. Responses and extracted text must fit the Open Flow 1 MiB Code limit; the synchronous relay must complete within 60 seconds. Use searchable PDFs.
+Search matches file names in My Drive and returns up to ten files. ReadFile downloads the requested file and extracts PDF text or CSV rows, describes an image or transcribes audio. The original folderId input did not constrain the read. Video and Google Docs exported as plain text had no result branch in the source and are reported as unsupported. CSV aggregates all rows and escapes quotes; the original single-execution setting could drop rows. Images and audio are sent to the configured AI service. Use searchable PDFs.
 
 See the [MCP reference](https://github.com/modelcontextprotocol/servers/tree/main/src/gdrive).
-
-<details>
-<summary>In n8n</summary>
-
-Import n8n, set Bearer Auth on the MCP trigger and Header Auth on the binary extraction webhook with Authorization: Bearer followed by a secret token, and configure the Google Drive and OpenAI credentials. Direct mode runs entirely in n8n.
-
-</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

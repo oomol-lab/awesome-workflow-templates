@@ -3,30 +3,14 @@
 Parse uploaded documents, translate and analyze them, and email the report.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/analyze-uploaded-documents-and-email-report/) [![n8n JSON](../../assets/n8n-json.svg)](templates/analyze-uploaded-documents-and-email-report.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/analyze-uploaded-documents-and-email-report.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
-
-## Setup
-
-For Open Flow bind DOCUMENT_RELAY_AUTH to that full header, bind LLAMA_CLOUD_API_KEY to the LlamaCloud API key, connect Gemini and Gmail, and enable persistent State. Protect the relay endpoint and execution history.
 
 ## Behavior
 
 A form accepts one required and one optional file, an email address, and a caller-generated Request ID of 16 to 128 letters, digits, underscores or hyphens. Use a unique random ID for each new submission and reuse it when retrying the same submission. LlamaCloud parses each file; Gemini translates and analyzes their combined text, and Gmail sends a text attachment to the submitted address. Review AI output against the source documents. Files and text are sent to LlamaCloud and Gemini. The separate conversational retrieval and knowledge-indexing branches of the original are not part of this component.
 
-In Open Flow, parsing waits two seconds between checks and stops after 120 checks per file. Unknown parse creation or email outcomes stop before retry; inspect the destination, enter the pending key and confirmed or absent in **Choose document processing step**, and replay the same submission. For a confirmed parse creation, enter its job ID. Clear the recovery fields afterward.
-
-<details>
-<summary>In n8n</summary>
-
-In n8n connect Gmail and Gemini. Configure a Header Auth credential with the LlamaCloud Bearer API key on the upload, status and result nodes. Select one Data Table with text columns item_key and status in each checkpoint node. In **Choose form mode**, leave direct to run in n8n, or set relay to upload the form files and send their IDs to Open Flow. For relay, configure the Open Flow webhook URL and a separate Header Auth credential containing a shared Authorization header. In n8n, a pending Data Table checkpoint blocks replay after an uncertain upload, relay or email. Inspect LlamaCloud, the destination workflow and Gmail, complete or repair the partial work, and delete the checkpoint only when safe. Retry the same request with its original Request ID, even in a new execution; use a fresh ID for a different request. The relay returns admission, not a completed report. Avoid overlapping executions for the same submission.
-
-</details>
+Unknown parse creation or email outcomes stop before retry; inspect the destination, enter the pending key and confirmed or absent in **Choose document processing step**, and replay the same submission. For a confirmed parse creation, enter its job ID. Clear the recovery fields afterward.
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -3,28 +3,16 @@
 Receive events from a HubSpot app subscription.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/receive-hubspot-app-events/) [![n8n JSON](../../assets/n8n-json.svg)](templates/receive-hubspot-app-events.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/receive-hubspot-app-events.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup and use
 
-Configure your HubSpot app to deliver its selected legacy webhook subscriptions to the **Receive HubSpot events** production URL. For Open Flow, enter its webhook URL in **Forward to Open Flow** and enable that node. Restrict access to the relay endpoint.
+Configure your HubSpot app to deliver its selected legacy webhook subscriptions to the **Receive HubSpot events** production URL.
 
 ## Behavior
 
-As in the source, contact, company, deal and ticket object IDs are mapped to their corresponding named ID field. Unsafe integers become decimal strings. The optional relay forwards each event to Open Flow. Events may contain personal information.
-
-<details>
-<summary>In n8n</summary>
-
-Import and activate the n8n workflow. Store the app client secret as HUBSPOT_CLIENT_SECRET in the n8n environment and allow the workflow to access it. Leave it disabled for n8n alone. The n8n workflow checks the v1 SHA-256 signature over the original request bytes and emits each event from the batch. Inspect n8n execution history for forwarding failures.
-
-</details>
+As in the source, contact, company, deal and ticket object IDs are mapped to their corresponding named ID field. Unsafe integers become decimal strings. Events may contain personal information.
 
 <details>
 <summary>Inspiration &amp; credits</summary>

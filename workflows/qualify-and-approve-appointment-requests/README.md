@@ -3,17 +3,12 @@
 Qualify an enquiry, request an administrator decision and create an appointment or send a rejection.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/qualify-and-approve-appointment-requests/) [![n8n JSON](../../assets/n8n-json.svg)](templates/qualify-and-approve-appointment-requests.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/qualify-and-approve-appointment-requests.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup and use
 
-Connect its OpenAI and Gmail credentials, set the administrator email and calendar, and configure the form and terms for your use. For Open Flow mode set **Open Flow mode** to true, configure the Open Flow webhook URL in both forwarding nodes, deploy the Open Flow workflow, configure its model and connect Google Calendar and Gmail.
+Connect its OpenAI and Gmail credentials, set the administrator email and calendar, and configure the form and terms for your use.
 
 ## Behavior
 
@@ -22,18 +17,7 @@ The form qualifies the enquiry, collects terms acceptance and a requested time, 
 Enquiries are shared with the model. A lost email or calendar response may represent a completed write; inspect the relevant account before retrying.
 
 <details>
-<summary>In n8n</summary>
-
-Import the n8n workflow, connect its OpenAI and Gmail credentials, set the administrator email and calendar, and configure the form and terms for your use. For n8n-only mode leave it false and connect Google Calendar in n8n. The Open Flow webhook receives both classification requests and approval decisions from the supplied n8n workflow. The n8n form lists working days within the next five calendar days and times from 9:00 through 18:00 in its configured timezone.
-
-</details>
-
-<details>
 <summary>Inspiration &amp; credits</summary>
-
-## Changes to the source
-
-- Add an Open Flow relay mode while retaining the form and human approval in n8n. Show dates with their year to preserve dates across year boundaries, handle the multi-select terms value, and replace personal email and calendar settings.
 
 Adapted from [Qualifying Appointment Requests with AI & n8n Forms](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Forms_and_Surveys/Qualifying%20Appointment%20Requests%20with%20AI%20%26%20n8n%20Forms.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 

@@ -33,8 +33,6 @@ Adapted from [Generate 9_16 Images from Content and Brand Guidelines](https://gi
 
 Source collection notice: © 2024–2026 Enes Cingoz, [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). The source export credits [Alex Kim (AlexK1919)](https://n8n.io/creators/alexk1919); it does not identify a separate template license. See [repository licensing](../../README.md#licensing) for the scope of OOMOL contributions and third-party material.
 
-
-
 Changes from source: Use linked content from a configurable content table, apply the retrieved brand guidelines, use structured scene prompts, generate exact 9:16 images, poll for completion and checkpoint generation and asset writes.
 
 Collection license notice:

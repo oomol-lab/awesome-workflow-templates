@@ -3,35 +3,19 @@
 Receive webhook events from a GitLab project.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/receive-gitlab-repository-events/) [![n8n JSON](../../assets/n8n-json.svg)](templates/receive-gitlab-repository-events.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/receive-gitlab-repository-events.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup and use
 
-Connect GitLab and set the project owner and repository in **Gitlab Trigger**. Activate it to register the supported project webhook events. For Open Flow, enter its webhook URL in **Forward to Open Flow** and enable that node. Restrict access to the relay endpoint.
+Connect GitLab and set the project owner and repository in **Gitlab Trigger**. Activate it to register the supported project webhook events.
 
 ## Behavior
 
-The trigger emits the complete event body and request metadata. The optional relay forwards the body, query and headers to Open Flow after removing the x-gitlab-token header. It registers GitLab hooks with TLS certificate verification disabled.
-
-<details>
-<summary>In n8n</summary>
-
-Import the n8n workflow, connect GitLab and set the project owner and repository in **Gitlab Trigger**. Leave it disabled for n8n alone. The fixed n8n trigger checks the token when a webhook secret is stored; if that state is missing it accepts the event. The original trigger exposes incoming headers to n8n execution history, including this token; protect that history. Inspect n8n for relay failures.
-
-</details>
+The trigger emits the complete event body and request metadata. It registers GitLab hooks with TLS certificate verification disabled.
 
 <details>
 <summary>Inspiration &amp; credits</summary>
-
-## Changes to the source
-
-- Replace source project coordinates with placeholders and add an optional n8n relay. Remove the webhook token from the relayed headers.
 
 Adapted from [GitLab repository events](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Gitlab/0998_Gitlab_Automate_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

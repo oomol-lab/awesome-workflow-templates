@@ -3,26 +3,14 @@
 Parse new PDF invoices and save linked invoice and line item records in Airtable.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/parse-drive-invoices-to-airtable/) [![n8n JSON](../../assets/n8n-json.svg)](templates/parse-drive-invoices-to-airtable.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/parse-drive-invoices-to-airtable.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup and use
 
-Import both Open Flow workflows, configure and publish Invoice PDF Worker, then refresh the Process one PDF capability in the dispatcher. Connect Google Drive, Airtable and a model. Configure the watched folder, Airtable base and two tables. In Invoices create a Name text field; in Line Items create Description, Qty, Unit price, Amount and an Invoices linked-record field.
+Connect Google Drive, Airtable and a model. Configure the watched folder, Airtable base and two tables. In Invoices create a Name text field; in Line Items create Description, Qty, Unit price, Amount and an Invoices linked-record field.
 
 Each new PDF is uploaded and parsed by LlamaParse. The model extracts its line items; the workflow creates one invoice record and a linked record for each line. Verify AI output against the PDF. State keeps the parse job, parent ID and completed line index; inspect LlamaCloud or Airtable before clearing a pending checkpoint. Avoid overlapping runs.
-
-<details>
-<summary>In n8n</summary>
-
-Configure a LlamaCloud Bearer token in LLAMA_AUTHORIZATION and a protected n8n PDF upload relay; bind N8N_RELAY_AUTHORIZATION. For n8n, create a Data Table with text columns item_key and status, configure its ID on the checkpoint nodes, and connect Google Drive, Airtable, LlamaCloud header authentication and the model. The relay webhook uses header authentication: set its credential to match N8N_RELAY_AUTHORIZATION, configure the relay Drive and LlamaCloud credentials, activate the n8n workflow and set the worker URL to its production webhook URL.
-
-</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>
@@ -30,8 +18,6 @@ Configure a LlamaCloud Bearer token in LLAMA_AUTHORIZATION and a protected n8n P
 Adapted from [Parse PDF with LlamaParse and save to Airtable](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/PDF_and_Document_Processing/Parse%20PDF%20with%20LlamaParse%20and%20save%20to%20Airtable.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 
 Source collection notice: © 2024–2026 Enes Cingoz, [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). The source identifies Mark Shcherbakov / 5minAI; it does not state a separate template license. See [repository licensing](../../README.md#licensing) for the scope of OOMOL contributions and third-party material.
-
-
 
 Original workflow by Mark Shcherbakov / 5minAI. Changes: use LlamaParse v2 polling, current model and persistent write recovery; process each file independently.
 

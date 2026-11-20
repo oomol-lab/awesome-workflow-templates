@@ -33,8 +33,6 @@ Adapted from [Deduplicate Scraping AI Grants for Eligibility using AI](https://g
 
 Source collection notice: © 2024–2026 Enes Cingoz, [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). The source export does not identify a separate template author or license. See [repository licensing](../../README.md#licensing) for the scope of OOMOL contributions and third-party material.
 
-
-
 Changes from source: Replace the embedded organization profile with configuration, repair the two model-result merge and the digest schedule so it follows ingestion, add pagination and write checkpoints, and use UTC schedules.
 
 Collection license notice:

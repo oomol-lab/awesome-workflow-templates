@@ -3,30 +3,18 @@
 Extract structured receipt data from a directly accessible image URL.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/extract-receipt-from-image-url/) [![n8n JSON](../../assets/n8n-json.svg)](templates/extract-receipt-from-image-url.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/extract-receipt-from-image-url.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup
 
-Create a Mindee V2 Receipt model and copy its model ID. In Open Flow, set the ID in **Prepare the receipt request**, create a secret Variable named `MINDEE_API_KEY`, and bind it to the Authorization input of **Submit the receipt to Mindee**, **Check the Mindee job** and **Read the receipt result**. Run with a receipt image URL.
+Create a Mindee V2 Receipt model and copy its model ID. Run with a receipt image URL.
 
 The image must be available at a direct HTTPS URL that Mindee can fetch without authentication or redirects. Anyone with that URL may be able to view the receipt, so use an appropriately scoped link. A login-only or expiring URL may fail. Receipt contents are sent to Mindee for processing.
 
 ## Behavior
 
-A manual run submits one image URL to the configured Receipt model, waits three seconds between job checks, and returns the complete V2 extraction response when its job finishes. The model determines the returned fields and recognition quality. Open Flow limits each HTTP response to 4 MiB and Code inputs and outputs to 1 MiB; an oversized response stops the run. A missing or invalid job, failed processing, mismatched result or 200 pending checks stops the run. The workflow does not resubmit a failed or uncertain request; an unknown submission may already have created a job, so inspect Mindee before retrying.
-
-<details>
-<summary>In n8n</summary>
-
-In n8n, set the image URL and model ID in **Prepare the receipt request**. Create an HTTP Header Auth credential with name `Authorization` and your Mindee V2 API key as its value, and select it on all three Mindee HTTP nodes. Use one format per extraction.
-
-</details>
+A manual run submits one image URL to the configured Receipt model, waits three seconds between job checks, and returns the complete V2 extraction response when its job finishes. The model determines the returned fields and recognition quality. A missing or invalid job, failed processing, mismatched result or 200 pending checks stops the run. The workflow does not resubmit a failed or uncertain request; an unknown submission may already have created a job, so inspect Mindee before retrying.
 
 <details>
 <summary>Inspiration &amp; credits</summary>

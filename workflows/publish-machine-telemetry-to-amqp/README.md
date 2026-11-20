@@ -3,13 +3,8 @@
 Generate sample machine telemetry every second and publish it to an AMQP destination.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/publish-machine-telemetry-to-amqp/) [![n8n JSON](../../assets/n8n-json.svg)](templates/publish-machine-telemetry-to-amqp.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/publish-machine-telemetry-to-amqp.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup and use
 
@@ -17,21 +12,10 @@ Configure both AMQP nodes with the same AMQP 1.0 connection and destination. Nei
 
 ## Behavior
 
-Every second, generate a machine name, random temperature and uptime from 0 through 99, and the current Unix timestamp in milliseconds. These sample values are sent as an AMQP object. The relay responds after the sender submits the message; sender failure returns HTTP failure. The tick request is acknowledged before the Open Flow run finishes, so inspect that run for relay failures. A successful AMQP relay response does not establish broker delivery. A lost response can mean the message was already sent. Intervals can overlap if delivery takes longer than one second.
-
-<details>
-<summary>In n8n</summary>
-
-Import the supplied n8n workflow and configure both AMQP nodes with the same AMQP 1.0 connection and destination. For n8n mode enable **Interval** and disable **Open Flow interval** and **AMQP relay webhook**. For Open Flow mode disable **Interval**, enable the other two, enter the deployed Open Flow webhook URL in **Send tick to Open Flow**, and enter the n8n production webhook URL in **Send to n8n AMQP relay**. Activate the n8n workflow and use one mode. In Open Flow mode n8n forwards a tick to Open Flow; Open Flow generates the telemetry and sends it to the n8n AMQP relay.
-
-</details>
+Every second, generate a machine name, random temperature and uptime from 0 through 99, and the current Unix timestamp in milliseconds. These sample values are sent as an AMQP object. A lost response can mean the message was already sent. Intervals can overlap if delivery takes longer than one second.
 
 <details>
 <summary>Inspiration &amp; credits</summary>
-
-## Changes to the source
-
-- Fix the source expressions and retain its one-second interval and AMQP 1.0 sender using the supplied n8n tick and producer relay for Open Flow.
 
 Adapted from [Machine telemetry to AMQP](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Interval/0211_Interval_Amqp_Automation_Scheduled.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

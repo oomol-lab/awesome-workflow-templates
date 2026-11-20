@@ -3,30 +3,18 @@
 Index text from updated documents in a Drive folder.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/index-updated-radar-documents/) [![n8n JSON](../../assets/n8n-json.svg)](templates/index-updated-radar-documents.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/index-updated-radar-documents.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup
 
-Select the watched folder. Connect Google Drive, LlamaCloud, Gemini and Pinecone, and use a 3072-dimensional Pinecone index. Parsing is polled every two seconds with a bounded timeout. Protect the relay and execution history.
+Select the watched folder. Connect Google Drive, LlamaCloud, Gemini and Pinecone, and use a 3072-dimensional Pinecone index. Parsing is polled every two seconds with a bounded timeout.
 
 ## Use
 
-Updated files in the folder are parsed to text, split into overlapping passages and indexed. The relay extracts text and JSON directly and uses LlamaParse for PDF, DOCX, EPUB and CSV files, including Google Docs exported as DOCX. Other file types follow text extraction. LlamaParse can truncate text beyond 64 KB per page; review unusually dense documents. The relay upload must respond within the Open Flow HTTP timeout, and an uncertain upload must be reconciled as described below. Changes to a document create a new set of vectors; remove obsolete versions according to your index retention policy. Avoid overlapping executions for the same document.
+Updated files in the folder are parsed to text, split into overlapping passages and indexed. Other file types follow text extraction. LlamaParse can truncate text beyond 64 KB per page; review unusually dense documents. Changes to a document create a new set of vectors; remove obsolete versions according to your index retention policy. Avoid overlapping executions for the same document.
 
-For an uncertain relay upload or Pinecone write, inspect the destination, then set the pending key and confirmed or absent in **Choose document indexing step** and replay the same event batch. For a confirmed upload also enter its parse job ID. Clear recovery fields afterward. Relay uploads retain a separate checkpoint per file version; after an uncertain relay outcome inspect LlamaCloud before clearing it. Successful relay rows remain as a record and should be cleared only when a repeat upload is intended. The MySQL refresh and chat paths are separate from this component.
-
-<details>
-<summary>In n8n</summary>
-
-In n8n configure the Data Table with item_key and status columns and select the index. For Open Flow enable the disabled n8n extraction webhook, configure its Header Auth as Authorization: Bearer plus a secret and the LlamaCloud Bearer credential on **Parse relay file**, set its URL in **Extract document text via n8n**, bind RADAR_RELAY_TOKEN and LLAMA_CLOUD_API_KEY, and enable persistent State. For an absent upload clear the corresponding n8n relay checkpoint before replay. In n8n inspect and repair the index before clearing the pending Data Table row.
-
-</details>
+For a confirmed upload also enter its parse job ID. Clear recovery fields afterward. The MySQL refresh and chat paths are separate from this component.
 
 <details>
 <summary>Inspiration &amp; credits</summary>

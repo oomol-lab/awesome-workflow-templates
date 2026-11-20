@@ -3,35 +3,19 @@
 Receive PayPal billing plan activation events.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/receive-paypal-plan-activations/) [![n8n JSON](../../assets/n8n-json.svg)](templates/receive-paypal-plan-activations.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/receive-paypal-plan-activations.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup and use
 
-Connect PayPal in **PayPal Trigger**. Activate it to register the billing plan activation webhook; its URL must be publicly reachable by PayPal. For Open Flow enter its webhook URL in **Forward to Open Flow** and enable that node. Restrict access to the webhook endpoints.
+Connect PayPal in **PayPal Trigger**. Activate it to register the billing plan activation webhook; its URL must be publicly reachable by PayPal. Restrict access to the webhook endpoints.
 
 ## Behavior
 
-The trigger asks PayPal to verify each webhook signature before emitting the event. The optional relay forwards each complete event to Open Flow. The Open Flow relay endpoint does not authenticate the sender. Event details may appear in execution history.
-
-<details>
-<summary>In n8n</summary>
-
-Import the n8n workflow and connect PayPal in **PayPal Trigger**. Leave it disabled for n8n alone. Restrict access and inspect n8n execution history for verification or relay failures.
-
-</details>
+The trigger asks PayPal to verify each webhook signature before emitting the event. Event details may appear in execution history.
 
 <details>
 <summary>Inspiration &amp; credits</summary>
-
-## Changes to the source
-
-- Add an optional n8n relay.
 
 Adapted from [PayPal plan activation events](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Paypal/0965_Paypal_Update_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

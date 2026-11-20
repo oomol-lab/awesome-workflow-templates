@@ -39,7 +39,6 @@ For the n8n template, configure Header Auth credentials for ExactBuyer (`X-API-K
 - Fixed the `Update data in Intercom` `email` field mapping so it sends `current_work_email` instead of concatenating `current_work_email` and `full_name`.
 - Bound ExactBuyer (`EXACTBUYER_API_KEY`) and Intercom (`INTERCOM_ACCESS_TOKEN`) credentials to secret variables in Open Flow.
 
-
 Adapted from [Enrich new Intercom users with contact details from ExactBuyer](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Intercom/0413_Intercom_Code_Create_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). Attribution: Zie619 / n8n-workflows.
 
 The collection’s [MIT notice](https://github.com/Zie619/n8n-workflows/blob/94007c1445d9258a7da116646b79473e7c7c3282/LICENSE) is pinned at a later revision. This is the collection notice at that revision; it does not establish a separate original template author's license. Our changes are listed above; see [repository licensing](../../README.md#licensing).

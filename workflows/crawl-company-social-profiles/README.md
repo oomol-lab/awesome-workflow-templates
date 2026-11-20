@@ -33,8 +33,6 @@ Adapted from [Autonomous AI crawler](https://github.com/enescingoz/awesome-n8n-t
 
 Source collection notice: © 2024–2026 Enes Cingoz, [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). The source export does not identify a separate template author or license. See [repository licensing](../../README.md#licensing) for the scope of OOMOL contributions and third-party material.
 
-
-
 Changes from the source: Correct the required social_media schema, use a Firecrawl page tool, paginate the input and add write checkpoints.
 
 Collection license notice:

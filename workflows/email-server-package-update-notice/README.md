@@ -3,35 +3,19 @@
 Check a remote server for upgradable apt packages and email a notice when updates are available.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/email-server-package-update-notice/) [![n8n JSON](../../assets/n8n-json.svg)](templates/email-server-package-update-notice.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/email-server-package-update-notice.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup
 
-Connect SSH credentials to **SSH relay** for the target Debian-based server. Enable **SSH relay webhook**, activate the workflow, and configure its production URL in **Check remote packages** in Open Flow. Disable **Run workflow every day** when using Open Flow. The relay has no built-in authentication and exposes package information; restrict access to trusted callers. Connect an IMAP/SMTP mailbox and set the recipient in **Email update notice**.
+Connect an IMAP/SMTP mailbox and set the recipient in **Email update notice**.
 
 ## Behavior
 
 Each day the workflow runs `apt list --upgradable` over SSH and sends an HTML list only if packages are present. It reports package information; it does not perform upgrades. SSH connection or nonzero command failures stop the run. If an email result is unknown, inspect sent mail before retrying. Package text is escaped in the email.
 
 <details>
-<summary>In n8n</summary>
-
-Import the n8n workflow and connect SSH credentials to **SSH relay** for the target Debian-based server. For n8n-only operation, disable **SSH relay webhook**, enable **Run workflow every day**, connect SSH credentials to **List upgradable packages**, and configure SMTP sender and recipient in **Send Email through SMTP**. Use one scheduling mode. Both formats default to midnight UTC.
-
-</details>
-
-<details>
 <summary>Inspiration &amp; credits</summary>
-
-## Changes to the source
-
-- Add a bundled n8n SSH relay for Open Flow, configure UTC and escape package text. Stop on nonzero command status.
 
 Adapted from [VPS upgrade notify](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Code/0726_Code_Schedule_Update_Scheduled.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

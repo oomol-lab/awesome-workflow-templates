@@ -3,35 +3,19 @@
 Receive complete Amazon SNS notification events.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/receive-aws-sns-notifications/) [![n8n JSON](../../assets/n8n-json.svg)](templates/receive-aws-sns-notifications.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/receive-aws-sns-notifications.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup and use
 
-Connect AWS credentials in **AWS-SNS-Trigger**, and replace the topic ARN. Activate the workflow to subscribe its publicly reachable HTTPS endpoint. Confirm that the subscription becomes confirmed in SNS. To use Open Flow, enter its webhook URL in **Forward to Open Flow** and enable that node. Restrict access to both endpoints.
+Connect AWS credentials in **AWS-SNS-Trigger**, and replace the topic ARN. Activate the workflow to subscribe its publicly reachable HTTPS endpoint. Confirm that the subscription becomes confirmed in SNS. Restrict access to both endpoints.
 
 ## Behavior
 
-The trigger confirms subscriptions and emits complete SNS notification bodies. It does not verify SNS message signatures. The optional relay forwards each event to Open Flow. Event details may appear in execution history.
-
-<details>
-<summary>In n8n</summary>
-
-Import the n8n workflow, connect AWS credentials in **AWS-SNS-Trigger**, and replace the topic ARN. Leave it disabled for n8n alone. Inspect n8n history for forwarding failures.
-
-</details>
+The trigger confirms subscriptions and emits complete SNS notification bodies. It does not verify SNS message signatures. Event details may appear in execution history.
 
 <details>
 <summary>Inspiration &amp; credits</summary>
-
-## Changes to the source
-
-- Add an optional n8n relay.
 
 Adapted from [Amazon SNS notifications](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Awssns/0984_Awssns_Automate_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

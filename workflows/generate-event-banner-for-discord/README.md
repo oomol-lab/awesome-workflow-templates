@@ -3,30 +3,18 @@
 Generate an event poster from a prompt and share it as a Discord attachment.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/generate-event-banner-for-discord/) [![n8n JSON](../../assets/n8n-json.svg)](templates/generate-event-banner-for-discord.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/generate-event-banner-for-discord.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup
 
-Connect OpenAI, Cloudinary and Bannerbear. Create a Bannerbear template with layers named placeholder_image, placeholder_text, placeholder_location and placeholder_date. Set the webhook HTTPS production URL in **Choose banner step** and bind that token as secret Variable N8N_RELAY_TOKEN. Enable persistent State and prevent overlapping executions. Run Open Flow with a unique submission ID, event details, prompt, template ID and Discord channel ID.
+Connect OpenAI, Cloudinary and Bannerbear. Create a Bannerbear template with layers named placeholder_image, placeholder_text, placeholder_location and placeholder_date.
 
 ## Behavior
 
-The workflow generates an image, uploads it to Cloudinary, renders the event details in Bannerbear, and sends the poster as a Discord file. Image generation and rendering may take time. Open Flow uses the synchronous endpoint.
+The workflow generates an image, uploads it to Cloudinary, renders the event details in Bannerbear, and sends the poster as a Discord file. Image generation and rendering may take time.
 
-If an external write has an unknown result, inspect the corresponding service. In **Choose banner step**, enter the pending key and resolution confirmed or absent. For a confirmed image generation, upload or render enter its resulting HTTPS URL; then rerun with the same submission ID and details and clear the fields. Protect the relay endpoint and execution history.
-
-<details>
-<summary>In n8n</summary>
-
-In n8n connect Discord, configure the relay Discord node with your guild ID and credentials, then set its webhook Header Auth credential to Authorization: Bearer followed by your chosen token. Configure a Data Table with text columns item_key and status for the relay checkpoint nodes, then activate the workflow. For n8n direct mode, configure the form's two template IDs, Cloudinary account and upload preset, Bannerbear and Discord. Select the same Data Table on the form checkpoint nodes. Enable only one format. The source n8n workflow polls the asynchronous Bannerbear job. For a pending direct-form row, inspect the affected service and complete any remaining actions manually before marking it done. For a pending relay row, mark it done if the Discord message exists and confirm the Open Flow step; if no message exists, delete the relay row and resolve the Open Flow step as absent before retrying.
-
-</details>
+If an external write has an unknown result, inspect the corresponding service. In **Choose banner step**, enter the pending key and resolution confirmed or absent. For a confirmed image generation, upload or render enter its resulting HTTPS URL; then rerun with the same submission ID and details and clear the fields.
 
 <details>
 <summary>Inspiration &amp; credits</summary>

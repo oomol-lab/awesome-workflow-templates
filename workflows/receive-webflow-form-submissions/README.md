@@ -3,35 +3,19 @@
 Receive form submission events from a Webflow site.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/receive-webflow-form-submissions/) [![n8n JSON](../../assets/n8n-json.svg)](templates/receive-webflow-form-submissions.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/receive-webflow-form-submissions.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup and use
 
-Activate it, then register the **Receive Webflow event** production URL through the Webflow v2 Create Webhook API for the site and form_submission event. The URL must be publicly reachable by Webflow. For Open Flow enter its webhook URL in **Forward to Open Flow** and enable that node. Restrict access to the webhook endpoints.
+Activate it, then register the **Receive Webflow event** production URL through the Webflow v2 Create Webhook API for the site and form_submission event. The URL must be publicly reachable by Webflow. Restrict access to the webhook endpoints.
 
 ## Behavior
 
-The webhook receives form submission events and the optional relay forwards each event to Open Flow as workflow output. Neither endpoint verifies the sender. Event data may appear in execution history. Event details may appear in execution history.
-
-<details>
-<summary>In n8n</summary>
-
-Import the n8n workflow and activate it, then register the **Receive Webflow event** production URL through the Webflow v2 Create Webhook API for the site and form_submission event. Leave it disabled for n8n alone. Restrict access and inspect n8n execution history for relay failures.
-
-</details>
+Neither endpoint verifies the sender. Event data may appear in execution history. Event details may appear in execution history.
 
 <details>
 <summary>Inspiration &amp; credits</summary>
-
-## Changes to the source
-
-- Use a manually registered n8n Webhook with the current Webflow v2 API because the source trigger uses v1, and add an optional relay.
 
 Adapted from [Webflow form submission events](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Webflow/0953_Webflow_Update_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

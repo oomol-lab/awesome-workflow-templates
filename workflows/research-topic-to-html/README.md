@@ -3,17 +3,12 @@
 Research a topic with Perplexity and return an HTML article.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/research-topic-to-html/) [![n8n JSON](../../assets/n8n-json.svg)](templates/research-topic-to-html.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/research-topic-to-html.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup
 
-Import **Research topic to HTML** and **Perplexity research tool**, configure an AI model and the PERPLEXITY_API_KEY secret, connect Telegram, enable persistent State, publish the research tool and refresh its interface in the main workflow. Restrict webhook access.
+Restrict webhook access.
 
 Send a GET request with URL-encoded topic, chatId and requestId query parameters. Use a unique requestId for each request and prevent overlapping requests with the same ID.
 
@@ -24,13 +19,6 @@ The workflow rewrites the topic, invokes a Perplexity research tool, sends the r
 A notification is reserved before sending. A repeated request ID is blocked; resolve the existing notification manually and use a new ID only after confirming whether the prior messages were sent. Never run both entry points for the same request.
 
 The synchronous Sonar Chat Completions API remains operational through Perplexity's compatibility path, although its support ended on September 27, 2026. Check Perplexity's current API availability before use.
-
-<details>
-<summary>In n8n</summary>
-
-In n8n configure OpenAI, Perplexity header authentication and Telegram. Create a Data Table with item_key and status text columns, select it in both notification reservations, and set the imported workflow ID in **Call Perplexity Researcher**. Choose one entry point: enable the original n8n webhook for direct n8n operation, or disable it and enable **Open Flow HTML frontend**, with the deployed Open Flow webhook URL. The n8n response applies a restrictive Content Security Policy. If a response is lost or a request times out, inspect Telegram and the pending State or Data Table row before retrying.
-
-</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -3,35 +3,15 @@
 Verify Keap contact mailing addresses and apply deliverability tags.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/verify-keap-contact-mailing-address/) [![n8n JSON](../../assets/n8n-json.svg)](templates/verify-keap-contact-mailing-address.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/verify-keap-contact-mailing-address.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
-
-## Setup and use
-
-For Open Flow bind secret Variable KEAP_ACCESS_TOKEN with contact read and tag write permissions to all three Keap HTTP nodes, connect Lob, enter the two numeric tag IDs in **Prepare deliverability tag**, and set **Forward to Open Flow** to its webhook URL.
 
 ## Behavior
 
 Keap REST Hook events can contain multiple contact IDs. The workflow reads each contact, selects its BILLING address, otherwise SHIPPING, otherwise its first address, and asks Lob to verify it. Exactly deliverable applies the configured deliverable tag; other returned statuses apply the other tag. Configure Keap contacts with US mailing addresses. Both webhook entrances acknowledge before downstream work and do not authenticate the sender; restrict access and inspect execution history. Full contact data may appear in execution history. If a tag write is uncertain, inspect the contact before retrying; earlier contacts in the batch may already have been tagged.
 
 <details>
-<summary>In n8n</summary>
-
-Subscribe a Keap contact REST Hook to the supplied n8n webhook. Configure n8n **Choose execution mode** as n8n to process there or openflow to relay the complete event to Open Flow. In n8n set a Keap bearer credential on **Read Keap contact**, a Keap connection on both tag nodes, Lob HTTP Basic Auth with API key as username and empty password, and numeric tag IDs in the tag nodes.
-
-</details>
-
-<details>
 <summary>Inspiration &amp; credits</summary>
-
-## Changes to the source
-
-- Accept the complete Keap REST Hook batch and retrieve each contact's address, instead of assuming the webhook directly contains address fields. Correct the ZIP and contact ID mappings and configure numeric tag IDs. Open Flow uses a user-supplied Keap bearer token and n8n relay.
 
 Adapted from [Verify Keap contact mailing address](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Http/0493_HTTP_Keap_Create_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

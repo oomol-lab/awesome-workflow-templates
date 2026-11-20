@@ -3,28 +3,16 @@
 Turn a Screaming Frog crawl export into a downloadable llms.txt index.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/make-llms-txt-from-screaming-frog-csv/) [![n8n JSON](../../assets/n8n-json.svg)](templates/make-llms-txt-from-screaming-frog-csv.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/make-llms-txt-from-screaming-frog-csv.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup
 
-Export internal_html.csv or internal_all.csv from Screaming Frog. Open its form to provide the website name, description and CSV. For Open Flow set mode to relay in **Collect crawl rows**, configure the webhook URL and deploy the Open Flow workflow; restrict access to the webhook.
+Export internal_html.csv or internal_all.csv from Screaming Frog. Open its form to provide the website name, description and CSV.
 
 ## Behavior
 
-Rows with status 200, an indexable value and a content type containing text/html become Markdown links, using each row's title, URL and optional meta description. The output starts with the submitted website name and description. The workflow recognizes the source's English, French, Italian, German and Spanish column labels; indexability values are Indexable, Indicizzabile or Indexierbar. The optional source classifier remains disabled. If no rows match, the file contains only the heading and description. Open Flow Code inputs and outputs must each fit within 1 MiB.
-
-<details>
-<summary>In n8n</summary>
-
-Import the n8n workflow and open its form to provide the website name, description and CSV. Direct mode runs in n8n. Download llms.txt from **Generate llms.txt file** in the n8n execution.
-
-</details>
+Rows with status 200, an indexable value and a content type containing text/html become Markdown links, using each row's title, URL and optional meta description. The output starts with the submitted website name and description. The workflow recognizes the source's English, French, Italian, German and Spanish column labels; indexability values are Indexable, Indicizzabile or Indexierbar. The optional source classifier remains disabled. If no rows match, the file contains only the heading and description.
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -3,35 +3,19 @@
 Receive notifications when Keap contacts are added.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/receive-keap-new-contacts/) [![n8n JSON](../../assets/n8n-json.svg)](templates/receive-keap-new-contacts.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/receive-keap-new-contacts.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup and use
 
-Connect Keap in **Keap Trigger**. Activate it to register the contact.add hook; its URL must be publicly reachable by Keap. Confirm the subscription is verified in Keap. For Open Flow enter its webhook URL in **Forward to Open Flow** and enable that node. Restrict access to the webhook endpoints.
+Connect Keap in **Keap Trigger**. Activate it to register the contact.add hook; its URL must be publicly reachable by Keap. Confirm the subscription is verified in Keap. Restrict access to the webhook endpoints.
 
 ## Behavior
 
-Keap batches changed contacts; the trigger emits each contact ID, event type, timestamp and optional API URL separately. It responds to the registration handshake but does not authenticate later events. The optional relay forwards each event to Open Flow. Event details may appear in execution history.
-
-<details>
-<summary>In n8n</summary>
-
-Import the n8n workflow and connect Keap in **Keap Trigger**. Leave it disabled for n8n alone. Restrict endpoint access and inspect n8n execution history for relay failures.
-
-</details>
+Keap batches changed contacts; the trigger emits each contact ID, event type, timestamp and optional API URL separately. It responds to the registration handshake but does not authenticate later events. Event details may appear in execution history.
 
 <details>
 <summary>Inspiration &amp; credits</summary>
-
-## Changes to the source
-
-- Add an optional n8n relay.
 
 Adapted from [Keap contact addition events](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Keap/1023_Keap_Automate_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

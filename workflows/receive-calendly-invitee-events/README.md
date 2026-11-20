@@ -3,35 +3,19 @@
 Receive Calendly booking and cancellation events.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/receive-calendly-invitee-events/) [![n8n JSON](../../assets/n8n-json.svg)](templates/receive-calendly-invitee-events.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/receive-calendly-invitee-events.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup and use
 
-Connect Calendly. Select the subscription scope in **Calendly Trigger** and activate the workflow to register both booking and cancellation events. Calendly webhook availability depends on the account plan and permissions. For Open Flow enter its webhook URL in **Forward to Open Flow** and enable that node. Restrict access to the webhook endpoints.
+Connect Calendly. Select the subscription scope in **Calendly Trigger** and activate the workflow to register both booking and cancellation events. Calendly webhook availability depends on the account plan and permissions. Restrict access to the webhook endpoints.
 
 ## Behavior
 
-The trigger emits the complete event for each invitee booking or cancellation. The optional relay forwards it as Open Flow workflow output. Events may contain personal information.
-
-<details>
-<summary>In n8n</summary>
-
-Import the n8n workflow and connect Calendly. Leave it disabled to use n8n alone. The n8n trigger does not verify Calendly signatures; restrict access and inspect n8n execution history for relay failures.
-
-</details>
+The trigger emits the complete event for each invitee booking or cancellation. Events may contain personal information.
 
 <details>
 <summary>Inspiration &amp; credits</summary>
-
-## Changes to the source
-
-- Add an optional n8n relay for complete Calendly events in Open Flow.
 
 Adapted from [Calendly invitee events](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Calendly/1009_Calendly_Automate_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

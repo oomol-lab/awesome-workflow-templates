@@ -3,28 +3,16 @@
 Render Markdown as a branded PDF with a cover and numbered contents.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/render-branded-markdown-pdf/) [![n8n JSON](../../assets/n8n-json.svg)](templates/render-branded-markdown-pdf.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/render-branded-markdown-pdf.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup
 
-Set the branding and page settings in **Build cover and contents**. Bind PDFMINT_API_KEY as a secret Variable and deploy the Open Flow webhook. Install the PDFMint community node and configure its credential. Set the Open Flow URL in **Prepare document with Open Flow**, then activate the Open Flow frontend webhook. Restrict access to both webhooks.
+Set the branding and page settings in **Build cover and contents**. Install the PDFMint community node and configure its credential. Restrict access to both webhooks.
 
 ## Behavior
 
 POST JSON containing title and markdown, with optional author. The workflow checks quota, numbers headings outside fenced code blocks, creates a cover and contents, and returns a PDF in the same HTTP response. Invalid input or an unsuccessful render returns JSON. A lost response can follow a completed render; inspect service usage before retrying. Markdown is sent to PDFMint.
-
-<details>
-<summary>In n8n</summary>
-
-Import the n8n workflow, install the PDFMint community node and configure its credential. For direct n8n mode configure branding and credentials in the original nodes and activate its separate webhook.
-
-</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

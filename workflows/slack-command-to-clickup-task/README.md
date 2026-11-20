@@ -3,35 +3,15 @@
 Create a ClickUp task from a Slack slash command and reply with its task ID.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/slack-command-to-clickup-task/) [![n8n JSON](../../assets/n8n-json.svg)](templates/slack-command-to-clickup-task.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/slack-command-to-clickup-task.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
-
-## Setup and use
-
-For Open Flow mode configure the relay URL, deploy the workflow, and connect ClickUp with a list ID.
 
 ## Behavior
 
 Slack requires acknowledgment within three seconds; server latency affects this. The full command, including response URL, may appear in execution history. A lost response from ClickUp may mean the task was created; inspect ClickUp before retrying. A failed Slack confirmation does not undo task creation.
 
 <details>
-<summary>In n8n</summary>
-
-Create a Slack slash command pointing to the n8n webhook. Configure the ClickUp workspace, list and credentials in n8n. Set **Execution mode** to n8n or openflow. The n8n and Open Flow endpoints do not verify the sender; restrict access. n8n acknowledges the Slack request immediately, then the selected workflow creates a task whose title and description are the command text and posts the task ID to Slack's response URL.
-
-</details>
-
-<details>
 <summary>Inspiration &amp; credits</summary>
-
-## Changes to the source
-
-- Replace sample ClickUp identifiers with configuration, add an Open Flow relay and send the task confirmation through Slack's response URL after an immediate acknowledgment.
 
 Adapted from [Slack command to ClickUp](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Clickup/0469_Clickup_Respondtowebhook_Create_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

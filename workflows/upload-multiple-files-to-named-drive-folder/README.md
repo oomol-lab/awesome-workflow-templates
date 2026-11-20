@@ -3,32 +3,20 @@
 Upload multiple form files to a named Google Drive folder, creating it when needed.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/upload-multiple-files-to-named-drive-folder/) [![n8n JSON](../../assets/n8n-json.svg)](templates/upload-multiple-files-to-named-drive-folder.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/upload-multiple-files-to-named-drive-folder.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup
 
 Allow uploads through the form and prevent overlapping submissions targeting the same new folder.
 
-For Open Flow set mode to relay in **Prepare folder request**, configure its webhook URL, connect the same Google Drive account and enable persistent State. Restrict webhook access. File bytes are not sent to Open Flow.
+Restrict webhook access.
 
 ## Behavior
 
 Submit a folder name and multiple files. The workflow finds exactly one matching folder directly under the configured parent, or creates it, then uploads each file with its original name to that folder. Multiple same-name folders stop the run for manual selection. Folder contents and filenames may appear in execution history; protect access.
 
-If folder creation is uncertain, inspect the parent before retrying. In Open Flow set **Reserve folder creation** to applied when the folder exists or absent when it does not, replay the same request, then clear the field.
-
-<details>
-<summary>In n8n</summary>
-
-Import the n8n workflow, connect Google Drive, set the parent folder ID in **Prepare folder request**, and select a Data Table with item_key and status text columns in all checkpoint nodes. Direct mode runs in n8n; use one mode. In both modes n8n retains and uploads the original binary files. In n8n inspect the folder checkpoint and Drive before marking it done or deleting it. If an upload is uncertain, inspect that file in the destination before retrying; reconcile its pending Data Table row and any remaining files manually.
-
-</details>
+If folder creation is uncertain, inspect the parent before retrying.
 
 <details>
 <summary>Inspiration &amp; credits</summary>

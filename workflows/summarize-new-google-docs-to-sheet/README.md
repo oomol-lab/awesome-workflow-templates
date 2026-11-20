@@ -3,28 +3,16 @@
 Summarize each new Google Doc and append its last modifier and summary.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/summarize-new-google-docs-to-sheet/) [![n8n JSON](../../assets/n8n-json.svg)](templates/summarize-new-google-docs-to-sheet.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/summarize-new-google-docs-to-sheet.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup
 
-Create a Summaries sheet with Name, Email and Summary columns in that order. For Open Flow set mode to relay in Prepare document event, configure the Open Flow webhook and Header Auth, bind DOC_EVENT_AUTH to the same Authorization header, connect Google Docs and Sheets and enable persistent State. Use one mode and prevent overlapping runs for the same document.
+Create a Summaries sheet with Name, Email and Summary columns in that order. Use one mode and prevent overlapping runs for the same document.
 
 Each new Google Doc is read by ID, summarized and appended with its last modifying user's name and email. If those fields are missing they are left blank. The source description mentions filename and upload date, but its sheet node writes only these three fields. Content is sent to the model and can appear in execution history. Review summaries before relying on them.
 
-An unknown append is not replayed. Inspect the target sheet first. In Open Flow set the pending key and confirmed or absent in Reserve summary append, replay the same event and clear those fields. To intentionally summarize the same document again, remove its completed checkpoint.
-
-<details>
-<summary>In n8n</summary>
-
-Configure the n8n Drive trigger for the target folder, Google Docs, Google Sheets and an AI model. Select a private Data Table with item_key and status text columns. Direct mode runs in n8n. In n8n mark the pending Data Table row done if appended, or delete it only after confirming no row exists, then rerun the original execution.
-
-</details>
+An unknown append is not replayed. Inspect the target sheet first. To intentionally summarize the same document again, remove its completed checkpoint.
 
 <details>
 <summary>Inspiration &amp; credits</summary>

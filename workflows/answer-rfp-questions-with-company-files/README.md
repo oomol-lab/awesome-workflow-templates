@@ -3,28 +3,16 @@
 Draft a response document from RFP questions and company files.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/answer-rfp-questions-with-company-files/) [![n8n JSON](../../assets/n8n-json.svg)](templates/answer-rfp-questions-with-company-files.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/answer-rfp-questions-with-company-files.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup and use
 
-Configure Google Docs, Gmail, Slack and OpenAI Header Auth credentials. Upload company marketing and sales documents to that vector store. For Open Flow also enter the vector store ID and Slack channel in **Choose RFP step**, bind OPENAI_API_KEY, connect Google Docs, Gmail and Slack, and enable persistent State. Configure trusted access and prevent concurrent runs for the same request ID. PDFs must contain extractable text; scans require OCR. Each Open Flow Code input and output must fit 1 MiB.
+Configure Google Docs, Gmail, Slack and OpenAI Header Auth credentials. Upload company marketing and sales documents to that vector store. Configure trusted access and prevent concurrent runs for the same request ID. PDFs must contain extractable text; scans require OCR.
 
-Each request creates a new document and appends each extracted question with an answer using OpenAI file search over the configured company files. The response is a draft requiring human review. The email and Slack message include its link. Inspect the run for completion. The source Assistant API is retired, so Responses file search replaces it; configure the company files yourself. Open Flow creates the document in the connection's default location rather than the original private folder.
+Each request creates a new document and appends each extracted question with an answer using OpenAI file search over the configured company files. The response is a draft requiring human review. The email and Slack message include its link. Inspect the run for completion. The source Assistant API is retired, so Responses file search replaces it; configure the company files yourself.
 
 Each create, append, email and Slack write is recorded as pending before it runs. If its result is unknown, inspect the service. In **Choose RFP step**, enter the pending key and confirmed or absent; for confirmed creation also provide its document ID. Clear these fields after recovery. For an absent operation set its stage back to ready-create, ready-append, ready-email or ready-slack. For a confirmed creation set payload.docId and stage ready-answer. For a confirmed append increment payload.index, clear payload.answer and set stage to ready-answer when questions remain or ready-email otherwise. For confirmed email set ready-slack; for confirmed Slack set done. Do not retry until the outcome is checked. State contains the RFP and draft answers, so restrict access to it and workflow execution history.
-
-<details>
-<summary>In n8n</summary>
-
-Import n8n and configure Google Docs, Gmail, Slack and OpenAI Header Auth credentials. Create a Data Table with text columns item_key, stage and payload, choose it on each Data Table node, set the document folder and Slack channel, and enter the OpenAI vector store ID in **Search company files and answer**. In **Normalize RFP**, choose direct for n8n, or relay and set the Open Flow webhook URL. Submit multipart id, title, reply_to and data PDF to n8n. For n8n, inspect the matching Data Table row.
-
-</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -3,30 +3,18 @@
 Summarize company inquiries and send knowledge-grounded replies through IMAP and SMTP.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/reply-company-inquiries-with-knowledge/) [![n8n JSON](../../assets/n8n-json.svg)](templates/reply-company-inquiries-with-knowledge.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/reply-company-inquiries-with-knowledge.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup
 
 Configure Qdrant and OpenAI with an existing company-knowledge collection whose documents use text-embedding-3-large with 1536 dimensions and content/metadata payloads. The separate Drive indexing and collection refresh from the source are not included.
 
-For Open Flow import **Company inquiry response** and **Retrieve company knowledge**, publish the retrieval workflow and refresh the tool. Enable only one IMAP trigger: the native mode or the disabled Open Flow relay trigger. For native mode configure Qdrant and OpenAI credentials.
+For native mode configure Qdrant and OpenAI credentials.
 
 ## Behavior
 
-Summarize each email and classify company information requests. The agent retrieves relevant knowledge and prepares a concise reply; other emails receive no response. The relay sends through SMTP. Avoid concurrent processing of the same mailbox. Email and retrieved content are sent to the configured model. Review generated responses and knowledge for accuracy.
-
-<details>
-<summary>In n8n</summary>
-
-Configure IMAP and SMTP credentials, a Data Table with item_key and status text columns, and an AI model. Deploy the webhook behind an authenticated gateway or private network, and configure its URL in the n8n relay. An uncertain send leaves a pending message ID: inspect the sent mailbox and reconcile the Data Table record before retrying.
-
-</details>
+Summarize each email and classify company information requests. The agent retrieves relevant knowledge and prepares a concise reply; other emails receive no response. Avoid concurrent processing of the same mailbox. Email and retrieved content are sent to the configured model. Review generated responses and knowledge for accuracy.
 
 <details>
 <summary>Inspiration &amp; credits</summary>
@@ -34,8 +22,6 @@ Configure IMAP and SMTP credentials, a Data Table with item_key and status text 
 Adapted from [AI-Powered Email Automation for Business: Summarize & Respond with RAG](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/OpenAI_and_LLMs/AI-Powered%20Email%20Automation%20for%20Business_%20Summarize%20%26%20Respond%20with%20RAG.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 
 Source collection notice: © 2024–2026 Enes Cingoz, [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). The source export does not identify a separate template author or license. See [repository licensing](../../README.md#licensing) for the scope of OOMOL contributions and third-party material.
-
-
 
 Changes: isolate the inquiry response, replace unavailable models, repair text summarization, align embeddings, use n8n as the IMAP/SMTP relay, and add send checkpoints.
 

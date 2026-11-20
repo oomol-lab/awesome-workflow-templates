@@ -3,35 +3,19 @@
 Send a Vonage SMS when a Kafka JSON message reports a temperature above 50.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/kafka-temperature-alert-vonage-sms/) [![n8n JSON](../../assets/n8n-json.svg)](templates/kafka-temperature-alert-vonage-sms.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/kafka-temperature-alert-vonage-sms.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup
 
-Connect the Kafka credential. Set the topic and consumer group in **Kafka Trigger** and send JSON messages with a numeric `temp` field. For Open Flow, connect Vonage, set the destination in **Send temperature alert**, set **Choose delivery mode** to `relay` and configure the Open Flow URL in **Forward Kafka message**. The sender must be permitted for the destination.
+Connect the Kafka credential. Set the topic and consumer group in **Kafka Trigger** and send JSON messages with a numeric `temp` field. The sender must be permitted for the destination.
 
 ## Behavior
 
-A temperature strictly above 50 sends one SMS with the value; 50 and below send nothing. The source uses the Kafka trigger's normal offset handling. The Open Flow webhook acknowledges before processing, so a later relay or SMS failure is visible in the respective execution. An uncertain SMS may have been sent; inspect Vonage before replaying.
-
-<details>
-<summary>In n8n</summary>
-
-Import the bundled n8n workflow and connect the Kafka credential. For n8n-only operation leave the mode as `direct`, connect Vonage and set its destination. Activate one mode. The Open Flow webhook is unauthenticated and may send SMS messages to the configured recipient; restrict access to trusted callers.
-
-</details>
+A temperature strictly above 50 sends one SMS with the value; 50 and below send nothing. The source uses the Kafka trigger's normal offset handling. An uncertain SMS may have been sent; inspect Vonage before replaying.
 
 <details>
 <summary>Inspiration &amp; credits</summary>
-
-## Changes to the source
-
-- Replace the missing SMS recipient with configuration and add an optional Kafka trigger relay.
 
 Adapted from [Receive messages from a topic and send an SMS](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Noop/0209_Noop_Kafka_Send_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

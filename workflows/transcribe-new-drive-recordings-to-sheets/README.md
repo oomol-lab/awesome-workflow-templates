@@ -3,13 +3,8 @@
 Transcribe new Drive recordings with Amazon Transcribe and append the results to Google Sheets.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/transcribe-new-drive-recordings-to-sheets/) [![n8n JSON](../../assets/n8n-json.svg)](templates/transcribe-new-drive-recordings-to-sheets.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/transcribe-new-drive-recordings-to-sheets.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup
 
@@ -19,14 +14,7 @@ Select the Drive folder in **Watch Drive folder**. Connect Google Sheets and con
 
 New files are downloaded from Drive and uploaded to S3 with a key containing their Drive ID. Amazon Transcribe uses the source default US English, then the workflow polls until completion and appends the transcript and matching recording details. The folder should contain audio or video formats supported by Transcribe; unsupported files fail.
 
-If an upload, Transcribe start or sheet append has an unknown result, inspect S3, the deterministic job name or the spreadsheet. In **Choose transcription step** enter the pending key and resolution confirmed or absent, trigger another poll, then clear the fields. For an uncertain relay upload, mark the relay row done when the object exists and confirm the Open Flow upload; if the object is absent delete the relay row and resolve it as absent before retrying. Protect the relay and execution history.
-
-<details>
-<summary>In n8n</summary>
-
-In n8n configure the authenticated binary relay webhook, Google Drive and AWS credentials, and select a Data Table with text columns item_key and status. Bind secret Variable N8N_RELAY_TOKEN to the webhook Header Auth value Authorization: Bearer followed by the same token. Set the relay production URL in **Choose transcription step**. Enable persistent State and prevent overlapping executions. For direct n8n mode configure its Drive folder, AWS and Sheets credentials, spreadsheet ID, and the same Data Table on direct checkpoint nodes. Set the bucket in **AWS S3 1** and replace YOUR_S3_BUCKET in the media URI expression on **AWS Transcribe 1** with that same bucket. Use one format. The n8n relay transfers file bytes without placing base64 in Open Flow ports. For an n8n direct pending row, complete the remaining steps manually before marking it done.
-
-</details>
+If an upload, Transcribe start or sheet append has an unknown result, inspect S3, the deterministic job name or the spreadsheet. In **Choose transcription step** enter the pending key and resolution confirmed or absent, trigger another poll, then clear the fields.
 
 <details>
 <summary>Inspiration &amp; credits</summary>

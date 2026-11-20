@@ -39,7 +39,6 @@ Adapted from [Recover a completed video with Magic Hour](https://github.com/enes
 
 Source collection notice: © 2024–2026 Enes Cingoz, [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). The source includes a separate MIT notice for these workflows, reproduced below. See [repository licensing](../../README.md#licensing) for the scope of OOMOL contributions and third-party material.
 
-
 [Magic Hour workflow license](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/docs/Magic%20Hour%20workflow%20license.txt):
 
 > MIT License

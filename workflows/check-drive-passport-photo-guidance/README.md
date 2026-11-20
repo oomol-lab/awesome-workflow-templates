@@ -3,28 +3,16 @@
 Check Google Drive portraits against digital passport photo guidance and review the results.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/check-drive-passport-photo-guidance/) [![n8n JSON](../../assets/n8n-json.svg)](templates/check-drive-passport-photo-guidance.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/check-drive-passport-photo-guidance.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup
 
-Connect Google Drive and Gemini, and configure a current vision-capable Gemini model. Activate the photo relay. In Open Flow set **Check original photo** to its production webhook URL and run with photos containing a name and Google Drive file ID. Restrict access to the relay; it does not authenticate callers.
+Connect Google Drive and Gemini, and configure a current vision-capable Gemini model.
 
 ## Behavior
 
-For each original image, the relay measures pixel dimensions and byte length before resizing for the model. It returns those measurements, whether the digital size requirements pass, and the model's assessment of visible features. Review each result against the original image and current official guidance; a model cannot establish all requirements or guarantee acceptance. Images are sent to Gemini.
-
-<details>
-<summary>In n8n</summary>
-
-Import the n8n workflow, connect Google Drive and Gemini, and configure a current vision-capable Gemini model. To run n8n directly, set the photo list in **Photo URLs** and use its manual trigger.
-
-</details>
+It returns those measurements, whether the digital size requirements pass, and the model's assessment of visible features. Review each result against the original image and current official guidance; a model cannot establish all requirements or guarantee acceptance. Images are sent to Gemini.
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -3,35 +3,19 @@
 Receive change events for a Trello list.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/receive-trello-list-changes/) [![n8n JSON](../../assets/n8n-json.svg)](templates/receive-trello-list-changes.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/receive-trello-list-changes.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup and use
 
-Configure Trello credentials and set the list model ID in **Trello Trigger**. For Open Flow set the destination in **Forward to Open Flow** and enable that node. Restrict access to the webhook endpoints.
+Configure Trello credentials and set the list model ID in **Trello Trigger**. Restrict access to the webhook endpoints.
 
 ## Behavior
 
-The Trello trigger emits the complete webhook payload for changes on the configured model. The optional relay forwards it to Open Flow as workflow output. Event details may appear in execution history.
-
-<details>
-<summary>In n8n</summary>
-
-Import the n8n workflow, configure Trello credentials and set the list model ID in **Trello Trigger**. n8n registers a Trello webhook when activated; its URL must be reachable by Trello. Leave it disabled to use n8n alone. The n8n trigger acknowledges requests before forwarding and does not validate Trello signatures; restrict access and inspect n8n execution history for relay failures.
-
-</details>
+The Trello trigger emits the complete webhook payload for changes on the configured model. Event details may appear in execution history.
 
 <details>
 <summary>Inspiration &amp; credits</summary>
-
-## Changes to the source
-
-- Add an optional n8n relay for complete event payloads in Open Flow.
 
 Adapted from [Trello list changes](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Trello/0076_Trello_Update_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

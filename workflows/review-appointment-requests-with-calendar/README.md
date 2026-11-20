@@ -3,30 +3,18 @@
 Qualify appointment requests, obtain a human decision and create a calendar meeting or send a rejection.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/review-appointment-requests-with-calendar/) [![n8n JSON](../../assets/n8n-json.svg)](templates/review-appointment-requests-with-calendar.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/review-appointment-requests-with-calendar.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup
 
-Connect Gmail, Google Calendar and an AI model in Open Flow; set the calendar ID in **Prepare appointment action** and enable persistent State. Prevent overlapping executions for the same submission.
+Prevent overlapping executions for the same submission.
 
 ## Behavior
 
 The form accepts a name, email and enquiry. Relevant enquiries proceed to terms and a choice of weekday and time. A receipt acknowledges the request; an administrator approves or declines it by email. Approval creates a 30-minute event with Google Meet and the requester as an attendee. Decline sends a rejection email. The classifier and summary can be wrong; the administrator makes the final decision. Request data is sent to the model and stored in execution history.
 
 If a write outcome is unknown, inspect Gmail or Calendar before retrying. Enter the pending key and confirmed if the action happened or absent if it did not in **Prepare appointment action**, replay the same request, then clear those fields. Mark it done if the action happened, or delete it only if absent. An approval email remains pending while awaiting the administrator; never clear it while its response is outstanding. If that waiting execution is lost after delivery, obtain the administrator’s decision separately and complete the calendar event or rejection manually before marking its checkpoint done.
-
-<details>
-<summary>In n8n</summary>
-
-Import the n8n form and approval workflow, configure Gmail and the model, administrator address, calendar, workflow timezone, form terms and decline-page contact address. Select the same Data Table with item_key and status text columns in every checkpoint node. Use direct mode for n8n or set **Choose processing mode** to relay for Open Flow. Configure the n8n relay with the Open Flow webhook URL and HTTP Basic Auth, and bind the full matching Authorization header as secret Variable APPOINTMENT_RELAY_AUTH. In n8n inspect each pending Data Table row and the corresponding Gmail message or Calendar event.
-
-</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

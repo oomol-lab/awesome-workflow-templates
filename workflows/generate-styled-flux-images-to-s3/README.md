@@ -31,8 +31,6 @@ Adapted from [Flux AI Image Generator](https://github.com/enescingoz/awesome-n8n
 
 Source collection notice: © 2024–2026 Enes Cingoz, [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). The source export does not identify a separate template author or license. See [repository licensing](../../README.md#licensing) for the scope of OOMOL contributions and third-party material.
 
-
-
 Created by [Max Tkacz](https://x.com/maxtkacz) for the [30 Day AI Sprint](https://30dayaisprint.notion.site/). Changes: use fal's current FLUX.1 schnell endpoint, make storage configurable, replace the guessed gallery with the generated image URL, and add an Open Flow webhook and checkpoint.
 
 Collection license notice:

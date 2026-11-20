@@ -3,30 +3,18 @@
 Format scheduled Notion posts, publish their images on LinkedIn and mark the matching page done.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/publish-notion-posts-to-linkedin/) [![n8n JSON](../../assets/n8n-json.svg)](templates/publish-notion-posts-to-linkedin.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/publish-notion-posts-to-linkedin.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup
 
-Connect Notion, LinkedIn and a text model. Configure the Notion data source, its Date and Status properties, and the LinkedIn personal URN. Enable persistent State. Use only one format and prevent overlapping runs.
+Connect Notion, LinkedIn and a text model. Configure the Notion data source, its Date and Status properties, and the LinkedIn personal URN. Use only one format and prevent overlapping runs.
 
 ## Behavior
 
-Daily at 15:00 UTC, read pages scheduled for that date and not marked Done. Read each page's direct text blocks and first image, format the text, publish the image post and update the same Notion page. Text is sent to the model; formatted text and images are sent to LinkedIn. Protect the relay and execution history, which can contain image URLs. The model can alter meaning; review source material and outputs.
+Daily at 15:00 UTC, read pages scheduled for that date and not marked Done. Read each page's direct text blocks and first image, format the text, publish the image post and update the same Notion page. Text is sent to the model; formatted text and images are sent to LinkedIn. The model can alter meaning; review source material and outputs.
 
 If a publish or status update has an unknown result, inspect LinkedIn or Notion. Enter its pending key in **Resolve prior post**, set resolution to confirmed or absent, rerun, and clear the fields. Complete a missing status update manually and mark the row done; delete a pending-post row only after confirming no post was created.
-
-<details>
-<summary>In n8n</summary>
-
-Import the n8n workflow, configure LinkedIn, a Data Table with text columns item_key and status, and the upload relay Header Auth credential. Enable **Binary upload relay**, disable the n8n schedule when using Open Flow, set the relay URL in **Upload image via n8n** and bind N8N_RELAY_TOKEN. For direct n8n mode configure the Notion database and LinkedIn account. In n8n inspect the pending-post or pending-status Data Table row.
-
-</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

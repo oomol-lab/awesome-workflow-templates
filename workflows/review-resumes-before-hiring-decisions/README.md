@@ -3,17 +3,12 @@
 Prepare factual resume summaries and let a human decide how each application is handled.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/review-resumes-before-hiring-decisions/) [![n8n JSON](../../assets/n8n-json.svg)](templates/review-resumes-before-hiring-decisions.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/review-resumes-before-hiring-decisions.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup and review
 
-Set a secret Header Auth credential on the reviewer webhook and restrict access to authorized reviewers. For Open Flow set both **Choose processing mode** and **Choose decision mode** to relay, configure the Open Flow webhook URL and bearer Header Auth on both relay nodes, bind REVIEW_AUTH to the exact Authorization header value, connect Google Docs, Drive, Sheets and Gmail, and enable persistent State. Set the same job document ID in **Read job description**, the four folder IDs in **Apply human decision**, the same spreadsheet ID in both tracker nodes, and the internal email in **Apply human decision**. The Candidates sheet must start with File ID, Candidate Name, Human Verdict, Human Reason and Review Summary columns in that order. Prevent concurrent processing of the same file and concurrent tracker edits.
+Set a secret Header Auth credential on the reviewer webhook and restrict access to authorized reviewers. Set the same job document ID in **Read job description**, the four folder IDs in **Apply human decision**, the same spreadsheet ID in both tracker nodes, and the internal email in **Apply human decision**. The Candidates sheet must start with File ID, Candidate Name, Human Verdict, Human Reason and Review Summary columns in that order. Prevent concurrent processing of the same file and concurrent tracker edits.
 
 A new resume PDF is extracted and summarized against the job description. The summary contains factual information for a reviewer; it does not choose, score or rank a candidate. For example:
 
@@ -21,14 +16,7 @@ A new resume PDF is extracted and summarized against the job description. The su
 
 The webhook acknowledges receipt; inspect the execution and tracker for completion. No folder move, tracker update or notification occurs until that decision. The decision then moves the same Drive file, upserts its File ID row and sends a notification to the configured internal address. The source used an AI-generated decision and matched rows by candidate name; this version requires human judgment and uses the stable file ID. The source's notification was addressed to a fixed internal mailbox, not dynamically to the candidate.
 
-PDFs must contain extractable text; scans require OCR. Open Flow Code inputs and outputs must fit 1 MiB. Review records and workflow history contain sensitive personal data and require restricted access. If a move, tracker write or email result is unknown, inspect the service before retrying. In Open Flow set the pending key and confirmed or absent in **Apply human decision**; clear the fields after recovery. If the operation is confirmed, set pending-move to ready-tracker, pending-tracker to ready-email, or pending-email to done. If absent, set them to ready-move, ready-tracker, or ready-email respectively. Then resubmit the same decision. Do not change a recorded decision during recovery.
-
-<details>
-<summary>In n8n</summary>
-
-Configure the n8n Drive trigger, PDF extraction, job description document, four Drive folders, candidate tracker and internal notification recipient. Use a private Data Table with item_key, status and payload text columns. In n8n direct mode set the three destination folder IDs in **Move reviewed resume**, and configure the spreadsheet and internal email on their nodes. An authorized person inspects the original resume, job description and the Data Table row with status review and its payload, independently selects REJECTED, KIV or SHORTLISTED, and sends the file ID, decision and reason to the authenticated reviewer webhook. In n8n inspect the pending Data Table row.
-
-</details>
+PDFs must contain extractable text; scans require OCR. Review records and workflow history contain sensitive personal data and require restricted access. If a move, tracker write or email result is unknown, inspect the service before retrying. If the operation is confirmed, set pending-move to ready-tracker, pending-tracker to ready-email, or pending-email to done. If absent, set them to ready-move, ready-tracker, or ready-email respectively. Then resubmit the same decision. Do not change a recorded decision during recovery.
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -3,30 +3,18 @@
 Upload Drive videos privately and use captions to generate YouTube metadata.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/add-metadata-to-private-youtube-videos/) [![n8n JSON](../../assets/n8n-json.svg)](templates/add-metadata-to-private-youtube-videos.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/add-metadata-to-private-youtube-videos.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup
 
-Connect Google Drive, YouTube and Gemini. The YouTube connection must include youtube.force-ssl and belong to an account able to edit the uploaded videos. Enable persistent State. Only files created at or after that time are considered.
+Connect Google Drive, YouTube and Gemini. The YouTube connection must include youtube.force-ssl and belong to an account able to edit the uploaded videos. Only files created at or after that time are considered.
 
 ## Use
 
-The workflow uploads each video privately and associates its Drive ID with the YouTube ID. It checks available caption tracks, generates a title, description and tags, and updates the same private video. Open Flow checks again on a later scheduled run if captions are not ready. Caption generation and availability depend on YouTube; videos without a usable track remain pending. Set the preferred caption language in Choose caption track. Transcript content is sent to Gemini. Review the generated metadata before making a video public.
+The workflow uploads each video privately and associates its Drive ID with the YouTube ID. It checks available caption tracks, generates a title, description and tags, and updates the same private video. Caption generation and availability depend on YouTube; videos without a usable track remain pending. Set the preferred caption language in Choose caption track. Transcript content is sent to Gemini. Review the generated metadata before making a video public.
 
-An uncertain upload remains pending to prevent another upload. In Open Flow, enter the pending key as ack and use confirmed only after completing the intended effects manually; use absent only after verifying no upload remains. Clear the recovery fields after use. Inspect an uncertain upload and only remove its checkpoint when a retry is safe. To resume metadata for an already confirmed upload, POST its requestId to the authenticated Resume metadata webhook. Avoid overlapping runs or moving and editing files while a scan is in progress. By default the original Drive file remains. To move it to Drive trash after its own metadata update succeeds, set deleteSource to true in Confirm video metadata. A delete_pending checkpoint means the outcome is unknown; inspect that exact Drive file before reconciling.
-
-<details>
-<summary>In n8n</summary>
-
-In Open Flow set the Drive folder ID and a UTC start time in Configure source folder, then set the authenticated n8n upload and status URLs and bind PRIVATE_VIDEO_RELAY_TOKEN. Activate the n8n workflow and configure its Drive folder and credentials, YouTube OAuth, Gemini Header Auth, a shared Data Table with item_key, status, video_id and file_id text columns, and Header Auth on all three webhooks. Use either the n8n Drive trigger or Open Flow scheduling for a folder, not both. The n8n workflow waits and checks again. Inspect YouTube and the n8n Data Table before retrying. In n8n set deleteSource to true in Configure source deletion to move the file to trash after its metadata succeeds. If the Data Table status is delete_pending, inspect that file and reconcile the checkpoint before resuming.
-
-</details>
+An uncertain upload remains pending to prevent another upload. Clear the recovery fields after use. Inspect an uncertain upload and only remove its checkpoint when a retry is safe. To resume metadata for an already confirmed upload, POST its requestId to the authenticated Resume metadata webhook. Avoid overlapping runs or moving and editing files while a scan is in progress. By default the original Drive file remains. To move it to Drive trash after its own metadata update succeeds, set deleteSource to true in Confirm video metadata. A delete_pending checkpoint means the outcome is unknown; inspect that exact Drive file before reconciling.
 
 <details>
 <summary>Inspiration &amp; credits</summary>

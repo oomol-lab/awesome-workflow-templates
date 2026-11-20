@@ -3,28 +3,16 @@
 Create and email a personalized PDF certificate for each passing quiz response.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/email-quiz-certificates-from-slides/) [![n8n JSON](../../assets/n8n-json.svg)](templates/email-quiz-certificates-from-slides.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/email-quiz-certificates-from-slides.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup
 
-Configure a Google Sheets form-response tab with unique Submission ID, Name, Email and numeric Score columns. Each response must have a unique immutable Submission ID. The template must contain [ NAME ] on page object ID p, and the destination Drive folder must exist. In Open Flow mode set mode to relay in Prepare response, configure the webhook and Header Auth, bind CERTIFICATE_RELAY_AUTH to that Authorization header, connect Drive and Slides, select the Gmail connection for the Email certificate Code node, and enable persistent State. Configure Header Auth on Resume submission. Enter the template and folder IDs in Choose certificate step. Prevent concurrent handling of the same submission.
+Configure a Google Sheets form-response tab with unique Submission ID, Name, Email and numeric Score columns. Each response must have a unique immutable Submission ID. The template must contain [ NAME ] on page object ID p, and the destination Drive folder must exist. Configure Header Auth on Resume submission. Enter the template and folder IDs in Choose certificate step. Prevent concurrent handling of the same submission.
 
 A score strictly greater than 3 creates a copy of the Slides template, replaces [ NAME ] on page p, exports that copy as PDF and sends it to the respondent. Scores of 3 or less do not create or send a certificate. The Gmail connector fetches the temporary PDF transit URL; it must be accessible to the connector, and attachments have a 25 MB decoded limit. A missing name placeholder stops before email is sent.
 
-If a copy, replacement or email has an unknown result, inspect Drive, Slides or Gmail before retrying. In Open Flow enter the pending key and confirmed or absent in Choose certificate step; a confirmed copy also needs its ID. Clear recovery fields after replay. Resume the same submission through the authenticated resume webhook.
-
-<details>
-<summary>In n8n</summary>
-
-Configure the n8n trigger, Drive, Slides, Gmail and a private Data Table with item_key, status and payload text columns. n8n exports and attaches the original PDF bytes directly. In n8n inspect the matching Data Table row; for an absent copy delete it, for a confirmed copy set payload.fileId and ready-replace, for an absent or confirmed replacement set ready-replace or ready-email, and for an absent or confirmed email set ready-email or done.
-
-</details>
+If a copy, replacement or email has an unknown result, inspect Drive, Slides or Gmail before retrying. Clear recovery fields after replay. Resume the same submission through the authenticated resume webhook.
 
 <details>
 <summary>Inspiration &amp; credits</summary>

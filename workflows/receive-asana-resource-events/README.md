@@ -3,35 +3,19 @@
 Receive change events for an Asana task or project.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/receive-asana-resource-events/) [![n8n JSON](../../assets/n8n-json.svg)](templates/receive-asana-resource-events.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/receive-asana-resource-events.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup and use
 
-Connect Asana and set the task or project ID in **Asana-Trigger**. Activate it to register the webhook; its URL must be publicly reachable by Asana. For Open Flow enter its webhook URL in **Forward to Open Flow** and enable that node. Restrict access to the webhook endpoints.
+Connect Asana and set the task or project ID in **Asana-Trigger**. Activate it to register the webhook; its URL must be publicly reachable by Asana. Restrict access to the webhook endpoints.
 
 ## Behavior
 
-Asana may deliver several events together. The optional relay forwards each event to Open Flow as workflow output. Event details may appear in execution history.
-
-<details>
-<summary>In n8n</summary>
-
-Import the n8n workflow, connect Asana and set the task or project ID in **Asana-Trigger**. Leave it disabled for n8n alone. The n8n trigger emits each event separately and ignores empty heartbeats. The fixed n8n trigger completes the Asana handshake but does not verify event signatures; restrict access and inspect n8n execution history for relay failures.
-
-</details>
+Asana may deliver several events together. Event details may appear in execution history.
 
 <details>
 <summary>Inspiration &amp; credits</summary>
-
-## Changes to the source
-
-- Replace resource coordinates with placeholders and add an optional n8n relay.
 
 Adapted from [Asana resource events](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Asana/0967_Asana_Update_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

@@ -33,8 +33,6 @@ Adapted from [Build Your Own Image Search Using AI Object Detection, CDN and Ela
 
 Source collection notice: © 2024–2026 Enes Cingoz, [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). The source export does not identify a separate template author or license. See [repository licensing](../../README.md#licensing) for the scope of OOMOL contributions and third-party material.
 
-
-
 Changes from source: Replace the unavailable Cloudflare detection model with AWS Rekognition, use Cloudinary crop delivery URLs, and add checkpoints for external writes.
 
 Collection license notice:

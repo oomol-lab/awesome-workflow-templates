@@ -3,35 +3,19 @@
 Create a Pipedrive call activity and ask for meeting notes in Slack after a Calendly meeting.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/remind-calendly-meeting-feedback/) [![n8n JSON](../../assets/n8n-json.svg)](templates/remind-calendly-meeting-feedback.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/remind-calendly-meeting-feedback.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup and use
 
-Connect Calendly and configure its invitee.created trigger. In openflow mode set the relay URL and deploy the Open Flow workflow. In Open Flow bind CALENDLY_TOKEN with event type read access and PIPEDRIVE_TOKEN as secret Variables. Connect Slack and set the destination channel. Set the call notes URL. Use one execution mode.
+Connect Calendly and configure its invitee.created trigger. Connect Slack and set the destination channel. Set the call notes URL. Use one execution mode.
 
 ## Behavior
 
-For each created invitee, the workflow reads its Calendly event type, creates a Pipedrive call activity with meeting name, invitee and start time, and asks the first assigned host in Slack to add notes 15 minutes after the scheduled end. Meetings already past that time send the reminder immediately. It handles Calendly's current event payload; cancellation and rescheduling do not cancel an already scheduled reminder. The Calendly trigger and relay acknowledge before downstream work and do not validate the sender. Restrict access and inspect execution history. Pipedrive and Slack writes are separate; inspect both services before retrying an uncertain execution.
-
-<details>
-<summary>In n8n</summary>
-
-Import n8n, connect Calendly and configure its invitee.created trigger. Configure **Execution mode** as n8n or openflow. In n8n configure HTTP Bearer Auth for Calendly and HTTP Header Auth named x-api-token with the Pipedrive API token.
-
-</details>
+For each created invitee, the workflow reads its Calendly event type, creates a Pipedrive call activity with meeting name, invitee and start time, and asks the first assigned host in Slack to add notes 15 minutes after the scheduled end. Meetings already past that time send the reminder immediately. It handles Calendly's current event payload; cancellation and rescheduling do not cancel an already scheduled reminder. Restrict access and inspect execution history. Pipedrive and Slack writes are separate; inspect both services before retrying an uncertain execution.
 
 <details>
 <summary>Inspiration &amp; credits</summary>
-
-## Changes to the source
-
-- Map current Calendly event payloads and read event type details. Use Pipedrive API v2 in both formats, add an optional relay, and replace the original channel and notes link with configuration.
 
 Adapted from [Calendly meeting feedback reminder](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Wait/0092_Wait_Datetime_Automate_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

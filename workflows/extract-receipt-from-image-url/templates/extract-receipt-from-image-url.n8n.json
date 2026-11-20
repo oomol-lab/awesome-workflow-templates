@@ -13,267 +13,51 @@
       "id": "extract-receipt-from-image-url-0"
     },
     {
-      "name": "Prepare the receipt request",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "parameters": {
-        "mode": "runOnceForAllItems",
-        "jsCode": "const receiptUrl = \"YOUR_RECEIPT_HTTPS_URL\",\n  modelId = \"YOUR_MINDEE_RECEIPT_MODEL_ID\";\nif (\n  !/^https:\\/\\/[^\\s/?#@]+(?:[/?#][^\\s]*)?$/i.test(receiptUrl) ||\n  receiptUrl.includes(\"openflow-mindee-form-7d1b8e6f\")\n)\n  throw Error(\"Enter a direct HTTPS receipt URL without credentials\");\nif (!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(modelId))\n  throw Error(\"Configure the Mindee Receipt model ID\");\nreturn [{ json: { receiptUrl, modelId } }];\n"
-      },
+      "name": "Mindee",
+      "type": "n8n-nodes-base.mindee",
+      "position": [
+        650,
+        340
+      ],
+      "parameters": {},
+      "typeVersion": 1,
       "id": "extract-receipt-from-image-url-1"
     },
     {
-      "name": "Submit the receipt to Mindee",
+      "name": "HTTP Request",
       "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
+      "position": [
+        450,
+        340
+      ],
       "parameters": {
-        "method": "POST",
-        "url": "https://api-v2.mindee.net/v2/products/extraction/enqueue",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendBody": true,
-        "contentType": "multipart-form-data",
-        "bodyParameters": {
-          "parameters": [
-            {
-              "name": "model_id",
-              "value": "={{ $json.modelId }}"
-            },
-            {
-              "name": "url",
-              "value": "={{ $json.receiptUrl }}"
-            }
-          ]
-        },
-        "options": {
-          "redirect": {
-            "redirect": {
-              "followRedirects": false
-            }
-          },
-          "response": {
-            "response": {
-              "responseFormat": "json",
-              "fullResponse": true
-            }
-          }
-        }
+        "url": "https://miro.medium.com/max/1400/0*1T9GkAb93w5NSMsf",
+        "options": {},
+        "responseFormat": "file"
       },
+      "typeVersion": 1,
       "id": "extract-receipt-from-image-url-2"
-    },
-    {
-      "name": "Check the accepted job",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "parameters": {
-        "mode": "runOnceForAllItems",
-        "jsCode": "const j = $json.body?.job,\n  modelId = $(\"Prepare the receipt request\").first().json.modelId;\nif (\n  $json.statusCode !== 202 ||\n  !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(j?.id ?? \"\") ||\n  j.model_id !== modelId\n)\n  throw Error(\"Mindee returned an invalid job\");\nreturn [{ json: { jobId: j.id } }];\n"
-      },
-      "id": "extract-receipt-from-image-url-3"
-    },
-    {
-      "name": "Wait for receipt processing",
-      "type": "n8n-nodes-base.wait",
-      "typeVersion": 1.1,
-      "parameters": {
-        "amount": 3,
-        "unit": "seconds"
-      },
-      "id": "extract-receipt-from-image-url-4"
-    },
-    {
-      "name": "Check the Mindee job",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "parameters": {
-        "method": "GET",
-        "url": "={{ \"https://api-v2.mindee.net/v2/jobs/\" + $(\"Check the accepted job\").first().json.jobId + \"?redirect=false\" }}",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "options": {
-          "redirect": {
-            "redirect": {
-              "followRedirects": false
-            }
-          }
-        }
-      },
-      "id": "extract-receipt-from-image-url-5"
-    },
-    {
-      "name": "Validate the job status",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "parameters": {
-        "mode": "runOnceForAllItems",
-        "jsCode": "const j = $input.first().json.job,\n  id = $(\"Check the accepted job\").first().json.jobId;\nif (j?.id !== id || j.status === \"Failed\" || (j.status === \"Processing\" && $runIndex >= 199))\n  throw Error(\"Mindee job failed or timed out\");\nif (j.status !== \"Processing\" && j.status !== \"Processed\") throw Error(\"Invalid Mindee status\");\nif (\n  j.status === \"Processed\" &&\n  !/^https:\\/\\/api-v2\\.mindee\\.net\\/v2\\/products\\/extraction\\/results\\/[0-9a-f-]{36}$/i.test(\n    j.result_url ?? \"\",\n  )\n)\n  throw Error(\"Invalid Mindee result URL\");\nreturn [{ json: { ready: j.status === \"Processed\", resultUrl: j.result_url } }];\n"
-      },
-      "id": "extract-receipt-from-image-url-6"
-    },
-    {
-      "name": "Is the receipt ready?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "typeValidation": "strict",
-            "version": 2
-          },
-          "conditions": [
-            {
-              "id": "ready",
-              "leftValue": "={{ $json.ready }}",
-              "rightValue": true,
-              "operator": {
-                "type": "boolean",
-                "operation": "true",
-                "singleValue": true
-              }
-            }
-          ],
-          "combinator": "and"
-        },
-        "options": {}
-      },
-      "id": "extract-receipt-from-image-url-7"
-    },
-    {
-      "name": "Read the receipt result",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "parameters": {
-        "method": "GET",
-        "url": "={{ $json.resultUrl }}",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "options": {
-          "redirect": {
-            "redirect": {
-              "followRedirects": false
-            }
-          }
-        }
-      },
-      "id": "extract-receipt-from-image-url-8"
-    },
-    {
-      "name": "Check the receipt result",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "parameters": {
-        "mode": "runOnceForAllItems",
-        "jsCode": "const body = $input.first().json,\n  id = $(\"Check the accepted job\").first().json.jobId;\nif (\n  !body ||\n  typeof body !== \"object\" ||\n  Array.isArray(body) ||\n  body.inference?.job?.id !== id ||\n  !body.inference?.result?.fields ||\n  typeof body.inference.result.fields !== \"object\"\n)\n  throw Error(\"Mindee returned an invalid receipt result\");\nreturn [{ json: body }];\n"
-      },
-      "id": "extract-receipt-from-image-url-9"
     }
   ],
   "active": false,
-  "settings": {
-    "executionOrder": "v1"
-  },
+  "settings": {},
   "connections": {
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Mindee",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "On clicking 'execute'": {
       "main": [
         [
           {
-            "node": "Prepare the receipt request",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Prepare the receipt request": {
-      "main": [
-        [
-          {
-            "node": "Submit the receipt to Mindee",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Submit the receipt to Mindee": {
-      "main": [
-        [
-          {
-            "node": "Check the accepted job",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Check the accepted job": {
-      "main": [
-        [
-          {
-            "node": "Wait for receipt processing",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Wait for receipt processing": {
-      "main": [
-        [
-          {
-            "node": "Check the Mindee job",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Check the Mindee job": {
-      "main": [
-        [
-          {
-            "node": "Validate the job status",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Validate the job status": {
-      "main": [
-        [
-          {
-            "node": "Is the receipt ready?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Read the receipt result": {
-      "main": [
-        [
-          {
-            "node": "Check the receipt result",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Is the receipt ready?": {
-      "main": [
-        [
-          {
-            "node": "Read the receipt result",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Wait for receipt processing",
+            "node": "HTTP Request",
             "type": "main",
             "index": 0
           }

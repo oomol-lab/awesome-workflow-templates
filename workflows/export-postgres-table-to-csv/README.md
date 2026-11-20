@@ -3,35 +3,19 @@
 Read a PostgreSQL table and export its rows as a CSV file.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/export-postgres-table-to-csv/) [![n8n JSON](../../assets/n8n-json.svg)](templates/export-postgres-table-to-csv.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/export-postgres-table-to-csv.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup
 
-Connect the PostgreSQL credential. Set the table name in **Choose table** and run Open Flow manually.
+Connect the PostgreSQL credential.
 
 ## Behavior
 
-The workflow selects all rows from one table and creates a CSV file. Nested values are flattened into dot-separated columns. Table names must be unqualified identifiers containing letters, digits or underscores and beginning with a letter or underscore. The database account controls table visibility. An empty table produces an empty CSV in Open Flow. The relay does not authenticate callers and can read tables accessible to its credential; restrict access to trusted callers. Large tables are subject to request and artifact size limits.
-
-<details>
-<summary>In n8n</summary>
-
-Import the supplied n8n workflow and connect the PostgreSQL credential. For Open Flow, enable **Postgres relay webhook**, connect its **Read table for relay** node, activate n8n, and set the relay URL in **Read table from n8n**. For n8n-only use, disable the relay webhook and set the table in **TableName** before running manually. In direct n8n mode the source query emits no items, so no file is produced.
-
-</details>
+The workflow selects all rows from one table and creates a CSV file. Nested values are flattened into dot-separated columns. Table names must be unqualified identifiers containing letters, digits or underscores and beginning with a letter or underscore. The database account controls table visibility. Large tables are subject to request and artifact size limits.
 
 <details>
 <summary>Inspiration &amp; credits</summary>
-
-## Changes to the source
-
-- Replace the example table name with configuration, validate the identifier and provide an n8n database relay.
 
 Adapted from [PostgreSQL export to CSV](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/0930_Manual_Spreadsheetfile_Export_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

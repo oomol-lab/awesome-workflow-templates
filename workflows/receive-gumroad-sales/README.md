@@ -3,35 +3,19 @@
 Receive Gumroad sale notifications.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/receive-gumroad-sales/) [![n8n JSON](../../assets/n8n-json.svg)](templates/receive-gumroad-sales.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/receive-gumroad-sales.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup and use
 
-Connect Gumroad in **Gumroad Trigger**. Activate it to register the sale subscription; its URL must be publicly reachable by Gumroad. For Open Flow enter its webhook URL in **Forward to Open Flow** and enable that node. Restrict access to the webhook endpoints.
+Connect Gumroad in **Gumroad Trigger**. Activate it to register the sale subscription; its URL must be publicly reachable by Gumroad. Restrict access to the webhook endpoints.
 
 ## Behavior
 
-The trigger receives sale notifications and the optional relay forwards them to Open Flow as workflow output. Neither endpoint authenticates the sender. Sale details can appear in execution history. Event details may appear in execution history.
-
-<details>
-<summary>In n8n</summary>
-
-Import the n8n workflow and connect Gumroad in **Gumroad Trigger**. Leave it disabled for n8n alone. Restrict access and inspect n8n execution history for relay failures.
-
-</details>
+Neither endpoint authenticates the sender. Sale details can appear in execution history. Event details may appear in execution history.
 
 <details>
 <summary>Inspiration &amp; credits</summary>
-
-## Changes to the source
-
-- Add an optional n8n relay.
 
 Adapted from [Gumroad sale notifications](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Gumroad/0843_Gumroad_Update_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

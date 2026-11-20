@@ -3,13 +3,8 @@
 Generate Turkish win-back offers for high-risk customers and record confirmed emails.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/send-churn-risk-winback-offers/) [![n8n JSON](../../assets/n8n-json.svg)](templates/send-churn-risk-winback-offers.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/send-churn-risk-winback-offers.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup
 
@@ -19,14 +14,7 @@ Connect Google Sheets, Gmail and a model. Configure SYSTEM_LOG with customer_id,
 
 Each day customers with a numeric score above 0.7 and at most 1 receive a Turkish offer. Scores through 0.8 receive an informational message about a preferred category; scores through 0.9 receive 200 points on Books, and higher scores receive a 20% Books discount. Confirm your business can honor these offers and review AI-generated content. Customer preferences are sent to the selected model and may appear in execution history. The source's campaign-date note is not implemented in its filter.
 
-The log is appended only after Gmail confirms the send. If delivery or logging is uncertain, inspect Gmail and SYSTEM_LOG before retrying. In Open Flow enter the key and confirmed or absent in the pending reservation node, replay the same customer and day, then clear the fields. Open Flow Code ports are limited to 1 MiB each.
-
-<details>
-<summary>In n8n</summary>
-
-In n8n choose the customer spreadsheet and Customer Data sheet, with customer_id, user_mail, predicted_churn_score and preferred_categories columns. Configure the same Data Table in all checkpoint nodes with item_key and status text columns. For Open Flow, select relay mode in **Choose processing mode**, set the webhook URL, connect Gmail and Google Sheets, configure the spreadsheet ID, enable persistent State, and restrict webhook access at the deployment boundary. Direct mode runs in n8n. No matching customers produces a NOT_FOUND log from n8n. In n8n inspect the pending Data Table row and downstream records; if the email was sent, verify or manually append the corresponding log before marking the row done; remove the pending row only when no email was sent.
-
-</details>
+The log is appended only after Gmail confirms the send. If delivery or logging is uncertain, inspect Gmail and SYSTEM_LOG before retrying.
 
 <details>
 <summary>Inspiration &amp; credits</summary>

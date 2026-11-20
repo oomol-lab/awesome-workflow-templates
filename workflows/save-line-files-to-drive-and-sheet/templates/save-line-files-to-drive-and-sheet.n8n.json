@@ -1,5 +1,5 @@
 {
-  "name": "Line Save File to Google Drive and Log File's URL",
+  "name": "Save LINE Files to Drive and Sheet",
   "tags": [
     {
       "id": "W3ZSaJHRI2hXA9gT",
@@ -10,85 +10,7 @@
   ],
   "nodes": [
     {
-      "id": "line-save-0",
-      "name": "LINE Webhook Listener",
-      "type": "n8n-nodes-base.webhook",
-      "position": [
-        980,
-        -300
-      ],
-      "parameters": {
-        "path": "line-webhook",
-        "options": {
-          "rawBody": true
-        },
-        "httpMethod": "POST"
-      },
-      "typeVersion": 1
-    },
-    {
-      "name": "Verify LINE signature",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "parameters": {
-        "mode": "runOnceForAllItems",
-        "jsCode": "const crypto = require(\"crypto\");\nconst raw = Buffer.from($binary?.data?.data ?? \"\", \"base64\"),\n  sig = String($json.headers?.[\"x-line-signature\"] ?? \"\"),\n  secret = $env.LINE_CHANNEL_SECRET,\n  relay = $env.LINE_RELAY_SECRET;\nif (!raw.length || !secret || !relay) throw Error(\"Missing LINE signature configuration\");\nconst want = crypto.createHmac(\"sha256\", secret).update(raw).digest(),\n  got = Buffer.from(sig, \"base64\");\nif (got.length !== want.length || !crypto.timingSafeEqual(got, want))\n  throw Error(\"Invalid LINE signature\");\nconst body = JSON.parse(raw.toString(\"utf8\"));\nreturn (body.events ?? [])\n  .filter(\n    (e) => e.type === \"message\" && [\"image\", \"video\", \"audio\", \"file\"].includes(e.message?.type),\n  )\n  .map((event, i) => {\n    const payload = Buffer.from(JSON.stringify(event), \"utf8\").toString(\"base64\"),\n      signature = crypto.createHmac(\"sha256\", relay).update(payload, \"utf8\").digest(\"base64\");\n    return { json: { event, payload, signature }, pairedItem: { item: 0 } };\n  });\n"
-      },
-      "id": "line-save-1"
-    },
-    {
-      "name": "Configure processing mode",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "parameters": {
-        "mode": "runOnceForEachItem",
-        "jsCode": "return { json: { ...$json, mode: \"direct\" }, pairedItem: { item: $itemIndex } };\n"
-      },
-      "id": "line-save-2"
-    },
-    {
-      "name": "Forward to Open Flow?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "parameters": {
-        "conditions": {
-          "options": {
-            "typeValidation": "strict",
-            "version": 2
-          },
-          "combinator": "and",
-          "conditions": [
-            {
-              "leftValue": "={{ $json.mode }}",
-              "rightValue": "forward",
-              "operator": {
-                "type": "string",
-                "operation": "equals"
-              }
-            }
-          ]
-        },
-        "options": {}
-      },
-      "id": "line-save-3"
-    },
-    {
-      "name": "Forward verified event",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "parameters": {
-        "method": "POST",
-        "url": "https://YOUR_OPEN_FLOW_WEBHOOK",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ {payload:$json.payload,signature:$json.signature} }}",
-        "options": {}
-      },
-      "id": "line-save-4",
-      "onError": "continueErrorOutput"
-    },
-    {
-      "id": "line-save-5",
+      "id": "47c9f83b-5590-4ffc-825c-5fee72e8ef87",
       "name": "Get Config",
       "type": "n8n-nodes-base.googleSheets",
       "position": [
@@ -104,141 +26,105 @@
       "alwaysOutputData": true
     },
     {
-      "name": "Prepare LINE event",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
+      "id": "1514cec1-bd12-4ce4-99af-bd2465026822",
+      "name": "Create Date Folder",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [
+        1700,
+        80
+      ],
       "parameters": {
-        "mode": "runOnceForEachItem",
-        "jsCode": "const event = $(\"Verify LINE signature\").item.json.event,\n  c = $json,\n  yes = (x) => x === true || String(x).toLowerCase() === \"true\";\nif (!event?.webhookEventId || !event.message?.id || !c[\"Parent Folder ID\"])\n  throw Error(\"Missing event or configuration\");\nconst allowed = String(c[\"Allow File Types\"] ?? \"\")\n    .split(\"|\")\n    .map((x) => x.trim().toLowerCase())\n    .includes(event.message.type),\n  date = String(\n    c.CurrentDate || new Date(event.timestamp).toISOString().slice(0, 10).replaceAll(\"-\", \"\"),\n  );\nreturn {\n  json: {\n    event,\n    allowed,\n    parent: String(c[\"Parent Folder ID\"]),\n    date,\n    byDate: yes(c[\"Store by Date\"]),\n    byType: yes(c[\"Store by File Type\"]),\n    reply: yes(c[\"Reply Enabled\"]),\n  },\n  pairedItem: { item: $itemIndex },\n};\n"
+        "name": "={{ $('Determine Folder Info').item.json.dateFolderName }}",
+        "options": {
+          "parents": [
+            "={{ $('Determine Folder Info').item.json.baseFolderId }}"
+          ]
+        },
+        "resource": "folder"
       },
-      "id": "line-save-6"
+      "typeVersion": 2
     },
     {
-      "name": "Check LINE event",
-      "type": "n8n-nodes-base.dataTable",
-      "typeVersion": 1,
+      "id": "a584238e-1d53-46ff-8cfc-437e14ea71d9",
+      "name": "Set Date Folder ID",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1960,
+        -20
+      ],
       "parameters": {
-        "resource": "row",
-        "dataTableId": {
+        "jsCode": "// Log ข้อมูล input ทั้งหมด\n//console.log(\"Set Target Parent (Date) - Input:\", items);\n\nlet targetParentId = '';\n\nif (items.length > 0) {\n\t// ตรวจสอบจาก branch แรก (True Branch จาก IF node)\n\tif (items[0].json && items[0].json.id) {\n\t\ttargetParentId = items[0].json.id;\n\t} else if (items.length > 1 && items[1].json && items[1].json.id) {\n\t\t// ถ้าไม่พบจาก branch แรก ให้ลองดูจาก branch ที่สอง (False Branch หรือผลจากการสร้าง folder ใหม่)\n\t\ttargetParentId = items[1].json.id;\n\t}\n\t\n\t// เพิ่ม targetParentId ลงใน items[0].json\n\titems[0].json.targetParentId = targetParentId;\n\tconsole.log(\"Set Target Parent (Date) - Output:\", items);\n\treturn items;\n} else {\n\tconsole.log(\"Set Target Parent (Date) - No input items.\");\n\treturn [];\n}\n"
+      },
+      "typeVersion": 2,
+      "alwaysOutputData": false
+    },
+    {
+      "id": "aa480dc9-935e-4a6e-a6c6-2559255ae1c2",
+      "name": "Create File Type Folder",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [
+        1700,
+        400
+      ],
+      "parameters": {
+        "name": "={{ $('Determine Folder Info').item.json.fileTypeFolderName }}",
+        "driveId": {
           "__rl": true,
           "mode": "id",
-          "value": "YOUR_DATA_TABLE_ID"
+          "value": "={{ $('Determine Folder Info').item.json.baseFolderId }}"
         },
-        "matchType": "allConditions",
-        "filters": {
-          "conditions": [
-            {
-              "keyName": "item_key",
-              "condition": "eq",
-              "keyValue": "={{ 'line:'+ $('Prepare LINE event').item.json.event.webhookEventId }}"
-            }
-          ]
-        },
-        "operation": "rowNotExists"
-      },
-      "id": "line-save-7"
-    },
-    {
-      "name": "Reserve LINE event",
-      "type": "n8n-nodes-base.dataTable",
-      "typeVersion": 1,
-      "parameters": {
-        "resource": "row",
-        "operation": "insert",
-        "dataTableId": {
+        "options": {},
+        "folderId": {
           "__rl": true,
           "mode": "id",
-          "value": "YOUR_DATA_TABLE_ID"
+          "value": "={{ $('Get Config').first().json['Store by Date'] === true ? $('Set Date Folder ID').first().json.targetParentId : $('Get Config').first().json[\"Parent Folder ID\"] }}"
         },
-        "columns": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "item_key": "={{ 'line:'+ $('Prepare LINE event').item.json.event.webhookEventId }}",
-            "status": "pending"
-          },
-          "schema": []
-        },
-        "options": {}
+        "resource": "folder"
       },
-      "id": "line-save-8"
+      "typeVersion": 3
     },
     {
-      "name": "Restore LINE event",
+      "id": "d5ed8981-5b65-45a3-8ff4-c00902756bb9",
+      "name": "Upload File to Google Drive",
+      "type": "n8n-nodes-base.googleDrive",
+      "onError": "continueRegularOutput",
+      "position": [
+        1600,
+        640
+      ],
+      "parameters": {
+        "name": "={{ $('Merge Event and Config Data').item.json.body.events[0].timestamp }}.{{$node[\"Get File Binary Content\"].binary.data.fileExtension}}",
+        "driveId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Configure Final Parent Folder ID').item.json.finalParentId }}"
+        },
+        "options": {},
+        "folderId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "root"
+        }
+      },
+      "typeVersion": 3,
+      "alwaysOutputData": false
+    },
+    {
+      "id": "92787455-6839-455f-a939-6927660bc215",
+      "name": "Determine Folder Info",
       "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
+      "position": [
+        1960,
+        -280
+      ],
       "parameters": {
-        "mode": "runOnceForEachItem",
-        "jsCode": "return { json: $(\"Prepare LINE event\").item.json, pairedItem: { item: $itemIndex } };\n"
+        "jsCode": "const data = items[0].json;\nconst config = data.config;\nconst event = data.event;\n\n// ใช้ key จาก config ตามที่ส่งมา\nlet baseFolderId = config[\"Parent Folder ID\"];\nlet dateFolderName = \"\";\nlet fileTypeFolderName = \"\";\n\n// หากตั้งค่า Store by Date เป็น true\nif (config[\"Store by Date\"]) {\n  // ใช้ CurrentDate จาก config หรือใช้วันที่ปัจจุบันถ้าไม่มี\n  dateFolderName = config[\"CurrentDate\"] ? config[\"CurrentDate\"] : new Date().toISOString().slice(0,10).replace(/-/g, \"\");\n}\n\n// หากตั้งค่า Store by File Type เป็น true\nif (config[\"Store by File Type\"]) {\n  // ตรวจสอบว่า event.body.events มีข้อมูลหรือไม่\n  if (event.body && event.body.events && event.body.events.length > 0) {\n    // ดึง type ของ message จาก event.body.events[0]\n    fileTypeFolderName = event.body.events[0].message.type.toLowerCase();\n  }\n}\n\nreturn [{\n  json: {\n    baseFolderId,\n    dateFolderName,\n    fileTypeFolderName,\n    storeByDate: config[\"Store by Date\"],\n    storeByFileType: config[\"Store by File Type\"],\n    event: event,\n    config: config\n  }\n}];\n"
       },
-      "id": "line-save-9"
+      "typeVersion": 2
     },
     {
-      "name": "Allowed file type?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "parameters": {
-        "conditions": {
-          "options": {
-            "typeValidation": "strict",
-            "version": 2
-          },
-          "combinator": "and",
-          "conditions": [
-            {
-              "leftValue": "={{ $json.allowed }}",
-              "rightValue": "",
-              "operator": {
-                "type": "boolean",
-                "operation": "true",
-                "singleValue": true
-              }
-            }
-          ]
-        },
-        "options": {}
-      },
-      "id": "line-save-10"
-    },
-    {
-      "name": "Select folder step",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "parameters": {
-        "mode": "runOnceForEachItem",
-        "jsCode": "const p = $(\"Prepare LINE event\").item.json,\n  stage = $json.stage ?? 0,\n  parent = $json.parent ?? p.parent,\n  names = [...(p.byDate ? [p.date] : []), ...(p.byType ? [p.event.message.type] : [])],\n  name = names[stage];\nif (!/^[\\w-]+$/.test(parent) || (name && /[\\\\/\\x00-\\x1f]/.test(name)))\n  throw Error(\"Invalid folder\");\nreturn { json: { parent, stage, name: name ?? \"\", done: !name }, pairedItem: { item: $itemIndex } };\n"
-      },
-      "id": "line-save-11"
-    },
-    {
-      "name": "Folder selection complete?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "parameters": {
-        "conditions": {
-          "options": {
-            "typeValidation": "strict",
-            "version": 2
-          },
-          "combinator": "and",
-          "conditions": [
-            {
-              "leftValue": "={{ $json.done }}",
-              "rightValue": "",
-              "operator": {
-                "type": "boolean",
-                "operation": "true",
-                "singleValue": true
-              }
-            }
-          ]
-        },
-        "options": {}
-      },
-      "id": "line-save-12"
-    },
-    {
-      "id": "line-save-13",
-      "name": "Find matching folder",
+      "id": "f4e30758-986e-4dd4-bc85-f2953e883bfe",
+      "name": "Search Date Folder",
       "type": "n8n-nodes-base.googleDrive",
       "position": [
         980,
@@ -249,124 +135,153 @@
           "folderId": {
             "__rl": true,
             "mode": "id",
-            "value": "={{ $json.parent }}"
-          },
-          "whatToSearch": "folders"
+            "value": "={{ $json.baseFolderId }}"
+          }
         },
-        "options": {
-          "fields": [
-            "id",
-            "name",
-            "mimeType"
-          ]
-        },
+        "options": {},
         "resource": "fileFolder",
-        "queryString": "={{ $json.name }}"
+        "queryString": "={{ $json.dateFolderName }}"
       },
       "typeVersion": 3,
       "alwaysOutputData": true
     },
     {
-      "name": "Select matching folder",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "parameters": {
-        "mode": "runOnceForAllItems",
-        "jsCode": "const target = $(\"Select folder step\").first().json.name,\n  a = $input\n    .all()\n    .map((x) => x.json)\n    .filter(\n      (x) => x.id && x.name === target && x.mimeType === \"application/vnd.google-apps.folder\",\n    );\nif (a.length > 1) throw Error(\"Duplicate folders\");\nreturn [{ json: { exists: a.length === 1, id: a[0]?.id ?? \"\" }, pairedItem: { item: 0 } }];\n"
-      },
-      "id": "line-save-14"
-    },
-    {
-      "name": "Folder exists?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "parameters": {
-        "conditions": {
-          "options": {
-            "typeValidation": "strict",
-            "version": 2
-          },
-          "combinator": "and",
-          "conditions": [
-            {
-              "leftValue": "={{ $json.exists }}",
-              "rightValue": "",
-              "operator": {
-                "type": "boolean",
-                "operation": "true",
-                "singleValue": true
-              }
-            }
-          ]
-        },
-        "options": {}
-      },
-      "id": "line-save-15"
-    },
-    {
-      "id": "line-save-16",
-      "name": "Create missing folder",
-      "type": "n8n-nodes-base.googleDrive",
+      "id": "e74d65bc-be7f-43d0-8b0a-ee6316b4aff9",
+      "name": "Merge Event and Config Data",
+      "type": "n8n-nodes-base.merge",
       "position": [
-        1700,
-        400
+        1480,
+        -280
       ],
       "parameters": {
-        "name": "={{ $('Select folder step').item.json.name }}",
-        "driveId": {
-          "__rl": true,
-          "mode": "list",
-          "value": "My Drive"
+        "mode": "mergeByIndex"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "f380d584-32aa-435f-8e8e-6d1d05932bd2",
+      "name": "Check Existing Date Folder",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1220,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.id !== undefined }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "96dc0853-67ec-4cfc-b40c-0cce63f51e96",
+      "name": "Check Existing File Type Folder",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1220,
+        320
+      ],
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.id !== undefined }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "742cb154-3b23-423d-8df6-53a82f0d8aab",
+      "name": "Merge Final Parent Folder Data",
+      "type": "n8n-nodes-base.merge",
+      "position": [
+        2280,
+        400
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "1003b29d-9140-4961-90d4-b94e4d33dc69",
+      "name": "Search File Type Folder",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [
+        980,
+        320
+      ],
+      "parameters": {
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "={{ $('Get Config').item.json['Store by Date'] === true && $json.targetParentId && $json.targetParentId !== \"\" ? $json.targetParentId : $('Get Config').item.json['Parent Folder ID'] }}"
+          }
         },
         "options": {},
-        "folderId": {
-          "__rl": true,
-          "mode": "id",
-          "value": "={{ $('Select folder step').item.json.parent }}"
-        },
-        "resource": "folder"
+        "resource": "fileFolder",
+        "queryString": "={{ $('Determine Folder Info').item.json.fileTypeFolderName }}"
       },
       "typeVersion": 3,
-      "onError": "continueErrorOutput"
+      "alwaysOutputData": true
     },
     {
-      "name": "Advance folder",
+      "id": "8015eb75-0c38-4c3b-a29f-f04dedf79cee",
+      "name": "Set File Type Folder ID",
       "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
+      "position": [
+        1960,
+        320
+      ],
       "parameters": {
-        "mode": "runOnceForEachItem",
-        "jsCode": "const prior = $(\"Select folder step\").item.json,\n  id = $json.id;\nif (!id) throw Error(\"Inspect folder result\");\nreturn { json: { parent: id, stage: prior.stage + 1 }, pairedItem: { item: $itemIndex } };\n"
+        "jsCode": "// Log ข้อมูล input ทั้งหมด\n//console.log(\"Set Target Parent (Date) - Input:\", items);\n\nlet targetParentId = '';\n\nif (items.length > 0) {\n\t// ตรวจสอบจาก branch แรก (True Branch จาก IF node)\n\tif (items[0].json && items[0].json.id) {\n\t\ttargetParentId = items[0].json.id;\n\t} else if (items.length > 1 && items[1].json && items[1].json.id) {\n\t\t// ถ้าไม่พบจาก branch แรก ให้ลองดูจาก branch ที่สอง (False Branch หรือผลจากการสร้าง folder ใหม่)\n\t\ttargetParentId = items[1].json.id;\n\t}\n\t\n\t// เพิ่ม targetParentId ลงใน items[0].json\n\titems[0].json.targetParentId = targetParentId;\n\tconsole.log(\"Set Target Parent (Date) - Output:\", items);\n\treturn items;\n} else {\n\tconsole.log(\"Set Target Parent (Date) - No input items.\");\n\treturn [];\n}\n"
       },
-      "id": "line-save-17"
+      "typeVersion": 2
     },
     {
-      "name": "Prepare direct media",
+      "id": "b59d58c7-cb8c-4edc-a7e7-533675c39a96",
+      "name": "Configure Final Parent Folder ID",
       "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
+      "position": [
+        960,
+        640
+      ],
       "parameters": {
-        "mode": "runOnceForEachItem",
-        "jsCode": "const p = $(\"Prepare LINE event\").item.json;\nreturn {\n  json: {\n    requestId: p.event.webhookEventId,\n    messageId: p.event.message.id,\n    parent: $json.parent,\n    type: p.event.message.type,\n    timestamp: p.event.timestamp,\n    reply: p.reply,\n  },\n  pairedItem: { item: $itemIndex },\n};\n"
+        "jsCode": "/**\n * Expected input: items array จาก Merge Final Data\n * - items[0].json คือผลลัพธ์ที่อาจเป็น folder สำหรับวันที่หรือ file type folder (ขึ้นอยู่กับเงื่อนไข)\n * - items[1].json คือผลลัพธ์อีกส่วนหนึ่ง (สำหรับกรณีที่มีทั้งสอง)\n * \n * Config จะถูกดึงมาจาก node 'Get Config'\n */\n\nconst config = $('Get Config').first().json;\nlet finalParentId = '';\n\n// เงื่อนไขเลือก finalParentId\nif (config[\"Store by Date\"] === true && config[\"Store by File Type\"] === true) {\n    // เมื่อทั้งสองเป็น TRUE: สมมุติว่า file type folder อยู่ใน items[1]\n    finalParentId = $('Set File Type Folder ID').first().json.targetParentId\n} else if (config[\"Store by Date\"] === true && config[\"Store by File Type\"] === false) {\n    // ใช้ folder ตามวันที่ (items[0])\n    finalParentId =$('Set Date Folder ID').first().json.targetParentId;\n} else if (config[\"Store by Date\"] === false && config[\"Store by File Type\"] === true) {\n    // ใช้ folder สำหรับประเภทไฟล์ (ใน test case นี้ ใช้ items[0])\n    finalParentId = $('Set File Type Folder ID').first().json.targetParentId;\n} else {\n    // เมื่อทั้งสองเป็น FALSE: ใช้ Parent Folder ID จาก config\n    finalParentId = config[\"Parent Folder ID\"];\n}\n\n// เพิ่ม finalParentId ลงใน items[0].json เพื่อส่งต่อให้ Node \"Upload File to Google Drive\" ใช้งาน\nitems[0].json.finalParentId = finalParentId;\nreturn [items[0]];\n"
       },
-      "id": "line-save-18"
+      "typeVersion": 2
     },
     {
-      "id": "line-save-19",
-      "name": "Download LINE media",
+      "id": "683c83fc-e4b7-4a0d-b5f0-8958d0743faf",
+      "name": "Process Event and Config Data",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1680,
+        -280
+      ],
+      "parameters": {
+        "jsCode": "// ตรวจสอบว่า items มีอย่างน้อย 2 รายการหรือไม่\nconst eventData = items[0].json;\nlet config;\n\nif (items.length >= 2) {\n\t// ถ้ามี items[1] ให้ใช้เป็น config\n\tconst configData = items[1].json;\n\tconfig = Array.isArray(configData) ? configData[0] : configData;\n} else {\n\t// ถ้าไม่มี items[1] ให้ลองดึง config จาก eventData\n\t// สมมุติว่าฟิลด์ config ถูกส่งมาพร้อมกับ eventData ด้วยชื่อฟิลด์เหมือนที่ได้ใน output\n\tif (eventData[\"Parent Folder Path\"] && eventData[\"Parent Folder ID\"]) {\n\t\tconfig = {\n\t\t\t\"Parent Folder Path\": eventData[\"Parent Folder Path\"],\n\t\t\t\"Parent Folder ID\": eventData[\"Parent Folder ID\"],\n\t\t\t\"Store by Date\": eventData[\"Store by Date\"],\n\t\t\t\"Store by File Type\": eventData[\"Store by File Type\"],\n\t\t\t\"Allow File Types\": eventData[\"Allow File Types\"],\n\t\t\t\"CurrentDate\": eventData[\"CurrentDate\"],\n\t\t\t\"Reply Enabled\": eventData[\"Reply Enabled\"],\n\t\t\t\"CHANNEL ACCESS TOKEN\": eventData[\"CHANNEL ACCESS TOKEN\"]\n\t\t};\n\t} else {\n\t\tthrow new Error(\"ไม่พบข้อมูล config! กรุณาตรวจสอบว่า node ก่อนหน้านี้ส่งข้อมูล config มาด้วย\");\n\t}\n}\n\nreturn [{ json: { event: eventData, config: config } }];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "fb5bd15c-bb0a-420b-a14b-ed5df5ecd691",
+      "name": "Get File Binary Content",
       "type": "n8n-nodes-base.httpRequest",
       "position": [
         1180,
         640
       ],
       "parameters": {
-        "url": "={{ 'https://api-data.line.me/v2/bot/message/'+$('Prepare direct media').item.json.messageId+'/content' }}",
-        "options": {
-          "response": {
-            "response": {
-              "responseFormat": "file",
-              "outputPropertyName": "data"
-            }
-          }
-        },
+        "url": "=https://api-data.line.me/v2/bot/message/{{ $('LINE Webhook Listener').item.json.body.events[0].message.id }}/content",
+        "options": {},
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth"
       },
@@ -374,47 +289,10 @@
       "typeVersion": 4.2
     },
     {
-      "id": "line-save-20",
-      "name": "Upload LINE file",
-      "type": "n8n-nodes-base.googleDrive",
-      "onError": "continueErrorOutput",
-      "position": [
-        1600,
-        640
-      ],
-      "parameters": {
-        "name": "={{ String($('Prepare direct media').item.json.timestamp)+'.'+($binary.data.fileExtension||'bin') }}",
-        "driveId": {
-          "__rl": true,
-          "mode": "list",
-          "value": "My Drive"
-        },
-        "options": {},
-        "folderId": {
-          "__rl": true,
-          "mode": "id",
-          "value": "={{ $('Prepare direct media').item.json.parent }}"
-        },
-        "inputDataFieldName": "data"
-      },
-      "typeVersion": 3,
-      "alwaysOutputData": false
-    },
-    {
-      "name": "Verify direct upload",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "parameters": {
-        "mode": "runOnceForEachItem",
-        "jsCode": "if (!$json.id) throw Error(\"Inspect Drive upload\");\nreturn { json: $json, pairedItem: { item: $itemIndex } };\n"
-      },
-      "id": "line-save-21"
-    },
-    {
-      "id": "line-save-22",
-      "name": "Log LINE file",
+      "id": "f064ba27-a5a8-4cca-afb8-3e099fb5abc8",
+      "name": "Log File Details to Google Sheet",
       "type": "n8n-nodes-base.googleSheets",
-      "onError": "continueErrorOutput",
+      "onError": "continueRegularOutput",
       "position": [
         1820,
         640
@@ -475,79 +353,144 @@
         "sheetName": {
           "__rl": true,
           "mode": "list",
-          "value": "YOUR_FILE_LIST_SHEET"
+          "value": 585160829,
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1iO4ZHU7s0fe1Jn8jcScNDce7rFXQlkRBqsO8IFHbcSc/edit#gid=585160829",
+          "cachedResultName": "fileList"
         },
         "documentId": {
           "__rl": true,
           "mode": "id",
-          "value": "YOUR_SPREADSHEET_ID"
+          "value": "1iO4ZHU7s0fe1Jn8jcScNDce7rFXQlkRBqsO8IFHbcSc"
         }
       },
       "typeVersion": 4.5,
       "alwaysOutputData": true
     },
     {
-      "name": "Verify LINE log",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "parameters": {
-        "mode": "runOnceForEachItem",
-        "jsCode": "const u = $(\"Verify direct upload\").item.json;\nif (!$json[\"File Name\"] || $json[\"File Name\"] !== u.name || !$json[\"Google Drive URL\"])\n  throw Error(\"Inspect Sheets append\");\nreturn { json: $json, pairedItem: { item: $itemIndex } };\n"
-      },
-      "id": "line-save-23"
-    },
-    {
-      "name": "Reply enabled?",
+      "id": "fd936998-6ba0-4dbe-b406-c785f89181dd",
+      "name": "Check Reply Enabled Flag",
       "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
+      "position": [
+        2040,
+        640
+      ],
       "parameters": {
+        "options": {},
         "conditions": {
           "options": {
-            "typeValidation": "strict",
-            "version": 2
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
           },
           "combinator": "and",
           "conditions": [
             {
-              "leftValue": "={{ $(\"Prepare LINE event\").item.json.reply }}",
-              "rightValue": "",
+              "id": "8f593e3a-95dd-457e-903f-f2ca68cdbcd1",
               "operator": {
                 "type": "boolean",
                 "operation": "true",
                 "singleValue": true
-              }
+              },
+              "leftValue": "={{ $('Get Config').item.json['Reply Enabled'] }}",
+              "rightValue": "true"
             }
           ]
+        }
+      },
+      "typeVersion": 2.2,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "7d1f19e7-cb6c-4f5d-8a10-b84e9e06345a",
+      "name": "Check if Store by Date is Enabled",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1420,
+        80
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "370bcd8c-c72a-4e69-acfd-9e271b1a09ed",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $('Get Config').item.json['Store by Date'] === true }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "8644134e-673c-4360-8831-71c048c1522d",
+      "name": "Check if Store by File Type is Enabled",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1420,
+        400
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "7c0577ba-b2ed-4050-a580-3cadc7da2b73",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $('Get Config').item.json['Store by File Type'] === true }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "f6b24396-a854-42c4-ae70-55095d637b9a",
+      "name": "LINE Webhook Listener",
+      "type": "n8n-nodes-base.webhook",
+      "position": [
+        980,
+        -300
+      ],
+      "parameters": {
+        "path": "line-webhook",
+        "options": {
+          "rawBody": true
         },
-        "options": {}
+        "httpMethod": "POST"
       },
-      "id": "line-save-24"
+      "typeVersion": 1
     },
     {
-      "name": "Prepare success reply",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "parameters": {
-        "mode": "runOnceForEachItem",
-        "jsCode": "const p = $(\"Prepare LINE event\").item.json,\n  e = p.event,\n  u = $(\"Verify direct upload\").item.json;\nreturn {\n  json: {\n    replyToken: e.replyToken,\n    messages: [\n      {\n        type: \"text\",\n        text: u.webContentLink || \"https://drive.google.com/file/d/\" + u.id + \"/view\",\n      },\n    ],\n  },\n  pairedItem: { item: $itemIndex },\n};\n"
-      },
-      "id": "line-save-25"
-    },
-    {
-      "name": "Prepare rejected reply",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "parameters": {
-        "mode": "runOnceForEachItem",
-        "jsCode": "const e = $(\"Prepare LINE event\").item.json.event;\nreturn {\n  json: {\n    replyToken: e.replyToken,\n    messages: [{ type: \"text\", text: \"This file type is not allowed.\" }],\n  },\n  pairedItem: { item: $itemIndex },\n};\n"
-      },
-      "id": "line-save-26"
-    },
-    {
-      "id": "line-save-27",
-      "name": "Reply on LINE",
+      "id": "3b1ca174-f5fc-4b01-90f4-be9240f8be77",
+      "name": "Send LINE Reply Message",
       "type": "n8n-nodes-base.httpRequest",
-      "onError": "continueErrorOutput",
+      "onError": "continueRegularOutput",
       "position": [
         2280,
         620
@@ -555,16 +498,8 @@
       "parameters": {
         "url": "https://api.line.me/v2/bot/message/reply",
         "method": "POST",
-        "options": {
-          "response": {
-            "response": {
-              "responseFormat": "json",
-              "fullResponse": true,
-              "neverError": true
-            }
-          }
-        },
-        "jsonBody": "={{ $json }}",
+        "options": {},
+        "jsonBody": "={\n  \"replyToken\": \"{{ $('LINE Webhook Listener').first().json.body.events[0].replyToken }}\",\n  \"messages\": [\n    {\n      \"type\": \"text\",\n      \"text\": \"{{ $('Validate File Type').item.json.error ? $('Validate File Type').item.json.error : $json['Google Drive URL'] }}\"\n    }\n  ]\n}",
         "sendBody": true,
         "specifyBody": "json",
         "authentication": "genericCredentialType",
@@ -574,328 +509,82 @@
       "alwaysOutputData": true
     },
     {
-      "name": "Verify LINE reply",
+      "id": "87465dac-4557-4ee4-ae21-b36aab37c884",
+      "name": "Validate File Type",
       "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "parameters": {
-        "mode": "runOnceForEachItem",
-        "jsCode": "if ($json.statusCode < 200 || $json.statusCode >= 300 || !Number.isInteger($json.statusCode))\n  throw Error(\"Inspect LINE reply\");\nreturn { json: { ok: true }, pairedItem: { item: $itemIndex } };\n"
-      },
-      "id": "line-save-28"
-    },
-    {
-      "name": "Confirm LINE event",
-      "type": "n8n-nodes-base.dataTable",
-      "typeVersion": 1,
-      "parameters": {
-        "resource": "row",
-        "dataTableId": {
-          "__rl": true,
-          "mode": "id",
-          "value": "YOUR_DATA_TABLE_ID"
-        },
-        "matchType": "allConditions",
-        "filters": {
-          "conditions": [
-            {
-              "keyName": "item_key",
-              "condition": "eq",
-              "keyValue": "={{ 'line:'+ $('Prepare LINE event').item.json.event.webhookEventId }}"
-            }
-          ]
-        },
-        "operation": "update",
-        "columns": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "status": "done"
-          },
-          "schema": []
-        },
-        "options": {}
-      },
-      "id": "line-save-29"
-    },
-    {
-      "name": "Stop after uncertain LINE write",
-      "type": "n8n-nodes-base.noOp",
-      "typeVersion": 1,
-      "parameters": {},
-      "id": "line-save-30"
-    },
-    {
-      "name": "Receive media job",
-      "type": "n8n-nodes-base.webhook",
-      "typeVersion": 2,
-      "parameters": {
-        "httpMethod": "POST",
-        "path": "line-media-upload",
-        "authentication": "headerAuth",
-        "responseMode": "onReceived",
-        "options": {}
-      },
-      "id": "line-save-31"
-    },
-    {
-      "name": "Validate media job",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "parameters": {
-        "mode": "runOnceForEachItem",
-        "jsCode": "const x = $json.body ?? {},\n  id = x.requestId;\nif (\n  !/^[A-Za-z0-9_-]{8,128}$/.test(id ?? \"\") ||\n  !/^[A-Za-z0-9_-]+$/.test(x.messageId ?? \"\") ||\n  !/^[A-Za-z0-9_-]+$/.test(x.parent ?? \"\") ||\n  ![\"image\", \"video\", \"audio\", \"file\"].includes(x.type) ||\n  !Number.isFinite(x.timestamp)\n)\n  throw Error(\"Invalid media job\");\nreturn { json: { ...x }, pairedItem: { item: $itemIndex } };\n"
-      },
-      "id": "line-save-32"
-    },
-    {
-      "name": "Check media job",
-      "type": "n8n-nodes-base.dataTable",
-      "typeVersion": 1,
-      "parameters": {
-        "resource": "row",
-        "dataTableId": {
-          "__rl": true,
-          "mode": "id",
-          "value": "YOUR_DATA_TABLE_ID"
-        },
-        "matchType": "allConditions",
-        "filters": {
-          "conditions": [
-            {
-              "keyName": "item_key",
-              "condition": "eq",
-              "keyValue": "={{ 'line-job:'+ $('Validate media job').first().json.requestId }}"
-            }
-          ]
-        },
-        "operation": "rowNotExists"
-      },
-      "id": "line-save-33"
-    },
-    {
-      "name": "Reserve media job",
-      "type": "n8n-nodes-base.dataTable",
-      "typeVersion": 1,
-      "parameters": {
-        "resource": "row",
-        "operation": "insert",
-        "dataTableId": {
-          "__rl": true,
-          "mode": "id",
-          "value": "YOUR_DATA_TABLE_ID"
-        },
-        "columns": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "item_key": "={{ 'line-job:'+ $('Validate media job').first().json.requestId }}",
-            "status": "pending",
-            "file_id": "",
-            "name": "",
-            "url": "",
-            "created": "",
-            "extension": ""
-          },
-          "schema": []
-        },
-        "options": {}
-      },
-      "id": "line-save-34"
-    },
-    {
-      "id": "line-save-35",
-      "name": "Download relay media",
-      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueRegularOutput",
       "position": [
-        1180,
+        1380,
         640
       ],
       "parameters": {
-        "url": "={{ 'https://api-data.line.me/v2/bot/message/'+$('Validate media job').first().json.messageId+'/content' }}",
-        "options": {
-          "response": {
-            "response": {
-              "responseFormat": "file",
-              "outputPropertyName": "data"
-            }
-          }
-        },
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth"
+        "jsCode": "// ดึงค่า allowed types จาก Node \"Get Config\"\nconst allowedTypes = $('Get Config').first().json[\"Allow File Types\"]\n  .split(\"|\")\n  .map(s => s.trim().toLowerCase());\n\n// ดึงค่า file type จากข้อมูลของ event (ปรับให้ตรงกับ structure ของข้อมูลคุณ)\nconst fileType = $('LINE Webhook Listener').first().json.body.events[0].message.type.toLowerCase();\n\n// ตรวจสอบว่า fileType อยู่ใน allowedTypes หรือไม่\nif (!allowedTypes.includes(fileType)) {\n  // สร้าง Error object พร้อมแนบข้อมูล replyToken และ errorMessage\n  const error = new Error(`File type '${fileType}' is not allowed.`);\n  error.json = {\n    replyToken: $('LINE Webhook Listener').first().json.body.events[0].replyToken,\n    errorMessage: error.message,\n  };\n  throw error;\n}\n\nreturn items;\n"
       },
-      "executeOnce": true,
-      "typeVersion": 4.2
+      "typeVersion": 2,
+      "alwaysOutputData": true
     },
     {
-      "id": "line-save-36",
-      "name": "Upload relay file",
-      "type": "n8n-nodes-base.googleDrive",
-      "onError": "continueErrorOutput",
+      "id": "00ddc2ae-4782-4079-947e-2fda99c0f037",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
       "position": [
-        1600,
-        640
+        220,
+        -380
       ],
       "parameters": {
-        "name": "={{ String($('Validate media job').first().json.timestamp)+'.'+($binary.data.fileExtension||'bin') }}",
-        "driveId": {
-          "__rl": true,
-          "mode": "list",
-          "value": "My Drive"
-        },
-        "options": {},
-        "folderId": {
-          "__rl": true,
-          "mode": "id",
-          "value": "={{ $('Validate media job').first().json.parent }}"
-        },
-        "inputDataFieldName": "data"
+        "width": 2320,
+        "height": 320,
+        "content": "## Workflow Entry & Configuration\nThis section initializes the workflow by listening to incoming requests from \nthe LINE Messaging API and retrieving configuration details from Google Sheets. \nIt merges the event data with the config, then determines initial folder information \n(such as whether to store files by date or file type). Nodes in this group:\n\n* **LINE Webhook Listener**\nReceives POST requests (file messages) from LINE.\n* **Get Config**\nReads configuration data (parent folder, allowed file types, etc.) from a Google Sheet.\n* **Merge Event and Config Data**\nCombines the LINE event data and config data.\n* **Determine Folder Info**\nCalculates folder names based on the config (e.g., date folder name, file type folder name)."
       },
-      "typeVersion": 3,
-      "alwaysOutputData": false
+      "typeVersion": 1
     },
     {
-      "name": "Verify relay upload",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
+      "id": "ccae9a3d-0a46-4c06-b94b-c3bd08d10df1",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        220,
+        -40
+      ],
       "parameters": {
-        "mode": "runOnceForEachItem",
-        "jsCode": "if (!$json.id) throw Error(\"Inspect Drive upload\");\nreturn {\n  json: {\n    ...$json,\n    url: $json.webContentLink || \"https://drive.google.com/file/d/\" + $json.id + \"/view\",\n  },\n  pairedItem: { item: $itemIndex },\n};\n"
+        "color": 5,
+        "width": 2320,
+        "height": 340,
+        "content": "## Folder Search & Creation\nThis section handles the logic for finding or creating the appropriate Google Drive folders.\nIt checks if a date folder exists (when Store by Date is enabled) and whether a file type folder\n is required (when Store by File Type is enabled). Nodes in this group:\n\n* **Search Date Folder / Check Existing Date Folder / Check if Store by Date is Enabled** \nLooks for or creates a date-based folder.\n* **Create Date Folder / Set Date Folder ID** \nreates and stores the date folder ID if it doesn’t exist.\n* **Search File Type Folder / Check Existing File Type Folder / Check if Store by File Type is Enabled** \nSimilarly handles file type subfolder logic.\n* **Create File Type Folder / Set File Type Folder ID** \n Creates and stores the file type folder ID.\n* **Merge Final Parent Folder Data / Configure Final Parent Folder ID** \nMerges the final folder IDs (date folder + file type folder) to determine where the file should be placed."
       },
-      "id": "line-save-37"
+      "typeVersion": 1
     },
     {
-      "name": "Store media result",
-      "type": "n8n-nodes-base.dataTable",
-      "typeVersion": 1,
+      "id": "b9272975-3e0d-436c-b8e3-98fcb8cfc893",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        220,
+        600
+      ],
       "parameters": {
-        "resource": "row",
-        "dataTableId": {
-          "__rl": true,
-          "mode": "id",
-          "value": "YOUR_DATA_TABLE_ID"
-        },
-        "matchType": "allConditions",
-        "filters": {
-          "conditions": [
-            {
-              "keyName": "item_key",
-              "condition": "eq",
-              "keyValue": "={{ 'line-job:'+ $('Validate media job').first().json.requestId }}"
-            }
-          ]
-        },
-        "operation": "update",
-        "columns": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "status": "done",
-            "file_id": "={{ $json.id }}",
-            "name": "={{ $json.name }}",
-            "url": "={{ $json.url }}",
-            "created": "={{ $json.createdTime }}",
-            "extension": "={{ $json.fileExtension }}"
-          },
-          "schema": []
-        },
-        "options": {}
+        "color": 4,
+        "width": 2320,
+        "height": 320,
+        "content": "## Upload, Log, & Reply\nOnce the file is validated and the correct folder determined, the workflow uploads the file\nto Google Drive and logs the details in a Google Sheet. Finally, it checks whether replies \nare enabled and, if so, sends a message back to the LINE user (either confirming a successful\nupload or reporting an error). Nodes in this group:\n\n* **Upload File to Google Drive**\nUploads the validated file to the determined folder path.\n* **Log File Details to Google Sheet**\nRecords the file name, upload date, URL, and file type in Google Sheets.\n* **Check Reply Enabled Flag**\nVerifies if replies to LINE are turned on in the config.\n* **Send LINE Reply Message**\nSends a text reply back to the user via LINE, either containing the file’s Google Drive URL or an error message."
       },
-      "id": "line-save-38"
+      "typeVersion": 1
     },
     {
-      "name": "Receive media status",
-      "type": "n8n-nodes-base.webhook",
-      "typeVersion": 2,
+      "id": "85a84d38-6992-439d-bdaa-de37b0dac554",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        220,
+        320
+      ],
       "parameters": {
-        "httpMethod": "POST",
-        "path": "line-media-status",
-        "authentication": "headerAuth",
-        "responseMode": "responseNode",
-        "options": {}
+        "color": 6,
+        "width": 2320,
+        "height": 260,
+        "content": "## File Retrieval & Validation\nIn this group, the workflow fetches the binary content of the file from the LINE API\nand validates whether the file type is allowed (e.g., image, audio, video). If the \nfile type is not permitted, the workflow throws an error which will be used to send\nan appropriate reply message back to LINE. Nodes in this group:\n\n* **Get File Binary Content**\nRetrieves the actual file data from the LINE Messaging API.\n* **Validate File Type**\nChecks the file’s MIME type against an allowed list from the config and throws an error if disallowed."
       },
-      "id": "line-save-39"
-    },
-    {
-      "name": "Validate media status request",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "parameters": {
-        "mode": "runOnceForEachItem",
-        "jsCode": "const requestId = $json.body?.requestId;\nif (!/^[A-Za-z0-9_-]{8,128}$/.test(requestId ?? \"\")) throw Error(\"Invalid request\");\nreturn { json: { requestId }, pairedItem: { item: $itemIndex } };\n"
-      },
-      "id": "line-save-40"
-    },
-    {
-      "name": "Read media job",
-      "type": "n8n-nodes-base.dataTable",
-      "typeVersion": 1,
-      "parameters": {
-        "resource": "row",
-        "dataTableId": {
-          "__rl": true,
-          "mode": "id",
-          "value": "YOUR_DATA_TABLE_ID"
-        },
-        "matchType": "allConditions",
-        "filters": {
-          "conditions": [
-            {
-              "keyName": "item_key",
-              "condition": "eq",
-              "keyValue": "={{ 'line-job:'+ $('Validate media status request').first().json.requestId }}"
-            }
-          ]
-        },
-        "operation": "get",
-        "returnAll": false,
-        "limit": 1
-      },
-      "alwaysOutputData": true,
-      "id": "line-save-41"
-    },
-    {
-      "name": "Prepare media status",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "parameters": {
-        "mode": "runOnceForEachItem",
-        "jsCode": "return {\n  json: {\n    requestId: $(\"Validate media status request\").first().json.requestId,\n    status: $json.status ?? \"pending\",\n    fileId: $json.file_id ?? \"\",\n    name: $json.name ?? \"\",\n    url: $json.url ?? \"\",\n    created: $json.created ?? \"\",\n    extension: $json.extension ?? \"\",\n  },\n  pairedItem: { item: $itemIndex },\n};\n"
-      },
-      "id": "line-save-42"
-    },
-    {
-      "name": "Return media status",
-      "type": "n8n-nodes-base.respondToWebhook",
-      "typeVersion": 1.4,
-      "parameters": {
-        "respondWith": "json",
-        "responseBody": "={{ $json }}",
-        "options": {}
-      },
-      "id": "line-save-43"
-    },
-    {
-      "name": "Denied file?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "parameters": {
-        "conditions": {
-          "options": {
-            "typeValidation": "strict",
-            "version": 2
-          },
-          "combinator": "and",
-          "conditions": [
-            {
-              "leftValue": "={{ $(\"Prepare LINE event\").item.json.allowed }}",
-              "rightValue": "",
-              "operator": {
-                "type": "boolean",
-                "operation": "true",
-                "singleValue": true
-              }
-            }
-          ]
-        },
-        "options": {}
-      }
+      "typeVersion": 1
     }
   ],
   "active": false,
@@ -904,49 +593,85 @@
     "executionOrder": "v1"
   },
   "connections": {
+    "Get Config": {
+      "main": [
+        [
+          {
+            "node": "Merge Event and Config Data",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Create Date Folder": {
+      "main": [
+        [
+          {
+            "node": "Set Date Folder ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Date Folder": {
+      "main": [
+        [
+          {
+            "node": "Check Existing Date Folder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Date Folder ID": {
+      "main": [
+        [
+          {
+            "node": "Search File Type Folder",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge Final Parent Folder Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate File Type": {
+      "main": [
+        [
+          {
+            "node": "Upload File to Google Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Determine Folder Info": {
+      "main": [
+        [
+          {
+            "node": "Search Date Folder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "LINE Webhook Listener": {
       "main": [
         [
           {
-            "node": "Verify LINE signature",
+            "node": "Merge Event and Config Data",
             "type": "main",
             "index": 0
-          }
-        ]
-      ]
-    },
-    "Verify LINE signature": {
-      "main": [
-        [
-          {
-            "node": "Configure processing mode",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Configure processing mode": {
-      "main": [
-        [
-          {
-            "node": "Forward to Open Flow?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Forward to Open Flow?": {
-      "main": [
-        [
-          {
-            "node": "Forward verified event",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
+          },
           {
             "node": "Get Config",
             "type": "main",
@@ -955,478 +680,193 @@
         ]
       ]
     },
-    "Get Config": {
+    "Create File Type Folder": {
       "main": [
         [
           {
-            "node": "Prepare LINE event",
+            "node": "Set File Type Folder ID",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Prepare LINE event": {
+    "Get File Binary Content": {
       "main": [
         [
           {
-            "node": "Check LINE event",
+            "node": "Validate File Type",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Check LINE event": {
+    "Search File Type Folder": {
       "main": [
         [
           {
-            "node": "Reserve LINE event",
+            "node": "Check Existing File Type Folder",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Reserve LINE event": {
+    "Set File Type Folder ID": {
       "main": [
         [
           {
-            "node": "Restore LINE event",
+            "node": "Merge Final Parent Folder Data",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Check Reply Enabled Flag": {
+      "main": [
+        [
+          {
+            "node": "Send LINE Reply Message",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Restore LINE event": {
+    "Check Existing Date Folder": {
       "main": [
         [
           {
-            "node": "Allowed file type?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Allowed file type?": {
-      "main": [
-        [
-          {
-            "node": "Select folder step",
+            "node": "Set Date Folder ID",
             "type": "main",
             "index": 0
           }
         ],
         [
           {
-            "node": "Reply enabled?",
+            "node": "Check if Store by Date is Enabled",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Select folder step": {
+    "Merge Event and Config Data": {
       "main": [
         [
           {
-            "node": "Folder selection complete?",
+            "node": "Process Event and Config Data",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Folder selection complete?": {
+    "Upload File to Google Drive": {
       "main": [
         [
           {
-            "node": "Prepare direct media",
+            "node": "Log File Details to Google Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Event and Config Data": {
+      "main": [
+        [
+          {
+            "node": "Determine Folder Info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Final Parent Folder Data": {
+      "main": [
+        [
+          {
+            "node": "Configure Final Parent Folder ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Existing File Type Folder": {
+      "main": [
+        [
+          {
+            "node": "Set File Type Folder ID",
             "type": "main",
             "index": 0
           }
         ],
         [
           {
-            "node": "Find matching folder",
+            "node": "Check if Store by File Type is Enabled",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Find matching folder": {
+    "Configure Final Parent Folder ID": {
       "main": [
         [
           {
-            "node": "Select matching folder",
+            "node": "Get File Binary Content",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Select matching folder": {
+    "Log File Details to Google Sheet": {
       "main": [
         [
           {
-            "node": "Folder exists?",
+            "node": "Check Reply Enabled Flag",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Folder exists?": {
+    "Check if Store by Date is Enabled": {
       "main": [
         [
           {
-            "node": "Advance folder",
+            "node": "Create Date Folder",
             "type": "main",
             "index": 0
           }
         ],
         [
           {
-            "node": "Create missing folder",
+            "node": "Set Date Folder ID",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Create missing folder": {
+    "Check if Store by File Type is Enabled": {
       "main": [
         [
           {
-            "node": "Advance folder",
+            "node": "Create File Type Folder",
             "type": "main",
             "index": 0
           }
         ],
         [
           {
-            "node": "Stop after uncertain LINE write",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Advance folder": {
-      "main": [
-        [
-          {
-            "node": "Select folder step",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Prepare direct media": {
-      "main": [
-        [
-          {
-            "node": "Download LINE media",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Download LINE media": {
-      "main": [
-        [
-          {
-            "node": "Upload LINE file",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Upload LINE file": {
-      "main": [
-        [
-          {
-            "node": "Verify direct upload",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Stop after uncertain LINE write",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Verify direct upload": {
-      "main": [
-        [
-          {
-            "node": "Log LINE file",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Log LINE file": {
-      "main": [
-        [
-          {
-            "node": "Verify LINE log",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Stop after uncertain LINE write",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Verify LINE log": {
-      "main": [
-        [
-          {
-            "node": "Reply enabled?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Reply enabled?": {
-      "main": [
-        [
-          {
-            "node": "Denied file?",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Confirm LINE event",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Prepare success reply": {
-      "main": [
-        [
-          {
-            "node": "Reply on LINE",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Prepare rejected reply": {
-      "main": [
-        [
-          {
-            "node": "Reply on LINE",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Reply on LINE": {
-      "main": [
-        [
-          {
-            "node": "Verify LINE reply",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Stop after uncertain LINE write",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Verify LINE reply": {
-      "main": [
-        [
-          {
-            "node": "Confirm LINE event",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Receive media job": {
-      "main": [
-        [
-          {
-            "node": "Validate media job",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Validate media job": {
-      "main": [
-        [
-          {
-            "node": "Check media job",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Check media job": {
-      "main": [
-        [
-          {
-            "node": "Reserve media job",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Reserve media job": {
-      "main": [
-        [
-          {
-            "node": "Download relay media",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Download relay media": {
-      "main": [
-        [
-          {
-            "node": "Upload relay file",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Upload relay file": {
-      "main": [
-        [
-          {
-            "node": "Verify relay upload",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Stop after uncertain LINE write",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Verify relay upload": {
-      "main": [
-        [
-          {
-            "node": "Store media result",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Receive media status": {
-      "main": [
-        [
-          {
-            "node": "Validate media status request",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Validate media status request": {
-      "main": [
-        [
-          {
-            "node": "Read media job",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Read media job": {
-      "main": [
-        [
-          {
-            "node": "Prepare media status",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Prepare media status": {
-      "main": [
-        [
-          {
-            "node": "Return media status",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Denied file?": {
-      "main": [
-        [
-          {
-            "node": "Prepare success reply",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Prepare rejected reply",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Forward verified event": {
-      "main": [
-        [],
-        [
-          {
-            "node": "Stop after uncertain LINE write",
+            "node": "Set File Type Folder ID",
             "type": "main",
             "index": 0
           }

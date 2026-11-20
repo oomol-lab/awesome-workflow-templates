@@ -3,28 +3,16 @@
 Receive new Shopify orders with their original large integer IDs preserved.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/receive-shopify-order-events/) [![n8n JSON](../../assets/n8n-json.svg)](templates/receive-shopify-order-events.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/receive-shopify-order-events.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup and use
 
-Register its **Receive Shopify order** production webhook for the Shopify app's orders/create topic. For Open Flow, enter its webhook URL in **Forward to Open Flow** and enable that node. Restrict access to the relay endpoint.
+Register its **Receive Shopify order** production webhook for the Shopify app's orders/create topic.
 
 ## Behavior
 
-The full order object is emitted; integer values outside JavaScript's safe integer range become decimal strings to preserve their exact values. Other fields are retained. The optional relay forwards the order to Open Flow as workflow output. Orders may contain personal information.
-
-<details>
-<summary>In n8n</summary>
-
-Import the n8n workflow. Store the app's webhook signing secret in the n8n environment variable SHOPIFY_WEBHOOK_SECRET and allow the workflow to access it. Leave it disabled for n8n alone. The n8n webhook reads the original request bytes and checks their HMAC-SHA256 against Shopify's signature before parsing. Inspect n8n execution history for forwarding failures.
-
-</details>
+The full order object is emitted; integer values outside JavaScript's safe integer range become decimal strings to preserve their exact values. Other fields are retained. Orders may contain personal information.
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -3,13 +3,8 @@
 Save LINE media in Drive folders, log the file and optionally reply.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/save-line-files-to-drive-and-sheet/) [![n8n JSON](../../assets/n8n-json.svg)](templates/save-line-files-to-drive-and-sheet.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/save-line-files-to-drive-and-sheet.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup and use
 
@@ -17,18 +12,9 @@ Create a LINE Messaging API channel, Google Drive folder and Google Sheet. In th
 
 Configure Google Drive and Sheets credentials and select the spreadsheet. Configure the LINE webhook URL and header authentication on the media job and status webhooks.
 
-For Open Flow, change Configure processing mode to forward and set its destination to the Open Flow webhook. Set their URLs in Start media upload relay and Read media upload status, and connect LINE, Drive and Sheets. Enable persistent State.
-
 ## Behavior and recovery
 
-Each supported LINE file event is checked against the allowed types, placed under the configured date and type folders when enabled, logged in Sheets and optionally replied to on LINE. LINE reply tokens are short lived and single use; a delayed upload can make a reply fail. Inspect the event, Drive, sheet and LINE before retrying. A pending checkpoint prevents an uncertain external write from being repeated automatically. In Open Flow, use the event's exact line-file:<webhookEventId> key and set the resolution to confirmed only after all required effects are verified complete, or absent only after confirming none occurred. Avoid overlapping runs for the same event.
-
-<details>
-<summary>In n8n</summary>
-
-In n8n, provide LINE_CHANNEL_SECRET and LINE_RELAY_SECRET as environment variables and a LINE channel access token for the media and reply HTTP nodes. Use a self-hosted n8n with NODE_FUNCTION_ALLOW_BUILTIN=crypto and N8N_BLOCK_ENV_ACCESS_IN_NODE=false. Select a Data Table with text columns item_key, status, file_id, name, url, created and extension. The n8n workflow runs directly by default. Set LINE_RELAY_SECRET as an Open Flow Secret Variable with the same value as in n8n, and set LINE_MEDIA_RELAY_TOKEN to the header credential used by both n8n media webhooks. The n8n webhook verifies LINE's signature over the original request bytes; its signed relay preserves event identity. Native n8n downloads and uploads the file bytes so large attachments do not pass through the Open Flow Code response limit. In n8n, inspect and reconcile the corresponding Data Table rows before retrying.
-
-</details>
+Each supported LINE file event is checked against the allowed types, placed under the configured date and type folders when enabled, logged in Sheets and optionally replied to on LINE. LINE reply tokens are short lived and single use; a delayed upload can make a reply fail. Inspect the event, Drive, sheet and LINE before retrying. A pending checkpoint prevents an uncertain external write from being repeated automatically. Avoid overlapping runs for the same event.
 
 <details>
 <summary>Inspiration &amp; credits</summary>

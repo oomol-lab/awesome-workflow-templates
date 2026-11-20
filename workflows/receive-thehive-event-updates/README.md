@@ -3,35 +3,19 @@
 Receive all TheHive events with their original request details.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/receive-thehive-event-updates/) [![n8n JSON](../../assets/n8n-json.svg)](templates/receive-thehive-event-updates.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/receive-thehive-event-updates.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup and use
 
-Configure TheHive to send its webhooks to the production URL of **TheHive Trigger**. Restrict access to the webhook and relay endpoints.
+Configure TheHive to send its webhooks to the production URL of **TheHive Trigger**.
 
 ## Behavior
 
-TheHive Trigger accepts events with operation and objectType and subscribes to all event types. It emits the normalized event name and the full request body, headers and query. The optional relay forwards that complete trigger output to Open Flow, which exposes it as workflow output for downstream processing. Request headers and event details may appear in execution history; restrict access and avoid sending unnecessary secrets.
-
-<details>
-<summary>In n8n</summary>
-
-Import the supplied n8n workflow and configure TheHive to send its webhooks to the production URL of **TheHive Trigger**. For Open Flow set the destination in **Forward to Open Flow** and enable that node before activating n8n. Leave it disabled to use n8n alone. TheHive is acknowledged before forwarding, so inspect n8n execution history for relay failures.
-
-</details>
+TheHive Trigger accepts events with operation and objectType and subscribes to all event types. It emits the normalized event name and the full request body, headers and query. Request headers and event details may appear in execution history; restrict access and avoid sending unnecessary secrets.
 
 <details>
 <summary>Inspiration &amp; credits</summary>
-
-## Changes to the source
-
-- Add an optional n8n relay to preserve the complete trigger output in Open Flow.
 
 Adapted from [TheHive event updates](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Thehive/0205_Thehive_Update_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

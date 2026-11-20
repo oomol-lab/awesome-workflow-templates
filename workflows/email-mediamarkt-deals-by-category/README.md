@@ -3,32 +3,16 @@
 Find MediaMarkt Spain deals in selected categories and email the source links.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/email-mediamarkt-deals-by-category/) [![n8n JSON](../../assets/n8n-json.svg)](templates/email-mediamarkt-deals-by-category.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/email-mediamarkt-deals-by-category.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup
 
 Configure a Bright Data Web Unlocker zone and API token, and connect an AI model.
 
-Configure its webhook URL, set the Web Unlocker zone in **Prepare offers request**, bind BRIGHT_DATA_TOKEN as a secret, connect Gmail and enable persistent State.
-
 ## Behavior
 
 A form collects categories and an email address. Bright Data retrieves the MediaMarkt Spain offers page; the model extracts matching products. Only MediaMarkt paths, product names and price strings that appear in the returned page are included, and links use the MediaMarkt domain. The checks do not prove that a price belongs to a product. If none can be verified, the message says so. Prices and availability can change, and model output may be incomplete or inaccurate; check each offer on the retailer's site. The page and form details may appear in execution history. Code inputs and outputs must each fit 1 MiB.
-
-If email delivery or relay completion is uncertain, inspect sent mail before retrying. In Open Flow enter the pending key and confirmed or absent in **Verify and reserve deal email**, replay the same submission, and clear the fields.
-
-<details>
-<summary>In n8n</summary>
-
-In n8n configure Bright Data HTTP Header Auth with Authorization: Bearer followed by your token, connect SMTP and set the sender address. Select a Data Table with item_key and status text columns for checkpoints. For Open Flow set **Prepare request** to relay, configure its webhook URL, set the Web Unlocker zone in **Prepare offers request**, bind BRIGHT_DATA_TOKEN as a secret, connect Gmail and enable persistent State. Restrict the webhook to trusted n8n. Direct mode runs in n8n; choose one mode. In n8n inspect the pending Data Table row and sent email; mark it done if delivered or delete it only when no email was sent.
-
-</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

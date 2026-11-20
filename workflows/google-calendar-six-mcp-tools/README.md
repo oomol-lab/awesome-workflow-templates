@@ -3,30 +3,18 @@
 Expose event lookup, listing, availability, creation, reminders update and deletion through MCP.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/google-calendar-six-mcp-tools/) [![n8n JSON](../../assets/n8n-json.svg)](templates/google-calendar-six-mcp-tools.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/google-calendar-six-mcp-tools.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup
 
-Configure the same Calendar ID. In Open Flow enable persistent State and set CALENDAR_MCP_RELAY_AUTH.
+Configure the same Calendar ID.
 
 ## Behavior
 
-The six tools get an event by ID, list all events between After and Before, check availability between Start_Time and End_Time in America/Sao_Paulo, create an event with Start, End, Description and Use_Default_Reminders, update only the reminders setting, or delete by Event_ID. As in the source, an update with Use_Default_Reminders true sends no reminder change; false sets useDefault false. Dates should include offsets. The caller must explicitly request writes. Event data may appear in execution history. The Open Flow list runs through Code, which has a 1 MiB input/output limit.
+The six tools get an event by ID, list all events between After and Before, check availability between Start_Time and End_Time in America/Sao_Paulo, create an event with Start, End, Description and Use_Default_Reminders, update only the reminders setting, or delete by Event_ID. As in the source, an update with Use_Default_Reminders true sends no reminder change; false sets useDefault false. Dates should include offsets. The caller must explicitly request writes. Event data may appear in execution history.
 
-If a write outcome is unknown, inspect Calendar before retrying. In Open Flow enter the pending key and confirmed or absent in **Reserve calendar write**, replay the request, then clear both fields. Use a fresh requestId for intentional new writes. Open Flow treats a delete 404 as already absent.
-
-<details>
-<summary>In n8n</summary>
-
-Connect Google Calendar and an authenticated n8n MCP server. Select a Data Table with item_key, status and fingerprint text columns, set a unique requestId for each write, and prevent overlapping runs for a request. In n8n select relay mode and configure the matching Header Auth credential and Open Flow URL. In n8n mark the pending Data Table row done only after confirming the write, or delete it only after confirming it did not occur. N8n returns an error.
-
-</details>
+If a write outcome is unknown, inspect Calendar before retrying. Use a fresh requestId for intentional new writes.
 
 <details>
 <summary>Inspiration &amp; credits</summary>

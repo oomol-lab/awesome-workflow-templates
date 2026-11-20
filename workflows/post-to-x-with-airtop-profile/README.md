@@ -3,32 +3,18 @@
 Use an authenticated Airtop browser profile to submit text to X.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/post-to-x-with-airtop-profile/) [![n8n JSON](../../assets/n8n-json.svg)](templates/post-to-x-with-airtop-profile.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/post-to-x-with-airtop-profile.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup
 
 The form and workflow trigger accept the profile name and text.
 
-For Open Flow set **Choose mode** to relay and configure its webhook URL. Bind AIRTOP_API_KEY and enable persistent State.
-
 ## Behavior
 
 A five-minute browser session opens X using the selected profile, types the provided text and clicks Post, then closes the session and saves the profile. Airtop interaction completion does not prove that X published the post. Check X directly before treating it as published. The text and browser state are sent to Airtop.
 
-The interaction is reserved before typing because Enter or a click could submit the post. If typing or clicking is uncertain, inspect X before retrying. Open Flow keeps the pending key after interaction; to mark a verified post, enter the key and confirmed in **Reserve X interaction** and replay once, then clear the fields. Use absent only after verifying no post exists. A failed run may leave a browser session active until timeout; close it in Airtop if needed.
-
-<details>
-<summary>In n8n</summary>
-
-Create an Airtop profile signed in to X and connect Airtop in n8n. Select a Data Table with item_key and status text columns; prevent overlapping runs. Restrict the webhook to trusted n8n. Direct mode uses Airtop nodes in n8n. In n8n inspect the Data Table row and mark it done after checking X, or delete it only when no post exists.
-
-</details>
+The interaction is reserved before typing because Enter or a click could submit the post. If typing or clicking is uncertain, inspect X before retrying. Use absent only after verifying no post exists. A failed run may leave a browser session active until timeout; close it in Airtop if needed.
 
 <details>
 <summary>Inspiration &amp; credits</summary>

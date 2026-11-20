@@ -24,8 +24,6 @@ Adapted from [AI Agent for n8n Creators Leaderboard - Find Popular Workflows](ht
 
 Source collection notice: © 2024–2026 Enes Cingoz, [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). The source export does not identify a separate template author or license. See [repository licensing](../../README.md#licensing) for the scope of OOMOL contributions and third-party material.
 
-
-
 Changes from source: Publish the callable statistics component, omit the chat interface and optional local file output, and read the current array-shaped leaderboard data in bounded ranges. The returned statistics preserve the source's top-25 and top-300 filters.
 
 Collection license notice:

@@ -3,30 +3,16 @@
 Replace the configured Shopify order tags when its mapped Onfleet task is delayed.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/replace-shopify-order-tags-for-onfleet-delays/) [![n8n JSON](../../assets/n8n-json.svg)](templates/replace-shopify-order-tags-for-onfleet-delays.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/replace-shopify-order-tags-for-onfleet-delays.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup
 
-Bind the Shopify Admin API token with order write access as Secret Variable `SHOPIFY_ADMIN_TOKEN` and set your shop URL in **Replace the Shopify order tags**. In **Map task to order and replacement tags**, replace the example mapping with entries from Onfleet task ID to Shopify order GraphQL ID, such as `gid://shopify/Order/123`, and set the complete replacement tags array. Each task must have its own correct mapping. The source leaves the order ID and tags unspecified.
-
-Connect the Onfleet Trigger with its signing secret, set **Choose delivery mode** to `relay`, and set the Open Flow URL in **Forward event to Open Flow**. Onfleet validates its webhook with GET and sends events by POST; the relay handles registration and forwards the complete event. Restrict access to the Open Flow URL, which does not authenticate the relay.
+In **Map task to order and replacement tags**, replace the example mapping with entries from Onfleet task ID to Shopify order GraphQL ID, such as `gid://shopify/Order/123`, and set the complete replacement tags array. Each task must have its own correct mapping. The source leaves the order ID and tags unspecified.
 
 ## Behavior
 
 A delayed task updates the mapped order. The configured array **replaces all existing tags**, matching the source's update operation; include every tag you intend to retain. Unknown tasks, missing mappings and invalid events stop before the Shopify write. A webhook acknowledgment does not confirm an update. If an update result is uncertain, inspect the order before replaying; no automatic replay or deduplication is added.
-
-<details>
-<summary>In n8n</summary>
-
-For Open Flow, deploy the webhook and import the provided n8n workflow. For direct n8n processing, set **Choose delivery mode** to `direct`, connect the Onfleet Trigger with its signing secret, configure the task-to-order mapping and tags in **Map task to order and replacement tags**, set your Shopify Admin GraphQL URL in **Replace Shopify tags**, and use a header credential named `X-Shopify-Access-Token` with order write access. Activate one format.
-
-</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>
@@ -34,7 +20,6 @@ For Open Flow, deploy the webhook and import the provided n8n workflow. For dire
 ## Changes to the source
 
 - Require an explicit Onfleet task-to-Shopify order mapping and replacement tags instead of the source's empty fields.
-- Open Flow uses an n8n relay for Onfleet registration; both formats use Shopify Admin GraphQL.
 
 Adapted from [Updating Shopify tags on Onfleet events](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Shopify/0185_Shopify_Onfleet_Automation_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

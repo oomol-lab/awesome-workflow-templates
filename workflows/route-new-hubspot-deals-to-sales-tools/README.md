@@ -3,32 +3,18 @@
 Create a HubSpot ticket for each new deal and route its stage to Slack, Google Slides or Airtable.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/route-new-hubspot-deals-to-sales-tools/) [![n8n JSON](../../assets/n8n-json.svg)](templates/route-new-hubspot-deals-to-sales-tools.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/route-new-hubspot-deals-to-sales-tools.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup
 
-The relay validates the v1 signature over the original bytes. Connect HubSpot, Google Slides, Airtable and Slack; bind HUBSPOT_PRIVATE_APP_TOKEN to the ticket HTTP step. Configure the pipeline, stage, high-priority owner, channel, Airtable base and table in **Choose the next deal action**. The Airtable table needs deal_name, deal_id and deal_type fields. Enable persistent State and prevent overlapping runs.
-
-Restrict access to the Open Flow webhook.
+Connect HubSpot, Google Slides, Airtable and Slack; bind HUBSPOT_PRIVATE_APP_TOKEN to the ticket HTTP step. Configure the pipeline, stage, high-priority owner, channel, Airtable base and table in **Choose the next deal action**. The Airtable table needs deal_name, deal_id and deal_type fields.
 
 ## Behavior
 
 For each verified creation event, retrieve the deal, create a ticket and route won deals to Slack, presentation-scheduled deals to Google Slides, and lost deals to Airtable. Other stages create only a ticket. A deal over 500 with type newbusiness receives HIGH priority unless its stage is exactly the literal closedlost|closedwon; all other tickets receive MEDIUM. This preserves the source comparison.
 
 If a write outcome is unknown, inspect its destination. In **Choose the next deal action**, enter the pending key and resolution confirmed or absent, then replay the event and clear the fields. Execution history contains deal data.
-
-<details>
-<summary>In n8n</summary>
-
-Configure a HubSpot legacy app subscription for deal.creation and send it to the n8n raw webhook. Set HUBSPOT_CLIENT_SECRET in the n8n environment. For Open Flow enable **Forward to Open Flow**, set its webhook URL and disconnect the direct n8n business branch. For direct n8n use its branch alone and set the same credentials, pipeline, stage, owner and destinations. Configure one Data Table with item_key and status text columns for its checkpoint nodes. In direct n8n inspect the pending event row and all destinations; complete any remaining actions manually and mark the row done, or delete it only if no writes occurred.
-
-</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

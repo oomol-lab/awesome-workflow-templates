@@ -3,35 +3,19 @@
 Receive Customer.io customer unsubscribe events.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/receive-customerio-unsubscribes/) [![n8n JSON](../../assets/n8n-json.svg)](templates/receive-customerio-unsubscribes.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/receive-customerio-unsubscribes.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup and use
 
-Activate it, then register the **Receive Customer.io event** production URL in Customer.io Reporting Webhooks with the customer unsubscribe event. The URL must be publicly reachable by Customer.io. For Open Flow enter its webhook URL in **Forward to Open Flow** and enable that node. Restrict access to the webhook endpoints.
+Activate it, then register the **Receive Customer.io event** production URL in Customer.io Reporting Webhooks with the customer unsubscribe event. The URL must be publicly reachable by Customer.io. Restrict access to the webhook endpoints.
 
 ## Behavior
 
-The webhook receives customer unsubscribe events and the optional relay forwards each event to Open Flow as workflow output. Neither endpoint verifies the sender. Event data may appear in execution history. Event details may appear in execution history.
-
-<details>
-<summary>In n8n</summary>
-
-Import the n8n workflow and activate it, then register the **Receive Customer.io event** production URL in Customer.io Reporting Webhooks with the customer unsubscribe event. Leave it disabled for n8n alone. Restrict access and inspect n8n execution history for relay failures.
-
-</details>
+Neither endpoint verifies the sender. Event data may appear in execution history. Event details may appear in execution history.
 
 <details>
 <summary>Inspiration &amp; credits</summary>
-
-## Changes to the source
-
-- Use a manually registered n8n Webhook because the source trigger uses an older reporting API, and add an optional relay.
 
 Adapted from [Customer.io unsubscribe events](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Customerio/0738_Customerio_Update_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

@@ -33,8 +33,6 @@ Adapted from [Actioning Your Meeting Next Steps using Transcripts and AI](https:
 
 Source collection notice: © 2024–2026 Enes Cingoz, [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). The source export does not identify a separate template author or license. See [repository licensing](../../README.md#licensing) for the scope of OOMOL contributions and third-party material.
 
-
-
 Changes from source: Match conference records by event time, paginate transcript lookup, repair the tool input and create all attendees together, use a current model and add event-write checkpoints.
 
 Collection license notice:

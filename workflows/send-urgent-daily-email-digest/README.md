@@ -3,30 +3,18 @@
 Summarize the past day of email and notify when a thread needs action.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/send-urgent-daily-email-digest/) [![n8n JSON](../../assets/n8n-json.svg)](templates/send-urgent-daily-email-digest.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/send-urgent-daily-email-digest.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup
 
-Set NODE_FUNCTION_ALLOW_EXTERNAL=mailparser in that runner and install mailparser there. Configure IMAP, Telegram and ntfy credentials. Set a unique mailbox key and prevent concurrent runs. For Open Flow mode, deploy its webhook and connect OpenRouter with access to openai/gpt-5.4-mini.
+Set NODE_FUNCTION_ALLOW_EXTERNAL=mailparser in that runner and install mailparser there. Configure IMAP, Telegram and ntfy credentials. Set a unique mailbox key and prevent concurrent runs.
 
 ## Behavior
 
 A manual run or daily 23:59 UTC schedule reads INBOX from the preceding 24 hours without marking messages read. It groups references or subjects, mutes common promotional threads and summarizes the remainder. If the model fails or returns invalid JSON, heuristic fallback is used. Only urgent items produce a Telegram notification. ntfy is used only after a confirmed Telegram rejection. Review model judgments. Email contents are sent to the configured model.
 
 A pending notification may have succeeded. An oversized input or an IMAP list reaching its configured limit stops rather than silently omitting messages.
-
-<details>
-<summary>In n8n</summary>
-
-Use self-hosted n8n with n8n-nodes-imap 3.0.1 and mailparser available to the Code task runner. Configure IMAP, Telegram and ntfy credentials, and a Data Table with item_key and status columns. Set the URL in n8n. For n8n mode configure Ollama. Inspect Telegram or ntfy and reconcile the corresponding Data Table record before another attempt.
-
-</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

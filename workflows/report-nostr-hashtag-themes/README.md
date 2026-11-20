@@ -3,38 +3,21 @@
 Summarize Nostr hashtag posts and send a themes overview and detailed report by email and Telegram.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/report-nostr-hashtag-themes/) [![n8n JSON](../../assets/n8n-json.svg)](templates/report-nostr-hashtag-themes.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/report-nostr-hashtag-themes.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup
 
-Select an AI model, connect Gmail and Telegram, and set the email and chat ID in both corresponding nodes. Enable persistent State. Restrict access to the Open Flow webhook URL.
+Select an AI model, connect Gmail and Telegram, and set the email and chat ID in both corresponding nodes.
 
 ## Behavior
 
-The workflow analyzes the fetched posts, extracts themes, prepares a detailed report, and delivers both summaries to Gmail and Telegram. AI results may be inaccurate. Open Flow sends plain text and uses a configurable model.
+The workflow analyzes the fetched posts, extracts themes, prepares a detailed report, and delivers both summaries to Gmail and Telegram. AI results may be inaccurate.
 
 If a delivery fails or its result is unknown, inspect both destinations and complete the report manually before entering the pending execution ID in **Prepare hashtag posts** to acknowledge it. Do not replay the report without checking each destination. Keep runs from overlapping.
 
 <details>
-<summary>In n8n</summary>
-
-Install the [Nostrobots community node](https://github.com/ocknamo/n8n-nodes-nostrobots) in n8n and configure a Nostr relay in **Nostr Read #damus**. For Open Flow, import the n8n workflow, set **Choose processing mode** to relay and enter the Open Flow webhook URL in **Forward Nostr events**. For direct n8n processing, choose direct mode, connect the model, Gmail and Telegram credentials, and set both email recipients and chat IDs. Activate only one mode. The source queries the last 180 days of hashtag events. N8n preserves the source model prompts and HTML email formatting.
-
-</details>
-
-<details>
 <summary>Inspiration &amp; credits</summary>
-
-## Changes to the source
-
-- Provide a direct n8n mode and a relay mode for Open Flow because Nostr uses WebSocket relays.
-- Replace the source recipient and chat ID with configuration and guard uncertain Open Flow deliveries.
 
 Adapted from [Report Nostr hashtag themes](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Telegram/0001_Telegram_Schedule_Automation_Scheduled.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

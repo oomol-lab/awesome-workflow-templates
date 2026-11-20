@@ -3,13 +3,8 @@
 Collect waitlist registrations, verify email and save intended use in Google Sheets.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/verify-waitlist-signups-in-sheets/) [![n8n JSON](../../assets/n8n-json.svg)](templates/verify-waitlist-signups-in-sheets.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/verify-waitlist-signups-in-sheets.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup
 
@@ -18,15 +13,6 @@ Create a spreadsheet with columns Submission ID, Firstname, Lastname, Email, Com
 ## Behavior
 
 The code expires after 10 minutes and the form allows two attempts. Protect those records and SMTP access. This example is a waitlist workflow, not a general account authentication service.
-
-For a pending Open Flow sheet write enter the key and confirmed or absent in **Reserve registration update**, replay the same stage, then clear the fields.
-
-<details>
-<summary>In n8n</summary>
-
-Connect Google Sheets and SMTP in n8n and set the sender address. Configure a Data Table with item_key and status text columns for checkpoints. For Open Flow, set relay mode in **Prepare registration**, configure the webhook URL and spreadsheet IDs, connect Sheets and enable persistent State. Protect the webhook at the deployment boundary so only your trusted n8n workflow can send registration stages; a forged verified stage could mark a record verified. Direct mode runs in n8n; choose one mode. n8n collects the registration, generates and emails a verification code, verifies it before collecting intended use, and saves each stage to the same submission ID. The code is not stored in Sheets, but it can appear in n8n execution history and email. If an email, sheet write or relay result is uncertain, inspect the sent email, spreadsheet and pending Data Table row before replaying. In n8n inspect the pending submission and finish any remaining registration steps manually before marking it done; remove the pending row only if no external write occurred.
-
-</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

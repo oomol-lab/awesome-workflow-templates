@@ -3,32 +3,20 @@
 Save unread email PDF invoices to Drive and append extracted invoice details to a reconciliation sheet.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/archive-gmail-invoices-in-drive-and-sheets/) [![n8n JSON](../../assets/n8n-json.svg)](templates/archive-gmail-invoices-in-drive-and-sheets.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/archive-gmail-invoices-in-drive-and-sheets.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup
 
 Connect Gmail and Google Drive. Configure the destination folder, a Google Sheet with Invoice date, Invoice Description, Total price and Fichero columns. Prevent overlapping runs.
 
-Connect Sheets and a model, configure its spreadsheet ID and range, and enable persistent State. Protect the webhook at your deployment boundary.
+Protect the webhook at your deployment boundary.
 
 ## Behavior
 
-Each unread message with a PDF saves its first PDF to Drive, extracts readable text, records the date, saved filename, total and Drive link, then marks the message read. Messages with no PDF are marked read without creating a row. Review extracted values; model output can be wrong. Scanned PDFs need OCR. The extracted text and surrounding data must fit the Open Flow 1 MiB per-Code input/output limit. Invoice text goes to the model; execution histories and Drive/Sheets contain sensitive data. Restrict access and apply retention rules.
+Each unread message with a PDF saves its first PDF to Drive, extracts readable text, records the date, saved filename, total and Drive link, then marks the message read. Messages with no PDF are marked read without creating a row. Review extracted values; model output can be wrong. Scanned PDFs need OCR. Invoice text goes to the model; execution histories and Drive/Sheets contain sensitive data. Restrict access and apply retention rules.
 
-If a write has an unknown outcome, inspect Drive, Sheets and Gmail before retrying. For an uncertain Open Flow row append, inspect the sheet and replay the same message with its pending key in **Prepare reconciliation row** and resolution confirmed if present or absent if not, then clear the fields. Do not overlap executions.
-
-<details>
-<summary>In n8n</summary>
-
-Import the n8n workflow and connect Gmail and Google Drive. Configure the destination folder, a Google Sheet with Invoice date, Invoice Description, Total price and Fichero columns, and a Data Table with item_key and status text columns. For direct n8n, connect the OpenAI model and Google Sheets and leave processing mode direct. For Open Flow, select relay mode, set the Open Flow webhook URL, connect Sheets and a model, configure its spreadsheet ID and range, and enable persistent State. The n8n Data Table retains a pending message; finish missing work manually and mark it done, or delete it only when no external write occurred.
-
-</details>
+If a write has an unknown outcome, inspect Drive, Sheets and Gmail before retrying. Do not overlap executions.
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -3,35 +3,19 @@
 Receive JSON events from a server-sent events stream.
 
 <!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/receive-server-sent-events/) [![n8n JSON](../../assets/n8n-json.svg)](templates/receive-server-sent-events.n8n.json)
+[![n8n JSON](../../assets/n8n-json.svg)](templates/receive-server-sent-events.n8n.json)
 <!-- template-actions:end -->
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
-</picture>
 
 ## Setup and use
 
-Set the stream URL in **SSE Trigger**. Activate it to keep the event stream open. For Open Flow enter its webhook URL in **Forward to Open Flow** and enable that node. Restrict access to the webhook endpoints.
+Set the stream URL in **SSE Trigger**. Activate it to keep the event stream open. Restrict access to the webhook endpoints.
 
 ## Behavior
 
-The SSE Trigger parses each message data value as JSON and emits it separately. The optional relay forwards each event to Open Flow. The Open Flow relay endpoint does not authenticate the sender. Delivery and replay depend on the stream provider. Event details may appear in execution history.
-
-<details>
-<summary>In n8n</summary>
-
-Import the n8n workflow and set the stream URL in **SSE Trigger**. Leave it disabled for n8n alone. Restrict access and inspect n8n execution history for relay failures.
-
-</details>
+The SSE Trigger parses each message data value as JSON and emits it separately. Delivery and replay depend on the stream provider. Event details may appear in execution history.
 
 <details>
 <summary>Inspiration &amp; credits</summary>
-
-## Changes to the source
-
-- Replace the example URL with a stream placeholder and add an optional n8n relay.
 
 Adapted from [server-sent JSON events](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Sse/1084_Sse_Automation_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

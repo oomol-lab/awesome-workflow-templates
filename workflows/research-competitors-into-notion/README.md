@@ -33,8 +33,6 @@ Adapted from [Automate Competitor Research with Exa.ai, Notion and AI Agents](ht
 
 Source collection notice: © 2024–2026 Enes Cingoz, [CC BY 4.0](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/LICENSE). The source export does not identify a separate template author or license. See [repository licensing](../../README.md#licensing) for the scope of OOMOL contributions and third-party material.
 
-
-
 Changes from source: Recover the complete JSON document before trailing repeated title text, replace deprecated Exa findSimilar with search, update Firecrawl and model, add write checkpoints and use a parent-page report in Open Flow.
 
 Collection license notice:
