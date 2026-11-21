@@ -3,25 +3,35 @@
 Enrich business contacts and email those at B2B companies with at least 500 employees.
 
 <!-- template-actions:start -->
-[![n8n JSON](../../assets/n8n-json.svg)](templates/qualify-contact-form-leads-with-clearbit.n8n.json)
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/qualify-contact-form-leads-with-clearbit/) [![n8n JSON](../../assets/n8n-json.svg)](templates/qualify-contact-form-leads-with-clearbit.n8n.json)
 <!-- template-actions:end -->
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
+  <img alt="Open Flow workflow" src="preview-light.png">
+</picture>
 
 ## Setup
 
-Use an existing Clearbit account with Person and Company API access. Set your signature in **Prepare acknowledgment** and **Send Email**.
-
-Protect the webhook at the deployment boundary.
+Use an existing Clearbit account with Person and Company API access. Bind `CLEARBIT_API_KEY` as a secret variable, connect Gmail, set your signature in **Prepare acknowledgment**, and enable persistent State. Publish the workflow and open the hosted Webhook form URL (or POST JSON `{"role": "Product", "email": "alex@company.com"}`).
 
 ## Behavior
 
-A form asks for role and business email. The source's literal personal-email substring exclusions run first. Clearbit finds the person by email and the company by employment domain. Only companies tagged B2B with more than 499 employees receive the personalized acknowledgment. The role is collected but not used in qualification. Missing enrichment stops processing; it is not treated as a match. Contact details are sent to Clearbit and may be retained in execution history.
+The hosted form asks for role and business email. The source's literal personal-email substring exclusions run first. Clearbit finds the person by email and the company by employment domain. Only companies tagged B2B with more than 499 employees receive the personalized acknowledgment. The role is collected but not used in qualification. Missing enrichment stops processing; it is not treated as a match. Contact details are sent to Clearbit and may be retained in execution history.
 
-If email delivery is uncertain, inspect Gmail before retrying.
+If email delivery is uncertain, inspect Gmail before retrying. Replay the same submission with the pending key in **Prepare acknowledgment** and resolution `confirmed` if sent or `absent` if not, then clear both fields.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow, connect Clearbit and Gmail, and set your signature in **Send Email**. Select one Data Table with `item_key` and `status` text columns in all checkpoint nodes; prevent overlapping executions. If email delivery is uncertain, inspect the pending Data Table row and sent mail, mark it `done` if sent, or delete it only if no email was sent.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>
 
-Add a form relay and delivery checkpoints; retain the source filter and qualification rules.
+Added hosted form intake and delivery checkpoints; retained the source filter and qualification rules.
 
 Adapted from [Contact form lead qualification](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Filter/0411_Filter_Form_Send_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

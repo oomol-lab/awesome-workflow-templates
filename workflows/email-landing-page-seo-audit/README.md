@@ -3,25 +3,35 @@
 Audit a landing page for technical SEO and content improvements and email the findings.
 
 <!-- template-actions:start -->
-[![n8n JSON](../../assets/n8n-json.svg)](templates/email-landing-page-seo-audit.n8n.json)
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/email-landing-page-seo-audit/) [![n8n JSON](../../assets/n8n-json.svg)](templates/email-landing-page-seo-audit.n8n.json)
 <!-- template-actions:end -->
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
+  <img alt="Open Flow workflow" src="preview-light.png">
+</picture>
 
 ## Setup
 
-Prevent overlapping executions.
-
-Submit a public HTTP(S) landing page URL. Deploy with network controls that prevent access to private or internal hosts, including redirects.
+Connect Gmail, select an AI model, set the audit recipient in **Reserve audit email**, and enable persistent State. Publish the workflow and open the hosted Webhook form URL (or POST JSON `{"url": "https://..."}` to the same endpoint). Deploy with network controls that prevent access to private or internal hosts, including redirects.
 
 ## Behavior
 
-The workflow fetches the requested page and produces a technical audit followed by a content audit. It emails the findings to the configured recipient with the page URL in the subject. Model findings are suggestions, not measured rankings or performance; review them. HTML is sent to the model and may appear in execution history. The page and each Code input/output must fit 1 MiB.
+The workflow fetches the requested public HTTP(S) page and runs a technical SEO audit followed by a content SEO audit. It emails the findings to the configured recipient with the page URL in the subject. Model findings are suggestions, not measured rankings or performance; review them. HTML is sent to the model and may appear in execution history. The page and each Code input/output must fit 1 MiB.
 
-If delivery is uncertain, inspect Gmail before replay.
+If delivery is uncertain, inspect Gmail before replay. Enter the pending key and `confirmed` or `absent` in **Reserve audit email**, replay the same submission and clear both fields.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow, connect OpenAI and Gmail, set the audit recipient in **Gmail**, and choose a Data Table with `item_key` and `status` text columns. Prevent overlapping executions. If delivery is uncertain, inspect the pending Data Table row, mark it `done` after confirming delivery, or delete it only if no email was sent.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>
 
-Add a URL relay and email checkpoint, and replace the private recipient.
+Added URL validation, hosted form intake, and email delivery checkpoints.
 
 Adapted from [🤖 On-Page SEO Audit](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Form/1886_Form_Markdown_Automation_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 
