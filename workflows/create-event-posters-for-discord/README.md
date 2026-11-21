@@ -3,23 +3,37 @@
 Generate an event poster from a prompt and share it as a Discord attachment.
 
 <!-- template-actions:start -->
-[![n8n JSON](../../assets/n8n-json.svg)](templates/create-event-posters-for-discord.n8n.json)
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/create-event-posters-for-discord/) [![n8n JSON](../../assets/n8n-json.svg)](templates/create-event-posters-for-discord.n8n.json)
 <!-- template-actions:end -->
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
+  <img alt="Open Flow workflow" src="preview-light.png">
+</picture>
 
 ## Setup
 
-Connect OpenAI, Cloudinary and Bannerbear. Create a Bannerbear template with layers named placeholder_image, placeholder_text, placeholder_location and placeholder_date.
+Connect OpenAI, Cloudinary and Bannerbear. Create a Bannerbear template with layers named `placeholder_image`, `placeholder_text`, `placeholder_location` and `placeholder_date`, and set your Bannerbear template IDs and Discord channel ID in **Choose banner step**. Bind `DISCORD_BOT_AUTH` as a secret variable (for example `Bot YOUR_DISCORD_BOT_TOKEN`), enable persistent State, and publish the workflow. Open the hosted Webhook form URL to submit event details.
 
 ## Behavior
 
-The workflow generates an image, uploads it to Cloudinary, renders the event details in Bannerbear, and sends the poster as a Discord file. Image generation and rendering may take time.
+The workflow generates an image, uploads it to Cloudinary, renders the event details in Bannerbear, downloads the rendered poster as a Run Artifact, and posts it to Discord as a multipart file attachment. Image generation and rendering may take time. Open Flow uses the synchronous endpoint.
 
-If an external write has an unknown result, inspect the corresponding service. In **Choose banner step**, enter the pending key and resolution confirmed or absent. For a confirmed image generation, upload or render enter its resulting HTTPS URL; then rerun with the same submission ID and details and clear the fields.
+If an external write has an unknown result, inspect the corresponding service. In **Choose banner step**, enter the pending key and resolution `confirmed` or `absent`. For a confirmed image generation, upload or render, enter its resulting HTTPS URL; then rerun with the same submission ID and details and clear the fields.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow and configure the form's two template IDs, Cloudinary account and upload preset, Bannerbear and Discord. Select one Data Table with `item_key` and `status` text columns on all checkpoint nodes. If a pending row remains, inspect the affected service and complete any remaining actions manually before marking it `done`.
+
+The source n8n workflow polls the asynchronous Bannerbear job.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>
 
-Added an authenticated n8n binary attachment relay, configurable account settings, and write checkpoints.
+Added hosted form intake, Run Artifact poster download, multipart Discord upload, configurable account settings, and write checkpoints.
 
 Adapted from [Generate and share an event banner](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Bannerbear/1665_Bannerbear_Discord_Automation_Webhook.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

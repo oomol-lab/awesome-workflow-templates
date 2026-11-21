@@ -3,18 +3,30 @@
 Score inbound demo leads, record their context, and route follow-up alerts.
 
 <!-- template-actions:start -->
-[![n8n JSON](../../assets/n8n-json.svg)](templates/score-and-route-demo-leads.n8n.json)
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/score-and-route-demo-leads/) [![n8n JSON](../../assets/n8n-json.svg)](templates/score-and-route-demo-leads.n8n.json)
 <!-- template-actions:end -->
 
-## Setup and use
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
+  <img alt="Open Flow workflow" src="preview-light.png">
+</picture>
 
-Connect Gmail and Google Sheets, set the spreadsheet ID and create a Leads sheet with columns received_at, priority, lead_score, sla_minutes, owner_team, intent_tags, page_signal_tags, dedupe_key, email, company, message, name, phone, role, budget, timeline, page_url, source, utm_campaign, needs_exec_escalation, missing_contact, page_title and page_description. Set the four recipient addresses in Prepare audit and routing. Configure its Gmail and Sheets credentials.
+## Setup
+
+Connect Gmail and Google Sheets, set the spreadsheet ID in **Append lead audit**, and create a `Leads` sheet with columns `received_at`, `priority`, `lead_score`, `sla_minutes`, `owner_team`, `intent_tags`, `page_signal_tags`, `dedupe_key`, `email`, `company`, `message`, `name`, `phone`, `role`, `budget`, `timeline`, `page_url`, `source`, `utm_campaign`, `needs_exec_escalation`, `missing_contact`, `page_title`, and `page_description`. Set the four recipient addresses in **Prepare audit and routing**. Restrict webhook access to trusted callers.
 
 ## Behavior
 
-Missing contact information returns HTTP 400. A valid submission is scored and optionally enriched with its submitted page title and description; page fetch failures continue without page signals. The workflow writes an audit row and sends a priority email. Hot leads with the source's executive escalation flag also send a leadership alert. It returns priority, score, SLA, owner and dedupe key. The key is descriptive and does not deduplicate submissions.
+Missing contact information returns an error response. A valid submission is scored and optionally enriched with its submitted page title and description; page fetch failures continue without page signals. The workflow writes an audit row and sends a priority email. Hot leads with the source's executive escalation flag also send a leadership alert. It returns priority, score, SLA, owner, and dedupe key. The key is descriptive and does not deduplicate submissions.
 
-If an audit append or Gmail send loses its response, the write may have happened. Inspect the sheet and mailbox before retrying the same submission. Page URLs and lead data are processed by the workflow and retained according to your execution-history settings.
+If an audit append or Gmail send loses its response, the write may have happened. Inspect the sheet and mailbox before retrying the same submission. Open Flow's webhook waits up to 60 seconds for its response.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow, configure its Gmail and Sheets credentials, and enable **Lead Intake Webhook**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

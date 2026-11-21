@@ -3,12 +3,28 @@
 Extract requested fields and a structured summary from a webpage.
 
 <!-- template-actions:start -->
-[![n8n JSON](../../assets/n8n-json.svg)](templates/extract-data-from-a-webpage.n8n.json)
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/extract-data-from-a-webpage/) [![n8n JSON](../../assets/n8n-json.svg)](templates/extract-data-from-a-webpage.n8n.json)
 <!-- template-actions:end -->
 
-## Setup and use
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
+  <img alt="Open Flow workflow" src="preview-light.png">
+</picture>
 
-POST JSON with url and optional extract_fields and name. Fields default to price,features,description. The workflow follows redirects, strips scripts, styles and tags, and sends the first 4,000 characters of text to the model. It returns title, description, extractedData, statistics and sentiment as JSON. Page text is sent to the model and the result should be checked against the source. Failed or empty fetches do not produce an extraction.
+## Setup
+
+Configure an AI model and deploy the Open Flow webhook. Restrict the webhook to trusted callers and deploy with network controls that prevent access to private or internal hosts.
+
+## Behavior
+
+POST JSON with `url` and optional `extract_fields` and `name`. Fields default to `price,features,description`. The workflow fetches the webpage, strips scripts, styles and HTML tags, and sends the first 4,000 characters of text to the model. It returns `title`, `description`, `extractedData`, `statistics` and `sentiment` as JSON. Page text is sent to the model and the result should be checked against the source. Failed or empty fetches do not produce an extraction.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow, configure the model credential, and restrict the **Scrape URL** webhook to trusted callers.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -3,18 +3,30 @@
 Classify incoming emails for phishing risk, then attach a screenshot and text body to the corresponding Jira issue.
 
 <!-- template-actions:start -->
-[![n8n JSON](../../assets/n8n-json.svg)](templates/classify-phishing-emails-and-attach-evidence.n8n.json)
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/classify-phishing-emails-and-attach-evidence/) [![n8n JSON](../../assets/n8n-json.svg)](templates/classify-phishing-emails-and-attach-evidence.n8n.json)
 <!-- template-actions:end -->
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
+  <img alt="Open Flow workflow" src="preview-light.png">
+</picture>
 
 ## Setup
 
-Connect Gmail, HTML/CSS to Image and Jira. Set the Jira project and issue type in **Choose reporting step**. Set its production HTTPS URL in **Choose reporting step**, and bind Secret Variables `OPENAI_API_KEY` and `N8N_RELAY_TOKEN`.
+Connect Gmail, HTML/CSS to Image and Jira, bind secret variables `OPENAI_API_KEY`, `JIRA_EMAIL`, and `JIRA_API_TOKEN`, and enable persistent State. Set your Jira project key, issue type, and Jira Cloud domain (for example `example.atlassian.net`) in **Choose reporting step**, and prevent overlapping executions.
 
 ## Behavior
 
-Incoming email HTML and headers are analyzed and classified as potentially malicious or benign. Email content is sent to HTML/CSS to Image and OpenAI; protect execution history and review the analysis.
+Incoming email HTML and headers are analyzed and classified as potentially malicious or benign. The corresponding Jira issue contains the model analysis and receives both `emailScreenshot.png` (via Jira Connector) and `emailBody.txt` (uploaded as a Run Artifact via Jira's multipart attachment API). Email content is sent to HTML/CSS to Image and OpenAI; protect execution history and review the analysis.
 
-If screenshot, issue or attachment creation has an unknown result, inspect the corresponding service. In **Choose reporting step**, enter the pending key and set resolution to confirmed or absent; for a confirmed screenshot enter its URL and for a confirmed issue enter its key. Mark the attachment step confirmed only after both emailScreenshot.png and emailBody.txt exist on that issue. Trigger another poll after resolving it and clear the fields. If one attachment exists and the other does not, add the missing attachment before resolving the pending row. The two webhook and poll modes must not run in parallel.
+If screenshot, issue or attachment creation has an unknown result, inspect the corresponding service. In **Choose reporting step**, enter the pending key and set resolution to `confirmed` or `absent`; for a confirmed screenshot enter its URL and for a confirmed issue enter its key. Mark the attachment step `confirmed` only after both `emailScreenshot.png` and `emailBody.txt` exist on that issue. Trigger another poll after resolving it and clear the fields.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow and connect Gmail, HTML/CSS to Image, OpenAI and Jira. Set the Jira project and issue type IDs and choose the same Data Table with text columns `item_key` and `status` on all checkpoint nodes. The Microsoft Outlook trigger remains disabled. If one attachment exists and the other does not, add the missing attachment before resolving the pending row.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

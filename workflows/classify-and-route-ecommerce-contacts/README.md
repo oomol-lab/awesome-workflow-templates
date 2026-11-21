@@ -3,23 +3,35 @@
 Classify contact messages, email the right department, and log each request.
 
 <!-- template-actions:start -->
-[![n8n JSON](../../assets/n8n-json.svg)](templates/classify-and-route-ecommerce-contacts.n8n.json)
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/classify-and-route-ecommerce-contacts/) [![n8n JSON](../../assets/n8n-json.svg)](templates/classify-and-route-ecommerce-contacts.n8n.json)
 <!-- template-actions:end -->
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
+  <img alt="Open Flow workflow" src="preview-light.png">
+</picture>
 
 ## Setup
 
-Connect OpenAI, SMTP and Google Sheets, and configure the sender and five department addresses in **Prepare routing**. Configure a Sheet with columns DATA, NOME, EMAIL, RICHIESTA, CATEGORIA, TO in that order. Prevent overlapping executions.
+Connect Google Sheets, select an AI model, and bind `GMAIL_ACCESS_TOKEN` as a secret variable with Gmail send permission. Configure the five department recipients in **Reserve department email**, set the spreadsheet ID and range in **Reserve contact row**, and enable persistent State. Prepare a Sheet with columns `DATA`, `NOME`, `EMAIL`, `RICHIESTA`, `CATEGORIA`, `TO` in that order. Publish the workflow and open the hosted Webhook form URL (or POST JSON `{"name": "...", "email": "...", "message": "..."}`).
 
 ## Behavior
 
-The message is classified as Request Quote, Product info, General problem, Order or Other, then emailed to the corresponding department with the customer's address as Reply-To. After successful delivery, the request, category and recipient are appended to the sheet. AI classification may be wrong; review messages. Personal data is sent to the model and may appear in execution history; protect access and retention.
+The message is classified as `Request Quote`, `Product info`, `General problem`, `Order`, or `Other`, then emailed to the corresponding department with the customer's address as `Reply-To`. After successful delivery, the request, category, and recipient are appended to the sheet. AI classification may be wrong; review messages. Personal data is sent to the model and may appear in execution history; protect access and retention. Code inputs and outputs must fit 1 MiB each.
 
-If email delivery or sheet append is uncertain, inspect Gmail/SMTP or the sheet before retrying.
+If email delivery or sheet append is uncertain, inspect Gmail or the sheet before retrying. Enter the pending key and `confirmed` or `absent` in the corresponding reserve node, replay the same submission, then clear the fields.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow, connect OpenAI, SMTP and Google Sheets, and configure the sender and five department addresses in **Prepare routing**. Select a Data Table with `item_key` and `status` text columns and prevent overlapping executions. Inspect pending Data Table rows if a run fails mid-way.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>
 
-Fix the product and quote routing and record the actual category; add a relay and separate write checkpoints.
+Fixed product and quote routing, recorded the actual category, and added hosted form intake with separate write checkpoints.
 
 Adapted from [Contact Form Text Classifier for eCommerce](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Form/1537_Form_GoogleSheets_Automation_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 

@@ -3,19 +3,35 @@
 Check the latest n8n GitHub release daily and email its release notes when it is less than one day old.
 
 <!-- template-actions:start -->
-[![n8n JSON](../../assets/n8n-json.svg)](templates/email-recent-n8n-release-notes.n8n.json)
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/email-recent-n8n-release-notes/) [![n8n JSON](../../assets/n8n-json.svg)](templates/email-recent-n8n-release-notes.n8n.json)
 <!-- template-actions:end -->
 
-## Setup and use
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
+  <img alt="Open Flow workflow" src="preview-light.png">
+</picture>
 
-Configure SMTP credentials and sender and recipient addresses on both email nodes. The workflow uses UTC by default; change their schedules to your timezone if desired.
+## Setup
+
+Connect Gmail and set the recipient address in **Email release notes**. The schedule runs at 00:00 UTC daily; change its timezone or expression if desired.
 
 ## Behavior
 
-Daily at midnight, fetch the latest n8n release. When published less than 24 hours ago, convert its Markdown notes to HTML and send an email with the subject New n8n release. Inspect your mail before rerunning.
+Daily at midnight UTC, the workflow fetches the latest n8n release from GitHub. When published less than 24 hours ago, it converts the Markdown release notes to HTML and sends an email with the subject `New n8n release`.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow and configure SMTP credentials and sender and recipient addresses on **Send Email**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>
+
+## Changes to the source
+
+- Replaced sample sender and recipient addresses with placeholders and set UTC explicitly.
 
 Adapted from [Email new n8n release notes](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Splitout/0652_Splitout_Schedule_Create_Scheduled.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
 
@@ -43,6 +59,6 @@ The collection’s [MIT notice](https://github.com/Zie619/n8n-workflows/blob/940
 > OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 > SOFTWARE.
 
-the workflow bundles [Showdown 2.1.0](https://github.com/showdownjs/showdown) under MIT; the notice is included in the workflow code.
+Open Flow bundles [Showdown 2.1.0](https://github.com/showdownjs/showdown) under MIT; the notice is included in the workflow code.
 
 </details>

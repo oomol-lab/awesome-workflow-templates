@@ -3,16 +3,30 @@
 Summarize recent Colt news and save summaries and keywords to NocoDB.
 
 <!-- template-actions:start -->
-[![n8n JSON](../../assets/n8n-json.svg)](templates/summarize-colt-news-in-nocodb.n8n.json)
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/summarize-colt-news-in-nocodb/) [![n8n JSON](../../assets/n8n-json.svg)](templates/summarize-colt-news-in-nocodb.n8n.json)
 <!-- template-actions:end -->
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
+  <img alt="Open Flow workflow" src="preview-light.png">
+</picture>
 
 ## Setup
 
-Create the fields News_Source, Title, Date, Link, Summary and Keywords. Use one format and prevent overlapping runs.
+Connect an AI model and NocoDB v3, enter the base and table IDs in **Create NocoDB record**, and enable persistent State. Create the fields `News_Source`, `Title`, `Date`, `Link`, `Summary` and `Keywords`. Prevent overlapping runs.
 
 ## Behavior
 
-Each Wednesday at 04:32 UTC, fetch the Colt news index, pair dates and links by position, select posts dated within the preceding 70 days, read each article, produce a summary under 70 words and three technical keywords, and create a NocoDB record. The source code uses 70 days although its node name says seven. Previously selected articles can be written again on a later weekly run, as in the source. The original site-specific CSS selectors may need updating if the site changes. Article text is sent to the model.
+Each Wednesday at 04:32 UTC, the workflow fetches the Colt news index, extracts links and dates, selects posts dated within the preceding 70 days, fetches each article, produces a summary under 70 words and three technical keywords, and creates a NocoDB record. Site markup changes may require updating the extraction patterns in **Extract and filter news** and **Extract article text**. Article text is sent to the model.
+
+If a database create has an unknown result, inspect NocoDB and resolve the pending State key before retrying.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow, configure the model, NocoDB credentials, base, table, and a Data Table with `item_key` and `status` text columns.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

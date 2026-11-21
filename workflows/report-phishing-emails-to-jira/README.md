@@ -3,18 +3,30 @@
 Analyze incoming email screenshots and headers for phishing indicators, then create Jira issues with screenshot attachments.
 
 <!-- template-actions:start -->
-[![n8n JSON](../../assets/n8n-json.svg)](templates/report-phishing-emails-to-jira.n8n.json)
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/report-phishing-emails-to-jira/) [![n8n JSON](../../assets/n8n-json.svg)](templates/report-phishing-emails-to-jira.n8n.json)
 <!-- template-actions:end -->
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
+  <img alt="Open Flow workflow" src="preview-light.png">
+</picture>
 
 ## Setup
 
-Connect Gmail, HTML/CSS to Image and Jira. Set the Jira project and issue type in **Choose reporting step**. Set its production HTTPS URL in **Choose reporting step**, and bind Secret Variables `OPENAI_API_KEY` and `N8N_RELAY_TOKEN`.
+Connect Gmail, HTML/CSS to Image and Jira, bind `OPENAI_API_KEY` as a secret variable, and enable persistent State. Set your Jira project key and issue type in **Choose reporting step**, and prevent overlapping executions.
 
 ## Behavior
 
-Incoming HTML emails are rendered as screenshots and analyzed with their headers. Email content is sent to HTML/CSS to Image and OpenAI; protect execution history and review the analysis.
+Incoming HTML emails are rendered as screenshots and analyzed with their headers. A Jira issue contains the subject, recipient, text and model analysis, with `emailScreenshot.png` attached directly via Jira. Email content is sent to HTML/CSS to Image and OpenAI; protect execution history and review the analysis.
 
-If screenshot, issue or attachment creation has an unknown result, inspect the corresponding service. In **Choose reporting step**, enter the pending key and set resolution to confirmed or absent; for a confirmed screenshot enter its URL and for a confirmed issue enter its key. Trigger another poll after resolving it and clear the fields. The two webhook and poll modes must not run in parallel.
+If screenshot, issue or attachment creation has an unknown result, inspect the corresponding service. In **Choose reporting step**, enter the pending key and set resolution to `confirmed` or `absent`; for a confirmed screenshot enter its URL and for a confirmed issue enter its key. Trigger another poll after resolving it and clear the fields.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow and connect Gmail, HTML/CSS to Image, OpenAI and Jira. Set the Jira project and issue type IDs and choose the same Data Table with text columns `item_key` and `status` on all checkpoint nodes. The Microsoft Outlook trigger remains disabled. If a run stops mid-way, inspect the corresponding service and reconcile the matching pending Data Table row before replay.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

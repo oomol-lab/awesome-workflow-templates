@@ -3,18 +3,30 @@
 Identify appointment requests, check calendar availability and reply with suggested times.
 
 <!-- template-actions:start -->
-[![n8n JSON](../../assets/n8n-json.svg)](templates/reply-to-unread-meeting-requests-with-availability.n8n.json)
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/reply-to-unread-meeting-requests-with-availability/) [![n8n JSON](../../assets/n8n-json.svg)](templates/reply-to-unread-meeting-requests-with-availability.n8n.json)
 <!-- template-actions:end -->
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
+  <img alt="Open Flow workflow" src="preview-light.png">
+</picture>
 
 ## Setup
 
-Connect Gmail, Google Calendar and an AI model. Configure the calendar. Prevent overlapping runs for the same message.
+Connect Gmail, Google Calendar and an AI model. Configure the calendar ID and timezone in **Read calendar availability**, and enable persistent State. Prevent overlapping runs for the same message.
 
 ## Behavior
 
-Unread email is classified by subject and snippet. Appointment requests use confirmed timed events from all calendar pages, from one day ago through one month ahead, to suggest a specific time with a 15-minute buffer after prior events. All-day events are excluded, as in the source, so check them separately before accepting a suggestion. The workflow replies to the original email and marks it read after the reply is confirmed. Other messages are left unread. It does not create calendar events. Review suggested times: model output may be wrong, and the workflow does not reserve a slot. Email content and calendar data are sent to the model; protect execution history.
+Unread email is polled and classified by subject and body. Appointment requests use confirmed timed events from all calendar pages, from one day ago through one month ahead, to suggest a specific time with a 15-minute buffer after prior events. All-day events are excluded, so check them separately before accepting a suggestion. The workflow replies to the original email and marks it read after the reply is confirmed. Other messages are left unread. It does not create calendar events. Review suggested times: model output may be wrong, and the workflow does not reserve a slot. Email content and calendar data are sent to the model; protect execution history. Code inputs and outputs must fit 1 MiB.
 
-If a reply or mark-read outcome is unknown, inspect Gmail before replaying.
+If a reply or mark-read outcome is unknown, inspect Gmail before replaying. Enter the reply pending key and `confirmed` or `absent` in **Reserve reply**, replay, and clear the fields.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow, connect Gmail, Google Calendar and OpenAI, configure the calendar, and select a Data Table with `item_key` and `status` text columns.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

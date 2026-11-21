@@ -3,16 +3,28 @@
 Generate a reply to an incoming email, log it and record linked feedback.
 
 <!-- template-actions:start -->
-[![n8n JSON](../../assets/n8n-json.svg)](templates/reply-to-gmail-and-record-feedback.n8n.json)
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/reply-to-gmail-and-record-feedback/) [![n8n JSON](../../assets/n8n-json.svg)](templates/reply-to-gmail-and-record-feedback.n8n.json)
 <!-- template-actions:end -->
 
-## Setup and use
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
+  <img alt="Open Flow workflow" src="preview-light.png">
+</picture>
 
-Configure an existing spreadsheet, or allow the workflow to create one on its first run.
+## Setup
+
+Connect Gmail and Google Sheets, and configure an AI model. Prepare a Google Sheet with `Sheet1` headers `ID`, `Initial message`, `Generated reply`, and `Good response?`, and set the spreadsheet ID in **Append reply log**, **Read reply IDs**, and **Record feedback**. Set the allowed sender filter in **Choose next email**, publish the workflow, and copy the **Receive feedback click** Webhook URL into **Format linked reply**.
 
 ## Behavior
 
-For allowed incoming messages the workflow extracts the reply text, asks the model for a response, sends a Gmail reply to the originating message and records both texts. The response includes Yes/No links; a click records feedback against the corresponding UUID. Initialize an empty configuration with one request before allowing simultaneous requests; automatic creation is not serialized. If creation is uncertain, inspect Google Sheets and configure the created spreadsheet ID before running again. Email content is shared with the model. Lost Gmail or Sheets responses can mean a write succeeded; inspect the destination before retrying.
+For allowed unread messages, the workflow generates a reply, logs the UUID, original text, and reply to Google Sheets, and sends an HTML Gmail reply containing Yes/No feedback links. Clicking a link calls the feedback Webhook and records the response in the matching row. Email content is shared with the model. Lost Gmail or Sheets responses can mean a write succeeded; inspect the destination before retrying.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow, configure Gmail and OpenAI credentials, set the allowed senders in **Configure**, and set a public feedback webhook URL on **On feedback given**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>
