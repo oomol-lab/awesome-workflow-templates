@@ -13,9 +13,10 @@ Scan Reddit discussions on a schedule, filter high-intent buyer or feedback post
 
 ## Requirements
 
+- TikHub connection (OOMOL-provided access or TikHub API token)
 - Slack connection with chat:write permission and access to the destination channel
 - Configured AI model on the Open Flow AI Agent node
-- Target subreddit, search query, and product positioning configured on the Start/Defaults node
+- Target subreddit, search query, and product positioning configured on the Configure Reddit monitor node
 
 ## Setup
 

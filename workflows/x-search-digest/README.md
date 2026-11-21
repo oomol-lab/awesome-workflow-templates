@@ -1,6 +1,6 @@
 # X Search Digest
 
-Run a query through Xquik and receive normalized X posts with a plain-text digest. The workflow reads one response and returns its pagination flag and cursor.
+Search X once via TikHub and receive normalized X posts with a plain-text digest. The workflow reads one response and returns its pagination flag and cursor.
 
 <!-- template-actions:start -->
 [![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/x-search-digest/) [![n8n JSON](../../assets/n8n-json.svg)](templates/x-search-digest.n8n.json)
@@ -8,27 +8,27 @@ Run a query through Xquik and receive normalized X posts with a plain-text diges
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
-  <img alt="Open Flow workflow" src="preview-light.png">
+  <img alt="X Search Digest workflow preview" src="preview-light.png">
 </picture>
 
 ## Setup
 
-In Open Flow, import the JSON and bind **Search X with Xquik → Authentication token** to a secret Variable containing your Xquik API key. The template leaves this value empty. Enter `query` and `limit` when starting the workflow, for example `n8n automation` and `10`.
+Connect TikHub in **Search X via TikHub** (via OOMOL-provided access or your TikHub API token). Enter `query` and `limit` when starting the workflow, for example `n8n automation` and `10`.
 
-Use a nonempty query of up to 4,096 characters and an integer limit from 1 to 10,000. Xquik recommends keeping queries within 512 characters; larger or expensive searches may fail or return fewer rows because of service limits or available quota. See the [official API specification](https://xquik.com/openapi.json) for current search behavior.
+Use a nonempty query of up to 4,096 characters and an integer limit from 1 to 10,000.
 
-## Results
+## Behavior
 
 - `tweets` contains each returned post's `id`, `url`, `text`, `author`, `created_at`, and `metrics`.
 - `digest` numbers posts in response order and separates them with blank lines. No matches returns `No matching X posts found for this query.`
 - `results_count`, `has_more`, and `next_cursor` describe this response. The workflow does not follow the cursor or claim to retrieve every match.
 
-Each run makes one search request, with a 120-second task/request timeout and no workflow retry. HTTP failures or malformed responses stop the run. A repeated run performs another search; there is no saved watermark, deduplication, posting, or model call.
+Each run makes one search request with no workflow retry. Connector failures or malformed responses stop the run. A repeated run performs another search; there is no saved watermark, deduplication, posting, or model call.
 
 <details>
 <summary>In n8n</summary>
 
-In n8n, edit **Search Settings**. Create a Header Auth credential with name `X-API-Key` and your Xquik key as its value, then select it on **Search X with Xquik**. Run **Manual Trigger**.
+Edit **Search Settings**. Create a Header Auth credential with name `X-API-Key` and your Xquik key as its value, then select it on **Search X with Xquik**. Run **Manual Trigger**. Xquik recommends keeping queries within 512 characters and uses a 120-second request timeout.
 
 </details>
 
@@ -37,10 +37,9 @@ In n8n, edit **Search Settings**. Create a Header Auth credential with name `X-A
 
 ## Changes to the source
 
-- Store the API key in the platform's secret configuration instead of an environment expression.
+- Use the TikHub Connector for X search in Open Flow, and store the Xquik API key in n8n's Header Auth credential instead of an environment expression.
 - Validate the query and limit before searching, and reject malformed responses instead of reporting them as no matches.
-- Read the current Xquik `has_next_page`, `createdAt`, and metric fields while retaining the source's older field aliases.
-- Use real line breaks in the digest.
+- Normalize returned posts, metrics, and pagination fields while using real line breaks in the digest.
 
 Adapted from [Monitor X Search with Xquik](https://github.com/enescingoz/awesome-n8n-templates/blob/827110332c21cbe000ab13f6d292d5adb1f1f8db/Instagram_Twitter_Social_Media/Monitor%20X%20Search%20with%20Xquik.json) in [enescingoz/awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates).
 

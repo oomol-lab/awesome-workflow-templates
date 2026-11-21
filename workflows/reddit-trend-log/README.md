@@ -2,10 +2,6 @@
 
 Read a subreddit’s hot posts at 09:00 each day, rank the eligible posts, and log an AI trend analysis and content ideas in Google Sheets.
 
-<!-- template-actions:start -->
-[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/reddit-trend-log/) [![n8n JSON](../../assets/n8n-json.svg)](templates/reddit-trend-log.n8n.json)
-<!-- template-actions:end -->
-
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
   <img alt="Open Flow workflow" src="preview-light.png">
@@ -18,16 +14,20 @@ Create a sheet named `Trend Log` with these headers in columns A–E:
 | Date | Posts | Trends | Content Ideas | Sentiment |
 | --- | --- | --- | --- | --- |
 
-For Open Flow, connect Reddit in **Read hot Reddit posts** and change `SaaS` to your subreddit name without `r/`. Connect Google Sheets in **Save trend analysis** and replace `YOUR_SPREADSHEET_ID`. Select a configured `gpt-4o-mini` model in **Analyze Reddit trends** and confirm the schedule timezone, initially UTC.
+Connect TikHub in **Read hot Reddit posts** (via OOMOL-provided access or your TikHub API token) and change `SaaS` in `request.query.subreddit_name` to your subreddit name without `r/`. Connect Google Sheets in **Save trend analysis** and replace `YOUR_SPREADSHEET_ID`. Select a configured `gpt-4o-mini` model in **Analyze Reddit trends** and confirm the schedule timezone, initially UTC.
+
+## Behavior
 
 The workflow uses the first 20 hot posts, keeps scores strictly greater than 3, sorts by descending score, and analyzes at most 15 posts. One model request and one sheet row are produced per successful run, including an empty eligible list. Trends and content ideas are stored as JSON text. Repeated runs append another row; there is no deduplication or post publishing.
 
-Malformed or incomplete model JSON produces empty trends and ideas with sentiment `unknown`. A failed Reddit or model request stops without writing. The configured limits are two Reddit attempts, three model attempts, and two sheet-write attempts, with intervals of five, two, and one second. Open Flow retries only failures the platform marks safe to retry. A repeated write or request can create another log row.
+Malformed or incomplete model JSON produces empty trends and ideas with sentiment `unknown`. A failed Reddit or model request stops without writing. The configured limits are two Reddit attempts, three model attempts, and two sheet-write attempts, with intervals of five, two, and one second. Open Flow retries only failures the platform marks safe to retry; a repeated write or request can create another log row.
 
 <details>
 <summary>In n8n</summary>
 
-For n8n, connect Reddit in **Reddit: Fetch Posts**, OpenAI in **AI: Quick Analysis**, and Google Sheets in **Log to Sheets**. Set the subreddit, spreadsheet, and `Trend Log` tab, and confirm the workflow timezone before enabling it. N8n retries node errors.
+Connect Reddit in **Reddit: Fetch Posts**, OpenAI in **AI: Quick Analysis**, and Google Sheets in **Log to Sheets**. Set the subreddit, spreadsheet, and `Trend Log` tab, and confirm the workflow timezone before enabling it. n8n retries node errors according to the configured node retry settings.
+
+[Open Flow JSON](templates/reddit-trend-log.openflow.json) · [n8n JSON](templates/reddit-trend-log.n8n.json)
 
 </details>
 
@@ -36,7 +36,7 @@ For n8n, connect Reddit in **Reddit: Fetch Posts**, OpenAI in **AI: Quick Analys
 
 ## Changes to the source
 
-- Use account-backed Reddit reads instead of an unauthenticated public endpoint.
+- Use TikHub Reddit reads in Open Flow (and account-backed Reddit reads in n8n) instead of an unauthenticated public endpoint.
 - Remove server environment variables and provide explicit configuration placeholders.
 - Use the current n8n model node and real line breaks in its post list.
 - Validate numeric post metrics and incomplete analysis, preserve the parse-failure fallback, and write literal sheet values with RAW formatting.

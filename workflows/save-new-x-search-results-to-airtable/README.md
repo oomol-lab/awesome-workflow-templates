@@ -13,18 +13,18 @@ Search recent X posts and append results whose IDs are absent from Airtable.
 
 ## Setup
 
-Connect X with recent-search access and Airtable with read and write access. Set the query in **Search recent X posts** and use the same base and table in both Airtable nodes. The table needs text fields `Tweet`, `Tweet_id`, `Tweet URL`, `Author` and `Time`, plus a numeric `Likes` field.
+Connect TikHub (via OOMOL-provided access or your TikHub API token) and Airtable with read and write access. Set `request.query.keyword` in **Search X via TikHub** and use the same base and table in both Airtable nodes. The table needs text fields `Tweet`, `Tweet_id`, `Tweet URL`, `Author` and `Time`, plus a numeric `Likes` field.
 
 ## Behavior
 
-The workflow requests up to 100 recent X search results and reads every page of existing Airtable records. It compares post IDs against `Tweet_id`, then appends unmatched posts in batches of up to 10. Existing records are not updated. Each new row contains the post text, ID, URL, like count and creation time. As in the source, `Author` refers to the user being replied to, when present; it is not the post author's name. Missing required expanded users stop the run before writing.
+The workflow searches X via TikHub and reads every page of existing Airtable records. It compares post IDs against `Tweet_id`, then appends unmatched posts in batches of up to 10. Existing records are not updated. Each new row contains the post text, ID, URL, like count and creation time. As in the source, `Author` refers to the user being replied to, when present; it is not the post author's name.
 
-X recent search covers a limited time window and may require eligible API access. The original V1 mixed search is replaced with V2 recent search, so ranking and available results may differ. The workflow does not paginate past the first 100 X results. A failed or uncertain batch may already have created rows; earlier batches remain. Inspect the table before retrying, and avoid overlapping runs. Collected results and records must fit execution limits.
+The workflow does not paginate past the first TikHub search page. A failed or uncertain batch may already have created rows; earlier batches remain. Inspect the table before retrying, and avoid overlapping runs. Collected results and records must fit execution limits.
 
 <details>
 <summary>In n8n</summary>
 
-Configure the same query, base, table and credentials in n8n.
+Connect X OAuth2 with recent-search access to **Search recent X posts** and Airtable to both Airtable nodes, and configure the same query, base, and table. X recent search covers a limited time window and may require eligible API access.
 
 </details>
 
@@ -33,7 +33,7 @@ Configure the same query, base, table and credentials in n8n.
 
 ## Changes to the source
 
-- Replace private Airtable identifiers and use current X recent search with user expansions. Read all Airtable pages and compare IDs before writing.
+- Replace private Airtable identifiers and use TikHub X search in Open Flow (and V2 recent search with user expansions in n8n). Read all Airtable pages and compare IDs before writing.
 - Fix source cross-branch references that can fail when the number of existing records differs from search results.
 
 Adapted from [New tweets](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Manual/0005_Manual_Twitter_Create_Triggered.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.

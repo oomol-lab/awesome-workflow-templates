@@ -13,18 +13,18 @@ Monitor a recent X search and post new results to a Mattermost channel.
 
 ## Setup
 
-Connect X with access to recent search and Mattermost with permission to post. Set the query in **Search recent X posts** and channel ID in **Post to Mattermost**. Enable persistent workflow State.
+Connect TikHub (via OOMOL-provided access or your TikHub API token) and Mattermost with permission to post. Set `request.query.keyword` in **Search X via TikHub** and channel ID in **Post to Mattermost**. Enable persistent workflow State.
 
 ## Behavior
 
-Each minute the workflow reads up to 50 recent search results, compares them with the previous nonempty result set and sends the new results in search order until it encounters an already seen ID. Each notification links to the post and includes its text and author. The first run sends the returned results. It remembers only the latest result set; older or delayed results can be missed or repeated. X recent search covers a limited time window and requires an eligible account.
+Each minute the workflow reads recent X search results via TikHub, compares them with the previous nonempty result set and sends the new results in search order until it encounters an already seen ID. Each notification links to the post and includes its text and author. The first run sends the returned results. It remembers only the latest result set; older or delayed results can be missed or repeated.
 
-The workflow advances its saved IDs only after a successful run. If a later notification fails, earlier posts remain and a retry can repeat them. An uncertain post may already have been created; inspect Mattermost before retrying. Avoid overlapping runs, which can race on saved State.
+The workflow advances its saved IDs only after a successful run. If a later notification fails, earlier posts remain and a retry can repeat them. An uncertain post may already have been created; inspect Mattermost before retrying. Avoid overlapping runs, which can race on saved State. The schedule uses UTC.
 
 <details>
 <summary>In n8n</summary>
 
-n8n static data persists in active scheduled runs. In n8n connect X OAuth2 to **Search recent X posts**, Mattermost to **Post to Mattermost**, and set the query and channel. The source inherited its n8n instance timezone; the schedule uses UTC.
+Connect X OAuth2 to **Search recent X posts**, Mattermost to **Post to Mattermost**, and set the query and channel. n8n static data persists in active scheduled runs, and X recent search covers a limited time window requiring an eligible account.
 
 </details>
 
@@ -33,7 +33,7 @@ n8n static data persists in active scheduled runs. In n8n connect X OAuth2 to **
 
 ## Changes to the source
 
-- Use the current X recent-search API and expanded authors, and remove the private channel ID. The former profile link color is not returned by the current API.
+- Use TikHub X search in Open Flow (and the current X recent-search API in n8n), and remove the private channel ID.
 - Keep X IDs as strings and preserve the association between each post and author.
 
 Adapted from [Twitter notifications to Mattermost](https://github.com/Zie619/n8n-workflows/blob/ae8cf6dc5b873cbb4f74587aa9180ed3a9f70682/workflows/Mattermost/0357_Mattermost_Twitter_Automation_Scheduled.json) in [Zie619/n8n-workflows](https://github.com/Zie619/n8n-workflows). The source export does not identify a separate template author or license.
