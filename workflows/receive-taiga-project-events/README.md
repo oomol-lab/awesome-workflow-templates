@@ -3,16 +3,28 @@
 Receive events from a Taiga project.
 
 <!-- template-actions:start -->
-[![n8n JSON](../../assets/n8n-json.svg)](templates/receive-taiga-project-events.n8n.json)
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/receive-taiga-project-events/) [![n8n JSON](../../assets/n8n-json.svg)](templates/receive-taiga-project-events.n8n.json)
 <!-- template-actions:end -->
 
-## Setup and use
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
+  <img alt="Open Flow workflow" src="preview-light.png">
+</picture>
 
-Connect Taiga and select the project in **Taiga Trigger**. Activate it to register the webhook; its URL must be publicly reachable by Taiga. Restrict access to the webhook endpoints.
+## Setup
+
+Connect Taiga in **Receive Taiga project events** and set **projectId** (plus optional **types** and **actions** filters) before activating the workflow.
 
 ## Behavior
 
-The trigger receives project events for all supported resources and operations by default. Event data may appear in execution history. Event details may appear in execution history.
+When a matching project event occurs in Taiga, the trigger emits `entityType`, `action`, `deliveryId`, and `body` to **Return event**.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow, connect Taiga, and set your project ID in **Taiga Trigger**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

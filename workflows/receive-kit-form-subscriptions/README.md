@@ -3,16 +3,28 @@
 Receive subscriber events for a Kit form.
 
 <!-- template-actions:start -->
-[![n8n JSON](../../assets/n8n-json.svg)](templates/receive-kit-form-subscriptions.n8n.json)
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/receive-kit-form-subscriptions/) [![n8n JSON](../../assets/n8n-json.svg)](templates/receive-kit-form-subscriptions.n8n.json)
 <!-- template-actions:end -->
 
-## Setup and use
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
+  <img alt="Open Flow workflow" src="preview-light.png">
+</picture>
 
-Connect Kit and set the form ID in **ConvertKit Trigger**. Activate it to register the legacy webhook; its URL must be publicly reachable by Kit. Restrict access to the webhook endpoints.
+## Setup
+
+Connect Kit (ConvertKit) in **Receive Kit form subscriptions**. **eventName** is preconfigured to `subscriber.form_subscribe`; activate the workflow to register the webhook.
 
 ## Behavior
 
-Legacy deliveries are not signed or retried. Event details may appear in execution history.
+When a subscriber joins a Kit form, the trigger emits `event`, `deliveryId`, and `body` to **Return event**.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow, connect Kit, and select the target form in **ConvertKit Trigger**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

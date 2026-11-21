@@ -3,20 +3,28 @@
 Embed new Notion page text and store the vectors and page metadata in Supabase.
 
 <!-- template-actions:start -->
-[![n8n JSON](../../assets/n8n-json.svg)](templates/embed-notion-pages-to-supabase-store.n8n.json)
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/embed-notion-pages-to-supabase-store/) [![n8n JSON](../../assets/n8n-json.svg)](templates/embed-notion-pages-to-supabase-store.n8n.json)
 <!-- template-actions:end -->
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
+  <img alt="Open Flow workflow" src="preview-light.png">
+</picture>
 
 ## Setup
 
-Create a Supabase table with content text, metadata jsonb and embedding vector(1536) columns, and allow your API role to insert rows. Name the database title property Page, or adjust the title extraction in **Prepare page text**. Prevent overlapping runs.
-
-Bind OPENAI_API_KEY, SUPABASE_API_KEY and SUPABASE_AUTHORIZATION as secret Variables; the last value includes the Bearer prefix.
+Connect Notion in **Watch Notion database** and **Read page markdown**, and set **databaseId** in **Watch Notion database**. Create Secret Variables for your OpenAI API key and Supabase service/anon key and bind them to **Create embeddings** and **Insert page vectors**, and configure your Supabase REST endpoint URL.
 
 ## Behavior
 
-New Notion database pages are handled individually. The workflow reads direct page blocks, excludes images and video, joins available text and stores chunks with page ID, creation time and title. Child blocks are not recursively retrieved. Match the table vector dimension to your configured model. No vector search is included. Page content is sent to OpenAI and Supabase and can appear in execution history. Code input and output ports must each fit 1 MiB.
+Every minute, **Watch Notion database** polls for newly added pages. For each page, **Read page markdown** retrieves the page content as Markdown, **Prepare page chunks** splits it into overlapping 1,000-character chunks, **Create embeddings** generates vectors, and **Insert page vectors** upserts rows into Supabase with idempotent state checkpoints.
 
-Partial insertion needs manual reconciliation.
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow, connect Notion, OpenAI, and Supabase credentials, and select the target Notion database and Supabase table.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

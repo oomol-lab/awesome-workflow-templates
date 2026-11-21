@@ -3,16 +3,28 @@
 Receive new project notifications from Copper.
 
 <!-- template-actions:start -->
-[![n8n JSON](../../assets/n8n-json.svg)](templates/receive-copper-project-events.n8n.json)
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/receive-copper-project-events/) [![n8n JSON](../../assets/n8n-json.svg)](templates/receive-copper-project-events.n8n.json)
 <!-- template-actions:end -->
 
-## Setup and use
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
+  <img alt="Open Flow workflow" src="preview-light.png">
+</picture>
 
-Connect Copper in **Copper Trigger**. Activate it to register the webhook; its URL must be publicly reachable by Copper. Restrict access to the webhook endpoints.
+## Setup
+
+Connect Copper in **Receive Copper project events**. **resourceType** is preconfigured to `project` and **event** to `new`; activate the workflow to register the webhook subscription.
 
 ## Behavior
 
-The trigger checks the Copper shared secret and emits project creation notifications with their IDs. Event details may appear in execution history.
+When a new project is created in Copper, the trigger emits `resourceType`, `event`, `deliveryId`, and `body` to **Return event**.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow and connect Copper in **Copper Trigger**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

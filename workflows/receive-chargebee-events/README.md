@@ -3,16 +3,28 @@
 Receive Chargebee subscription and billing events.
 
 <!-- template-actions:start -->
-[![n8n JSON](../../assets/n8n-json.svg)](templates/receive-chargebee-events.n8n.json)
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/receive-chargebee-events/) [![n8n JSON](../../assets/n8n-json.svg)](templates/receive-chargebee-events.n8n.json)
 <!-- template-actions:end -->
 
-## Setup and use
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
+  <img alt="Open Flow workflow" src="preview-light.png">
+</picture>
 
-Its URL must be publicly reachable by Chargebee. Restrict access to the webhook endpoints.
+## Setup
+
+Connect Chargebee in **Receive Chargebee events**. Leave **eventTypes** unset to receive all Chargebee webhook events, or select specific event types before activating the workflow.
 
 ## Behavior
 
-Event details may appear in execution history.
+Each delivered Chargebee webhook emits the `events` array to **Return event**.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow, connect Chargebee, and configure the Chargebee webhook URL to point to **Chargebee Trigger**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

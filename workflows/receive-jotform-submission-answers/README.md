@@ -3,16 +3,28 @@
 Receive answers when a Jotform form is submitted.
 
 <!-- template-actions:start -->
-[![n8n JSON](../../assets/n8n-json.svg)](templates/receive-jotform-submission-answers.n8n.json)
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/receive-jotform-submission-answers/) [![n8n JSON](../../assets/n8n-json.svg)](templates/receive-jotform-submission-answers.n8n.json)
 <!-- template-actions:end -->
 
-## Setup and use
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
+  <img alt="Open Flow workflow" src="preview-light.png">
+</picture>
 
-Connect Jotform and choose the form in **JotForm Trigger**. Activate it to register the webhook; its URL must be publicly reachable by Jotform. Restrict access to the webhook endpoints.
+## Setup
+
+Connect Jotform in **Receive Jotform submissions** and set **formId** to the target Jotform ID before activating the workflow.
 
 ## Behavior
 
-The trigger resolves form question names and returns answers only, as in the source defaults. Neither endpoint verifies the sender. Submission answers may appear in execution history. Event details may appear in execution history.
+Each new form submission emits `submissionId`, `formId`, and `body` to **Return event**.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow, connect Jotform, and enter your form ID in **Jotform Trigger**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

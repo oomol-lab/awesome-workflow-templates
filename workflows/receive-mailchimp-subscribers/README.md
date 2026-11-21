@@ -3,16 +3,28 @@
 Receive Mailchimp audience subscribe notifications.
 
 <!-- template-actions:start -->
-[![n8n JSON](../../assets/n8n-json.svg)](templates/receive-mailchimp-subscribers.n8n.json)
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/receive-mailchimp-subscribers/) [![n8n JSON](../../assets/n8n-json.svg)](templates/receive-mailchimp-subscribers.n8n.json)
 <!-- template-actions:end -->
 
-## Setup and use
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
+  <img alt="Open Flow workflow" src="preview-light.png">
+</picture>
 
-Connect Mailchimp and select the audience in **Mailchimp Trigger**. Activate it to register the webhook; its URL must be publicly reachable by Mailchimp. Restrict access to the webhook endpoints.
+## Setup
+
+Connect Mailchimp in **Receive Mailchimp subscribers**, set **listId** to your target audience ID, and keep **events** set to `subscribe`.
 
 ## Behavior
 
-The trigger receives subscribe events from API, admin and user sources. Form-encoded nested keys are retained in their parsed form. Subscriber data may appear in execution history. Event details may appear in execution history.
+When a subscriber is added to the configured Mailchimp audience, the trigger emits `event`, `deliveryId`, `listId`, and `body` to **Return event**.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow, connect Mailchimp, and set the audience list ID in **Mailchimp Trigger**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

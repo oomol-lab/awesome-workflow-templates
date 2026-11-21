@@ -1,18 +1,30 @@
 # Email Quiz Certificates from Slides
 
-Create and email a personalized PDF certificate for each passing quiz response.
+Create a personalized PDF certificate for each passing quiz response and email it to the respondent.
 
 <!-- template-actions:start -->
-[![n8n JSON](../../assets/n8n-json.svg)](templates/email-quiz-certificates-from-slides.n8n.json)
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/email-quiz-certificates-from-slides/) [![n8n JSON](../../assets/n8n-json.svg)](templates/email-quiz-certificates-from-slides.n8n.json)
 <!-- template-actions:end -->
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
+  <img alt="Open Flow workflow" src="preview-light.png">
+</picture>
 
 ## Setup
 
-Configure a Google Sheets form-response tab with unique Submission ID, Name, Email and numeric Score columns. Each response must have a unique immutable Submission ID. The template must contain [ NAME ] on page object ID p, and the destination Drive folder must exist. Configure Header Auth on Resume submission. Enter the template and folder IDs in Choose certificate step. Prevent concurrent handling of the same submission.
+Connect Google Sheets in **Watch quiz responses** and set **spreadsheetId** and **sheet** to your quiz response sheet. Connect Google Drive, Google Slides, and Gmail in **Copy Slides template**, **Replace certificate name**, **Export certificate PDF**, and **Email certificate**. Set `templateId` and `folderId` in **Choose certificate step**.
 
-A score strictly greater than 3 creates a copy of the Slides template, replaces [ NAME ] on page p, exports that copy as PDF and sends it to the respondent. Scores of 3 or less do not create or send a certificate. The Gmail connector fetches the temporary PDF transit URL; it must be accessible to the connector, and attachments have a 25 MB decoded limit. A missing name placeholder stops before email is sent.
+## Behavior
 
-If a copy, replacement or email has an unknown result, inspect Drive, Slides or Gmail before retrying. Clear recovery fields after replay. Resume the same submission through the authenticated resume webhook.
+Every minute, **Watch quiz responses** polls for newly added rows. For each row with a passing score (> 3), the workflow copies the Google Slides certificate template, replaces the participant name, exports a PDF, and emails it as an attachment via Gmail with idempotent state checkpoints.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow, connect Google Sheets, Google Drive, Google Slides, and Gmail credentials, and configure the spreadsheet, template presentation, and destination folder.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

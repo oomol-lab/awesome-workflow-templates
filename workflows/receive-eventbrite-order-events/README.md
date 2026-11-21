@@ -3,16 +3,28 @@
 Receive Eventbrite order events and fetch the order details.
 
 <!-- template-actions:start -->
-[![n8n JSON](../../assets/n8n-json.svg)](templates/receive-eventbrite-order-events.n8n.json)
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/receive-eventbrite-order-events/) [![n8n JSON](../../assets/n8n-json.svg)](templates/receive-eventbrite-order-events.n8n.json)
 <!-- template-actions:end -->
 
-## Setup and use
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
+  <img alt="Open Flow workflow" src="preview-light.png">
+</picture>
 
-Configure the Eventbrite organization and event in **Eventbrite Trigger**, and connect Eventbrite. In **Fetch order**, create an HTTP Header Auth credential named Authorization with value Bearer YOUR_EVENTBRITE_TOKEN. Activate the workflow to register the webhook; its URL must be publicly reachable by Eventbrite. Restrict access to the webhook endpoints.
+## Setup
+
+Connect Eventbrite in **Receive Eventbrite order events**, set **organizationId** (and optionally **eventId** to scope to a single event), and keep **actions** set to `order.placed`, `order.updated`, and `order.refunded`.
 
 ## Behavior
 
-The trigger receives placed, updated and refunded order notifications. Neither endpoint authenticates the sender. Order details may appear in execution history. Event details may appear in execution history.
+When a matching order event fires in Eventbrite, the trigger emits `action`, `deliveryId`, `apiUrl`, and `body` to **Return event**.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow, connect Eventbrite, and set your organization ID and optional event ID in **Eventbrite Trigger**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

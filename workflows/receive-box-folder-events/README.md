@@ -3,16 +3,28 @@
 Receive Box folder move and download events.
 
 <!-- template-actions:start -->
-[![n8n JSON](../../assets/n8n-json.svg)](templates/receive-box-folder-events.n8n.json)
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/receive-box-folder-events/) [![n8n JSON](../../assets/n8n-json.svg)](templates/receive-box-folder-events.n8n.json)
 <!-- template-actions:end -->
 
-## Setup and use
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
+  <img alt="Open Flow workflow" src="preview-light.png">
+</picture>
 
-Connect Box and set the folder ID in **Box Trigger**. Activate it to register the webhook; its URL must be publicly reachable by Box. Restrict access to the webhook endpoints.
+## Setup
+
+Connect Box in **Receive Box folder events**, set **targetId** to the folder ID you want to watch, and keep **targetType** set to `folder` and **triggers** set to `FOLDER.MOVED` and `FOLDER.DOWNLOADED` (or customize the event list).
 
 ## Behavior
 
-Event details may appear in execution history.
+When a matching folder event occurs in Box, the trigger emits `event`, `deliveryId`, `targetId`, `targetType`, and the full `body` payload to **Return event**.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow, connect Box, and set the target folder ID and events in **Box Trigger**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

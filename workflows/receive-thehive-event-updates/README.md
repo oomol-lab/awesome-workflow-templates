@@ -3,16 +3,28 @@
 Receive all TheHive events with their original request details.
 
 <!-- template-actions:start -->
-[![n8n JSON](../../assets/n8n-json.svg)](templates/receive-thehive-event-updates.n8n.json)
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/receive-thehive-event-updates/) [![n8n JSON](../../assets/n8n-json.svg)](templates/receive-thehive-event-updates.n8n.json)
 <!-- template-actions:end -->
 
-## Setup and use
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
+  <img alt="Open Flow workflow" src="preview-light.png">
+</picture>
 
-Configure TheHive to send its webhooks to the production URL of **TheHive Trigger**.
+## Setup
+
+Connect TheHive in **Receive TheHive event updates**. **resourceType** is preconfigured to `alert` (switch to `case` if needed) before activating the workflow.
 
 ## Behavior
 
-TheHive Trigger accepts events with operation and objectType and subscribes to all event types. It emits the normalized event name and the full request body, headers and query. Request headers and event details may appear in execution history; restrict access and avoid sending unnecessary secrets.
+When a matching event arrives from TheHive, the trigger emits the `events` array to **Return event**.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow and connect TheHive in **TheHive Trigger**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

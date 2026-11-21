@@ -3,18 +3,28 @@
 Enrich Kit subscribers and their companies in HubSpot.
 
 <!-- template-actions:start -->
-[![n8n JSON](../../assets/n8n-json.svg)](templates/enrich-kit-subscribers-in-hubspot.n8n.json)
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/enrich-kit-subscribers-in-hubspot/) [![n8n JSON](../../assets/n8n-json.svg)](templates/enrich-kit-subscribers-in-hubspot.n8n.json)
 <!-- template-actions:end -->
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
+  <img alt="Open Flow workflow" src="preview-light.png">
+</picture>
 
 ## Setup
 
-Use an existing Clearbit account with Person and Company API access. Connect HubSpot, and bind secret Variables CLEARBIT_API_KEY and HUBSPOT_PRIVATE_APP_TOKEN for the same HubSpot account. One configured form and subscriber email form the processing identity; repeated subscriptions for that email are treated as already processed until reconciled.
+Connect Kit (ConvertKit) in **Receive Kit subscriber** (**eventName** is preconfigured to `subscriber.form_subscribe`). Create Secret Variables for your Clearbit API key and HubSpot private app token and bind them to **Enrich person**, **Enrich company**, **Upsert HubSpot contact**, and **Associate contact and company**. Connect HubSpot in **Find HubSpot company**, **Create HubSpot company**, and **Update HubSpot company**.
 
 ## Behavior
 
-Business subscribers are enriched by email. If a company domain is found, the company is enriched and searched in HubSpot. An existing company is updated; a new company is created and the contact is associated with it. Without a company domain, the contact is upserted. The source excludes several personal email providers. Clearbit errors do not produce a contact.
+When a subscriber joins a Kit form, **Decode subscriber** extracts the email address, **Enrich person** and **Enrich company** look up profile and company details via Clearbit, and the workflow searches, creates or updates the HubSpot company, upserts the HubSpot contact, and associates them with idempotent state checkpoints.
 
-If a write result is unknown, inspect HubSpot before replay. In **Choose enrichment step**, enter the pending key and choose confirmed or absent; supply the created company or contact ID when confirmed. If some writes succeeded, complete the remaining writes manually and mark the row done; if none succeeded, delete the row before replay. Protect webhook access and execution history, which contain personal information.
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow, connect ConvertKit, Clearbit, and HubSpot credentials, and select the target form in **ConvertKit Trigger**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

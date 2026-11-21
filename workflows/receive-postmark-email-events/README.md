@@ -3,16 +3,28 @@
 Receive Postmark bounce and email open events.
 
 <!-- template-actions:start -->
-[![n8n JSON](../../assets/n8n-json.svg)](templates/receive-postmark-email-events.n8n.json)
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/receive-postmark-email-events/) [![n8n JSON](../../assets/n8n-json.svg)](templates/receive-postmark-email-events.n8n.json)
 <!-- template-actions:end -->
 
-## Setup and use
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
+  <img alt="Open Flow workflow" src="preview-light.png">
+</picture>
 
-Connect Postmark in **Postmark Trigger**. Activate it to register the webhook; its URL must be publicly reachable by Postmark. Enable open tracking in Postmark for open events. Restrict access to the webhook endpoints.
+## Setup
+
+Connect Postmark in **Receive Postmark email events**. **messageStream** is preconfigured to `outbound` and **events** to `Bounce` and `Open`; adjust if needed before activating.
 
 ## Behavior
 
-The trigger receives bounce and open events. Bounce content is included, as configured in the source. Neither endpoint authenticates the sender. Event data and bounce content may appear in execution history. Event details may appear in execution history.
+When a Postmark bounce or open event arrives, the trigger emits `recordType`, `deliveryId`, `messageId`, and `body` to **Return event**.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow and connect Postmark in **Postmark Trigger**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

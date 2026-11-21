@@ -3,16 +3,28 @@
 Receive answers submitted to a Wufoo form.
 
 <!-- template-actions:start -->
-[![n8n JSON](../../assets/n8n-json.svg)](templates/receive-wufoo-form-answers.n8n.json)
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/receive-wufoo-form-answers/) [![n8n JSON](../../assets/n8n-json.svg)](templates/receive-wufoo-form-answers.n8n.json)
 <!-- template-actions:end -->
 
-## Setup and use
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
+  <img alt="Open Flow workflow" src="preview-light.png">
+</picture>
 
-Connect Wufoo and choose the form in **Wufoo Trigger**. Activate it to register the webhook; its URL must be publicly reachable by Wufoo. Restrict access to the webhook endpoints.
+## Setup
+
+Connect Wufoo in **Receive Wufoo form answers** and set **formHash** to your target Wufoo form hash before activating the workflow.
 
 ## Behavior
 
-The trigger checks the handshake key and returns answers labeled by form field, as in the source defaults. Answers may appear in execution history. Event details may appear in execution history.
+Each new Wufoo form entry emits `entryId`, `formHash`, and `body` to **Return event**.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow, connect Wufoo, and set the form hash in **Wufoo Trigger**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

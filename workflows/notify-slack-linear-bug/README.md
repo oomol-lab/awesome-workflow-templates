@@ -3,16 +3,28 @@
 Send a Slack notification for Linear issue events that match the configured bug filter.
 
 <!-- template-actions:start -->
-[![n8n JSON](../../assets/n8n-json.svg)](templates/notify-slack-linear-bug.n8n.json)
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/notify-slack-linear-bug/) [![n8n JSON](../../assets/n8n-json.svg)](templates/notify-slack-linear-bug.n8n.json)
 <!-- template-actions:end -->
 
-## Setup and use
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
+  <img alt="Open Flow workflow" src="preview-light.png">
+</picture>
 
-Configure the Slack connection and destination channel for the chosen mode.
+## Setup
+
+Connect Linear in **Watch Linear issues** and **Read Linear issue**, and set **teamId** (plus optional **stateIds**) in **Watch Linear issues**. Connect Slack in **Notify Slack channel** and set the target Slack channel ID.
 
 ## Behavior
 
-The original filter matches events whose priority is at least 3 and whose first label is exactly `bug`. The source calls these urgent bugs, but Linear priority values of 3 and higher need not mean urgent. The message uses the issue URL and title-cased title and mentions the channel. The trigger accepts issue events without checking the action. Inspect Slack before retrying an unknown send result.
+Every minute, **Watch Linear issues** polls for changed issues in the selected team. For each issue, **Read Linear issue** fetches full details, **Read bug event** checks for priority 3 or higher and the `bug` label, and **Notify Slack channel** posts a formatted alert when matched.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow, connect Linear and Slack credentials, select your Linear team in **Linear Trigger**, and set the Slack channel in **Slack**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

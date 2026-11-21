@@ -3,16 +3,28 @@
 Receive PayPal billing plan activation events.
 
 <!-- template-actions:start -->
-[![n8n JSON](../../assets/n8n-json.svg)](templates/receive-paypal-plan-activations.n8n.json)
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/receive-paypal-plan-activations/) [![n8n JSON](../../assets/n8n-json.svg)](templates/receive-paypal-plan-activations.n8n.json)
 <!-- template-actions:end -->
 
-## Setup and use
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
+  <img alt="Open Flow workflow" src="preview-light.png">
+</picture>
 
-Connect PayPal in **PayPal Trigger**. Activate it to register the billing plan activation webhook; its URL must be publicly reachable by PayPal. Restrict access to the webhook endpoints.
+## Setup
+
+Connect PayPal in **Receive PayPal subscription activations**. **events** is preconfigured to `BILLING.SUBSCRIPTION.ACTIVATED`; activate the workflow to register the webhook.
 
 ## Behavior
 
-The trigger asks PayPal to verify each webhook signature before emitting the event. Event details may appear in execution history.
+When a PayPal subscription activation event arrives, the trigger emits `event`, `deliveryId`, `resourceType`, and `body` to **Return event**.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow and connect PayPal in **PayPal Trigger**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

@@ -3,16 +3,28 @@
 Receive push events for a Bitbucket repository.
 
 <!-- template-actions:start -->
-[![n8n JSON](../../assets/n8n-json.svg)](templates/receive-bitbucket-repository-pushes.n8n.json)
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/receive-bitbucket-repository-pushes/) [![n8n JSON](../../assets/n8n-json.svg)](templates/receive-bitbucket-repository-pushes.n8n.json)
 <!-- template-actions:end -->
 
-## Setup and use
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
+  <img alt="Open Flow workflow" src="preview-light.png">
+</picture>
 
-Connect Bitbucket and set the workspace and repository in **Bitbucket Trigger**. Activate it to register a repo:push webhook. Restrict access to the webhook endpoints.
+## Setup
+
+Connect Bitbucket in **Receive Bitbucket push events**, then set **workspace** and **repoSlug** to your target repository. Keep **events** set to `repo:push` (or adjust as needed) and activate the workflow to register the repository webhook.
 
 ## Behavior
 
-The trigger emits each complete repository push event. Event details may appear in execution history.
+When a matching push event arrives from Bitbucket, the trigger emits the `event`, `deliveryId`, `hookUuid`, and full `body` payload to **Return event**.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow, connect Bitbucket, and set the workspace and repository in **Bitbucket Trigger**. The n8n trigger compares the webhook UUID but does not verify a cryptographic signature; restrict access to the webhook endpoint.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

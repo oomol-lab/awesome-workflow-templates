@@ -3,16 +3,28 @@
 Receive change events for a Trello list.
 
 <!-- template-actions:start -->
-[![n8n JSON](../../assets/n8n-json.svg)](templates/receive-trello-list-changes.n8n.json)
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/receive-trello-list-changes/) [![n8n JSON](../../assets/n8n-json.svg)](templates/receive-trello-list-changes.n8n.json)
 <!-- template-actions:end -->
 
-## Setup and use
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
+  <img alt="Open Flow workflow" src="preview-light.png">
+</picture>
 
-Configure Trello credentials and set the list model ID in **Trello Trigger**. Restrict access to the webhook endpoints.
+## Setup
+
+Connect Trello in **Receive Trello list changes** and set **modelId** to the Trello list or board ID you want to watch (with optional **actionTypes** filters) before activating.
 
 ## Behavior
 
-The Trello trigger emits the complete webhook payload for changes on the configured model. Event details may appear in execution history.
+When a change occurs on the watched Trello model, the trigger emits `actionType`, `deliveryId`, `modelId`, and `body` to **Return event**.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow, connect Trello, and enter your list ID in **Trello Trigger**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

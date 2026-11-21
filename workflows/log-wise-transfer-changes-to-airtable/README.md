@@ -3,16 +3,28 @@
 Append transfer details to Airtable when a Wise transfer changes state.
 
 <!-- template-actions:start -->
-[![n8n JSON](../../assets/n8n-json.svg)](templates/log-wise-transfer-changes-to-airtable.n8n.json)
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/log-wise-transfer-changes-to-airtable/) [![n8n JSON](../../assets/n8n-json.svg)](templates/log-wise-transfer-changes-to-airtable.n8n.json)
 <!-- template-actions:end -->
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
+  <img alt="Open Flow workflow" src="preview-light.png">
+</picture>
 
 ## Setup
 
-Create an Airtable table with text fields `Transfer ID`, `Date`, `Reference` and `Amount`. Connect Airtable and select the base and table in **Append transfer record**.
+Connect Wise in **Receive Wise transfer event** and set **profileId** to your Wise profile ID (with **triggerOn** set to `transfers#state-change`). Create a Secret Variable for your Wise API token and bind it to **Read Wise transfer**. Connect Airtable in **Append transfer record** and set the base ID and table ID or name.
 
 ## Behavior
 
-Each transfer state change reads that transfer and appends its ID, creation date, reference and source amount. Multiple changes for the same transfer create separate rows. A webhook acknowledgment does not confirm the Airtable write. If the result of an Airtable write is unknown, inspect the table before replaying the event.
+When a Wise transfer state-change event arrives, **Select transfer** extracts the integer transfer ID, **Read Wise transfer** fetches the full transfer details from the Wise API, **Prepare Airtable record** maps the transfer fields, and **Append transfer record** writes the new row to Airtable.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow, connect Wise and Airtable credentials, set your Wise profile ID in **Wise Trigger**, and select your Airtable base and table in **Airtable**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

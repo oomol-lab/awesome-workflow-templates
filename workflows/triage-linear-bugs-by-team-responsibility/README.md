@@ -3,20 +3,28 @@
 Classify eligible Linear bugs and route them to a responsible team or notify Slack.
 
 <!-- template-actions:start -->
-[![n8n JSON](../../assets/n8n-json.svg)](templates/triage-linear-bugs-by-team-responsibility.n8n.json)
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/triage-linear-bugs-by-team-responsibility/) [![n8n JSON](../../assets/n8n-json.svg)](templates/triage-linear-bugs-by-team-responsibility.n8n.json)
 <!-- template-actions:end -->
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
+  <img alt="Open Flow workflow" src="preview-light.png">
+</picture>
 
 ## Setup
 
-Set the state and bug label IDs in **Only tickets that need to be classified**, and list your exact Linear team names and responsibilities in **Set me up**. Configure the model, Linear and Slack credentials and Slack channel.
-
-Set a Slack channel ID.
+Connect Linear in **Watch Linear issues**, **Read Linear issue**, and **Update issue team**, and set **teamId** in **Watch Linear issues**. Configure `stateId`, `labelId`, and `teams` in **Check issue eligibility**, bind a Secret Variable for your Linear API key to **Find Linear teams**, connect an LLM to **Choose responsible team**, and connect Slack in **Notify Slack**.
 
 ## Behavior
 
-Issue events with the configured state and label and a description without the placeholder are classified against your team descriptions. An exact unique team name updates that issue; Other sends a Slack notification. Invalid or ambiguous team names stop the run. The Linear teams query uses the API default first page. Model results can be wrong; review assignments. Issue contents are sent to the model and may appear in execution history.
+Every minute, **Watch Linear issues** polls for changed issues. For each issue, **Read Linear issue** retrieves full details, **Check issue eligibility** filters by state, label, and non-template description, **Choose responsible team** selects the owning Linear team, and the workflow updates the issue team or notifies Slack with idempotent state checkpoints.
 
-If a Linear update or Slack notification has an unknown result, inspect the issue or channel before retrying.
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow, connect Linear, OpenAI, and Slack credentials, and configure the trigger team and target filters.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

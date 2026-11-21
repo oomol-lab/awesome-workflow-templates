@@ -3,16 +3,28 @@
 Receive supported Jira webhook events.
 
 <!-- template-actions:start -->
-[![n8n JSON](../../assets/n8n-json.svg)](templates/receive-jira-workspace-events.n8n.json)
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/receive-jira-workspace-events/) [![n8n JSON](../../assets/n8n-json.svg)](templates/receive-jira-workspace-events.n8n.json)
 <!-- template-actions:end -->
 
-## Setup and use
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
+  <img alt="Open Flow workflow" src="preview-light.png">
+</picture>
 
-Connect Jira and activate it to register the events supported by the Jira Trigger. The source trigger is unauthenticated by default.
+## Setup
+
+Connect Jira in **Receive Jira workspace events** and select the Jira **sourceId** (and adjust **eventTypes** if needed) before activating the workflow.
 
 ## Behavior
 
-Event details may appear in execution history.
+When a matching Jira issue or comment event arrives, the trigger emits `event`, `deliveryId`, `cloudId`, `issueId`, and `body` to **Return event**.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow, connect Jira in **Jira Trigger**, and activate it to register the webhook. Use optional query authentication where appropriate and restrict endpoint access.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

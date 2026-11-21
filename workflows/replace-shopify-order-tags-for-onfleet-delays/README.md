@@ -3,16 +3,28 @@
 Replace the configured Shopify order tags when its mapped Onfleet task is delayed.
 
 <!-- template-actions:start -->
-[![n8n JSON](../../assets/n8n-json.svg)](templates/replace-shopify-order-tags-for-onfleet-delays.n8n.json)
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/replace-shopify-order-tags-for-onfleet-delays/) [![n8n JSON](../../assets/n8n-json.svg)](templates/replace-shopify-order-tags-for-onfleet-delays.n8n.json)
 <!-- template-actions:end -->
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
+  <img alt="Open Flow workflow" src="preview-light.png">
+</picture>
 
 ## Setup
 
-In **Map task to order and replacement tags**, replace the example mapping with entries from Onfleet task ID to Shopify order GraphQL ID, such as `gid://shopify/Order/123`, and set the complete replacement tags array. Each task must have its own correct mapping. The source leaves the order ID and tags unspecified.
+Connect Onfleet in **Receive Onfleet delay event** (**trigger** is preconfigured to `taskDelayed`). In **Map task to order and replacement tags**, configure `taskOrders` (mapping Onfleet task IDs to Shopify order GraphQL IDs like `gid://shopify/Order/123456`) and `tags`. Create a Secret Variable for your Shopify Admin API access token and bind it to **Replace the Shopify order tags**, and set your Shopify GraphQL endpoint URL.
 
 ## Behavior
 
-A delayed task updates the mapped order. The configured array **replaces all existing tags**, matching the source's update operation; include every tag you intend to retain. Unknown tasks, missing mappings and invalid events stop before the Shopify write. A webhook acknowledgment does not confirm an update. If an update result is uncertain, inspect the order before replaying; no automatic replay or deduplication is added.
+When an Onfleet task is delayed, **Map task to order and replacement tags** resolves the matching Shopify order ID and replacement tags, **Replace the Shopify order tags** updates the order via the Shopify Admin API, and **Confirm the same order** verifies the returned order ID matches.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow, connect Onfleet and Shopify credentials, and configure the target Shopify order ID and tags in **Shopify**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

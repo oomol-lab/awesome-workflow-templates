@@ -3,16 +3,28 @@
 Receive notifications when Keap contacts are added.
 
 <!-- template-actions:start -->
-[![n8n JSON](../../assets/n8n-json.svg)](templates/receive-keap-new-contacts.n8n.json)
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/receive-keap-new-contacts/) [![n8n JSON](../../assets/n8n-json.svg)](templates/receive-keap-new-contacts.n8n.json)
 <!-- template-actions:end -->
 
-## Setup and use
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
+  <img alt="Open Flow workflow" src="preview-light.png">
+</picture>
 
-Connect Keap in **Keap Trigger**. Activate it to register the contact.add hook; its URL must be publicly reachable by Keap. Confirm the subscription is verified in Keap. Restrict access to the webhook endpoints.
+## Setup
+
+Connect Keap in **Receive Keap new contacts**. **eventKey** is preconfigured to `contact.add`; activate the workflow to register the webhook.
 
 ## Behavior
 
-Keap batches changed contacts; the trigger emits each contact ID, event type, timestamp and optional API URL separately. It responds to the registration handshake but does not authenticate later events. Event details may appear in execution history.
+When a new contact is added in Keap, the trigger emits `eventKey`, `deliveryId`, and `body` to **Return event**.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow and connect Keap in **Keap Trigger**.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

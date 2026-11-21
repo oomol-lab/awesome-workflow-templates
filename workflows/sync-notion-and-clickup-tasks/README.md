@@ -3,16 +3,28 @@
 Synchronize Notion page details to ClickUp and ClickUp status changes back to Notion.
 
 <!-- template-actions:start -->
-[![n8n JSON](../../assets/n8n-json.svg)](templates/sync-notion-and-clickup-tasks.n8n.json)
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/sync-notion-and-clickup-tasks/) [![n8n JSON](../../assets/n8n-json.svg)](templates/sync-notion-and-clickup-tasks.n8n.json)
 <!-- template-actions:end -->
 
-## Setup and use
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
+  <img alt="Open Flow workflow" src="preview-light.png">
+</picture>
 
-The Notion data source needs a rich text **ClickUp ID**, title **Task name**, select **Status** and date **Deadline**.
+## Setup
+
+Connect Notion in **Watch Notion tasks**, **Find Notion pages**, and **Update Notion status**, and set **databaseId** in **Watch Notion tasks** and **dataSourceId** in **Find Notion pages**. Connect ClickUp in **Receive ClickUp status event**, **Read ClickUp task**, and **Update ClickUp task**, and set **workspaceId** (and optional **listId**) in **Receive ClickUp status event**.
 
 ## Behavior
 
-A changed Notion page updates the matching ClickUp task’s name, status and deadline when they differ. A ClickUp status event queries every matching Notion page by ClickUp ID and updates its Status select when it differs. Keep status names consistent and monitor both directions for repeated updates. Inspect both systems before retrying an uncertain write.
+Two independent triggers keep Notion and ClickUp in sync: **Watch Notion tasks** polls for updated Notion pages and updates matching ClickUp tasks when name, status, or deadline differ, while **Receive ClickUp status event** listens for `taskStatusUpdated` webhooks and updates matching Notion pages.
+
+<details>
+<summary>In n8n</summary>
+
+Import the n8n workflow, connect Notion and ClickUp credentials, and configure the target Notion database and ClickUp team/workspace.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>

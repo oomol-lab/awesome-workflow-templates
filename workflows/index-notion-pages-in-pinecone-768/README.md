@@ -3,20 +3,28 @@
 Embed new Notion page text and store the vectors and page metadata in Pinecone.
 
 <!-- template-actions:start -->
-[![n8n JSON](../../assets/n8n-json.svg)](templates/index-notion-pages-in-pinecone-768.n8n.json)
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/index-notion-pages-in-pinecone-768/) [![n8n JSON](../../assets/n8n-json.svg)](templates/index-notion-pages-in-pinecone-768.n8n.json)
 <!-- template-actions:end -->
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
+  <img alt="Open Flow workflow" src="preview-light.png">
+</picture>
 
 ## Setup
 
-Create a new Pinecone dense index with 768 dimensions. Configure Notion database access and name its title property Name, or adjust **Prepare page text**. Prevent overlapping runs.
+Connect Notion in **Watch Notion database** and **Read page markdown**, and set **databaseId** in **Watch Notion database**. Create Secret Variables for your Gemini API key and Pinecone API key and bind them to **Create embeddings** and **Insert page vectors**, and set your 768-dimensional Pinecone index host URL.
 
 ## Behavior
 
-Each new page is processed separately. Direct page blocks are read, images and video excluded, and text split into 1,000-character windows with 120-character overlap, up to 20 chunks per page. Gemini Embedding 2 generates 768-dimensional vectors; Pinecone records contain the page ID, creation time, title and chunk text. Existing vectors from other embedding models cannot be compared with these vectors; re-embed into a fresh index. Page content is sent to Gemini and Pinecone and may appear in execution history. Code input and output ports must each fit 1 MiB. No vector search is included.
+Every minute, **Watch Notion database** polls for newly added pages. For each page, **Read page markdown** retrieves the page content as Markdown, **Prepare page chunks** splits it into overlapping chunks, **Create embeddings** generates 768-dimensional embeddings, and **Insert page vectors** upserts vectors into Pinecone with idempotent state checkpoints.
 
-Reconcile partial writes manually.
+<details>
+<summary>In n8n</summary>
 
-The source model text-embedding-004 was retired. The replacement changes the embedding space; both formats explicitly request 768 dimensions. See [Google's embedding documentation](https://ai.google.dev/gemini-api/docs/embeddings) and [Pinecone's upsert API](https://docs.pinecone.io/reference/api/2025-10/data-plane/upsert).
+Import the n8n workflow, connect Notion, Google Gemini, and Pinecone credentials, and select the target Notion database and Pinecone index.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>
