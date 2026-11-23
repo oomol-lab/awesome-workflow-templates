@@ -28,6 +28,14 @@ Complete contact and submission collections must fit the execution platform’s 
 
 Twilio returns submission IDs and statuses. These confirm submission, not delivery to the recipient. A service failure stops later submissions without replaying earlier ones. Check Twilio’s message log before rerunning an uncertain batch; rerunning sends the records again.
 
+## Running an Airtable SMS broadcast
+
+Use this workflow as an Airtable broadcast tool for event reminders, launch announcements, or status updates to a contact list.
+
+To target a subset of contacts instead of the entire table, set the optional `view` or `filterByFormula` inputs on **Read one Airtable contact page**—for example, pointing to a filtered Airtable view or a formula matching opted-in records.
+
+Before broadcasting to a large list, test with a small filtered view first. **Prepare and validate messages** checks every destination number before any Twilio request is sent, so malformed rows stop the run early. Because rerunning the workflow messages all matching records again, filter out already-messaged contacts in Airtable (or check Twilio’s message log) before repeating a broadcast.
+
 <details>
 <summary>In n8n</summary>
 
