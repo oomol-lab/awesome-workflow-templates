@@ -708,6 +708,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Create Formatted Posts on WordPress.com](workflows/create-formatted-wordpress-com-posts/) - Send a title and formatted article to WordPress.com and return the confirmed post ID.
 - [Log Weather Requests and Send an SMS](workflows/log-and-text-city-weather/) - Save an incoming name, number, and city to Airtable and text that number the current weather.
 - [Record Analyzed Retell Calls](workflows/record-analyzed-retell-calls/) - Log signed Retell call transcripts and analysis in Google Sheets, Airtable, or Notion.
+- [Save Medium Gmail Attachments to Google Drive](workflows/save-medium-gmail-attachments-to-drive/) - Pick up new unread messages from a chosen sender and save each attachment that falls within your size limits.
 
 ## Content
 

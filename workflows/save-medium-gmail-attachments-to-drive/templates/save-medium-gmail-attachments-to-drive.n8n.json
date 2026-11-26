@@ -1,0 +1,271 @@
+{
+  "name": "Save Medium Gmail Attachments to Google Drive",
+  "nodes": [
+    {
+      "id": "save-medium-gmail-attachments-to-drive-0",
+      "name": "New unread Gmail messages",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {
+        "simple": false,
+        "filters": {
+          "sender": "approved-sender@example.com",
+          "readStatus": "unread"
+        },
+        "options": {
+          "downloadAttachments": true,
+          "dataPropertyAttachmentsPrefixName": "attachment_"
+        },
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "save-medium-gmail-attachments-to-drive-1",
+      "name": "Separate the Gmail binary attachments",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        260,
+        300
+      ],
+      "parameters": {
+        "fieldToSplitOut": "$binary",
+        "include": "selectedOtherFields",
+        "fieldsToInclude": "id",
+        "options": {}
+      }
+    },
+    {
+      "id": "save-medium-gmail-attachments-to-drive-2",
+      "name": "Measure each attachment",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        520,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function sizeBand(bytes, smallLimit, mediumLimit) {\n  if (\n    !Number.isSafeInteger(smallLimit) ||\n    smallLimit < 0 ||\n    !Number.isSafeInteger(mediumLimit) ||\n    mediumLimit <= smallLimit\n  ) {\n    throw new Error(\"Enter nonnegative byte limits in increasing order\");\n  }\n  if (!Number.isSafeInteger(bytes) || bytes < 0)\n    throw new Error(\"The attachment did not report its byte size\");\n  if (bytes > mediumLimit) return \"large\";\n  if (bytes > smallLimit) return \"medium\";\n  return \"small\";\n}\n\nconst smallBytes = 10000;\nconst mediumBytes = 300000;\nconst measured = [];\nfor (const [index, item] of $input.all().entries()) {\n  const keys = Object.keys(item.binary ?? {});\n  if (keys.length !== 1) throw new Error(\"Expected exactly one Gmail binary per item\");\n  if (typeof item.json.id !== \"string\" || !item.json.id)\n    throw new Error(\"Gmail message ID is missing from the attachment\");\n  const [binaryKey] = keys;\n  const binary = item.binary[binaryKey];\n  const size = (await this.helpers.getBinaryDataBuffer(index, binaryKey)).length;\n  measured.push({\n    json: {\n      messageId: item.json.id,\n      binaryKey,\n      size,\n      band: sizeBand(size, smallBytes, mediumBytes),\n      name: binary.fileName?.trim() || binaryKey,\n      mimeType: binary.mimeType || \"application/octet-stream\",\n    },\n    binary: item.binary,\n    pairedItem: { item: index },\n  });\n}\nreturn measured;\n"
+      }
+    },
+    {
+      "id": "save-medium-gmail-attachments-to-drive-3",
+      "name": "Route attachments by size",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        780,
+        300
+      ],
+      "parameters": {
+        "mode": "rules",
+        "rules": {
+          "values": [
+            {
+              "renameOutput": true,
+              "outputKey": "large",
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "save-medium-gmail-attachments-to-drive-large",
+                    "leftValue": "={{ $json.band }}",
+                    "rightValue": "large",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "renameOutput": true,
+              "outputKey": "medium",
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "save-medium-gmail-attachments-to-drive-medium",
+                    "leftValue": "={{ $json.band }}",
+                    "rightValue": "medium",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      }
+    },
+    {
+      "id": "save-medium-gmail-attachments-to-drive-4",
+      "name": "Skip large attachments",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1040,
+        300
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "save-medium-gmail-attachments-to-drive-5",
+      "name": "Upload the medium attachment to Drive",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1300,
+        300
+      ],
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "file",
+        "operation": "upload",
+        "inputDataFieldName": "={{ $json.binaryKey }}",
+        "name": "={{ $json.name }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DRIVE_FOLDER_ID"
+        },
+        "options": {
+          "simplifyOutput": false
+        }
+      }
+    },
+    {
+      "id": "save-medium-gmail-attachments-to-drive-6",
+      "name": "Skip small attachments",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1560,
+        300
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "save-medium-gmail-attachments-to-drive-7",
+      "name": "Confirm the saved attachment",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1820,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function confirmDriveFile(file, name, mimeType, folder, size) {\n  if (\n    typeof file?.id !== \"string\" ||\n    !file.id ||\n    file.name !== name ||\n    file.mimeType !== mimeType ||\n    !Array.isArray(file.parents) ||\n    !file.parents.includes(folder) ||\n    (file.size !== undefined && file.size !== null && String(file.size) !== String(size))\n  ) {\n    throw new Error(\n      \"Drive did not confirm the expected attachment and destination. Review Drive before replaying.\",\n    );\n  }\n  return file.id;\n}\n\nconst prior = $(\"Measure each attachment\").item.json;\nconst folderId = $(\"Upload the medium attachment to Drive\").params.folderId.value;\nconst id = confirmDriveFile($json, prior.name, prior.mimeType, folderId, prior.size);\nreturn { json: { fileId: id, messageId: prior.messageId, binaryKey: prior.binaryKey } };\n"
+      }
+    }
+  ],
+  "connections": {
+    "New unread Gmail messages": {
+      "main": [
+        [
+          {
+            "node": "Separate the Gmail binary attachments",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Separate the Gmail binary attachments": {
+      "main": [
+        [
+          {
+            "node": "Measure each attachment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Measure each attachment": {
+      "main": [
+        [
+          {
+            "node": "Route attachments by size",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route attachments by size": {
+      "main": [
+        [
+          {
+            "node": "Skip large attachments",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Upload the medium attachment to Drive",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Skip small attachments",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload the medium attachment to Drive": {
+      "main": [
+        [
+          {
+            "node": "Confirm the saved attachment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
