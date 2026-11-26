@@ -237,6 +237,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Kafka Temperature Alert by Vonage SMS](workflows/kafka-temperature-alert-vonage-sms/) - Send a Vonage SMS when a Kafka JSON message reports a temperature above 50.
 - [RabbitMQ Temperature Alert by Vonage SMS](workflows/rabbitmq-temperature-alert-vonage-sms/) - Send a Vonage SMS when a RabbitMQ JSON message reports a temperature above 50.
 - [Back Up n8n Workflows by ID to GitHub](workflows/back-up-n8n-workflows-by-id-to-github/) - Back up n8n workflows to GitHub by workflow ID, updating files only when their contents change.
+- [Email Zero-Budget Project Alerts](workflows/email-zero-budget-project-alerts/) - Send weekly Outlook alerts with the number of open, active external projects that have a zero budgeted cost, grouped by company and cost center.
 
 ## Marketing
 
