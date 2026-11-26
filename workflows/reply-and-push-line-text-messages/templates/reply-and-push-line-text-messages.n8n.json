@@ -1,0 +1,784 @@
+{
+  "name": "Reply to LINE Texts and Send a Manual Push",
+  "nodes": [
+    {
+      "id": "reply-and-push-line-text-messages-hook",
+      "name": "Receive LINE webhook deliveries",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "reply-and-push-line-text-messages",
+        "responseMode": "responseNode",
+        "options": {
+          "rawBody": true
+        }
+      },
+      "position": [
+        0,
+        240
+      ]
+    },
+    {
+      "id": "reply-and-push-line-text-messages-prepare",
+      "name": "Read the original request bytes",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const item = $input.first();\nconst raw = await helpers.getBinaryDataBuffer(0, \"data\");\nconst receivedAt = Date.now();\nreturn [\n  {\n    json: {\n      signature: item.json.headers[\"x-line-signature\"],\n      receivedAt,\n      raw: raw.toString(\"base64\"),\n    },\n    binary: item.binary,\n  },\n];\n"
+      },
+      "position": [
+        216,
+        240
+      ]
+    },
+    {
+      "id": "reply-and-push-line-text-messages-sign",
+      "name": "Sign the request with the LINE channel secret",
+      "type": "n8n-nodes-base.crypto",
+      "typeVersion": 1,
+      "parameters": {
+        "action": "hmac",
+        "type": "SHA256",
+        "binaryData": true,
+        "binaryPropertyName": "data",
+        "dataPropertyName": "digest",
+        "encoding": "base64",
+        "secret": "={{ (()=>{throw Error(\"Configure the LINE channel secret\")})() }}"
+      },
+      "position": [
+        432,
+        240
+      ]
+    },
+    {
+      "id": "reply-and-push-line-text-messages-verify",
+      "name": "Authenticate the LINE delivery",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function compareLineSignature(expected, computed) {\n  if (\n    typeof expected !== \"string\" ||\n    typeof computed !== \"string\" ||\n    !/^[A-Za-z0-9+/]{43}=$/.test(expected) ||\n    computed.length !== 44\n  )\n    return false;\n  let difference = 0;\n  for (let i = 0; i < 44; i++) difference |= expected.charCodeAt(i) ^ computed.charCodeAt(i);\n  return difference === 0;\n}\n\nfunction lineMessages(body, receivedAt) {\n  if (\n    !body ||\n    typeof body.destination !== \"string\" ||\n    !/^U[a-fA-F0-9]{32}$/.test(body.destination) ||\n    !Array.isArray(body.events)\n  )\n    return null;\n  return body.events.flatMap((event) => {\n    if (\n      event?.type !== \"message\" ||\n      event.mode !== \"active\" ||\n      event.message?.type !== \"text\" ||\n      typeof event.message.text !== \"string\" ||\n      event.message.text.length === 0 ||\n      !/^[0-9A-HJKMNP-TV-Z]{26}$/.test(event.webhookEventId) ||\n      typeof event.replyToken !== \"string\" ||\n      !/^[A-Za-z0-9_-]{1,256}$/.test(event.replyToken) ||\n      !Number.isSafeInteger(event.timestamp) ||\n      event.timestamp > receivedAt + 60_000 ||\n      receivedAt - event.timestamp >= 20 * 60_000\n    )\n      return [];\n    const text = \"收到您的訊息 : \" + event.message.text;\n    if (text.length > 5000) return [];\n    return [\n      {\n        key: \"reply:\" + body.destination + \":\" + event.webhookEventId,\n        receivedAt,\n        request: { replyToken: event.replyToken, messages: [{ type: \"text\", text }] },\n      },\n    ];\n  });\n}\n\nconst { signature, digest, raw, receivedAt } = $input.first().json;\nif (!compareLineSignature(signature, digest)) return [{ json: { status: 401, messages: [] } }];\nlet messages;\ntry {\n  messages = lineMessages(JSON.parse(Buffer.from(raw, \"base64\").toString(\"utf8\")), receivedAt);\n} catch {\n  messages = null;\n}\nreturn [{ json: { status: messages === null ? 400 : 200, messages: messages ?? [] } }];\n"
+      },
+      "position": [
+        648,
+        240
+      ]
+    },
+    {
+      "id": "reply-and-push-line-text-messages-ack",
+      "name": "Acknowledge LINE before sending",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "parameters": {
+        "respondWith": "noData",
+        "options": {
+          "responseCode": "={{ $json.status }}"
+        }
+      },
+      "position": [
+        864,
+        240
+      ]
+    },
+    {
+      "id": "reply-and-push-line-text-messages-items",
+      "name": "Prepare the verified text events",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return $input.first().json.messages.map((json) => ({ json, pairedItem: { item: 0 } }));\n"
+      },
+      "position": [
+        1080,
+        240
+      ]
+    },
+    {
+      "id": "reply-and-push-line-text-messages-loop",
+      "name": "Reply to one event at a time",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "position": [
+        1296,
+        240
+      ]
+    },
+    {
+      "id": "reply-and-push-line-text-messages-lookup",
+      "name": "Check for an earlier LINE reply",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_LINE_ATTEMPTS_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "request_key",
+              "condition": "eq",
+              "keyValue": "={{ $json.key }}"
+            }
+          ]
+        },
+        "returnAll": false,
+        "limit": 1
+      },
+      "position": [
+        1512,
+        240
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "id": "reply-and-push-line-text-messages-check",
+      "name": "Is this reply fresh and unattempted?",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const event = $(\"Reply to one event at a time\").all(1, $runIndex)[0].json;\nconst noPrior = Object.keys($input.first().json).length === 0;\nreturn [\n  {\n    json: { ...event, send: noPrior && Date.now() - event.receivedAt < 59000 },\n    pairedItem: { item: 0 },\n  },\n];\n"
+      },
+      "position": [
+        1728,
+        240
+      ]
+    },
+    {
+      "id": "reply-and-push-line-text-messages-route",
+      "name": "Can this LINE reply be sent?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.send }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "position": [
+        1944,
+        240
+      ]
+    },
+    {
+      "id": "reply-and-push-line-text-messages-reserve",
+      "name": "Reserve this LINE reply",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_LINE_ATTEMPTS_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "request_key": "={{ $json.key }}",
+            "status": "pending",
+            "receipt": ""
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "position": [
+        2160,
+        240
+      ]
+    },
+    {
+      "id": "reply-and-push-line-text-messages-reply",
+      "name": "Reply using the event token",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.line.me/v2/bot/message/reply",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $('Is this reply fresh and unattempted?').item.json.request }}",
+        "options": {
+          "timeout": 12000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "position": [
+        2376,
+        240
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "reply-and-push-line-text-messages-status",
+      "name": "Read the LINE reply outcome",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function lineReceipt(reply) {\n  const status = reply?.statusCode;\n  const receipt = reply?.body?.sentMessages;\n  const id = receipt?.[0]?.id;\n  if (\n    status === 200 &&\n    Array.isArray(receipt) &&\n    receipt.length === 1 &&\n    typeof id === \"string\" &&\n    /^\\d{1,40}$/.test(id)\n  ) {\n    return { status: \"accepted\", receipt: id };\n  }\n  if (Number.isInteger(status) && status >= 400 && status < 500 && status !== 409)\n    return { status: \"rejected\", receipt: \"\" };\n  return { status: \"indeterminate\", receipt: \"\" };\n}\n\nconst key = $(\"Is this reply fresh and unattempted?\").item.json.key;\nreturn [{ json: { key, ...lineReceipt($input.first().json) }, pairedItem: { item: 0 } }];\n"
+      },
+      "position": [
+        2592,
+        240
+      ]
+    },
+    {
+      "id": "reply-and-push-line-text-messages-record",
+      "name": "Record the LINE reply outcome",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_LINE_ATTEMPTS_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "request_key",
+              "condition": "eq",
+              "keyValue": "={{ $json.key }}"
+            },
+            {
+              "keyName": "status",
+              "condition": "eq",
+              "keyValue": "pending"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "={{ $json.status }}",
+            "receipt": "={{ $json.receipt }}"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "position": [
+        2808,
+        240
+      ]
+    },
+    {
+      "id": "reply-and-push-line-text-messages-manual",
+      "name": "Start a manual LINE push",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "parameters": {},
+      "position": [
+        0,
+        660
+      ]
+    },
+    {
+      "id": "reply-and-push-line-text-messages-config",
+      "name": "Set one push user, message and retry key",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function linePush(settings) {\n  if (settings.enabled !== true) return [];\n  const { recipient, message, retryKey } = settings;\n  if (\n    typeof recipient !== \"string\" ||\n    !/^U[a-fA-F0-9]{32}$/.test(recipient) ||\n    typeof message !== \"string\" ||\n    !message.trim() ||\n    message.length > 5000 ||\n    typeof retryKey !== \"string\" ||\n    !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(retryKey)\n  ) {\n    throw Error(\"Set one LINE user ID, a non-empty text message and a new UUIDv4 retry key.\");\n  }\n  return [\n    {\n      key: \"push:\" + retryKey.toLowerCase(),\n      retryKey: retryKey.toLowerCase(),\n      request: { to: recipient, messages: [{ type: \"text\", text: message }] },\n    },\n  ];\n}\n\nconst settings = {\n  enabled: false,\n  recipient: \"YOUR_LINE_USER_ID\",\n  message: \"推播測試\",\n  retryKey: \"YOUR_UUID_V4\",\n};\nreturn linePush(settings).map((json) => ({ json }));\n"
+      },
+      "position": [
+        216,
+        660
+      ]
+    },
+    {
+      "id": "reply-and-push-line-text-messages-findPush",
+      "name": "Check for an earlier LINE push",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_LINE_ATTEMPTS_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "request_key",
+              "condition": "eq",
+              "keyValue": "={{ $json.key }}"
+            }
+          ]
+        },
+        "returnAll": false,
+        "limit": 1
+      },
+      "position": [
+        432,
+        660
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "id": "reply-and-push-line-text-messages-firstPush",
+      "name": "Is this push unattempted?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ Object.keys($json).length===0 }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "position": [
+        648,
+        660
+      ]
+    },
+    {
+      "id": "reply-and-push-line-text-messages-holdPush",
+      "name": "Reserve this LINE push",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_LINE_ATTEMPTS_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "request_key": "={{ $('Set one push user, message and retry key').item.json.key }}",
+            "status": "pending",
+            "receipt": ""
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "position": [
+        864,
+        660
+      ]
+    },
+    {
+      "id": "reply-and-push-line-text-messages-push",
+      "name": "Push text to the configured LINE user",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.line.me/v2/bot/message/push",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $('Set one push user, message and retry key').item.json.request }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Line-Retry-Key",
+              "value": "={{ $('Set one push user, message and retry key').item.json.retryKey }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 12000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "position": [
+        1080,
+        660
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "reply-and-push-line-text-messages-pushResult",
+      "name": "Read the LINE push outcome",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function lineReceipt(reply) {\n  const status = reply?.statusCode;\n  const receipt = reply?.body?.sentMessages;\n  const id = receipt?.[0]?.id;\n  if (\n    status === 200 &&\n    Array.isArray(receipt) &&\n    receipt.length === 1 &&\n    typeof id === \"string\" &&\n    /^\\d{1,40}$/.test(id)\n  ) {\n    return { status: \"accepted\", receipt: id };\n  }\n  if (Number.isInteger(status) && status >= 400 && status < 500 && status !== 409)\n    return { status: \"rejected\", receipt: \"\" };\n  return { status: \"indeterminate\", receipt: \"\" };\n}\n\nconst key = $(\"Set one push user, message and retry key\").item.json.key;\nreturn [{ json: { key, ...lineReceipt($input.first().json) }, pairedItem: { item: 0 } }];\n"
+      },
+      "position": [
+        1296,
+        660
+      ]
+    },
+    {
+      "id": "reply-and-push-line-text-messages-recordPush",
+      "name": "Record the LINE push outcome",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_LINE_ATTEMPTS_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "request_key",
+              "condition": "eq",
+              "keyValue": "={{ $json.key }}"
+            },
+            {
+              "keyName": "status",
+              "condition": "eq",
+              "keyValue": "pending"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "={{ $json.status }}",
+            "receipt": "={{ $json.receipt }}"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "position": [
+        1512,
+        660
+      ]
+    }
+  ],
+  "connections": {
+    "Receive LINE webhook deliveries": {
+      "main": [
+        [
+          {
+            "node": "Read the original request bytes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the original request bytes": {
+      "main": [
+        [
+          {
+            "node": "Sign the request with the LINE channel secret",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sign the request with the LINE channel secret": {
+      "main": [
+        [
+          {
+            "node": "Authenticate the LINE delivery",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Authenticate the LINE delivery": {
+      "main": [
+        [
+          {
+            "node": "Acknowledge LINE before sending",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Acknowledge LINE before sending": {
+      "main": [
+        [
+          {
+            "node": "Prepare the verified text events",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare the verified text events": {
+      "main": [
+        [
+          {
+            "node": "Reply to one event at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reply to one event at a time": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Check for an earlier LINE reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check for an earlier LINE reply": {
+      "main": [
+        [
+          {
+            "node": "Is this reply fresh and unattempted?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is this reply fresh and unattempted?": {
+      "main": [
+        [
+          {
+            "node": "Can this LINE reply be sent?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Can this LINE reply be sent?": {
+      "main": [
+        [
+          {
+            "node": "Reserve this LINE reply",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reply to one event at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve this LINE reply": {
+      "main": [
+        [
+          {
+            "node": "Reply using the event token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reply using the event token": {
+      "main": [
+        [
+          {
+            "node": "Read the LINE reply outcome",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the LINE reply outcome": {
+      "main": [
+        [
+          {
+            "node": "Record the LINE reply outcome",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record the LINE reply outcome": {
+      "main": [
+        [
+          {
+            "node": "Reply to one event at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start a manual LINE push": {
+      "main": [
+        [
+          {
+            "node": "Set one push user, message and retry key",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set one push user, message and retry key": {
+      "main": [
+        [
+          {
+            "node": "Check for an earlier LINE push",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check for an earlier LINE push": {
+      "main": [
+        [
+          {
+            "node": "Is this push unattempted?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is this push unattempted?": {
+      "main": [
+        [
+          {
+            "node": "Reserve this LINE push",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve this LINE push": {
+      "main": [
+        [
+          {
+            "node": "Push text to the configured LINE user",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Push text to the configured LINE user": {
+      "main": [
+        [
+          {
+            "node": "Read the LINE push outcome",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the LINE push outcome": {
+      "main": [
+        [
+          {
+            "node": "Record the LINE push outcome",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "none",
+    "saveDataSuccessExecution": "none",
+    "saveManualExecutions": false,
+    "saveExecutionProgress": false
+  },
+  "pinData": {}
+}

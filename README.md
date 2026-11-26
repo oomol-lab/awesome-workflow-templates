@@ -724,6 +724,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Index Notion Pages in Pinecone](workflows/index-notion-pages-in-pinecone/) - Turn new Notion pages into searchable text vectors in Pinecone with Gemini embeddings.
 - [Push a Daily Local Temperature](workflows/push-daily-local-temperature/) - Read the current temperature in Celsius at 9:00 a.m. and send it to one named Pushover device.
 - [Append Typeform Responses to a Nextcloud Workbook](workflows/append-typeform-responses-to-nextcloud-xls/) - Add each signed Typeform response to an existing Excel 97–2003 workbook in Nextcloud.
+- [Reply to LINE Texts and Send a Manual Push](workflows/reply-and-push-line-text-messages/) - Echo signed LINE text messages and send a separate manual push to one configured user.
 
 ## Content
 
