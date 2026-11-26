@@ -717,6 +717,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Export Published WordPress Posts to Drive CSV](workflows/export-published-wordpress-posts-to-drive-csv/) - Save all published WordPress posts as one CSV with their IDs, titles, links, and rendered content.
 - [Summarize Drive Recordings in Notion](workflows/summarize-drive-recordings-in-notion/) - Transcribe new recordings in a Google Drive folder and create a Notion child page with each recording’s title and summary.
 - [Log Dialpad Call Time on a Syncro Ticket](workflows/log-dialpad-call-time-to-syncro/) - Look up the ticket for a finished Dialpad call in Google Sheets and log the call time in Syncro.
+- [Index Notion Pages in Pinecone](workflows/index-notion-pages-in-pinecone/) - Turn new Notion pages into searchable text vectors in Pinecone with Gemini embeddings.
 
 ## Content
 

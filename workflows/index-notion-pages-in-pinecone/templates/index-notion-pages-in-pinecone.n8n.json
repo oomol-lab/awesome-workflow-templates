@@ -1,0 +1,410 @@
+{
+  "name": "Index Notion Pages in Pinecone",
+  "nodes": [
+    {
+      "id": "index-notion-pages-in-pinecone-watch",
+      "type": "n8n-nodes-base.notionTrigger",
+      "typeVersion": 1,
+      "name": "Watch for new Notion pages",
+      "position": [
+        0,
+        240
+      ],
+      "parameters": {
+        "event": "pageAddedToDatabase",
+        "databaseId": {
+          "__rl": true,
+          "mode": "id",
+          "value": ""
+        },
+        "simple": false,
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "index-notion-pages-in-pinecone-blocks",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "name": "Read all Notion page blocks",
+      "position": [
+        230,
+        240
+      ],
+      "parameters": {
+        "authentication": "apiKey",
+        "resource": "block",
+        "operation": "getAll",
+        "blockId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.id }}"
+        },
+        "returnAll": true,
+        "fetchNestedBlocks": true,
+        "simplifyOutput": true
+      }
+    },
+    {
+      "id": "index-notion-pages-in-pinecone-collect",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "name": "Collect each page separately",
+      "position": [
+        460,
+        240
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function notionText(runs) {\n  if (!Array.isArray(runs)) return \"\";\n  return runs.map((part) => part?.plain_text ?? part?.text?.content ?? \"\").join(\"\");\n}\n\nfunction notionPage(page) {\n  const pageId = page?.pageId ?? page?.id;\n  const createdTime = page?.createdTime ?? page?.created_time;\n  if (\n    typeof pageId !== \"string\" ||\n    !/^[\\da-f]{8}(?:-[\\da-f]{4}){3}-[\\da-f]{12}$/i.test(pageId) ||\n    typeof createdTime !== \"string\" ||\n    !Number.isFinite(Date.parse(createdTime))\n  ) {\n    throw new Error(\"Notion returned a page without a valid ID and creation time\");\n  }\n  const properties = Object.values(page.properties ?? {});\n  const title =\n    properties.find((property) => property?.type === \"title\")?.title ??\n    page.properties?.Name?.title;\n  return {\n    pageId: pageId.toLowerCase(),\n    createdTime,\n    pageTitle: notionText(title).trim() || \"Untitled\",\n  };\n}\n\nfunction ignoreNotionChildren(type) {\n  return [\"image\", \"video\", \"child_page\", \"child_database\", \"link_to_page\"].includes(type);\n}\n\nfunction notionBlockText(block) {\n  if ([\"image\", \"video\", \"link_to_page\"].includes(block.type)) return \"\";\n  if (typeof block.content === \"string\") return block.content;\n  const details = block[block.type] ?? {};\n  if (block.type === \"table_row\") return (details.cells ?? []).map(notionText).join(\"\\t\").trim();\n  if (block.type === \"equation\") return details.expression ?? \"\";\n  if (block.type === \"child_page\" || block.type === \"child_database\") return details.title ?? \"\";\n  return notionText(details.rich_text ?? details.text);\n}\n\nfunction readFlattenedNotionDocument(source, blocks) {\n  const blockedParents = new Set();\n  const content = [];\n  for (const block of blocks) {\n    if (!block?.id || !block?.type)\n      throw new Error(\"Notion returned a block without an ID or type\");\n    const parent = block.parent?.block_id ?? block.parent_id;\n    if (blockedParents.has(parent)) {\n      blockedParents.add(block.id);\n      continue;\n    }\n    if (ignoreNotionChildren(block.type)) blockedParents.add(block.id);\n    const text = notionBlockText(block);\n    if (text.trim()) content.push(text);\n  }\n  return { ...source, text: content.join(\"\\n\") };\n}\n\nfunction pineconeNamespace(namespace) {\n  if (typeof namespace !== \"string\" || !/^[A-Za-z0-9_-]{1,128}$/.test(namespace)) {\n    throw new Error(\"Enter a Pinecone namespace for these Gemini embeddings\");\n  }\n  return namespace;\n}\n\nconst indexName = \"notion-pages\";\nconst namespace = pineconeNamespace(\"notion-gemini-embedding-2\");\nif (!/^[a-z0-9](?:[a-z0-9-]{0,43}[a-z0-9])?$/.test(indexName))\n  throw new Error(\"Configure the Pinecone index name\");\nconst grouped = new Map(\n  $(\"Watch for new Notion pages\")\n    .all()\n    .map((entry) => {\n      const page = notionPage(entry.json);\n      return [page.pageId, { page, blocks: [] }];\n    }),\n);\nfor (const { json: block } of $input.all()) {\n  const page = grouped.get(block.root_id?.toLowerCase());\n  if (!page) throw new Error(\"Notion returned a block without a known source page\");\n  page.blocks.push(block);\n}\nconst documents = [...grouped.values()]\n  .map(({ page, blocks }) => readFlattenedNotionDocument(page, blocks))\n  .filter((doc) => doc.text.trim());\nreturn documents.length ? [{ json: { documents, indexName, namespace } }] : [];\n"
+      }
+    },
+    {
+      "id": "index-notion-pages-in-pinecone-vocab",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "name": "Load the tokenizer vocabulary",
+      "position": [
+        690,
+        240
+      ],
+      "parameters": {
+        "options": {
+          "timeout": 90000,
+          "response": {
+            "response": {
+              "responseFormat": "text",
+              "outputPropertyName": "vocabulary"
+            }
+          },
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          }
+        },
+        "authentication": "none",
+        "url": "https://openaipublic.blob.core.windows.net/encodings/cl100k_base.tiktoken",
+        "method": "GET"
+      }
+    },
+    {
+      "id": "index-notion-pages-in-pinecone-digest",
+      "type": "n8n-nodes-base.crypto",
+      "typeVersion": 1,
+      "name": "Verify the vocabulary checksum",
+      "position": [
+        920,
+        240
+      ],
+      "parameters": {
+        "action": "hash",
+        "type": "SHA256",
+        "encoding": "hex",
+        "binaryData": false,
+        "value": "={{ $json.vocabulary }}",
+        "dataPropertyName": "vocabularyHash"
+      }
+    },
+    {
+      "id": "index-notion-pages-in-pinecone-embed",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "name": "Split pages and embed chunks",
+      "position": [
+        1150,
+        240
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function splitNotionDocuments(documents, vocabulary) {\n  const alphabet = \"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/\";\n  const byteValues = Object.fromEntries(\n    Array.from(alphabet, (character, index) => [character, index]),\n  );\n  function decodeBase64(encoded) {\n    let decoded = \"\";\n    for (let offset = 0; offset < encoded.length; offset += 4) {\n      const first = byteValues[encoded[offset]];\n      const second = byteValues[encoded[offset + 1]];\n      const third = byteValues[encoded[offset + 2]];\n      const fourth = byteValues[encoded[offset + 3]];\n      decoded += String.fromCharCode((first << 2) | (second >> 4));\n      if (third !== undefined) decoded += String.fromCharCode(((second & 15) << 4) | (third >> 2));\n      if (fourth !== undefined) decoded += String.fromCharCode(((third & 3) << 6) | fourth);\n    }\n    return decoded;\n  }\n  const ranks = new Map();\n  const tokens = [];\n  for (const line of vocabulary.trimEnd().split(\"\\n\")) {\n    const separator = line.indexOf(\" \");\n    const bytes = decodeBase64(line.slice(0, separator));\n    const rank = Number(line.slice(separator + 1));\n    if (!bytes || rank !== tokens.length) throw new Error(\"Unexpected cl100k_base vocabulary\");\n    ranks.set(bytes, rank);\n    tokens.push(bytes);\n  }\n  if (tokens.length !== 100256) throw new Error(\"Unexpected cl100k_base vocabulary size\");\n  const special = [\n    \"<|endoftext|>\",\n    \"<|fim_prefix|>\",\n    \"<|fim_middle|>\",\n    \"<|fim_suffix|>\",\n    \"<|endofprompt|>\",\n  ];\n  const specialPattern = /(<\\|(?:endoftext|fim_prefix|fim_middle|fim_suffix|endofprompt)\\|>)/g;\n  const piecePattern =\n    /('s|'S|'t|'T|'re|'rE|'Re|'RE|'ve|'vE|'Ve|'VE|'m|'M|'ll|'lL|'Ll|'LL|'d|'D)|[^\\r\\n\\p{L}\\p{N}]?\\p{L}+|\\p{N}{1,3}| ?[^\\s\\p{L}\\p{N}]+[\\r\\n]*|\\s*[\\r\\n]+|\\s+(?!\\S)|\\s+/gu;\n  const encoder = new TextEncoder();\n  const decoder = new TextDecoder();\n  const cache = new Map();\n  function byteString(bytes) {\n    let value = \"\";\n    for (let offset = 0; offset < bytes.length; offset += 2048) {\n      value += String.fromCharCode(...bytes.subarray(offset, offset + 2048));\n    }\n    return value;\n  }\n  function encodePiece(piece) {\n    const cached = cache.get(piece);\n    if (cached) return cached;\n    const bytes = /^[\\x00-\\x7f]+$/.test(piece) ? piece : byteString(encoder.encode(piece));\n    const direct = ranks.get(bytes);\n    if (direct !== undefined) return [bytes];\n    const parts = bytes.split(\"\");\n    const adjacentRanks = parts\n      .slice(1)\n      .map((part, index) => ranks.get(parts[index] + part) ?? Infinity);\n    while (adjacentRanks.length) {\n      let best = Infinity;\n      let index = -1;\n      for (let candidate = 0; candidate < adjacentRanks.length; candidate++) {\n        if (adjacentRanks[candidate] < best) {\n          best = adjacentRanks[candidate];\n          index = candidate;\n        }\n      }\n      if (index < 0) break;\n      parts.splice(index, 2, parts[index] + parts[index + 1]);\n      adjacentRanks.splice(index, 1);\n      if (index > 0)\n        adjacentRanks[index - 1] = ranks.get(parts[index - 1] + parts[index]) ?? Infinity;\n      if (index + 1 < parts.length)\n        adjacentRanks[index] = ranks.get(parts[index] + parts[index + 1]) ?? Infinity;\n    }\n    cache.set(piece, parts);\n    return parts;\n  }\n  const chunks = [];\n  for (const { text, ...page } of documents) {\n    const encoded = [];\n    for (const segment of text.split(specialPattern)) {\n      if (special.includes(segment)) {\n        encoded.push(segment);\n        continue;\n      }\n      for (const piece of segment.matchAll(piecePattern)) {\n        for (const bytes of encodePiece(piece[0])) encoded.push(bytes);\n      }\n    }\n    for (let start = 0, chunkIndex = 0; start < encoded.length; start += 226, chunkIndex++) {\n      const end = Math.min(start + 256, encoded.length);\n      const bytes = encoded.slice(start, end).join(\"\");\n      const chunk = decoder.decode(Uint8Array.from(bytes, (value) => value.charCodeAt(0)));\n      if (chunk.trim())\n        chunks.push({\n          id: page.pageId + \":\" + String(chunkIndex).padStart(5, \"0\"),\n          metadata: { ...page, text: chunk, chunkIndex },\n        });\n      if (end === encoded.length) break;\n    }\n  }\n  if (chunks.length > 64) throw new Error(\"This group of pages exceeds the 64-chunk upsert limit\");\n  return chunks;\n}\n\nfunction embeddingText(metadata) {\n  return \"title: \" + metadata.pageTitle + \" | text: \" + metadata.text;\n}\n\nconst { vocabulary, vocabularyHash } = $input.first().json;\nif (vocabularyHash !== \"223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7\")\n  throw new Error(\"Unexpected tokenizer vocabulary checksum\");\nconst config = $(\"Collect each page separately\").first().json;\nconst chunks = splitNotionDocuments(config.documents, vocabulary);\nconst requests = chunks.map((chunk) => ({\n  model: \"models/gemini-embedding-2\",\n  content: { parts: [{ text: embeddingText(chunk.metadata) }] },\n  output_dimensionality: 768,\n}));\nreturn [{ json: { chunks, requests, indexName: config.indexName, namespace: config.namespace } }];\n"
+      }
+    },
+    {
+      "id": "index-notion-pages-in-pinecone-embedRequest",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "name": "Embed the chunks with Gemini",
+      "position": [
+        1380,
+        240
+      ],
+      "parameters": {
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googlePalmApi",
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-2:batchEmbedContents",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { requests: $json.requests } }}",
+        "options": {
+          "timeout": 90000,
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "index-notion-pages-in-pinecone-vectorPlan",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "name": "Check every embedding dimension",
+      "position": [
+        1610,
+        240
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function checkEmbedding(vector, reportedLength = vector?.length) {\n  if (\n    reportedLength !== 768 ||\n    !Array.isArray(vector) ||\n    vector.length !== 768 ||\n    !vector.every(Number.isFinite) ||\n    !vector.some((value) => value !== 0)\n  ) {\n    throw new Error(\"Gemini did not return a valid 768-dimensional embedding\");\n  }\n  return vector;\n}\n\nconst plan = $(\"Split pages and embed chunks\").first().json;\nconst { embeddings } = $input.first().json;\nif (!Array.isArray(embeddings) || embeddings.length !== plan.chunks.length)\n  throw new Error(\"Gemini returned the wrong number of embeddings\");\nconst vectors = plan.chunks.map((chunk, position) => ({\n  ...chunk,\n  values: checkEmbedding(embeddings[position]?.values),\n}));\nreturn [{ json: { indexName: plan.indexName, namespace: plan.namespace, vectors } }];\n"
+      }
+    },
+    {
+      "id": "index-notion-pages-in-pinecone-index",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "name": "Find the Pinecone index",
+      "position": [
+        1840,
+        240
+      ],
+      "parameters": {
+        "options": {
+          "timeout": 90000,
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          }
+        },
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "pineconeApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Pinecone-Api-Version",
+              "value": "2026-04"
+            }
+          ]
+        },
+        "method": "GET",
+        "url": "={{ \"https://api.pinecone.io/indexes/\" + $json.indexName }}"
+      }
+    },
+    {
+      "id": "index-notion-pages-in-pinecone-indexPlan",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "name": "Verify the Pinecone index",
+      "position": [
+        2070,
+        240
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function pineconeIndex(index) {\n  const match = /^(?:https:\\/\\/)?([a-z0-9-]+(?:\\.[a-z0-9-]+)*\\.pinecone\\.io)\\/?$/i.exec(\n    index?.host ?? \"\",\n  );\n  if (\n    index?.dimension !== 768 ||\n    index.metric !== \"cosine\" ||\n    (index.vector_type != null && index.vector_type !== \"dense\") ||\n    !match ||\n    index.status?.ready !== true\n  ) {\n    throw new Error(\"Configure a ready 768-dimensional dense cosine Pinecone index\");\n  }\n  return \"https://\" + match[1];\n}\n\nconst { vectors, namespace } = $(\"Check every embedding dimension\").first().json;\nconst host = pineconeIndex($input.first().json);\nreturn [{ json: { host, vectors, namespace } }];\n"
+      }
+    },
+    {
+      "id": "index-notion-pages-in-pinecone-save",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "name": "Upsert the page vectors",
+      "position": [
+        2300,
+        240
+      ],
+      "parameters": {
+        "options": {
+          "timeout": 90000,
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          }
+        },
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "pineconeApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Pinecone-Api-Version",
+              "value": "2026-04"
+            }
+          ]
+        },
+        "method": "POST",
+        "url": "={{ $json.host + \"/vectors/upsert\" }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { vectors: $json.vectors, namespace: $json.namespace } }}"
+      }
+    },
+    {
+      "id": "index-notion-pages-in-pinecone-check",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "name": "Confirm the vector count",
+      "position": [
+        2530,
+        240
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const result = $input.first().json.upsertedCount;\nconst { vectors } = $(\"Verify the Pinecone index\").first().json;\nif (result !== vectors.length) throw new Error(\"Pinecone did not confirm every vector\");\nreturn [{ json: { upserted: result } }];\n"
+      }
+    }
+  ],
+  "connections": {
+    "Watch for new Notion pages": {
+      "main": [
+        [
+          {
+            "node": "Read all Notion page blocks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read all Notion page blocks": {
+      "main": [
+        [
+          {
+            "node": "Collect each page separately",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect each page separately": {
+      "main": [
+        [
+          {
+            "node": "Load the tokenizer vocabulary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load the tokenizer vocabulary": {
+      "main": [
+        [
+          {
+            "node": "Verify the vocabulary checksum",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify the vocabulary checksum": {
+      "main": [
+        [
+          {
+            "node": "Split pages and embed chunks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split pages and embed chunks": {
+      "main": [
+        [
+          {
+            "node": "Embed the chunks with Gemini",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embed the chunks with Gemini": {
+      "main": [
+        [
+          {
+            "node": "Check every embedding dimension",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check every embedding dimension": {
+      "main": [
+        [
+          {
+            "node": "Find the Pinecone index",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find the Pinecone index": {
+      "main": [
+        [
+          {
+            "node": "Verify the Pinecone index",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify the Pinecone index": {
+      "main": [
+        [
+          {
+            "node": "Upsert the page vectors",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upsert the page vectors": {
+      "main": [
+        [
+          {
+            "node": "Confirm the vector count",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
