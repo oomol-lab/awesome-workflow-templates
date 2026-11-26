@@ -1,0 +1,177 @@
+{
+  "name": "Extract Text from HTML and a PDF URL",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "df553684-dfa8-4af4-a57b-ebbc9ef2a33f",
+      "name": "When clicking ‘Test workflow’",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "787e9369-abb5-483e-ba43-8837b5c586f9",
+      "name": "Set HTML and PDF URL",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function validateInputs({ html, pdfUrl }) {\n  if (typeof html !== \"string\" || !html.trim()) throw new Error(\"Enter HTML to render as a PDF\");\n  if (typeof pdfUrl !== \"string\" || !/^https?:\\/\\/[^\\s/?#]+(?:[/?#][^\\s]*)?$/i.test(pdfUrl)) {\n    throw new Error(\"Enter a direct HTTP or HTTPS PDF URL\");\n  }\n  return { html, pdfUrl };\n}\nconst html = \"<h1>Hello World</h1>\";\nconst pdfUrl = \"https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf\";\nreturn [{ json: validateInputs({ html, pdfUrl }) }];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "420cfac7-a621-4bf3-bd34-3fee569321e4",
+      "name": "Render HTML as PDF",
+      "type": "@custom-js/n8n-nodes-pdf-toolkit.html2Pdf",
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "operation": "html2Pdf",
+        "htmlInput": "={{ $json.html }}",
+        "outputFilename": "rendered.pdf"
+      },
+      "typeVersion": 1
+    },
+    {
+      "name": "Check rendered PDF bytes",
+      "id": "extract-text-from-html-and-pdf-url-check-pdf",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const item = $input.first();\nif (!item.binary?.data) throw new Error(\"CustomJS did not return a PDF file\");\nconst bytes = await helpers.getBinaryDataBuffer(0, \"data\");\nif (bytes.length < 8 || String.fromCharCode(...bytes.subarray(0, 5)) !== \"%PDF-\") {\n  throw new Error(\"CustomJS did not return a PDF file\");\n}\nreturn [item];\n"
+      },
+      "position": [
+        660,
+        0
+      ]
+    },
+    {
+      "id": "d92f690d-c84d-451d-9ab8-da6f9356e0ca",
+      "name": "Extract text from rendered PDF",
+      "type": "@custom-js/n8n-nodes-pdf-toolkit.PdfToText",
+      "position": [
+        880,
+        0
+      ],
+      "parameters": {
+        "operation": "pdfToText",
+        "resource": "binary",
+        "field_name": "data"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "83c05ec3-1225-41d0-b5b4-f9f6be7619ea",
+      "name": "Extract text from linked PDF",
+      "type": "@custom-js/n8n-nodes-pdf-toolkit.PdfToText",
+      "position": [
+        1100,
+        0
+      ],
+      "parameters": {
+        "operation": "pdfToText",
+        "resource": "url",
+        "field_name": "={{ $('Set HTML and PDF URL').first().json.pdfUrl }}"
+      },
+      "typeVersion": 1
+    },
+    {
+      "name": "Extracted text",
+      "id": "extract-text-from-html-and-pdf-url-result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function checkText(text) {\n  if (typeof text !== \"string\") throw new Error(\"The processor did not return plain text\");\n  return text;\n}\nconst htmlText = checkText($(\"Extract text from rendered PDF\").first().json.output);\nconst urlText = checkText($input.first().json.output);\nreturn [{ json: { htmlText, urlText } }];\n"
+      },
+      "position": [
+        1320,
+        0
+      ]
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "When clicking ‘Test workflow’": {
+      "main": [
+        [
+          {
+            "node": "Set HTML and PDF URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set HTML and PDF URL": {
+      "main": [
+        [
+          {
+            "node": "Render HTML as PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Render HTML as PDF": {
+      "main": [
+        [
+          {
+            "node": "Check rendered PDF bytes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check rendered PDF bytes": {
+      "main": [
+        [
+          {
+            "node": "Extract text from rendered PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract text from rendered PDF": {
+      "main": [
+        [
+          {
+            "node": "Extract text from linked PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract text from linked PDF": {
+      "main": [
+        [
+          {
+            "node": "Extracted text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
