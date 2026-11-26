@@ -1,0 +1,265 @@
+{
+  "name": "Send a Gmail Message With an Inline Image",
+  "nodes": [
+    {
+      "id": "send-gmail-with-inline-image-start",
+      "name": "Run on demand",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "send-gmail-with-inline-image-settings",
+      "name": "Message settings",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [
+        240,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "send-gmail-with-inline-image-from",
+              "name": "from",
+              "type": "string",
+              "value": "sender@example.com"
+            },
+            {
+              "id": "send-gmail-with-inline-image-to",
+              "name": "to",
+              "type": "string",
+              "value": "recipient@example.com"
+            },
+            {
+              "id": "send-gmail-with-inline-image-subject",
+              "name": "subject",
+              "type": "string",
+              "value": "Email with an embedded image"
+            },
+            {
+              "id": "send-gmail-with-inline-image-html",
+              "name": "html",
+              "type": "string",
+              "value": "<p>This email contains an embedded image:</p>\n<p><img src=\"cid:image1\" alt=\"Embedded image\"></p>"
+            },
+            {
+              "id": "send-gmail-with-inline-image-imageUrl",
+              "name": "imageUrl",
+              "type": "string",
+              "value": "https://example.com/path/to/image.jpg"
+            },
+            {
+              "id": "send-gmail-with-inline-image-imageMimeType",
+              "name": "imageMimeType",
+              "type": "string",
+              "value": "image/jpeg"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "send-gmail-with-inline-image-validate",
+      "name": "Validate message settings",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function readSettings(settings) {\n  const { imageUrl, imageMimeType, from, to, subject, html } = settings;\n  const email = /^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9](?:[A-Za-z0-9.-]*[A-Za-z0-9])?$/;\n  if (typeof from !== \"string\" || typeof to !== \"string\" || !email.test(from) || !email.test(to)) {\n    throw new Error(\"Set one sender address and one recipient address\");\n  }\n  if (typeof subject !== \"string\" || /[\\r\\n\\0]/.test(subject)) {\n    throw new Error(\"Set a subject without line breaks\");\n  }\n  if (\n    typeof imageUrl !== \"string\" ||\n    !/^https:\\/\\/[a-z0-9.-]+(?::\\d+)?(?:[/?#][^\\s]*)?$/i.test(imageUrl)\n  ) {\n    throw new Error(\"Set a public HTTPS image URL without embedded credentials\");\n  }\n  if (typeof imageMimeType !== \"string\" || !/^image\\/[a-z0-9.+-]+$/.test(imageMimeType)) {\n    throw new Error(\"Set the image media type, such as image/jpeg or image/png\");\n  }\n  if (\n    typeof html !== \"string\" ||\n    !/\\bsrc\\s*=\\s*(?:\"cid:image1\"|'cid:image1'|cid:image1(?=[\\s>]))/i.test(html)\n  ) {\n    throw new Error(\"Keep the cid:image1 image reference in the HTML body\");\n  }\n  return {\n    imageUrl: imageUrl.replace(/^https:/i, \"https:\"),\n    imageMimeType,\n    from,\n    to,\n    subject,\n    html,\n  };\n}\nreturn [{ json: readSettings($input.first().json) }];\n"
+      }
+    },
+    {
+      "id": "send-gmail-with-inline-image-get",
+      "name": "Get image",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        720,
+        0
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.imageUrl }}",
+        "authentication": "none",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "outputPropertyName": "data"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "send-gmail-with-inline-image-extract",
+      "name": "Convert image to Base64",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        960,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "operation": "binaryToPropery",
+        "destinationKey": "imageBase64"
+      }
+    },
+    {
+      "id": "send-gmail-with-inline-image-mime",
+      "name": "Compose the inline email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function encodeMessage(settings, imageBase64, mediaType) {\n  if (mediaType !== settings.imageMimeType) {\n    throw new Error(\"The downloaded image media type differs from the configured type\");\n  }\n  if (typeof imageBase64 !== \"string\" || !imageBase64) {\n    throw new Error(\"The cloud image download returned no bytes\");\n  }\n  const imageBytes = Buffer.from(imageBase64, \"base64\");\n  if (!imageBytes.length || imageBytes.toString(\"base64\") !== imageBase64) {\n    throw new Error(\"The image bytes are not valid Base64\");\n  }\n  if (imageBytes.length > 25_000_000) {\n    throw new Error(\"The image exceeds the 25 MB email limit\");\n  }\n\n  const words = [];\n  let chunk = \"\";\n  for (const character of settings.subject) {\n    if (Buffer.byteLength(chunk + character, \"utf8\") > 42) {\n      words.push(chunk);\n      chunk = \"\";\n    }\n    chunk += character;\n  }\n  if (chunk) words.push(chunk);\n  const subject = words\n    .map((word) => \"=?UTF-8?B?\" + Buffer.from(word, \"utf8\").toString(\"base64\") + \"?=\")\n    .join(\"\\r\\n \");\n\n  const wrap = (base64) => base64.match(/.{1,76}/g).join(\"\\r\\n\");\n  const boundary = \"openflow-inline-image\";\n  const mime = [\n    \"From: \" + settings.from,\n    \"To: \" + settings.to,\n    \"Subject: \" + subject,\n    \"MIME-Version: 1.0\",\n    'Content-Type: multipart/related; type=\"text/html\"; boundary=\"' + boundary + '\"',\n    \"\",\n    \"--\" + boundary,\n    \"Content-Type: text/html; charset=UTF-8\",\n    \"Content-Transfer-Encoding: base64\",\n    \"\",\n    wrap(Buffer.from(settings.html, \"utf8\").toString(\"base64\")),\n    \"\",\n    \"--\" + boundary,\n    \"Content-Type: \" + mediaType,\n    \"Content-Transfer-Encoding: base64\",\n    \"Content-Disposition: inline\",\n    \"Content-ID: <image1>\",\n    \"\",\n    wrap(imageBase64),\n    \"\",\n    \"--\" + boundary + \"--\",\n    \"\",\n  ].join(\"\\r\\n\");\n  if (Buffer.byteLength(mime, \"utf8\") > 35_000_000) {\n    throw new Error(\"The encoded email exceeds the Gmail MIME size limit\");\n  }\n  return {\n    raw: Buffer.from(mime, \"utf8\")\n      .toString(\"base64\")\n      .replace(/\\+/g, \"-\")\n      .replace(/\\//g, \"_\")\n      .replace(/=+$/, \"\"),\n  };\n}\nconst settings = $(\"Validate message settings\").first().json;\nconst media = $(\"Get image\").first().binary?.data?.mimeType?.split(\";\")[0]?.trim()?.toLowerCase();\nreturn [{ json: encodeMessage(settings, $input.first().json.imageBase64, media) }];\n"
+      }
+    },
+    {
+      "id": "send-gmail-with-inline-image-send",
+      "name": "Send the Gmail message",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1440,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://gmail.googleapis.com/gmail/v1/users/me/messages/send",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "gmailOAuth2",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "send-gmail-with-inline-image-receipt",
+      "name": "Confirm Gmail accepted the message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1680,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function readReceipt(messageId, threadId) {\n  if (typeof messageId !== \"string\" || !messageId.trim()) {\n    throw new Error(\"Gmail did not return a message ID\");\n  }\n  return {\n    messageId,\n    threadId: typeof threadId === \"string\" && threadId ? threadId : null,\n  };\n}\nconst { id, threadId } = $input.first().json;\nreturn [{ json: readReceipt(id, threadId) }];\n"
+      }
+    }
+  ],
+  "connections": {
+    "Run on demand": {
+      "main": [
+        [
+          {
+            "node": "Message settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message settings": {
+      "main": [
+        [
+          {
+            "node": "Validate message settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate message settings": {
+      "main": [
+        [
+          {
+            "node": "Get image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get image": {
+      "main": [
+        [
+          {
+            "node": "Convert image to Base64",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert image to Base64": {
+      "main": [
+        [
+          {
+            "node": "Compose the inline email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compose the inline email": {
+      "main": [
+        [
+          {
+            "node": "Send the Gmail message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send the Gmail message": {
+      "main": [
+        [
+          {
+            "node": "Confirm Gmail accepted the message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}

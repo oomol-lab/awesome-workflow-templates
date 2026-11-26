@@ -64,6 +64,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Events](#events)
 - [Ecommerce](#ecommerce)
 - [CRM](#crm)
+- [Email](#email)
 - [Contribute](#contribute)
 - [Translations](#translations)
 - [Licensing](#licensing)
@@ -1225,6 +1226,10 @@ A growing collection of automation workflows for connecting apps and getting rep
 
 - [Replicate HubSpot Deal Line Items](workflows/hubspot-replicate-deal-line-items/) - Copy line items from a won HubSpot deal to a newly created deal via HubSpot batch APIs and send a Slack confirmation.
 - [Enrich Intercom Contacts with ExactBuyer](workflows/intercom-contact-enrichment-exactbuyer/) - Listen for Intercom contact.user.created webhooks, enrich new contacts with ExactBuyer profile data, and update the Intercom contact record.
+
+## Email
+
+- [Send a Gmail Message With an Inline Image](workflows/send-gmail-with-inline-image/) - Send an HTML email in Gmail with a cloud-hosted image embedded in the message body.
 
 ## Contribute
 

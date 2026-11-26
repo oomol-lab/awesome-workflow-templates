@@ -1,0 +1,193 @@
+{
+  "kind": "open-flow-workflow",
+  "version": 1,
+  "name": "Send a Gmail Message With an Inline Image",
+  "content": {
+    "modelVersion": 16,
+    "document": {
+      "bindings": {},
+      "graph": {
+        "nodes": {
+          "n_fa5a24f4d0e433a4": {
+            "name": "Run on demand",
+            "kind": "start",
+            "inputDefs": []
+          },
+          "n_d3f65fae5430862a": {
+            "inputs": {
+              "from": {
+                "kind": "value",
+                "value": "sender@example.com"
+              },
+              "to": {
+                "kind": "value",
+                "value": "recipient@example.com"
+              },
+              "subject": {
+                "kind": "value",
+                "value": "Email with an embedded image"
+              },
+              "html": {
+                "kind": "value",
+                "value": "<p>This email contains an embedded image:</p>\n<p><img src=\"cid:image1\" alt=\"Embedded image\"></p>"
+              },
+              "imageUrl": {
+                "kind": "value",
+                "value": "https://example.com/path/to/image.jpg"
+              },
+              "imageMimeType": {
+                "kind": "value",
+                "value": "image/jpeg"
+              }
+            },
+            "name": "Send the Gmail message",
+            "kind": "task",
+            "task": {
+              "inputs": [
+                {
+                  "jsonSchema": {
+                    "type": "string"
+                  },
+                  "nullable": false,
+                  "handle": "from"
+                },
+                {
+                  "jsonSchema": {
+                    "type": "string"
+                  },
+                  "nullable": false,
+                  "handle": "to"
+                },
+                {
+                  "jsonSchema": {
+                    "type": "string"
+                  },
+                  "nullable": false,
+                  "handle": "subject"
+                },
+                {
+                  "jsonSchema": {
+                    "type": "string"
+                  },
+                  "nullable": false,
+                  "handle": "html"
+                },
+                {
+                  "jsonSchema": {
+                    "type": "string"
+                  },
+                  "nullable": false,
+                  "handle": "imageUrl"
+                },
+                {
+                  "jsonSchema": {
+                    "type": "string"
+                  },
+                  "nullable": false,
+                  "handle": "imageMimeType"
+                }
+              ],
+              "outputs": [
+                {
+                  "jsonSchema": {
+                    "type": "string"
+                  },
+                  "nullable": false,
+                  "handle": "messageId"
+                },
+                {
+                  "jsonSchema": {
+                    "type": "string"
+                  },
+                  "nullable": true,
+                  "handle": "threadId"
+                }
+              ],
+              "name": "Send the Gmail message",
+              "moduleId": "n_77194068baa7fa3b",
+              "capabilities": [
+                {
+                  "kind": "connector",
+                  "mode": "independent",
+                  "actions": [
+                    {
+                      "action": "gmail.send_email"
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          "n_07bee78b0d5de988": {
+            "name": "Gmail receipt",
+            "kind": "outputs",
+            "outputDefs": [
+              {
+                "jsonSchema": {
+                  "type": "string"
+                },
+                "nullable": false,
+                "handle": "messageId"
+              },
+              {
+                "jsonSchema": {
+                  "type": "string"
+                },
+                "nullable": true,
+                "handle": "threadId"
+              }
+            ],
+            "outputMappings": {
+              "messageId": {
+                "kind": "sources",
+                "sources": [
+                  {
+                    "kind": "node",
+                    "nodeId": "n_d3f65fae5430862a",
+                    "output": "messageId"
+                  }
+                ]
+              },
+              "threadId": {
+                "kind": "sources",
+                "sources": [
+                  {
+                    "kind": "node",
+                    "nodeId": "n_d3f65fae5430862a",
+                    "output": "threadId"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "edges": [
+          {
+            "source": "n_fa5a24f4d0e433a4",
+            "target": "n_d3f65fae5430862a"
+          },
+          {
+            "source": "n_d3f65fae5430862a",
+            "target": "n_07bee78b0d5de988"
+          }
+        ]
+      }
+    },
+    "modules": {
+      "n_77194068baa7fa3b": {
+        "name": "Send the Gmail message",
+        "imports": [],
+        "source": "function readSettings(settings) {\n  const { imageUrl, imageMimeType, from, to, subject, html } = settings;\n  const email = /^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9](?:[A-Za-z0-9.-]*[A-Za-z0-9])?$/;\n  if (typeof from !== \"string\" || typeof to !== \"string\" || !email.test(from) || !email.test(to)) {\n    throw new Error(\"Set one sender address and one recipient address\");\n  }\n  if (typeof subject !== \"string\" || /[\\r\\n\\0]/.test(subject)) {\n    throw new Error(\"Set a subject without line breaks\");\n  }\n  if (\n    typeof imageUrl !== \"string\" ||\n    !/^https:\\/\\/[a-z0-9.-]+(?::\\d+)?(?:[/?#][^\\s]*)?$/i.test(imageUrl)\n  ) {\n    throw new Error(\"Set a public HTTPS image URL without embedded credentials\");\n  }\n  if (typeof imageMimeType !== \"string\" || !/^image\\/[a-z0-9.+-]+$/.test(imageMimeType)) {\n    throw new Error(\"Set the image media type, such as image/jpeg or image/png\");\n  }\n  if (\n    typeof html !== \"string\" ||\n    !/\\bsrc\\s*=\\s*(?:\"cid:image1\"|'cid:image1'|cid:image1(?=[\\s>]))/i.test(html)\n  ) {\n    throw new Error(\"Keep the cid:image1 image reference in the HTML body\");\n  }\n  return {\n    imageUrl: imageUrl.replace(/^https:/i, \"https:\"),\n    imageMimeType,\n    from,\n    to,\n    subject,\n    html,\n  };\n}\n\nfunction readReceipt(messageId, threadId) {\n  if (typeof messageId !== \"string\" || !messageId.trim()) {\n    throw new Error(\"Gmail did not return a message ID\");\n  }\n  return {\n    messageId,\n    threadId: typeof threadId === \"string\" && threadId ? threadId : null,\n  };\n}\nexport default async function sendEmail(input, context) {\n  const settings = readSettings(input);\n  const result = await context.actions.call(\"gmail.send_email\", {\n    fromEmail: settings.from,\n    to: settings.to,\n    subject: settings.subject,\n    body: settings.html,\n    isHtml: true,\n    attachments: [\n      {\n        fileUrl: settings.imageUrl,\n        mimeType: settings.imageMimeType,\n        contentId: \"image1\",\n        disposition: \"inline\",\n      },\n    ],\n  });\n  return readReceipt(result.messageId, result.threadId);\n}\n"
+      }
+    },
+    "features": []
+  },
+  "presentation": {
+    "designer": {
+      "version": 1,
+      "flow": {
+        "direction": "vertical"
+      }
+    }
+  }
+}
