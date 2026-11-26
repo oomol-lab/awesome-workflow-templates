@@ -1,0 +1,299 @@
+{
+  "name": "Describe Webpage Screenshots with URLbox",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "8b3eb3f4-b31a-48f0-94bb-35379d07a81f",
+      "name": "Manual Execution",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "name": "Set the webpage and instructions",
+      "id": "describe-webpage-screenshots-with-urlbox-config",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function configure({ website_name, url, instruction }) {\n  if (\n    typeof website_name !== \"string\" ||\n    !website_name.trim() ||\n    typeof instruction !== \"string\" ||\n    !instruction.trim()\n  ) {\n    throw new Error(\"Enter the webpage name and description instructions\");\n  }\n  if (typeof url !== \"string\" || !/^https?:\\/\\/[^\\s/?#@]+(?:[/?#][^\\s]*)?$/i.test(url)) {\n    throw new Error(\"Enter a public HTTP or HTTPS webpage URL\");\n  }\n  return {\n    website_name: website_name.trim(),\n    url,\n    instruction,\n    request: { url, full_page: true, format: \"png\", save_hashes: true },\n  };\n}\nconst settings = {\n  website_name: \"n8n\",\n  url: \"https://n8n.io/\",\n  instruction:\n    \"Your input is a screenshot of a website. Describe the content of the website in one sentence.\",\n};\nreturn [{ json: configure(settings) }];\n"
+      },
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "id": "ca9f0357-a596-4453-b351-fdd8d47c81ad",
+      "name": "Capture the page with URLbox",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.urlbox.com/v1/render/sync",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.request) }}",
+        "options": {
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "timeout": 30000,
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "name": "Check screenshot URL and digest",
+      "id": "describe-webpage-screenshots-with-urlbox-render",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function checkRender(body) {\n  const url = body?.renderUrl;\n  const digest = body?.hashes?.file;\n  if (\n    typeof url !== \"string\" ||\n    !/^https:\\/\\/renders\\.urlbox\\.com\\/[^?#\\s]+(?:\\?[^#\\s]*)?$/.test(url)\n  ) {\n    throw new Error(\"URLbox did not return a trusted screenshot URL\");\n  }\n  if (typeof digest !== \"string\" || !/^[a-f0-9]{64}$/i.test(digest)) {\n    throw new Error(\"URLbox did not return a valid screenshot digest\");\n  }\n  if (!Number.isSafeInteger(body.size) || body.size < 8 || body.size > 2 * 1024 * 1024) {\n    throw new Error(\"URLbox screenshot size is invalid or exceeds 2 MiB\");\n  }\n  return { url, digest: digest.toLowerCase(), size: body.size };\n}\nreturn { json: checkRender($input.item.json) };\n"
+      },
+      "position": [
+        660,
+        0
+      ]
+    },
+    {
+      "name": "Download screenshot",
+      "id": "describe-webpage-screenshots-with-urlbox-download",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.url }}",
+        "options": {
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "timeout": 30000,
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "outputPropertyName": "data"
+            }
+          }
+        }
+      },
+      "position": [
+        880,
+        0
+      ]
+    },
+    {
+      "name": "Check the downloaded PNG",
+      "id": "describe-webpage-screenshots-with-urlbox-inspect",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function checkImage({ bytes, mime, size }) {\n  const signature = [137, 80, 78, 71, 13, 10, 26, 10];\n  if (\n    mime !== \"image/png\" ||\n    bytes.length !== size ||\n    !signature.every((value, index) => bytes[index] === value)\n  ) {\n    throw new Error(\"Downloaded screenshot is not the expected PNG\");\n  }\n}\nconst item = $input.item;\nconst bytes = await helpers.getBinaryDataBuffer($itemIndex, \"data\");\ncheckImage({ bytes, mime: item.binary.data.mimeType, size: item.json.size });\nreturn item;\n"
+      },
+      "position": [
+        1100,
+        0
+      ]
+    },
+    {
+      "name": "Hash the screenshot",
+      "id": "describe-webpage-screenshots-with-urlbox-hash",
+      "type": "n8n-nodes-base.crypto",
+      "typeVersion": 1,
+      "parameters": {
+        "action": "hash",
+        "type": "SHA256",
+        "binaryData": true,
+        "binaryPropertyName": "data",
+        "encoding": "hex",
+        "dataPropertyName": "actualDigest"
+      },
+      "position": [
+        1320,
+        0
+      ]
+    },
+    {
+      "name": "Verify screenshot digest",
+      "id": "describe-webpage-screenshots-with-urlbox-restore",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const { actualDigest, digest } = $input.item.json;\nif (actualDigest !== digest) throw new Error(\"Screenshot digest does not match URLbox\");\nconst screenshot = $(\"Check the downloaded PNG\").item.binary;\nreturn { json: {}, binary: screenshot };\n"
+      },
+      "position": [
+        1540,
+        0
+      ]
+    },
+    {
+      "id": "d2b81b41-1497-4733-8130-67f8de0acff4",
+      "name": "Describe the screenshot",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "position": [
+        1760,
+        0
+      ],
+      "parameters": {
+        "resource": "image",
+        "operation": "analyze",
+        "modelId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "gpt-4.1-mini"
+        },
+        "inputType": "base64",
+        "binaryPropertyName": "data",
+        "text": "={{ $('Set the webpage and instructions').item.json.instruction }}",
+        "simplify": false,
+        "options": {
+          "maxTokens": 300,
+          "detail": "auto"
+        }
+      },
+      "typeVersion": 1.8
+    },
+    {
+      "name": "Webpage description",
+      "id": "describe-webpage-screenshots-with-urlbox-output",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function checkDescription(value) {\n  if (typeof value !== \"string\" || !value.trim() || value.length > 4096) {\n    throw new Error(\"The model did not return a complete description\");\n  }\n  return value.trim();\n}\nconst reply = $input.item.json.choices?.[0];\nif (reply?.finish_reason !== \"stop\" || reply.message?.refusal)\n  throw new Error(\"The model did not complete screenshot analysis\");\nconst { website_name, url } = $(\"Set the webpage and instructions\").item.json;\nreturn { json: { website_name, url, description: checkDescription(reply.message?.content) } };\n"
+      },
+      "position": [
+        1980,
+        0
+      ]
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Manual Execution": {
+      "main": [
+        [
+          {
+            "node": "Set the webpage and instructions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set the webpage and instructions": {
+      "main": [
+        [
+          {
+            "node": "Capture the page with URLbox",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Capture the page with URLbox": {
+      "main": [
+        [
+          {
+            "node": "Check screenshot URL and digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check screenshot URL and digest": {
+      "main": [
+        [
+          {
+            "node": "Download screenshot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download screenshot": {
+      "main": [
+        [
+          {
+            "node": "Check the downloaded PNG",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check the downloaded PNG": {
+      "main": [
+        [
+          {
+            "node": "Hash the screenshot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hash the screenshot": {
+      "main": [
+        [
+          {
+            "node": "Verify screenshot digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify screenshot digest": {
+      "main": [
+        [
+          {
+            "node": "Describe the screenshot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Describe the screenshot": {
+      "main": [
+        [
+          {
+            "node": "Webpage description",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
