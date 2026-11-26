@@ -164,6 +164,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Copy Missing Contacts Between Pipedrive and HubSpot](workflows/copy-missing-contacts-between-pipedrive-and-hubspot/) - Compare both CRMs by email on a schedule and add contacts that exist in only one account.
 - [Enrich New HubSpot Contacts with ExactBuyer](workflows/enrich-new-hubspot-contacts-with-exactbuyer/) - Look up each new HubSpot contact by email and update that same record with the available ExactBuyer details.
 - [Follow Up with Typeform Leads](workflows/follow-up-with-typeform-leads/) - Save Typeform leads in HubSpot and email scheduling and presentation links to respondents who say they are interested.
+- [Verify and Enrich Form Leads in HubSpot](workflows/verify-and-enrich-form-leads-in-hubspot/) - Collect business email addresses and save matching professional and company details to HubSpot after Hunter verifies the email.
 
 ## Operations
 

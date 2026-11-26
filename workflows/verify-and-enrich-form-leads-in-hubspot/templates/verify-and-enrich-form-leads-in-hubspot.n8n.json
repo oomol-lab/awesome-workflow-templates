@@ -1,0 +1,424 @@
+{
+  "name": "Verify and Enrich Form Leads in HubSpot",
+  "nodes": [
+    {
+      "id": "verify-and-enrich-form-leads-in-hubspot-form",
+      "name": "Receive the contact form",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2,
+      "parameters": {
+        "formTitle": "Contact us",
+        "formDescription": "Enter your business email so our team can follow up.",
+        "responseMode": "onReceived",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Business email",
+              "fieldType": "email",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {
+          "path": "verify-and-enrich-form-leads-in-hubspot",
+          "buttonLabel": "Submit"
+        }
+      },
+      "position": [
+        0,
+        240
+      ]
+    },
+    {
+      "id": "verify-and-enrich-form-leads-in-hubspot-email",
+      "name": "Read the business email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function formEmail(value) {\n  const email = typeof value === \"string\" ? value.trim().toLowerCase() : \"\";\n  if (\n    email.length > 254 ||\n    !/^[a-z0-9.!#$%&'*+/=?^_`{|}~-]+@(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z]{2,63}$/.test(\n      email,\n    )\n  ) {\n    throw new Error(\"A business email address is required\");\n  }\n  return email;\n}\nreturn [{ json: { email: formEmail($input.first().json[\"Business email\"]) } }];\n"
+      },
+      "position": [
+        220,
+        240
+      ]
+    },
+    {
+      "id": "verify-and-enrich-form-leads-in-hubspot-verify",
+      "name": "Verify the email with Hunter",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ 'https://api.hunter.io/v2/email-verifier?email=' + encodeURIComponent($('Read the business email').first().json.email) }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 25000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "position": [
+        440,
+        240
+      ]
+    },
+    {
+      "id": "verify-and-enrich-form-leads-in-hubspot-verified",
+      "name": "Check the email verification",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function verify({ email, result }) {\n  const status = result?.status;\n  if (typeof status !== \"string\") throw new Error(\"Hunter did not return a verification status\");\n  if (status !== \"valid\") return { valid: false };\n  if (typeof result.email !== \"string\" || result.email.toLowerCase() !== email.toLowerCase()) {\n    throw new Error(\"Hunter verification does not match the submitted email\");\n  }\n  return { valid: true };\n}\n\nconst email = $(\"Read the business email\").first().json.email;\nreturn verify({ email, result: $input.first().json.data }).valid ? [{ json: { email } }] : [];\n"
+      },
+      "position": [
+        660,
+        240
+      ]
+    },
+    {
+      "id": "verify-and-enrich-form-leads-in-hubspot-enrich",
+      "name": "Enrich the person and company",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ 'https://api.hunter.io/v2/combined/find?email=' + encodeURIComponent($('Read the business email').first().json.email) }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 25000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "position": [
+        880,
+        240
+      ]
+    },
+    {
+      "id": "verify-and-enrich-form-leads-in-hubspot-map",
+      "name": "Match the person and domain",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function matchHunterLead({ email, enrichment }) {\n  const person = enrichment?.data?.person;\n  const company = enrichment?.data?.company;\n  const domain = email.slice(email.lastIndexOf(\"@\") + 1);\n  const normalized = (value) => (typeof value === \"string\" ? value.trim().toLowerCase() : \"\");\n  const skip = { ready: false, properties: {}, filterGroups: [] };\n  if (\n    !person ||\n    !company ||\n    person.fuzzy === true ||\n    normalized(person.email) !== email ||\n    normalized(person.employment?.domain) !== domain ||\n    normalized(company.domain) !== domain\n  )\n    return skip;\n\n  const clean = (value) => (typeof value === \"string\" ? value.trim() : \"\");\n  const count = company.metrics?.employeesCount;\n  const range = clean(company.metrics?.employees);\n  const size =\n    Number.isSafeInteger(count) && count >= 0\n      ? String(count)\n      : /^\\d+(?:-\\d+|\\+)?$/.test(range)\n        ? range\n        : \"\";\n  const values = {\n    firstname: clean(person.name?.givenName),\n    lastname: clean(person.name?.familyName),\n    jobtitle: clean(person.employment?.title),\n    company: clean(person.employment?.name) || clean(company.name),\n    hunter_company_size: size,\n  };\n  const fields = Object.entries(values).filter(([, value]) => value !== \"\");\n  if (fields.length === 0) return skip;\n  return {\n    ready: true,\n    properties: { email, ...Object.fromEntries(fields) },\n    filterGroups: [{ filters: [{ propertyName: \"email\", operator: \"EQ\", value: email }] }],\n  };\n}\nconst mapped = matchHunterLead({\n  email: $(\"Read the business email\").first().json.email,\n  enrichment: $input.first().json,\n});\nreturn mapped.ready ? [{ json: mapped }] : [];\n"
+      },
+      "position": [
+        1100,
+        240
+      ]
+    },
+    {
+      "id": "verify-and-enrich-form-leads-in-hubspot-search",
+      "name": "Find the exact HubSpot contact",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.hubapi.com/crm/objects/2026-09/contacts/search",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { filterGroups: $json.filterGroups, properties: ['email'], limit: 2 } }}",
+        "options": {
+          "timeout": 25000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "position": [
+        1320,
+        240
+      ]
+    },
+    {
+      "id": "verify-and-enrich-form-leads-in-hubspot-match",
+      "name": "Check the contact match",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function verifyContactReceipt(record, email, expectedId) {\n  const id = record?.id;\n  if (\n    typeof id !== \"string\" ||\n    !/^[1-9]\\d*$/.test(id) ||\n    record.archived === true ||\n    (expectedId && expectedId !== \"0\" && id !== expectedId) ||\n    typeof record.properties?.email !== \"string\" ||\n    record.properties.email.toLowerCase() !== email\n  ) {\n    throw new Error(\"HubSpot did not confirm the submitted contact\");\n  }\n  return id;\n}\nfunction chooseContact({ search, email }) {\n  const records = search?.results ?? search?.records ?? search?.objects ?? search?.items;\n  if (\n    !Array.isArray(records) ||\n    records.length > 1 ||\n    search.paging?.next ||\n    search.paging?.nextAfter ||\n    (typeof search.total === \"number\" && search.total !== records.length)\n  ) {\n    throw new Error(\"HubSpot did not return a unique contact lookup\");\n  }\n  return records.length\n    ? { recordId: verifyContactReceipt(records[0], email), exists: true }\n    : { recordId: \"0\", exists: false };\n}\nreturn [\n  {\n    json: chooseContact({\n      search: $input.first().json,\n      email: $(\"Read the business email\").first().json.email,\n    }),\n  },\n];\n"
+      },
+      "position": [
+        1540,
+        240
+      ]
+    },
+    {
+      "id": "verify-and-enrich-form-leads-in-hubspot-exists",
+      "name": "Contact already exists?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "leftValue": ""
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.exists }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "position": [
+        1760,
+        240
+      ]
+    },
+    {
+      "id": "verify-and-enrich-form-leads-in-hubspot-update",
+      "name": "Update the matching contact",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ 'https://api.hubapi.com/crm/objects/2026-09/contacts/' + encodeURIComponent($('Read the business email').first().json.email) + '?idProperty=email' }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { properties: $('Match the person and domain').first().json.properties } }}",
+        "options": {
+          "timeout": 25000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "position": [
+        1980,
+        240
+      ]
+    },
+    {
+      "id": "verify-and-enrich-form-leads-in-hubspot-create",
+      "name": "Create the enriched contact",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.hubapi.com/crm/objects/2026-09/contacts",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { properties: $('Match the person and domain').first().json.properties } }}",
+        "options": {
+          "timeout": 25000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "position": [
+        2200,
+        240
+      ]
+    },
+    {
+      "id": "verify-and-enrich-form-leads-in-hubspot-receipt",
+      "name": "Confirm the saved contact",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function verifyContactReceipt(record, email, expectedId) {\n  const id = record?.id;\n  if (\n    typeof id !== \"string\" ||\n    !/^[1-9]\\d*$/.test(id) ||\n    record.archived === true ||\n    (expectedId && expectedId !== \"0\" && id !== expectedId) ||\n    typeof record.properties?.email !== \"string\" ||\n    record.properties.email.toLowerCase() !== email\n  ) {\n    throw new Error(\"HubSpot did not confirm the submitted contact\");\n  }\n  return id;\n}\nreturn [\n  {\n    json: {\n      contactId: verifyContactReceipt(\n        $input.first().json,\n        $(\"Read the business email\").first().json.email,\n        $(\"Check the contact match\").first().json.recordId,\n      ),\n    },\n  },\n];\n"
+      },
+      "position": [
+        2420,
+        240
+      ]
+    }
+  ],
+  "connections": {
+    "Receive the contact form": {
+      "main": [
+        [
+          {
+            "node": "Read the business email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the business email": {
+      "main": [
+        [
+          {
+            "node": "Verify the email with Hunter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify the email with Hunter": {
+      "main": [
+        [
+          {
+            "node": "Check the email verification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check the email verification": {
+      "main": [
+        [
+          {
+            "node": "Enrich the person and company",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enrich the person and company": {
+      "main": [
+        [
+          {
+            "node": "Match the person and domain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Match the person and domain": {
+      "main": [
+        [
+          {
+            "node": "Find the exact HubSpot contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find the exact HubSpot contact": {
+      "main": [
+        [
+          {
+            "node": "Check the contact match",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check the contact match": {
+      "main": [
+        [
+          {
+            "node": "Contact already exists?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Contact already exists?": {
+      "main": [
+        [
+          {
+            "node": "Update the matching contact",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create the enriched contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update the matching contact": {
+      "main": [
+        [
+          {
+            "node": "Confirm the saved contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create the enriched contact": {
+      "main": [
+        [
+          {
+            "node": "Confirm the saved contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}
