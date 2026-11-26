@@ -1,0 +1,720 @@
+{
+  "nodes": [
+    {
+      "name": "Receive Retell call events",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "record-analyzed-retell-calls",
+        "responseMode": "responseNode",
+        "options": {
+          "rawBody": true
+        }
+      },
+      "id": "record-analyzed-retell-calls-0",
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "name": "Prepare the signed bytes",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function retellSignature(header, now) {\n  const parsed = typeof header === \"string\" && /^v=(\\d{13}),d=([a-f0-9]{64})$/.exec(header);\n  if (!parsed || Math.abs(now - Number(parsed[1])) > 5 * 60 * 1000)\n    return { timestamp: \"\", digest: \"\" };\n  return { timestamp: parsed[1], digest: parsed[2] };\n}\nconst item = $input.first();\nconst { timestamp, digest } = retellSignature(item.json.headers[\"x-retell-signature\"], Date.now());\nconst raw = await helpers.getBinaryDataBuffer(0, \"data\");\nconst bytes = Buffer.concat([raw, Buffer.from(timestamp, \"ascii\")]);\nreturn [\n  {\n    json: { body: item.json.body, expected: digest },\n    binary: { data: { data: bytes.toString(\"base64\"), mimeType: \"application/octet-stream\" } },\n  },\n];\n"
+      },
+      "id": "record-analyzed-retell-calls-1",
+      "position": [
+        210,
+        0
+      ]
+    },
+    {
+      "name": "Sign the Retell request bytes",
+      "type": "n8n-nodes-base.crypto",
+      "typeVersion": 1,
+      "parameters": {
+        "action": "hmac",
+        "type": "SHA256",
+        "binaryData": true,
+        "binaryPropertyName": "data",
+        "dataPropertyName": "digest",
+        "encoding": "hex",
+        "secret": "={{ (() => { throw new Error(\"Configure the Retell webhook API key\"); })() }}"
+      },
+      "id": "record-analyzed-retell-calls-2",
+      "position": [
+        420,
+        0
+      ]
+    },
+    {
+      "name": "Check the Retell signature",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function equalRetellDigest(computed, expected) {\n  if (\n    typeof computed !== \"string\" ||\n    typeof expected !== \"string\" ||\n    computed.length !== 64 ||\n    expected.length !== 64\n  )\n    return false;\n  let difference = 0;\n  for (let index = 0; index < 64; index++)\n    difference |= computed.charCodeAt(index) ^ expected.charCodeAt(index);\n  return difference === 0;\n}\nconst { expected, digest, body } = $input.first().json;\nconst authorized = equalRetellDigest(digest, expected);\nreturn [{ json: authorized ? { authorized, body } : { authorized } }];\n"
+      },
+      "id": "record-analyzed-retell-calls-3",
+      "position": [
+        630,
+        0
+      ]
+    },
+    {
+      "name": "Acknowledge the signed event",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "parameters": {
+        "respondWith": "noData",
+        "options": {
+          "responseCode": "={{ $json.authorized ? 204 : 401 }}"
+        }
+      },
+      "id": "record-analyzed-retell-calls-4",
+      "position": [
+        840,
+        0
+      ]
+    },
+    {
+      "name": "Signature valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.authorized }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "record-analyzed-retell-calls-5",
+      "position": [
+        1050,
+        0
+      ]
+    },
+    {
+      "name": "Map the call and destinations",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function mapCall(call) {\n  const id = call?.call_id;\n  const start = call?.start_timestamp;\n  const end = call?.end_timestamp;\n  const duration = call?.call_cost?.total_duration_seconds;\n  const cost = call?.call_cost?.combined_cost;\n  if (\n    typeof id !== \"string\" ||\n    !/^[a-zA-Z0-9_-]{1,160}$/.test(id) ||\n    !Number.isSafeInteger(start) ||\n    !Number.isSafeInteger(end) ||\n    start < 0 ||\n    end < start ||\n    !Number.isFinite(duration) ||\n    duration < 0 ||\n    !Number.isFinite(cost) ||\n    cost < 0 ||\n    !call.call_analysis ||\n    typeof call.call_analysis !== \"object\" ||\n    Array.isArray(call.call_analysis)\n  ) {\n    throw new Error(\"Retell did not provide complete analyzed call data\");\n  }\n  const text = (value) => {\n    if (value == null) return \"\";\n    if (typeof value !== \"string\") throw new Error(\"Retell returned an invalid call text field\");\n    return value;\n  };\n  return {\n    \"Call ID\": id,\n    \"Start Datetime\": new Date(start).toISOString(),\n    \"End Datetime\": new Date(end).toISOString(),\n    \"Duration in seconds\": duration,\n    Transcript: text(call.transcript),\n    \"Call Summary\": text(call.call_analysis.call_summary),\n    \"User Sentiment\": text(call.call_analysis.user_sentiment),\n    \"Phone Number\": text(call.direction === \"outbound\" ? call.to_number : call.from_number),\n    \"Total Cost in Dollars\": cost / 100,\n  };\n}\nfunction prepareDestinations(fields, config) {\n  const sheets = config.sheets;\n  const airtable = config.airtable;\n  const notion = config.notion;\n  if (![sheets, airtable, notion].some((item) => item.enabled === true))\n    throw new Error(\"Enable at least one call log destination\");\n  const identifier = (value, pattern, message) => {\n    if (typeof value !== \"string\" || !pattern.test(value) || value.startsWith(\"YOUR_\"))\n      throw new Error(message);\n    return value;\n  };\n  const targets = {};\n  if (sheets.enabled === true) {\n    const id = identifier(\n      sheets.spreadsheetId,\n      /^[a-zA-Z0-9_-]{5,150}$/,\n      \"Set the Google Sheets spreadsheet ID\",\n    );\n    const tab = identifier(\n      sheets.tab,\n      /^[^\\u0000-\\u001f]{1,100}$/,\n      \"Set the Google Sheets tab name\",\n    );\n    const values = Object.values(fields);\n    if (values.some((value) => typeof value === \"string\" && value.length > 50000)) {\n      throw new Error(\"A call field exceeds the Google Sheets cell size limit\");\n    }\n    const range = \"'\" + tab.replace(/'/g, \"''\") + \"'!A:I\";\n    targets.sheets = {\n      url:\n        \"https://sheets.googleapis.com/v4/spreadsheets/\" +\n        id +\n        \"/values/\" +\n        encodeURIComponent(range) +\n        \":append?valueInputOption=RAW&insertDataOption=INSERT_ROWS&includeValuesInResponse=true&responseValueRenderOption=UNFORMATTED_VALUE\",\n      payload: { values: [values] },\n    };\n  }\n  if (airtable.enabled === true) {\n    const base = identifier(airtable.baseId, /^app[a-zA-Z0-9]{14}$/, \"Set the Airtable base ID\");\n    const table = identifier(airtable.tableId, /^tbl[a-zA-Z0-9]{14}$/, \"Set the Airtable table ID\");\n    targets.airtable = {\n      url: \"https://api.airtable.com/v0/\" + base + \"/\" + table,\n      payload: { records: [{ fields }] },\n    };\n  }\n  if (notion.enabled === true) {\n    const id = identifier(\n      notion.dataSourceId,\n      /^(?:[a-f0-9]{32}|[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12})$/i,\n      \"Set the Notion data source ID\",\n    );\n    const chunks = (text) => {\n      if (text.length > 50000)\n        throw new Error(\"A Notion call field exceeds the 50,000 character template limit\");\n      const rich = [];\n      let part = \"\";\n      for (const character of text) {\n        if (part.length + character.length > 1800) {\n          rich.push({ type: \"text\", text: { content: part } });\n          part = \"\";\n        }\n        part += character;\n      }\n      if (part) rich.push({ type: \"text\", text: { content: part } });\n      return rich;\n    };\n    const properties = { Name: { title: chunks(fields[\"Call Summary\"] || fields[\"Call ID\"]) } };\n    for (const [name, content] of Object.entries(fields)) {\n      if (name === \"Call Summary\") continue;\n      if (typeof content === \"number\") properties[name] = { number: content };\n      else if (name.endsWith(\"Datetime\")) properties[name] = { date: { start: content } };\n      else properties[name] = { rich_text: chunks(content) };\n    }\n    targets.notion = {\n      url: \"https://api.notion.com/v1/pages\",\n      payload: { parent: { type: \"data_source_id\", data_source_id: id }, properties },\n    };\n  }\n  return targets;\n}\nconst destinations = {\n  sheets: {\n    enabled: false,\n    spreadsheetId: \"YOUR_SPREADSHEET_ID\",\n    tab: \"Transcripts\",\n  },\n  airtable: {\n    enabled: false,\n    baseId: \"YOUR_BASE_ID\",\n    tableId: \"YOUR_TABLE_ID\",\n  },\n  notion: {\n    enabled: false,\n    dataSourceId: \"YOUR_DATA_SOURCE_ID\",\n  },\n};\nconst body = $input.first().json.body;\nif (body?.event !== \"call_analyzed\") return [];\nconst fields = mapCall(body.call);\nreturn [{ json: { id: fields[\"Call ID\"], targets: prepareDestinations(fields, destinations) } }];\n"
+      },
+      "id": "record-analyzed-retell-calls-6",
+      "position": [
+        1260,
+        0
+      ]
+    },
+    {
+      "name": "Skip reserved calls",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "rowNotExists",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_RESERVATION_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "call_key",
+              "condition": "eq",
+              "keyValue": "={{ \"retell:\" + $('Map the call and destinations').first().json.id }}"
+            }
+          ]
+        }
+      },
+      "id": "record-analyzed-retell-calls-7",
+      "position": [
+        1470,
+        0
+      ]
+    },
+    {
+      "name": "Reserve this call",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_RESERVATION_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "call_key": "={{ \"retell:\" + $('Map the call and destinations').first().json.id }}",
+            "status": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "record-analyzed-retell-calls-8",
+      "position": [
+        1680,
+        0
+      ]
+    },
+    {
+      "name": "Confirm call reservation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const id = $(\"Map the call and destinations\").first().json.id;\nif ($input.first().json.call_key !== \"retell:\" + id)\n  throw new Error(\"The call reservation was not confirmed\");\nreturn [{ json: { id } }];\n"
+      },
+      "id": "record-analyzed-retell-calls-9",
+      "position": [
+        1890,
+        0
+      ]
+    },
+    {
+      "name": "Use Google Sheets?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ Boolean($('Map the call and destinations').first().json.targets.sheets) }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "record-analyzed-retell-calls-10",
+      "position": [
+        2100,
+        0
+      ]
+    },
+    {
+      "name": "Write the Google Sheets row",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Map the call and destinations').first().json.targets.sheets.url }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ $('Map the call and destinations').first().json.targets.sheets.payload }}",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "record-analyzed-retell-calls-11",
+      "position": [
+        2310,
+        0
+      ]
+    },
+    {
+      "name": "Confirm the Sheets row range",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function verifyReceipt(destination, body, id) {\n  if (destination === \"sheets\") {\n    const update = body?.updates;\n    if (\n      update?.updatedRows === 1 &&\n      typeof update.updatedRange === \"string\" &&\n      update.updatedRange &&\n      update.updatedData?.values?.[0]?.[0] === id\n    )\n      return update.updatedRange;\n  } else if (destination === \"airtable\") {\n    const record = body?.records?.[0];\n    if (\n      body?.records?.length === 1 &&\n      record?.fields?.[\"Call ID\"] === id &&\n      typeof record.id === \"string\" &&\n      record.id\n    )\n      return record.id;\n  } else if (destination === \"notion\") {\n    const values = body?.properties?.[\"Call ID\"]?.rich_text;\n    if (\n      body?.object === \"page\" &&\n      typeof body.id === \"string\" &&\n      body.id &&\n      Array.isArray(values) &&\n      values.map((part) => part?.plain_text ?? part?.text?.content).join(\"\") === id\n    )\n      return body.id;\n  }\n  throw new Error(\n    \"The \" + destination + \" write was not confirmed. Check the destination before retrying.\",\n  );\n}\nconst id = $(\"Map the call and destinations\").first().json.id;\nconst receipt = verifyReceipt(\"sheets\", $input.first().json, id);\nreturn [{ json: { id, receipt } }];\n"
+      },
+      "id": "record-analyzed-retell-calls-12",
+      "position": [
+        2520,
+        0
+      ]
+    },
+    {
+      "name": "Use Airtable?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ Boolean($('Map the call and destinations').first().json.targets.airtable) }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "record-analyzed-retell-calls-13",
+      "position": [
+        2730,
+        0
+      ]
+    },
+    {
+      "name": "Write the Airtable record",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Map the call and destinations').first().json.targets.airtable.url }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "airtableTokenApi",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ $('Map the call and destinations').first().json.targets.airtable.payload }}",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "record-analyzed-retell-calls-14",
+      "position": [
+        2940,
+        0
+      ]
+    },
+    {
+      "name": "Confirm the Airtable record ID",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function verifyReceipt(destination, body, id) {\n  if (destination === \"sheets\") {\n    const update = body?.updates;\n    if (\n      update?.updatedRows === 1 &&\n      typeof update.updatedRange === \"string\" &&\n      update.updatedRange &&\n      update.updatedData?.values?.[0]?.[0] === id\n    )\n      return update.updatedRange;\n  } else if (destination === \"airtable\") {\n    const record = body?.records?.[0];\n    if (\n      body?.records?.length === 1 &&\n      record?.fields?.[\"Call ID\"] === id &&\n      typeof record.id === \"string\" &&\n      record.id\n    )\n      return record.id;\n  } else if (destination === \"notion\") {\n    const values = body?.properties?.[\"Call ID\"]?.rich_text;\n    if (\n      body?.object === \"page\" &&\n      typeof body.id === \"string\" &&\n      body.id &&\n      Array.isArray(values) &&\n      values.map((part) => part?.plain_text ?? part?.text?.content).join(\"\") === id\n    )\n      return body.id;\n  }\n  throw new Error(\n    \"The \" + destination + \" write was not confirmed. Check the destination before retrying.\",\n  );\n}\nconst id = $(\"Map the call and destinations\").first().json.id;\nconst receipt = verifyReceipt(\"airtable\", $input.first().json, id);\nreturn [{ json: { id, receipt } }];\n"
+      },
+      "id": "record-analyzed-retell-calls-15",
+      "position": [
+        3150,
+        0
+      ]
+    },
+    {
+      "name": "Use Notion?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ Boolean($('Map the call and destinations').first().json.targets.notion) }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "record-analyzed-retell-calls-16",
+      "position": [
+        3360,
+        0
+      ]
+    },
+    {
+      "name": "Write the Notion page",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Map the call and destinations').first().json.targets.notion.url }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ $('Map the call and destinations').first().json.targets.notion.payload }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Notion-Version",
+              "value": "2025-09-03"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000,
+          "lowercaseHeaders": false,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "record-analyzed-retell-calls-17",
+      "position": [
+        3570,
+        0
+      ]
+    },
+    {
+      "name": "Confirm the Notion page ID",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function verifyReceipt(destination, body, id) {\n  if (destination === \"sheets\") {\n    const update = body?.updates;\n    if (\n      update?.updatedRows === 1 &&\n      typeof update.updatedRange === \"string\" &&\n      update.updatedRange &&\n      update.updatedData?.values?.[0]?.[0] === id\n    )\n      return update.updatedRange;\n  } else if (destination === \"airtable\") {\n    const record = body?.records?.[0];\n    if (\n      body?.records?.length === 1 &&\n      record?.fields?.[\"Call ID\"] === id &&\n      typeof record.id === \"string\" &&\n      record.id\n    )\n      return record.id;\n  } else if (destination === \"notion\") {\n    const values = body?.properties?.[\"Call ID\"]?.rich_text;\n    if (\n      body?.object === \"page\" &&\n      typeof body.id === \"string\" &&\n      body.id &&\n      Array.isArray(values) &&\n      values.map((part) => part?.plain_text ?? part?.text?.content).join(\"\") === id\n    )\n      return body.id;\n  }\n  throw new Error(\n    \"The \" + destination + \" write was not confirmed. Check the destination before retrying.\",\n  );\n}\nconst id = $(\"Map the call and destinations\").first().json.id;\nconst receipt = verifyReceipt(\"notion\", $input.first().json, id);\nreturn [{ json: { id, receipt } }];\n"
+      },
+      "id": "record-analyzed-retell-calls-18",
+      "position": [
+        3780,
+        0
+      ]
+    },
+    {
+      "name": "Record completion",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_RESERVATION_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "call_key",
+              "condition": "eq",
+              "keyValue": "={{ \"retell:\" + $('Map the call and destinations').first().json.id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "saved"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "record-analyzed-retell-calls-19",
+      "position": [
+        3990,
+        0
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Receive Retell call events": {
+      "main": [
+        [
+          {
+            "node": "Prepare the signed bytes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare the signed bytes": {
+      "main": [
+        [
+          {
+            "node": "Sign the Retell request bytes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sign the Retell request bytes": {
+      "main": [
+        [
+          {
+            "node": "Check the Retell signature",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check the Retell signature": {
+      "main": [
+        [
+          {
+            "node": "Acknowledge the signed event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Acknowledge the signed event": {
+      "main": [
+        [
+          {
+            "node": "Signature valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Signature valid?": {
+      "main": [
+        [
+          {
+            "node": "Map the call and destinations",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Map the call and destinations": {
+      "main": [
+        [
+          {
+            "node": "Skip reserved calls",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Skip reserved calls": {
+      "main": [
+        [
+          {
+            "node": "Reserve this call",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve this call": {
+      "main": [
+        [
+          {
+            "node": "Confirm call reservation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm call reservation": {
+      "main": [
+        [
+          {
+            "node": "Use Google Sheets?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Use Google Sheets?": {
+      "main": [
+        [
+          {
+            "node": "Write the Google Sheets row",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Use Airtable?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write the Google Sheets row": {
+      "main": [
+        [
+          {
+            "node": "Confirm the Sheets row range",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm the Sheets row range": {
+      "main": [
+        [
+          {
+            "node": "Use Airtable?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Use Airtable?": {
+      "main": [
+        [
+          {
+            "node": "Write the Airtable record",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Use Notion?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write the Airtable record": {
+      "main": [
+        [
+          {
+            "node": "Confirm the Airtable record ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm the Airtable record ID": {
+      "main": [
+        [
+          {
+            "node": "Use Notion?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Use Notion?": {
+      "main": [
+        [
+          {
+            "node": "Write the Notion page",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Record completion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write the Notion page": {
+      "main": [
+        [
+          {
+            "node": "Confirm the Notion page ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm the Notion page ID": {
+      "main": [
+        [
+          {
+            "node": "Record completion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Record Analyzed Retell Calls",
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false
+}
