@@ -161,6 +161,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Enrich Pipedrive Organization Website and Notify Slack](workflows/enrich-pipedrive-organization-website-and-notify-slack/) - Summarize a new organization website, add a Pipedrive note and notify Slack.
 - [Research Sales Accounts in Google Sheets](workflows/research-sales-accounts-in-sheets/) - Research companies on the web and update their matching spreadsheet rows.
 - [Sales Call Prep Briefing](workflows/sales-call-prep-briefing/) - Research an external meeting prospect from their company domain, generate a structured call prep brief, and post it to Slack.
+- [Copy Missing Contacts Between Pipedrive and HubSpot](workflows/copy-missing-contacts-between-pipedrive-and-hubspot/) - Compare both CRMs by email on a schedule and add contacts that exist in only one account.
 
 ## Operations
 

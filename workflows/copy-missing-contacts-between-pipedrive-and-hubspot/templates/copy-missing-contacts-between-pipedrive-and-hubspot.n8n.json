@@ -1,0 +1,590 @@
+{
+  "name": "Copy Missing Contacts Between Pipedrive and HubSpot",
+  "nodes": [
+    {
+      "id": "copy-missing-contacts-between-pipedrive-and-hubspot-0",
+      "name": "Run daily at 09:00 UTC",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 9 * * *"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "copy-missing-contacts-between-pipedrive-and-hubspot-1",
+      "name": "Run on demand",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        220
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "copy-missing-contacts-between-pipedrive-and-hubspot-2",
+      "name": "List all Pipedrive persons",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        260,
+        0
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.pipedrive.com/api/v2/persons",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "specifyQuery": "keypair",
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "limit",
+              "value": "100"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          },
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "pagination": {
+            "pagination": {
+              "paginationMode": "updateAParameterInEachRequest",
+              "parameters": {
+                "parameters": [
+                  {
+                    "type": "qs",
+                    "name": "cursor",
+                    "value": "={{ $response.body?.additional_data?.next_cursor }}"
+                  }
+                ]
+              },
+              "paginationCompleteWhen": "other",
+              "completeExpression": "={{ ($response.body?.additional_data?.next_cursor) == null }}",
+              "limitPagesFetched": false,
+              "requestInterval": 0
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "copy-missing-contacts-between-pipedrive-and-hubspot-3",
+      "name": "Collect Pipedrive contacts",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        780,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function emailKey(value) {\n  if (typeof value !== \"string\") return null;\n  const email = value.trim().toLowerCase();\n  return /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email) ? email : null;\n}\n\nfunction contacts(rows, provider) {\n  if (!Array.isArray(rows)) throw new Error(\"Invalid contact list from \" + provider);\n  return rows.flatMap((row) => {\n    if (provider === \"pipedrive\" && row?.is_deleted === true) return [];\n    const id = row?.id;\n    if ((typeof id !== \"string\" && typeof id !== \"number\") || String(id).trim() === \"\") {\n      throw new Error(\"A contact returned by \" + provider + \" has no record ID\");\n    }\n    if (provider === \"hubspot\" && (!row.properties || typeof row.properties !== \"object\")) {\n      throw new Error(\"A HubSpot contact is missing the requested properties\");\n    }\n    if (provider === \"pipedrive\" && row.emails != null && !Array.isArray(row.emails)) {\n      throw new Error(\"A Pipedrive person returned an invalid email list\");\n    }\n    const addresses =\n      provider === \"pipedrive\"\n        ? (row.emails ?? []).map((address) => address?.value)\n        : [row.properties.email, ...(row.properties.hs_additional_emails ?? \"\").split(\";\")];\n    const firstName = provider === \"pipedrive\" ? row.first_name : row.properties.firstname;\n    return [\n      {\n        id: String(id),\n        email: emailKey(addresses[0]),\n        aliases: [...new Set(addresses.map(emailKey).filter(Boolean))],\n        firstName: typeof firstName === \"string\" ? firstName.trim() : \"\",\n      },\n    ];\n  });\n}\n\nfunction addPage(state, rows, cursor, provider) {\n  const before = state ?? { rows: [], seen: [] };\n  if (cursor !== null && (typeof cursor !== \"string\" || !cursor || before.seen.includes(cursor))) {\n    throw new Error(\"Invalid or repeated \" + provider + \" contact cursor\");\n  }\n  return {\n    rows: before.rows.concat(contacts(rows, provider)),\n    seen: cursor === null ? before.seen : [...before.seen, cursor],\n  };\n}\n\nconst pages = $input.all();\nlet state = null;\nfor (const {\n  json: { body },\n} of pages) {\n  if (body?.success !== true)\n    throw new Error(\"Pipedrive did not return a successful contacts page\");\n  state = addPage(state, body.data, body.additional_data?.next_cursor ?? null, \"pipedrive\");\n}\nif (pages.at(-1)?.json.body?.additional_data?.next_cursor != null || !state) {\n  throw new Error(\"The Pipedrive contacts list is incomplete\");\n}\nreturn [{ json: { contacts: state.rows } }];\n"
+      }
+    },
+    {
+      "id": "copy-missing-contacts-between-pipedrive-and-hubspot-4",
+      "name": "List all HubSpot contacts",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1040,
+        0
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.hubapi.com/crm/v3/objects/contacts",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendQuery": true,
+        "specifyQuery": "keypair",
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "limit",
+              "value": "100"
+            },
+            {
+              "name": "properties",
+              "value": "email,firstname,hs_additional_emails"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          },
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "pagination": {
+            "pagination": {
+              "paginationMode": "updateAParameterInEachRequest",
+              "parameters": {
+                "parameters": [
+                  {
+                    "type": "qs",
+                    "name": "after",
+                    "value": "={{ $response.body?.paging?.next?.after }}"
+                  }
+                ]
+              },
+              "paginationCompleteWhen": "other",
+              "completeExpression": "={{ ($response.body?.paging?.next?.after) == null }}",
+              "limitPagesFetched": false,
+              "requestInterval": 0
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "copy-missing-contacts-between-pipedrive-and-hubspot-5",
+      "name": "Find contacts missing by email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1300,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function emailKey(value) {\n  if (typeof value !== \"string\") return null;\n  const email = value.trim().toLowerCase();\n  return /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email) ? email : null;\n}\n\nfunction contacts(rows, provider) {\n  if (!Array.isArray(rows)) throw new Error(\"Invalid contact list from \" + provider);\n  return rows.flatMap((row) => {\n    if (provider === \"pipedrive\" && row?.is_deleted === true) return [];\n    const id = row?.id;\n    if ((typeof id !== \"string\" && typeof id !== \"number\") || String(id).trim() === \"\") {\n      throw new Error(\"A contact returned by \" + provider + \" has no record ID\");\n    }\n    if (provider === \"hubspot\" && (!row.properties || typeof row.properties !== \"object\")) {\n      throw new Error(\"A HubSpot contact is missing the requested properties\");\n    }\n    if (provider === \"pipedrive\" && row.emails != null && !Array.isArray(row.emails)) {\n      throw new Error(\"A Pipedrive person returned an invalid email list\");\n    }\n    const addresses =\n      provider === \"pipedrive\"\n        ? (row.emails ?? []).map((address) => address?.value)\n        : [row.properties.email, ...(row.properties.hs_additional_emails ?? \"\").split(\";\")];\n    const firstName = provider === \"pipedrive\" ? row.first_name : row.properties.firstname;\n    return [\n      {\n        id: String(id),\n        email: emailKey(addresses[0]),\n        aliases: [...new Set(addresses.map(emailKey).filter(Boolean))],\n        firstName: typeof firstName === \"string\" ? firstName.trim() : \"\",\n      },\n    ];\n  });\n}\n\nfunction addPage(state, rows, cursor, provider) {\n  const before = state ?? { rows: [], seen: [] };\n  if (cursor !== null && (typeof cursor !== \"string\" || !cursor || before.seen.includes(cursor))) {\n    throw new Error(\"Invalid or repeated \" + provider + \" contact cursor\");\n  }\n  return {\n    rows: before.rows.concat(contacts(rows, provider)),\n    seen: cursor === null ? before.seen : [...before.seen, cursor],\n  };\n}\n\nfunction readHubSpotPage(body) {\n  if (!Array.isArray(body?.results)) throw new Error(\"Invalid HubSpot contacts page\");\n  const next = body.paging?.next;\n  if (next != null && (typeof next.after !== \"string\" || !next.after.trim())) {\n    throw new Error(\"Invalid HubSpot contact cursor\");\n  }\n  return { rows: body.results, cursor: next?.after ?? null };\n}\n\nfunction indexEmails(rows) {\n  const identities = new Map();\n  for (const row of rows) {\n    for (const alias of row.aliases) {\n      if (!identities.has(alias)) identities.set(alias, new Set());\n      identities.get(alias).add(row.id);\n    }\n  }\n  return identities;\n}\n\nfunction planCopies(pipedrive, hubspot) {\n  const copies = [];\n  const ambiguous = new Set();\n  let missingPipedriveName = 0;\n  const p = indexEmails(pipedrive);\n  const h = indexEmails(hubspot);\n  for (const [rows, source, target, destination] of [\n    [pipedrive, p, \"hubspot\", h],\n    [hubspot, h, \"pipedrive\", p],\n  ]) {\n    const selected = new Set();\n    for (const { email, firstName, aliases } of rows) {\n      if (!email || selected.has(email) || aliases.some((alias) => destination.has(alias)))\n        continue;\n      selected.add(email);\n      if (source.get(email)?.size !== 1) {\n        ambiguous.add(target + \"/\" + email);\n        continue;\n      }\n      if (target === \"pipedrive\" && !firstName) {\n        missingPipedriveName++;\n        continue;\n      }\n      copies.push({ target, email, firstName });\n    }\n  }\n  return {\n    copies,\n    totals: {\n      hubspotCreated: copies.filter((item) => item.target === \"hubspot\").length,\n      pipedriveCreated: copies.filter((item) => item.target === \"pipedrive\").length,\n      ambiguousEmails: ambiguous.size,\n      missingPipedriveName,\n    },\n  };\n}\n\nconst pages = $input.all();\nlet state = null;\nlet cursor;\nfor (const {\n  json: { body },\n} of pages) {\n  const page = readHubSpotPage(body);\n  cursor = page.cursor;\n  state = addPage(state, page.rows, cursor, \"hubspot\");\n}\nif (cursor !== null || !state) throw new Error(\"The HubSpot contacts list is incomplete\");\nconst pipedrive = $(\"Collect Pipedrive contacts\").first().json.contacts;\nconst { copies, totals } = planCopies(pipedrive, state.rows);\nreturn (copies.length ? copies : [{ target: \"done\" }]).map((contact) => ({\n  json: { ...contact, totals },\n}));\n"
+      }
+    },
+    {
+      "id": "copy-missing-contacts-between-pipedrive-and-hubspot-6",
+      "name": "No contacts to create?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1560,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "copy-missing-contacts-between-pipedrive-and-hubspot-6-condition",
+              "leftValue": "={{ $json.target }}",
+              "rightValue": "done",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "copy-missing-contacts-between-pipedrive-and-hubspot-7",
+      "name": "Process one contact at a time",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1820,
+        0
+      ],
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      }
+    },
+    {
+      "id": "copy-missing-contacts-between-pipedrive-and-hubspot-8",
+      "name": "Create in Pipedrive?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2080,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "copy-missing-contacts-between-pipedrive-and-hubspot-8-condition",
+              "leftValue": "={{ $json.target }}",
+              "rightValue": "pipedrive",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "copy-missing-contacts-between-pipedrive-and-hubspot-9",
+      "name": "Prepare Pipedrive name and email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2340,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function requestBody(item) {\n  if (item.target === \"pipedrive\") {\n    return { name: item.firstName, emails: [{ value: item.email, primary: true }] };\n  }\n  return {\n    properties: { email: item.email, ...(item.firstName ? { firstname: item.firstName } : {}) },\n  };\n}\n\nconst item = $input.first();\nreturn [{ json: { ...item.json, body: requestBody(item.json) } }];\n"
+      }
+    },
+    {
+      "id": "copy-missing-contacts-between-pipedrive-and-hubspot-10",
+      "name": "Create missing Pipedrive person",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2600,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.pipedrive.com/api/v2/persons",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.body }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "copy-missing-contacts-between-pipedrive-and-hubspot-11",
+      "name": "Confirm Pipedrive creation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2860,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function emailKey(value) {\n  if (typeof value !== \"string\") return null;\n  const email = value.trim().toLowerCase();\n  return /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email) ? email : null;\n}\n\nfunction confirmContact(body, item) {\n  const id = body?.id;\n  const actualEmail =\n    item.target === \"pipedrive\"\n      ? body?.emails?.find((email) => emailKey(email?.value) === item.email)?.value\n      : body?.properties?.email;\n  if (\n    (typeof id !== \"string\" && typeof id !== \"number\") ||\n    !String(id).trim() ||\n    emailKey(actualEmail) !== item.email\n  ) {\n    throw new Error(\n      item.target +\n        \" contact creation was not confirmed. Check the destination CRM before rerunning.\",\n    );\n  }\n}\n\nconst saved = $input.first().json;\nconst contact = $(\"Prepare Pipedrive name and email\").itemMatching(0).json;\nconfirmContact(saved?.success === true ? saved.data : null, contact);\nreturn [{ json: { totals: contact.totals } }];\n"
+      }
+    },
+    {
+      "id": "copy-missing-contacts-between-pipedrive-and-hubspot-12",
+      "name": "Prepare HubSpot email and first name",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2340,
+        200
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function requestBody(item) {\n  if (item.target === \"pipedrive\") {\n    return { name: item.firstName, emails: [{ value: item.email, primary: true }] };\n  }\n  return {\n    properties: { email: item.email, ...(item.firstName ? { firstname: item.firstName } : {}) },\n  };\n}\n\nconst item = $input.first();\nreturn [{ json: { ...item.json, body: requestBody(item.json) } }];\n"
+      }
+    },
+    {
+      "id": "copy-missing-contacts-between-pipedrive-and-hubspot-13",
+      "name": "Create missing HubSpot contact",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3380,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.hubapi.com/crm/v3/objects/contacts",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.body }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "copy-missing-contacts-between-pipedrive-and-hubspot-14",
+      "name": "Confirm HubSpot creation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3640,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function emailKey(value) {\n  if (typeof value !== \"string\") return null;\n  const email = value.trim().toLowerCase();\n  return /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email) ? email : null;\n}\n\nfunction confirmContact(body, item) {\n  const id = body?.id;\n  const actualEmail =\n    item.target === \"pipedrive\"\n      ? body?.emails?.find((email) => emailKey(email?.value) === item.email)?.value\n      : body?.properties?.email;\n  if (\n    (typeof id !== \"string\" && typeof id !== \"number\") ||\n    !String(id).trim() ||\n    emailKey(actualEmail) !== item.email\n  ) {\n    throw new Error(\n      item.target +\n        \" contact creation was not confirmed. Check the destination CRM before rerunning.\",\n    );\n  }\n}\n\nconst saved = $input.first().json;\nconst contact = $(\"Prepare HubSpot email and first name\").itemMatching(0).json;\nconfirmContact(saved, contact);\nreturn [{ json: { totals: contact.totals } }];\n"
+      }
+    },
+    {
+      "id": "copy-missing-contacts-between-pipedrive-and-hubspot-15",
+      "name": "Contact copy counts",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3900,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return [{ json: $input.first().json.totals }];\n"
+      }
+    }
+  ],
+  "connections": {
+    "Prepare Pipedrive name and email": {
+      "main": [
+        [
+          {
+            "node": "Create missing Pipedrive person",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create missing Pipedrive person": {
+      "main": [
+        [
+          {
+            "node": "Confirm Pipedrive creation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm Pipedrive creation": {
+      "main": [
+        [
+          {
+            "node": "Process one contact at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare HubSpot email and first name": {
+      "main": [
+        [
+          {
+            "node": "Create missing HubSpot contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create missing HubSpot contact": {
+      "main": [
+        [
+          {
+            "node": "Confirm HubSpot creation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm HubSpot creation": {
+      "main": [
+        [
+          {
+            "node": "Process one contact at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run daily at 09:00 UTC": {
+      "main": [
+        [
+          {
+            "node": "List all Pipedrive persons",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run on demand": {
+      "main": [
+        [
+          {
+            "node": "List all Pipedrive persons",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List all Pipedrive persons": {
+      "main": [
+        [
+          {
+            "node": "Collect Pipedrive contacts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect Pipedrive contacts": {
+      "main": [
+        [
+          {
+            "node": "List all HubSpot contacts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List all HubSpot contacts": {
+      "main": [
+        [
+          {
+            "node": "Find contacts missing by email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find contacts missing by email": {
+      "main": [
+        [
+          {
+            "node": "No contacts to create?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "No contacts to create?": {
+      "main": [
+        [
+          {
+            "node": "Contact copy counts",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Process one contact at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process one contact at a time": {
+      "main": [
+        [
+          {
+            "node": "Contact copy counts",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create in Pipedrive?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create in Pipedrive?": {
+      "main": [
+        [
+          {
+            "node": "Prepare Pipedrive name and email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare HubSpot email and first name",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC"
+  },
+  "pinData": {}
+}
