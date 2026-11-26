@@ -1,0 +1,391 @@
+{
+  "name": "Look Up ServiceNow Incidents from Slack",
+  "nodes": [
+    {
+      "id": "slack-servicenow-incident-lookup-hook",
+      "name": "Receive the Slack command",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        240
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "slack-servicenow-incident-lookup",
+        "authentication": "none",
+        "responseMode": "responseNode",
+        "options": {
+          "rawBody": true
+        }
+      }
+    },
+    {
+      "id": "slack-servicenow-incident-lookup-prepare",
+      "name": "Read the signed request bytes",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        240
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function slackSignatureInput(headers, raw, nowSeconds) {\n  const timestamp = headers?.[\"x-slack-request-timestamp\"];\n  const signature = headers?.[\"x-slack-signature\"];\n  if (\n    typeof timestamp !== \"string\" ||\n    !/^\\d{10}$/.test(timestamp) ||\n    Math.abs(nowSeconds - Number(timestamp)) > 300 ||\n    typeof signature !== \"string\" ||\n    !/^v0=[a-f0-9]{64}$/.test(signature) ||\n    typeof raw !== \"string\" ||\n    !/^[\\x20-\\x7e]{1,16384}$/.test(raw) ||\n    !/^application\\/x-www-form-urlencoded(?:\\s*;|$)/i.test(headers?.[\"content-type\"] ?? \"\")\n  ) {\n    return { ready: false, base: \"v0:invalid\", signature: \"\" };\n  }\n  return {\n    ready: true,\n    base: \"v0:\" + timestamp + \":\" + raw,\n    signature,\n    raw,\n    retry: /^\\d+$/.test(headers[\"x-slack-retry-num\"] ?? \"\"),\n  };\n}\n\nlet raw = \"\";\ntry {\n  const bytes = await helpers.getBinaryDataBuffer(0, \"data\");\n  if (bytes.length <= 16384 && !bytes.some((byte) => byte < 32 || byte > 126))\n    raw = Buffer.from(bytes).toString(\"ascii\");\n} catch {}\nreturn { json: slackSignatureInput($json.headers, raw, Math.floor(Date.now() / 1000)) };\n"
+      }
+    },
+    {
+      "id": "slack-servicenow-incident-lookup-hmac",
+      "name": "Compute the Slack request signature",
+      "type": "n8n-nodes-base.crypto",
+      "typeVersion": 1,
+      "position": [
+        440,
+        240
+      ],
+      "parameters": {
+        "action": "hmac",
+        "type": "SHA256",
+        "encoding": "hex",
+        "binaryData": false,
+        "value": "={{ $json.base }}",
+        "dataPropertyName": "digest",
+        "secret": "={{ $env.SLACK_SIGNING_SECRET?.length >= 16 ? $env.SLACK_SIGNING_SECRET : null }}"
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "slack-servicenow-incident-lookup-admit",
+      "name": "Verify Slack and approve the incident lookup",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        240
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function equalSignature(received, digest) {\n  if (\n    typeof digest !== \"string\" ||\n    !/^[a-f0-9]{64}$/.test(digest) ||\n    typeof received !== \"string\" ||\n    received.length !== 67\n  )\n    return false;\n  const expected = \"v0=\" + digest;\n  let difference = 0;\n  for (let i = 0; i < expected.length; i++)\n    difference |= received.charCodeAt(i) ^ expected.charCodeAt(i);\n  return difference === 0;\n}\n\nfunction parseSlackForm(raw) {\n  const decoded = Object.create(null);\n  const unescape = (value) => decodeURIComponent(value.replaceAll(\"+\", \" \"));\n  for (const pair of raw.split(\"&\")) {\n    const separator = pair.indexOf(\"=\");\n    if (separator < 0) throw new Error(\"Malformed Slack command.\");\n    const key = unescape(pair.slice(0, separator));\n    if (!key || Object.hasOwn(decoded, key)) throw new Error(\"Repeated Slack command field.\");\n    decoded[key] = unescape(pair.slice(separator + 1));\n  }\n  return decoded;\n}\n\nfunction privateReply(text) {\n  return { response_type: \"ephemeral\", text };\n}\n\nfunction admittedIncident(prepared, digest, settings) {\n  if (!prepared.ready || !equalSignature(prepared.signature, digest)) {\n    return { query: false, status: 401, reply: { error: \"Invalid Slack signature.\" } };\n  }\n  let form;\n  try {\n    form = parseSlackForm(prepared.raw);\n  } catch {\n    return { query: false, status: 400, reply: { error: \"Invalid Slack command.\" } };\n  }\n  const {\n    team_id: team,\n    channel_id: channel,\n    user_id: user,\n    command,\n    response_url: responseUrl,\n  } = form;\n  if (\n    !/^T[A-Z0-9]{3,}$/.test(settings.teamId) ||\n    team !== settings.teamId ||\n    !settings.channelIds.includes(channel) ||\n    !/^[CG][A-Z0-9]{3,}$/.test(channel ?? \"\") ||\n    !settings.userIds.includes(user) ||\n    !/^[UW][A-Z0-9]{3,}$/.test(user ?? \"\") ||\n    command !== settings.command\n  ) {\n    return {\n      query: false,\n      status: 200,\n      reply: privateReply(\"This command is unavailable in this channel or for this user.\"),\n    };\n  }\n  const responsePath =\n    /^https:\\/\\/hooks\\.slack\\.com\\/commands\\/(T[A-Z0-9]+)\\/[A-Za-z0-9_-]+\\/[A-Za-z0-9_-]+$/;\n  const shortPath = /^https:\\/\\/hooks\\.slack\\.com\\/commands\\/[0-9]+\\/[A-Za-z0-9_-]+$/;\n  const trustedReply =\n    typeof responseUrl === \"string\" &&\n    responseUrl.length <= 768 &&\n    (responseUrl.match(responsePath)?.[1] === team || shortPath.test(responseUrl));\n  if (!trustedReply) {\n    return { query: false, status: 400, reply: { error: \"Invalid Slack response destination.\" } };\n  }\n  if (prepared.retry)\n    return {\n      query: false,\n      status: 200,\n      reply: privateReply(\"This command has already been received.\"),\n    };\n  const incident = form.text?.trim().toUpperCase();\n  if (!/^INC[0-9]{1,15}$/.test(incident ?? \"\")) {\n    return {\n      query: false,\n      status: 200,\n      reply: privateReply(\"Enter one incident number, for example INC0012345.\"),\n    };\n  }\n  if (\n    typeof settings.instance !== \"string\" ||\n    !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(settings.instance)\n  ) {\n    return {\n      query: false,\n      status: 200,\n      reply: privateReply(\"The ServiceNow lookup is unavailable.\"),\n    };\n  }\n  return {\n    query: true,\n    incident,\n    responseUrl,\n    origin: \"https://\" + settings.instance + \".service-now.com\",\n  };\n}\n\nconst settings = {\n  command: \"/incident\",\n  teamId: \"\",\n  channelIds: [],\n  userIds: [],\n  instance: \"\",\n};\nreturn {\n  json: admittedIncident($(\"Read the signed request bytes\").first().json, $json.digest, settings),\n};\n"
+      }
+    },
+    {
+      "id": "slack-servicenow-incident-lookup-gate",
+      "name": "Proceed with the lookup?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        880,
+        240
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "slack-servicenow-incident-lookup-approved",
+              "leftValue": "={{ $json.query }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "slack-servicenow-incident-lookup-ack",
+      "name": "Acknowledge the command",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1100,
+        140
+      ],
+      "parameters": {
+        "respondWith": "noData",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Cache-Control",
+                "value": "no-store"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "slack-servicenow-incident-lookup-reject",
+      "name": "Return the private command response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1100,
+        360
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json.reply }}",
+        "options": {
+          "responseCode": "={{ $json.status }}",
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Cache-Control",
+                "value": "no-store"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "slack-servicenow-incident-lookup-lookup",
+      "name": "Read the matching ServiceNow incident",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1320,
+        140
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $(\"Verify Slack and approve the incident lookup\").first().json.origin + \"/api/now/table/incident\" }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "serviceNowBasicApi",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "sysparm_query",
+              "value": "={{ \"number=\" + $(\"Verify Slack and approve the incident lookup\").first().json.incident }}"
+            },
+            {
+              "name": "sysparm_limit",
+              "value": "2"
+            },
+            {
+              "name": "sysparm_display_value",
+              "value": "all"
+            },
+            {
+              "name": "sysparm_exclude_reference_link",
+              "value": "true"
+            },
+            {
+              "name": "sysparm_fields",
+              "value": "number,short_description,severity,caller_id,priority,incident_state,category,opened_at,sys_id"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 12000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "slack-servicenow-incident-lookup-format",
+      "name": "Prepare the Slack incident response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1540,
+        140
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function privateReply(text) {\n  return { response_type: \"ephemeral\", text };\n}\n\nfunction incidentReply(request, status, body) {\n  const problem = () =>\n    privateReply(\n      \"Could not look up this incident in ServiceNow. Try again or contact your administrator.\",\n    );\n  if (status !== 200 || !Array.isArray(body?.result)) return problem();\n  if (body.result.length === 0)\n    return privateReply(\"No incident was found with that number. Check the number and try again.\");\n  if (body.result.length !== 1) return problem();\n  const record = body.result[0];\n  const value = (key) => {\n    const field = record?.[key];\n    return field && typeof field === \"object\" ? field.value : field;\n  };\n  const display = (key) => {\n    const field = record?.[key];\n    const text = field && typeof field === \"object\" ? field.display_value : field;\n    return typeof text === \"string\" && text.trim()\n      ? [...text].slice(0, 1800).join(\"\")\n      : \"Unavailable\";\n  };\n  const sysId = value(\"sys_id\");\n  if (\n    value(\"number\") !== request.incident ||\n    typeof sysId !== \"string\" ||\n    !/^[a-f0-9]{32}$/i.test(sysId)\n  )\n    return problem();\n  const fields = [\n    [\"Incident ID\", \"number\"],\n    [\"Description\", \"short_description\"],\n    [\"Severity\", \"severity\"],\n    [\"Caller\", \"caller_id\"],\n    [\"Priority\", \"priority\"],\n    [\"State\", \"incident_state\"],\n    [\"Category\", \"category\"],\n    [\"Date opened\", \"opened_at\"],\n  ].map(([label, key]) => ({\n    type: \"plain_text\",\n    text: label + \":\\n\" + display(key),\n    emoji: false,\n  }));\n  const url =\n    request.origin + \"/nav_to.do?uri=\" + encodeURIComponent(\"incident.do?sys_id=\" + sysId);\n  return {\n    response_type: \"in_channel\",\n    text: \"ServiceNow incident \" + request.incident,\n    blocks: [\n      { type: \"header\", text: { type: \"plain_text\", text: \"ServiceNow Incident Notification\" } },\n      { type: \"section\", fields },\n      {\n        type: \"actions\",\n        elements: [\n          {\n            type: \"button\",\n            text: { type: \"plain_text\", text: \"View Incident\" },\n            url,\n            action_id: \"view_incident\",\n          },\n        ],\n      },\n    ],\n  };\n}\n\nconst request = $(\"Verify Slack and approve the incident lookup\").first().json;\nreturn { json: { payload: incidentReply(request, $json.statusCode, $json.body) } };\n"
+      }
+    },
+    {
+      "id": "slack-servicenow-incident-lookup-reply",
+      "name": "Reply to the originating Slack command",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1760,
+        140
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $(\"Verify Slack and approve the incident lookup\").first().json.responseUrl }}",
+        "authentication": "none",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.payload }}",
+        "options": {
+          "timeout": 12000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "text",
+              "outputPropertyName": "body",
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "slack-servicenow-incident-lookup-receipt",
+      "name": "Confirm Slack accepted the response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1980,
+        140
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if ($json.statusCode !== 200)\n  throw new Error(\n    \"Slack did not confirm the deferred reply. Review the channel before attempting another command.\",\n  );\nreturn { json: { delivery: \"accepted\" } };\n"
+      }
+    }
+  ],
+  "connections": {
+    "Receive the Slack command": {
+      "main": [
+        [
+          {
+            "node": "Read the signed request bytes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the signed request bytes": {
+      "main": [
+        [
+          {
+            "node": "Compute the Slack request signature",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compute the Slack request signature": {
+      "main": [
+        [
+          {
+            "node": "Verify Slack and approve the incident lookup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify Slack and approve the incident lookup": {
+      "main": [
+        [
+          {
+            "node": "Proceed with the lookup?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Proceed with the lookup?": {
+      "main": [
+        [
+          {
+            "node": "Acknowledge the command",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Return the private command response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Acknowledge the command": {
+      "main": [
+        [
+          {
+            "node": "Read the matching ServiceNow incident",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the matching ServiceNow incident": {
+      "main": [
+        [
+          {
+            "node": "Prepare the Slack incident response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare the Slack incident response": {
+      "main": [
+        [
+          {
+            "node": "Reply to the originating Slack command",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reply to the originating Slack command": {
+      "main": [
+        [
+          {
+            "node": "Confirm Slack accepted the response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "saveExecutionProgress": false,
+    "saveManualExecutions": false,
+    "saveDataSuccessExecution": "none",
+    "saveDataErrorExecution": "none"
+  }
+}

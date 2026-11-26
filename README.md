@@ -1176,6 +1176,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 ## IT Operations
 
 - [Create, Update and Read a Workspace User](workflows/create-update-read-workspace-user/) - Create a Google Workspace user, update their surname, and retrieve the user.
+- [Look Up ServiceNow Incidents from Slack](workflows/slack-servicenow-incident-lookup/) - Use a Slack slash command to look up a ServiceNow incident and share its details in an approved channel.
 
 ## AI
 
