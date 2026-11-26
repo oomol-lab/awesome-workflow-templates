@@ -1023,6 +1023,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Generate YouTube Video Chapters](workflows/generate-youtube-video-chapters/) - Generate chapter timestamps from a video caption track and append them to its description.
 - [Generate YouTube Metadata from Transcript and Document](workflows/generate-youtube-metadata-from-transcript-and-doc/) - Generate a video title, description and tags using a transcript and channel reference document.
 - [Summarize YouTube Video and Notify](workflows/summarize-youtube-video-and-notify/) - Summarize a YouTube transcript, return the video details and notify Telegram.
+- [Add Audio Narration to WordPress Articles](workflows/add-narration-to-wordpress-articles/) - Turn a WordPress article or its summary into MP3 audio and place the player above the existing post.
 
 ## Recruiting
 
