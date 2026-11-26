@@ -1,0 +1,250 @@
+{
+  "name": "Create Azure DevOps Tasks from Elasticsearch Alerts",
+  "active": false,
+  "nodes": [
+    {
+      "id": "elasticsearch-alert-to-azure-devops-task-schedule",
+      "name": "Daily at 12:15 UTC",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "15 12 * * *"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "elasticsearch-alert-to-azure-devops-task-config",
+      "name": "Configure alert query",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function configureSearch({ indexName, query }) {\n  const index = indexName.trim();\n  const filter = query.trim();\n  if (!index || index === \"your-alert-index\" || index === \".\" || index === \"..\" || !filter) {\n    throw new Error(\"Set the Elasticsearch index and alert query.\");\n  }\n  return { indexName: index, query: filter };\n}\n\nreturn [\n  {\n    json: configureSearch({\n      indexName: \"your-alert-index\",\n      query: \"log.level:error AND @timestamp:[now-1d TO now]\",\n    }),\n  },\n];\n"
+      }
+    },
+    {
+      "id": "elasticsearch-alert-to-azure-devops-task-count",
+      "name": "Count matching documents",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "authentication": "genericCredentialType",
+        "sendBody": true,
+        "url": "={{ 'https://elasticsearch.example.com/' + encodeURIComponent($json.indexName) + '/_count' }}",
+        "genericAuthType": "httpHeaderAuth",
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ query: { query_string: { query: $json.query } } }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "timeout": 30000
+        }
+      }
+    },
+    {
+      "id": "elasticsearch-alert-to-azure-devops-task-prepare",
+      "name": "Prepare work item",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function prepareWorkItem({ count, failedShards }) {\n  if (!Number.isSafeInteger(count) || count < 0 || failedShards !== 0) {\n    throw new Error(\"Elasticsearch did not return a complete document count.\");\n  }\n  return {\n    matchCount: count,\n    patch: JSON.stringify([\n      {\n        op: \"add\",\n        path: \"/fields/System.Title\",\n        value: `Elasticsearch alert: ${count} matching ${count === 1 ? \"document\" : \"documents\"}`,\n      },\n    ]),\n  };\n}\n\nreturn [\n  {\n    json: prepareWorkItem({\n      count: $input.first().json.count,\n      failedShards: $input.first().json._shards?.failed,\n    }),\n  },\n];\n"
+      }
+    },
+    {
+      "id": "elasticsearch-alert-to-azure-devops-task-gate",
+      "name": "Any matches?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        880,
+        0
+      ],
+      "parameters": {
+        "combineOperation": "all",
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $json.matchCount }}",
+              "value2": 0,
+              "operation": "larger"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "elasticsearch-alert-to-azure-devops-task-create",
+      "name": "Create Azure DevOps Task",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1100,
+        -100
+      ],
+      "parameters": {
+        "method": "POST",
+        "authentication": "genericCredentialType",
+        "sendBody": true,
+        "url": "https://dev.azure.com/YOUR_ORGANIZATION/YOUR_PROJECT/_apis/wit/workitems/$Task?api-version=7.1",
+        "genericAuthType": "httpBasicAuth",
+        "contentType": "raw",
+        "rawContentType": "application/json-patch+json",
+        "body": "={{ $json.patch }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "timeout": 30000
+        }
+      }
+    },
+    {
+      "id": "elasticsearch-alert-to-azure-devops-task-confirm",
+      "name": "Confirm work item ID",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1320,
+        -100
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function confirmWorkItem({ body, matchCount }) {\n  if (!Number.isSafeInteger(body?.id) || body.id < 1) {\n    throw new Error(\"Azure DevOps did not confirm the created work item ID.\");\n  }\n  return { matchCount, workItemId: body.id };\n}\n\nreturn [\n  {\n    json: confirmWorkItem({\n      body: $input.first().json,\n      matchCount: $(\"Prepare work item\").first().json.matchCount,\n    }),\n  },\n];\n"
+      }
+    },
+    {
+      "id": "elasticsearch-alert-to-azure-devops-task-skip",
+      "name": "No matches",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1100,
+        100
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return [{ json: { matchCount: 0, workItemId: null } }];\n"
+      }
+    }
+  ],
+  "connections": {
+    "Daily at 12:15 UTC": {
+      "main": [
+        [
+          {
+            "node": "Configure alert query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configure alert query": {
+      "main": [
+        [
+          {
+            "node": "Count matching documents",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Count matching documents": {
+      "main": [
+        [
+          {
+            "node": "Prepare work item",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare work item": {
+      "main": [
+        [
+          {
+            "node": "Any matches?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Azure DevOps Task": {
+      "main": [
+        [
+          {
+            "node": "Confirm work item ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Any matches?": {
+      "main": [
+        [
+          {
+            "node": "Create Azure DevOps Task",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No matches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "timezone": "UTC",
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}
