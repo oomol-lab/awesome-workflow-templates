@@ -1,0 +1,128 @@
+{
+  "name": "Create Formatted Posts on WordPress.com",
+  "tags": [
+    {
+      "id": "uumvgGHY5e6zEL7V",
+      "name": "Published Template",
+      "createdAt": "2025-02-10T11:18:10.923Z",
+      "updatedAt": "2025-02-10T11:18:10.923Z"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "157b9656-5d90-44f4-aa3c-1285cda698d8",
+      "name": "Start post creation",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "name": "Set site and article",
+      "id": "create-formatted-wordpress-com-posts-config",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function preparePost({ siteId, title, content, status }) {\n  if (typeof siteId !== \"string\" || !/^[1-9]\\d{0,19}$/.test(siteId)) {\n    throw new Error(\"Set the numeric WordPress.com site ID\");\n  }\n  if (\n    typeof title !== \"string\" ||\n    !title.trim() ||\n    typeof content !== \"string\" ||\n    !content.trim()\n  ) {\n    throw new Error(\"Enter a post title and body\");\n  }\n  if (status !== \"draft\" && status !== \"publish\") {\n    throw new Error(\"Choose draft or publish for the post status\");\n  }\n  return {\n    url: \"https://public-api.wordpress.com/wp/v2/sites/\" + siteId + \"/posts?_fields=id,status,type\",\n    payload: { title, content, status },\n    requestedStatus: status,\n  };\n}\nconst settings = {\n  siteId: \"YOUR_WORDPRESS_COM_SITE_ID\",\n  title: \"A sample article\",\n  content: \"<p>Write your article here. You can include <strong>HTML formatting</strong>.</p>\",\n  status: \"draft\",\n};\nreturn [{ json: preparePost(settings) }];\n"
+      },
+      "position": [
+        225,
+        0
+      ]
+    },
+    {
+      "id": "3f29f3ed-f7ae-475b-bce3-04d3eeeacee9",
+      "name": "Create the WordPress.com post",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        450,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.url }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.payload) }}",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "responseFormat": "text",
+              "outputPropertyName": "data",
+              "neverError": true
+            }
+          }
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "name": "Confirm the new post ID",
+      "id": "create-formatted-wordpress-com-posts-confirm",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function confirmPost({ statusCode, response, expectedStatus }) {\n  if (statusCode >= 400 && statusCode < 500 && statusCode !== 408) {\n    throw new Error(\"WordPress.com rejected the post request (HTTP \" + statusCode + \")\");\n  }\n  const unknown = \"WordPress.com did not confirm creation. Check the site before retrying\";\n  if (statusCode !== 201) throw new Error(unknown + \" (HTTP \" + statusCode + \")\");\n  let post;\n  try {\n    post = JSON.parse(response);\n  } catch {\n    throw new Error(unknown);\n  }\n  if (\n    !Number.isSafeInteger(post?.id) ||\n    post.id < 1 ||\n    post.type !== \"post\" ||\n    post.status !== expectedStatus\n  ) {\n    throw new Error(unknown);\n  }\n  return { postId: post.id, status: post.status };\n}\nconst { statusCode, data: response } = $input.first().json;\nconst expectedStatus = $(\"Set site and article\").first().json.payload.status;\nreturn [{ json: confirmPost({ statusCode, response, expectedStatus }) }];\n"
+      },
+      "position": [
+        675,
+        0
+      ]
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Start post creation": {
+      "main": [
+        [
+          {
+            "node": "Set site and article",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set site and article": {
+      "main": [
+        [
+          {
+            "node": "Create the WordPress.com post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create the WordPress.com post": {
+      "main": [
+        [
+          {
+            "node": "Confirm the new post ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
