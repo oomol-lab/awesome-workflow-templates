@@ -709,6 +709,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Log Weather Requests and Send an SMS](workflows/log-and-text-city-weather/) - Save an incoming name, number, and city to Airtable and text that number the current weather.
 - [Record Analyzed Retell Calls](workflows/record-analyzed-retell-calls/) - Log signed Retell call transcripts and analysis in Google Sheets, Airtable, or Notion.
 - [Save Medium Gmail Attachments to Google Drive](workflows/save-medium-gmail-attachments-to-drive/) - Pick up new unread messages from a chosen sender and save each attachment that falls within your size limits.
+- [Send IMAP XML Orders to an API](workflows/send-imap-xml-orders-to-an-api/) - Read the first XML attachment from each IMAP message and POST the parsed order to your HTTPS endpoint.
 
 ## Content
 

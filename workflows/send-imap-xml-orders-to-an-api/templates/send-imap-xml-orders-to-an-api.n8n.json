@@ -1,0 +1,131 @@
+{
+  "name": "Send IMAP XML Orders to an API",
+  "nodes": [
+    {
+      "name": "Watch for order emails",
+      "type": "n8n-nodes-base.emailReadImap",
+      "typeVersion": 2.1,
+      "parameters": {
+        "mailbox": "INBOX",
+        "format": "simple",
+        "postProcessAction": "read",
+        "downloadAttachments": true,
+        "dataPropertyAttachmentsPrefixName": "attachment_",
+        "options": {
+          "customEmailConfig": "[\"UNSEEN\"]",
+          "trackLastMessageId": true
+        }
+      },
+      "id": "send-imap-xml-orders-to-an-api-0",
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "name": "Decode the first XML attachment",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function validateOrderEndpoint(endpoint) {\n  if (\n    typeof endpoint !== \"string\" ||\n    !/^https:\\/\\/[a-z0-9.-]+(?::[0-9]{1,5})?\\/[^#\\s\\\\]*$/i.test(endpoint) ||\n    /^https:\\/\\/[^/]+\\.invalid\\//i.test(endpoint)\n  )\n    throw new Error(\"Configure the HTTPS order endpoint\");\n  return endpoint;\n}\nfunction isXmlAttachment(file) {\n  const mime =\n    typeof file?.mimeType === \"string\" ? file.mimeType.split(\";\")[0].trim().toLowerCase() : \"\";\n  return (\n    [\"application/xml\", \"text/xml\"].includes(mime) ||\n    mime.endsWith(\"+xml\") ||\n    (typeof file?.fileName === \"string\" && /\\.xml$/i.test(file.fileName))\n  );\n}\nfunction decodeOrderXml(bytes) {\n  if (!bytes?.length || bytes.length > 1024 * 1024)\n    throw new Error(\"The first XML attachment must be between 1 byte and 1 MiB\");\n  const xml = new TextDecoder(\"utf-8\", { fatal: true }).decode(bytes);\n  const tokens =\n    /<!--[\\s\\S]*?-->|<!\\[CDATA\\[[\\s\\S]*?\\]\\]>|<\\?[\\s\\S]*?\\?>|<(?:(?:\"[^\"]*\")|(?:'[^']*')|[^<>\"'])*>/g;\n  const spaceOnly = /^[\\t\\r\\n ]*$/;\n  const invalidDocument = \"Expected one complete XML document\";\n  let depth = 0;\n  let roots = 0;\n  let end = 0;\n  for (const token of xml.matchAll(tokens)) {\n    const markup = token[0];\n    if (/^<!\\s*(?:DOCTYPE|ENTITY)\\b/i.test(markup))\n      throw new Error(\"XML document type and entity declarations are disabled\");\n    if (depth === 0 && !spaceOnly.test(xml.slice(end, token.index)))\n      throw new Error(invalidDocument);\n    end = token.index + markup.length;\n    if (markup.startsWith(\"<!--\")) continue;\n    if (markup.startsWith(\"<?\")) {\n      if (/^<\\?xml(?:\\s|\\?)/i.test(markup) && token.index !== 0) throw new Error(invalidDocument);\n      continue;\n    }\n    if (markup.startsWith(\"<![CDATA[\") && depth > 0) continue;\n    if (markup.startsWith(\"<!\")) throw new Error(invalidDocument);\n    if (markup.startsWith(\"</\")) {\n      if (--depth < 0) throw new Error(invalidDocument);\n      continue;\n    }\n    if (depth === 0 && ++roots > 1) throw new Error(invalidDocument);\n    if (!markup.endsWith(\"/>\")) depth++;\n  }\n  if (roots !== 1 || depth !== 0 || !spaceOnly.test(xml.slice(end)))\n    throw new Error(invalidDocument);\n  return xml;\n}\nconst endpoint = \"https://orders.example.invalid/receive\";\nconst items = $input.all();\nconst result = [];\nfor (const [index, item] of items.entries()) {\n  if (!isXmlAttachment(item.binary?.attachment_0)) continue;\n  const uid = item.json.attributes?.uid;\n  if (!Number.isSafeInteger(uid) || uid < 1) throw new Error(\"Expected an IMAP message UID\");\n  const bytes = await helpers.getBinaryDataBuffer(index, \"attachment_0\");\n  result.push({\n    json: { uid, xml: decodeOrderXml(bytes), endpoint: validateOrderEndpoint(endpoint) },\n    pairedItem: { item: index },\n  });\n}\nreturn result;\n"
+      },
+      "id": "send-imap-xml-orders-to-an-api-1",
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "name": "Parse the order XML",
+      "type": "n8n-nodes-base.xml",
+      "typeVersion": 1,
+      "parameters": {
+        "mode": "xmlToJson",
+        "dataPropertyName": "xml",
+        "options": {
+          "explicitRoot": true,
+          "explicitArray": false,
+          "ignoreAttrs": true
+        }
+      },
+      "id": "send-imap-xml-orders-to-an-api-2",
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "name": "POST the order to your API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "parameters": {
+        "authentication": "none",
+        "requestMethod": "POST",
+        "url": "={{ $('Decode the first XML attachment').itemMatching($itemIndex).json.endpoint }}",
+        "options": {
+          "bodyContentType": "form-urlencoded",
+          "followRedirect": false,
+          "followAllRedirects": false,
+          "timeout": 30000
+        },
+        "responseFormat": "string",
+        "dataPropertyName": "status",
+        "bodyParametersUi": {
+          "parameter": [
+            {
+              "name": "orderRequest",
+              "value": "={{ $json }}"
+            }
+          ]
+        },
+        "allowUnauthorizedCerts": false
+      },
+      "id": "send-imap-xml-orders-to-an-api-3",
+      "position": [
+        660,
+        0
+      ]
+    }
+  ],
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Watch for order emails": {
+      "main": [
+        [
+          {
+            "node": "Decode the first XML attachment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decode the first XML attachment": {
+      "main": [
+        [
+          {
+            "node": "Parse the order XML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse the order XML": {
+      "main": [
+        [
+          {
+            "node": "POST the order to your API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {}
+}
