@@ -1,0 +1,769 @@
+{
+  "name": "Convert New Drive PDFs to HTML",
+  "nodes": [
+    {
+      "name": "New PDFs in the Drive folder",
+      "id": "convert-drive-pdfs-to-html-trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 * * * * *"
+            }
+          ]
+        }
+      },
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "name": "Set folders and select the scan window",
+      "id": "convert-drive-pdfs-to-html-window",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function fileKey(value) {\n  return typeof value === \"string\" && /^[A-Za-z0-9_-]{2,100}$/.test(value);\n}\n\nconst sourceFolder = \"YOUR_INPUT_FOLDER_ID\";\nconst destination = \"YOUR_OUTPUT_FOLDER_ID\";\nif (\n  !fileKey(sourceFolder) ||\n  sourceFolder.startsWith(\"YOUR_\") ||\n  !fileKey(destination) ||\n  destination.startsWith(\"YOUR_\")\n)\n  throw new Error(\"Set both Google Drive folder IDs.\");\nif ($execution.mode !== \"production\") return [];\nconst end = Date.parse($input.first().json.timestamp);\nif (!Number.isSafeInteger(end)) throw new Error(\"Schedule did not provide a valid scan time.\");\nconst staticData = $getWorkflowStaticData(\"global\");\nconst state = staticData.pdfHtmlScan;\nif (state && (!Number.isSafeInteger(state.since) || state.folder !== sourceFolder)) {\n  throw new Error(\n    \"The scan watermark belongs to another Drive folder. Import a new copy to watch it.\",\n  );\n}\nif (!state) {\n  staticData.pdfHtmlScan = { folder: sourceFolder, since: end };\n  return [];\n}\nconst start = state.since;\nif (end <= start) return [];\nconst q = [\n  \"'\" + sourceFolder + \"' in parents\",\n  \"trashed = false\",\n  \"mimeType = 'application/pdf'\",\n  \"createdTime >= '\" + new Date(start).toISOString() + \"'\",\n  \"createdTime < '\" + new Date(end).toISOString() + \"'\",\n].join(\" and \");\nreturn [{ json: { q, start, end, sourceFolder, destination } }];\n"
+      },
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "name": "Read every Drive page in this scan",
+      "id": "convert-drive-pdfs-to-html-scan",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ \"https://www.googleapis.com/drive/v3/files?pageSize=100&orderBy=createdTime&fields=nextPageToken%2CincompleteSearch%2Cfiles(id%2CmimeType%2Cparents%2Ctrashed%2CcreatedTime)&q=\" + encodeURIComponent($json.q) }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "options": {
+          "timeout": 20000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          },
+          "pagination": {
+            "pagination": {
+              "paginationMode": "updateAParameterInEachRequest",
+              "parameters": {
+                "parameters": [
+                  {
+                    "type": "qs",
+                    "name": "pageToken",
+                    "value": "={{ $response.body?.nextPageToken }}"
+                  }
+                ]
+              },
+              "paginationCompleteWhen": "other",
+              "completeExpression": "={{ !$response.body?.nextPageToken }}",
+              "limitPagesFetched": true,
+              "maxRequests": 25,
+              "requestInterval": 0
+            }
+          }
+        }
+      },
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "name": "Select newly created PDFs",
+      "id": "convert-drive-pdfs-to-html-choose",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function fileKey(value) {\n  return typeof value === \"string\" && /^[A-Za-z0-9_-]{2,100}$/.test(value);\n}\n\nfunction pdfEvents(events, isOpenFlow) {\n  if (!Array.isArray(events)) throw new Error(\"Drive did not return file events.\");\n  const selected = new Map();\n  for (const file of events) {\n    if (isOpenFlow && (file?.eventType !== \"file_created\" || file.itemType !== \"file\")) continue;\n    if (file?.mimeType !== \"application/pdf\" || file.trashed === true) continue;\n    const id = isOpenFlow ? file.fileId : file.id;\n    if (\n      !fileKey(id) ||\n      !Array.isArray(file.parents) ||\n      file.parents.length !== 1 ||\n      !fileKey(file.parents[0])\n    ) {\n      throw new Error(\"The new PDF has no verifiable Drive ID and parent.\");\n    }\n    selected.set(id, { id, parent: file.parents[0] });\n  }\n  return [...selected.values()];\n}\n\nconst { start, end, sourceFolder, destination } = $(\n  \"Set folders and select the scan window\",\n).first().json;\nconst pages = $input.all();\nconst tokens = new Set();\nconst files = [];\nfor (const [index, item] of pages.entries()) {\n  const page = item.json;\n  const token = page.body?.nextPageToken;\n  if (\n    page.statusCode !== 200 ||\n    page.body?.incompleteSearch === true ||\n    !Array.isArray(page.body?.files) ||\n    (token === undefined\n      ? index !== pages.length - 1\n      : typeof token !== \"string\" || !token || tokens.has(token) || index === pages.length - 1)\n  ) {\n    throw new Error(\n      \"Drive did not return a complete, bounded page sequence. No files were converted.\",\n    );\n  }\n  tokens.add(token);\n  for (const file of page.body.files) {\n    if (file.mimeType !== \"application/pdf\" || file.trashed === true) continue;\n    const time = Date.parse(file.createdTime);\n    if (\n      time < start ||\n      time >= end ||\n      !Number.isSafeInteger(time) ||\n      file.parents?.[0] !== sourceFolder\n    ) {\n      throw new Error(\"Drive returned a PDF outside the requested folder or time window.\");\n    }\n    files.push({ file, index });\n  }\n}\nconst matched = pdfEvents(\n  files.map((entry) => entry.file),\n  false,\n).map((source) => ({\n  json: { source, destination },\n  pairedItem: { item: files.find((entry) => entry.file.id === source.id).index },\n}));\n$getWorkflowStaticData(\"global\").pdfHtmlScan = { folder: sourceFolder, since: end };\nreturn matched;\n"
+      },
+      "position": [
+        660,
+        0
+      ]
+    },
+    {
+      "name": "Read the original Drive metadata",
+      "id": "convert-drive-pdfs-to-html-meta",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ \"https://www.googleapis.com/drive/v3/files/\" + $json.source.id + \"?fields=id,name,mimeType,parents,size,trashed\" }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "options": {
+          "timeout": 20000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "position": [
+        880,
+        0
+      ]
+    },
+    {
+      "name": "Validate the PDF and target filename",
+      "id": "convert-drive-pdfs-to-html-plan",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function fileKey(value) {\n  return typeof value === \"string\" && /^[A-Za-z0-9_-]{2,100}$/.test(value);\n}\n\nfunction driveSource(doc, request, destination) {\n  if (!fileKey(destination) || destination.startsWith(\"YOUR_\"))\n    throw new Error(\"Set the destination Drive folder ID.\");\n  if (\n    doc?.id !== request.id ||\n    doc.mimeType !== \"application/pdf\" ||\n    doc.trashed === true ||\n    !Array.isArray(doc.parents) ||\n    doc.parents.length !== 1 ||\n    doc.parents[0] !== request.parent\n  ) {\n    throw new Error(\"The PDF no longer matches the original Drive file and watched folder.\");\n  }\n  const size = Number(doc.sizeBytes ?? doc.size);\n  if (!Number.isSafeInteger(size) || size < 8 || size > 3000000) {\n    throw new Error(\"The input must be a PDF of up to 3,000,000 bytes.\");\n  }\n  if (typeof doc.name !== \"string\" || !doc.name.trim())\n    throw new Error(\"Drive did not return the source filename.\");\n  const base = doc.name\n    .trim()\n    .replace(/[\\/\\\\\\u0000-\\u001f\\u007f]/g, \"_\")\n    .replace(/\\.pdf$/i, \"\")\n    .trim();\n  const name = (base || \"document\") + \".html\";\n  return {\n    id: doc.id,\n    parent: request.parent,\n    destination,\n    name,\n    size,\n    query:\n      \"'\" +\n      destination +\n      \"' in parents and trashed = false and appProperties has { key='pdfHtmlSourceId' and value='\" +\n      doc.id +\n      \"' }\",\n  };\n}\n\nconst { source, destination } = $(\"Select newly created PDFs\").item.json;\nif ($json.statusCode !== 200) throw new Error(\"Drive did not confirm the source document.\");\nreturn { json: driveSource($json.body, source, destination) };\n"
+      },
+      "position": [
+        1100,
+        0
+      ]
+    },
+    {
+      "name": "Find a prior HTML for this source",
+      "id": "convert-drive-pdfs-to-html-list",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ \"https://www.googleapis.com/drive/v3/files?pageSize=2&fields=\"+encodeURIComponent(\"nextPageToken,files(id,name,mimeType,parents,appProperties,trashed)\")+\"&q=\"+encodeURIComponent($json.query) }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "options": {
+          "timeout": 20000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "position": [
+        1320,
+        0
+      ]
+    },
+    {
+      "name": "Check the destination for a matching output",
+      "id": "convert-drive-pdfs-to-html-decide",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function fileKey(value) {\n  return typeof value === \"string\" && /^[A-Za-z0-9_-]{2,100}$/.test(value);\n}\n\nfunction existingHtml(reply, status, doc) {\n  if (\n    status !== 200 ||\n    !Array.isArray(reply?.files) ||\n    reply.nextPageToken ||\n    reply.files.length > 1\n  ) {\n    throw new Error(\n      \"Could not establish a unique prior Drive output. Check the destination before retrying.\",\n    );\n  }\n  const current = reply.files[0];\n  if (!current) return null;\n  if (\n    !fileKey(current.id) ||\n    current.mimeType !== \"text/html\" ||\n    current.trashed === true ||\n    !current.parents?.includes(doc.destination) ||\n    current.appProperties?.pdfHtmlSourceId !== doc.id ||\n    typeof current.name !== \"string\"\n  ) {\n    throw new Error(\"The marked Drive output does not match this source PDF and folder.\");\n  }\n  return { sourceId: doc.id, driveId: current.id, name: current.name, state: \"already_created\" };\n}\n\nconst doc = $(\"Validate the PDF and target filename\").item.json;\nconst old = existingHtml($json.body, $json.statusCode, doc);\nreturn { json: old ? { ...old, needsConversion: false } : { ...doc, needsConversion: true } };\n"
+      },
+      "position": [
+        1540,
+        0
+      ]
+    },
+    {
+      "name": "Does this PDF need converting?",
+      "id": "convert-drive-pdfs-to-html-needs",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "leftValue": ""
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "needs-conversion",
+              "leftValue": "={{ $json.needsConversion }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "position": [
+        1760,
+        0
+      ]
+    },
+    {
+      "name": "Download the private PDF bytes",
+      "id": "convert-drive-pdfs-to-html-fetch",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ \"https://www.googleapis.com/drive/v3/files/\" + $json.id + \"?alt=media\" }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "options": {
+          "timeout": 20000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "fullResponse": true,
+              "outputPropertyName": "pdf"
+            }
+          }
+        }
+      },
+      "position": [
+        0,
+        240
+      ]
+    },
+    {
+      "name": "Check the downloaded PDF bytes",
+      "id": "convert-drive-pdfs-to-html-inspected",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function requirePdf(bytes, mime, size) {\n  const signature = [37, 80, 68, 70, 45];\n  if (\n    mime?.split(\";\")[0].toLowerCase() !== \"application/pdf\" ||\n    bytes.length !== size ||\n    !signature.every((byte, i) => bytes[i] === byte)\n  ) {\n    throw new Error(\"Drive did not return the complete matching PDF.\");\n  }\n}\n\nconst doc = $(\"Validate the PDF and target filename\").item.json;\nif ($json.statusCode !== 200) throw new Error(\"Drive did not return the original PDF.\");\nrequirePdf(\n  await helpers.getBinaryDataBuffer($itemIndex, \"pdf\"),\n  $input.item.binary?.pdf?.mimeType,\n  doc.size,\n);\nreturn { json: {}, binary: $input.item.binary };\n"
+      },
+      "position": [
+        220,
+        240
+      ]
+    },
+    {
+      "name": "Request a temporary PDF upload link",
+      "id": "convert-drive-pdfs-to-html-ticket",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.pdf.co/v1/file/upload/get-presigned-url?name=source.pdf&contenttype=application%2Fpdf",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 20000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "position": [
+        440,
+        240
+      ]
+    },
+    {
+      "name": "Verify the PDF and signed links",
+      "id": "convert-drive-pdfs-to-html-verify",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function temporaryObject(address, maxLifetime) {\n  const parts =\n    typeof address === \"string\" &&\n    /^https:\\/\\/(pdf-temp-files\\.s3(?:[.-][a-z0-9-]+)?\\.amazonaws\\.com)(\\/[A-Za-z0-9_-]+\\/source\\.pdf)\\?([^\\s#\"<>\\\\]+)$/.exec(\n      address,\n    );\n  if (!parts) throw new Error(\"PDF.co did not return an approved temporary storage URL.\");\n  const query = parts[3].split(\"&\");\n  const count = (key) => query.filter((field) => field.startsWith(key + \"=\"));\n  const expires = count(\"X-Amz-Expires\");\n  const duration = expires.length === 1 ? Number(expires[0].slice(14)) : NaN;\n  if (\n    !Number.isInteger(duration) ||\n    duration < 1 ||\n    duration > maxLifetime ||\n    count(\"X-Amz-Algorithm\").length !== 1 ||\n    !query.includes(\"X-Amz-Algorithm=AWS4-HMAC-SHA256\") ||\n    count(\"X-Amz-Signature\").length !== 1 ||\n    !/^X-Amz-Signature=[a-fA-F0-9]{64}$/.test(count(\"X-Amz-Signature\")[0]) ||\n    count(\"X-Amz-Date\").length !== 1 ||\n    !/^X-Amz-Date=\\d{8}T\\d{6}Z$/.test(count(\"X-Amz-Date\")[0])\n  ) {\n    throw new Error(\"PDF.co did not return an expiring signed storage URL.\");\n  }\n  return parts[1] + parts[2];\n}\n\nfunction uploadTicket(body, status) {\n  if (status !== 200 || Number(body?.status) !== 200 || body.error !== false)\n    throw new Error(\"PDF.co did not confirm a temporary upload.\");\n  if (temporaryObject(body.presignedUrl, 1800) !== temporaryObject(body.url, 3600)) {\n    throw new Error(\"The PDF.co upload and conversion reference different temporary files.\");\n  }\n  return {\n    putUrl: body.presignedUrl,\n    request: {\n      url: body.url,\n      pages: \"0-\",\n      inline: true,\n      async: false,\n      name: \"converted.html\",\n      expiration: 5,\n    },\n  };\n}\n\nreturn {\n  json: uploadTicket($json.body, $json.statusCode),\n  binary: $(\"Check the downloaded PDF bytes\").item.binary,\n};\n"
+      },
+      "position": [
+        660,
+        240
+      ]
+    },
+    {
+      "name": "Upload PDF bytes to temporary storage",
+      "id": "convert-drive-pdfs-to-html-put",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ $json.putUrl }}",
+        "authentication": "none",
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "pdf",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/pdf"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 20000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "text",
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "position": [
+        880,
+        240
+      ]
+    },
+    {
+      "name": "Prepare the synchronous HTML conversion",
+      "id": "convert-drive-pdfs-to-html-request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if (![200, 204].includes($json.statusCode))\n  throw new Error(\"PDF.co storage did not accept the original bytes.\");\nreturn { json: $(\"Verify the PDF and signed links\").item.json.request };\n"
+      },
+      "position": [
+        1100,
+        240
+      ]
+    },
+    {
+      "name": "Convert all PDF pages to inline HTML",
+      "id": "convert-drive-pdfs-to-html-convert",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.pdf.co/v1/pdf/convert/to/html",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {
+          "timeout": 120000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "position": [
+        1320,
+        240
+      ]
+    },
+    {
+      "name": "Prepare the exact HTML file",
+      "id": "convert-drive-pdfs-to-html-html",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function inlineHtml(body, status) {\n  if (\n    status !== 200 ||\n    Number(body?.status) !== 200 ||\n    body.error !== false ||\n    typeof body.body !== \"string\" ||\n    !/<(?:!doctype\\s+html|html|head|body|meta|style|div|p|table|svg)(?:[\\s/>])/i.test(body.body)\n  ) {\n    throw new Error(\"PDF.co did not return complete inline HTML.\");\n  }\n  return body.body;\n}\n\nfunction driveUploadMetadata(doc) {\n  return {\n    name: doc.name,\n    mimeType: \"text/html\",\n    parents: [doc.destination],\n    appProperties: { pdfHtmlSourceId: doc.id },\n  };\n}\n\nfunction driveMultipart(doc, bytes) {\n  const metadata = JSON.stringify(driveUploadMetadata(doc));\n  let number = 0,\n    boundary;\n  do {\n    boundary = \"pdfhtml-\" + doc.id.slice(0, 25) + \"-\" + number++;\n  } while (metadata.includes(boundary) || bytes.includes(boundary));\n  const data = Buffer.concat([\n    Buffer.from(\n      \"--\" +\n        boundary +\n        \"\\r\\nContent-Type: application/json; charset=UTF-8\\r\\n\\r\\n\" +\n        metadata +\n        \"\\r\\n--\" +\n        boundary +\n        \"\\r\\nContent-Type: text/html; charset=UTF-8\\r\\n\\r\\n\",\n    ),\n    bytes,\n    Buffer.from(\"\\r\\n--\" + boundary + \"--\\r\\n\"),\n  ]);\n  return { data, contentType: \"multipart/related; boundary=\" + boundary };\n}\n\nconst doc = $(\"Validate the PDF and target filename\").item.json;\nconst bytes = Buffer.from(inlineHtml($json.body, $json.statusCode), \"utf8\");\nif (bytes.length > 2000000) throw new Error(\"The HTML must fit within 2,000,000 bytes.\");\nconst envelope = driveMultipart(doc, bytes);\nreturn {\n  json: {\n    size: bytes.length,\n    name: doc.name,\n    contentType: envelope.contentType,\n    html: bytes.toString(\"base64\"),\n    multipart: envelope.data.toString(\"base64\"),\n  },\n};\n"
+      },
+      "position": [
+        1540,
+        240
+      ]
+    },
+    {
+      "name": "Create the downloadable HTML file",
+      "id": "convert-drive-pdfs-to-html-file",
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "parameters": {
+        "operation": "toBinary",
+        "sourceProperty": "html",
+        "binaryPropertyName": "data",
+        "options": {
+          "fileName": "={{ $json.name }}",
+          "mimeType": "text/html",
+          "addBOM": false
+        }
+      },
+      "position": [
+        1760,
+        240
+      ]
+    },
+    {
+      "name": "Read the prepared Drive upload envelope",
+      "id": "convert-drive-pdfs-to-html-restore",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return { json: $(\"Prepare the exact HTML file\").item.json };\n"
+      },
+      "position": [
+        0,
+        480
+      ]
+    },
+    {
+      "name": "Create the Drive multipart binary",
+      "id": "convert-drive-pdfs-to-html-multipart",
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "parameters": {
+        "operation": "toBinary",
+        "sourceProperty": "multipart",
+        "binaryPropertyName": "multipart",
+        "options": {
+          "fileName": "upload.bin",
+          "mimeType": "application/octet-stream",
+          "addBOM": false
+        }
+      },
+      "position": [
+        220,
+        480
+      ]
+    },
+    {
+      "name": "Save the HTML in Google Drive",
+      "id": "convert-drive-pdfs-to-html-upload",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id%2Cname%2CmimeType%2Cparents%2Csize%2CappProperties",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "multipart",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "={{ $(\"Prepare the exact HTML file\").item.json.contentType }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 20000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "position": [
+        440,
+        480
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "name": "Confirm the Drive HTML file",
+      "id": "convert-drive-pdfs-to-html-confirm",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function fileKey(value) {\n  return typeof value === \"string\" && /^[A-Za-z0-9_-]{2,100}$/.test(value);\n}\n\nfunction driveReceipt(reply, doc, size) {\n  if (\n    !fileKey(reply?.id) ||\n    reply.name !== doc.name ||\n    reply.mimeType !== \"text/html\" ||\n    !reply.parents?.includes(doc.destination) ||\n    Number(reply.sizeBytes ?? reply.size) !== size\n  ) {\n    throw new Error(\"Drive did not confirm the HTML file. Check the destination before retrying.\");\n  }\n  return { sourceId: doc.id, driveId: reply.id, name: reply.name, state: \"created\" };\n}\n\nconst doc = $(\"Validate the PDF and target filename\").item.json;\ntry {\n  if (\n    ![200, 201].includes($json.statusCode) ||\n    $json.body?.appProperties?.pdfHtmlSourceId !== doc.id\n  ) {\n    throw new Error(\"Drive did not confirm the HTML file.\");\n  }\n  return {\n    json: driveReceipt($json.body, doc, $(\"Prepare the exact HTML file\").item.json.size),\n    binary: $(\"Create the downloadable HTML file\").item.binary,\n  };\n} catch {\n  return {\n    json: {\n      sourceId: doc.id,\n      name: doc.name,\n      state: \"unconfirmed\",\n      message: \"Check the destination before retrying.\",\n    },\n  };\n}\n"
+      },
+      "position": [
+        660,
+        480
+      ]
+    }
+  ],
+  "connections": {
+    "New PDFs in the Drive folder": {
+      "main": [
+        [
+          {
+            "node": "Set folders and select the scan window",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set folders and select the scan window": {
+      "main": [
+        [
+          {
+            "node": "Read every Drive page in this scan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read every Drive page in this scan": {
+      "main": [
+        [
+          {
+            "node": "Select newly created PDFs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select newly created PDFs": {
+      "main": [
+        [
+          {
+            "node": "Read the original Drive metadata",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the original Drive metadata": {
+      "main": [
+        [
+          {
+            "node": "Validate the PDF and target filename",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate the PDF and target filename": {
+      "main": [
+        [
+          {
+            "node": "Find a prior HTML for this source",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find a prior HTML for this source": {
+      "main": [
+        [
+          {
+            "node": "Check the destination for a matching output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check the destination for a matching output": {
+      "main": [
+        [
+          {
+            "node": "Does this PDF need converting?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Does this PDF need converting?": {
+      "main": [
+        [
+          {
+            "node": "Download the private PDF bytes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download the private PDF bytes": {
+      "main": [
+        [
+          {
+            "node": "Check the downloaded PDF bytes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check the downloaded PDF bytes": {
+      "main": [
+        [
+          {
+            "node": "Request a temporary PDF upload link",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Request a temporary PDF upload link": {
+      "main": [
+        [
+          {
+            "node": "Verify the PDF and signed links",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify the PDF and signed links": {
+      "main": [
+        [
+          {
+            "node": "Upload PDF bytes to temporary storage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload PDF bytes to temporary storage": {
+      "main": [
+        [
+          {
+            "node": "Prepare the synchronous HTML conversion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare the synchronous HTML conversion": {
+      "main": [
+        [
+          {
+            "node": "Convert all PDF pages to inline HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert all PDF pages to inline HTML": {
+      "main": [
+        [
+          {
+            "node": "Prepare the exact HTML file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare the exact HTML file": {
+      "main": [
+        [
+          {
+            "node": "Create the downloadable HTML file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create the downloadable HTML file": {
+      "main": [
+        [
+          {
+            "node": "Read the prepared Drive upload envelope",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the prepared Drive upload envelope": {
+      "main": [
+        [
+          {
+            "node": "Create the Drive multipart binary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create the Drive multipart binary": {
+      "main": [
+        [
+          {
+            "node": "Save the HTML in Google Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save the HTML in Google Drive": {
+      "main": [
+        [
+          {
+            "node": "Confirm the Drive HTML file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC",
+    "saveDataSuccessExecution": "all",
+    "saveDataErrorExecution": "all",
+    "saveManualExecutions": false,
+    "saveExecutionProgress": false
+  }
+}

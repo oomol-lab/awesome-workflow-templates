@@ -1270,6 +1270,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Render Branded Markdown PDF](workflows/render-branded-markdown-pdf/) - Render Markdown as a branded PDF with a cover and numbered contents.
 - [Fill a Reviewed PDF Form with JustFill](workflows/fill-reviewed-pdf-form-with-justfill/) - Fill a reviewed PDF template with exact field names and return a temporary download link.
 - [Render HTML and PDF Pages as PNGs](workflows/render-html-and-pdf-pages-as-png/) - Turn HTML and a PDF URL into PNG images, with one file per page from each document.
+- [Convert New Drive PDFs to HTML](workflows/convert-drive-pdfs-to-html/) - Convert new PDFs in a Google Drive folder with PDF.co and save the HTML under the original filename.
 
 ## Events
 
