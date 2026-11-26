@@ -1,0 +1,882 @@
+{
+  "name": "Record Hourly Crypto Portfolio Value in Airtable",
+  "nodes": [
+    {
+      "id": "record-hourly-crypto-portfolio-value-in-airtable-0",
+      "name": "Run at the top of each hour",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 * * * *"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "record-hourly-crypto-portfolio-value-in-airtable-1",
+      "name": "Set Airtable tables",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        260,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function configurePortfolio(baseId, portfolioTable, historyTable, timestamp) {\n  if (typeof baseId !== \"string\" || !/^app[A-Za-z0-9]{14}$/.test(baseId))\n    throw new Error(\"Enter your Airtable base ID\");\n  if (\n    !portfolioTable?.trim() ||\n    !historyTable?.trim() ||\n    portfolioTable.trim() === historyTable.trim()\n  ) {\n    throw new Error(\"Choose separate Airtable portfolio and history tables\");\n  }\n  const time = new Date(timestamp);\n  if (!Number.isFinite(time.getTime())) throw new Error(\"A valid schedule timestamp is required\");\n  time.setUTCMinutes(0, 0, 0);\n  const hour = time.toISOString();\n  return {\n    baseId,\n    portfolioTable: portfolioTable.trim(),\n    historyTable: historyTable.trim(),\n    hour,\n    key: \"portfolio:\" + hour,\n  };\n}\n\nconst config = configurePortfolio(\n  \"appYYYYYYYYYYYYYY\",\n  \"Portfolio\",\n  \"Portfolio Value\",\n  $input.first().json.timestamp,\n);\nconst prefix = \"https://api.airtable.com/v0/\" + config.baseId + \"/\";\nreturn [\n  {\n    json: {\n      ...config,\n      positionUrl: prefix + encodeURIComponent(config.portfolioTable),\n      historyUrl: prefix + encodeURIComponent(config.historyTable),\n    },\n  },\n];\n"
+      }
+    },
+    {
+      "id": "record-hourly-crypto-portfolio-value-in-airtable-2",
+      "name": "Read all portfolio symbols",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        520,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Set Airtable tables').first().json.positionUrl + \"/listRecords\" }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": {
+          "fields": [
+            "Symbol"
+          ],
+          "pageSize": 100
+        },
+        "options": {
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          },
+          "pagination": {
+            "pagination": {
+              "paginationMode": "updateAParameterInEachRequest",
+              "parameters": {
+                "parameters": [
+                  {
+                    "type": "body",
+                    "name": "offset",
+                    "value": "={{ $response.body?.offset }}"
+                  }
+                ]
+              },
+              "paginationCompleteWhen": "other",
+              "completeExpression": "={{ typeof $response.body?.offset !== \"string\" || !$response.body.offset }}",
+              "limitPagesFetched": false,
+              "requestInterval": 250
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "record-hourly-crypto-portfolio-value-in-airtable-3",
+      "name": "Collect portfolio and group CoinGecko IDs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        780,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function readPortfolioPage(state, page, offset, values) {\n  if (!Array.isArray(page)) throw new Error(\"Airtable returned an invalid portfolio page\");\n  const before = state ?? { rows: [], offsets: [] };\n  if (\n    offset !== null &&\n    (typeof offset !== \"string\" || !offset || before.offsets.includes(offset))\n  ) {\n    throw new Error(\"Airtable returned a malformed or repeated offset\");\n  }\n  const ids = new Set(before.rows.map((row) => row.id));\n  const snapshot = [];\n  for (const record of page) {\n    const id = record?.id;\n    const coinId = record?.fields?.Symbol;\n    if (typeof id !== \"string\" || !/^rec[A-Za-z0-9]+$/.test(id) || ids.has(id)) {\n      throw new Error(\"Airtable returned a missing or duplicate record ID\");\n    }\n    if (typeof coinId !== \"string\" || !/^[a-z0-9][a-z0-9._-]*$/.test(coinId)) {\n      throw new Error(\"Enter a CoinGecko API coin ID in Symbol for \" + id);\n    }\n    ids.add(id);\n    const row = { id, coinId };\n    if (values) {\n      row.price = record.fields[\"Present Price\"] ?? null;\n      row.value = record.fields[\"Present Value\"] ?? null;\n    }\n    snapshot.push(row);\n  }\n  return {\n    rows: before.rows.concat(snapshot),\n    offsets: offset === null ? before.offsets : [...before.offsets, offset],\n  };\n}\n\nfunction airtableListResult(body) {\n  if (!Array.isArray(body?.records) || (body.offset != null && typeof body.offset !== \"string\")) {\n    throw new Error(\"Airtable returned an invalid portfolio page\");\n  }\n  return { rows: body.records, offset: body.offset ?? null };\n}\n\nlet state = null;\nlet offset;\nfor (const {\n  json: { body, statusCode },\n} of $input.all()) {\n  if (statusCode !== 200) throw new Error(\"Airtable portfolio read failed with HTTP \" + statusCode);\n  const page = airtableListResult(body);\n  offset = page.offset;\n  state = readPortfolioPage(state, page.rows, offset, false);\n}\nif (offset !== null || state === null)\n  throw new Error(\"Airtable portfolio pagination did not finish\");\nfunction splitBatches(items, size) {\n  const batches = [];\n  for (let start = 0; start < items.length; start += size)\n    batches.push(items.slice(start, start + size));\n  return batches;\n}\n\nconst ids = [...new Set(state.rows.map((row) => row.coinId))];\nreturn [\n  { json: { portfolio: state.rows, groups: splitBatches(ids, 100), empty: ids.length === 0 } },\n];\n"
+      }
+    },
+    {
+      "id": "record-hourly-crypto-portfolio-value-in-airtable-4",
+      "name": "Portfolio is empty?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1040,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "record-hourly-crypto-portfolio-value-in-airtable-4-condition",
+              "leftValue": "={{ $json.empty }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "record-hourly-crypto-portfolio-value-in-airtable-5",
+      "name": "Return empty portfolio",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1300,
+        220
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return [{ json: { state: \"empty_portfolio\", hour: $(\"Set Airtable tables\").first().json.hour } }];\n"
+      }
+    },
+    {
+      "id": "record-hourly-crypto-portfolio-value-in-airtable-6",
+      "name": "Prepare CoinGecko quote requests",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1560,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return $input.first().json.groups.map((ids) => ({ json: { ids: ids.join(\",\") } }));\n"
+      }
+    },
+    {
+      "id": "record-hourly-crypto-portfolio-value-in-airtable-7",
+      "name": "Get CoinGecko prices in USD",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1820,
+        0
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.coingecko.com/api/v3/simple/price",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "specifyQuery": "keypair",
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "ids",
+              "value": "={{ $json.ids }}"
+            },
+            {
+              "name": "vs_currencies",
+              "value": "usd"
+            },
+            {
+              "name": "precision",
+              "value": "full"
+            }
+          ]
+        },
+        "options": {
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "record-hourly-crypto-portfolio-value-in-airtable-8",
+      "name": "Validate all quotes and plan price updates",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2080,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function takeQuotes(ids, prices) {\n  if (prices === null || typeof prices !== \"object\" || Array.isArray(prices)) {\n    throw new Error(\"CoinGecko returned an invalid price result\");\n  }\n  return Object.fromEntries(\n    ids.map((id) => {\n      const dollar = Object.hasOwn(prices, id) ? prices[id]?.usd : undefined;\n      if (!Number.isFinite(dollar) || dollar < 0)\n        throw new Error(\"Missing or invalid CoinGecko USD price for \" + id);\n      return [id, dollar];\n    }),\n  );\n}\n\nfunction recordsToUpdate(rows, prices) {\n  return rows.map(({ id, coinId }) => ({ id, fields: { \"Present Price\": prices[coinId] } }));\n}\n\nfunction splitBatches(items, size) {\n  const batches = [];\n  for (let start = 0; start < items.length; start += size)\n    batches.push(items.slice(start, start + size));\n  return batches;\n}\n\nconst expected = $(\"Collect portfolio and group CoinGecko IDs\").first().json;\nconst input = $input.all();\nif (input.length !== expected.groups.length)\n  throw new Error(\"CoinGecko responses did not cover the requested groups\");\nconst prices = {};\nfor (const [index, item] of input.entries()) {\n  if (item.json.statusCode !== 200) throw new Error(\"CoinGecko did not confirm the price request\");\n  const groupIndex = item.pairedItem?.item ?? index;\n  Object.assign(prices, takeQuotes(expected.groups[groupIndex], item.json.body));\n}\nif (Object.keys(prices).length !== new Set(expected.portfolio.map((row) => row.coinId)).size)\n  throw new Error(\"CoinGecko prices are incomplete\");\nreturn [\n  { json: { prices, batches: splitBatches(recordsToUpdate(expected.portfolio, prices), 10) } },\n];\n"
+      }
+    },
+    {
+      "id": "record-hourly-crypto-portfolio-value-in-airtable-9",
+      "name": "Find the hourly checkpoint",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        2340,
+        0
+      ],
+      "parameters": {
+        "resource": "row",
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_CHECKPOINT_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "hour_key",
+              "condition": "eq",
+              "keyValue": "={{ $('Set Airtable tables').first().json.key }}"
+            }
+          ]
+        },
+        "returnAll": false,
+        "limit": 1
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "id": "record-hourly-crypto-portfolio-value-in-airtable-10",
+      "name": "Check whether this hour can write",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2600,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const state = $input.first().json;\nif (Object.keys(state).length === 0) return [{ json: { fresh: true } }];\nif (state.hour_key !== $(\"Set Airtable tables\").first().json.key || state.status !== \"done\") {\n  throw new Error(\n    \"Airtable writes for \" +\n      $(\"Set Airtable tables\").first().json.hour +\n      \" are pending. Check both tables before retrying.\",\n  );\n}\nreturn [{ json: { fresh: false } }];\n"
+      }
+    },
+    {
+      "id": "record-hourly-crypto-portfolio-value-in-airtable-11",
+      "name": "Record this hour?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2860,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "record-hourly-crypto-portfolio-value-in-airtable-11-condition",
+              "leftValue": "={{ $json.fresh }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "record-hourly-crypto-portfolio-value-in-airtable-12",
+      "name": "Return previously recorded hour",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3120,
+        220
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return [{ json: { state: \"already_recorded\", hour: $(\"Set Airtable tables\").first().json.hour } }];\n"
+      }
+    },
+    {
+      "id": "record-hourly-crypto-portfolio-value-in-airtable-13",
+      "name": "Reserve this portfolio hour",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        3380,
+        0
+      ],
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_CHECKPOINT_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "hour_key": "={{ $('Set Airtable tables').first().json.key }}",
+            "status": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "record-hourly-crypto-portfolio-value-in-airtable-14",
+      "name": "Prepare Airtable price batches",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3640,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const reservation = $input.first().json;\nif (\n  reservation.hour_key !== $(\"Set Airtable tables\").first().json.key ||\n  reservation.status !== \"pending\"\n)\n  throw new Error(\"The hourly checkpoint was not confirmed\");\nreturn $(\"Validate all quotes and plan price updates\")\n  .first()\n  .json.batches.map((records) => ({ json: { records } }));\n"
+      }
+    },
+    {
+      "id": "record-hourly-crypto-portfolio-value-in-airtable-15",
+      "name": "Update price batches in order",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        3900,
+        0
+      ],
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      }
+    },
+    {
+      "id": "record-hourly-crypto-portfolio-value-in-airtable-16",
+      "name": "Update Airtable prices by record ID",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4160,
+        0
+      ],
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ $('Set Airtable tables').first().json.positionUrl }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ { records: $json.records } }}",
+        "options": {
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "record-hourly-crypto-portfolio-value-in-airtable-17",
+      "name": "Confirm the updated record IDs and prices",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4420,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function confirmPrices(records, requested) {\n  if (!Array.isArray(records) || records.length !== requested.length) {\n    throw new Error(\"Airtable did not confirm all updated portfolio rows\");\n  }\n  const prices = new Map(requested.map((row) => [row.id, row.fields[\"Present Price\"]]));\n  for (const row of records) {\n    if (!prices.has(row?.id) || row.fields?.[\"Present Price\"] !== prices.get(row.id)) {\n      throw new Error(\"Airtable returned a different record ID or price for this update\");\n    }\n    prices.delete(row.id);\n  }\n}\n\nconst item = $input.first().json;\nconst request = $(\"Update price batches in order\").itemMatching(0).json;\nconfirmPrices(item.body?.records, request.records);\nreturn [{ json: { updated: request.records.length } }];\n"
+      }
+    },
+    {
+      "id": "record-hourly-crypto-portfolio-value-in-airtable-18",
+      "name": "Confirm all portfolio rows were updated",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4680,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const updated = $input.all().reduce((sum, item) => sum + item.json.updated, 0);\nif (updated !== $(\"Collect portfolio and group CoinGecko IDs\").first().json.portfolio.length)\n  throw new Error(\"Not all portfolio rows were updated\");\nreturn [{ json: { updated } }];\n"
+      }
+    },
+    {
+      "id": "record-hourly-crypto-portfolio-value-in-airtable-19",
+      "name": "Read all recalculated portfolio values",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4940,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Set Airtable tables').first().json.positionUrl + \"/listRecords\" }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": {
+          "fields": [
+            "Symbol",
+            "Present Price",
+            "Present Value"
+          ],
+          "pageSize": 100
+        },
+        "options": {
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          },
+          "pagination": {
+            "pagination": {
+              "paginationMode": "updateAParameterInEachRequest",
+              "parameters": {
+                "parameters": [
+                  {
+                    "type": "body",
+                    "name": "offset",
+                    "value": "={{ $response.body?.offset }}"
+                  }
+                ]
+              },
+              "paginationCompleteWhen": "other",
+              "completeExpression": "={{ typeof $response.body?.offset !== \"string\" || !$response.body.offset }}",
+              "limitPagesFetched": false,
+              "requestInterval": 250
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "record-hourly-crypto-portfolio-value-in-airtable-20",
+      "name": "Sum Airtable calculated values",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5200,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function readPortfolioPage(state, page, offset, values) {\n  if (!Array.isArray(page)) throw new Error(\"Airtable returned an invalid portfolio page\");\n  const before = state ?? { rows: [], offsets: [] };\n  if (\n    offset !== null &&\n    (typeof offset !== \"string\" || !offset || before.offsets.includes(offset))\n  ) {\n    throw new Error(\"Airtable returned a malformed or repeated offset\");\n  }\n  const ids = new Set(before.rows.map((row) => row.id));\n  const snapshot = [];\n  for (const record of page) {\n    const id = record?.id;\n    const coinId = record?.fields?.Symbol;\n    if (typeof id !== \"string\" || !/^rec[A-Za-z0-9]+$/.test(id) || ids.has(id)) {\n      throw new Error(\"Airtable returned a missing or duplicate record ID\");\n    }\n    if (typeof coinId !== \"string\" || !/^[a-z0-9][a-z0-9._-]*$/.test(coinId)) {\n      throw new Error(\"Enter a CoinGecko API coin ID in Symbol for \" + id);\n    }\n    ids.add(id);\n    const row = { id, coinId };\n    if (values) {\n      row.price = record.fields[\"Present Price\"] ?? null;\n      row.value = record.fields[\"Present Value\"] ?? null;\n    }\n    snapshot.push(row);\n  }\n  return {\n    rows: before.rows.concat(snapshot),\n    offsets: offset === null ? before.offsets : [...before.offsets, offset],\n  };\n}\n\nfunction airtableListResult(body) {\n  if (!Array.isArray(body?.records) || (body.offset != null && typeof body.offset !== \"string\")) {\n    throw new Error(\"Airtable returned an invalid portfolio page\");\n  }\n  return { rows: body.records, offset: body.offset ?? null };\n}\n\nlet state = null;\nlet offset;\nfor (const {\n  json: { body, statusCode },\n} of $input.all()) {\n  if (statusCode !== 200) throw new Error(\"Airtable portfolio read failed with HTTP \" + statusCode);\n  const page = airtableListResult(body);\n  offset = page.offset;\n  state = readPortfolioPage(state, page.rows, offset, true);\n}\nif (offset !== null || state === null)\n  throw new Error(\"Airtable portfolio pagination did not finish\");\nfunction totalPortfolio(initial, completed, prices) {\n  if (completed.length !== initial.length)\n    throw new Error(\"The Airtable portfolio changed during pricing\");\n  const expected = new Map(initial.map((row) => [row.id, row.coinId]));\n  let value = 0;\n  for (const row of completed) {\n    if (expected.get(row.id) !== row.coinId || row.price !== prices[row.coinId]) {\n      throw new Error(\"The Airtable portfolio changed during pricing\");\n    }\n    if (!Number.isFinite(row.value)) throw new Error(\"Present Value must be numeric for \" + row.id);\n    value += row.value;\n  }\n  if (!Number.isFinite(value)) throw new Error(\"The portfolio total is outside the numeric range\");\n  return value;\n}\n\nconst total = totalPortfolio(\n  $(\"Collect portfolio and group CoinGecko IDs\").first().json.portfolio,\n  state.rows,\n  $(\"Validate all quotes and plan price updates\").first().json.prices,\n);\nreturn [{ json: { total, records: [{ fields: { \"Portfolio Value (US$)\": total } }] } }];\n"
+      }
+    },
+    {
+      "id": "record-hourly-crypto-portfolio-value-in-airtable-21",
+      "name": "Append one portfolio history row",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        5460,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Set Airtable tables').first().json.historyUrl }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ { records: $json.records } }}",
+        "options": {
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "record-hourly-crypto-portfolio-value-in-airtable-22",
+      "name": "Confirm the appended history row",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5720,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function confirmSnapshot(records, total) {\n  if (\n    !Array.isArray(records) ||\n    records.length !== 1 ||\n    !/^rec[A-Za-z0-9]+$/.test(records[0]?.id ?? \"\") ||\n    records[0].fields?.[\"Portfolio Value (US$)\"] !== total\n  ) {\n    throw new Error(\"Airtable did not confirm the portfolio history append\");\n  }\n  return records[0].id;\n}\n\nconst item = $input.first().json;\nconst total = $(\"Sum Airtable calculated values\").first().json.total;\nconst airtableId = confirmSnapshot(item.body?.records, total);\nreturn [\n  { json: { state: \"done\", hour: $(\"Set Airtable tables\").first().json.hour, total, airtableId } },\n];\n"
+      }
+    },
+    {
+      "id": "record-hourly-crypto-portfolio-value-in-airtable-23",
+      "name": "Mark this hour as recorded",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        5980,
+        0
+      ],
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_CHECKPOINT_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "hour_key",
+              "condition": "eq",
+              "keyValue": "={{ $('Set Airtable tables').first().json.key }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "done"
+          },
+          "schema": []
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "record-hourly-crypto-portfolio-value-in-airtable-24",
+      "name": "Return the hourly portfolio result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        6240,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const checkpoint = $input.first().json;\nif (\n  checkpoint.hour_key !== $(\"Set Airtable tables\").first().json.key ||\n  checkpoint.status !== \"done\"\n)\n  throw new Error(\"The completed checkpoint was not confirmed\");\nreturn [{ json: $(\"Confirm the appended history row\").first().json }];\n"
+      }
+    }
+  ],
+  "connections": {
+    "Run at the top of each hour": {
+      "main": [
+        [
+          {
+            "node": "Set Airtable tables",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Airtable tables": {
+      "main": [
+        [
+          {
+            "node": "Read all portfolio symbols",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read all portfolio symbols": {
+      "main": [
+        [
+          {
+            "node": "Collect portfolio and group CoinGecko IDs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect portfolio and group CoinGecko IDs": {
+      "main": [
+        [
+          {
+            "node": "Portfolio is empty?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Portfolio is empty?": {
+      "main": [
+        [
+          {
+            "node": "Return empty portfolio",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare CoinGecko quote requests",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare CoinGecko quote requests": {
+      "main": [
+        [
+          {
+            "node": "Get CoinGecko prices in USD",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get CoinGecko prices in USD": {
+      "main": [
+        [
+          {
+            "node": "Validate all quotes and plan price updates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate all quotes and plan price updates": {
+      "main": [
+        [
+          {
+            "node": "Find the hourly checkpoint",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find the hourly checkpoint": {
+      "main": [
+        [
+          {
+            "node": "Check whether this hour can write",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check whether this hour can write": {
+      "main": [
+        [
+          {
+            "node": "Record this hour?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record this hour?": {
+      "main": [
+        [
+          {
+            "node": "Reserve this portfolio hour",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Return previously recorded hour",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve this portfolio hour": {
+      "main": [
+        [
+          {
+            "node": "Prepare Airtable price batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Airtable price batches": {
+      "main": [
+        [
+          {
+            "node": "Update price batches in order",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Airtable prices by record ID": {
+      "main": [
+        [
+          {
+            "node": "Confirm the updated record IDs and prices",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm the updated record IDs and prices": {
+      "main": [
+        [
+          {
+            "node": "Update price batches in order",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update price batches in order": {
+      "main": [
+        [
+          {
+            "node": "Confirm all portfolio rows were updated",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Update Airtable prices by record ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm all portfolio rows were updated": {
+      "main": [
+        [
+          {
+            "node": "Read all recalculated portfolio values",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read all recalculated portfolio values": {
+      "main": [
+        [
+          {
+            "node": "Sum Airtable calculated values",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sum Airtable calculated values": {
+      "main": [
+        [
+          {
+            "node": "Append one portfolio history row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append one portfolio history row": {
+      "main": [
+        [
+          {
+            "node": "Confirm the appended history row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm the appended history row": {
+      "main": [
+        [
+          {
+            "node": "Mark this hour as recorded",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark this hour as recorded": {
+      "main": [
+        [
+          {
+            "node": "Return the hourly portfolio result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC"
+  },
+  "pinData": {}
+}
