@@ -1,0 +1,198 @@
+{
+  "name": "Archive ScanServJS Scans in Nextcloud",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "77388051-b1b3-4a75-8190-628cb10c6734",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        -280,
+        0
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 1,
+              "triggerAtMinute": 0
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "name": "Configure ScanServJS",
+      "id": "archive-scanservjs-scans-in-nextcloud--60",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -60,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function configuredUrl(input, service) {\n  const url = input.trim().replace(/\\/+$/, \"\");\n  if (!/^https?:\\/\\/[^/?#@]+(?:\\/[^?#]*)?$/i.test(url) || /\\.example\\.invalid(?:\\/|$)/.test(url)) {\n    throw new Error(\"Set a reachable \" + service + \" HTTP URL\");\n  }\n  return url;\n}\nconst baseUrl = \"https://scanserv.example.invalid\";\nreturn [{ json: { url: configuredUrl(baseUrl, \"ScanServJS\") + \"/api/v1/files\" } }];\n"
+      }
+    },
+    {
+      "id": "574d02f2-54c9-4f24-9c8b-4618ccdf2c7c",
+      "name": "List completed scans",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        160,
+        0
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "name": "Match scan and archive paths",
+      "id": "archive-scanservjs-scans-in-nextcloud-380",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        380,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function scanName(name) {\n  if (\n    typeof name !== \"string\" ||\n    !/^[ \\p{L}\\p{N}._-]+$/u.test(name) ||\n    name === \".\" ||\n    name === \"..\"\n  ) {\n    throw new Error(\"ScanServJS returned an invalid file name\");\n  }\n  return name;\n}\nconst listUrl = $(\"Configure ScanServJS\").first().json.url;\nreturn $input.all().map(({ json }, index) => {\n  const name = scanName(json.name);\n  return {\n    json: { downloadUrl: listUrl + \"/\" + encodeURIComponent(name), archivePath: \"Scans/\" + name },\n    pairedItem: { item: index },\n  };\n});\n"
+      }
+    },
+    {
+      "id": "93a27a7e-d709-4ceb-b062-4136fcaa7c0a",
+      "name": "Download scan bytes",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        600,
+        0
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.downloadUrl }}",
+        "options": {
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "outputPropertyName": "data"
+            }
+          }
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "7a1b5ef3-750f-45c5-b60e-34d463978abf",
+      "name": "Upload scan to Nextcloud",
+      "type": "n8n-nodes-base.nextCloud",
+      "position": [
+        820,
+        0
+      ],
+      "parameters": {
+        "authentication": "accessToken",
+        "resource": "file",
+        "operation": "upload",
+        "path": "={{ $json.archivePath }}",
+        "binaryDataUpload": true,
+        "binaryPropertyName": "data"
+      },
+      "typeVersion": 1
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC"
+  },
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Configure ScanServJS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configure ScanServJS": {
+      "main": [
+        [
+          {
+            "node": "List completed scans",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List completed scans": {
+      "main": [
+        [
+          {
+            "node": "Match scan and archive paths",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Match scan and archive paths": {
+      "main": [
+        [
+          {
+            "node": "Download scan bytes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download scan bytes": {
+      "main": [
+        [
+          {
+            "node": "Upload scan to Nextcloud",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
