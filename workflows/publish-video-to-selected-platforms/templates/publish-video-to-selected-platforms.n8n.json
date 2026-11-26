@@ -1,0 +1,394 @@
+{
+  "name": "Publish One Video with Native Social Captions",
+  "nodes": [
+    {
+      "id": "publish-video-to-selected-platforms-start",
+      "name": "Start the selected video publish",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "parameters": {},
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "id": "publish-video-to-selected-platforms-settings",
+      "name": "Set the video, platform accounts and publication key",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const supported = [\"tiktok\", \"instagram\", \"youtube\"];\nconst privacyLevels = [\n  \"SELF_ONLY\",\n  \"MUTUAL_FOLLOW_FRIENDS\",\n  \"FOLLOWER_OF_CREATOR\",\n  \"PUBLIC_TO_EVERYONE\",\n];\nfunction handle(value) {\n  return typeof value === \"string\" ? value.trim().replace(/^@/, \"\").toLowerCase() : \"\";\n}\n\nfunction directVideo(value) {\n  if (typeof value !== \"string\" || value.length > 1900) return false;\n  const match = /^https:\\/\\/([a-z0-9.-]+)\\/[^\\s<>\"'|#\\\\?]*\\.mp4(?:\\?[^\\s<>\"'|#\\\\]*)?$/i.exec(value);\n  return Boolean(\n    match &&\n    /^(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z]{2,63}$/i.test(match[1]) &&\n    !/\\.(?:local|internal|localhost|test|onion)$/i.test(match[1]),\n  );\n}\n\nfunction planPublication(settings) {\n  const {\n    confirm,\n    idea,\n    brand_voice,\n    video_url,\n    brand_id,\n    publication_key,\n    tiktok_privacy,\n    platforms,\n    expected_accounts,\n  } = settings;\n  if (confirm !== true)\n    throw new Error(\n      \"Set confirm to true only after reviewing the selected publishing configuration.\",\n    );\n  if (\n    typeof idea !== \"string\" ||\n    !idea.trim() ||\n    idea.length > 4000 ||\n    typeof brand_voice !== \"string\" ||\n    brand_voice.length > 1500 ||\n    !directVideo(video_url)\n  )\n    throw new Error(\"Provide an idea and an approved direct HTTPS MP4 URL.\");\n  if (\n    typeof brand_id !== \"string\" ||\n    !/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(brand_id) ||\n    typeof publication_key !== \"string\" ||\n    !/^[A-Za-z0-9_-]{16,100}$/.test(publication_key) ||\n    publication_key.startsWith(\"YOUR_\")\n  ) {\n    throw new Error(\"Set a PostWire brand ID and a stable, unique publication key.\");\n  }\n  if (\n    !Array.isArray(platforms) ||\n    !platforms.length ||\n    platforms.some((platform) => !supported.includes(platform)) ||\n    new Set(platforms).size !== platforms.length\n  )\n    throw new Error(\"Select unique platforms from TikTok, Instagram and YouTube.\");\n  const accounts = {};\n  for (const platform of platforms) {\n    const expected = handle(expected_accounts?.[platform]);\n    if (\n      !expected ||\n      expected.length > 160 ||\n      /[<>\\s\\/\\\\]/.test(expected) ||\n      expected.startsWith(\"your_\")\n    )\n      throw new Error(\"Set the expected handle for \" + platform + \".\");\n    accounts[platform] = expected;\n  }\n  if (platforms.includes(\"tiktok\") && !privacyLevels.includes(tiktok_privacy))\n    throw new Error(\"Select a documented TikTok privacy level.\");\n  return {\n    platforms,\n    accounts,\n    video_url,\n    brand_id: brand_id.toLowerCase(),\n    publication_key,\n    tiktok_privacy,\n    generation: { prompt: idea, platforms, media_url: video_url, brand_voice },\n  };\n}\n\nconst settings = {\n  confirm: false,\n  idea: \"Introduce a friendly feature from your product.\",\n  brand_voice: \"Plain language, first person, no hype, at most one emoji.\",\n  video_url: \"https://example.com/your-vertical-video.mp4\",\n  brand_id: \"YOUR_POSTWIRE_BRAND_ID\",\n  publication_key: \"YOUR_PUBLICATION_KEY\",\n  platforms: [\"tiktok\", \"instagram\", \"youtube\"],\n  expected_accounts: { tiktok: \"YOUR_HANDLE\", instagram: \"YOUR_HANDLE\", youtube: \"YOUR_HANDLE\" },\n  tiktok_privacy: \"SELF_ONLY\",\n};\nreturn { json: planPublication(settings) };\n"
+      },
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "id": "publish-video-to-selected-platforms-brand",
+      "name": "Read the configured brand accounts",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ \"https://postwire.io/api/brands/\" + $json.brand_id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "id": "publish-video-to-selected-platforms-checkBrand",
+      "name": "Verify the selected connected accounts",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function handle(value) {\n  return typeof value === \"string\" ? value.trim().replace(/^@/, \"\").toLowerCase() : \"\";\n}\n\nfunction checkBrand(plan, body) {\n  const brand = body?.brand;\n  if (brand?.id !== plan.brand_id || !Array.isArray(brand.accounts))\n    throw new Error(\"PostWire did not confirm the configured brand.\");\n  for (const platform of plan.platforms) {\n    const found = brand.accounts.filter((account) => account.platform === platform);\n    if (\n      found.length !== 1 ||\n      handle(found[0].handle) !== plan.accounts[platform] ||\n      found[0].needs === \"reconnect\" ||\n      (Array.isArray(found[0].needs) && found[0].needs.length)\n    ) {\n      throw new Error(\"PostWire did not confirm the intended account for \" + platform + \".\");\n    }\n  }\n}\n\nconst plan = $(\"Set the video, platform accounts and publication key\").item.json;\nif ($json.statusCode !== 200) throw new Error(\"Could not read the configured brand.\");\ncheckBrand(plan, $json.body);\nreturn { json: plan };\n"
+      },
+      "position": [
+        660,
+        0
+      ]
+    },
+    {
+      "id": "publish-video-to-selected-platforms-select",
+      "name": "Does this batch include TikTok?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "leftValue": ""
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "has-tiktok",
+              "leftValue": "={{ $json.platforms.includes(\"tiktok\") }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "position": [
+        880,
+        0
+      ]
+    },
+    {
+      "id": "publish-video-to-selected-platforms-creator",
+      "name": "Read the TikTok creator permissions",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ \"https://postwire.io/api/tiktok/creator-info?brand_id=\" + $json.brand_id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "position": [
+        1100,
+        0
+      ]
+    },
+    {
+      "id": "publish-video-to-selected-platforms-checkCreator",
+      "name": "Verify TikTok privacy and account",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function handle(value) {\n  return typeof value === \"string\" ? value.trim().replace(/^@/, \"\").toLowerCase() : \"\";\n}\n\nfunction checkCreator(plan, body) {\n  if (\n    body?.ok !== true ||\n    body.brand_id !== plan.brand_id ||\n    handle(body.creator_username) !== plan.accounts.tiktok ||\n    !Array.isArray(body.privacy_level_options) ||\n    !body.privacy_level_options.includes(plan.tiktok_privacy)\n  ) {\n    throw new Error(\"The TikTok account does not confirm the selected privacy level.\");\n  }\n}\n\nconst plan = $(\"Set the video, platform accounts and publication key\").item.json;\nif ($json.statusCode !== 200) throw new Error(\"Could not read the TikTok creator account.\");\ncheckCreator(plan, $json.body);\nreturn { json: plan };\n"
+      },
+      "position": [
+        1320,
+        0
+      ]
+    },
+    {
+      "id": "publish-video-to-selected-platforms-generate",
+      "name": "Draft native captions in PostWire",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://postwire.io/api/generate",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.generation }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "position": [
+        1540,
+        0
+      ]
+    },
+    {
+      "id": "publish-video-to-selected-platforms-prepare",
+      "name": "Match drafts to the selected platforms",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function buildPublish(plan, body) {\n  const drafts = body?.drafts;\n  if (\n    !drafts ||\n    typeof drafts !== \"object\" ||\n    Array.isArray(drafts) ||\n    Object.keys(drafts).length !== plan.platforms.length\n  ) {\n    throw new Error(\"PostWire did not return one caption for every selected platform.\");\n  }\n  const per_platform = {},\n    options = {};\n  for (const platform of plan.platforms) {\n    const draft = drafts[platform];\n    if (!draft || typeof draft.text !== \"string\" || !draft.text.trim())\n      throw new Error(\"Missing native caption for \" + platform + \".\");\n    per_platform[platform] = { text: draft.text };\n    if (platform === \"tiktok\") options.tiktok = { privacy_level: plan.tiktok_privacy };\n    if (platform === \"youtube\") {\n      if (draft.title !== undefined) {\n        if (typeof draft.title !== \"string\" || !draft.title.trim() || [...draft.title].length > 100)\n          throw new Error(\"Invalid YouTube title.\");\n        per_platform.youtube.title = draft.title;\n      }\n      if (draft.tags !== undefined) {\n        if (\n          !Array.isArray(draft.tags) ||\n          draft.tags.some((tag) => typeof tag !== \"string\" || !tag.trim())\n        )\n          throw new Error(\"Invalid YouTube tags.\");\n        options.youtube = { tags: draft.tags };\n      }\n    }\n  }\n  return {\n    platforms: plan.platforms,\n    video_url: plan.video_url,\n    per_platform,\n    options,\n    brand_id: plan.brand_id,\n    idempotency_key: plan.publication_key,\n  };\n}\n\nif ($json.statusCode !== 200) throw new Error(\"PostWire could not generate the native captions.\");\nreturn {\n  json: buildPublish(\n    $(\"Set the video, platform accounts and publication key\").item.json,\n    $json.body,\n  ),\n};\n"
+      },
+      "position": [
+        0,
+        245
+      ]
+    },
+    {
+      "id": "publish-video-to-selected-platforms-publish",
+      "name": "Submit one PostWire publish request",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://postwire.io/api/post",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "responseFormat": "json",
+              "neverError": true
+            }
+          }
+        }
+      },
+      "position": [
+        220,
+        245
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "publish-video-to-selected-platforms-out",
+      "name": "Platform publication results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function handle(value) {\n  return typeof value === \"string\" ? value.trim().replace(/^@/, \"\").toLowerCase() : \"\";\n}\n\nfunction receiptUrl(url, platform) {\n  if (typeof url !== \"string\" || url.length > 1800) return null;\n  const match = /^https:\\/\\/([a-z0-9.-]+)\\/[^\\s<>\"'|\\\\]*$/i.exec(url);\n  const domains = {\n    instagram: [\"instagram.com\"],\n    tiktok: [\"tiktok.com\"],\n    youtube: [\"youtube.com\", \"youtu.be\"],\n  };\n  const host = match?.[1]?.toLowerCase();\n  return host && domains[platform].some((root) => host === root || host.endsWith(\".\" + root))\n    ? url\n    : null;\n}\n\nfunction receiptId(value) {\n  return typeof value === \"string\" && /^[A-Za-z0-9_.:-]{1,240}$/.test(value) ? value : null;\n}\n\nfunction publishResult(plan, status, body) {\n  const errorText = (value) =>\n    typeof value === \"string\" && value.trim() ? value.trim().slice(0, 1000) : null;\n  const details = (state, code = null, error = null) =>\n    plan.platforms.map((platform) => ({\n      platform,\n      account: plan.accounts[platform],\n      state,\n      code,\n      error,\n    }));\n  const finish = (state, results, jobId = null) => {\n    const [count, accepted] = [\"posted\", \"accepted\"].map(\n      (value) => results.filter((row) => row.state === value).length,\n    );\n    return {\n      state,\n      publication_key: plan.publication_key,\n      posted: count,\n      accepted,\n      job_id: jobId,\n      status_lookup: jobId\n        ? \"https://postwire.io/api/post/status?id=\" + encodeURIComponent(jobId)\n        : null,\n      results,\n    };\n  };\n  const errorCode = receiptId(body?.code);\n  if (status === 409 && errorCode === \"duplicate_post\")\n    return finish(\"duplicate\", details(\"duplicate\", errorCode, errorText(body.error)));\n  if (\n    [400, 401, 402, 403, 404, 413, 429].includes(status) ||\n    (status === 409 && errorCode === \"ambiguous_brand\") ||\n    (status === 503 && errorCode === \"governance_unavailable\")\n  )\n    return finish(\"rejected\", details(\"failed\", errorCode, errorText(body?.error)));\n  if (![200, 202].includes(status) || !Array.isArray(body?.results))\n    return finish(\"unconfirmed\", details(\"unconfirmed\"));\n  if (\n    body.results.some((row) => !plan.platforms.includes(row?.platform)) ||\n    new Set(body.results.map((row) => row.platform)).size !== body.results.length\n  )\n    return finish(\"unconfirmed\", details(\"unconfirmed\"));\n  const approvalJob =\n    status === 202 && body.ok === true && body.status === \"pending_approval\" && body.posted === 0\n      ? receiptId(body.id)\n      : null;\n  if (status === 202 && !approvalJob) return finish(\"unconfirmed\", details(\"unconfirmed\"));\n  const rows = plan.platforms.map((platform) => {\n    const match = body.results.find((data) => data.platform === platform);\n    const account = plan.accounts[platform];\n    const row = {\n      platform,\n      account,\n      state: \"unconfirmed\",\n      code: receiptId(match?.code),\n      error: errorText(match?.error),\n    };\n    if (!match) return row;\n    const correct =\n      match.account?.platform === platform &&\n      match.account?.brand_id === plan.brand_id &&\n      handle(match.account?.handle) === account;\n    if (match.account && !correct) return row;\n    if (match.ok === false) {\n      if (status === 202 && match.status === \"pending_approval\" && correct)\n        return { ...row, state: \"pending_approval\" };\n      if (status === 200 && (match.status === \"held\" || row.code === \"networks_per_post\"))\n        return { ...row, state: \"held\" };\n      if (status === 200 && typeof match.error === \"string\") return { ...row, state: \"failed\" };\n      return row;\n    }\n    if (status !== 200 || match.ok !== true || !correct) return row;\n    const id = receiptId(match.id);\n    const url = receiptUrl(match.url, platform);\n    if (!id) return row;\n    const acknowledged = {\n      ...row,\n      id,\n      url,\n      status_lookup:\n        \"https://postwire.io/api/post/status?platform=\" +\n        platform +\n        \"&id=\" +\n        encodeURIComponent(id),\n    };\n    if (match.status === \"failed\" || match.status === \"rejected\") return row;\n    if (match.status === \"processing\" || match.status === \"scheduled\" || !url)\n      return { ...acknowledged, state: \"accepted\" };\n    return { ...acknowledged, state: \"posted\" };\n  });\n  if (rows.some((row) => row.state === \"unconfirmed\"))\n    return finish(\"unconfirmed\", rows, approvalJob);\n  if (approvalJob) return finish(\"pending_approval\", rows, approvalJob);\n  if (rows.every((row) => row.state === \"posted\")) return finish(\"posted\", rows);\n  if (rows.every((row) => row.state === \"posted\" || row.state === \"accepted\"))\n    return finish(\"accepted\", rows);\n  if (rows.some((row) => row.state === \"posted\" || row.state === \"accepted\"))\n    return finish(\"partial\", rows);\n  if (rows.every((row) => row.state === \"held\")) return finish(\"held\", rows);\n  return finish(\"failed\", rows);\n}\n\nreturn {\n  json: publishResult(\n    $(\"Set the video, platform accounts and publication key\").item.json,\n    $json.statusCode ?? 0,\n    $json.body ?? null,\n  ),\n};\n"
+      },
+      "position": [
+        440,
+        245
+      ]
+    }
+  ],
+  "connections": {
+    "Start the selected video publish": {
+      "main": [
+        [
+          {
+            "node": "Set the video, platform accounts and publication key",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set the video, platform accounts and publication key": {
+      "main": [
+        [
+          {
+            "node": "Read the configured brand accounts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the configured brand accounts": {
+      "main": [
+        [
+          {
+            "node": "Verify the selected connected accounts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify the selected connected accounts": {
+      "main": [
+        [
+          {
+            "node": "Does this batch include TikTok?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Does this batch include TikTok?": {
+      "main": [
+        [
+          {
+            "node": "Read the TikTok creator permissions",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Draft native captions in PostWire",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the TikTok creator permissions": {
+      "main": [
+        [
+          {
+            "node": "Verify TikTok privacy and account",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify TikTok privacy and account": {
+      "main": [
+        [
+          {
+            "node": "Draft native captions in PostWire",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Draft native captions in PostWire": {
+      "main": [
+        [
+          {
+            "node": "Match drafts to the selected platforms",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Match drafts to the selected platforms": {
+      "main": [
+        [
+          {
+            "node": "Submit one PostWire publish request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Submit one PostWire publish request": {
+      "main": [
+        [
+          {
+            "node": "Platform publication results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataSuccessExecution": "none",
+    "saveDataErrorExecution": "none",
+    "saveManualExecutions": false,
+    "saveExecutionProgress": false
+  }
+}
