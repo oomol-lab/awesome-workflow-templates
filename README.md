@@ -730,6 +730,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Reply to LINE Texts and Send a Manual Push](workflows/reply-and-push-line-text-messages/) - Echo signed LINE text messages and send a separate manual push to one configured user.
 - [Summarize New Drive Recordings in Notion](workflows/summarize-new-drive-recordings-in-notion/) - Watch a private Google Drive folder for new audio, transcribe it, and save a summary under a chosen Notion page.
 - [Describe a List of Webpage Screenshots](workflows/analyze-page-screenshots/) - Capture a full-page screenshot for each named URL and return a short visual description with its original name and URL.
+- [Summarize IMAP Emails and Send Them to LINE](workflows/summarize-imap-emails-and-send-to-line/) - Summarize each unread IMAP email with OpenRouter and send its actions and deadlines to one configured LINE user.
 
 ## Content
 
