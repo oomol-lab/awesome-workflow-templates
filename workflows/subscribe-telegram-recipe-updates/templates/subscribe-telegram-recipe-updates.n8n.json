@@ -1,0 +1,705 @@
+{
+  "name": "Send Daily Vegan Recipes to Telegram Subscribers",
+  "nodes": [
+    {
+      "id": "trigger",
+      "name": "New Telegram Message",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {
+          "download": false
+        }
+      },
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "id": "identity",
+      "name": "Read Subscriber Identity",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function recipeSubscription({ body }) {\n  const message = body?.message,\n    chatId = message?.chat?.id,\n    name = message?.from?.first_name;\n  if (!Number.isSafeInteger(chatId) || chatId === 0 || typeof name !== \"string\" || !name.trim())\n    throw new Error(\"A message with a valid chat ID and sender first name is required.\");\n  return { chatId, name, filterByFormula: \"{chatid} = \" + chatId };\n}\n\nreturn $input.all().map((item, index) => ({\n  json: recipeSubscription({ body: item.json }),\n  pairedItem: { item: index },\n}));\n"
+      },
+      "position": [
+        240,
+        0
+      ]
+    },
+    {
+      "id": "lookup",
+      "name": "Look Up This Chat",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 1,
+      "parameters": {
+        "authentication": "airtableTokenApi",
+        "application": "YOUR_AIRTABLE_BASE_ID",
+        "table": "Table 1",
+        "operation": "list",
+        "returnAll": false,
+        "limit": 2,
+        "additionalOptions": {
+          "filterByFormula": "={{ $json.filterByFormula }}"
+        }
+      },
+      "position": [
+        480,
+        0
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "id": "plan",
+      "name": "Plan First Recipe and Registration",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function recipePlan({ chatId, name, records }) {\n  if (!Array.isArray(records) || records.length > 1)\n    throw new Error(\"Airtable lookup must return at most one matching subscriber.\");\n  if (records.length && (!records[0]?.id || Number(records[0]?.fields?.chatid) !== chatId))\n    throw new Error(\"Airtable lookup returned another chat.\");\n  return {\n    plan: { mode: \"subscription\", recipients: [{ chatId }], isNew: records.length === 0, name },\n  };\n}\n\nconst identity = $(\"Read Subscriber Identity\").first().json;\nreturn [\n  {\n    json: recipePlan({\n      ...identity,\n      records: $input\n        .all()\n        .map((i) => i.json)\n        .filter((r) => r.id),\n    }),\n  },\n];\n"
+      },
+      "position": [
+        720,
+        0
+      ]
+    },
+    {
+      "id": "welcome",
+      "name": "Welcome the Chat",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "parameters": {
+        "operation": "sendMessage",
+        "chatId": "={{ $(\"Read Subscriber Identity\").first().json.chatId }}",
+        "text": "Welcome! This bot will send you one vegan recipe a day. Here is your first recipe!",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "HTML"
+        }
+      },
+      "position": [
+        960,
+        0
+      ]
+    },
+    {
+      "id": "first",
+      "name": "Request First Vegan Recipe",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.spoonacular.com/recipes/random?number=1&include-tags=vegan",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": false,
+              "neverError": false
+            }
+          }
+        }
+      },
+      "position": [
+        1200,
+        0
+      ],
+      "notes": "https://spoonacular.com/food-api/docs"
+    },
+    {
+      "id": "first-recipe",
+      "name": "Validate First Recipe",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function collectRecipes({ plan, previousState, body, statusCode, bodyEncoding = \"json\", welcome }) {\n  const state = previousState\n    ? { index: previousState.index, recipes: [...previousState.recipes] }\n    : { index: 0, recipes: [] };\n  if (!previousState && plan.mode === \"subscription\") {\n    const receipt = welcome;\n    if (\n      !Number.isInteger(receipt?.messageId) ||\n      receipt.messageId < 1 ||\n      receipt.chat?.id !== plan.recipients[0]?.chatId\n    )\n      throw new Error(\"Welcome receipt does not match the subscription chat.\");\n  }\n  if (previousState) {\n    if (statusCode < 200 || statusCode >= 300 || bodyEncoding !== \"json\")\n      throw new Error(\"Recipe request did not return successful JSON.\");\n    const recipe = body?.recipes?.[0],\n      url = (value) =>\n        typeof value === \"string\" &&\n        /^https?:\\/\\/[^/?#\\s@]+(?:[/?#]|$)/i.test(value) &&\n        !/[\\s]/.test(value);\n    if (\n      !recipe ||\n      typeof recipe.title !== \"string\" ||\n      !recipe.title.trim() ||\n      !url(recipe.image) ||\n      !url(recipe.sourceUrl)\n    )\n      throw new Error(\"A recipe needs a title, image URL and source URL.\");\n    const text = \"\\n\" + recipe.title + \"\\n\\n\" + recipe.sourceUrl;\n    if (text.replaceAll(\"&\", \"&amp;\").replaceAll(\"<\", \"&lt;\").replaceAll(\">\", \"&gt;\").length > 4096)\n      throw new Error(\"Recipe title and URL exceed the Telegram message limit.\");\n    const recipient = plan.recipients[state.index];\n    if (!recipient) throw new Error(\"Recipe count exceeds recipient count.\");\n    state.recipes.push({ ...recipient, image: recipe.image, text });\n    state.index++;\n  }\n  return { state, isNew: plan.isNew, more: state.index < plan.recipients.length };\n}\n\nconst plan = $(\"Plan First Recipe and Registration\").first().json.plan,\n  w = $(\"Welcome the Chat\").first().json;\ncollectRecipes({\n  plan,\n  previousState: null,\n  welcome: { messageId: w.result?.message_id, chat: w.result?.chat },\n});\nconst state = collectRecipes({\n  plan,\n  previousState: { index: 0, recipes: [] },\n  body: $input.first().json,\n  statusCode: 200,\n  bodyEncoding: \"json\",\n}).state;\nreturn [{ json: state.recipes[0] }];\n"
+      },
+      "position": [
+        1440,
+        0
+      ]
+    },
+    {
+      "id": "first-photo",
+      "name": "Send First Recipe Photo",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "parameters": {
+        "operation": "sendPhoto",
+        "chatId": "={{ $json.chatId }}",
+        "file": "={{ $json.image }}",
+        "additionalFields": {}
+      },
+      "position": [
+        1680,
+        0
+      ]
+    },
+    {
+      "id": "first-check",
+      "name": "Confirm First Recipe Photo",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function collectRecipePhotos({ plan, recipes, previousState, messageId, chat, error }) {\n  const state = previousState\n    ? { index: previousState.index, receipts: [...previousState.receipts] }\n    : { index: 0, receipts: [] };\n  if (previousState) {\n    const expected = recipes[state.index],\n      invalid = !Number.isInteger(messageId) || messageId < 1 || chat?.id !== expected?.chatId,\n      problem =\n        error?.message ?? (invalid ? \"Recipe photo receipt does not match the recipient.\" : null);\n    if (problem) {\n      if (plan.mode !== \"daily\") throw new Error(problem);\n      state.receipts.push({ chatId: expected.chatId, status: \"failed\", error: problem });\n    } else state.receipts.push({ chatId: expected.chatId, status: \"sent\", messageId });\n    state.index++;\n  }\n  const next = recipes[state.index];\n  return {\n    state,\n    more: !!next,\n    chatId: next?.chatId ?? 0,\n    photo: next?.image ?? \"https://example.com/unused.jpg\",\n  };\n}\n\nconst recipes = $(\"Validate First Recipe\")\n    .all()\n    .map((i) => i.json),\n  items = $input.all();\nif (items.length !== recipes.length) throw Error(\"Photo receipt count differs.\");\nlet state = { index: 0, receipts: [] };\nfor (const item of items)\n  state = collectRecipePhotos({\n    plan: { mode: \"subscription\" },\n    recipes,\n    previousState: state,\n    messageId: item.json.result?.message_id,\n    chat: item.json.result?.chat,\n    error: item.json.error ? { message: item.json.error } : null,\n  }).state;\nreturn recipes.map((json, index) => ({ json, pairedItem: { item: index } }));\n"
+      },
+      "position": [
+        0,
+        280
+      ]
+    },
+    {
+      "id": "new",
+      "name": "New Subscription",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "new-chat",
+              "leftValue": "={{ $(\"Plan First Recipe and Registration\").first().json.plan.isNew }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "position": [
+        240,
+        280
+      ],
+      "notes": "If the chat ID is not in Airtable,add it for daily recipes."
+    },
+    {
+      "id": "write",
+      "name": "Prepare Subscriber Fields",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const p = $(\"Plan First Recipe and Registration\").first().json.plan;\nreturn [{ json: { chatid: p.recipients[0].chatId, Name: p.name } }];\n"
+      },
+      "position": [
+        480,
+        280
+      ]
+    },
+    {
+      "id": "create",
+      "name": "Register the Chat",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 1,
+      "parameters": {
+        "authentication": "airtableTokenApi",
+        "application": "YOUR_AIRTABLE_BASE_ID",
+        "table": "Table 1",
+        "operation": "append",
+        "addAllFields": true,
+        "options": {}
+      },
+      "position": [
+        720,
+        280
+      ]
+    },
+    {
+      "id": "confirm",
+      "name": "Confirm Registration",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const p = $(\"Plan First Recipe and Registration\").first().json.plan,\n  r = $input.first().json;\nif (!r.id || Number(r.fields?.chatid) !== p.recipients[0].chatId || r.fields?.Name !== p.name)\n  throw Error(\"Subscriber receipt differs.\");\nreturn [{ json: $(\"Validate First Recipe\").first().json }];\n"
+      },
+      "position": [
+        960,
+        280
+      ]
+    },
+    {
+      "id": "first-link",
+      "name": "Send First Recipe Link",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "parameters": {
+        "operation": "sendMessage",
+        "chatId": "={{ $(\"Validate First Recipe\").first().json.chatId }}",
+        "text": "={{ $(\"Validate First Recipe\").first().json.text.replaceAll(\"&\",\"&amp;\").replaceAll(\"<\",\"&lt;\").replaceAll(\">\",\"&gt;\") }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "HTML"
+        }
+      },
+      "position": [
+        1200,
+        280
+      ]
+    },
+    {
+      "id": "first-done",
+      "name": "Confirmed First Recipe",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const expected = $(\"Validate First Recipe\").all(),\n  items = $input.all();\nif (items.length !== expected.length) throw Error(\"Link receipt count differs.\");\nreturn items.map((item, index) => {\n  const e = expected[index].json,\n    r = item.json.result;\n  if (item.json.error && false) return item;\n  if (\n    !Number.isInteger(r?.message_id) ||\n    r.message_id < 1 ||\n    r.chat?.id !== e.chatId ||\n    r.text !== e.text\n  ) {\n    throw Error(\"Recipe link receipt differs.\");\n  }\n  return item;\n});\n"
+      },
+      "position": [
+        1440,
+        280
+      ]
+    },
+    {
+      "id": "daily",
+      "name": "Daily at14:00UTC",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "mode": "everyDay",
+              "hour": 14,
+              "minute": 0
+            }
+          ]
+        }
+      },
+      "position": [
+        1680,
+        280
+      ]
+    },
+    {
+      "id": "all",
+      "name": "Read Every Subscriber",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 1,
+      "parameters": {
+        "authentication": "airtableTokenApi",
+        "application": "YOUR_AIRTABLE_BASE_ID",
+        "table": "Table 1",
+        "operation": "list",
+        "returnAll": true,
+        "additionalOptions": {}
+      },
+      "position": [
+        0,
+        560
+      ],
+      "notes": "Grab our list of chats from Airtable to send a random recipe"
+    },
+    {
+      "id": "daily-plan",
+      "name": "Validate Every Subscriber",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function collectSubscribers({ previousState, records, offset }) {\n  const state = previousState\n    ? {\n        ...previousState,\n        recipients: [...previousState.recipients],\n        cursors: [...previousState.cursors],\n      }\n    : { recipients: [], cursors: [] };\n  if (previousState) {\n    if (!Array.isArray(records)) throw new Error(\"Airtable returned no record list.\");\n    for (const record of records) {\n      const raw = record?.fields?.chatid,\n        id = typeof raw === \"string\" && /^-?\\d+$/.test(raw) ? Number(raw) : raw;\n      if (!record?.id || !Number.isSafeInteger(id) || id === 0)\n        throw new Error(\"Each subscriber needs a record ID and safe numeric chatid.\");\n      state.recipients.push({ recordId: record.id, chatId: id });\n    }\n    if (offset !== null && offset !== undefined && (typeof offset !== \"string\" || !offset))\n      throw new Error(\"Invalid Airtable pagination cursor.\");\n    if (offset) {\n      if (state.cursors.includes(offset))\n        throw new Error(\"Airtable repeated its pagination cursor.\");\n      state.cursors.push(offset);\n    }\n  }\n  const more = !previousState || !!offset;\n  return {\n    state,\n    more,\n    offset: more ? (offset ?? null) : null,\n    plan: { mode: \"daily\", recipients: state.recipients, isNew: false, name: \"\" },\n  };\n}\n\nfunction uniqueSubscribers(input) {\n  const result = collectSubscribers(input);\n  const chats = new Set();\n  result.state.recipients = result.state.recipients.filter(({ chatId }) => {\n    if (chats.has(chatId)) return false;\n    chats.add(chatId);\n    return true;\n  });\n  result.plan.recipients = result.state.recipients;\n  return result;\n}\n\nconst records = $input.all().map((item) => item.json);\nreturn uniqueSubscribers({\n  previousState: { recipients: [], cursors: [] },\n  records,\n  offset: null,\n}).plan.recipients.map((json) => ({ json }));\n"
+      },
+      "position": [
+        240,
+        560
+      ]
+    },
+    {
+      "id": "batch",
+      "name": "Request Every Vegan Recipe",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.spoonacular.com/recipes/random?number=1&include-tags=vegan",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": false,
+              "neverError": false
+            }
+          }
+        }
+      },
+      "position": [
+        480,
+        560
+      ],
+      "notes": "https://spoonacular.com/food-api/docs"
+    },
+    {
+      "id": "daily-recipes",
+      "name": "Validate All Daily Recipes",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function collectRecipes({ plan, previousState, body, statusCode, bodyEncoding = \"json\", welcome }) {\n  const state = previousState\n    ? { index: previousState.index, recipes: [...previousState.recipes] }\n    : { index: 0, recipes: [] };\n  if (!previousState && plan.mode === \"subscription\") {\n    const receipt = welcome;\n    if (\n      !Number.isInteger(receipt?.messageId) ||\n      receipt.messageId < 1 ||\n      receipt.chat?.id !== plan.recipients[0]?.chatId\n    )\n      throw new Error(\"Welcome receipt does not match the subscription chat.\");\n  }\n  if (previousState) {\n    if (statusCode < 200 || statusCode >= 300 || bodyEncoding !== \"json\")\n      throw new Error(\"Recipe request did not return successful JSON.\");\n    const recipe = body?.recipes?.[0],\n      url = (value) =>\n        typeof value === \"string\" &&\n        /^https?:\\/\\/[^/?#\\s@]+(?:[/?#]|$)/i.test(value) &&\n        !/[\\s]/.test(value);\n    if (\n      !recipe ||\n      typeof recipe.title !== \"string\" ||\n      !recipe.title.trim() ||\n      !url(recipe.image) ||\n      !url(recipe.sourceUrl)\n    )\n      throw new Error(\"A recipe needs a title, image URL and source URL.\");\n    const text = \"\\n\" + recipe.title + \"\\n\\n\" + recipe.sourceUrl;\n    if (text.replaceAll(\"&\", \"&amp;\").replaceAll(\"<\", \"&lt;\").replaceAll(\">\", \"&gt;\").length > 4096)\n      throw new Error(\"Recipe title and URL exceed the Telegram message limit.\");\n    const recipient = plan.recipients[state.index];\n    if (!recipient) throw new Error(\"Recipe count exceeds recipient count.\");\n    state.recipes.push({ ...recipient, image: recipe.image, text });\n    state.index++;\n  }\n  return { state, isNew: plan.isNew, more: state.index < plan.recipients.length };\n}\n\nconst items = $input.all(),\n  recipients = $(\"Validate Every Subscriber\")\n    .all()\n    .map((i) => i.json);\nif (items.length !== recipients.length) throw Error(\"Recipe count differs from subscribers.\");\nconst plan = { mode: \"daily\", recipients };\nlet state = { index: 0, recipes: [] };\nfor (const item of items)\n  state = collectRecipes({\n    plan,\n    previousState: state,\n    body: item.json,\n    statusCode: 200,\n    bodyEncoding: \"json\",\n  }).state;\nreturn state.recipes.map((json, index) => ({ json, pairedItem: { item: index } }));\n"
+      },
+      "position": [
+        720,
+        560
+      ]
+    },
+    {
+      "id": "photos",
+      "name": "Send All Recipe Photos",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "parameters": {
+        "operation": "sendPhoto",
+        "chatId": "={{ $json.chatId }}",
+        "file": "={{ $json.image }}",
+        "additionalFields": {}
+      },
+      "position": [
+        960,
+        560
+      ],
+      "continueOnFail": true
+    },
+    {
+      "id": "daily-check",
+      "name": "Confirm All Recipe Photos",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function n8nDelivery(item, chatId, text) {\n  const incoming = item.json;\n  const record = incoming?.result;\n  if (\n    incoming?.error ||\n    !Number.isSafeInteger(record?.message_id) ||\n    record.message_id < 1 ||\n    record.chat?.id !== chatId ||\n    (text !== undefined && record.text !== text)\n  ) {\n    return { chatId, status: \"unconfirmed\", reason: \"Telegram did not confirm the message\" };\n  }\n  return { chatId, status: \"sent\", messageId: record.message_id };\n}\n\nconst recipes = $(\"Validate All Daily Recipes\")\n  .all()\n  .map((item) => item.json);\nconst items = $input.all();\nif (items.length !== recipes.length) throw new Error(\"Telegram photo result count differs.\");\nreturn recipes.map((recipe, index) => ({\n  json: { ...recipe, photoDelivery: n8nDelivery(items[index], recipe.chatId) },\n  pairedItem: { item: index },\n}));\n"
+      },
+      "position": [
+        1200,
+        560
+      ]
+    },
+    {
+      "id": "links",
+      "name": "Send All Recipe Links",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "parameters": {
+        "operation": "sendMessage",
+        "chatId": "={{ $json.chatId }}",
+        "text": "={{ $json.text.replaceAll(\"&\",\"&amp;\").replaceAll(\"<\",\"&lt;\").replaceAll(\">\",\"&gt;\") }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "HTML"
+        }
+      },
+      "position": [
+        1440,
+        560
+      ],
+      "continueOnFail": true
+    },
+    {
+      "id": "daily-done",
+      "name": "Confirmed Daily Recipes",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function n8nDelivery(item, chatId, text) {\n  const incoming = item.json;\n  const record = incoming?.result;\n  if (\n    incoming?.error ||\n    !Number.isSafeInteger(record?.message_id) ||\n    record.message_id < 1 ||\n    record.chat?.id !== chatId ||\n    (text !== undefined && record.text !== text)\n  ) {\n    return { chatId, status: \"unconfirmed\", reason: \"Telegram did not confirm the message\" };\n  }\n  return { chatId, status: \"sent\", messageId: record.message_id };\n}\n\nconst recipes = $(\"Confirm All Recipe Photos\")\n  .all()\n  .map((item) => item.json);\nconst items = $input.all();\nif (items.length !== recipes.length) throw new Error(\"Telegram link result count differs.\");\nreturn recipes.map((recipe, index) => ({\n  json: {\n    chatId: recipe.chatId,\n    photo: recipe.photoDelivery,\n    link: n8nDelivery(items[index], recipe.chatId, recipe.text),\n  },\n  pairedItem: { item: index },\n}));\n"
+      },
+      "position": [
+        1680,
+        560
+      ]
+    }
+  ],
+  "connections": {
+    "New Telegram Message": {
+      "main": [
+        [
+          {
+            "node": "Read Subscriber Identity",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Subscriber Identity": {
+      "main": [
+        [
+          {
+            "node": "Look Up This Chat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Look Up This Chat": {
+      "main": [
+        [
+          {
+            "node": "Plan First Recipe and Registration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Plan First Recipe and Registration": {
+      "main": [
+        [
+          {
+            "node": "Welcome the Chat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Welcome the Chat": {
+      "main": [
+        [
+          {
+            "node": "Request First Vegan Recipe",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Request First Vegan Recipe": {
+      "main": [
+        [
+          {
+            "node": "Validate First Recipe",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate First Recipe": {
+      "main": [
+        [
+          {
+            "node": "Send First Recipe Photo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send First Recipe Photo": {
+      "main": [
+        [
+          {
+            "node": "Confirm First Recipe Photo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm First Recipe Photo": {
+      "main": [
+        [
+          {
+            "node": "New Subscription",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Subscriber Fields": {
+      "main": [
+        [
+          {
+            "node": "Register the Chat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Register the Chat": {
+      "main": [
+        [
+          {
+            "node": "Confirm Registration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm Registration": {
+      "main": [
+        [
+          {
+            "node": "Send First Recipe Link",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send First Recipe Link": {
+      "main": [
+        [
+          {
+            "node": "Confirmed First Recipe",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Daily at14:00UTC": {
+      "main": [
+        [
+          {
+            "node": "Read Every Subscriber",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Every Subscriber": {
+      "main": [
+        [
+          {
+            "node": "Validate Every Subscriber",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Every Subscriber": {
+      "main": [
+        [
+          {
+            "node": "Request Every Vegan Recipe",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Request Every Vegan Recipe": {
+      "main": [
+        [
+          {
+            "node": "Validate All Daily Recipes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate All Daily Recipes": {
+      "main": [
+        [
+          {
+            "node": "Send All Recipe Photos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send All Recipe Photos": {
+      "main": [
+        [
+          {
+            "node": "Confirm All Recipe Photos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm All Recipe Photos": {
+      "main": [
+        [
+          {
+            "node": "Send All Recipe Links",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send All Recipe Links": {
+      "main": [
+        [
+          {
+            "node": "Confirmed Daily Recipes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "New Subscription": {
+      "main": [
+        [
+          {
+            "node": "Prepare Subscriber Fields",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send First Recipe Link",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC",
+    "saveDataSuccessExecution": "all",
+    "saveDataErrorExecution": "all"
+  },
+  "active": false,
+  "pinData": {}
+}
