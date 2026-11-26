@@ -1,0 +1,259 @@
+{
+  "nodes": [
+    {
+      "id": "enrich-new-hubspot-contacts-with-exactbuyer-hook",
+      "name": "Receive HubSpot contact creation",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "enrich-new-hubspot-contacts-with-exactbuyer",
+        "authentication": "headerAuth",
+        "responseMode": "onReceived",
+        "options": {
+          "responseCode": {
+            "values": {
+              "responseCode": "customCode",
+              "customCode": 202
+            }
+          }
+        }
+      },
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "id": "enrich-new-hubspot-contacts-with-exactbuyer-event",
+      "name": "Check contact creation event",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function readCreation(body) {\n  const id = body?.contactId;\n  const contactId = typeof id === \"number\" && Number.isSafeInteger(id) ? String(id) : id;\n  if (\n    body?.event !== \"contact.creation\" ||\n    typeof contactId !== \"string\" ||\n    !/^[1-9]\\d*$/.test(contactId)\n  ) {\n    throw new Error(\"Expected a HubSpot contact.creation event with a Record ID\");\n  }\n  return { contactId };\n}\nreturn [{ json: readCreation($input.first().json.body) }];\n"
+      },
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "id": "enrich-new-hubspot-contacts-with-exactbuyer-get",
+      "name": "Get the new HubSpot contact",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "method": "GET",
+        "url": "={{ \"https://api.hubapi.com/crm/objects/2026-03/contacts/\" + $json.contactId + \"?properties=email\" }}",
+        "options": {
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "id": "enrich-new-hubspot-contacts-with-exactbuyer-email",
+      "name": "Prepare email lookup",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function buildLookup({ contactId, record }) {\n  if (record?.id !== contactId || record.archived)\n    throw new Error(\"HubSpot returned a different or archived contact\");\n  const email = record.properties?.email;\n  const hasEmail = typeof email === \"string\" && /^[^\\s@]+@[^\\s@]+$/.test(email.trim());\n  const endpoint = \"https://api.exactbuyer.com/v1/enrich\";\n  const url = hasEmail\n    ? endpoint +\n      \"?email=\" +\n      encodeURIComponent(email.trim()) +\n      \"&required=work_email%2Cpersonal_email%2Cemail\"\n    : endpoint;\n  return { hasEmail, url, email: hasEmail ? email.trim() : \"\" };\n}\nconst { contactId } = $(\"Check contact creation event\").first().json;\nconst result = buildLookup({ contactId, record: $input.first().json });\nreturn result.hasEmail ? [{ json: { url: result.url, email: result.email } }] : [];\n"
+      },
+      "position": [
+        660,
+        0
+      ]
+    },
+    {
+      "id": "enrich-new-hubspot-contacts-with-exactbuyer-lookup",
+      "name": "Find the contact in ExactBuyer",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "method": "GET",
+        "url": "={{ $json.url }}",
+        "options": {
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true,
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "position": [
+        880,
+        0
+      ]
+    },
+    {
+      "id": "enrich-new-hubspot-contacts-with-exactbuyer-map",
+      "name": "Map matched contact fields",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function mapResult({ status, body, queryEmail }) {\n  if (status === 404) return { matched: false, properties: {} };\n  if (\n    status !== 200 ||\n    !body?.result ||\n    typeof body.result !== \"object\" ||\n    Array.isArray(body.result)\n  ) {\n    throw new Error(\"ExactBuyer lookup failed (HTTP \" + status + \")\");\n  }\n  const { result } = body;\n  const normalizeEmail = (entry) => (typeof entry === \"string\" ? entry.trim().toLowerCase() : \"\");\n  const optionalList = (entry) => (Array.isArray(entry) ? entry : []);\n  const addresses = [\n    result.current_work_email,\n    ...optionalList(result.other_current_work_emails).map((entry) => entry?.work_email),\n    ...optionalList(result.personal_emails),\n  ];\n  const expected = normalizeEmail(queryEmail);\n  if (!expected || !addresses.some((address) => normalizeEmail(address) === expected)) {\n    return { matched: false, properties: {} };\n  }\n  const source = {\n    firstname: result.first_name,\n    lastname: result.last_name,\n    gender: result.gender,\n    school: result.education?.[0]?.school?.name,\n    country: result.location?.country,\n    jobtitle: result.employment?.job?.title,\n    company: result.employment?.name,\n    company_size: result.employment?.size,\n    phone: result.phone_numbers?.[0]?.E164,\n  };\n  const properties = Object.fromEntries(\n    Object.entries(source)\n      .filter(\n        ([, entry]) =>\n          (typeof entry === \"string\" && entry.trim()) ||\n          (typeof entry === \"number\" && Number.isFinite(entry)),\n      )\n      .map(([key, entry]) => [key, String(entry).trim()]),\n  );\n  return { matched: Object.keys(properties).length > 0, properties };\n}\nconst { contactId } = $(\"Check contact creation event\").first().json;\nconst { statusCode, body } = $input.first().json;\nconst queryEmail = $(\"Prepare email lookup\").first().json.email;\nconst result = mapResult({ status: statusCode, body, queryEmail });\nreturn result.matched ? [{ json: { contactId, properties: result.properties } }] : [];\n"
+      },
+      "position": [
+        1100,
+        0
+      ]
+    },
+    {
+      "id": "enrich-new-hubspot-contacts-with-exactbuyer-update",
+      "name": "Update the same HubSpot contact",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "method": "PATCH",
+        "url": "={{ \"https://api.hubapi.com/crm/objects/2026-03/contacts/\" + $json.contactId }}",
+        "options": {
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ properties: $json.properties }) }}"
+      },
+      "position": [
+        1320,
+        0
+      ]
+    },
+    {
+      "id": "enrich-new-hubspot-contacts-with-exactbuyer-confirm",
+      "name": "Confirm the updated contact ID",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function confirmUpdate({ contactId, record }) {\n  if (record?.id !== contactId || record.archived)\n    throw new Error(\"HubSpot did not confirm the requested contact update\");\n  return { contactId };\n}\nconst { contactId } = $(\"Check contact creation event\").first().json;\nreturn [{ json: confirmUpdate({ contactId, record: $input.first().json }) }];\n"
+      },
+      "position": [
+        1540,
+        0
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Receive HubSpot contact creation": {
+      "main": [
+        [
+          {
+            "node": "Check contact creation event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check contact creation event": {
+      "main": [
+        [
+          {
+            "node": "Get the new HubSpot contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get the new HubSpot contact": {
+      "main": [
+        [
+          {
+            "node": "Prepare email lookup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare email lookup": {
+      "main": [
+        [
+          {
+            "node": "Find the contact in ExactBuyer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find the contact in ExactBuyer": {
+      "main": [
+        [
+          {
+            "node": "Map matched contact fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Map matched contact fields": {
+      "main": [
+        [
+          {
+            "node": "Update the same HubSpot contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update the same HubSpot contact": {
+      "main": [
+        [
+          {
+            "node": "Confirm the updated contact ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Enrich New HubSpot Contacts with ExactBuyer",
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false
+}
