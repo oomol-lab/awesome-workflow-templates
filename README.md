@@ -1023,6 +1023,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Refund Policy Pre-Check & Approval](workflows/refund-policy-precheck/) - Validate incoming refund requests against deterministic policy rules, score risk with AI, and post an approval summary to Slack.
 - [Return an Invoice PDF from a Webhook](workflows/return-invoice-pdf-from-webhook/) - Generate an invoice from configured line items and return the PDF in the HTTP response.
 - [Record Hourly Crypto Portfolio Value in Airtable](workflows/record-hourly-crypto-portfolio-value-in-airtable/) - Update portfolio rows with CoinGecko USD prices and log the total of Airtable’s calculated holding values.
+- [List Incoming TRON USDT Transfers](workflows/list-incoming-tron-usdt-transfers/) - Check a TRON wallet every 15 minutes and list older incoming USDT transfers with their confirmation and execution status.
 
 ## Community
 

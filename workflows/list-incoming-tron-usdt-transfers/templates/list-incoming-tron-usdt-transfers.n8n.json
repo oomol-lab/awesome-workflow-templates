@@ -1,0 +1,123 @@
+{
+  "name": "List Incoming TRON USDT Transfers",
+  "nodes": [
+    {
+      "id": "list-incoming-tron-usdt-transfers-schedule",
+      "name": "Every 15 minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 15
+            }
+          ]
+        }
+      },
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "id": "list-incoming-tron-usdt-transfers-setup",
+      "name": "Set wallet and page size",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function prepareTronQuery(wallet, limit, timestamp) {\n  if (typeof wallet !== \"string\" || !/^T[1-9A-HJ-NP-Za-km-z]{33}$/.test(wallet)) {\n    throw new Error(\"Set a TRON Mainnet Base58 wallet address\");\n  }\n  if (!Number.isInteger(limit) || limit < 1 || limit > 50)\n    throw new Error(\"Set the page size between 1 and 50\");\n  const observed = Date.parse(timestamp);\n  const cutoff = observed - 15 * 60 * 1000;\n  if (!Number.isSafeInteger(cutoff) || cutoff < 0)\n    throw new Error(\"The schedule did not provide a valid timestamp\");\n\n  const contract = \"TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t\";\n  const url =\n    \"https://apilist.tronscanapi.com/api/token_trc20/transfers?start=0&limit=\" +\n    limit +\n    \"&contract_address=\" +\n    contract +\n    \"&toAddress=\" +\n    wallet +\n    \"&end_timestamp=\" +\n    cutoff;\n  return { url, wallet, limit, cutoff, contract };\n}\nconst wallet = \"YOUR_TRON_WALLET_ADDRESS\";\nconst limit = 20;\nreturn [{ json: prepareTronQuery(wallet, limit, $input.first().json.timestamp) }];\n"
+      },
+      "position": [
+        230,
+        0
+      ]
+    },
+    {
+      "id": "list-incoming-tron-usdt-transfers-fetch",
+      "name": "Read the TronScan transfer page",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.url }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 10000,
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          }
+        }
+      },
+      "position": [
+        460,
+        0
+      ]
+    },
+    {
+      "id": "list-incoming-tron-usdt-transfers-list",
+      "name": "Check and format incoming USDT transfers",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function summarizeTronTransfers(page, scope) {\n  const rows = page?.token_transfers;\n  const total = page?.rangeTotal;\n  if (\n    !Array.isArray(rows) ||\n    rows.length > scope.limit ||\n    !Number.isSafeInteger(total) ||\n    total < rows.length\n  ) {\n    throw new Error(\"TronScan did not return a valid transfer page\");\n  }\n\n  const results = [];\n  for (const row of rows) {\n    if (!row || typeof row !== \"object\") throw new Error(\"TronScan returned a malformed transfer\");\n    if (\n      row.contract_address !== scope.contract ||\n      row.to_address !== scope.wallet ||\n      row.event_type !== \"Transfer\"\n    )\n      continue;\n    if (!Number.isSafeInteger(row.block_ts) || row.block_ts < 0)\n      throw new Error(\"TronScan returned an invalid block timestamp\");\n    if (row.block_ts > scope.cutoff) continue;\n    if (\n      row.tokenInfo?.tokenDecimal !== 6 ||\n      typeof row.quant !== \"string\" ||\n      !/^[0-9]{1,78}$/.test(row.quant) ||\n      !/^[a-f0-9]{64}$/i.test(row.transaction_id ?? \"\") ||\n      !/^T[1-9A-HJ-NP-Za-km-z]{33}$/.test(row.from_address ?? \"\") ||\n      typeof row.confirmed !== \"boolean\" ||\n      ![\"SUCCESS\", \"FAIL\"].includes(row.finalResult)\n    ) {\n      throw new Error(\"TronScan returned invalid data for a matching USDT transfer\");\n    }\n\n    const digits = row.quant.replace(/^0+(?=\\d)/, \"\").padStart(7, \"0\");\n    const amount = digits.slice(0, -6) + \".\" + digits.slice(-6);\n    results.push({\n      Coin: \"Tether USD (USDT)\",\n      Network: \"TRON (TRC20)\",\n      \"From Address\": row.from_address === scope.wallet ? \"Your wallet\" : row.from_address,\n      \"To Address\": \"Your wallet\",\n      \"Amount (USDT)\": amount,\n      \"Record Type\": \"Transfer\",\n      \"Record Status\": row.confirmed ? \"Confirmed\" : \"Unconfirmed\",\n      \"Transaction Result\": row.revert === true ? \"REVERTED\" : row.finalResult,\n      \"Block Time\": new Date(row.block_ts).toISOString(),\n      \"Record URL\": \"https://tronscan.org/#/transaction/\" + row.transaction_id,\n    });\n  }\n\n  return {\n    Transactions: results.sort((a, b) => b[\"Block Time\"].localeCompare(a[\"Block Time\"])),\n    moreAvailable: total > rows.length,\n  };\n}\nreturn [\n  { json: summarizeTronTransfers($input.first().json, $(\"Set wallet and page size\").first().json) },\n];\n"
+      },
+      "position": [
+        690,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Every 15 minutes": {
+      "main": [
+        [
+          {
+            "node": "Set wallet and page size",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set wallet and page size": {
+      "main": [
+        [
+          {
+            "node": "Read the TronScan transfer page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the TronScan transfer page": {
+      "main": [
+        [
+          {
+            "node": "Check and format incoming USDT transfers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "timezone": "UTC",
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}
