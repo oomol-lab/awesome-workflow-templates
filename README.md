@@ -432,6 +432,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Collect Daily Product Hunt Posts](workflows/collect-daily-product-hunt-posts/) - Collect up to ten Product Hunt posts for a UTC day and maintain a Google Sheets list.
 - [Summarize Colt News to NocoDB](workflows/summarize-colt-news-to-nocodb/) - Summarize recent Colt news and save each article with technical keywords.
 - [Collect Colt Press Releases in NocoDB](workflows/collect-colt-press-releases-in-nocodb/) - Collect recent Colt press releases, summarize them and save technical keywords to NocoDB.
+- [Rerank Brave Search Results with Gemini](workflows/rerank-brave-search-results-with-gemini/) - Refine a research question, search the web with Brave, and return up to ten ranked links with relevant snippets.
 
 ## Productivity
 
