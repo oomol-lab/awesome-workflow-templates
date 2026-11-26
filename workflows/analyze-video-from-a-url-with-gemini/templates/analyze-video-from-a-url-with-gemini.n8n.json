@@ -1,0 +1,505 @@
+{
+  "name": "Analyze a Video URL with Gemini",
+  "tags": [
+    {
+      "id": "bjzc8PEM2FgX8rUa",
+      "name": "Marketing",
+      "createdAt": "2025-04-18T13:34:48.192Z",
+      "updatedAt": "2025-04-18T13:34:48.192Z"
+    },
+    {
+      "id": "OiWw6VmsJz6ZBAzz",
+      "name": "AI",
+      "createdAt": "2025-04-25T09:59:58.961Z",
+      "updatedAt": "2025-04-25T09:59:58.961Z"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "ff204f3f-947e-4b6a-a9a3-822d6d57064b",
+      "name": "Start video analysis",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "name": "Set the video URL and instructions",
+      "id": "analyze-video-from-a-url-with-gemini-input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function configureVideo({ videoUrl, instruction }) {\n  if (\n    typeof videoUrl !== \"string\" ||\n    !/^https:\\/\\/[a-z0-9.-]+(?::443)?\\/(?!\\/)[^#\\s\\\\]+$/i.test(videoUrl) ||\n    /^https:\\/\\/[^/]+\\.invalid\\//i.test(videoUrl)\n  ) {\n    throw new Error(\"Set a direct HTTPS video URL\");\n  }\n  if (typeof instruction !== \"string\" || !instruction.trim() || instruction.length > 4000) {\n    throw new Error(\"Enter video analysis instructions of up to 4,000 characters\");\n  }\n  return { videoUrl, instruction };\n}\nconst videoUrl = \"https://media.example.invalid/video.mp4\";\nconst instruction =\n  \"Describe in detail what is visually happening in the video, including key elements, actions, colors, and branding. Note the style, tone, and any notable creative techniques being used.\";\nreturn [{ json: configureVideo({ videoUrl, instruction }) }];\n"
+      },
+      "position": [
+        210,
+        0
+      ]
+    },
+    {
+      "name": "Download the video",
+      "id": "analyze-video-from-a-url-with-gemini-download",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "url": "={{ $json.videoUrl }}",
+        "method": "GET",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "position": [
+        420,
+        0
+      ]
+    },
+    {
+      "name": "Check video size and type",
+      "id": "analyze-video-from-a-url-with-gemini-metadata",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function videoMetadata({ size, mime, status }) {\n  if (status !== 200 || !Number.isSafeInteger(size) || size < 1 || size > 10 * 1024 * 1024) {\n    throw new Error(\"The video download must contain a complete file of up to 10 MiB\");\n  }\n  const supported = [\n    \"video/mp4\",\n    \"video/mpeg\",\n    \"video/quicktime\",\n    \"video/mov\",\n    \"video/avi\",\n    \"video/x-flv\",\n    \"video/mpg\",\n    \"video/webm\",\n    \"video/wmv\",\n    \"video/3gpp\",\n  ];\n  if (!supported.includes(mime))\n    throw new Error(\"The download did not return a supported video Content-Type\");\n  return { length: String(size), mime };\n}\nconst item = $input.first();\nconst bytes = await helpers.getBinaryDataBuffer(0, \"data\");\nconst json = videoMetadata({\n  size: bytes.length,\n  mime: item.binary.data.mimeType,\n  status: item.json.statusCode,\n});\nreturn [{ json }];\n"
+      },
+      "position": [
+        630,
+        0
+      ]
+    },
+    {
+      "name": "Start the Gemini upload",
+      "id": "analyze-video-from-a-url-with-gemini-initiate",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "url": "https://generativelanguage.googleapis.com/upload/v1beta/files",
+        "method": "POST",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "text",
+              "fullResponse": true
+            }
+          }
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Goog-Upload-Protocol",
+              "value": "resumable"
+            },
+            {
+              "name": "X-Goog-Upload-Command",
+              "value": "start"
+            },
+            {
+              "name": "X-Goog-Upload-Header-Content-Length",
+              "value": "={{ $json.length }}"
+            },
+            {
+              "name": "X-Goog-Upload-Header-Content-Type",
+              "value": "={{ $json.mime }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "{\"file\":{\"displayName\":\"Workflow video\"}}"
+      },
+      "position": [
+        840,
+        0
+      ]
+    },
+    {
+      "name": "Read the Gemini upload URL",
+      "id": "analyze-video-from-a-url-with-gemini-session",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function uploadSession(headers) {\n  const url = Object.entries(headers ?? {}).find(\n    ([key]) => key.toLowerCase() === \"x-goog-upload-url\",\n  )?.[1];\n  if (\n    typeof url !== \"string\" ||\n    !/^https:\\/\\/generativelanguage\\.googleapis\\.com\\/upload\\/v1beta\\/files\\?[^#\\s\\\\]+$/.test(url)\n  ) {\n    throw new Error(\"Gemini did not return a trusted resumable upload URL\");\n  }\n  return url;\n}\nreturn [\n  {\n    json: { url: uploadSession($input.first().json.headers) },\n    binary: $(\"Download the video\").first().binary,\n  },\n];\n"
+      },
+      "position": [
+        1050,
+        0
+      ]
+    },
+    {
+      "name": "Upload the complete video",
+      "id": "analyze-video-from-a-url-with-gemini-upload",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "method": "POST",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Goog-Upload-Command",
+              "value": "upload, finalize"
+            },
+            {
+              "name": "X-Goog-Upload-Offset",
+              "value": "0"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "data"
+      },
+      "position": [
+        1260,
+        0
+      ]
+    },
+    {
+      "name": "Check the uploaded Gemini file",
+      "id": "analyze-video-from-a-url-with-gemini-file",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function uploadedFile({ body, mime, length }) {\n  const file = body?.file;\n  if (\n    !/^files\\/[a-z0-9](?:[a-z0-9-]{0,38}[a-z0-9])?$/.test(file?.name ?? \"\") ||\n    file.mimeType !== mime ||\n    String(file.sizeBytes) !== length\n  ) {\n    throw new Error(\"Gemini upload did not return the matching file metadata\");\n  }\n  const url = \"https://generativelanguage.googleapis.com/v1beta/\" + file.name;\n  if (file.uri !== url) throw new Error(\"Gemini upload returned an unexpected file URI\");\n  if (file.state !== \"ACTIVE\" && file.state !== \"PROCESSING\") {\n    throw new Error(\"Gemini upload failed to process the video\");\n  }\n  return { fileName: file.name, fileUrl: url, mime };\n}\nconst { mime, length } = $(\"Check video size and type\").first().json;\nreturn [{ json: uploadedFile({ body: $input.first().json, mime, length }) }];\n"
+      },
+      "position": [
+        1470,
+        0
+      ]
+    },
+    {
+      "name": "Wait before checking the file",
+      "id": "analyze-video-from-a-url-with-gemini-pause",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "parameters": {
+        "resume": "timeInterval",
+        "amount": 5,
+        "unit": "seconds"
+      },
+      "position": [
+        1680,
+        0
+      ]
+    },
+    {
+      "name": "Read Gemini file status",
+      "id": "analyze-video-from-a-url-with-gemini-poll",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "url": "={{ $('Check the uploaded Gemini file').first().json.fileUrl }}",
+        "method": "GET",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "position": [
+        1890,
+        0
+      ]
+    },
+    {
+      "name": "Check the same file is ready",
+      "id": "analyze-video-from-a-url-with-gemini-state",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function fileStatus({ file, fileName, fileUrl, mime, instruction, attempt }) {\n  if (file?.name !== fileName || file?.uri !== fileUrl || file?.mimeType !== mime) {\n    throw new Error(\"Gemini status did not match the uploaded video\");\n  }\n  if (file.state === \"ACTIVE\") {\n    return {\n      processing: false,\n      attempt,\n      request: {\n        contents: [\n          {\n            role: \"user\",\n            parts: [{ fileData: { fileUri: fileUrl, mimeType: mime } }, { text: instruction }],\n          },\n        ],\n        generationConfig: { maxOutputTokens: 8192, thinkingConfig: { thinkingLevel: \"LOW\" } },\n      },\n    };\n  }\n  if (file.state !== \"PROCESSING\") throw new Error(\"Gemini failed to process the uploaded video\");\n  if (attempt >= 12)\n    throw new Error(\"Gemini video processing did not finish after 12 status checks\");\n  return { processing: true, attempt, request: null };\n}\nconst { fileName, fileUrl, mime } = $(\"Check the uploaded Gemini file\").first().json;\nconst { instruction } = $(\"Set the video URL and instructions\").first().json;\nreturn [\n  {\n    json: fileStatus({\n      file: $input.first().json,\n      fileName,\n      fileUrl,\n      mime,\n      instruction,\n      attempt: $runIndex + 1,\n    }),\n  },\n];\n"
+      },
+      "position": [
+        2100,
+        0
+      ]
+    },
+    {
+      "name": "Video still processing?",
+      "id": "analyze-video-from-a-url-with-gemini-waiting",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.processing }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "position": [
+        2310,
+        0
+      ]
+    },
+    {
+      "name": "Analyze the video with Gemini",
+      "id": "analyze-video-from-a-url-with-gemini-analyze",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent",
+        "method": "POST",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.request) }}"
+      },
+      "position": [
+        2520,
+        0
+      ]
+    },
+    {
+      "name": "Extract the video description",
+      "id": "analyze-video-from-a-url-with-gemini-result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function videoDescription(body) {\n  const candidate = body?.candidates?.[0];\n  if (candidate?.finishReason !== \"STOP\") throw new Error(\"Gemini did not complete video analysis\");\n  const description = (candidate.content?.parts ?? [])\n    .filter((part) => !part.thought && typeof part.text === \"string\")\n    .map((part) => part.text)\n    .join(\"\\n\")\n    .trim();\n  if (!description) throw new Error(\"Gemini returned no video description\");\n  return { videoDescription: description };\n}\nreturn [{ json: videoDescription($input.first().json) }];\n"
+      },
+      "position": [
+        2730,
+        0
+      ]
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Start video analysis": {
+      "main": [
+        [
+          {
+            "node": "Set the video URL and instructions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set the video URL and instructions": {
+      "main": [
+        [
+          {
+            "node": "Download the video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download the video": {
+      "main": [
+        [
+          {
+            "node": "Check video size and type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check video size and type": {
+      "main": [
+        [
+          {
+            "node": "Start the Gemini upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start the Gemini upload": {
+      "main": [
+        [
+          {
+            "node": "Read the Gemini upload URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the Gemini upload URL": {
+      "main": [
+        [
+          {
+            "node": "Upload the complete video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload the complete video": {
+      "main": [
+        [
+          {
+            "node": "Check the uploaded Gemini file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check the uploaded Gemini file": {
+      "main": [
+        [
+          {
+            "node": "Wait before checking the file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait before checking the file": {
+      "main": [
+        [
+          {
+            "node": "Read Gemini file status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Gemini file status": {
+      "main": [
+        [
+          {
+            "node": "Check the same file is ready",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check the same file is ready": {
+      "main": [
+        [
+          {
+            "node": "Video still processing?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Video still processing?": {
+      "main": [
+        [
+          {
+            "node": "Wait before checking the file",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Analyze the video with Gemini",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze the video with Gemini": {
+      "main": [
+        [
+          {
+            "node": "Extract the video description",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

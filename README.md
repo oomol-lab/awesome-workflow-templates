@@ -702,6 +702,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Extract Text from HTML and a PDF URL](workflows/extract-text-from-html-and-pdf-url/) - Render HTML as a PDF, then extract its text and the text of a second PDF from a download URL.
 - [Optimise Google Drive Images with TinyPNG](workflows/optimise-google-drive-images-with-tinypng/) - Compress new images in one Google Drive folder and save optimised copies in a separate folder.
 - [Describe Webpage Screenshots with URLbox](workflows/describe-webpage-screenshots-with-urlbox/) - Capture a full-page screenshot and return its visual description with the original webpage name and URL.
+- [Analyze a Video URL with Gemini](workflows/analyze-video-from-a-url-with-gemini/) - Download a video, send the full file to Gemini, and return a description based on your instructions.
 
 ## Content
 
