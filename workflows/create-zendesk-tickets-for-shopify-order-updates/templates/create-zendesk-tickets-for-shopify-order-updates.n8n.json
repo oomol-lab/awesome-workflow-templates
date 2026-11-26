@@ -1,0 +1,223 @@
+{
+  "name": "Create Zendesk Tickets for Shopify Order Updates",
+  "nodes": [
+    {
+      "id": "create-zendesk-tickets-for-shopify-order-updates-trigger",
+      "name": "On Shopify order update",
+      "type": "n8n-nodes-base.shopifyTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "topic": "orders/updated",
+        "authentication": "accessToken"
+      }
+    },
+    {
+      "id": "create-zendesk-tickets-for-shopify-order-updates-prepare",
+      "name": "Read order number",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function normalizeOrder(order) {\n  const number = order?.order_number;\n  const externalId = String(number);\n  if (\n    (typeof number !== \"string\" && typeof number !== \"number\") ||\n    !/^[1-9]\\d{0,19}$/.test(externalId) ||\n    (typeof number === \"number\" && !Number.isSafeInteger(number)) ||\n    !Array.isArray(order.line_items)\n  ) {\n    throw new Error(\"Shopify order number or line items are missing or invalid\");\n  }\n\n  const customer = order.customer;\n  const customerName = [customer?.first_name, customer?.last_name]\n    .filter((part) => typeof part === \"string\" && part.trim())\n    .join(\" \");\n  const email = [customer?.email, order.contact_email, order.email].find(\n    (value) => typeof value === \"string\" && value.trim(),\n  );\n  const subject = \"Order #\" + externalId + \" - \" + order.line_items.length + \" item(s)\";\n  return {\n    externalId,\n    subject,\n    comment: {\n      body: [\n        subject,\n        \"\",\n        \"Order:\",\n        \"Customer: \" + (customerName || \"Unavailable\"),\n        \"email: \" + (email || \"Unavailable\"),\n        \"Status: New order\",\n      ].join(\"\\n\"),\n    },\n    status: \"open\",\n  };\n}\nreturn $input.all().map(({ json }) => ({ json: normalizeOrder(json) }));\n"
+      }
+    },
+    {
+      "id": "create-zendesk-tickets-for-shopify-order-updates-lookup",
+      "name": "Find tickets for this order",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        480,
+        0
+      ],
+      "parameters": {
+        "url": "https://YOUR_ZENDESK_SUBDOMAIN.zendesk.com/api/v2/tickets.json",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "zendeskApi",
+        "method": "GET",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "external_id",
+              "value": "={{ $json.externalId }}"
+            },
+            {
+              "name": "page[size]",
+              "value": "100"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "responseFormat": "json"
+            }
+          },
+          "pagination": {
+            "pagination": {
+              "paginationMode": "updateAParameterInEachRequest",
+              "parameters": {
+                "parameters": [
+                  {
+                    "type": "qs",
+                    "name": "page[after]",
+                    "value": "={{ $response.body?.meta?.after_cursor ?? undefined }}"
+                  }
+                ]
+              },
+              "paginationCompleteWhen": "other",
+              "completeExpression": "={{ $response.body?.meta?.has_more !== true || typeof $response.body.meta.after_cursor !== \"string\" || !$response.body.meta.after_cursor }}",
+              "limitPagesFetched": false
+            }
+          },
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "create-zendesk-tickets-for-shopify-order-updates-decide",
+      "name": "Check for an open ticket",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function readPage(body, externalId, state) {\n  const { tickets, meta } = body ?? {};\n  if (!Array.isArray(tickets) || typeof meta?.has_more !== \"boolean\") {\n    throw new Error(\"Zendesk returned an invalid ticket page\");\n  }\n\n  const nextCursor = meta.has_more ? meta.after_cursor : null;\n  if (\n    meta.has_more &&\n    (typeof nextCursor !== \"string\" || !nextCursor || state.cursors.includes(nextCursor))\n  ) {\n    throw new Error(\"Zendesk returned an invalid pagination cursor\");\n  }\n\n  let latestId = state.latestId;\n  let open = state.open;\n  for (const ticket of tickets) {\n    if (typeof ticket?.external_id !== \"string\") {\n      throw new Error(\"Zendesk returned a ticket with no external ID\");\n    }\n    if (ticket.external_id !== externalId) continue;\n    if (!Number.isSafeInteger(ticket.id) || ticket.id < 1 || typeof ticket.status !== \"string\") {\n      throw new Error(\"Zendesk returned an invalid matching ticket\");\n    }\n    latestId = Math.max(ticket.id, latestId);\n    open ||= ticket.status === \"open\";\n  }\n\n  return {\n    cursors: nextCursor ? [...state.cursors, nextCursor] : state.cursors,\n    latestId,\n    open,\n  };\n}\n\nfunction ticketKey(externalId, latestId) {\n  return \"shopify-order-\" + externalId + \"-after-zendesk-\" + latestId;\n}\nconst { externalId, ...ticketFields } = $(\"Read order number\").first().json;\nlet state = { cursors: [], latestId: 0, open: false };\nconst pages = $input.all();\nif (!pages.length) throw new Error(\"Zendesk returned no ticket pages\");\nfor (const [index, { json }] of pages.entries()) {\n  if (json.statusCode !== 200) throw new Error(\"Zendesk ticket lookup failed\");\n  state = readPage(json.body, externalId, state);\n  if (json.body.meta.has_more !== index < pages.length - 1) {\n    throw new Error(\"Zendesk ticket lookup did not return a complete page sequence\");\n  }\n}\nreturn state.open\n  ? []\n  : [\n      {\n        json: {\n          externalId,\n          body: { ticket: { ...ticketFields, external_id: externalId } },\n          key: ticketKey(externalId, state.latestId),\n        },\n      },\n    ];\n"
+      }
+    },
+    {
+      "id": "create-zendesk-tickets-for-shopify-order-updates-create",
+      "name": "Create an open ticket",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        960,
+        0
+      ],
+      "parameters": {
+        "url": "https://YOUR_ZENDESK_SUBDOMAIN.zendesk.com/api/v2/tickets.json",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "zendeskApi",
+        "method": "POST",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Idempotency-Key",
+              "value": "={{ $json.key }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.body }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "responseFormat": "json"
+            }
+          },
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "create-zendesk-tickets-for-shopify-order-updates-confirm",
+      "name": "Confirm ticket creation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function confirm({ response, statusCode, externalId }) {\n  const ticket = response?.ticket;\n  if (\n    statusCode !== 201 ||\n    !Number.isSafeInteger(ticket?.id) ||\n    ticket.id < 1 ||\n    ticket.external_id !== externalId\n  ) {\n    throw new Error(\"Zendesk did not confirm the new ticket for this order\");\n  }\n  return { ticketId: ticket.id };\n}\n\nconst externalId = $(\"Check for an open ticket\").first().json.externalId;\nreturn $input.all().map(({ json }) => ({\n  json: confirm({ response: json.body, statusCode: json.statusCode, externalId }),\n}));\n"
+      }
+    }
+  ],
+  "connections": {
+    "On Shopify order update": {
+      "main": [
+        [
+          {
+            "node": "Read order number",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read order number": {
+      "main": [
+        [
+          {
+            "node": "Find tickets for this order",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find tickets for this order": {
+      "main": [
+        [
+          {
+            "node": "Check for an open ticket",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check for an open ticket": {
+      "main": [
+        [
+          {
+            "node": "Create an open ticket",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create an open ticket": {
+      "main": [
+        [
+          {
+            "node": "Confirm ticket creation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}
