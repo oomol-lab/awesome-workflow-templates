@@ -1042,6 +1042,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Add Audio Narration to WordPress Articles](workflows/add-narration-to-wordpress-articles/) - Turn a WordPress article or its summary into MP3 audio and place the player above the existing post.
 - [Return Speech as an MP3 from a Webhook](workflows/return-speech-mp3-from-webhook/) - Send text to a webhook and get an AI-generated ElevenLabs MP3 in the same HTTP response.
 - [Summarize YouTube Videos from Public Captions](workflows/summarize-youtube-public-captions/) - Submit a YouTube video URL and get a summary and key points based on its public captions.
+- [Generate Stock Image Metadata from a Webhook](workflows/generate-stock-image-metadata-with-a-webhook/) - Send a PNG or JPEG to a webhook and get a stock title, description, keywords, and a CSV row in the HTTP response.
 
 ## Recruiting
 
