@@ -713,6 +713,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Save Medium Gmail Attachments to Google Drive](workflows/save-medium-gmail-attachments-to-drive/) - Pick up new unread messages from a chosen sender and save each attachment that falls within your size limits.
 - [Send IMAP XML Orders to an API](workflows/send-imap-xml-orders-to-an-api/) - Read the first XML attachment from each IMAP message and POST the parsed order to your HTTPS endpoint.
 - [Export Published WordPress Posts to Drive CSV](workflows/export-published-wordpress-posts-to-drive-csv/) - Save all published WordPress posts as one CSV with their IDs, titles, links, and rendered content.
+- [Summarize Drive Recordings in Notion](workflows/summarize-drive-recordings-in-notion/) - Transcribe new recordings in a Google Drive folder and create a Notion child page with each recording’s title and summary.
 
 ## Content
 
