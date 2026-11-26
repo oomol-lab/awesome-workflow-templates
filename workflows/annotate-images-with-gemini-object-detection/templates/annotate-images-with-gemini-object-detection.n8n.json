@@ -1,0 +1,242 @@
+{
+  "name": "Draw Gemini Object Detections on an Image",
+  "nodes": [
+    {
+      "id": "annotate-images-with-gemini-object-detection-start",
+      "name": "Run object detection manually",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "parameters": {},
+      "position": [
+        0,
+        240
+      ]
+    },
+    {
+      "id": "annotate-images-with-gemini-object-detection-settings",
+      "name": "Set the image and objects",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function imageRequestSettings(imageUrl, target) {\n  if (\n    typeof imageUrl !== \"string\" ||\n    imageUrl.length > 2000 ||\n    !/^https:\\/\\/[a-z0-9]+(?:[.-][a-z0-9]+)*\\.[a-z]{2,}(?:\\/[^\\s#]*)?$/i.test(imageUrl)\n  ) {\n    throw new Error(\"Enter a public HTTPS image URL with no embedded account credentials.\");\n  }\n  if (typeof target !== \"string\" || !target.trim() || [...target.trim()].length > 300) {\n    throw new Error(\"Describe the objects to detect in 1 to 300 characters.\");\n  }\n  return { url: imageUrl, target: target.trim() };\n}\n\nreturn { json: imageRequestSettings(\"\", \"rabbits\") };\n"
+      },
+      "position": [
+        235,
+        240
+      ]
+    },
+    {
+      "id": "annotate-images-with-gemini-object-detection-download",
+      "name": "Download the original image",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "authentication": "none",
+        "url": "={{ $json.url }}",
+        "options": {
+          "timeout": 45000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "outputPropertyName": "data",
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "position": [
+        470,
+        240
+      ]
+    },
+    {
+      "id": "annotate-images-with-gemini-object-detection-prepare",
+      "name": "Read original dimensions and prepare Gemini input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function checkExifOrientation(bytes, from, end) {\n  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);\n  if (end - from < 8) throw new Error(\"Invalid image orientation metadata.\");\n  const little = view.getUint16(from) === 0x4949;\n  if ((!little && view.getUint16(from) !== 0x4d4d) || view.getUint16(from + 2, little) !== 42) {\n    throw new Error(\"Invalid image orientation metadata.\");\n  }\n  const start = from + view.getUint32(from + 4, little);\n  if (start < from + 8 || start + 2 > end) throw new Error(\"Invalid image orientation metadata.\");\n  const entries = view.getUint16(start, little);\n  if (start + 2 + entries * 12 > end) throw new Error(\"Invalid image orientation metadata.\");\n  for (let index = 0; index < entries; index++) {\n    const field = start + 2 + index * 12;\n    if (view.getUint16(field, little) !== 0x0112) continue;\n    if (\n      view.getUint16(field + 2, little) !== 3 ||\n      view.getUint32(field + 4, little) !== 1 ||\n      view.getUint16(field + 8, little) !== 1\n    ) {\n      throw new Error(\"Use an image stored upright with standard orientation.\");\n    }\n  }\n}\n\nfunction pngDimensions(bytes, view) {\n  if (view.getUint32(0) !== 0x89504e47 || view.getUint32(4) !== 0x0d0a1a0a)\n    throw new Error(\"Invalid PNG signature.\");\n  let dimensions,\n    imageData = false;\n  for (let offset = 8; offset + 12 <= bytes.length;) {\n    const length = view.getUint32(offset);\n    const start = offset + 8;\n    const end = start + length + 4;\n    if (end > bytes.length) break;\n    const chunk = String.fromCharCode(...bytes.subarray(offset + 4, start));\n    if (offset === 8) {\n      if (chunk !== \"IHDR\" || length !== 13) break;\n      dimensions = { width: view.getUint32(start), height: view.getUint32(start + 4) };\n    }\n    if (chunk === \"acTL\") throw new Error(\"Use a static PNG image.\");\n    if (chunk === \"eXIf\") checkExifOrientation(bytes, start, end - 4);\n    if (chunk === \"IDAT\" && length > 0) imageData = true;\n    if (chunk === \"IEND\" && length === 0 && imageData && dimensions && end === bytes.length)\n      return dimensions;\n    offset = end;\n  }\n  throw new Error(\"Incomplete PNG image.\");\n}\n\nfunction jpegDimensions(bytes, view) {\n  if (view.getUint16(0) !== 0xffd8 || view.getUint16(bytes.length - 2) !== 0xffd9) {\n    throw new Error(\"Invalid JPEG start or end.\");\n  }\n  let dimensions;\n  for (let offset = 2; offset + 4 < bytes.length;) {\n    if (bytes[offset++] !== 0xff) break;\n    while (bytes[offset] === 0xff) offset++;\n    const marker = bytes[offset++];\n    if (offset + 2 > bytes.length) break;\n    const length = view.getUint16(offset);\n    const start = offset + 2;\n    const end = offset + length;\n    if (length < 2 || end >= bytes.length - 2) break;\n    if ([0xc0, 0xc1, 0xc2].includes(marker)) {\n      if (dimensions || length < 8) break;\n      dimensions = { width: view.getUint16(start + 3), height: view.getUint16(start + 1) };\n    }\n    if (\n      marker === 0xe1 &&\n      length >= 8 &&\n      String.fromCharCode(...bytes.subarray(start, start + 6)) === \"Exif\\0\\0\"\n    ) {\n      checkExifOrientation(bytes, start + 6, end);\n    }\n    if (marker === 0xda && dimensions) return dimensions;\n    offset = end;\n  }\n  throw new Error(\"Unsupported or incomplete JPEG image.\");\n}\n\nfunction inspectSourceImage(bytes, mimeType) {\n  if (typeof mimeType !== \"string\" || ![\"image/jpeg\", \"image/png\"].includes(mimeType)) {\n    throw new Error(\"The host must return an image/jpeg or image/png content type.\");\n  }\n  if (bytes.length < 45 || bytes.length > 2 * 1024 * 1024) {\n    throw new Error(\"Use a JPEG or PNG file up to 2 MiB.\");\n  }\n  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);\n  const bounds =\n    mimeType === \"image/png\" ? pngDimensions(bytes, view) : jpegDimensions(bytes, view);\n  if (bounds.width < 1 || bounds.height < 1 || bounds.width > 4096 || bounds.height > 4096) {\n    throw new Error(\"Image width and height must each be at most 4,096 pixels.\");\n  }\n  return { ...bounds, mimeType };\n}\n\nfunction detectionRequest(target, media, encoded) {\n  return {\n    contents: [\n      {\n        role: \"user\",\n        parts: [\n          {\n            text:\n              \"Find every visible instance of this target description: \" +\n              target +\n              \"\\nReturn each bounding box as [ymin, xmin, ymax, xmax] with integer coordinates from 0 through 1000, normalized to the entire image. Include a short label for each box. Return [] if no requested objects are visible.\",\n          },\n          { inlineData: { mimeType: media.mimeType, data: encoded } },\n        ],\n      },\n    ],\n    generationConfig: {\n      responseMimeType: \"application/json\",\n      maxOutputTokens: 8192,\n      responseJsonSchema: {\n        type: \"array\",\n        maxItems: 100,\n        items: {\n          type: \"object\",\n          properties: {\n            box_2d: {\n              type: \"array\",\n              minItems: 4,\n              maxItems: 4,\n              items: { type: \"integer\", minimum: 0, maximum: 1000 },\n            },\n            label: { type: \"string\" },\n          },\n          additionalProperties: false,\n          required: [\"box_2d\", \"label\"],\n        },\n      },\n    },\n  };\n}\n\nconst bytes = await helpers.getBinaryDataBuffer(0, \"data\");\nif ($json.statusCode !== 200) throw new Error(\"Expected a complete image.\");\nconst media = inspectSourceImage(bytes, $input.item.binary.data.mimeType);\nreturn {\n  json: {\n    media,\n    body: detectionRequest(\n      $(\"Set the image and objects\").item.json.target,\n      media,\n      Buffer.from(bytes).toString(\"base64\"),\n    ),\n  },\n};\n"
+      },
+      "position": [
+        705,
+        240
+      ]
+    },
+    {
+      "id": "annotate-images-with-gemini-object-detection-detect",
+      "name": "Detect the requested objects",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googlePalmApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.body }}",
+        "options": {
+          "timeout": 45000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "position": [
+        940,
+        240
+      ]
+    },
+    {
+      "id": "annotate-images-with-gemini-object-detection-draw",
+      "name": "Draw boxes on the original image",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function imageBoxes(response, width, height) {\n  const selected = response?.candidates?.[0];\n  if (selected?.finishReason !== \"STOP\" || !Array.isArray(selected.content?.parts)) {\n    throw new Error(\"Gemini did not return a complete response.\");\n  }\n  const text = selected.content.parts\n    .filter((part) => part?.thought !== true)\n    .map((part) => part?.text ?? \"\")\n    .join(\"\");\n  if (text.length > 80000) throw new Error(\"Gemini returned an oversized box list.\");\n  let values;\n  try {\n    values = JSON.parse(text);\n  } catch {\n    throw new Error(\"Gemini returned invalid detection JSON.\");\n  }\n  if (!Array.isArray(values) || values.length > 100)\n    throw new Error(\"Expected an array of at most 100 boxes.\");\n  return values.map((item, index) => {\n    const coords = item?.box_2d,\n      label = typeof item?.label === \"string\" ? item.label.trim() : \"\";\n    if (\n      !Array.isArray(coords) ||\n      coords.length !== 4 ||\n      coords.some((n) => !Number.isInteger(n) || n < 0 || n > 1000) ||\n      coords[2] <= coords[0] ||\n      coords[3] <= coords[1] ||\n      !label ||\n      [...label].length > 160 ||\n      /[\\x00-\\x1f\\x7f]/.test(label)\n    ) {\n      throw new Error(\"Gemini returned an invalid box or label at item \" + (index + 1) + \".\");\n    }\n    const [ymin, xmin, ymax, xmax] = coords;\n    return {\n      label,\n      xmin: (xmin * width) / 1000,\n      ymin: (ymin * height) / 1000,\n      xmax: (xmax * width) / 1000,\n      ymax: (ymax * height) / 1000,\n    };\n  });\n}\n\nfunction imageOverlay(media, encoded, boxes) {\n  const { width, height, mimeType } = media;\n  const stroke = Math.max(2, Math.min(6, Math.round(Math.min(width, height) / 300)));\n  const outlines = boxes\n    .map(\n      ({ xmin, ymin, xmax, ymax }) =>\n        '<rect x=\"' +\n        xmin +\n        '\" y=\"' +\n        ymin +\n        '\" width=\"' +\n        (xmax - xmin) +\n        '\" height=\"' +\n        (ymax - ymin) +\n        '\"/>',\n    )\n    .join(\"\");\n  return (\n    '<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"' +\n    width +\n    '\" height=\"' +\n    height +\n    '\" viewBox=\"0 0 ' +\n    width +\n    \" \" +\n    height +\n    '\"><image width=\"' +\n    width +\n    '\" height=\"' +\n    height +\n    '\" href=\"data:' +\n    mimeType +\n    \";base64,\" +\n    encoded +\n    '\"/><g fill=\"none\" stroke=\"#ff00f2\" stroke-width=\"' +\n    stroke +\n    '\">' +\n    outlines +\n    \"</g></svg>\"\n  );\n}\n\nconst { media, body } = $(\"Read original dimensions and prepare Gemini input\").item.json;\nconst boxes = imageBoxes($json, media.width, media.height);\nconst encoded = body.contents[0].parts[1].inlineData.data;\nconst svg = imageOverlay(media, encoded, boxes);\nreturn {\n  json: {\n    svg: Buffer.from(svg, \"utf8\").toString(\"base64\"),\n    boxes,\n    width: media.width,\n    height: media.height,\n  },\n};\n"
+      },
+      "position": [
+        1175,
+        240
+      ]
+    },
+    {
+      "id": "annotate-images-with-gemini-object-detection-convert",
+      "name": "Convert the annotated SVG to a file",
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "parameters": {
+        "operation": "toBinary",
+        "sourceProperty": "svg",
+        "binaryPropertyName": "data",
+        "options": {
+          "fileName": "object-detections.svg",
+          "mimeType": "image/svg+xml",
+          "addBOM": false
+        }
+      },
+      "position": [
+        1410,
+        240
+      ]
+    },
+    {
+      "id": "annotate-images-with-gemini-object-detection-out",
+      "name": "Return the image and labeled boxes",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const { boxes, width, height } = $(\"Draw boxes on the original image\").item.json;\nreturn { json: { boxes, width, height }, binary: $input.item.binary };\n"
+      },
+      "position": [
+        1645,
+        240
+      ]
+    }
+  ],
+  "connections": {
+    "Run object detection manually": {
+      "main": [
+        [
+          {
+            "node": "Set the image and objects",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set the image and objects": {
+      "main": [
+        [
+          {
+            "node": "Download the original image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download the original image": {
+      "main": [
+        [
+          {
+            "node": "Read original dimensions and prepare Gemini input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read original dimensions and prepare Gemini input": {
+      "main": [
+        [
+          {
+            "node": "Detect the requested objects",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Detect the requested objects": {
+      "main": [
+        [
+          {
+            "node": "Draw boxes on the original image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Draw boxes on the original image": {
+      "main": [
+        [
+          {
+            "node": "Convert the annotated SVG to a file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert the annotated SVG to a file": {
+      "main": [
+        [
+          {
+            "node": "Return the image and labeled boxes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataSuccessExecution": "none",
+    "saveDataErrorExecution": "none",
+    "saveManualExecutions": false,
+    "saveExecutionProgress": false
+  }
+}
