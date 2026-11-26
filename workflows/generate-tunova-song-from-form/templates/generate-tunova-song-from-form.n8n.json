@@ -1,0 +1,282 @@
+{
+  "name": "Generate a Song with Tunova",
+  "nodes": [
+    {
+      "id": "generate-tunova-song-from-form-form",
+      "name": "Receive a song request",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "parameters": {
+        "formTitle": "Make a song with AI",
+        "formDescription": "Describe the song you want. Turn on Instrumental for a track without vocals. A submission reference is optional. Use a random UUID v4 if you need to retry the same submission.",
+        "responseMode": "onReceived",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Prompt",
+              "fieldType": "textarea",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Instrumental",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "No"
+                  },
+                  {
+                    "option": "Yes"
+                  }
+                ]
+              }
+            },
+            {
+              "fieldLabel": "Submission reference",
+              "placeholder": "Optional UUID v4"
+            }
+          ]
+        },
+        "options": {
+          "path": "generate-tunova-song-from-form",
+          "buttonLabel": "Request song"
+        }
+      },
+      "position": [
+        0,
+        200
+      ]
+    },
+    {
+      "id": "generate-tunova-song-from-form-id",
+      "name": "Generate a submission reference",
+      "type": "n8n-nodes-base.crypto",
+      "typeVersion": 1,
+      "parameters": {
+        "action": "generate",
+        "encodingType": "uuid",
+        "dataPropertyName": "generatedReference"
+      },
+      "position": [
+        220,
+        200
+      ]
+    },
+    {
+      "id": "generate-tunova-song-from-form-prepare",
+      "name": "Prepare the generation request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function prepareSong(prompt, instrumental, reference, generatedReference) {\n  if (typeof prompt !== \"string\" || !prompt.trim() || prompt.trim().length > 2000) {\n    throw new Error(\"Enter a song prompt of 1–2,000 characters.\");\n  }\n  if (typeof instrumental !== \"boolean\")\n    throw new Error(\"Choose whether the song is instrumental.\");\n  const hasReference = reference != null && reference !== \"\";\n  const key = hasReference ? reference : generatedReference;\n  if (\n    typeof key !== \"string\" ||\n    !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(key)\n  ) {\n    throw new Error(\"Use a random UUID v4 as your submission reference, or leave it blank.\");\n  }\n  return {\n    key: \"song-form-\" + key.toLowerCase(),\n    body: { prompt: prompt.trim(), make_instrumental: instrumental, model: \"v6\" },\n  };\n}\nconst choice = $json.Instrumental ?? \"\";\nif (![\"\", \"No\", \"Yes\"].includes(choice)) throw new Error(\"Choose Yes or No for Instrumental.\");\nreturn {\n  json: prepareSong(\n    $json.Prompt,\n    choice === \"Yes\",\n    $json[\"Submission reference\"],\n    $json.generatedReference,\n  ),\n};\n"
+      },
+      "position": [
+        440,
+        200
+      ]
+    },
+    {
+      "id": "generate-tunova-song-from-form-create",
+      "name": "Start the Tunova job",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          }
+        },
+        "method": "POST",
+        "url": "https://api.tunova.ai/api/generate",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.body }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Idempotency-Key",
+              "value": "={{ $json.key }}"
+            }
+          ]
+        }
+      },
+      "position": [
+        660,
+        200
+      ]
+    },
+    {
+      "id": "generate-tunova-song-from-form-job",
+      "name": "Confirm the job ID",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function acceptedSongJob(reply, statusCode) {\n  const jobId = reply?.job_id;\n  if (statusCode !== 202 || typeof jobId !== \"string\" || !/^[a-zA-Z0-9_-]{1,128}$/.test(jobId)) {\n    throw new Error(\"Tunova did not confirm a job ID. Check Tunova before submitting again.\");\n  }\n  return { jobId, url: \"https://api.tunova.ai/api/jobs/\" + jobId };\n}\nreturn { json: acceptedSongJob($json.body, $json.statusCode) };\n"
+      },
+      "position": [
+        880,
+        200
+      ]
+    },
+    {
+      "id": "generate-tunova-song-from-form-wait",
+      "name": "Wait two minutes",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "parameters": {
+        "resume": "timeInterval",
+        "amount": 120,
+        "unit": "seconds"
+      },
+      "position": [
+        1100,
+        200
+      ]
+    },
+    {
+      "id": "generate-tunova-song-from-form-get",
+      "name": "Check this Tunova job",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          }
+        },
+        "method": "GET",
+        "url": "={{ $json.url }}"
+      },
+      "position": [
+        1320,
+        200
+      ]
+    },
+    {
+      "id": "generate-tunova-song-from-form-result",
+      "name": "Read the job status and first track",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function readSongJob(reply, statusCode, jobId) {\n  const status = reply?.status;\n  if (\n    statusCode !== 200 ||\n    reply?.job_id !== jobId ||\n    ![\"queued\", \"processing\", \"submitted\", \"complete\", \"failed\"].includes(status)\n  ) {\n    throw new Error(\"Tunova did not return a valid status for the submitted job.\");\n  }\n  const result = { job_id: jobId, status, audio_url: null, title: null };\n  if (status !== \"complete\") return result;\n\n  const clip = Array.isArray(reply.clips) ? reply.clips[0] : undefined;\n  if (\n    typeof clip?.audio_url !== \"string\" ||\n    !/^https:\\/\\/(?:[a-z\\d](?:[a-z\\d-]*[a-z\\d])?\\.)+[a-z]{2,}(?:[/?#][^\\s\\\\\"<>]*)?$/i.test(\n      clip.audio_url,\n    )\n  ) {\n    throw new Error(\"Tunova marked the job complete without a valid first audio URL.\");\n  }\n  result.audio_url = clip.audio_url;\n  result.title = typeof clip.title === \"string\" && clip.title.trim() ? clip.title : null;\n  return result;\n}\nreturn { json: readSongJob($json.body, $json.statusCode, $(\"Confirm the job ID\").item.json.jobId) };\n"
+      },
+      "position": [
+        1540,
+        200
+      ]
+    }
+  ],
+  "connections": {
+    "Receive a song request": {
+      "main": [
+        [
+          {
+            "node": "Generate a submission reference",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate a submission reference": {
+      "main": [
+        [
+          {
+            "node": "Prepare the generation request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare the generation request": {
+      "main": [
+        [
+          {
+            "node": "Start the Tunova job",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start the Tunova job": {
+      "main": [
+        [
+          {
+            "node": "Confirm the job ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm the job ID": {
+      "main": [
+        [
+          {
+            "node": "Wait two minutes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait two minutes": {
+      "main": [
+        [
+          {
+            "node": "Check this Tunova job",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check this Tunova job": {
+      "main": [
+        [
+          {
+            "node": "Read the job status and first track",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataSuccessExecution": "all",
+    "saveDataErrorExecution": "none",
+    "saveExecutionProgress": false
+  }
+}
