@@ -1052,6 +1052,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Summarize YouTube Videos from Public Captions](workflows/summarize-youtube-public-captions/) - Submit a YouTube video URL and get a summary and key points based on its public captions.
 - [Generate Stock Image Metadata from a Webhook](workflows/generate-stock-image-metadata-with-a-webhook/) - Send a PNG or JPEG to a webhook and get a stock title, description, keywords, and a CSV row in the HTTP response.
 - [Draft WordPress Articles from Google Sheets](workflows/draft-wordpress-articles-from-sheets/) - Turn unprocessed Google Sheets ideas into WordPress drafts with DeepSeek text and an OpenAI cover image.
+- [Draft WordPress Articles from Keywords](workflows/draft-wordpress-articles-from-keywords/) - Enter keywords, a chapter count, and a word limit to create a WordPress draft with an AI-generated cover.
 
 ## Recruiting
 
