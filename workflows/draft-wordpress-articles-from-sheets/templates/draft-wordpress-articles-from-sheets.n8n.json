@@ -1,0 +1,1021 @@
+{
+  "name": "Draft WordPress Articles from Google Sheets",
+  "nodes": [
+    {
+      "id": "draft-wordpress-articles-from-sheets-start",
+      "name": "Start drafting manually",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        280
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "draft-wordpress-articles-from-sheets-config",
+      "name": "Set the spreadsheet and WordPress site",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        200,
+        280
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function draftSettings(spreadsheetId, sheetId, site) {\n  if (\n    typeof spreadsheetId !== \"string\" ||\n    !/^[A-Za-z0-9_-]{12,}$/.test(spreadsheetId) ||\n    !Number.isInteger(sheetId) ||\n    sheetId < 0\n  ) {\n    throw new Error(\"Set the spreadsheet ID and numeric tab ID.\");\n  }\n  const host =\n    typeof site === \"string\"\n      ? site.match(\n          /^https:\\/\\/([a-z0-9]+(?:[.-][a-z0-9]+)*\\.[a-z]{2,})(?:\\/[a-z0-9_-]+)*\\/?$/i,\n        )?.[1]\n      : undefined;\n  if (!host || [\"example.com\", \"example.org\"].includes(host.toLowerCase())) {\n    throw new Error(\"Set the WordPress HTTPS site URL with its domain and optional subdirectory.\");\n  }\n  return { spreadsheetId, sheetId, wp: site.replace(/\\/$/, \"\") + \"/wp-json/wp/v2\" };\n}\n\nfunction sheetRange(settings, row, startColumnIndex = 0, endColumnIndex = 6) {\n  return {\n    gridRange: {\n      sheetId: settings.sheetId,\n      startColumnIndex,\n      endColumnIndex,\n      ...(row === undefined ? {} : { startRowIndex: row, endRowIndex: row + 1 }),\n    },\n  };\n}\n\nconst run = ({ spreadsheetId, sheetId, site }) => {\n  const settings = draftSettings(spreadsheetId, sheetId, site);\n  return { settings, spreadsheetId, filter: [sheetRange(settings)] };\n};\nreturn {\n  json: run({\n    spreadsheetId: \"YOUR_SPREADSHEET_ID\",\n    sheetId: 0,\n    site: \"https://example.com\",\n  }),\n};\n"
+      }
+    },
+    {
+      "id": "draft-wordpress-articles-from-sheets-scan",
+      "name": "Read all idea rows",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        400,
+        280
+      ],
+      "parameters": {
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "method": "POST",
+        "url": "={{ \"https://sheets.googleapis.com/v4/spreadsheets/\" + $(\"Set the spreadsheet and WordPress site\").first().json[\"spreadsheetId\"] + \"/values:batchGetByDataFilter\" }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { dataFilters: $(\"Set the spreadsheet and WordPress site\").first().json[\"filter\"], majorDimension: \"ROWS\", valueRenderOption: \"UNFORMATTED_VALUE\" } }}",
+        "options": {
+          "timeout": 110000,
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": false
+            }
+          },
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "draft-wordpress-articles-from-sheets-plan",
+      "name": "Find unprocessed ideas",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        600,
+        280
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function draftRows(response) {\n  const ranges = response?.valueRanges;\n  const [values] = ranges?.length === 1 ? [ranges[0]?.valueRange?.values] : [];\n  if (!Array.isArray(values)) throw new Error(\"Google Sheets did not return the configured range.\");\n  return values;\n}\n\nfunction planDrafts(response) {\n  const [header, ...values] = draftRows(response);\n  const columns = [\"DATA\", \"PROMPT\", \"TITOLO\", \"ID POST\", \"IDEA ID\", \"DRAFT STATE\"];\n  if (!Array.isArray(header) || !columns.every((column, i) => header[i] === column)) {\n    throw new Error(\"Use the six required columns in the stated order.\");\n  }\n  const plans = [];\n  const ids = new Set();\n  for (const [i, cells] of values.entries()) {\n    const [date, prompt, title, postId, ideaId, state] = cells;\n    if (ideaId) {\n      if (typeof ideaId !== \"string\" || !/^[a-z][a-z0-9-]{0,62}$/.test(ideaId) || ids.has(ideaId)) {\n        throw new Error(\"Give each idea a unique lowercase IDEA ID.\");\n      }\n      ids.add(ideaId);\n    }\n    if (!prompt || postId || state) continue;\n    if (\n      !ideaId ||\n      typeof prompt !== \"string\" ||\n      !prompt.trim() ||\n      prompt.length > 12000 ||\n      date ||\n      title\n    ) {\n      throw new Error(\n        \"Review incomplete rows before drafting. Each new idea needs an ID, a prompt and empty output cells.\",\n      );\n    }\n    plans.push({ row: i + 1, ideaId, prompt, slug: \"sheet-idea-\" + ideaId });\n  }\n  return plans;\n}\n\nreturn planDrafts($input.first().json).map((plan) => ({ json: { plan }, pairedItem: { item: 0 } }));\n"
+      }
+    },
+    {
+      "id": "draft-wordpress-articles-from-sheets-loop",
+      "name": "Process one idea at a time",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        800,
+        100
+      ],
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      }
+    },
+    {
+      "id": "draft-wordpress-articles-from-sheets-next",
+      "name": "Select the next idea",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1000,
+        280
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function sheetRange(settings, row, startColumnIndex = 0, endColumnIndex = 6) {\n  return {\n    gridRange: {\n      sheetId: settings.sheetId,\n      startColumnIndex,\n      endColumnIndex,\n      ...(row === undefined ? {} : { startRowIndex: row, endRowIndex: row + 1 }),\n    },\n  };\n}\n\nfunction deepseekBody(prompt) {\n  return {\n    model: \"deepseek-v4-pro\",\n    thinking: { type: \"enabled\" },\n    max_tokens: 8192,\n    messages: [{ role: \"user\", content: prompt }],\n    stream: false,\n  };\n}\n\nfunction articleRequest(plan) {\n  return deepseekBody(\n    \"Write an SEO-friendly article based on the topic below. Include a roughly 120-word introduction, \" +\n      \"four or five logically related sections without chapter numbers, and a roughly 120-word conclusion. \" +\n      \"Return only HTML. Use only p, h2, h3, ul, ol, li, strong, b, em, and i elements without attributes. \" +\n      \"Write in the language of the topic. Topic:\\n\" +\n      plan.prompt,\n  );\n}\n\nconst { plan } = $json;\nreturn {\n  json: {\n    plan,\n    body: articleRequest(plan),\n    filter: [\n      sheetRange($(\"Set the spreadsheet and WordPress site\").first().json[\"settings\"], plan.row),\n    ],\n  },\n};\n"
+      }
+    },
+    {
+      "id": "draft-wordpress-articles-from-sheets-article",
+      "name": "Write the article with DeepSeek",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        280
+      ],
+      "parameters": {
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "method": "POST",
+        "url": "={{ \"https://api.deepseek.com/chat/completions\" }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $(\"Select the next idea\").item.json[\"body\"] }}",
+        "options": {
+          "timeout": 110000,
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          },
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "draft-wordpress-articles-from-sheets-titleInput",
+      "name": "Validate article HTML and prepare title",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1400,
+        280
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function contentText(response) {\n  const choice = response?.choices?.[0];\n  const text = choice?.message?.content;\n  if (typeof text !== \"string\" || !text.trim() || choice.finish_reason !== \"stop\") {\n    throw new Error(\"DeepSeek returned no complete content.\");\n  }\n  return text.trim();\n}\n\nfunction preparedArticle(response) {\n  const article = contentText(response);\n  const tags = /<\\/?(?:p|h2|h3|ul|ol|li|strong|b|em|i)>/gi;\n  if (\n    article.length > 45000 ||\n    !/<p>/i.test(article) ||\n    /[<>]|\\x60\\x60\\x60/.test(article.replace(tags, \"\"))\n  ) {\n    throw new Error(\"DeepSeek did not return the allowed article HTML.\");\n  }\n  return article;\n}\n\nfunction deepseekBody(prompt) {\n  return {\n    model: \"deepseek-v4-pro\",\n    thinking: { type: \"enabled\" },\n    max_tokens: 8192,\n    messages: [{ role: \"user\", content: prompt }],\n    stream: false,\n  };\n}\n\nfunction titleRequest(article) {\n  return deepseekBody(\n    \"Return only a search-friendly title of up to 60 characters for this article. Use its keywords and language. \" +\n      \"Use letters, numbers, spaces, colons or commas. Do not include HTML, quotes or formatting. Article:\\n\" +\n      article,\n  );\n}\n\nconst run = ({ response }) => {\n  const article = preparedArticle(response);\n  return { article, body: titleRequest(article) };\n};\n\nreturn { json: run({ response: $(\"Write the article with DeepSeek\").item.json[\"body\"] }) };\n"
+      }
+    },
+    {
+      "id": "draft-wordpress-articles-from-sheets-title",
+      "name": "Write the title with DeepSeek",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1600,
+        280
+      ],
+      "parameters": {
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "method": "POST",
+        "url": "={{ \"https://api.deepseek.com/chat/completions\" }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $(\"Validate article HTML and prepare title\").item.json[\"body\"] }}",
+        "options": {
+          "timeout": 110000,
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          },
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "draft-wordpress-articles-from-sheets-coverInput",
+      "name": "Validate the title and prepare the cover",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1800,
+        280
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function contentText(response) {\n  const choice = response?.choices?.[0];\n  const text = choice?.message?.content;\n  if (typeof text !== \"string\" || !text.trim() || choice.finish_reason !== \"stop\") {\n    throw new Error(\"DeepSeek returned no complete content.\");\n  }\n  return text.trim();\n}\n\nfunction preparedTitle(response) {\n  const title = contentText(response);\n  if ([...title].length > 60 || !/^[\\p{L}\\p{M}\\p{N} :,]+$/u.test(title)) {\n    throw new Error(\"DeepSeek did not return a plain title of up to 60 characters.\");\n  }\n  return title;\n}\n\nfunction imageRequest(title) {\n  return {\n    model: \"gpt-image-2.5-flare\",\n    output_format: \"png\",\n    size: \"1792x1024\",\n    quality: \"high\",\n    n: 1,\n    prompt:\n      \"A realistic editorial photograph used as a cover for a blog post, with an 85 mm photography look. Article title: \" +\n      title,\n  };\n}\n\nconst run = ({ response }) => {\n  const title = preparedTitle(response);\n  return { title, body: imageRequest(title) };\n};\n\nreturn { json: run({ response: $(\"Write the title with DeepSeek\").item.json[\"body\"] }) };\n"
+      }
+    },
+    {
+      "id": "draft-wordpress-articles-from-sheets-cover",
+      "name": "Generate the cover image",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2000,
+        280
+      ],
+      "parameters": {
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "method": "POST",
+        "url": "={{ \"https://api.openai.com/v1/images/generations\" }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $(\"Validate the title and prepare the cover\").item.json[\"body\"] }}",
+        "options": {
+          "timeout": 110000,
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          },
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "draft-wordpress-articles-from-sheets-image",
+      "name": "Prepare the PNG cover file",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2200,
+        280
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function coverPng(response, decode) {\n  const encoded = response?.data?.length === 1 ? response.data[0]?.b64_json : undefined;\n  if (\n    typeof encoded !== \"string\" ||\n    encoded.length > 10000000 ||\n    encoded.length % 4 ||\n    !/^[A-Za-z0-9+/]+={0,2}$/.test(encoded) ||\n    (response.output_format && response.output_format !== \"png\")\n  ) {\n    throw new Error(\"OpenAI did not return one embedded PNG.\");\n  }\n  const bytes = decode(encoded);\n  const signature = [137, 80, 78, 71, 13, 10, 26, 10];\n  if (bytes.length < 45 || !signature.every((byte, i) => bytes[i] === byte))\n    throw new Error(\"Invalid cover PNG.\");\n  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);\n  let hasImageData = false;\n  for (let offset = 8; offset + 12 <= bytes.length;) {\n    const length = view.getUint32(offset);\n    const end = offset + 12 + length;\n    if (end > bytes.length) break;\n    const chunk = String.fromCharCode(...bytes.subarray(offset + 4, offset + 8));\n    if (\n      offset === 8 &&\n      (chunk !== \"IHDR\" ||\n        length !== 13 ||\n        view.getUint32(offset + 8) !== 1792 ||\n        view.getUint32(offset + 12) !== 1024)\n    )\n      break;\n    if (chunk === \"IDAT\" && length > 0) hasImageData = true;\n    if (chunk === \"IEND\") {\n      if (hasImageData && length === 0 && end === bytes.length) return { encoded, bytes };\n      break;\n    }\n    offset = end;\n  }\n  throw new Error(\"Invalid or incomplete 1792 × 1024 cover PNG.\");\n}\n\nfunction endpointForDraft(settings, slug) {\n  return (\n    settings.wp +\n    \"/posts?context=edit&slug=\" +\n    encodeURIComponent(slug) +\n    \"&status[]=draft&status[]=pending&status[]=publish&status[]=private&status[]=future\"\n  );\n}\n\nconst plan = $(\"Select the next idea\").item.json[\"plan\"];\nconst { encoded } = coverPng($json.body, (value) => Buffer.from(value, \"base64\"));\nreturn {\n  json: {\n    encoded,\n    filename: plan.slug + \"-cover.png\",\n    url: endpointForDraft(\n      $(\"Set the spreadsheet and WordPress site\").first().json[\"settings\"],\n      plan.slug,\n    ),\n  },\n};\n"
+      }
+    },
+    {
+      "id": "draft-wordpress-articles-from-sheets-convert",
+      "name": "Convert the PNG to a file",
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        2400,
+        280
+      ],
+      "parameters": {
+        "operation": "toBinary",
+        "sourceProperty": "encoded",
+        "binaryPropertyName": "data",
+        "options": {
+          "fileName": "={{ $json.filename }}",
+          "mimeType": "image/png",
+          "addBOM": false
+        }
+      }
+    },
+    {
+      "id": "draft-wordpress-articles-from-sheets-exists",
+      "name": "Check for an existing post slug",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2600,
+        280
+      ],
+      "parameters": {
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "method": "GET",
+        "url": "={{ $(\"Prepare the PNG cover file\").item.json[\"url\"] }}",
+        "options": {
+          "timeout": 110000,
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          },
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "draft-wordpress-articles-from-sheets-fresh",
+      "name": "Re-read the selected idea",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2800,
+        280
+      ],
+      "parameters": {
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "method": "POST",
+        "url": "={{ \"https://sheets.googleapis.com/v4/spreadsheets/\" + $(\"Set the spreadsheet and WordPress site\").first().json[\"spreadsheetId\"] + \"/values:batchGetByDataFilter\" }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { dataFilters: $(\"Select the next idea\").item.json[\"filter\"], majorDimension: \"ROWS\", valueRenderOption: \"UNFORMATTED_VALUE\" } }}",
+        "options": {
+          "timeout": 110000,
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": false
+            }
+          },
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "draft-wordpress-articles-from-sheets-claimInput",
+      "name": "Confirm the row before claiming",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3000,
+        280
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function draftRows(response) {\n  const ranges = response?.valueRanges;\n  const [values] = ranges?.length === 1 ? [ranges[0]?.valueRange?.values] : [];\n  if (!Array.isArray(values)) throw new Error(\"Google Sheets did not return the configured range.\");\n  return values;\n}\n\nfunction checkRow(response, plan, claimed) {\n  const rows = draftRows(response);\n  const [date, prompt, title, postId, ideaId, state] = rows[0] ?? [];\n  if (\n    rows.length !== 1 ||\n    ideaId !== plan.ideaId ||\n    prompt !== plan.prompt ||\n    date ||\n    title ||\n    postId ||\n    (state ?? \"\") !== (claimed ? \"IN PROGRESS\" : \"\")\n  ) {\n    throw new Error(\n      \"The planned idea row changed. Review its IDEA ID and WordPress records before running again.\",\n    );\n  }\n}\n\nfunction sheetRange(settings, row, startColumnIndex = 0, endColumnIndex = 6) {\n  return {\n    gridRange: {\n      sheetId: settings.sheetId,\n      startColumnIndex,\n      endColumnIndex,\n      ...(row === undefined ? {} : { startRowIndex: row, endRowIndex: row + 1 }),\n    },\n  };\n}\n\nfunction sheetWrite(settings, plan, fields) {\n  return {\n    valueInputOption: \"RAW\",\n    data: fields.map(([column, value]) => ({\n      dataFilter: sheetRange(settings, plan.row, column, column + 1),\n      majorDimension: \"ROWS\",\n      values: [[value]],\n    })),\n  };\n}\n\nfunction checkSheetWrite(response, settings, fields) {\n  if (response?.spreadsheetId !== settings.spreadsheetId || response.totalUpdatedCells !== fields) {\n    throw new Error(\n      \"Google Sheets did not confirm the requested write. Review the row before running again.\",\n    );\n  }\n}\n\nfunction noDraft(response) {\n  if (!Array.isArray(response) || response.length)\n    throw new Error(\n      \"An existing WordPress post matches this IDEA ID or the lookup failed. Review it before running again.\",\n    );\n}\n\nconst run = ({ existing, valueRanges, plan, settings }) => {\n  noDraft(existing);\n  checkRow({ valueRanges }, plan, false);\n  return { data: sheetWrite(settings, plan, [[5, \"IN PROGRESS\"]]).data };\n};\nreturn {\n  json: run({\n    existing: $(\"Check for an existing post slug\").item.json[\"body\"],\n    valueRanges: $(\"Re-read the selected idea\").item.json[\"valueRanges\"],\n    plan: $(\"Select the next idea\").item.json[\"plan\"],\n    settings: $(\"Set the spreadsheet and WordPress site\").first().json[\"settings\"],\n  }),\n};\n"
+      }
+    },
+    {
+      "id": "draft-wordpress-articles-from-sheets-claim",
+      "name": "Mark the idea in progress",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3200,
+        280
+      ],
+      "parameters": {
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "method": "POST",
+        "url": "={{ \"https://sheets.googleapis.com/v4/spreadsheets/\" + $(\"Set the spreadsheet and WordPress site\").first().json[\"spreadsheetId\"] + \"/values:batchUpdateByDataFilter\" }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { data: $(\"Confirm the row before claiming\").item.json[\"data\"], valueInputOption: \"RAW\" } }}",
+        "options": {
+          "timeout": 110000,
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": false
+            }
+          },
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "draft-wordpress-articles-from-sheets-claimRead",
+      "name": "Verify the claim on the same idea",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3400,
+        280
+      ],
+      "parameters": {
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "method": "POST",
+        "url": "={{ \"https://sheets.googleapis.com/v4/spreadsheets/\" + $(\"Set the spreadsheet and WordPress site\").first().json[\"spreadsheetId\"] + \"/values:batchGetByDataFilter\" }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { dataFilters: $(\"Select the next idea\").item.json[\"filter\"], majorDimension: \"ROWS\", valueRenderOption: \"UNFORMATTED_VALUE\" } }}",
+        "options": {
+          "timeout": 110000,
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": false
+            }
+          },
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "draft-wordpress-articles-from-sheets-draftInput",
+      "name": "Confirm the claim and prepare the draft",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3600,
+        280
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function draftRows(response) {\n  const ranges = response?.valueRanges;\n  const [values] = ranges?.length === 1 ? [ranges[0]?.valueRange?.values] : [];\n  if (!Array.isArray(values)) throw new Error(\"Google Sheets did not return the configured range.\");\n  return values;\n}\n\nfunction checkRow(response, plan, claimed) {\n  const rows = draftRows(response);\n  const [date, prompt, title, postId, ideaId, state] = rows[0] ?? [];\n  if (\n    rows.length !== 1 ||\n    ideaId !== plan.ideaId ||\n    prompt !== plan.prompt ||\n    date ||\n    title ||\n    postId ||\n    (state ?? \"\") !== (claimed ? \"IN PROGRESS\" : \"\")\n  ) {\n    throw new Error(\n      \"The planned idea row changed. Review its IDEA ID and WordPress records before running again.\",\n    );\n  }\n}\n\nfunction sheetRange(settings, row, startColumnIndex = 0, endColumnIndex = 6) {\n  return {\n    gridRange: {\n      sheetId: settings.sheetId,\n      startColumnIndex,\n      endColumnIndex,\n      ...(row === undefined ? {} : { startRowIndex: row, endRowIndex: row + 1 }),\n    },\n  };\n}\n\nfunction sheetWrite(settings, plan, fields) {\n  return {\n    valueInputOption: \"RAW\",\n    data: fields.map(([column, value]) => ({\n      dataFilter: sheetRange(settings, plan.row, column, column + 1),\n      majorDimension: \"ROWS\",\n      values: [[value]],\n    })),\n  };\n}\n\nfunction checkSheetWrite(response, settings, fields) {\n  if (response?.spreadsheetId !== settings.spreadsheetId || response.totalUpdatedCells !== fields) {\n    throw new Error(\n      \"Google Sheets did not confirm the requested write. Review the row before running again.\",\n    );\n  }\n}\n\nconst run = ({ spreadsheetId, totalUpdatedCells, valueRanges, settings, plan, title, article }) => {\n  checkSheetWrite({ spreadsheetId, totalUpdatedCells }, settings, 1);\n  checkRow({ valueRanges }, plan, true);\n  return {\n    url: settings.wp + \"/posts\",\n    body: { status: \"draft\", title, content: article, slug: plan.slug },\n  };\n};\nreturn {\n  json: run({\n    spreadsheetId: $(\"Mark the idea in progress\").item.json[\"spreadsheetId\"],\n    totalUpdatedCells: $(\"Mark the idea in progress\").item.json[\"totalUpdatedCells\"],\n    valueRanges: $(\"Verify the claim on the same idea\").item.json[\"valueRanges\"],\n    settings: $(\"Set the spreadsheet and WordPress site\").first().json[\"settings\"],\n    plan: $(\"Select the next idea\").item.json[\"plan\"],\n    title: $(\"Validate the title and prepare the cover\").item.json[\"title\"],\n    article: $(\"Validate article HTML and prepare title\").item.json[\"article\"],\n  }),\n};\n"
+      }
+    },
+    {
+      "id": "draft-wordpress-articles-from-sheets-draft",
+      "name": "Create a WordPress draft",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3800,
+        280
+      ],
+      "parameters": {
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "method": "POST",
+        "url": "={{ $(\"Confirm the claim and prepare the draft\").item.json[\"url\"] }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $(\"Confirm the claim and prepare the draft\").item.json[\"body\"] }}",
+        "options": {
+          "timeout": 110000,
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          },
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "draft-wordpress-articles-from-sheets-uploadInput",
+      "name": "Confirm the draft and prepare the upload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4000,
+        280
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function draftReceipt(post, plan) {\n  if (\n    !Number.isSafeInteger(post?.id) ||\n    post.id < 1 ||\n    post.status !== \"draft\" ||\n    post.slug !== plan.slug\n  ) {\n    throw new Error(\n      \"WordPress did not confirm the expected draft. Review the row before retrying.\",\n    );\n  }\n  return post.id;\n}\n\nconst run = ({ post, settings, plan }) => {\n  const postId = draftReceipt(post, plan);\n  return {\n    postId,\n    url:\n      settings.wp + \"/media?post=\" + postId + \"&slug=\" + encodeURIComponent(plan.slug + \"-cover\"),\n    disposition: 'attachment; filename=\"' + plan.slug + '-cover.png\"',\n  };\n};\nreturn {\n  json: run({\n    post: $(\"Create a WordPress draft\").item.json[\"body\"],\n    settings: $(\"Set the spreadsheet and WordPress site\").first().json[\"settings\"],\n    plan: $(\"Select the next idea\").item.json[\"plan\"],\n  }),\n  binary: $(\"Convert the PNG to a file\").item.binary,\n};\n"
+      }
+    },
+    {
+      "id": "draft-wordpress-articles-from-sheets-upload",
+      "name": "Upload the cover to WordPress",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4200,
+        280
+      ],
+      "parameters": {
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "method": "POST",
+        "url": "={{ $(\"Confirm the draft and prepare the upload\").item.json[\"url\"] }}",
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "data",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "image/png"
+            },
+            {
+              "name": "Content-Disposition",
+              "value": "={{ $(\"Confirm the draft and prepare the upload\").item.json[\"disposition\"] }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 110000,
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          },
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "draft-wordpress-articles-from-sheets-attachInput",
+      "name": "Confirm the uploaded cover",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4400,
+        280
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function imageReceipt(media, postId, plan) {\n  if (\n    !Number.isSafeInteger(media?.id) ||\n    media.id < 1 ||\n    media.post !== postId ||\n    media.slug !== plan.slug + \"-cover\" ||\n    media.mime_type !== \"image/png\"\n  ) {\n    throw new Error(\"WordPress did not confirm this draft’s PNG attachment.\");\n  }\n  return media.id;\n}\n\nconst run = ({ media, postId, settings, plan }) => {\n  const mediaId = imageReceipt(media, postId, plan);\n  return {\n    url: settings.wp + \"/posts/\" + postId,\n    mediaId,\n    body: { status: \"draft\", featured_media: mediaId },\n  };\n};\nreturn {\n  json: run({\n    media: $(\"Upload the cover to WordPress\").item.json[\"body\"],\n    postId: $(\"Confirm the draft and prepare the upload\").item.json[\"postId\"],\n    settings: $(\"Set the spreadsheet and WordPress site\").first().json[\"settings\"],\n    plan: $(\"Select the next idea\").item.json[\"plan\"],\n  }),\n};\n"
+      }
+    },
+    {
+      "id": "draft-wordpress-articles-from-sheets-attach",
+      "name": "Set the draft featured image",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4600,
+        280
+      ],
+      "parameters": {
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "method": "POST",
+        "url": "={{ $(\"Confirm the uploaded cover\").item.json[\"url\"] }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $(\"Confirm the uploaded cover\").item.json[\"body\"] }}",
+        "options": {
+          "timeout": 110000,
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          },
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "draft-wordpress-articles-from-sheets-attachCheck",
+      "name": "Confirm the cover belongs to the draft",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4800,
+        280
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function draftReceipt(post, plan) {\n  if (\n    !Number.isSafeInteger(post?.id) ||\n    post.id < 1 ||\n    post.status !== \"draft\" ||\n    post.slug !== plan.slug\n  ) {\n    throw new Error(\n      \"WordPress did not confirm the expected draft. Review the row before retrying.\",\n    );\n  }\n  return post.id;\n}\n\nconst run = ({ post, plan, postId, mediaId }) => {\n  if (draftReceipt(post, plan) !== postId || post.featured_media !== mediaId)\n    throw new Error(\"WordPress did not confirm the featured image on this draft.\");\n  return { postId, mediaId };\n};\nreturn {\n  json: run({\n    post: $(\"Set the draft featured image\").item.json[\"body\"],\n    plan: $(\"Select the next idea\").item.json[\"plan\"],\n    postId: $(\"Confirm the draft and prepare the upload\").item.json[\"postId\"],\n    mediaId: $(\"Confirm the uploaded cover\").item.json[\"mediaId\"],\n  }),\n};\n"
+      }
+    },
+    {
+      "id": "draft-wordpress-articles-from-sheets-latest",
+      "name": "Re-read the marked idea",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        5000,
+        280
+      ],
+      "parameters": {
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "method": "POST",
+        "url": "={{ \"https://sheets.googleapis.com/v4/spreadsheets/\" + $(\"Set the spreadsheet and WordPress site\").first().json[\"spreadsheetId\"] + \"/values:batchGetByDataFilter\" }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { dataFilters: $(\"Select the next idea\").item.json[\"filter\"], majorDimension: \"ROWS\", valueRenderOption: \"UNFORMATTED_VALUE\" } }}",
+        "options": {
+          "timeout": 110000,
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": false
+            }
+          },
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "draft-wordpress-articles-from-sheets-finishInput",
+      "name": "Verify row identity and prepare receipt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5200,
+        280
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function draftRows(response) {\n  const ranges = response?.valueRanges;\n  const [values] = ranges?.length === 1 ? [ranges[0]?.valueRange?.values] : [];\n  if (!Array.isArray(values)) throw new Error(\"Google Sheets did not return the configured range.\");\n  return values;\n}\n\nfunction checkRow(response, plan, claimed) {\n  const rows = draftRows(response);\n  const [date, prompt, title, postId, ideaId, state] = rows[0] ?? [];\n  if (\n    rows.length !== 1 ||\n    ideaId !== plan.ideaId ||\n    prompt !== plan.prompt ||\n    date ||\n    title ||\n    postId ||\n    (state ?? \"\") !== (claimed ? \"IN PROGRESS\" : \"\")\n  ) {\n    throw new Error(\n      \"The planned idea row changed. Review its IDEA ID and WordPress records before running again.\",\n    );\n  }\n}\n\nfunction sheetRange(settings, row, startColumnIndex = 0, endColumnIndex = 6) {\n  return {\n    gridRange: {\n      sheetId: settings.sheetId,\n      startColumnIndex,\n      endColumnIndex,\n      ...(row === undefined ? {} : { startRowIndex: row, endRowIndex: row + 1 }),\n    },\n  };\n}\n\nfunction sheetWrite(settings, plan, fields) {\n  return {\n    valueInputOption: \"RAW\",\n    data: fields.map(([column, value]) => ({\n      dataFilter: sheetRange(settings, plan.row, column, column + 1),\n      majorDimension: \"ROWS\",\n      values: [[value]],\n    })),\n  };\n}\n\nfunction checkSheetWrite(response, settings, fields) {\n  if (response?.spreadsheetId !== settings.spreadsheetId || response.totalUpdatedCells !== fields) {\n    throw new Error(\n      \"Google Sheets did not confirm the requested write. Review the row before running again.\",\n    );\n  }\n}\n\nfunction draftDate(now) {\n  const [year, month, day] = now.toISOString().slice(0, 10).split(\"-\");\n  return day + \"/\" + month + \"/\" + year;\n}\n\nconst run = ({ valueRanges, plan, settings, title, postId }) => {\n  checkRow({ valueRanges }, plan, true);\n  return {\n    data: sheetWrite(settings, plan, [\n      [0, draftDate(new Date())],\n      [2, title],\n      [3, postId],\n      [5, \"DONE\"],\n    ]).data,\n  };\n};\nreturn {\n  json: run({\n    valueRanges: $(\"Re-read the marked idea\").item.json[\"valueRanges\"],\n    plan: $(\"Select the next idea\").item.json[\"plan\"],\n    settings: $(\"Set the spreadsheet and WordPress site\").first().json[\"settings\"],\n    title: $(\"Validate the title and prepare the cover\").item.json[\"title\"],\n    postId: $(\"Confirm the cover belongs to the draft\").item.json[\"postId\"],\n  }),\n};\n"
+      }
+    },
+    {
+      "id": "draft-wordpress-articles-from-sheets-finish",
+      "name": "Write date title and post ID",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        5400,
+        280
+      ],
+      "parameters": {
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "method": "POST",
+        "url": "={{ \"https://sheets.googleapis.com/v4/spreadsheets/\" + $(\"Set the spreadsheet and WordPress site\").first().json[\"spreadsheetId\"] + \"/values:batchUpdateByDataFilter\" }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { data: $(\"Verify row identity and prepare receipt\").item.json[\"data\"], valueInputOption: \"RAW\" } }}",
+        "options": {
+          "timeout": 110000,
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": false
+            }
+          },
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "draft-wordpress-articles-from-sheets-verify",
+      "name": "Confirm that Google Sheets recorded the receipt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5600,
+        280
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function checkSheetWrite(response, settings, fields) {\n  if (response?.spreadsheetId !== settings.spreadsheetId || response.totalUpdatedCells !== fields) {\n    throw new Error(\n      \"Google Sheets did not confirm the requested write. Review the row before running again.\",\n    );\n  }\n}\n\nconst run = ({ spreadsheetId, totalUpdatedCells, settings, plan, postId, mediaId, results }) => {\n  checkSheetWrite({ spreadsheetId, totalUpdatedCells }, settings, 4);\n  return { results: [...results, { ideaId: plan.ideaId, row: plan.row + 1, postId, mediaId }] };\n};\nconst checked = run({\n  ...{\n    spreadsheetId: $(\"Write date title and post ID\").item.json[\"spreadsheetId\"],\n    totalUpdatedCells: $(\"Write date title and post ID\").item.json[\"totalUpdatedCells\"],\n    settings: $(\"Set the spreadsheet and WordPress site\").first().json[\"settings\"],\n    plan: $(\"Select the next idea\").item.json[\"plan\"],\n    postId: $(\"Confirm the cover belongs to the draft\").item.json[\"postId\"],\n    mediaId: $(\"Confirm the cover belongs to the draft\").item.json[\"mediaId\"],\n  },\n  results: [],\n});\nreturn { json: checked.results[0] };\n"
+      }
+    },
+    {
+      "id": "draft-wordpress-articles-from-sheets-out",
+      "name": "Return saved draft receipts",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5800,
+        280
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return $input.all();\n"
+      }
+    }
+  ],
+  "connections": {
+    "Start drafting manually": {
+      "main": [
+        [
+          {
+            "node": "Set the spreadsheet and WordPress site",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set the spreadsheet and WordPress site": {
+      "main": [
+        [
+          {
+            "node": "Read all idea rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read all idea rows": {
+      "main": [
+        [
+          {
+            "node": "Find unprocessed ideas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find unprocessed ideas": {
+      "main": [
+        [
+          {
+            "node": "Process one idea at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process one idea at a time": {
+      "main": [
+        [
+          {
+            "node": "Return saved draft receipts",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Select the next idea",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select the next idea": {
+      "main": [
+        [
+          {
+            "node": "Write the article with DeepSeek",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write the article with DeepSeek": {
+      "main": [
+        [
+          {
+            "node": "Validate article HTML and prepare title",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate article HTML and prepare title": {
+      "main": [
+        [
+          {
+            "node": "Write the title with DeepSeek",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write the title with DeepSeek": {
+      "main": [
+        [
+          {
+            "node": "Validate the title and prepare the cover",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate the title and prepare the cover": {
+      "main": [
+        [
+          {
+            "node": "Generate the cover image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate the cover image": {
+      "main": [
+        [
+          {
+            "node": "Prepare the PNG cover file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare the PNG cover file": {
+      "main": [
+        [
+          {
+            "node": "Convert the PNG to a file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert the PNG to a file": {
+      "main": [
+        [
+          {
+            "node": "Check for an existing post slug",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check for an existing post slug": {
+      "main": [
+        [
+          {
+            "node": "Re-read the selected idea",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Re-read the selected idea": {
+      "main": [
+        [
+          {
+            "node": "Confirm the row before claiming",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm the row before claiming": {
+      "main": [
+        [
+          {
+            "node": "Mark the idea in progress",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark the idea in progress": {
+      "main": [
+        [
+          {
+            "node": "Verify the claim on the same idea",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify the claim on the same idea": {
+      "main": [
+        [
+          {
+            "node": "Confirm the claim and prepare the draft",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm the claim and prepare the draft": {
+      "main": [
+        [
+          {
+            "node": "Create a WordPress draft",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a WordPress draft": {
+      "main": [
+        [
+          {
+            "node": "Confirm the draft and prepare the upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm the draft and prepare the upload": {
+      "main": [
+        [
+          {
+            "node": "Upload the cover to WordPress",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload the cover to WordPress": {
+      "main": [
+        [
+          {
+            "node": "Confirm the uploaded cover",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm the uploaded cover": {
+      "main": [
+        [
+          {
+            "node": "Set the draft featured image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set the draft featured image": {
+      "main": [
+        [
+          {
+            "node": "Confirm the cover belongs to the draft",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm the cover belongs to the draft": {
+      "main": [
+        [
+          {
+            "node": "Re-read the marked idea",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Re-read the marked idea": {
+      "main": [
+        [
+          {
+            "node": "Verify row identity and prepare receipt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify row identity and prepare receipt": {
+      "main": [
+        [
+          {
+            "node": "Write date title and post ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write date title and post ID": {
+      "main": [
+        [
+          {
+            "node": "Confirm that Google Sheets recorded the receipt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm that Google Sheets recorded the receipt": {
+      "main": [
+        [
+          {
+            "node": "Process one idea at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataSuccessExecution": "none",
+    "saveDataErrorExecution": "none",
+    "saveManualExecutions": false
+  }
+}
