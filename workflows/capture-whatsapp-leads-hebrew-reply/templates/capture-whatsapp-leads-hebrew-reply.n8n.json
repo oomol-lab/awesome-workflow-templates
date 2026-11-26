@@ -1,0 +1,888 @@
+{
+  "name": "Capture WhatsApp Leads and Reply in Hebrew",
+  "nodes": [
+    {
+      "name": "Verify the Meta callback",
+      "id": "capture-whatsapp-leads-hebrew-reply-handshake",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "whatsapp-lead-intake",
+        "authentication": "none",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "name": "Check the Meta verification token",
+      "id": "capture-whatsapp-leads-hebrew-reply-challenge",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function fixedMatch(left, right) {\n  if (typeof left !== \"string\" || typeof right !== \"string\" || left.length !== right.length)\n    return false;\n  let diff = 0;\n  for (let i = 0; i < left.length; i++) diff |= left.charCodeAt(i) ^ right.charCodeAt(i);\n  return diff === 0;\n}\n\nfunction challenge(query, secret) {\n  const token = query?.[\"hub.verify_token\"];\n  const value = query?.[\"hub.challenge\"];\n  if (\n    typeof secret !== \"string\" ||\n    secret.length < 24 ||\n    !fixedMatch(token, secret) ||\n    query?.[\"hub.mode\"] !== \"subscribe\" ||\n    typeof value !== \"string\" ||\n    !/^[\\x21-\\x7e]{1,256}$/.test(value)\n  ) {\n    return { status: 403, body: \"\" };\n  }\n  return { status: 200, body: value };\n}\n\nlet token;\ntry {\n  token = $env.META_WHATSAPP_VERIFY_TOKEN;\n} catch {}\nreturn { json: challenge($json.query, token) };\n"
+      },
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "name": "Return the Meta challenge",
+      "id": "capture-whatsapp-leads-hebrew-reply-verifyResponse",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.body }}",
+        "options": {
+          "responseCode": "={{ $json.status }}",
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "text/plain; charset=utf-8"
+              },
+              {
+                "name": "Cache-Control",
+                "value": "no-store"
+              }
+            ]
+          }
+        }
+      },
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "name": "Receive a signed WhatsApp notification",
+      "id": "capture-whatsapp-leads-hebrew-reply-ingress",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp-lead-intake",
+        "authentication": "none",
+        "responseMode": "responseNode",
+        "options": {
+          "rawBody": true
+        }
+      },
+      "position": [
+        660,
+        0
+      ]
+    },
+    {
+      "name": "Read the original signed bytes",
+      "id": "capture-whatsapp-leads-hebrew-reply-raw",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function signedRequest(bytes, headers) {\n  const waha = headers[\"x-webhook-hmac\"];\n  const meta = headers[\"x-hub-signature-256\"];\n  const validType = /^application\\/json(?:\\s*;|$)/i.test(headers[\"content-type\"] ?? \"\");\n  if (\n    !validType ||\n    (headers[\"content-encoding\"] !== undefined && headers[\"content-encoding\"] !== \"identity\") ||\n    !bytes ||\n    bytes.length === 0 ||\n    bytes.length > 1048576\n  )\n    return {};\n  const raw = bytes.toString(\"utf8\");\n  // n8n's Crypto HMAC accepts UTF-8 text. Refuse invalid sequences instead of rewriting signed bytes.\n  if (!Buffer.from(raw, \"utf8\").equals(bytes)) return {};\n  if (\n    meta === undefined &&\n    typeof waha === \"string\" &&\n    /^[a-f0-9]{128}$/.test(waha) &&\n    headers[\"x-webhook-hmac-algorithm\"] === \"sha512\"\n  ) {\n    return { raw, digest: waha, provider: \"waha\" };\n  }\n  if (waha === undefined && typeof meta === \"string\" && /^sha256=[a-f0-9]{64}$/.test(meta)) {\n    return { raw, digest: meta.slice(7), provider: \"meta\" };\n  }\n  return {};\n}\n\nlet raw;\ntry {\n  raw = await helpers.getBinaryDataBuffer($itemIndex, \"data\");\n} catch {}\nreturn { json: signedRequest(raw, $json.headers ?? {}) };\n"
+      },
+      "position": [
+        880,
+        0
+      ]
+    },
+    {
+      "name": "Compute the provider HMAC",
+      "id": "capture-whatsapp-leads-hebrew-reply-hmac",
+      "type": "n8n-nodes-base.crypto",
+      "typeVersion": 1,
+      "parameters": {
+        "action": "hmac",
+        "type": "={{ $json.provider === \"waha\" ? \"SHA512\" : \"SHA256\" }}",
+        "encoding": "hex",
+        "binaryData": false,
+        "value": "={{ $json.raw ?? \"\" }}",
+        "dataPropertyName": "computed",
+        "secret": "={{ $json.provider === 'waha'\n      ? ($env.WAHA_WEBHOOK_HMAC_KEY?.length >= 24 ? $env.WAHA_WEBHOOK_HMAC_KEY : null)\n      : ($json.provider === 'meta' && $env.META_WHATSAPP_APP_SECRET?.length >= 24 ? $env.META_WHATSAPP_APP_SECRET : null) }}"
+      },
+      "position": [
+        1100,
+        0
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "name": "Validate the webhook signature",
+      "id": "capture-whatsapp-leads-hebrew-reply-admit",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function fixedMatch(left, right) {\n  if (typeof left !== \"string\" || typeof right !== \"string\" || left.length !== right.length)\n    return false;\n  let diff = 0;\n  for (let i = 0; i < left.length; i++) diff |= left.charCodeAt(i) ^ right.charCodeAt(i);\n  return diff === 0;\n}\n\nfunction authorizedBody(signature, computed) {\n  if (!signature.provider || !fixedMatch(signature.digest, computed)) return { status: 401 };\n  try {\n    const body = JSON.parse(signature.raw);\n    if (typeof body !== \"object\" || body === null || Array.isArray(body)) return { status: 400 };\n    return { status: 200, provider: signature.provider, body };\n  } catch {\n    return { status: 400 };\n  }\n}\n\nreturn { json: authorizedBody($(\"Read the original signed bytes\").item.json, $json.computed) };\n"
+      },
+      "position": [
+        1320,
+        0
+      ]
+    },
+    {
+      "name": "Acknowledge the verified request",
+      "id": "capture-whatsapp-leads-hebrew-reply-ack",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "parameters": {
+        "respondWith": "noData",
+        "options": {
+          "responseCode": "={{ $json.status }}",
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Cache-Control",
+                "value": "no-store"
+              }
+            ]
+          }
+        }
+      },
+      "position": [
+        1540,
+        0
+      ]
+    },
+    {
+      "name": "Select direct incoming leads",
+      "id": "capture-whatsapp-leads-hebrew-reply-contacts",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function normalizedPhone(value) {\n  if (typeof value !== \"string\" || !/^\\+?\\d{8,15}$/.test(value)) return \"\";\n  const digits = value.replace(/^\\+/, \"\");\n  if (/^0\\d{8,9}$/.test(digits)) return \"+972\" + digits.slice(1);\n  if (digits.startsWith(\"0\")) return \"\";\n  return \"+\" + digits;\n}\n\nfunction cleanName(name) {\n  const text =\n    typeof name === \"string\"\n      ? name\n          .replace(/[\\u0000-\\u001f\\u007f]/g, \" \")\n          .trim()\n          .slice(0, 120)\n      : \"\";\n  return text || \"New WhatsApp lead\";\n}\n\nfunction leadConfig(settings, provider) {\n  if (\n    typeof settings.spreadsheetId !== \"string\" ||\n    !/^[a-zA-Z0-9_-]{10,160}$/.test(settings.spreadsheetId) ||\n    settings.spreadsheetId.startsWith(\"YOUR_\") ||\n    !Number.isInteger(settings.tabId) ||\n    settings.tabId < 0 ||\n    settings.tabId > 2147483647\n  ) {\n    throw new Error(\"Configure a dedicated leads spreadsheet and numeric tab ID.\");\n  }\n  if (\n    provider === \"waha\" &&\n    (!/^[a-zA-Z0-9_-]{1,60}$/.test(settings.wahaSession) ||\n      !/^https:\\/\\/[a-zA-Z0-9.-]+(?::\\d{1,5})?$/.test(settings.wahaOrigin) ||\n      settings.wahaOrigin === \"https://waha.example.com\")\n  ) {\n    throw new Error(\"Configure the HTTPS WAHA origin and session.\");\n  }\n  if (provider === \"meta\" && !/^\\d{5,30}$/.test(settings.metaPhoneId)) {\n    throw new Error(\"Configure the Meta business phone number ID.\");\n  }\n  return settings;\n}\n\nfunction whatsappLeads(body, provider, settings, arrivedAt) {\n  const leads = [];\n  const cleanup = (data, identity, address, chatName, message, phone, replyUntil) => {\n    if (\n      typeof identity !== \"string\" ||\n      identity.length === 0 ||\n      identity.length > 240 ||\n      /[\\u0000-\\u001f\\u007f]/.test(identity)\n    )\n      return;\n    const name = cleanName(chatName);\n    const text = typeof message === \"string\" ? message.slice(0, 16000) : \"\";\n    const key = JSON.stringify([provider, data, identity]);\n    leads.push({\n      provider,\n      scope: data,\n      address,\n      name,\n      message: text,\n      phone,\n      replyUntil,\n      key,\n      arrivedAt,\n      spreadsheetId: settings.spreadsheetId,\n      tabId: settings.tabId,\n      wahaOrigin: settings.wahaOrigin,\n    });\n  };\n  if (provider === \"waha\") {\n    const p = body.payload;\n    if (\n      body.event !== \"message\" ||\n      body.session !== settings.wahaSession ||\n      !p ||\n      p.fromMe !== false ||\n      typeof p.from !== \"string\" ||\n      !/^\\d{8,20}@(c\\.us|lid)$/.test(p.from)\n    )\n      return [];\n    const lid = p.from.endsWith(\"@lid\");\n    const phone = lid ? \"\" : normalizedPhone(p.from.slice(0, -5));\n    if (!lid && !phone) return [];\n    cleanup(body.session, p.id, p.from, p._data?.notifyName ?? p.notifyName, p.body, phone, null);\n  } else {\n    if (body.object !== \"whatsapp_business_account\" || !Array.isArray(body.entry)) return [];\n    for (const entry of body.entry) {\n      for (const change of Array.isArray(entry?.changes) ? entry.changes : []) {\n        const v = change?.value;\n        if (\n          change?.field !== \"messages\" ||\n          v?.messaging_product !== \"whatsapp\" ||\n          v?.group_id ||\n          v?.metadata?.phone_number_id !== settings.metaPhoneId ||\n          !Array.isArray(v.messages)\n        )\n          continue;\n        for (const msg of v.messages) {\n          if (\n            !msg ||\n            msg.fromMe === true ||\n            msg.group_id ||\n            msg.context?.group_id ||\n            typeof msg.from !== \"string\" ||\n            !/^[1-9]\\d{7,14}$/.test(msg.from)\n          )\n            continue;\n          const contact = Array.isArray(v.contacts)\n            ? v.contacts.find((contact) => contact?.wa_id === msg.from)\n            : undefined;\n          const elapsed = Date.parse(arrivedAt) - Number(msg.timestamp) * 1000;\n          const canReply =\n            Number.isFinite(elapsed) && elapsed >= -5 * 60000 && elapsed < 24 * 3600000;\n          cleanup(\n            settings.metaPhoneId,\n            msg.id,\n            msg.from,\n            contact?.profile?.name,\n            msg.text?.body,\n            normalizedPhone(msg.from),\n            canReply ? Number(msg.timestamp) * 1000 + 24 * 3600000 : 0,\n          );\n        }\n      }\n    }\n  }\n  const seen = new Set();\n  return leads.filter((item) => {\n    if (seen.has(item.key)) return false;\n    seen.add(item.key);\n    return true;\n  });\n}\n\nconst { provider, body, status } = $input.first().json;\nif (status !== 200) return [];\nconst settings = {\n  spreadsheetId: \"YOUR_SPREADSHEET_ID\",\n  tabId: 0,\n  wahaOrigin: \"https://waha.example.com\",\n  wahaSession: \"default\",\n  metaPhoneId: \"YOUR_META_PHONE_NUMBER_ID\",\n};\nconst config = leadConfig(settings, provider);\nreturn whatsappLeads(body, provider, config, new Date().toISOString()).map((json) => ({\n  json,\n  pairedItem: { item: 0 },\n}));\n"
+      },
+      "position": [
+        1760,
+        0
+      ]
+    },
+    {
+      "name": "Uses a WAHA linked ID?",
+      "id": "capture-whatsapp-leads-hebrew-reply-lid",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "leftValue": ""
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "lid",
+              "leftValue": "={{ $json.provider === \"waha\" && $json.address.endsWith(\"@lid\") }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "position": [
+        1980,
+        0
+      ]
+    },
+    {
+      "name": "Resolve the original WAHA linked ID",
+      "id": "capture-whatsapp-leads-hebrew-reply-resolve",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.wahaOrigin + \"/api/\" + encodeURIComponent($json.scope) + \"/lids/\" + encodeURIComponent($json.address) }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 20000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "position": [
+        0,
+        230
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "name": "Confirm the LID and its phone number",
+      "id": "capture-whatsapp-leads-hebrew-reply-checkPhone",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function normalizedPhone(value) {\n  if (typeof value !== \"string\" || !/^\\+?\\d{8,15}$/.test(value)) return \"\";\n  const digits = value.replace(/^\\+/, \"\");\n  if (/^0\\d{8,9}$/.test(digits)) return \"+972\" + digits.slice(1);\n  if (digits.startsWith(\"0\")) return \"\";\n  return \"+\" + digits;\n}\n\nfunction withLidPhone(lead, result, code) {\n  if (\n    code !== 200 ||\n    result?.lid !== lead.address ||\n    typeof result.pn !== \"string\" ||\n    !/^[0-9]{8,15}@c\\.us$/.test(result.pn)\n  ) {\n    return { state: \"unresolved_lid\", ready: false };\n  }\n  const phone = normalizedPhone(result.pn.slice(0, -5));\n  return phone ? { ...lead, phone, ready: true } : { state: \"unresolved_lid\", ready: false };\n}\n\nreturn {\n  json: withLidPhone($(\"Select direct incoming leads\").item.json, $json.body, $json.statusCode),\n};\n"
+      },
+      "position": [
+        220,
+        230
+      ]
+    },
+    {
+      "name": "Matching phone number?",
+      "id": "capture-whatsapp-leads-hebrew-reply-lidOk",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "leftValue": ""
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "lidOk",
+              "leftValue": "={{ $json.ready }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "position": [
+        440,
+        230
+      ]
+    },
+    {
+      "name": "Fingerprint the provider message",
+      "id": "capture-whatsapp-leads-hebrew-reply-hash",
+      "type": "n8n-nodes-base.crypto",
+      "typeVersion": 1,
+      "parameters": {
+        "action": "hash",
+        "type": "SHA256",
+        "value": "={{ $json.key }}",
+        "encoding": "hex",
+        "dataPropertyName": "digest"
+      },
+      "position": [
+        660,
+        230
+      ]
+    },
+    {
+      "name": "Prepare the metadata reservation and row",
+      "id": "capture-whatsapp-leads-hebrew-reply-plan",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function leadPlan(lead, digest) {\n  if (!/^[a-f0-9]{64}$/.test(digest))\n    throw new Error(\"Could not fingerprint the provider message.\");\n  // The Sheets ID is only the atomic reservation slot. Compare the full provider identity on reads.\n  const id = (parseInt(digest.slice(0, 8), 16) % 2147483647) + 1;\n  const metadata = {\n    metadataId: id,\n    metadataKey: \"whatsapp-lead-message-v1\",\n    metadataValue: lead.key,\n    visibility: \"DOCUMENT\",\n    location: { sheetId: lead.tabId },\n  };\n  const cells = [lead.arrivedAt, lead.name, lead.phone, lead.message, \"WhatsApp\"].map(\n    (stringValue) => ({ userEnteredValue: { stringValue } }),\n  );\n  const request = {\n    requests: [\n      { createDeveloperMetadata: { developerMetadata: metadata } },\n      {\n        appendCells: { sheetId: lead.tabId, rows: [{ values: cells }], fields: \"userEnteredValue\" },\n      },\n    ],\n  };\n  return {\n    ...lead,\n    metadata,\n    request,\n    root: \"https://sheets.googleapis.com/v4/spreadsheets/\" + lead.spreadsheetId,\n  };\n}\n\nreturn { json: leadPlan($json, $json.digest) };\n"
+      },
+      "position": [
+        880,
+        230
+      ]
+    },
+    {
+      "name": "Read the metadata reservation",
+      "id": "capture-whatsapp-leads-hebrew-reply-metadata",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.root + \"/developerMetadata/\" + $json.metadata.metadataId }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "options": {
+          "timeout": 20000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "position": [
+        1100,
+        230
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "name": "Classify new, duplicate or conflicting messages",
+      "id": "capture-whatsapp-leads-hebrew-reply-claim",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function matchMetadata(expected, actual) {\n  return (\n    actual?.metadataId === expected.metadataId &&\n    actual.metadataKey === expected.metadataKey &&\n    actual.metadataValue === expected.metadataValue &&\n    actual.visibility === expected.visibility &&\n    actual.location?.sheetId === expected.location.sheetId\n  );\n}\n\nfunction claimStatus(plan, response) {\n  if (response.statusCode === 404) return { ...plan, ready: true };\n  if (response.statusCode !== 200) return { state: \"metadata_read_unconfirmed\", ready: false };\n  if (matchMetadata(plan.metadata, response.body))\n    return { state: \"already_recorded\", ready: false };\n  return { state: \"metadata_slot_occupied\", ready: false };\n}\n\nreturn { json: claimStatus($(\"Prepare the metadata reservation and row\").item.json, $json) };\n"
+      },
+      "position": [
+        1320,
+        230
+      ]
+    },
+    {
+      "name": "Can this message be recorded?",
+      "id": "capture-whatsapp-leads-hebrew-reply-new",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "leftValue": ""
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "new",
+              "leftValue": "={{ $json.ready }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "position": [
+        1540,
+        230
+      ]
+    },
+    {
+      "name": "Atomically append the lead and reserve its message ID",
+      "id": "capture-whatsapp-leads-hebrew-reply-write",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.root + \":batchUpdate\" }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.request }}",
+        "options": {
+          "timeout": 20000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "position": [
+        1760,
+        230
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "name": "Check the Sheets receipt and prepare the reply",
+      "id": "capture-whatsapp-leads-hebrew-reply-prepareReply",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function matchMetadata(expected, actual) {\n  return (\n    actual?.metadataId === expected.metadataId &&\n    actual.metadataKey === expected.metadataKey &&\n    actual.metadataValue === expected.metadataValue &&\n    actual.visibility === expected.visibility &&\n    actual.location?.sheetId === expected.location.sheetId\n  );\n}\n\nfunction replyPlan(lead, response, now) {\n  const body = response?.body;\n  if (\n    response.statusCode !== 200 ||\n    body?.spreadsheetId !== lead.spreadsheetId ||\n    body.replies?.length !== 2 ||\n    !matchMetadata(lead.metadata, body.replies[0]?.createDeveloperMetadata?.developerMetadata)\n  ) {\n    return { state: \"check_sheet_before_replying\", ready: false };\n  }\n  if (lead.provider === \"meta\" && !(Number(now) < lead.replyUntil)) {\n    return { state: \"lead_recorded_without_reply\", ready: false };\n  }\n  const text = \"תודה \" + lead.name + \"! קיבלנו את הפנייה שלך ונחזור אליך בהקדם 🙏\";\n  if (lead.provider === \"waha\")\n    return {\n      ready: true,\n      waha: true,\n      url: lead.wahaOrigin + \"/api/sendText\",\n      request: { session: lead.scope, chatId: lead.address, text },\n    };\n  return {\n    ready: true,\n    waha: false,\n    url: \"https://graph.facebook.com/v25.0/\" + lead.scope + \"/messages\",\n    request: {\n      messaging_product: \"whatsapp\",\n      recipient_type: \"individual\",\n      to: lead.address,\n      type: \"text\",\n      text: { body: text },\n    },\n  };\n}\n\nreturn {\n  json: replyPlan(\n    $(\"Classify new, duplicate or conflicting messages\").item.json,\n    $json,\n    Date.now(),\n  ),\n};\n"
+      },
+      "position": [
+        1980,
+        230
+      ]
+    },
+    {
+      "name": "Should this lead receive a reply?",
+      "id": "capture-whatsapp-leads-hebrew-reply-ready",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "leftValue": ""
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "ready",
+              "leftValue": "={{ $json.ready }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "position": [
+        0,
+        460
+      ]
+    },
+    {
+      "name": "Reply through WAHA?",
+      "id": "capture-whatsapp-leads-hebrew-reply-provider",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "leftValue": ""
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "provider",
+              "leftValue": "={{ $json.waha }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "position": [
+        220,
+        460
+      ]
+    },
+    {
+      "name": "Send the Hebrew reply through WAHA",
+      "id": "capture-whatsapp-leads-hebrew-reply-waha",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.url }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.request }}",
+        "options": {
+          "timeout": 20000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "position": [
+        440,
+        460
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "name": "Send the Hebrew reply through Meta",
+      "id": "capture-whatsapp-leads-hebrew-reply-meta",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.url }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "whatsAppApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.request }}",
+        "options": {
+          "timeout": 20000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "position": [
+        660,
+        460
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "name": "Check WAHA acknowledgement",
+      "id": "capture-whatsapp-leads-hebrew-reply-wahaReceipt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const { body, statusCode } = $json;\nconst id = typeof body?.id === \"string\" ? body.id : body?.id?._serialized;\nreturn {\n  json: {\n    state:\n      statusCode >= 200 && statusCode < 300 && typeof id === \"string\" && id\n        ? \"reply_confirmed\"\n        : \"check_original_chat_before_replying\",\n  },\n};\n"
+      },
+      "position": [
+        880,
+        460
+      ]
+    },
+    {
+      "name": "Check Meta acknowledgement",
+      "id": "capture-whatsapp-leads-hebrew-reply-metaReceipt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const { body, statusCode } = $json;\nreturn {\n  json: {\n    state:\n      statusCode >= 200 && statusCode < 300 && typeof body?.messages?.[0]?.id === \"string\"\n        ? \"reply_confirmed\"\n        : \"check_original_chat_before_replying\",\n  },\n};\n"
+      },
+      "position": [
+        1100,
+        460
+      ]
+    }
+  ],
+  "connections": {
+    "Verify the Meta callback": {
+      "main": [
+        [
+          {
+            "node": "Check the Meta verification token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check the Meta verification token": {
+      "main": [
+        [
+          {
+            "node": "Return the Meta challenge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Receive a signed WhatsApp notification": {
+      "main": [
+        [
+          {
+            "node": "Read the original signed bytes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the original signed bytes": {
+      "main": [
+        [
+          {
+            "node": "Compute the provider HMAC",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compute the provider HMAC": {
+      "main": [
+        [
+          {
+            "node": "Validate the webhook signature",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate the webhook signature": {
+      "main": [
+        [
+          {
+            "node": "Acknowledge the verified request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Acknowledge the verified request": {
+      "main": [
+        [
+          {
+            "node": "Select direct incoming leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select direct incoming leads": {
+      "main": [
+        [
+          {
+            "node": "Uses a WAHA linked ID?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resolve the original WAHA linked ID": {
+      "main": [
+        [
+          {
+            "node": "Confirm the LID and its phone number",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm the LID and its phone number": {
+      "main": [
+        [
+          {
+            "node": "Matching phone number?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fingerprint the provider message": {
+      "main": [
+        [
+          {
+            "node": "Prepare the metadata reservation and row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare the metadata reservation and row": {
+      "main": [
+        [
+          {
+            "node": "Read the metadata reservation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the metadata reservation": {
+      "main": [
+        [
+          {
+            "node": "Classify new, duplicate or conflicting messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classify new, duplicate or conflicting messages": {
+      "main": [
+        [
+          {
+            "node": "Can this message be recorded?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Atomically append the lead and reserve its message ID": {
+      "main": [
+        [
+          {
+            "node": "Check the Sheets receipt and prepare the reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check the Sheets receipt and prepare the reply": {
+      "main": [
+        [
+          {
+            "node": "Should this lead receive a reply?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send the Hebrew reply through WAHA": {
+      "main": [
+        [
+          {
+            "node": "Check WAHA acknowledgement",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send the Hebrew reply through Meta": {
+      "main": [
+        [
+          {
+            "node": "Check Meta acknowledgement",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Uses a WAHA linked ID?": {
+      "main": [
+        [
+          {
+            "node": "Resolve the original WAHA linked ID",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fingerprint the provider message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Matching phone number?": {
+      "main": [
+        [
+          {
+            "node": "Fingerprint the provider message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Can this message be recorded?": {
+      "main": [
+        [
+          {
+            "node": "Atomically append the lead and reserve its message ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Should this lead receive a reply?": {
+      "main": [
+        [
+          {
+            "node": "Reply through WAHA?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reply through WAHA?": {
+      "main": [
+        [
+          {
+            "node": "Send the Hebrew reply through WAHA",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send the Hebrew reply through Meta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataSuccessExecution": "all",
+    "saveDataErrorExecution": "all",
+    "saveExecutionProgress": false,
+    "saveManualExecutions": false
+  }
+}
