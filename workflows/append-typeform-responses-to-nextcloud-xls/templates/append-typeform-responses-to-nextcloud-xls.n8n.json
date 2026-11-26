@@ -1,0 +1,387 @@
+{
+  "name": "Append Typeform Responses to a Nextcloud Workbook",
+  "nodes": [
+    {
+      "name": "Receive the Typeform response",
+      "id": "append-typeform-responses-to-nextcloud-xls-hook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        260
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "append-typeform-responses-to-nextcloud-xls",
+        "responseMode": "responseNode",
+        "options": {
+          "rawBody": true
+        }
+      }
+    },
+    {
+      "name": "Compute the Typeform signature",
+      "id": "append-typeform-responses-to-nextcloud-xls-hash",
+      "type": "n8n-nodes-base.crypto",
+      "typeVersion": 1,
+      "position": [
+        220,
+        260
+      ],
+      "parameters": {
+        "action": "hmac",
+        "type": "SHA256",
+        "binaryData": true,
+        "binaryPropertyName": "data",
+        "dataPropertyName": "digest",
+        "encoding": "base64",
+        "secret": "={{ (() => { throw new Error(\"Configure the Typeform signing secret\"); })() }}"
+      }
+    },
+    {
+      "name": "Verify and map the response",
+      "id": "append-typeform-responses-to-nextcloud-xls-verify",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        260
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function signedTypeform({ signature, digest }) {\n  if (\n    typeof signature !== \"string\" ||\n    typeof digest !== \"string\" ||\n    !/^sha256=[A-Za-z0-9+/]{43}=$/.test(signature) ||\n    !/^[A-Za-z0-9+/]{43}=$/.test(digest)\n  )\n    return false;\n  let difference = 0;\n  for (let index = 0; index < digest.length; index++)\n    difference |= signature.charCodeAt(index + 7) ^ digest.charCodeAt(index);\n  return difference === 0;\n}\n\nfunction mapWorkbookResponse(payload, settings) {\n  const response = payload?.form_response;\n  if (\n    payload?.event_type !== \"form_response\" ||\n    response?.form_id !== settings.formId ||\n    typeof response?.token !== \"string\" ||\n    !/^[A-Za-z0-9_-]{1,100}$/.test(response.token) ||\n    !Array.isArray(response.answers)\n  ) {\n    throw new Error(\"Expected a completed response from the configured Typeform\");\n  }\n  if (\n    !/^[A-Za-z0-9_-]{1,100}$/.test(settings.formId) ||\n    settings.formId.startsWith(\"YOUR_\") ||\n    !/^https:\\/\\/[A-Za-z0-9.-]+(?::\\d{1,5})?\\/(?:[^/]+\\/)*remote\\.php\\/dav\\/files\\/[^/]+\\/.+\\.xls$/i.test(\n      settings.workbookUrl,\n    ) ||\n    /[\\\\?#\\s]/.test(settings.workbookUrl) ||\n    /\\.invalid(?:\\/|:)/i.test(settings.workbookUrl) ||\n    /\\/\\.{1,2}(?:\\/|$)|%(?:2f|2e|5c|00)/i.test(settings.workbookUrl)\n  ) {\n    throw new Error(\n      \"Configure the Typeform form ID and the direct Nextcloud HTTPS path to an existing .xls file\",\n    );\n  }\n  const fields = Object.entries(settings.columns);\n  if (\n    !fields.length ||\n    fields.length > 32 ||\n    fields.some(\n      ([column, id]) =>\n        !column.trim() ||\n        column === \"response_token\" ||\n        !/^[A-Za-z0-9_-]{1,100}$/.test(id) ||\n        id.startsWith(\"YOUR_\"),\n    ) ||\n    new Set(fields.map(([, id]) => id)).size !== fields.length\n  ) {\n    throw new Error(\"Set each workbook column to a distinct Typeform field ID\");\n  }\n  const values = fields.map(([column, id]) => {\n    const found = response.answers.filter((answer) => answer?.field?.id === id);\n    if (found.length > 1)\n      throw new Error(\"A configured question appears twice in this Typeform response\");\n    if (!found.length) return [column, null];\n    const answer = found[0];\n    let value;\n    if (answer.type === \"choice\") value = answer.choice?.label;\n    else if (\n      answer.type === \"choices\" &&\n      Array.isArray(answer.choices?.labels) &&\n      answer.choices.labels.every((label) => typeof label === \"string\")\n    )\n      value = answer.choices.labels.join(\" | \");\n    else if (\n      [\"text\", \"email\", \"url\", \"file_url\", \"date\", \"phone_number\", \"number\", \"boolean\"].includes(\n        answer.type,\n      )\n    )\n      value = answer[answer.type];\n    if (\n      !(\n        typeof value === \"string\" &&\n        value.length <= 4096 &&\n        !/[\\x00-\\x1f\\x7f]/.test(value.replace(/[\\r\\n\\t]/g, \"\"))\n      ) &&\n      !(typeof value === \"number\" && Number.isFinite(value)) &&\n      typeof value !== \"boolean\"\n    ) {\n      throw new Error(\"A configured Typeform answer has an unsupported value\");\n    }\n    return [column, value];\n  });\n  return { url: settings.workbookUrl, token: response.token, values };\n}\nconst settings = {\n  formId: \"YOUR_TYPEFORM_FORM_ID\",\n  workbookUrl:\n    \"https://nextcloud.example.invalid/remote.php/dav/files/YOUR_USERNAME/typeform-responses.xls\",\n  columns: {\n    Name: \"YOUR_NAME_FIELD_ID\",\n    Quantity: \"YOUR_QUANTITY_FIELD_ID\",\n  },\n};\nconst { headers, digest, body } = $input.first().json;\nif (!signedTypeform({ signature: headers[\"typeform-signature\"], digest })) {\n  return [{ json: { valid: false, statusCode: 401 } }];\n}\ntry {\n  return [{ json: { ...mapWorkbookResponse(body, settings), valid: true } }];\n} catch {\n  return [{ json: { valid: false, statusCode: 422 } }];\n}\n"
+      }
+    },
+    {
+      "name": "Valid response?",
+      "id": "append-typeform-responses-to-nextcloud-xls-allowed",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        660,
+        260
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "leftValue": ""
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.valid }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "name": "Reply to invalid submissions",
+      "id": "append-typeform-responses-to-nextcloud-xls-reject",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        880,
+        450
+      ],
+      "parameters": {
+        "respondWith": "noData",
+        "options": {
+          "responseCode": "={{ $json.statusCode }}"
+        }
+      }
+    },
+    {
+      "name": "Download the Nextcloud workbook",
+      "id": "append-typeform-responses-to-nextcloud-xls-download",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1100,
+        260
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.url }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept-Encoding",
+              "value": "identity"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 10000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "fullResponse": true,
+              "outputPropertyName": "workbook"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Append the response to the workbook",
+      "id": "append-typeform-responses-to-nextcloud-xls-append",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1320,
+        260
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function appendWorkbook(xlsx, bytes, entry) {\n  const compound = [0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1];\n  if (bytes.length > 2 * 1024 * 1024 || !compound.every((value, index) => bytes[index] === value)) {\n    throw new Error(\"Expected an Excel 97–2003 XLS workbook up to 2 MiB\");\n  }\n  const read = (data) =>\n    xlsx.read(data, { type: \"buffer\", cellFormula: true, cellNF: true, bookVBA: true });\n  const workbook = read(bytes);\n  const [name] = workbook.SheetNames;\n  const sheet = workbook.Sheets[name];\n  if (\n    workbook.SheetNames.length !== 1 ||\n    !sheet?.[\"!ref\"] ||\n    workbook.vbaraw ||\n    (workbook.Workbook?.Names?.length ?? 0) ||\n    workbook.Workbook?.Sheets?.[0]?.Hidden ||\n    (sheet[\"!merges\"]?.length ?? 0) ||\n    sheet[\"!protect\"]\n  ) {\n    throw new Error(\"Use a visible, plain, single-sheet response workbook\");\n  }\n  const range = xlsx.utils.decode_range(sheet[\"!ref\"]);\n  if (range.s.r !== 0 || range.s.c !== 0 || range.e.c > 32 || range.e.r >= 65535) {\n    throw new Error(\"The response workbook must start at A1 and have space for another row\");\n  }\n  const matrix = (current) => {\n    const rows = Array.from({ length: current === sheet ? range.e.r + 1 : range.e.r + 2 }, () =>\n      new Array(range.e.c + 1).fill(null),\n    );\n    for (const [address, cell] of Object.entries(current)) {\n      if (address.startsWith(\"!\") || cell.t === \"z\") continue;\n      const { r, c } = xlsx.utils.decode_cell(address);\n      if (\n        !rows[r] ||\n        c >= rows[r].length ||\n        cell.f ||\n        cell.l ||\n        cell.c ||\n        ![\"s\", \"b\", \"n\"].includes(cell.t) ||\n        (cell.z && cell.z !== \"General\") ||\n        (cell.t === \"n\" && !Number.isFinite(cell.v))\n      )\n        throw new Error(\"The response sheet must contain plain values\");\n      rows[r][c] = cell.v;\n    }\n    return rows;\n  };\n  const original = matrix(sheet);\n  const headers = original[0];\n  const fields = new Map([[\"response_token\", entry.token], ...entry.values]);\n  if (\n    fields.size !== headers.length ||\n    new Set(headers).size !== headers.length ||\n    !headers.every((header) => fields.has(header))\n  ) {\n    throw new Error(\n      \"The workbook headers must match response_token and the configured Typeform columns\",\n    );\n  }\n  const tokenColumn = headers.indexOf(\"response_token\");\n  const tokens = original.slice(1).filter((row) => row[tokenColumn] === entry.token);\n  if (tokens.length > 1) throw new Error(\"The workbook has duplicate response tokens\");\n  if (tokens.length === 1) return { unchanged: true };\n  const row = headers.map((header) => fields.get(header));\n  xlsx.utils.sheet_add_aoa(sheet, [row], { origin: { r: range.e.r + 1, c: 0 } });\n  const updated = xlsx.write(workbook, { type: \"buffer\", bookType: \"biff8\" });\n  if (updated.length > 2 * 1024 * 1024) throw new Error(\"The updated workbook exceeds 2 MiB\");\n  const check = read(updated);\n  if (\n    check.SheetNames.length !== 1 ||\n    check.SheetNames[0] !== name ||\n    JSON.stringify(matrix(check.Sheets[name])) !== JSON.stringify([...original, row])\n  ) {\n    throw new Error(\"Workbook verification failed after writing; Nextcloud was unchanged\");\n  }\n  return { unchanged: false, bytes: updated };\n}\nconst entry = $(\"Verify and map the response\").first().json;\nconst received = $input.first();\nconst etag = received.json.headers?.etag;\nif (\n  received.json.statusCode !== 200 ||\n  !received.binary?.workbook ||\n  typeof etag !== \"string\" ||\n  !/^\"[^\"\\x00-\\x20\\x7f]{1,128}\"$/.test(etag)\n)\n  throw new Error(\"Nextcloud did not provide a strong workbook ETag\");\nconst original = await helpers.getBinaryDataBuffer(0, \"workbook\");\nconst updated = appendWorkbook(require(\"xlsx\"), original, entry);\nif (updated.unchanged) return [{ json: { changed: false, statusCode: 200 } }];\nreturn [\n  {\n    json: { changed: true, url: entry.url, etag },\n    binary: {\n      workbook: await helpers.prepareBinaryData(\n        updated.bytes,\n        \"responses.xls\",\n        \"application/vnd.ms-excel\",\n      ),\n    },\n  },\n];\n"
+      }
+    },
+    {
+      "name": "New submission?",
+      "id": "append-typeform-responses-to-nextcloud-xls-changed",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1540,
+        260
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "leftValue": ""
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.changed }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "name": "Save the updated workbook",
+      "id": "append-typeform-responses-to-nextcloud-xls-put",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1760,
+        260
+      ],
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ $json.url }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "If-Match",
+              "value": "={{ $json.etag }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "workbook",
+        "options": {
+          "timeout": 10000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "text",
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Check the Nextcloud write",
+      "id": "append-typeform-responses-to-nextcloud-xls-confirm",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1980,
+        260
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const { statusCode } = $input.first().json;\nif (statusCode !== 204 && statusCode !== 200) return [{ json: { statusCode: 503 } }];\nreturn [{ json: { statusCode: 200 } }];\n"
+      }
+    },
+    {
+      "name": "Reply to Typeform",
+      "id": "append-typeform-responses-to-nextcloud-xls-done",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        2200,
+        450
+      ],
+      "parameters": {
+        "respondWith": "noData",
+        "options": {
+          "responseCode": "={{ $json.statusCode }}"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Receive the Typeform response": {
+      "main": [
+        [
+          {
+            "node": "Compute the Typeform signature",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compute the Typeform signature": {
+      "main": [
+        [
+          {
+            "node": "Verify and map the response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify and map the response": {
+      "main": [
+        [
+          {
+            "node": "Valid response?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Valid response?": {
+      "main": [
+        [
+          {
+            "node": "Download the Nextcloud workbook",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reply to invalid submissions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download the Nextcloud workbook": {
+      "main": [
+        [
+          {
+            "node": "Append the response to the workbook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append the response to the workbook": {
+      "main": [
+        [
+          {
+            "node": "New submission?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "New submission?": {
+      "main": [
+        [
+          {
+            "node": "Save the updated workbook",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reply to Typeform",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save the updated workbook": {
+      "main": [
+        [
+          {
+            "node": "Check the Nextcloud write",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check the Nextcloud write": {
+      "main": [
+        [
+          {
+            "node": "Reply to Typeform",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveExecutionProgress": false,
+    "saveDataSuccessExecution": "none",
+    "saveDataErrorExecution": "none",
+    "saveManualExecutions": false
+  },
+  "pinData": {}
+}
