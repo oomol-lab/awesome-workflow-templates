@@ -1054,6 +1054,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Draft WordPress Articles from Google Sheets](workflows/draft-wordpress-articles-from-sheets/) - Turn unprocessed Google Sheets ideas into WordPress drafts with DeepSeek text and an OpenAI cover image.
 - [Draft WordPress Articles from Keywords](workflows/draft-wordpress-articles-from-keywords/) - Enter keywords, a chapter count, and a word limit to create a WordPress draft with an AI-generated cover.
 - [Generate a Song with Tunova](workflows/generate-tunova-song-from-form/) - Submit a song prompt and check its Tunova job after two minutes to get the first finished track.
+- [Generate a Song Through a Tunova Webhook](workflows/return-tunova-song-from-webhook/) - Send an authenticated song prompt and receive the Tunova job status in the same HTTP request after a 150-second wait.
 
 ## Recruiting
 
