@@ -1,0 +1,445 @@
+{
+  "name": "Convert Squarespace Profiles to Shopify Customer Rows",
+  "nodes": [
+    {
+      "id": "convert-squarespace-profiles-for-shopify-hook",
+      "name": "Receive a Squarespace CSV upload",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "convert-squarespace-profiles-for-shopify",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "position": [
+        0,
+        240
+      ]
+    },
+    {
+      "id": "convert-squarespace-profiles-for-shopify-validate",
+      "name": "Check the uploaded CSV file",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function checkCsvShape(source) {\n  const text = source.replace(/^\\uFEFF/, \"\");\n  let quoted = false,\n    afterQuote = false,\n    atStart = true;\n  let width = 1,\n    expectedWidth,\n    separator;\n  const endRow = () => {\n    expectedWidth ??= width;\n    if (width !== expectedWidth)\n      throw Error(\"A CSV row has a different number of columns than the header.\");\n    width = 1;\n    afterQuote = false;\n    atStart = true;\n  };\n  for (let i = 0; i < text.length; i++) {\n    const char = text[i];\n    if (quoted) {\n      if (char === '\"' && text[i + 1] === '\"') i++;\n      else if (char === '\"') {\n        quoted = false;\n        afterQuote = true;\n      }\n      continue;\n    }\n    if (char === \",\") {\n      width++;\n      atStart = true;\n      afterQuote = false;\n    } else if (char === \"\\r\" || char === \"\\n\") {\n      const current = char === \"\\r\" && text[i + 1] === \"\\n\" ? char + text[++i] : char;\n      separator ??= current;\n      if (current !== separator) throw Error(\"Use one line ending throughout the CSV.\");\n      endRow();\n    } else {\n      if (afterQuote || (char === '\"' && !atStart)) throw Error(\"Invalid quote in a CSV field.\");\n      quoted = char === '\"';\n      atStart = false;\n    }\n  }\n  if (quoted) throw Error(\"Unclosed quote in the CSV.\");\n  if (!atStart || width > 1) endRow();\n}\n\nconst item = $input.first(),\n  file = item.binary?.file;\nconst types = [\n  \"text/csv\",\n  \"application/csv\",\n  \"application/vnd.ms-excel\",\n  \"text/plain\",\n  \"application/octet-stream\",\n];\nif (\n  !file ||\n  Object.keys(item.binary).length !== 1 ||\n  !/\\.csv$/i.test(file.fileName ?? \"\") ||\n  !types.includes(String(file.mimeType).split(\";\")[0].trim().toLowerCase())\n)\n  throw Error(\"Upload one CSV file in the multipart file field.\");\nconst bytes = await helpers.getBinaryDataBuffer(0, \"file\");\nif (!bytes.length || bytes.length > 1024 * 1024) throw Error(\"Upload a non-empty CSV up to 1 MiB.\");\nlet text;\ntry {\n  text = new TextDecoder(\"utf-8\", { fatal: true }).decode(bytes);\n} catch {\n  throw Error(\"Use a UTF-8 CSV file.\");\n}\ncheckCsvShape(text);\nreturn [{ json: {}, binary: item.binary, pairedItem: { item: 0 } }];\n"
+      },
+      "position": [
+        216,
+        240
+      ]
+    },
+    {
+      "id": "convert-squarespace-profiles-for-shopify-extract",
+      "name": "Parse the CSV records",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "parameters": {
+        "operation": "csv",
+        "binaryPropertyName": "file",
+        "options": {
+          "headerRow": false,
+          "includeEmptyCells": true,
+          "delimiter": ",",
+          "encoding": "utf8",
+          "enableBOM": true,
+          "maxRowCount": 1002,
+          "relaxQuotes": false
+        }
+      },
+      "position": [
+        432,
+        240
+      ]
+    },
+    {
+      "id": "convert-squarespace-profiles-for-shopify-upload",
+      "name": "Prepare uploaded profiles",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function uploadedProfiles(rows, headers, key) {\n  const first = rows[0];\n  if (\n    !Array.isArray(first) ||\n    first.length > 100 ||\n    first.some((x) => typeof x !== \"string\" || !x.trim())\n  )\n    throw Error(\"The CSV needs a non-empty header row.\");\n  const names = first.map((cell) => cell.replace(/^\\uFEFF/, \"\").trim());\n  if (new Set(names).size !== names.length || !names.includes(\"Email\"))\n    throw Error(\"The CSV needs one unique Email column and unique headers.\");\n  if (rows.length < 2 || rows.length > 1001)\n    throw Error(\"Upload a CSV containing 1 to 1,000 profile rows.\");\n  const indexes = Object.fromEntries(\n    headers.filter((h) => names.includes(h)).map((h) => [h, names.indexOf(h)]),\n  );\n  const mapped = new Map();\n  for (const row of rows.slice(1)) {\n    if (\n      !Array.isArray(row) ||\n      row.length !== first.length ||\n      row.some((x) => typeof x !== \"string\")\n    )\n      throw Error(\"Profile row does not match the CSV header.\");\n    const profile = Object.fromEntries(Object.entries(indexes).map(([name, i]) => [name, row[i]]));\n    profile.Email = profile.Email.trim();\n    profile[\"Accepts Marketing\"] ??= \"\";\n    const email = key(profile.Email);\n    if (mapped.has(email)) throw Error(\"The upload contains more than one row for an email.\");\n    mapped.set(email, profile);\n  }\n  return [...mapped.values()];\n}\n\nfunction customerEmail(email) {\n  if (typeof email !== \"string\") throw Error(\"A required customer email is missing.\");\n  const key = email.trim().toLowerCase();\n  if (\n    !/^[^@\\s,;<>\\x00-\\x1f]{1,64}@[A-Za-z0-9-]+(?:\\.[A-Za-z0-9-]+)+$/.test(key) ||\n    key.length > 254\n  ) {\n    throw Error(\"A customer row has an invalid or missing email.\");\n  }\n  return key;\n}\n\nconst rawHeaders = [\n  \"Email\",\n  \"First Name\",\n  \"Last Name\",\n  \"Created On\",\n  \"Order Count\",\n  \"Last Order Date\",\n  \"Total Spent\",\n  \"Member Since\",\n  \"Subscriber Since\",\n  \"Subscriber Source\",\n  \"Tags\",\n  \"Mailing Lists\",\n  \"Member Areas\",\n  \"Donation Count\",\n  \"Last Donation Date\",\n  \"Total Donation Amount\",\n  \"Has Account\",\n  \"Customer Since\",\n  \"Shipping Name\",\n  \"Shipping Address 1\",\n  \"Shipping Address 2\",\n  \"Shipping City\",\n  \"Shipping Zip\",\n  \"Shipping Province/State\",\n  \"Shipping Country\",\n  \"Shipping Phone Number\",\n  \"Billing Name\",\n  \"Billing Address 1\",\n  \"Billing Address 2\",\n  \"Billing City\",\n  \"Billing Zip\",\n  \"Billing Province/State\",\n  \"Billing Country\",\n  \"Billing Phone Number\",\n  \"Accepts Marketing\",\n];\nconst profiles = uploadedProfiles(\n  $input.all().map((item) => item.json.row),\n  rawHeaders,\n  customerEmail,\n);\nreturn [{ json: { mode: \"upload\", profiles } }];\n"
+      },
+      "position": [
+        648,
+        240
+      ]
+    },
+    {
+      "id": "convert-squarespace-profiles-for-shopify-manual",
+      "name": "Rebuild the Shopify customer tab",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "parameters": {},
+      "position": [
+        864,
+        240
+      ]
+    },
+    {
+      "id": "convert-squarespace-profiles-for-shopify-rebuild",
+      "name": "Read profiles from the source tab",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return [{ json: { mode: \"manual\" } }];\n"
+      },
+      "position": [
+        1080,
+        240
+      ]
+    },
+    {
+      "id": "convert-squarespace-profiles-for-shopify-settings",
+      "name": "Set the spreadsheet and both tabs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function customerConfig(settings) {\n  const { spreadsheetId, profiles, customers } = settings;\n  if (\n    typeof spreadsheetId !== \"string\" ||\n    !/^[A-Za-z0-9_-]{10,150}$/.test(spreadsheetId) ||\n    spreadsheetId === \"YOUR_SPREADSHEET_ID\" ||\n    [profiles, customers].some(\n      (x) => typeof x !== \"string\" || !x.trim() || x.length > 100 || /[\\r\\n\\x00-\\x1f]/.test(x),\n    ) ||\n    profiles.trim().toLowerCase() === customers.trim().toLowerCase()\n  )\n    throw Error(\"Set one spreadsheet ID and two distinct tab names.\");\n  const range = (name, end) => \"'\" + name.replaceAll(\"'\", \"''\") + \"'!A:\" + end;\n  const root = \"https://sheets.googleapis.com/v4/spreadsheets/\" + spreadsheetId;\n  const fields =\n    \"spreadsheetId,sheets(properties(sheetId,title,gridProperties(rowCount,columnCount)),data(startRow,startColumn,rowData(values(formattedValue,userEnteredValue)))\";\n  return {\n    ...settings,\n    readUrl:\n      root +\n      \"?ranges=\" +\n      encodeURIComponent(range(profiles, \"AI\")) +\n      \"&ranges=\" +\n      encodeURIComponent(range(customers, \"Q\")) +\n      \"&includeGridData=true&fields=\" +\n      encodeURIComponent(fields),\n    writeUrl: root + \":batchUpdate\",\n  };\n}\n\nconst settings = {\n  spreadsheetId: \"YOUR_SPREADSHEET_ID\",\n  profiles: \"Squarespace profiles\",\n  customers: \"Shopify customers\",\n};\nreturn [{ json: { ...$input.first().json, settings: customerConfig(settings) } }];\n"
+      },
+      "position": [
+        1296,
+        240
+      ]
+    },
+    {
+      "id": "convert-squarespace-profiles-for-shopify-read",
+      "name": "Read both Sheets tabs",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.settings.readUrl }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "options": {
+          "timeout": 45000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "position": [
+        1512,
+        240
+      ]
+    },
+    {
+      "id": "convert-squarespace-profiles-for-shopify-plan",
+      "name": "Match customer rows by email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function planCustomerUpdates(reply, input, rawHeaders, shopHeaders, emailKey, transform) {\n  const settings = input.settings;\n  if (\n    reply?.spreadsheetId !== settings.spreadsheetId ||\n    !Array.isArray(reply.sheets) ||\n    reply.sheets.length !== 2\n  ) {\n    throw Error(\"Sheets did not return the configured spreadsheet and its two tabs.\");\n  }\n  function table(title, headers) {\n    const sheet = reply.sheets.find((x) => x.properties?.title === title);\n    const { sheetId, gridProperties } = sheet?.properties ?? {};\n    const block = sheet?.data?.[0];\n    if (\n      !Number.isSafeInteger(sheetId) ||\n      sheetId < 0 ||\n      !Number.isSafeInteger(gridProperties?.rowCount) ||\n      !Number.isSafeInteger(gridProperties?.columnCount) ||\n      gridProperties.columnCount < headers.length ||\n      sheet.data?.length !== 1 ||\n      (block?.startRow ?? 0) !== 0 ||\n      (block?.startColumn ?? 0) !== 0 ||\n      !Array.isArray(block?.rowData) ||\n      block.rowData.length > 2001 ||\n      block.rowData.length > gridProperties.rowCount\n    )\n      throw Error(\"Check the configured sheet grid and its capacity.\");\n    const cell = (raw) => raw?.formattedValue ?? raw?.userEnteredValue?.stringValue ?? \"\";\n    if (headers.some((label, i) => cell(block.rowData[0]?.values?.[i]) !== label))\n      throw Error(\"The configured tab headers do not match the template.\");\n    const known = new Map();\n    let next = 1;\n    for (let i = 1; i < block.rowData.length; i++) {\n      const values = headers.map((_, j) => cell(block.rowData[i]?.values?.[j]));\n      if (values.every((x) => x === \"\")) continue;\n      if (values.some((v) => typeof v !== \"string\"))\n        throw Error(\"Sheets returned a non-text customer value.\");\n      const record = Object.fromEntries(headers.map((name, j) => [name, values[j]]));\n      const key = emailKey(record.Email);\n      if (known.has(key)) throw Error(\"A tab contains duplicate customer emails.\");\n      known.set(key, { row: i, record });\n      next = i + 1;\n    }\n    return { sheetId, headers, known, next, rowLimit: gridProperties.rowCount };\n  }\n  const raw = table(settings.profiles, rawHeaders),\n    target = table(settings.customers, shopHeaders);\n  if (raw.sheetId === target.sheetId) throw Error(\"Select two distinct Sheets tabs.\");\n  const requests = [];\n  const plan = (tab, key, patch) => {\n    const old = tab.known.get(key);\n    const row = old?.row ?? tab.next++;\n    if (row >= tab.rowLimit || row > 2000)\n      throw Error(\"Add enough empty grid rows and keep each tab at or below 2,000 profiles.\");\n    const indexes = tab.headers\n      .map((h, i) => [h, i])\n      .filter(([h]) => Object.hasOwn(patch, h) && patch[h] !== (old?.record?.[h] ?? \"\"));\n    let startColumn,\n      endColumn,\n      cells = [];\n    const flush = () => {\n      if (!cells.length) return;\n      requests.push({\n        updateCells: {\n          start: { sheetId: tab.sheetId, rowIndex: row, columnIndex: startColumn },\n          rows: [{ values: cells }],\n          fields: \"userEnteredValue\",\n        },\n      });\n      cells = [];\n    };\n    for (const [h, i] of indexes) {\n      if (cells.length && i !== endColumn) flush();\n      if (!cells.length) startColumn = i;\n      endColumn = i + 1;\n      cells.push({ userEnteredValue: { stringValue: patch[h] } });\n    }\n    flush();\n    return { ...old?.record, ...patch };\n  };\n  const incoming =\n    input.mode === \"upload\" ? input.profiles : [...raw.known.values()].map((x) => x.record);\n  for (const profile of incoming) {\n    const key = emailKey(profile.Email);\n    const complete = input.mode === \"upload\" ? plan(raw, key, profile) : profile;\n    plan(target, key, transform(complete));\n  }\n  return {\n    request: { requests, includeSpreadsheetInResponse: false },\n    summary: { mode: input.mode, profiles: incoming.length },\n    writeUrl: settings.writeUrl,\n    spreadsheetId: settings.spreadsheetId,\n    count: requests.length,\n  };\n}\n\nfunction customerEmail(email) {\n  if (typeof email !== \"string\") throw Error(\"A required customer email is missing.\");\n  const key = email.trim().toLowerCase();\n  if (\n    !/^[^@\\s,;<>\\x00-\\x1f]{1,64}@[A-Za-z0-9-]+(?:\\.[A-Za-z0-9-]+)+$/.test(key) ||\n    key.length > 254\n  ) {\n    throw Error(\"A customer row has an invalid or missing email.\");\n  }\n  return key;\n}\n\nfunction shopifyCustomer(profile, countryOf, regionOf) {\n  const read = (key) => profile[key] ?? \"\";\n  const country = countryOf(read(\"Billing Country\"));\n  const region = regionOf(read(\"Billing Province/State\"), country);\n  const consent = /^(yes|true|1)$/i.test(read(\"Accepts Marketing\").trim()) ? \"yes\" : \"no\";\n  return {\n    \"First Name\": read(\"First Name\"),\n    \"Last Name\": read(\"Last Name\"),\n    Email: read(\"Email\"),\n    \"Accepts Email Marketing\": consent,\n    \"Default Address Company\": read(\"Billing Name\"),\n    \"Default Address Address1\": read(\"Billing Address 1\"),\n    \"Default Address Address2\": read(\"Billing Address 2\"),\n    \"Default Address City\": read(\"Billing City\"),\n    \"Default Address Province Code\": region,\n    \"Default Address Country Code\": country,\n    \"Default Address Zip\": read(\"Billing Zip\"),\n    \"Default Address Phone\": read(\"Billing Phone Number\"),\n    Phone: read(\"Billing Phone Number\"),\n    Tags: read(\"Last Order Date\").trim() ? \"n8n, squarespace, ground-control\" : \"n8n, squarespace\",\n  };\n}\n\nfunction shopifyCountry(value) {\n  const text = value.trim();\n  if (!text) return \"\";\n  const countries =\n    \"AD AE AF AG AI AL AM AO AQ AR AS AT AU AW AX AZ BA BB BD BE BF BG BH BI BJ BL BM BN BO BQ BR BS BT BV BW BY BZ CA CC CD CF CG CH CI CK CL CM CN CO CR CU CV CW CX CY CZ DE DJ DK DM DO DZ EC EE EG EH ER ES ET FI FJ FK FM FO FR GA GB GD GE GF GG GH GI GL GM GN GP GQ GR GS GT GU GW GY HK HM HN HR HT HU ID IE IL IM IN IO IQ IR IS IT JE JM JO JP KE KG KH KI KM KN KP KR KW KY KZ LA LB LC LI LK LR LS LT LU LV LY MA MC MD ME MF MG MH MK ML MM MN MO MP MQ MR MS MT MU MV MW MX MY MZ NA NC NE NF NG NI NL NO NP NR NU NZ OM PA PE PF PG PH PK PL PM PN PR PS PT PW PY QA RE RO RS RU RW SA SB SC SD SE SG SH SI SJ SK SL SM SN SO SR SS ST SV SX SY SZ TC TD TF TG TH TJ TK TL TM TN TO TR TT TV TW TZ UA UG UM US UY UZ VA VC VE VG VI VN VU WF WS YE YT ZA ZM ZW\".split(\n      \" \",\n    );\n  const upper = text.toUpperCase();\n  if (countries.includes(upper)) return upper;\n  const alias = {\n    uk: \"GB\",\n    \"united states of america\": \"US\",\n    usa: \"US\",\n    \"south korea\": \"KR\",\n    \"czech republic\": \"CZ\",\n  };\n  const region = new Intl.DisplayNames([\"en\"], { type: \"region\", fallback: \"none\" });\n  const match =\n    alias[text.toLowerCase()] ??\n    countries.find((code) => region.of(code)?.toLowerCase() === text.toLowerCase());\n  if (!match)\n    throw Error(\"A billing country is not a recognized English country or ISO alpha-2 code.\");\n  return match;\n}\n\nfunction shopifyRegion(value, country) {\n  const text = value.trim();\n  if (!text) return \"\";\n  if (!country) throw Error(\"Set a billing country before specifying a billing region.\");\n  const maps = {\n    US: \"AL:Alabama|AK:Alaska|AZ:Arizona|AR:Arkansas|CA:California|CO:Colorado|CT:Connecticut|DE:Delaware|DC:District of Columbia|FL:Florida|GA:Georgia|HI:Hawaii|ID:Idaho|IL:Illinois|IN:Indiana|IA:Iowa|KS:Kansas|KY:Kentucky|LA:Louisiana|ME:Maine|MD:Maryland|MA:Massachusetts|MI:Michigan|MN:Minnesota|MS:Mississippi|MO:Missouri|MT:Montana|NE:Nebraska|NV:Nevada|NH:New Hampshire|NJ:New Jersey|NM:New Mexico|NY:New York|NC:North Carolina|ND:North Dakota|OH:Ohio|OK:Oklahoma|OR:Oregon|PA:Pennsylvania|RI:Rhode Island|SC:South Carolina|SD:South Dakota|TN:Tennessee|TX:Texas|UT:Utah|VT:Vermont|VA:Virginia|WA:Washington|WV:West Virginia|WI:Wisconsin|WY:Wyoming\",\n    CA: \"AB:Alberta|BC:British Columbia|MB:Manitoba|NB:New Brunswick|NL:Newfoundland and Labrador|NT:Northwest Territories|NS:Nova Scotia|NU:Nunavut|ON:Ontario|PE:Prince Edward Island|QC:Quebec|SK:Saskatchewan|YT:Yukon\",\n    AU: \"ACT:Australian Capital Territory|NSW:New South Wales|NT:Northern Territory|QLD:Queensland|SA:South Australia|TAS:Tasmania|VIC:Victoria|WA:Western Australia\",\n  };\n  const code = text.toUpperCase().replace(new RegExp(\"^\" + country + \"-\"), \"\");\n  if (!maps[country] && /^[A-Z0-9]{1,3}$/.test(code)) return code;\n  const normalize = (x) => x.normalize(\"NFD\").replace(/\\p{M}/gu, \"\").toLowerCase();\n  const match = maps[country]\n    ?.split(\"|\")\n    .map((x) => x.split(\":\"))\n    .find(([id, name]) => id === code || normalize(name) === normalize(text));\n  if (!match)\n    throw Error(\"A billing province or state needs its documented Shopify subdivision code.\");\n  return match[0];\n}\n\nconst rawHeaders = [\n  \"Email\",\n  \"First Name\",\n  \"Last Name\",\n  \"Created On\",\n  \"Order Count\",\n  \"Last Order Date\",\n  \"Total Spent\",\n  \"Member Since\",\n  \"Subscriber Since\",\n  \"Subscriber Source\",\n  \"Tags\",\n  \"Mailing Lists\",\n  \"Member Areas\",\n  \"Donation Count\",\n  \"Last Donation Date\",\n  \"Total Donation Amount\",\n  \"Has Account\",\n  \"Customer Since\",\n  \"Shipping Name\",\n  \"Shipping Address 1\",\n  \"Shipping Address 2\",\n  \"Shipping City\",\n  \"Shipping Zip\",\n  \"Shipping Province/State\",\n  \"Shipping Country\",\n  \"Shipping Phone Number\",\n  \"Billing Name\",\n  \"Billing Address 1\",\n  \"Billing Address 2\",\n  \"Billing City\",\n  \"Billing Zip\",\n  \"Billing Province/State\",\n  \"Billing Country\",\n  \"Billing Phone Number\",\n  \"Accepts Marketing\",\n];\nconst shopHeaders = [\n  \"First Name\",\n  \"Last Name\",\n  \"Email\",\n  \"Accepts Email Marketing\",\n  \"Default Address Company\",\n  \"Default Address Address1\",\n  \"Default Address Address2\",\n  \"Default Address City\",\n  \"Default Address Province Code\",\n  \"Default Address Country Code\",\n  \"Default Address Zip\",\n  \"Default Address Phone\",\n  \"Phone\",\n  \"Accepts SMS Marketing\",\n  \"Tags\",\n  \"Note\",\n  \"Tax Exempt\",\n];\nconst input = $(\"Set the spreadsheet and both tabs\").first().json;\nconst plan = planCustomerUpdates(\n  $input.first().json.body,\n  input,\n  rawHeaders,\n  shopHeaders,\n  customerEmail,\n  (profile) => shopifyCustomer(profile, shopifyCountry, shopifyRegion),\n);\nif (Buffer.byteLength(JSON.stringify(plan.request), \"utf8\") > 1900000)\n  throw Error(\"This Sheets batch exceeds 1.9 MB. Split the source updates.\");\nreturn [{ json: plan }];\n"
+      },
+      "position": [
+        1728,
+        240
+      ]
+    },
+    {
+      "id": "convert-squarespace-profiles-for-shopify-changed",
+      "name": "Are there cell updates?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.count > 0 }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "position": [
+        1944,
+        240
+      ]
+    },
+    {
+      "id": "convert-squarespace-profiles-for-shopify-write",
+      "name": "Write both tabs in one Sheets batch",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.writeUrl }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.request }}",
+        "options": {
+          "timeout": 45000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "position": [
+        2160,
+        240
+      ]
+    },
+    {
+      "id": "convert-squarespace-profiles-for-shopify-receipt",
+      "name": "Confirm the Sheets batch",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function customerWriteReceipt(plan, response) {\n  if (\n    plan.count > 0 &&\n    (response?.spreadsheetId !== plan.spreadsheetId ||\n      !Array.isArray(response.replies) ||\n      response.replies.length !== plan.count)\n  )\n    throw Error(\"Google Sheets did not confirm the batch. Inspect both tabs before retrying.\");\n  return { ...plan.summary, updatedRanges: plan.count, accepted: true };\n}\n\nconst plan = $(\"Match customer rows by email\").first().json;\nreturn [{ json: customerWriteReceipt(plan, $input.first().json.body) }];\n"
+      },
+      "position": [
+        2376,
+        240
+      ]
+    },
+    {
+      "id": "convert-squarespace-profiles-for-shopify-viaUpload",
+      "name": "Was this a CSV upload?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.mode === \"upload\" }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "position": [
+        2592,
+        240
+      ]
+    },
+    {
+      "id": "convert-squarespace-profiles-for-shopify-respond",
+      "name": "Return upload counts",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "position": [
+        2808,
+        240
+      ]
+    }
+  ],
+  "connections": {
+    "Receive a Squarespace CSV upload": {
+      "main": [
+        [
+          {
+            "node": "Check the uploaded CSV file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check the uploaded CSV file": {
+      "main": [
+        [
+          {
+            "node": "Parse the CSV records",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse the CSV records": {
+      "main": [
+        [
+          {
+            "node": "Prepare uploaded profiles",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare uploaded profiles": {
+      "main": [
+        [
+          {
+            "node": "Set the spreadsheet and both tabs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set the spreadsheet and both tabs": {
+      "main": [
+        [
+          {
+            "node": "Read both Sheets tabs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read both Sheets tabs": {
+      "main": [
+        [
+          {
+            "node": "Match customer rows by email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Match customer rows by email": {
+      "main": [
+        [
+          {
+            "node": "Are there cell updates?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Are there cell updates?": {
+      "main": [
+        [
+          {
+            "node": "Write both tabs in one Sheets batch",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Confirm the Sheets batch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write both tabs in one Sheets batch": {
+      "main": [
+        [
+          {
+            "node": "Confirm the Sheets batch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm the Sheets batch": {
+      "main": [
+        [
+          {
+            "node": "Was this a CSV upload?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Was this a CSV upload?": {
+      "main": [
+        [
+          {
+            "node": "Return upload counts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rebuild the Shopify customer tab": {
+      "main": [
+        [
+          {
+            "node": "Read profiles from the source tab",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read profiles from the source tab": {
+      "main": [
+        [
+          {
+            "node": "Set the spreadsheet and both tabs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataSuccessExecution": "none",
+    "saveDataErrorExecution": "none",
+    "saveManualExecutions": false,
+    "saveExecutionProgress": false
+  },
+  "pinData": {}
+}

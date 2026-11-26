@@ -1283,6 +1283,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 
 - [Replicate HubSpot Deal Line Items](workflows/hubspot-replicate-deal-line-items/) - Copy line items from a won HubSpot deal to a newly created deal via HubSpot batch APIs and send a Slack confirmation.
 - [Enrich Intercom Contacts with ExactBuyer](workflows/intercom-contact-enrichment-exactbuyer/) - Listen for Intercom contact.user.created webhooks, enrich new contacts with ExactBuyer profile data, and update the Intercom contact record.
+- [Convert Squarespace Profiles to Shopify Customer Rows](workflows/convert-squarespace-profiles-for-shopify/) - Upload a Squarespace profile CSV or read the existing profiles tab to prepare Shopify customer rows in Google Sheets.
 
 ## Email
 
