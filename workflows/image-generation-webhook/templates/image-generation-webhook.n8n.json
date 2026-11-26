@@ -1,0 +1,392 @@
+{
+  "name": "Generate an Inline PNG from a Webhook",
+  "nodes": [
+    {
+      "id": "image-generation-webhook-webhook",
+      "name": "Receive the image prompt",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        240
+      ],
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "generate-image",
+        "authentication": "basicAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      }
+    },
+    {
+      "id": "image-generation-webhook-prompt",
+      "name": "Validate the image prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        240
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function readPrompt(input) {\n  const site = input.headers?.[\"sec-fetch-site\"];\n  if (site !== undefined && site !== \"same-origin\" && site !== \"none\") {\n    return { valid: false, status: 403, error: \"Open this URL directly in your browser.\" };\n  }\n  const prompt = typeof input.query?.input === \"string\" ? input.query.input.trim() : \"\";\n  if (!prompt || [...prompt].length > 4000) {\n    return { valid: false, status: 400, error: \"Enter one image prompt of 1 to 4000 characters.\" };\n  }\n  return { valid: true, prompt };\n}\n\nreturn { json: readPrompt($json) };\n"
+      }
+    },
+    {
+      "id": "image-generation-webhook-prompt-valid",
+      "name": "Prompt is valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        440,
+        240
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "prompt-valid",
+              "leftValue": "={{ $json.valid }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "image-generation-webhook-generate",
+      "name": "Generate the PNG",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        660,
+        140
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/images/generations",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { model: \"gpt-image-2.5-flare\", prompt: $json.prompt, n: 1, size: \"1024x1024\", quality: \"medium\", output_format: \"png\" } }}",
+        "options": {
+          "timeout": 75000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "image-generation-webhook-validate",
+      "name": "Validate the PNG bytes",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        140
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function inspectPng(response, decode) {\n  const encoded =\n    Array.isArray(response?.data) && response.data.length === 1\n      ? response.data[0]?.b64_json\n      : undefined;\n  if (\n    typeof encoded !== \"string\" ||\n    !encoded ||\n    encoded.length > 10_000_000 ||\n    encoded.length % 4 !== 0 ||\n    !/^[A-Za-z0-9+/]+={0,2}$/.test(encoded) ||\n    (response.output_format && response.output_format !== \"png\")\n  ) {\n    throw new Error(\"OpenAI did not return one base64 PNG image\");\n  }\n  const bytes = decode(encoded);\n  const signature = [137, 80, 78, 71, 13, 10, 26, 10];\n  if (bytes.length < 45 || !signature.every((byte, index) => bytes[index] === byte)) {\n    throw new Error(\"OpenAI returned an invalid PNG signature\");\n  }\n\n  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);\n  let hasImageData = false;\n  let offset = 8;\n  while (offset + 12 <= bytes.length) {\n    const length = view.getUint32(offset);\n    const end = offset + 12 + length;\n    if (end > bytes.length) break;\n    const chunk = String.fromCharCode(...bytes.subarray(offset + 4, offset + 8));\n    if (\n      offset === 8 &&\n      (chunk !== \"IHDR\" ||\n        length !== 13 ||\n        view.getUint32(offset + 8) !== 1024 ||\n        view.getUint32(offset + 12) !== 1024)\n    ) {\n      throw new Error(\"OpenAI did not return the requested 1024 × 1024 PNG\");\n    }\n    if (chunk === \"IDAT\" && length > 0) hasImageData = true;\n    if (chunk === \"IEND\") {\n      if (hasImageData && length === 0 && end === bytes.length) return { bytes, encoded };\n      break;\n    }\n    offset = end;\n  }\n  throw new Error(\"OpenAI returned an incomplete PNG\");\n}\n\nif ($json.statusCode === 200) {\n  try {\n    const { encoded } = inspectPng($json.body, (value) => Buffer.from(value, \"base64\"));\n    return { json: { valid: true, encoded } };\n  } catch {}\n}\nreturn { json: { valid: false } };\n"
+      }
+    },
+    {
+      "id": "image-generation-webhook-png-valid",
+      "name": "PNG is valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1100,
+        140
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "png-valid",
+              "leftValue": "={{ $json.valid }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "image-generation-webhook-file",
+      "name": "Convert the PNG to a file",
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        1320,
+        40
+      ],
+      "parameters": {
+        "operation": "toBinary",
+        "sourceProperty": "encoded",
+        "binaryPropertyName": "data",
+        "options": {
+          "fileName": "image.png",
+          "mimeType": "image/png",
+          "addBOM": false
+        }
+      }
+    },
+    {
+      "id": "image-generation-webhook-reply-image",
+      "name": "Return the inline PNG",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1540,
+        40
+      ],
+      "parameters": {
+        "respondWith": "binary",
+        "responseDataSource": "set",
+        "inputFieldName": "data",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Cache-Control",
+                "value": "no-store"
+              },
+              {
+                "name": "Referrer-Policy",
+                "value": "no-referrer"
+              },
+              {
+                "name": "X-Content-Type-Options",
+                "value": "nosniff"
+              },
+              {
+                "name": "Cross-Origin-Resource-Policy",
+                "value": "same-origin"
+              },
+              {
+                "name": "Content-Type",
+                "value": "image/png"
+              },
+              {
+                "name": "Content-Disposition",
+                "value": "inline; filename=\"image.png\""
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "image-generation-webhook-reply-invalid",
+      "name": "Return the request error",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        660,
+        360
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { error: $json.error } }}",
+        "options": {
+          "responseCode": "={{ $json.status }}",
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Cache-Control",
+                "value": "no-store"
+              },
+              {
+                "name": "Referrer-Policy",
+                "value": "no-referrer"
+              },
+              {
+                "name": "X-Content-Type-Options",
+                "value": "nosniff"
+              },
+              {
+                "name": "Cross-Origin-Resource-Policy",
+                "value": "same-origin"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "image-generation-webhook-reply-failure",
+      "name": "Return the image error",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1320,
+        240
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\"error\":\"Image generation failed.\"}",
+        "options": {
+          "responseCode": 502,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Cache-Control",
+                "value": "no-store"
+              },
+              {
+                "name": "Referrer-Policy",
+                "value": "no-referrer"
+              },
+              {
+                "name": "X-Content-Type-Options",
+                "value": "nosniff"
+              },
+              {
+                "name": "Cross-Origin-Resource-Policy",
+                "value": "same-origin"
+              }
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Receive the image prompt": {
+      "main": [
+        [
+          {
+            "node": "Validate the image prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate the image prompt": {
+      "main": [
+        [
+          {
+            "node": "Prompt is valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prompt is valid?": {
+      "main": [
+        [
+          {
+            "node": "Generate the PNG",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Return the request error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate the PNG": {
+      "main": [
+        [
+          {
+            "node": "Validate the PNG bytes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate the PNG bytes": {
+      "main": [
+        [
+          {
+            "node": "PNG is valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PNG is valid?": {
+      "main": [
+        [
+          {
+            "node": "Convert the PNG to a file",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Return the image error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert the PNG to a file": {
+      "main": [
+        [
+          {
+            "node": "Return the inline PNG",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataSuccessExecution": "none",
+    "saveDataErrorExecution": "none",
+    "saveManualExecutions": false
+  }
+}
