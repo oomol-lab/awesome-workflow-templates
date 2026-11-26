@@ -356,6 +356,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Send Recent X Mentions to Slack](workflows/send-recent-x-mentions-to-slack/) - Find recent public X mentions and send a separate link to Slack for each matching post.
 - [Append Google Ads Keyword Ideas to Sheets](workflows/append-google-ads-keyword-ideas-to-sheets/) - Find keyword ideas in Google Ads and append search volume, competition, and bid estimates to Google Sheets.
 - [Create UTM Links and QR Codes in Airtable](workflows/create-utm-links-and-qr-codes-in-airtable/) - Build a tagged campaign URL, download its QR code as a PNG, and save the same link to Airtable.
+- [Email Scheduled GA4 Sessions Reports](workflows/email-scheduled-ga4-sessions-reports/) - Summarize Google Analytics sessions by date and source or medium, then email the marketing manager.
 
 ## Support
 
