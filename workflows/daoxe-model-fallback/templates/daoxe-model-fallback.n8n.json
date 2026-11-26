@@ -1,0 +1,297 @@
+{
+  "name": "Run a DaoXE Prompt with Model Fallback",
+  "nodes": [
+    {
+      "id": "daoxe-model-fallback-start",
+      "name": "Run manually",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        240
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "daoxe-model-fallback-setup",
+      "name": "Set the prompt and models",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        230,
+        240
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function prepareRequests({ prompt, system, primary_model, fallback_model }) {\n  if (typeof prompt !== \"string\" || !prompt.trim() || prompt.length > 24000) {\n    throw new Error(\"Provide a prompt of up to 24,000 characters.\");\n  }\n  const instructions = system ?? \"You are a concise, helpful assistant. Answer in plain text.\";\n  if (typeof instructions !== \"string\" || instructions.length > 8000) {\n    throw new Error(\"Provide a system instruction of up to 8,000 characters.\");\n  }\n  const models = [primary_model, fallback_model];\n  if (\n    models.some(\n      (id) =>\n        typeof id !== \"string\" ||\n        !id.trim() ||\n        id !== id.trim() ||\n        id.length > 256 ||\n        [\"YOUR_DAOXE_MODEL_ID\", \"YOUR_DAOXE_FALLBACK_MODEL_ID\"].includes(id),\n    ) ||\n    primary_model === fallback_model\n  ) {\n    throw new Error(\"Set two distinct model IDs from your DaoXE group.\");\n  }\n  const messages = [\n    { role: \"system\", content: instructions },\n    { role: \"user\", content: prompt },\n  ];\n  return {\n    primary: { model: primary_model, messages, stream: false },\n    fallback: { model: fallback_model, messages, stream: false },\n  };\n}\n\nreturn {\n  json: prepareRequests({\n    prompt: \"Suggest three titles for a guide to indoor herb gardening.\",\n    system: \"You are a concise, helpful assistant. Answer in plain text.\",\n    primary_model: \"YOUR_DAOXE_MODEL_ID\",\n    fallback_model: \"YOUR_DAOXE_FALLBACK_MODEL_ID\",\n  }),\n};\n"
+      }
+    },
+    {
+      "id": "daoxe-model-fallback-primary",
+      "name": "Call the primary model",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        460,
+        240
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.daoxe.com/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.primary }}",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true,
+              "responseFormat": "text",
+              "outputPropertyName": "body"
+            }
+          }
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "daoxe-model-fallback-classify",
+      "name": "Check the primary reply",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        690,
+        240
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function inspectReply(status, body, via) {\n  if (status === 408 || status === 429 || (status >= 500 && status <= 599)) {\n    return { temporaryFailure: \"HTTP \" + status };\n  }\n  if (status === 401 || status === 403) {\n    throw new Error(\n      \"DaoXE rejected the \" +\n        via +\n        \" request (HTTP \" +\n        status +\n        \"). Check the shared key, model permissions and account balance.\",\n    );\n  }\n  if (status !== 200) {\n    throw new Error(\"DaoXE rejected the \" + via + \" request (HTTP \" + status + \").\");\n  }\n  let response;\n  try {\n    response = JSON.parse(body);\n  } catch {\n    throw new Error(\"DaoXE returned invalid JSON for the \" + via + \" request.\");\n  }\n  const choice = response?.choices?.[0];\n  const answer = choice?.message?.content;\n  if (\n    response?.error ||\n    typeof answer !== \"string\" ||\n    !answer.trim() ||\n    (choice.finish_reason && choice.finish_reason !== \"stop\")\n  ) {\n    throw new Error(\"DaoXE returned no complete text answer for the \" + via + \" request.\");\n  }\n  const served_model =\n    typeof response.model === \"string\" && response.model.trim() ? response.model : null;\n  return { answer, served_model, via };\n}\n\nfunction n8nReply(http, via) {\n  if (Number.isInteger(http.statusCode)) return inspectReply(http.statusCode, http.body, via);\n  const error = http.error;\n  const transportCode = [\n    \"ETIMEDOUT\",\n    \"ESOCKETTIMEDOUT\",\n    \"ECONNABORTED\",\n    \"ECONNRESET\",\n    \"ECONNREFUSED\",\n    \"EAI_AGAIN\",\n    \"ENOTFOUND\",\n    \"EPIPE\",\n    \"ERR_NETWORK\",\n  ];\n  if (transportCode.includes(error?.code ?? error?.cause?.code))\n    return { temporaryFailure: \"transport result unknown\" };\n  throw new Error(\n    \"DaoXE could not process the \" + via + \" request. Check the HTTP node and its credential.\",\n  );\n}\n\nreturn { json: n8nReply($json, \"primary\") };\n"
+      }
+    },
+    {
+      "id": "daoxe-model-fallback-route",
+      "name": "Try the fallback model?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        920,
+        240
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "daoxe-model-fallback-temporary",
+              "leftValue": "={{ Boolean($json.temporaryFailure) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "daoxe-model-fallback-fallback",
+      "name": "Call the fallback model",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1150,
+        100
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.daoxe.com/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $(\"Set the prompt and models\").item.json.fallback }}",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true,
+              "responseFormat": "text",
+              "outputPropertyName": "body"
+            }
+          }
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "daoxe-model-fallback-confirm",
+      "name": "Check the fallback reply",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1380,
+        100
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function inspectReply(status, body, via) {\n  if (status === 408 || status === 429 || (status >= 500 && status <= 599)) {\n    return { temporaryFailure: \"HTTP \" + status };\n  }\n  if (status === 401 || status === 403) {\n    throw new Error(\n      \"DaoXE rejected the \" +\n        via +\n        \" request (HTTP \" +\n        status +\n        \"). Check the shared key, model permissions and account balance.\",\n    );\n  }\n  if (status !== 200) {\n    throw new Error(\"DaoXE rejected the \" + via + \" request (HTTP \" + status + \").\");\n  }\n  let response;\n  try {\n    response = JSON.parse(body);\n  } catch {\n    throw new Error(\"DaoXE returned invalid JSON for the \" + via + \" request.\");\n  }\n  const choice = response?.choices?.[0];\n  const answer = choice?.message?.content;\n  if (\n    response?.error ||\n    typeof answer !== \"string\" ||\n    !answer.trim() ||\n    (choice.finish_reason && choice.finish_reason !== \"stop\")\n  ) {\n    throw new Error(\"DaoXE returned no complete text answer for the \" + via + \" request.\");\n  }\n  const served_model =\n    typeof response.model === \"string\" && response.model.trim() ? response.model : null;\n  return { answer, served_model, via };\n}\n\nfunction n8nReply(http, via) {\n  if (Number.isInteger(http.statusCode)) return inspectReply(http.statusCode, http.body, via);\n  const error = http.error;\n  const transportCode = [\n    \"ETIMEDOUT\",\n    \"ESOCKETTIMEDOUT\",\n    \"ECONNABORTED\",\n    \"ECONNRESET\",\n    \"ECONNREFUSED\",\n    \"EAI_AGAIN\",\n    \"ENOTFOUND\",\n    \"EPIPE\",\n    \"ERR_NETWORK\",\n  ];\n  if (transportCode.includes(error?.code ?? error?.cause?.code))\n    return { temporaryFailure: \"transport result unknown\" };\n  throw new Error(\n    \"DaoXE could not process the \" + via + \" request. Check the HTTP node and its credential.\",\n  );\n}\n\nfunction finalReply(result, via) {\n  if (result.temporaryFailure)\n    throw new Error(\"DaoXE \" + via + \" failed (\" + result.temporaryFailure + \").\");\n  return result;\n}\n\nreturn { json: finalReply(n8nReply($json, \"fallback\"), \"fallback\") };\n"
+      }
+    },
+    {
+      "id": "daoxe-model-fallback-result",
+      "name": "Return the answer and model",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1610,
+        240
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const { answer, served_model, via } = $json;\nreturn { json: { answer, served_model, via } };\n"
+      }
+    }
+  ],
+  "connections": {
+    "Run manually": {
+      "main": [
+        [
+          {
+            "node": "Set the prompt and models",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set the prompt and models": {
+      "main": [
+        [
+          {
+            "node": "Call the primary model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call the primary model": {
+      "main": [
+        [
+          {
+            "node": "Check the primary reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check the primary reply": {
+      "main": [
+        [
+          {
+            "node": "Try the fallback model?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Try the fallback model?": {
+      "main": [
+        [
+          {
+            "node": "Call the fallback model",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Return the answer and model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call the fallback model": {
+      "main": [
+        [
+          {
+            "node": "Check the fallback reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check the fallback reply": {
+      "main": [
+        [
+          {
+            "node": "Return the answer and model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataSuccessExecution": "none",
+    "saveDataErrorExecution": "none",
+    "saveManualExecutions": false
+  }
+}

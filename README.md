@@ -1190,6 +1190,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Extract Structured Data from Images with Gemini](workflows/extract-structured-data-from-images-with-gemini/) - Send an image URL and your output fields to a webhook. Gemini extracts matching data and returns it in the HTTP response.
 - [Generate an HTML Preview from a Website Idea](workflows/generate-an-html-preview-from-a-website-idea/) - Open a webhook URL with a website idea and get a static preview in the browser.
 - [Generate an Inline PNG from a Webhook](workflows/image-generation-webhook/) - Open an authenticated URL with an image prompt and view the generated PNG in your browser.
+- [Run a DaoXE Prompt with Model Fallback](workflows/daoxe-model-fallback/) - Send one prompt to a primary DaoXE model and use a second model if the first is temporarily unavailable.
 
 ## E-commerce
 
