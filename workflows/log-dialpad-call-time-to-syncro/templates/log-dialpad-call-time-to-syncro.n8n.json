@@ -1,0 +1,702 @@
+{
+  "name": "Log Dialpad Call Time on a Syncro Ticket",
+  "nodes": [
+    {
+      "name": "Receive signed Dialpad events",
+      "id": "log-dialpad-call-time-to-syncro-hook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "log-dialpad-call-time-to-syncro",
+        "authentication": "none",
+        "responseMode": "responseNode",
+        "options": {
+          "rawBody": true
+        }
+      },
+      "position": [
+        0,
+        260
+      ]
+    },
+    {
+      "name": "Read the compact JWT",
+      "id": "log-dialpad-call-time-to-syncro-decode",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const raw = await helpers.getBinaryDataBuffer(0, \"data\");\nconst token = raw.length <= 128 * 1024 ? Buffer.from(raw).toString(\"utf8\") : \"\";\nreturn [\n  { json: { token: /^[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+$/.test(token) ? token : \"\" } },\n];\n"
+      },
+      "position": [
+        220,
+        260
+      ]
+    },
+    {
+      "name": "Verify the Dialpad signature",
+      "id": "log-dialpad-call-time-to-syncro-verify",
+      "type": "n8n-nodes-base.jwt",
+      "typeVersion": 1,
+      "parameters": {
+        "operation": "verify",
+        "token": "={{ $json.token }}",
+        "options": {
+          "algorithm": "HS256",
+          "complete": true
+        }
+      },
+      "position": [
+        440,
+        260
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "name": "Read the ended call",
+      "id": "log-dialpad-call-time-to-syncro-call",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function dialpadCallId(value) {\n  const text = typeof value === \"number\" && Number.isSafeInteger(value) ? String(value) : value;\n  if (\n    typeof text !== \"string\" ||\n    !/^[1-9]\\d{0,18}$/.test(text) ||\n    BigInt(text) > 9223372036854775807n\n  ) {\n    throw new Error(\n      \"Call IDs must be exact positive integers. Store them as plain text in Sheets.\",\n    );\n  }\n  return text;\n}\n\nfunction dialpadEvent(token, verified) {\n  const segments = token.split(\".\");\n  if (\n    verified?.header?.alg !== \"HS256\" ||\n    !verified.payload ||\n    segments.length !== 3 ||\n    verified.signature !== segments[2]\n  ) {\n    return {\n      needsLookup: false,\n      statusCode: 401,\n      response: { error: \"Invalid Dialpad signature\" },\n    };\n  }\n  const source = new TextDecoder(\"utf-8\", { fatal: true }).decode(\n    Buffer.from(segments[1], \"base64url\"),\n  );\n  const event = JSON.parse(source, (key, value, context) => {\n    if (key === \"call_id\" && typeof value === \"number\" && /^\\d+$/.test(context?.source ?? \"\"))\n      return context.source;\n    return value;\n  });\n  if (event.state !== \"hangup\") return { needsLookup: false, statusCode: 200, response: [] };\n  const timestamp = (raw) => {\n    const value = typeof raw === \"string\" && /^\\d{1,15}$/.test(raw) ? Number(raw) : raw;\n    if (!Number.isSafeInteger(value) || value < 0 || value > 8640000000000000)\n      throw new Error(\"Invalid call timestamp\");\n    return value;\n  };\n  const callId = dialpadCallId(event.call_id);\n  const start = timestamp(event.date_started);\n  const end = timestamp(event.date_ended);\n  if (end < start) throw new Error(\"Call end precedes its start\");\n  const text = (value, max) =>\n    typeof value === \"string\"\n      ? value\n          .replace(/[\\x00-\\x1f\\x7f]/g, \" \")\n          .trim()\n          .slice(0, max)\n      : \"\";\n  const name = text(event.contact?.name, 200);\n  const phone = text(event.contact?.phone, 80);\n  const contact = name && phone ? name + \" (\" + phone + \")\" : name || phone;\n  const order = {\n    start_at: new Date(start).toISOString(),\n    end_at: new Date(end).toISOString(),\n    notes: contact ? \"Phone call from \" + contact + \".\" : \"Phone call.\",\n  };\n  return { needsLookup: true, callId, order };\n}\n\nfunction syncroTimerSettings(data) {\n  const { spreadsheetId, tab, syncroSubdomain, userId } = data;\n  if (\n    typeof spreadsheetId !== \"string\" ||\n    !/^[A-Za-z0-9_-]{12,}$/.test(spreadsheetId) ||\n    spreadsheetId.startsWith(\"YOUR_\") ||\n    typeof tab !== \"string\" ||\n    !tab.trim() ||\n    tab.length > 100\n  )\n    throw new Error(\"Configure the Google Sheets spreadsheet and tab\");\n  if (\n    typeof syncroSubdomain !== \"string\" ||\n    !/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(syncroSubdomain) ||\n    syncroSubdomain === \"your-subdomain\"\n  )\n    throw new Error(\"Configure your Syncro subdomain\");\n  if (!Number.isSafeInteger(userId) || userId < 1)\n    throw new Error(\"Configure the Syncro technician User ID\");\n  return {\n    sheetUrl:\n      \"https://sheets.googleapis.com/v4/spreadsheets/\" +\n      spreadsheetId +\n      \"/values/\" +\n      encodeURIComponent(\"'\" + tab.replace(/'/g, \"''\") + \"'!A:B\") +\n      \"?majorDimension=ROWS&valueRenderOption=UNFORMATTED_VALUE\",\n    origin: \"https://\" + syncroSubdomain + \".syncromsp.com\",\n    userId,\n  };\n}\n\nconst settings = {\n  spreadsheetId: \"YOUR_SPREADSHEET_ID\",\n  tab: \"Call Tickets\",\n  syncroSubdomain: \"your-subdomain\",\n  userId: 0,\n};\nconst verified = $input.first().json;\nconst { token } = $(\"Read the compact JWT\").first().json;\nlet mapped;\ntry {\n  mapped = dialpadEvent(token, verified);\n} catch {\n  return [\n    {\n      json: {\n        needsLookup: false,\n        statusCode: 400,\n        response: { error: \"Invalid Dialpad ended-call data\" },\n      },\n    },\n  ];\n}\nif (!mapped.needsLookup) return [{ json: mapped }];\nreturn [\n  { json: { ...mapped, callKey: \"dialpad:\" + mapped.callId, ...syncroTimerSettings(settings) } },\n];\n"
+      },
+      "position": [
+        660,
+        260
+      ]
+    },
+    {
+      "name": "Ended call?",
+      "id": "log-dialpad-call-time-to-syncro-ended",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.needsLookup }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "position": [
+        880,
+        260
+      ]
+    },
+    {
+      "name": "Read the call reservation",
+      "id": "log-dialpad-call-time-to-syncro-findReservation",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_RESERVATION_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "call_key",
+              "condition": "eq",
+              "keyValue": "={{ $('Read the ended call').first().json.callKey }}"
+            }
+          ]
+        },
+        "returnAll": false,
+        "limit": 2
+      },
+      "position": [
+        1100,
+        260
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "name": "Read the saved timer result",
+      "id": "log-dialpad-call-time-to-syncro-inspect",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const rows = $input.all();\nif (rows.length === 1 && !Object.keys(rows[0].json).length) return [{ json: { unreserved: true } }];\nconst row = rows[0]?.json;\nconst { callKey } = $(\"Read the ended call\").first().json;\nif (rows.length !== 1 || row.call_key !== callKey || !/^[1-9]\\d*$/.test(row.ticket_id ?? \"\")) {\n  throw new Error(\"The Dialpad call reservation is inconsistent\");\n}\nif (row.status === \"pending\")\n  return [\n    {\n      json: {\n        unreserved: false,\n        statusCode: 202,\n        response: { status: \"pending\", ticket_id: row.ticket_id },\n      },\n    },\n  ];\nif (row.status !== \"confirmed\") throw new Error(\"Unknown Dialpad call reservation status\");\nconst receipt = JSON.parse(row.receipt);\nif (\n  !Number.isSafeInteger(receipt?.id) ||\n  receipt.id < 1 ||\n  String(receipt.ticket_id) !== row.ticket_id\n) {\n  throw new Error(\"The saved timer does not belong to the reserved ticket\");\n}\nreturn [{ json: { unreserved: false, statusCode: 200, response: [receipt] } }];\n"
+      },
+      "position": [
+        1320,
+        260
+      ]
+    },
+    {
+      "name": "New ended call?",
+      "id": "log-dialpad-call-time-to-syncro-unreserved",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.unreserved }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "position": [
+        1540,
+        260
+      ]
+    },
+    {
+      "name": "Read the call mapping sheet",
+      "id": "log-dialpad-call-time-to-syncro-sheets",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $('Read the ended call').first().json.sheetUrl }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "position": [
+        1760,
+        260
+      ]
+    },
+    {
+      "name": "Find the matching ticket",
+      "id": "log-dialpad-call-time-to-syncro-match",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function dialpadCallId(value) {\n  const text = typeof value === \"number\" && Number.isSafeInteger(value) ? String(value) : value;\n  if (\n    typeof text !== \"string\" ||\n    !/^[1-9]\\d{0,18}$/.test(text) ||\n    BigInt(text) > 9223372036854775807n\n  ) {\n    throw new Error(\n      \"Call IDs must be exact positive integers. Store them as plain text in Sheets.\",\n    );\n  }\n  return text;\n}\n\nfunction matchSyncroTicket(values, callId) {\n  if (!Array.isArray(values) || !Array.isArray(values[0]))\n    throw new Error(\"The mapping tab needs Call and Ticket column headers\");\n  const headers = values[0];\n  if (\n    headers.filter((key) => key === \"Call\").length !== 1 ||\n    headers.filter((key) => key === \"Ticket\").length !== 1\n  ) {\n    throw new Error(\"The mapping tab needs one Call column and one Ticket column\");\n  }\n  const call = headers.indexOf(\"Call\");\n  const ticket = headers.indexOf(\"Ticket\");\n  const targets = [];\n  for (const row of values.slice(1)) {\n    if (!Array.isArray(row)) throw new Error(\"Google Sheets returned an invalid mapping row\");\n    if (row[call] == null || row[call] === \"\") continue;\n    if (dialpadCallId(row[call]) === callId) targets.push(row[ticket]);\n  }\n  if (targets.length > 1) {\n    return {\n      shouldWrite: false,\n      statusCode: 409,\n      response: { error: \"The Call ID has multiple ticket mappings\" },\n    };\n  }\n  const target = targets[0];\n  if (target == null || target === \"\") return { shouldWrite: false, statusCode: 200, response: [] };\n  const text = typeof target === \"string\" ? target : String(target);\n  const ticketId = Number(text);\n  if (!/^[1-9]\\d*$/.test(text) || !Number.isSafeInteger(ticketId))\n    throw new Error(\"The mapped Syncro Ticket ID is invalid\");\n  return { shouldWrite: true, ticketId };\n}\n\nconst event = $(\"Read the ended call\").first().json;\nconst found = matchSyncroTicket($input.first().json.values, event.callId);\nif (!found.shouldWrite) return [{ json: found }];\nreturn [\n  {\n    json: {\n      ...found,\n      url: event.origin + \"/api/v1/tickets/\" + found.ticketId + \"/timer_entry\",\n      order: { ...event.order, user_id: event.userId },\n    },\n  },\n];\n"
+      },
+      "position": [
+        1980,
+        260
+      ]
+    },
+    {
+      "name": "One ticket found?",
+      "id": "log-dialpad-call-time-to-syncro-matched",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.shouldWrite }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "position": [
+        2200,
+        260
+      ]
+    },
+    {
+      "name": "Reserve the call and ticket",
+      "id": "log-dialpad-call-time-to-syncro-reserve",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_RESERVATION_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "call_key": "={{ $('Read the ended call').first().json.callKey }}",
+            "ticket_id": "={{ String($('Find the matching ticket').first().json.ticketId) }}",
+            "status": "pending",
+            "receipt": ""
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "position": [
+        2420,
+        260
+      ]
+    },
+    {
+      "name": "Confirm the reserved ticket",
+      "id": "log-dialpad-call-time-to-syncro-reserved",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const rows = $input.all();\nconst row = rows[0]?.json;\nconst match = $(\"Find the matching ticket\").first().json;\nif (\n  rows.length !== 1 ||\n  row.call_key !== $(\"Read the ended call\").first().json.callKey ||\n  row.ticket_id !== String(match.ticketId) ||\n  row.status !== \"pending\"\n) {\n  throw new Error(\"The intended Syncro ticket was not reserved\");\n}\nreturn [{ json: match }];\n"
+      },
+      "position": [
+        2640,
+        260
+      ]
+    },
+    {
+      "name": "Create the Syncro ticket timer",
+      "id": "log-dialpad-call-time-to-syncro-syncro",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.url }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.order) }}",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "position": [
+        2860,
+        260
+      ]
+    },
+    {
+      "name": "Confirm the matching timer",
+      "id": "log-dialpad-call-time-to-syncro-check",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function syncroTimerReceipt(statusCode, timer, expected) {\n  if (\n    statusCode !== 200 ||\n    !Number.isSafeInteger(timer?.id) ||\n    timer.id < 1 ||\n    timer.ticket_id !== expected.ticketId ||\n    timer.user_id !== expected.order.user_id ||\n    Date.parse(timer.start_time) !== Date.parse(expected.order.start_at) ||\n    Date.parse(timer.end_time) !== Date.parse(expected.order.end_at)\n  ) {\n    return {\n      statusCode: 502,\n      response: { error: \"Syncro did not confirm this timer. Check the ticket before retrying.\" },\n    };\n  }\n  return { statusCode: 200, response: [timer] };\n}\n\nconst expected = $(\"Find the matching ticket\").first().json;\nconst { body, statusCode } = $input.first().json;\nconst result = syncroTimerReceipt(statusCode, body, expected);\nif (result.statusCode !== 200) return [{ json: result }];\nconst { id, ticket_id, user_id, start_time, end_time } = result.response[0];\nreturn [\n  { json: { statusCode: 200, response: [{ id, ticket_id, user_id, start_time, end_time }] } },\n];\n"
+      },
+      "position": [
+        3080,
+        260
+      ]
+    },
+    {
+      "name": "Timer confirmed?",
+      "id": "log-dialpad-call-time-to-syncro-confirmed",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.statusCode === 200 }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "position": [
+        3300,
+        260
+      ]
+    },
+    {
+      "name": "Save the timer receipt",
+      "id": "log-dialpad-call-time-to-syncro-save",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_RESERVATION_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "call_key",
+              "condition": "eq",
+              "keyValue": "={{ $('Read the ended call').first().json.callKey }}"
+            },
+            {
+              "keyName": "status",
+              "condition": "eq",
+              "keyValue": "pending"
+            },
+            {
+              "keyName": "ticket_id",
+              "condition": "eq",
+              "keyValue": "={{ String($('Find the matching ticket').first().json.ticketId) }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "confirmed",
+            "receipt": "={{ JSON.stringify($('Confirm the matching timer').first().json.response[0]) }}"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "position": [
+        3520,
+        260
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "name": "Confirm the saved receipt",
+      "id": "log-dialpad-call-time-to-syncro-checkSaved",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const rows = $input.all();\nconst row = rows[0]?.json;\nif (\n  rows.length !== 1 ||\n  row.call_key !== $(\"Read the ended call\").first().json.callKey ||\n  row.ticket_id !== String($(\"Find the matching ticket\").first().json.ticketId) ||\n  row.status !== \"confirmed\" ||\n  row.receipt !== JSON.stringify($(\"Confirm the matching timer\").first().json.response[0])\n)\n  throw new Error(\"Syncro timer receipt was not saved\");\nreturn [{ json: $(\"Confirm the matching timer\").first().json }];\n"
+      },
+      "position": [
+        3740,
+        260
+      ]
+    },
+    {
+      "name": "Return the timer result",
+      "id": "log-dialpad-call-time-to-syncro-reply",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json.response) }}",
+        "options": {
+          "responseCode": "={{ $json.statusCode }}",
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Cache-Control",
+                "value": "no-store"
+              }
+            ]
+          }
+        }
+      },
+      "position": [
+        3960,
+        260
+      ]
+    }
+  ],
+  "connections": {
+    "Receive signed Dialpad events": {
+      "main": [
+        [
+          {
+            "node": "Read the compact JWT",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the compact JWT": {
+      "main": [
+        [
+          {
+            "node": "Verify the Dialpad signature",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify the Dialpad signature": {
+      "main": [
+        [
+          {
+            "node": "Read the ended call",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the ended call": {
+      "main": [
+        [
+          {
+            "node": "Ended call?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ended call?": {
+      "main": [
+        [
+          {
+            "node": "Read the call reservation",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Return the timer result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the call reservation": {
+      "main": [
+        [
+          {
+            "node": "Read the saved timer result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the saved timer result": {
+      "main": [
+        [
+          {
+            "node": "New ended call?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "New ended call?": {
+      "main": [
+        [
+          {
+            "node": "Read the call mapping sheet",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Return the timer result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the call mapping sheet": {
+      "main": [
+        [
+          {
+            "node": "Find the matching ticket",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find the matching ticket": {
+      "main": [
+        [
+          {
+            "node": "One ticket found?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "One ticket found?": {
+      "main": [
+        [
+          {
+            "node": "Reserve the call and ticket",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Return the timer result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve the call and ticket": {
+      "main": [
+        [
+          {
+            "node": "Confirm the reserved ticket",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm the reserved ticket": {
+      "main": [
+        [
+          {
+            "node": "Create the Syncro ticket timer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create the Syncro ticket timer": {
+      "main": [
+        [
+          {
+            "node": "Confirm the matching timer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm the matching timer": {
+      "main": [
+        [
+          {
+            "node": "Timer confirmed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Timer confirmed?": {
+      "main": [
+        [
+          {
+            "node": "Save the timer receipt",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Return the timer result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save the timer receipt": {
+      "main": [
+        [
+          {
+            "node": "Confirm the saved receipt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm the saved receipt": {
+      "main": [
+        [
+          {
+            "node": "Return the timer result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
