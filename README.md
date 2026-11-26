@@ -1174,6 +1174,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Get n8n Creator Leaderboard Statistics](workflows/get-n8n-creator-leaderboard-statistics/) - Look up a creator and their popular workflows in the community leaderboard.
 - [Index Crop Images in Qdrant](workflows/index-crop-images-in-qdrant/) - Create image embeddings for a Cloud Storage dataset and upsert them into Qdrant.
 - [Rebuild Company Knowledge from Drive](workflows/rebuild-company-knowledge-from-drive/) - Clear and rebuild a Qdrant knowledge collection from a Google Drive folder.
+- [Extract Structured Data from Images with Gemini](workflows/extract-structured-data-from-images-with-gemini/) - Send an image URL and your output fields to a webhook. Gemini extracts matching data and returns it in the HTTP response.
 
 ## E-commerce
 
