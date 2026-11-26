@@ -1,0 +1,684 @@
+{
+  "name": "Post RSS Articles with Image Cards to Bluesky",
+  "nodes": [
+    {
+      "id": "post-rss-image-cards-to-bluesky-0",
+      "name": "New RSS articles",
+      "type": "n8n-nodes-base.rssFeedReadTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "feedUrl": "https://example.com/rss.xml",
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "post-rss-image-cards-to-bluesky-1",
+      "name": "Prepare this article",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        260,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function cleanText(value) {\n  const entities = { amp: \"&\", lt: \"<\", gt: \">\", quot: '\"', apos: \"'\", nbsp: \" \" };\n  return String(value ?? \"\")\n    .replace(/<(?:script|style)\\b[^>]*>[\\s\\S]*?<\\/(?:script|style)>/gi, \" \")\n    .replace(/<[^>]*>/g, \" \")\n    .replace(/&(#(?:x[\\da-f]+|\\d+)|amp|lt|gt|quot|apos|nbsp);/gi, (entity, name) => {\n      if (name[0] !== \"#\") return entities[name.toLowerCase()] ?? entity;\n      const n = /^#x/i.test(name) ? Number.parseInt(name.slice(2), 16) : Number(name.slice(1));\n      return n > 0 && n <= 0x10ffff && !(n >= 0xd800 && n <= 0xdfff)\n        ? String.fromCodePoint(n)\n        : entity;\n    })\n    .replace(/\\s+/g, \" \")\n    .trim();\n}\n\nfunction publicUrl(value) {\n  if (typeof value !== \"string\") return \"\";\n  const match = value.match(\n    /^https?:\\/\\/[a-z0-9][a-z0-9.-]*[a-z0-9](?::(\\d{1,5}))?(?:[/?#][^\\s\"'<>\\\\]*)?$/i,\n  );\n  return match && (!match[1] || Number(match[1]) <= 65535) ? value : \"\";\n}\n\nfunction keyForArticle(uri, timestamp) {\n  let hash = 2166136261;\n  for (const ch of uri) hash = Math.imul(hash ^ ch.codePointAt(0), 16777619);\n  hash >>>= 0;\n  const micros = BigInt(timestamp) * 1000n + BigInt((hash >>> 10) % 1000);\n  if (micros < 0n || micros >= 1n << 53n)\n    throw new Error(\"RSS publication time falls outside the Bluesky record key range\");\n  let value = (micros << 10n) | BigInt(hash & 1023);\n  let key = \"\";\n  const alphabet = \"234567abcdefghijklmnopqrstuvwxyz\";\n  for (let i = 0; i < 13; i++) {\n    key = alphabet[Number(value & 31n)] + key;\n    value >>= 5n;\n  }\n  return key;\n}\n\nfunction limitText(text, limit) {\n  const segmenter = new Intl.Segmenter(undefined, { granularity: \"grapheme\" });\n  let result = \"\",\n    bytes = 0,\n    count = 0;\n  const utf8 = new TextEncoder();\n  for (const { segment } of segmenter.segment(text)) {\n    bytes += utf8.encode(segment).length;\n    if (count++ === limit || bytes > 3000) break;\n    result += segment;\n  }\n  return result.trimEnd();\n}\n\nfunction planArticle(item, override = \"\") {\n  const uri = publicUrl(item.link);\n  const title = cleanText(item.title);\n  const description = cleanText(item.contentSnippet ?? item.description ?? item.content);\n  const text = limitText(\n    cleanText(item[\"content:encodedSnippet\"] ?? item[\"content:encoded\"]) || description || title,\n    200,\n  );\n  const timestamp = Date.parse(item.isoDate ?? item.pubDate ?? item.published);\n  const imageUrl = publicUrl(override || item.enclosure?.url);\n  if (!uri || !title || !Number.isSafeInteger(timestamp) || timestamp < 0 || !imageUrl) {\n    return {\n      valid: false,\n      uri,\n      reason: \"Expected a title, dated article link and a public image URL\",\n    };\n  }\n  const rkey = keyForArticle(uri, timestamp);\n  return {\n    valid: true,\n    uri,\n    title,\n    description,\n    text,\n    timestamp,\n    rkey,\n    imageUrl,\n    declaredMime: override ? \"\" : String(item.enclosure?.type ?? \"\"),\n  };\n}\n\nconst override = \"\";\nconst item = planArticle($json, override);\nreturn { json: item };\n"
+      }
+    },
+    {
+      "id": "post-rss-image-cards-to-bluesky-2",
+      "name": "Publish one article at a time",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        520,
+        0
+      ],
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      }
+    },
+    {
+      "id": "post-rss-image-cards-to-bluesky-3",
+      "name": "Article includes an image URL?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        780,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "post-rss-image-cards-to-bluesky-condition-3",
+              "leftValue": "={{ $json.valid }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "post-rss-image-cards-to-bluesky-4",
+      "name": "Download this article’s image",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1040,
+        0
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.imageUrl }}",
+        "authentication": "none",
+        "options": {
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "outputPropertyName": "data",
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "post-rss-image-cards-to-bluesky-5",
+      "name": "Validate the thumbnail bytes",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1300,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function thumbnailType(input, reported = \"\", declared = \"\") {\n  const bytes = new Uint8Array(input);\n  if (bytes.length < 16 || bytes.length > 1_000_000) return null;\n  const has = (at, prefix) => [...prefix].every((byte, i) => bytes[at + i] === byte);\n  const data = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);\n  let mime = null;\n  if (\n    bytes.length >= 45 &&\n    has(0, [137, 80, 78, 71, 13, 10, 26, 10]) &&\n    has(8, [0, 0, 0, 13, 73, 72, 68, 82]) &&\n    data.getUint32(16) &&\n    data.getUint32(20) &&\n    has(bytes.length - 12, [0, 0, 0, 0, 73, 69, 78, 68])\n  )\n    mime = \"image/png\";\n  else if (has(0, [255, 216, 255]) && has(bytes.length - 2, [255, 217])) mime = \"image/jpeg\";\n  else if (\n    (has(0, [71, 73, 70, 56, 55, 97]) || has(0, [71, 73, 70, 56, 57, 97])) &&\n    data.getUint16(6, true) &&\n    data.getUint16(8, true) &&\n    bytes.at(-1) === 59\n  )\n    mime = \"image/gif\";\n  else if (\n    bytes.length >= 20 &&\n    has(0, [82, 73, 70, 70]) &&\n    data.getUint32(4, true) === bytes.length - 8 &&\n    has(8, [87, 69, 66, 80, 86, 80, 56]) &&\n    [32, 76, 88].includes(bytes[15])\n  )\n    mime = \"image/webp\";\n  for (const raw of [reported, declared]) {\n    const type = String(raw).split(\";\")[0].trim().toLowerCase().replace(\"image/jpg\", \"image/jpeg\");\n    if (type && type !== \"application/octet-stream\" && type !== mime) return null;\n  }\n  return mime;\n}\n\nconst item = $input.first();\nconst { statusCode, headers } = item.json;\nconst article = $(\"Prepare this article\").item.json;\nif (statusCode !== 200 || !item.binary?.data)\n  return [\n    {\n      json: {\n        valid: false,\n        article: article.uri,\n        reason: \"The enclosure returned HTTP \" + statusCode,\n      },\n    },\n  ];\nconst bytes = await this.helpers.getBinaryDataBuffer(0, \"data\");\nconst mime = thumbnailType(bytes, headers[\"content-type\"], article.declaredMime);\nif (!mime)\n  return [\n    { json: { valid: false, article: article.uri, reason: \"Unsupported image content or size\" } },\n  ];\nitem.binary.data.mimeType = mime;\nreturn [{ json: { valid: true, mime, size: bytes.length }, binary: item.binary }];\n"
+      }
+    },
+    {
+      "id": "post-rss-image-cards-to-bluesky-6",
+      "name": "Is the thumbnail valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1560,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "post-rss-image-cards-to-bluesky-condition-6",
+              "leftValue": "={{ $json.valid }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "post-rss-image-cards-to-bluesky-7",
+      "name": "Start a Bluesky session",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1820,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://bsky.social/xrpc/com.atproto.server.createSession",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ ({}) }}",
+        "options": {
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "post-rss-image-cards-to-bluesky-8",
+      "name": "Validate the Bluesky session",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2080,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function checkedSession(body) {\n  if (\n    !/^did:[a-z0-9]+:[A-Za-z0-9._:%-]+$/.test(body?.did ?? \"\") ||\n    typeof body?.accessJwt !== \"string\" ||\n    !/^[A-Za-z0-9_.-]+$/.test(body.accessJwt)\n  )\n    throw new Error(\"Bluesky returned an invalid session\");\n  return { repo: body.did, token: body.accessJwt };\n}\n\nreturn { json: checkedSession($json) };\n"
+      }
+    },
+    {
+      "id": "post-rss-image-cards-to-bluesky-9",
+      "name": "Check the post’s record key",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2340,
+        0
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "https://bsky.social/xrpc/com.atproto.repo.getRecord",
+        "authentication": "none",
+        "sendHeaders": true,
+        "specifyHeaders": "keypair",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ \"Bearer \" + $('Validate the Bluesky session').item.json.token }}"
+            }
+          ]
+        },
+        "sendQuery": true,
+        "specifyQuery": "keypair",
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "repo",
+              "value": "={{ $('Validate the Bluesky session').item.json.repo }}"
+            },
+            {
+              "name": "collection",
+              "value": "app.bsky.feed.post"
+            },
+            {
+              "name": "rkey",
+              "value": "={{ $('Prepare this article').item.json.rkey }}"
+            }
+          ]
+        },
+        "options": {
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "post-rss-image-cards-to-bluesky-10",
+      "name": "Check whether the article was already posted",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2600,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function assertPostReceipt(body, expectedUri) {\n  if (\n    body?.uri !== expectedUri ||\n    typeof body.cid !== \"string\" ||\n    !/^b[a-z2-7]{20,}$/.test(body.cid)\n  ) {\n    throw new Error(\"Bluesky did not confirm the expected post URI and CID\");\n  }\n  return { uri: body.uri, cid: body.cid };\n}\n\nfunction findPost(status, body, item, expectedUri) {\n  if ([400, 404].includes(status) && body?.error === \"RecordNotFound\") return null;\n  if (status !== 200) throw new Error(\"Could not check the Bluesky record: HTTP \" + status);\n  const receipt = assertPostReceipt(body, expectedUri);\n  const embed = body.value?.embed;\n  if (\n    body.value?.$type !== \"app.bsky.feed.post\" ||\n    embed?.$type !== \"app.bsky.embed.external\" ||\n    embed.external?.uri !== item.uri ||\n    embed.external?.thumb?.$type !== \"blob\"\n  )\n    throw new Error(\"The Bluesky record key is occupied by a different post\");\n  return { status: \"already_posted\", ...receipt };\n}\n\nconst article = $(\"Prepare this article\").item.json;\nconst uri =\n  \"at://\" +\n  $(\"Validate the Bluesky session\").item.json.repo +\n  \"/app.bsky.feed.post/\" +\n  article.rkey;\nconst previous = findPost($json.statusCode, $json.body, article, uri);\nreturn { json: { create: !previous, receipt: previous, uri } };\n"
+      }
+    },
+    {
+      "id": "post-rss-image-cards-to-bluesky-11",
+      "name": "Post still needs creation?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2860,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "post-rss-image-cards-to-bluesky-condition-11",
+              "leftValue": "={{ $json.create }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "post-rss-image-cards-to-bluesky-12",
+      "name": "Restore this article’s thumbnail",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3120,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const item = $(\"Validate the thumbnail bytes\").item;\nreturn [{ json: item.json, binary: item.binary }];\n"
+      }
+    },
+    {
+      "id": "post-rss-image-cards-to-bluesky-13",
+      "name": "Upload this thumbnail to Bluesky",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3380,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://bsky.social/xrpc/com.atproto.repo.uploadBlob",
+        "authentication": "none",
+        "sendHeaders": true,
+        "specifyHeaders": "keypair",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ \"Bearer \" + $('Validate the Bluesky session').item.json.token }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "data",
+        "options": {
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "post-rss-image-cards-to-bluesky-14",
+      "name": "Build the article link card",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3640,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function postWithThumbnail(item, did, body, mime, size, createdAt) {\n  const thumb = body?.blob;\n  if (\n    thumb?.$type !== \"blob\" ||\n    !/^b[a-z2-7]{20,}$/.test(thumb.ref?.$link ?? \"\") ||\n    thumb.mimeType !== mime ||\n    thumb.size !== size\n  )\n    throw new Error(\"Bluesky did not confirm the uploaded image bytes\");\n  return {\n    repo: did,\n    collection: \"app.bsky.feed.post\",\n    rkey: item.rkey,\n    validate: true,\n    record: {\n      $type: \"app.bsky.feed.post\",\n      text: item.text,\n      langs: [\"es-ES\"],\n      createdAt,\n      embed: {\n        $type: \"app.bsky.embed.external\",\n        external: { uri: item.uri, title: item.title, description: item.description, thumb },\n      },\n    },\n  };\n}\n\nconst { mime, size } = $(\"Validate the thumbnail bytes\").item.json;\nreturn {\n  json: postWithThumbnail(\n    $(\"Prepare this article\").item.json,\n    $(\"Validate the Bluesky session\").item.json.repo,\n    $json,\n    mime,\n    size,\n    new Date().toISOString(),\n  ),\n};\n"
+      }
+    },
+    {
+      "id": "post-rss-image-cards-to-bluesky-15",
+      "name": "Create the Bluesky post",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3900,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://bsky.social/xrpc/com.atproto.repo.createRecord",
+        "authentication": "none",
+        "sendHeaders": true,
+        "specifyHeaders": "keypair",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ \"Bearer \" + $('Validate the Bluesky session').item.json.token }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "post-rss-image-cards-to-bluesky-16",
+      "name": "Confirm the exact Bluesky post URI",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4160,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function assertPostReceipt(body, expectedUri) {\n  if (\n    body?.uri !== expectedUri ||\n    typeof body.cid !== \"string\" ||\n    !/^b[a-z2-7]{20,}$/.test(body.cid)\n  ) {\n    throw new Error(\"Bluesky did not confirm the expected post URI and CID\");\n  }\n  return { uri: body.uri, cid: body.cid };\n}\n\nconst uri = $(\"Check whether the article was already posted\").item.json.uri;\nif ($json.statusCode < 200 || $json.statusCode >= 300)\n  throw new Error(\"Bluesky creation was not confirmed. Check \" + uri + \" before trying again.\");\nreturn { json: { status: \"posted\", ...assertPostReceipt($json.body, uri) } };\n"
+      }
+    },
+    {
+      "id": "post-rss-image-cards-to-bluesky-17",
+      "name": "Return the existing post",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4420,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return { json: $json.receipt };\n"
+      }
+    }
+  ],
+  "connections": {
+    "New RSS articles": {
+      "main": [
+        [
+          {
+            "node": "Prepare this article",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare this article": {
+      "main": [
+        [
+          {
+            "node": "Publish one article at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Article includes an image URL?": {
+      "main": [
+        [
+          {
+            "node": "Download this article’s image",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Publish one article at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download this article’s image": {
+      "main": [
+        [
+          {
+            "node": "Validate the thumbnail bytes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate the thumbnail bytes": {
+      "main": [
+        [
+          {
+            "node": "Is the thumbnail valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is the thumbnail valid?": {
+      "main": [
+        [
+          {
+            "node": "Start a Bluesky session",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Publish one article at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start a Bluesky session": {
+      "main": [
+        [
+          {
+            "node": "Validate the Bluesky session",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate the Bluesky session": {
+      "main": [
+        [
+          {
+            "node": "Check the post’s record key",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check the post’s record key": {
+      "main": [
+        [
+          {
+            "node": "Check whether the article was already posted",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check whether the article was already posted": {
+      "main": [
+        [
+          {
+            "node": "Post still needs creation?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Post still needs creation?": {
+      "main": [
+        [
+          {
+            "node": "Restore this article’s thumbnail",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Return the existing post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore this article’s thumbnail": {
+      "main": [
+        [
+          {
+            "node": "Upload this thumbnail to Bluesky",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload this thumbnail to Bluesky": {
+      "main": [
+        [
+          {
+            "node": "Build the article link card",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build the article link card": {
+      "main": [
+        [
+          {
+            "node": "Create the Bluesky post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create the Bluesky post": {
+      "main": [
+        [
+          {
+            "node": "Confirm the exact Bluesky post URI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm the exact Bluesky post URI": {
+      "main": [
+        [
+          {
+            "node": "Publish one article at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Return the existing post": {
+      "main": [
+        [
+          {
+            "node": "Publish one article at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Publish one article at a time": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Article includes an image URL?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC",
+    "saveDataErrorExecution": "none",
+    "saveDataSuccessExecution": "none",
+    "saveManualExecutions": false,
+    "saveExecutionProgress": false
+  }
+}

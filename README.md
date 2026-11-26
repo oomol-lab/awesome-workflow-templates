@@ -1079,6 +1079,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Publish Selected Social Media Upload](workflows/publish-selected-social-media-upload/) - Publish a photo or video to one selected social platform through Upload-Post.
 - [Publish Drive Reels to Instagram](workflows/publish-drive-reels-to-instagram/) - Generate a caption for each Drive video, track it in Sheets, and publish a Reel after processing.
 - [RSS to Mastodon Poster](workflows/rss-to-mastodon-poster/) - Poll an RSS or Atom feed every 10 minutes, filter unseen items using persistent state, and publish new entries to Mastodon.
+- [Post RSS Articles with Image Cards to Bluesky](workflows/post-rss-image-cards-to-bluesky/) - Publish each new RSS article to Bluesky with its own link, title, description, and image thumbnail.
 
 ## Education
 
