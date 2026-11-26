@@ -1041,6 +1041,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Summarize YouTube Video and Notify](workflows/summarize-youtube-video-and-notify/) - Summarize a YouTube transcript, return the video details and notify Telegram.
 - [Add Audio Narration to WordPress Articles](workflows/add-narration-to-wordpress-articles/) - Turn a WordPress article or its summary into MP3 audio and place the player above the existing post.
 - [Return Speech as an MP3 from a Webhook](workflows/return-speech-mp3-from-webhook/) - Send text to a webhook and get an AI-generated ElevenLabs MP3 in the same HTTP response.
+- [Summarize YouTube Videos from Public Captions](workflows/summarize-youtube-public-captions/) - Submit a YouTube video URL and get a summary and key points based on its public captions.
 
 ## Recruiting
 
