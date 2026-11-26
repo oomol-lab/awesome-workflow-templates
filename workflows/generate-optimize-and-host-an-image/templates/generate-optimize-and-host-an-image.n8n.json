@@ -1,0 +1,433 @@
+{
+  "name": "Generate, Optimize, and Host an Image",
+  "nodes": [
+    {
+      "id": "generate-optimize-and-host-an-image-0",
+      "name": "Start image workflow",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "generate-optimize-and-host-an-image-1",
+      "name": "Set the illustration description",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function generationPrompt(description) {\n  if (typeof description !== \"string\" || !description.trim()) {\n    throw new Error(\"Enter an image description before running the workflow\");\n  }\n  return `Create a minimalist professional illustration of ${description.trim()}. Use a clean, modern, tech-focused composition with two or three main colors, soft shadows and subtle depth. Put the main subject at the focal point, with supporting elements and subtle connections. Leave about 40% white space and use no text overlay. Use crisp edges, high contrast, matte surfaces, and light from the upper left. Compose it as a square.`;\n}\n\nreturn {\n  json: {\n    ...{ model: \"gpt-image-2.5-flare\", n: 1, size: \"1024x1024\", output_format: \"png\" },\n    prompt: generationPrompt(\"A person balancing AI autonomy with human oversight\"),\n  },\n};\n"
+      }
+    },
+    {
+      "id": "generate-optimize-and-host-an-image-2",
+      "name": "Generate a square PNG",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        480,
+        300
+      ],
+      "parameters": {
+        "options": {
+          "timeout": 180000,
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          }
+        },
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "method": "POST",
+        "url": "https://api.openai.com/v1/images/generations",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}"
+      }
+    },
+    {
+      "id": "generate-optimize-and-host-an-image-3",
+      "name": "Check the original PNG",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function inspectPng(response, decode) {\n  const encoded =\n    Array.isArray(response?.data) && response.data.length === 1\n      ? response.data[0]?.b64_json\n      : undefined;\n  if (\n    typeof encoded !== \"string\" ||\n    !encoded ||\n    encoded.length > 10_000_000 ||\n    encoded.length % 4 !== 0 ||\n    !/^[A-Za-z0-9+/]+={0,2}$/.test(encoded) ||\n    (response.output_format && response.output_format !== \"png\")\n  ) {\n    throw new Error(\"OpenAI did not return one base64 PNG image\");\n  }\n  const bytes = decode(encoded);\n  const signature = [137, 80, 78, 71, 13, 10, 26, 10];\n  if (bytes.length < 45 || !signature.every((byte, index) => bytes[index] === byte)) {\n    throw new Error(\"OpenAI returned an invalid PNG signature\");\n  }\n\n  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);\n  let hasImageData = false;\n  let offset = 8;\n  while (offset + 12 <= bytes.length) {\n    const length = view.getUint32(offset);\n    const end = offset + 12 + length;\n    if (end > bytes.length) break;\n    const chunk = String.fromCharCode(...bytes.subarray(offset + 4, offset + 8));\n    if (\n      offset === 8 &&\n      (chunk !== \"IHDR\" ||\n        length !== 13 ||\n        view.getUint32(offset + 8) !== 1024 ||\n        view.getUint32(offset + 12) !== 1024)\n    ) {\n      throw new Error(\"OpenAI did not return the requested 1024 × 1024 PNG\");\n    }\n    if (chunk === \"IDAT\" && length > 0) hasImageData = true;\n    if (chunk === \"IEND\") {\n      if (hasImageData && length === 0 && end === bytes.length) return { bytes, encoded };\n      break;\n    }\n    offset = end;\n  }\n  throw new Error(\"OpenAI returned an incomplete PNG\");\n}\n\nconst { encoded } = inspectPng($json, (value) => Buffer.from(value, \"base64\"));\nreturn { json: { encoded } };\n"
+      }
+    },
+    {
+      "id": "generate-optimize-and-host-an-image-4",
+      "name": "Prepare the original PNG",
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        960,
+        300
+      ],
+      "parameters": {
+        "operation": "toBinary",
+        "sourceProperty": "encoded",
+        "binaryPropertyName": "data",
+        "options": {
+          "fileName": "original.png",
+          "mimeType": "image/png",
+          "addBOM": false
+        }
+      }
+    },
+    {
+      "id": "generate-optimize-and-host-an-image-5",
+      "name": "Host the original on ImgBB",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        300
+      ],
+      "parameters": {
+        "options": {
+          "timeout": 180000,
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          }
+        },
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "method": "POST",
+        "url": "https://api.imgbb.com/1/upload",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "image",
+              "parameterType": "formBinaryData",
+              "inputDataFieldName": "data"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "generate-optimize-and-host-an-image-6",
+      "name": "Read the original ImgBB link",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1440,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function imgbbReceipt(response) {\n  const item = response?.data;\n  const size = Number(item?.size);\n  if (\n    response?.success !== true ||\n    response.status !== 200 ||\n    typeof item?.id !== \"string\" ||\n    !/^[A-Za-z0-9_-]+$/.test(item.id) ||\n    typeof item.url !== \"string\" ||\n    !/^https:\\/\\/i\\.ibb\\.co\\/[A-Za-z0-9_-]+\\/[A-Za-z0-9_%.~-]+$/i.test(item.url) ||\n    !Number.isSafeInteger(size) ||\n    size < 1\n  ) {\n    throw new Error(\"ImgBB did not confirm an uploaded image with a direct HTTPS URL\");\n  }\n  return { url: item.url, size };\n}\n\nreturn { json: imgbbReceipt($json) };\n"
+      }
+    },
+    {
+      "id": "generate-optimize-and-host-an-image-7",
+      "name": "Optimize the hosted PNG in TinyPNG",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1680,
+        300
+      ],
+      "parameters": {
+        "options": {
+          "timeout": 180000,
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          }
+        },
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "method": "POST",
+        "url": "https://api.tinify.com/shrink",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { source: { url: $json.url } } }}"
+      }
+    },
+    {
+      "id": "generate-optimize-and-host-an-image-8",
+      "name": "Check the compression receipt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1920,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function checkShrink({ url, id, info, outputMime }) {\n  const match =\n    typeof url === \"string\" && /^https:\\/\\/api\\.tinify\\.com\\/output\\/([A-Za-z0-9_-]+)$/.exec(url);\n  if (!match || (id !== undefined && id !== match[1])) {\n    throw new Error(\"Tinify returned an invalid output URL\");\n  }\n  if (info?.type !== outputMime || !Number.isSafeInteger(info.size) || info.size < 1) {\n    throw new Error(\"Tinify returned invalid output metadata\");\n  }\n  return { imageId: match[1], size: info.size };\n}\n\nfunction compressionReceipt(original, input, result) {\n  if (\n    input?.type !== \"image/png\" ||\n    input.size !== original.size ||\n    result?.width !== 1024 ||\n    result.height !== 1024 ||\n    !Number.isSafeInteger(result.size) ||\n    result.size < 1 ||\n    result.size > input.size\n  ) {\n    throw new Error(\"Tinify returned unexpected metadata for the original PNG\");\n  }\n  return { originalUrl: original.url, originalBytes: input.size, optimizedBytes: result.size };\n}\n\nconst original = $(\"Read the original ImgBB link\").item.json;\nconst result = $json.output;\ncheckShrink({ url: result?.url, info: result, outputMime: \"image/png\" });\nreturn { json: { url: result.url, sizes: compressionReceipt(original, $json.input, result) } };\n"
+      }
+    },
+    {
+      "id": "generate-optimize-and-host-an-image-9",
+      "name": "Download the optimized PNG",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2160,
+        300
+      ],
+      "parameters": {
+        "options": {
+          "timeout": 180000,
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "outputPropertyName": "data"
+            }
+          },
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          }
+        },
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "method": "GET",
+        "url": "={{ $json.url }}"
+      }
+    },
+    {
+      "id": "generate-optimize-and-host-an-image-10",
+      "name": "Prepare the optimized PNG",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2400,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function checkBytes({ bytes, mime, outputMime, expectedSize }) {\n  const at = (offset, length) => Array.from(bytes.subarray(offset, offset + length));\n  const ascii = (offset, length) => String.fromCharCode(...at(offset, length));\n  const signature = (expected) => expected.every((value, index) => bytes[index] === value);\n  const headers = {\n    \"image/png\": () => signature([137, 80, 78, 71, 13, 10, 26, 10]),\n    \"image/jpeg\": () => signature([255, 216, 255]),\n    \"image/webp\": () => ascii(0, 4) === \"RIFF\" && ascii(8, 4) === \"WEBP\",\n    \"image/avif\": () => ascii(4, 4) === \"ftyp\" && [\"avif\", \"avis\"].includes(ascii(8, 4)),\n    \"image/jxl\": () =>\n      signature([255, 10]) || signature([0, 0, 0, 12, 74, 88, 76, 32, 13, 10, 135, 10]),\n  };\n  if (\n    String(mime ?? \"\")\n      .split(\";\")[0]\n      .toLowerCase() !== outputMime ||\n    bytes.length !== expectedSize ||\n    !headers[outputMime]?.()\n  ) {\n    throw new Error(\"Tinify did not return the complete expected image\");\n  }\n}\n\nconst item = $input.item;\nconst sizes = $(\"Check the compression receipt\").item.json.sizes;\nconst bytes = await helpers.getBinaryDataBuffer($itemIndex, \"data\");\ncheckBytes({\n  bytes,\n  mime: item.binary.data.mimeType,\n  outputMime: \"image/png\",\n  expectedSize: sizes.optimizedBytes,\n});\nitem.binary.data.fileName = \"optimized.png\";\nreturn { json: sizes, binary: item.binary };\n"
+      }
+    },
+    {
+      "id": "generate-optimize-and-host-an-image-11",
+      "name": "Host the optimized PNG on ImgBB",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2640,
+        300
+      ],
+      "parameters": {
+        "options": {
+          "timeout": 180000,
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          }
+        },
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "method": "POST",
+        "url": "https://api.imgbb.com/1/upload",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "image",
+              "parameterType": "formBinaryData",
+              "inputDataFieldName": "data"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "generate-optimize-and-host-an-image-12",
+      "name": "Get the public image link",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2880,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function imgbbReceipt(response) {\n  const item = response?.data;\n  const size = Number(item?.size);\n  if (\n    response?.success !== true ||\n    response.status !== 200 ||\n    typeof item?.id !== \"string\" ||\n    !/^[A-Za-z0-9_-]+$/.test(item.id) ||\n    typeof item.url !== \"string\" ||\n    !/^https:\\/\\/i\\.ibb\\.co\\/[A-Za-z0-9_-]+\\/[A-Za-z0-9_%.~-]+$/i.test(item.url) ||\n    !Number.isSafeInteger(size) ||\n    size < 1\n  ) {\n    throw new Error(\"ImgBB did not confirm an uploaded image with a direct HTTPS URL\");\n  }\n  return { url: item.url, size };\n}\n\nconst hosted = imgbbReceipt($json);\nconst sizes = $(\"Check the compression receipt\").item.json.sizes;\nif (hosted.size !== sizes.optimizedBytes)\n  throw new Error(\"ImgBB did not confirm the expected optimized file size\");\nreturn { json: { ...sizes, optimizedUrl: hosted.url } };\n"
+      }
+    }
+  ],
+  "connections": {
+    "Start image workflow": {
+      "main": [
+        [
+          {
+            "node": "Set the illustration description",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set the illustration description": {
+      "main": [
+        [
+          {
+            "node": "Generate a square PNG",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate a square PNG": {
+      "main": [
+        [
+          {
+            "node": "Check the original PNG",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check the original PNG": {
+      "main": [
+        [
+          {
+            "node": "Prepare the original PNG",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare the original PNG": {
+      "main": [
+        [
+          {
+            "node": "Host the original on ImgBB",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Host the original on ImgBB": {
+      "main": [
+        [
+          {
+            "node": "Read the original ImgBB link",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the original ImgBB link": {
+      "main": [
+        [
+          {
+            "node": "Optimize the hosted PNG in TinyPNG",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Optimize the hosted PNG in TinyPNG": {
+      "main": [
+        [
+          {
+            "node": "Check the compression receipt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check the compression receipt": {
+      "main": [
+        [
+          {
+            "node": "Download the optimized PNG",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download the optimized PNG": {
+      "main": [
+        [
+          {
+            "node": "Prepare the optimized PNG",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare the optimized PNG": {
+      "main": [
+        [
+          {
+            "node": "Host the optimized PNG on ImgBB",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Host the optimized PNG on ImgBB": {
+      "main": [
+        [
+          {
+            "node": "Get the public image link",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
