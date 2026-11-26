@@ -1,0 +1,296 @@
+{
+  "name": "Append Google Ads Keyword Ideas to Sheets",
+  "active": false,
+  "nodes": [
+    {
+      "id": "append-google-ads-keyword-ideas-to-sheets-start",
+      "name": "Start keyword research",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        260
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "append-google-ads-keyword-ideas-to-sheets-settings",
+      "name": "Set seed keywords and targeting",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        260
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function prepareKeywordResearch(settings) {\n  const {\n    keywords,\n    geoTargetConstants,\n    language,\n    network,\n    customerId,\n    managerId,\n    pageSize,\n    spreadsheetId,\n    sheetName,\n  } = settings;\n  if (\n    !Array.isArray(keywords) ||\n    keywords.length < 1 ||\n    keywords.length > 20 ||\n    keywords.some(\n      (keyword) => typeof keyword !== \"string\" || !keyword.trim() || keyword.length > 80,\n    )\n  ) {\n    throw new Error(\"Enter 1 to 20 seed keywords\");\n  }\n  if (\n    !Array.isArray(geoTargetConstants) ||\n    geoTargetConstants.length > 10 ||\n    geoTargetConstants.some(\n      (geo) => typeof geo !== \"string\" || !/^geoTargetConstants\\/[1-9]\\d{0,9}$/.test(geo),\n    )\n  ) {\n    throw new Error(\"Enter up to 10 geoTargetConstants resource names\");\n  }\n  if (\n    typeof language !== \"string\" ||\n    (language && !/^languageConstants\\/[1-9]\\d{0,9}$/.test(language))\n  ) {\n    throw new Error(\"Enter a languageConstants resource name or leave it empty\");\n  }\n  if (![\"GOOGLE_SEARCH\", \"GOOGLE_SEARCH_AND_PARTNERS\"].includes(network))\n    throw new Error(\"Choose a Google Ads search network\");\n  if (\n    typeof customerId !== \"string\" ||\n    !/^\\d{10}$/.test(customerId) ||\n    typeof managerId !== \"string\" ||\n    (managerId && !/^\\d{10}$/.test(managerId))\n  ) {\n    throw new Error(\"Enter the 10-digit Ads client ID and optional manager ID without hyphens\");\n  }\n  if (!Number.isInteger(pageSize) || pageSize < 1 || pageSize > 500)\n    throw new Error(\"Page size must be between 1 and 500\");\n  if (\n    typeof spreadsheetId !== \"string\" ||\n    !/^[A-Za-z0-9_-]{12,}$/.test(spreadsheetId) ||\n    spreadsheetId === \"YOUR_SPREADSHEET_ID\" ||\n    typeof sheetName !== \"string\" ||\n    !sheetName.trim() ||\n    sheetName.length > 100\n  ) {\n    throw new Error(\"Set the spreadsheet ID and sheet tab name\");\n  }\n  return {\n    endpoint:\n      \"https://googleads.googleapis.com/v26/customers/\" + customerId + \":generateKeywordIdeas\",\n    headers: managerId ? { \"login-customer-id\": managerId } : {},\n    body: {\n      keywordSeed: { keywords: keywords.map((keyword) => keyword.trim()) },\n      geoTargetConstants,\n      ...(language ? { language } : {}),\n      includeAdultKeywords: false,\n      pageSize,\n      keywordPlanNetwork: network,\n    },\n    spreadsheetId,\n    sheetName,\n    range: \"'\" + sheetName.replace(/'/g, \"''\") + \"'!A:F\",\n  };\n}\n\nconst settings = {\n  keywords: [\"desk lamp\", \"task lighting\"],\n  geoTargetConstants: [\"geoTargetConstants/2840\"],\n  language: \"languageConstants/1000\",\n  network: \"GOOGLE_SEARCH\",\n  customerId: \"YOUR_ADS_CUSTOMER_ID\",\n  managerId: \"\",\n  pageSize: 200,\n  spreadsheetId: \"YOUR_SPREADSHEET_ID\",\n  sheetName: \"Keyword Ideas\",\n};\nreturn [{ json: prepareKeywordResearch(settings) }];\n"
+      }
+    },
+    {
+      "id": "append-google-ads-keyword-ideas-to-sheets-ads",
+      "name": "Get all keyword ideas",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        260
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.endpoint }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "oAuth2Api",
+        "sendHeaders": true,
+        "specifyHeaders": "json",
+        "jsonHeaders": "={{ JSON.stringify($json.headers) }}",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.body) }}",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          },
+          "pagination": {
+            "pagination": {
+              "paginationMode": "updateAParameterInEachRequest",
+              "parameters": {
+                "parameters": [
+                  {
+                    "type": "body",
+                    "name": "pageToken",
+                    "value": "={{ $response.body?.nextPageToken }}"
+                  }
+                ]
+              },
+              "paginationCompleteWhen": "other",
+              "completeExpression": "={{ typeof $response.body?.nextPageToken !== \"string\" || !$response.body.nextPageToken }}",
+              "limitPagesFetched": true,
+              "maxRequests": 20,
+              "requestInterval": 1100
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "append-google-ads-keyword-ideas-to-sheets-collect",
+      "name": "Check all pages and prepare rows",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        260
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function keywordCount(value) {\n  if (value == null) return \"\";\n  if (typeof value === \"number\" && !Number.isSafeInteger(value))\n    throw new Error(\"Google Ads returned an unsafe integer\");\n  if (typeof value !== \"string\" && typeof value !== \"number\")\n    throw new Error(\"Google Ads returned an invalid integer\");\n  const digits = String(value);\n  if (!/^\\d{1,19}$/.test(digits) || BigInt(digits) > 9223372036854775807n) {\n    throw new Error(\"Google Ads returned an invalid nonnegative int64\");\n  }\n  return digits;\n}\n\nfunction bidDisplay(value) {\n  const micros = keywordCount(value);\n  if (micros === \"\") return \"\";\n  const cents = (BigInt(micros) + 5000n) / 10000n;\n  return (cents / 100n).toString() + \".\" + (cents % 100n).toString().padStart(2, \"0\");\n}\n\nfunction keywordRow(idea) {\n  const keyword = idea?.text;\n  const metrics = idea?.keywordIdeaMetrics ?? {};\n  if (\n    typeof keyword !== \"string\" ||\n    !keyword.trim() ||\n    keyword.length > 200 ||\n    typeof metrics !== \"object\" ||\n    Array.isArray(metrics)\n  )\n    throw new Error(\"Google Ads returned an invalid keyword idea\");\n  const competition = metrics.competition ?? \"\";\n  if (![\"\", \"UNSPECIFIED\", \"UNKNOWN\", \"LOW\", \"MEDIUM\", \"HIGH\"].includes(competition)) {\n    throw new Error(\"Google Ads returned an invalid competition value\");\n  }\n  return [\n    keyword,\n    competition,\n    keywordCount(metrics.avgMonthlySearches),\n    keywordCount(metrics.competitionIndex),\n    bidDisplay(metrics.lowTopOfPageBidMicros),\n    bidDisplay(metrics.highTopOfPageBidMicros),\n  ];\n}\n\nfunction collectKeywordPage(previous, response) {\n  if (\n    !response ||\n    typeof response !== \"object\" ||\n    Array.isArray(response) ||\n    response.error ||\n    (response.results !== undefined && !Array.isArray(response.results))\n  ) {\n    throw new Error(\"Google Ads did not return a keyword ideas page\");\n  }\n  const page = response.results ?? [];\n  const token = response.nextPageToken ?? \"\";\n  if (\n    typeof token !== \"string\" ||\n    token.length > 4096 ||\n    (token && previous.tokens.includes(token))\n  ) {\n    throw new Error(\"Google Ads returned an invalid or repeated next page token\");\n  }\n  const rows = [...previous.rows, ...page.map(keywordRow)];\n  const count = previous.count + 1;\n  if (rows.length > 5000 || (token && count >= 20)) {\n    throw new Error(\n      \"Keyword research exceeded 20 pages or 5000 rows. Narrow the seed or targeting and run again.\",\n    );\n  }\n  const reportedSize = keywordCount(response.totalSize);\n  if (reportedSize && previous.totalSize && reportedSize !== previous.totalSize)\n    throw new Error(\"Google Ads total changed between pages\");\n  const totalSize = reportedSize || previous.totalSize;\n  if (\n    totalSize &&\n    (BigInt(rows.length) > BigInt(totalSize) ||\n      (!token && BigInt(rows.length) !== BigInt(totalSize)))\n  ) {\n    throw new Error(\"Google Ads returned an incomplete or inconsistent results list\");\n  }\n  if (new Set(rows.map((row) => row[0])).size !== rows.length)\n    throw new Error(\"Google Ads repeated a keyword across pages\");\n  return {\n    rows,\n    count,\n    tokens: token ? [...previous.tokens, token] : previous.tokens,\n    totalSize,\n    token,\n  };\n}\n\nconst plan = $(\"Set seed keywords and targeting\").first().json;\nlet state = { rows: [], count: 0, tokens: [], totalSize: \"\", token: \"\" };\nconst pages = $input.all();\nfor (const item of pages) {\n  if (item.json.statusCode !== 200) throw new Error(\"Google Ads keyword ideas failed\");\n  state = collectKeywordPage(state, item.json.body);\n}\nif (!pages.length || state.token) throw new Error(\"Google Ads pages are incomplete\");\nreturn [{ json: { ...plan, rows: state.rows, hasRows: state.rows.length > 0 } }];\n"
+      }
+    },
+    {
+      "id": "append-google-ads-keyword-ideas-to-sheets-gate",
+      "name": "Any keyword ideas?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        880,
+        260
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.hasRows }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "append-google-ads-keyword-ideas-to-sheets-append",
+      "name": "Append ideas to Google Sheets",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1100,
+        260
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ \"https://sheets.googleapis.com/v4/spreadsheets/\" + $json.spreadsheetId + \"/values/\" + encodeURIComponent($json.range) + \":append\" }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendQuery": true,
+        "specifyQuery": "keypair",
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "valueInputOption",
+              "value": "RAW"
+            },
+            {
+              "name": "insertDataOption",
+              "value": "INSERT_ROWS"
+            },
+            {
+              "name": "includeValuesInResponse",
+              "value": "true"
+            },
+            {
+              "name": "responseValueRenderOption",
+              "value": "UNFORMATTED_VALUE"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ majorDimension: \"ROWS\", values: $json.rows }) }}",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "append-google-ads-keyword-ideas-to-sheets-confirm",
+      "name": "Confirm the appended rows",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1320,
+        260
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function keywordSheetReceipt(receipt, expected, rows) {\n  const { spreadsheetId, updatedRange, updatedRows, updatedData } = receipt ?? {};\n  const split = typeof updatedRange === \"string\" ? updatedRange.lastIndexOf(\"!\") : -1;\n  const name = split < 0 ? \"\" : updatedRange.slice(0, split);\n  const tab =\n    name.startsWith(\"'\") && name.endsWith(\"'\") ? name.slice(1, -1).replace(/''/g, \"'\") : name;\n  const coordinates =\n    split < 0 ? null : /^A([1-9]\\d*):[A-F]([1-9]\\d*)$/.exec(updatedRange.slice(split + 1));\n  const actual = updatedData?.values;\n  if (\n    spreadsheetId !== expected.spreadsheetId ||\n    tab !== expected.sheetName ||\n    !coordinates ||\n    Number(coordinates[2]) - Number(coordinates[1]) + 1 !== rows.length ||\n    updatedRows !== rows.length ||\n    !Array.isArray(actual) ||\n    actual.length !== rows.length ||\n    !actual.every(\n      (row, index) =>\n        Array.isArray(row) &&\n        row.length <= rows[index].length &&\n        rows[index].every((cell, col) => (row[col] ?? \"\") === cell),\n    )\n  ) {\n    throw new Error(\"Sheets did not confirm these rows. Check the target tab before retrying.\");\n  }\n  return { spreadsheetId, updatedRange, appendedRows: updatedRows };\n}\n\nconst plan = $(\"Check all pages and prepare rows\").first().json;\nconst { body, statusCode } = $input.first().json;\nif (statusCode !== 200 || body?.error)\n  throw new Error(\"Sheets did not confirm the append. Check the target tab before retrying.\");\nreturn [\n  {\n    json: keywordSheetReceipt(\n      { ...body.updates, spreadsheetId: body.spreadsheetId },\n      plan,\n      plan.rows,\n    ),\n  },\n];\n"
+      }
+    },
+    {
+      "id": "append-google-ads-keyword-ideas-to-sheets-empty",
+      "name": "Report no keyword ideas",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1540,
+        260
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return [{ json: { appendedRows: 0 } }];\n"
+      }
+    }
+  ],
+  "connections": {
+    "Start keyword research": {
+      "main": [
+        [
+          {
+            "node": "Set seed keywords and targeting",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set seed keywords and targeting": {
+      "main": [
+        [
+          {
+            "node": "Get all keyword ideas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get all keyword ideas": {
+      "main": [
+        [
+          {
+            "node": "Check all pages and prepare rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check all pages and prepare rows": {
+      "main": [
+        [
+          {
+            "node": "Any keyword ideas?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Any keyword ideas?": {
+      "main": [
+        [
+          {
+            "node": "Append ideas to Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Report no keyword ideas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append ideas to Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Confirm the appended rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
