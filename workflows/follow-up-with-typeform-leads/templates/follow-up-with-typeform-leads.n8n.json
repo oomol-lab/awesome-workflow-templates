@@ -1,0 +1,737 @@
+{
+  "nodes": [
+    {
+      "name": "Receive the Typeform response",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "follow-up-with-typeform-leads",
+        "responseMode": "responseNode",
+        "options": {
+          "rawBody": true
+        }
+      },
+      "id": "follow-up-with-typeform-leads-0",
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "name": "Compute the Typeform signature",
+      "type": "n8n-nodes-base.crypto",
+      "typeVersion": 1,
+      "parameters": {
+        "action": "hmac",
+        "type": "SHA256",
+        "binaryData": true,
+        "binaryPropertyName": "data",
+        "dataPropertyName": "digest",
+        "encoding": "base64",
+        "secret": "={{ (() => { throw new Error(\"Configure the Typeform signing secret\"); })() }}"
+      },
+      "id": "follow-up-with-typeform-leads-1",
+      "position": [
+        200,
+        0
+      ]
+    },
+    {
+      "name": "Check the Typeform signature",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function signedTypeform({ signature, digest }) {\n  if (\n    typeof signature !== \"string\" ||\n    typeof digest !== \"string\" ||\n    !/^sha256=[A-Za-z0-9+/]{43}=$/.test(signature) ||\n    !/^[A-Za-z0-9+/]{43}=$/.test(digest)\n  )\n    return false;\n  let difference = 0;\n  for (let index = 0; index < digest.length; index++)\n    difference |= signature.charCodeAt(index + 7) ^ digest.charCodeAt(index);\n  return difference === 0;\n}\nconst { headers, digest, body } = $input.first().json;\nconst authorized = signedTypeform({ signature: headers[\"typeform-signature\"], digest });\nreturn [{ json: authorized ? { authorized, body } : { authorized } }];\n"
+      },
+      "id": "follow-up-with-typeform-leads-2",
+      "position": [
+        400,
+        0
+      ]
+    },
+    {
+      "name": "Acknowledge the signed response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "parameters": {
+        "respondWith": "noData",
+        "options": {
+          "responseCode": "={{ $json.authorized ? 200 : 401 }}"
+        }
+      },
+      "id": "follow-up-with-typeform-leads-3",
+      "position": [
+        600,
+        0
+      ]
+    },
+    {
+      "name": "Signature valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.authorized }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "follow-up-with-typeform-leads-4",
+      "position": [
+        800,
+        0
+      ]
+    },
+    {
+      "name": "Map the lead and links",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function mapLead({ response, formId, fields, schedulingUrl, presentationUrl }) {\n  if (\n    !response ||\n    response.form_id !== formId ||\n    !/^[a-zA-Z0-9_-]{1,128}$/.test(formId) ||\n    typeof response.token !== \"string\" ||\n    !/^[a-zA-Z0-9_-]{1,160}$/.test(response.token) ||\n    !Array.isArray(response.answers)\n  )\n    throw new Error(\"Expected a completed response from the configured Typeform\");\n  const identifiers = [\n    fields.first,\n    fields.last,\n    fields.department,\n    fields.company,\n    fields.email,\n    fields.interest,\n  ];\n  if (\n    new Set(identifiers).size !== 6 ||\n    identifiers.some((id) => typeof id !== \"string\" || !id || id.startsWith(\"YOUR_\"))\n  ) {\n    throw new Error(\"Configure six distinct Typeform field IDs\");\n  }\n  const answer = (id, types) => {\n    const matching = response.answers.filter((item) => item?.field?.id === id);\n    if (matching.length !== 1 || !types.includes(matching[0].type))\n      throw new Error(\"A required Typeform answer is missing or has the wrong type\");\n    return matching[0].type === \"choice\"\n      ? matching[0].choice?.label\n      : matching[0][matching[0].type];\n  };\n  const text = (val) => {\n    if (typeof val !== \"string\" || !val.trim() || val.length > 500)\n      throw new Error(\"Expected a nonempty Typeform text answer\");\n    return val.trim();\n  };\n  const firstname = text(answer(fields.first, [\"text\"]));\n  const lastname = text(answer(fields.last, [\"text\"]));\n  const industry = text(answer(fields.department, [\"text\", \"choice\"]));\n  const company = text(answer(fields.company, [\"text\"]));\n  const email = text(answer(fields.email, [\"email\"]));\n  if (email.length > 254 || !/^[^\\s@,;<>]+@[^\\s@,;<>]+\\.[^\\s@,;<>]+$/.test(email))\n    throw new Error(\"Expected one valid contact email\");\n  const interested = answer(fields.interest, [\"boolean\"]);\n  if (typeof interested !== \"boolean\")\n    throw new Error(\"Expected a boolean Typeform interest answer\");\n  if (\n    interested &&\n    [schedulingUrl, presentationUrl].some(\n      (url) =>\n        typeof url !== \"string\" ||\n        !/^https:\\/\\/[a-z0-9.-]+\\/[^\\s]+$/i.test(url) ||\n        /\\.invalid\\//i.test(url),\n    )\n  ) {\n    throw new Error(\"Configure the scheduling and presentation links\");\n  }\n  return {\n    key: \"typeform:\" + formId + \":\" + response.token,\n    email,\n    interested,\n    properties: { email, firstname, lastname, industry, company },\n    filter: [{ filters: [{ propertyName: \"email\", operator: \"EQ\", value: email }] }],\n    subject: \"So you're interested in growing your business\",\n    body:\n      \"Hello \" +\n      firstname +\n      \",\\n\\nI'm glad to hear you're interested in our services. You can schedule a call with me here: \" +\n      schedulingUrl +\n      \".\\nUntil then, check out this presentation about how we can help your business: \" +\n      presentationUrl +\n      \".\\nLooking forward to talking to you!\\n\\nBest,\\nTeam\",\n  };\n}\nconst config = {\n  formId: \"YOUR_TYPEFORM_ID\",\n  fields: {\n    first: \"YOUR_FIRST_NAME_FIELD_ID\",\n    last: \"YOUR_LAST_NAME_FIELD_ID\",\n    department: \"YOUR_DEPARTMENT_FIELD_ID\",\n    company: \"YOUR_COMPANY_FIELD_ID\",\n    email: \"YOUR_EMAIL_FIELD_ID\",\n    interest: \"YOUR_INTEREST_FIELD_ID\",\n  },\n  schedulingUrl: \"https://schedule.example.invalid/book\",\n  presentationUrl: \"https://presentation.example.invalid/overview\",\n};\nconst body = $input.first().json.body;\nif (body?.event_type !== \"form_response\" || body.form_response?.form_id !== config.formId)\n  return [];\nreturn [{ json: mapLead({ ...config, response: body.form_response }) }];\n"
+      },
+      "id": "follow-up-with-typeform-leads-5",
+      "position": [
+        1000,
+        0
+      ]
+    },
+    {
+      "name": "Skip reserved submissions",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "rowNotExists",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_RESERVATION_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "response_key",
+              "condition": "eq",
+              "keyValue": "={{ $('Map the lead and links').first().json.key }}"
+            }
+          ]
+        }
+      },
+      "id": "follow-up-with-typeform-leads-6",
+      "position": [
+        1200,
+        0
+      ]
+    },
+    {
+      "name": "Reserve this submission",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_RESERVATION_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "response_key": "={{ $('Map the lead and links').first().json.key }}",
+            "status": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "follow-up-with-typeform-leads-7",
+      "position": [
+        1400,
+        0
+      ]
+    },
+    {
+      "name": "Confirm the reservation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const key = $(\"Map the lead and links\").first().json.key;\nif ($input.first().json.response_key !== key) throw new Error(\"The reservation was not confirmed\");\nreturn [{ json: { key } }];\n"
+      },
+      "id": "follow-up-with-typeform-leads-8",
+      "position": [
+        1600,
+        0
+      ]
+    },
+    {
+      "name": "Find the contact by email",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.hubapi.com/crm/objects/2026-09/contacts/search",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ { filterGroups: $('Map the lead and links').first().json.filter, properties: [\"email\"], limit: 2 } }}",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "follow-up-with-typeform-leads-9",
+      "position": [
+        1800,
+        0
+      ]
+    },
+    {
+      "name": "Check the email match",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function confirmedContact({ record, email, expectedId = \"\", stage = false }) {\n  const id = record?.id;\n  const returnedEmail = record?.properties?.email;\n  if (\n    typeof id !== \"string\" ||\n    !/^[1-9][0-9]*$/.test(id) ||\n    record.archived === true ||\n    (expectedId && expectedId !== \"0\" && id !== expectedId) ||\n    (stage && record.properties?.lifecyclestage !== \"opportunity\") ||\n    ((!stage || returnedEmail != null) &&\n      (typeof returnedEmail !== \"string\" || returnedEmail.toLowerCase() !== email.toLowerCase()))\n  ) {\n    throw new Error(\"HubSpot did not confirm the matching contact\");\n  }\n  return id;\n}\nfunction selectContact({ records, email, paging }) {\n  if (!Array.isArray(records) || records.length > 1 || paging?.nextAfter || paging?.next?.after) {\n    throw new Error(\"HubSpot did not confirm a unique email match\");\n  }\n  return records.length\n    ? { existing: true, recordId: confirmedContact({ record: records[0], email }) }\n    : { existing: false, recordId: \"0\" };\n}\nconst { results: records, paging } = $input.first().json;\nreturn [\n  {\n    json: selectContact({ records, paging, email: $(\"Map the lead and links\").first().json.email }),\n  },\n];\n"
+      },
+      "id": "follow-up-with-typeform-leads-10",
+      "position": [
+        2000,
+        0
+      ]
+    },
+    {
+      "name": "Contact already exists?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.existing }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "follow-up-with-typeform-leads-11",
+      "position": [
+        2200,
+        0
+      ]
+    },
+    {
+      "name": "Save the existing contact",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ \"https://api.hubapi.com/crm/objects/2026-09/contacts/\" + $json.recordId }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ { properties: $('Map the lead and links').first().json.properties } }}",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "follow-up-with-typeform-leads-12",
+      "position": [
+        2400,
+        0
+      ]
+    },
+    {
+      "name": "Create the new contact",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.hubapi.com/crm/objects/2026-09/contacts",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ { properties: $('Map the lead and links').first().json.properties } }}",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "follow-up-with-typeform-leads-13",
+      "position": [
+        2600,
+        160
+      ]
+    },
+    {
+      "name": "Confirm the saved contact",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function confirmedContact({ record, email, expectedId = \"\", stage = false }) {\n  const id = record?.id;\n  const returnedEmail = record?.properties?.email;\n  if (\n    typeof id !== \"string\" ||\n    !/^[1-9][0-9]*$/.test(id) ||\n    record.archived === true ||\n    (expectedId && expectedId !== \"0\" && id !== expectedId) ||\n    (stage && record.properties?.lifecyclestage !== \"opportunity\") ||\n    ((!stage || returnedEmail != null) &&\n      (typeof returnedEmail !== \"string\" || returnedEmail.toLowerCase() !== email.toLowerCase()))\n  ) {\n    throw new Error(\"HubSpot did not confirm the matching contact\");\n  }\n  return id;\n}\nreturn [\n  {\n    json: {\n      recordId: confirmedContact({\n        record: $input.first().json,\n        email: $(\"Map the lead and links\").first().json.email,\n        expectedId: $(\"Check the email match\").first().json.recordId,\n      }),\n    },\n  },\n];\n"
+      },
+      "id": "follow-up-with-typeform-leads-14",
+      "position": [
+        2800,
+        0
+      ]
+    },
+    {
+      "name": "Lead interested?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $('Map the lead and links').first().json.interested }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "follow-up-with-typeform-leads-15",
+      "position": [
+        3000,
+        0
+      ]
+    },
+    {
+      "name": "Move the same contact to opportunity",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ \"https://api.hubapi.com/crm/objects/2026-09/contacts/\" + $json.recordId }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "{\"properties\":{\"lifecyclestage\":\"opportunity\"}}",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "follow-up-with-typeform-leads-16",
+      "position": [
+        3200,
+        0
+      ]
+    },
+    {
+      "name": "Confirm opportunity and recipient",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function confirmedContact({ record, email, expectedId = \"\", stage = false }) {\n  const id = record?.id;\n  const returnedEmail = record?.properties?.email;\n  if (\n    typeof id !== \"string\" ||\n    !/^[1-9][0-9]*$/.test(id) ||\n    record.archived === true ||\n    (expectedId && expectedId !== \"0\" && id !== expectedId) ||\n    (stage && record.properties?.lifecyclestage !== \"opportunity\") ||\n    ((!stage || returnedEmail != null) &&\n      (typeof returnedEmail !== \"string\" || returnedEmail.toLowerCase() !== email.toLowerCase()))\n  ) {\n    throw new Error(\"HubSpot did not confirm the matching contact\");\n  }\n  return id;\n}\nconst email = $(\"Map the lead and links\").first().json.email;\nconfirmedContact({\n  record: $input.first().json,\n  email,\n  expectedId: $(\"Confirm the saved contact\").first().json.recordId,\n  stage: true,\n});\nreturn [\n  {\n    json: {\n      to: email,\n      subject: $(\"Map the lead and links\").first().json.subject,\n      body: $(\"Map the lead and links\").first().json.body,\n    },\n  },\n];\n"
+      },
+      "id": "follow-up-with-typeform-leads-17",
+      "position": [
+        3400,
+        0
+      ]
+    },
+    {
+      "name": "Email the follow-up links",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "sendTo": "={{ $json.to }}",
+        "subject": "={{ $json.subject }}",
+        "emailType": "text",
+        "message": "={{ $json.body }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "follow-up-with-typeform-leads-18",
+      "position": [
+        3600,
+        0
+      ]
+    },
+    {
+      "name": "Confirm Gmail receipt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const { id } = $input.first().json;\nif (typeof id !== \"string\" || !id) throw new Error(\"Gmail did not confirm a sent message\");\nreturn [{ json: { id } }];\n"
+      },
+      "id": "follow-up-with-typeform-leads-19",
+      "position": [
+        3800,
+        0
+      ]
+    },
+    {
+      "name": "Record the follow-up outcome",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_RESERVATION_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "response_key",
+              "condition": "eq",
+              "keyValue": "={{ $('Map the lead and links').first().json.key }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "={{ $('Map the lead and links').first().json.interested ? \"sent\" : \"saved\" }}"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "follow-up-with-typeform-leads-20",
+      "position": [
+        4000,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Receive the Typeform response": {
+      "main": [
+        [
+          {
+            "node": "Compute the Typeform signature",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compute the Typeform signature": {
+      "main": [
+        [
+          {
+            "node": "Check the Typeform signature",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check the Typeform signature": {
+      "main": [
+        [
+          {
+            "node": "Acknowledge the signed response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Acknowledge the signed response": {
+      "main": [
+        [
+          {
+            "node": "Signature valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Signature valid?": {
+      "main": [
+        [
+          {
+            "node": "Map the lead and links",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Map the lead and links": {
+      "main": [
+        [
+          {
+            "node": "Skip reserved submissions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Skip reserved submissions": {
+      "main": [
+        [
+          {
+            "node": "Reserve this submission",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve this submission": {
+      "main": [
+        [
+          {
+            "node": "Confirm the reservation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm the reservation": {
+      "main": [
+        [
+          {
+            "node": "Find the contact by email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find the contact by email": {
+      "main": [
+        [
+          {
+            "node": "Check the email match",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check the email match": {
+      "main": [
+        [
+          {
+            "node": "Contact already exists?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Contact already exists?": {
+      "main": [
+        [
+          {
+            "node": "Save the existing contact",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create the new contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save the existing contact": {
+      "main": [
+        [
+          {
+            "node": "Confirm the saved contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm the saved contact": {
+      "main": [
+        [
+          {
+            "node": "Lead interested?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lead interested?": {
+      "main": [
+        [
+          {
+            "node": "Move the same contact to opportunity",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Record the follow-up outcome",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Move the same contact to opportunity": {
+      "main": [
+        [
+          {
+            "node": "Confirm opportunity and recipient",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm opportunity and recipient": {
+      "main": [
+        [
+          {
+            "node": "Email the follow-up links",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email the follow-up links": {
+      "main": [
+        [
+          {
+            "node": "Confirm Gmail receipt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm Gmail receipt": {
+      "main": [
+        [
+          {
+            "node": "Record the follow-up outcome",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create the new contact": {
+      "main": [
+        [
+          {
+            "node": "Confirm the saved contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Follow Up with Typeform Leads",
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false,
+  "pinData": {}
+}
