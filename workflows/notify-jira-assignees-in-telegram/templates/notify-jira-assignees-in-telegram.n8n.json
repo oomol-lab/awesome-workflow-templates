@@ -1,0 +1,87 @@
+{
+  "nodes": [
+    {
+      "id": "6ed72f04-7b15-4fb4-8699-0691beac69c0",
+      "name": "jira-webhook",
+      "type": "n8n-nodes-base.webhook",
+      "position": [
+        -500,
+        0
+      ],
+      "parameters": {
+        "path": "jira-issue-telegram",
+        "options": {},
+        "httpMethod": "POST",
+        "authentication": "headerAuth",
+        "responseMode": "onReceived"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "e10615ff-41dc-4ea6-981a-d8e949e2e386",
+      "name": "Map assignee and write alert",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -240,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function descriptionText(node) {\n  if (typeof node === \"string\") return node;\n  if (!node || typeof node !== \"object\") return \"\";\n  if (node.type === \"text\") return typeof node.text === \"string\" ? node.text : \"\";\n  if (node.type === \"hardBreak\") return \"\\n\";\n  const children = Array.isArray(node.content) ? node.content : [];\n  return children.map(descriptionText).join(node.type === \"doc\" ? \"\\n\" : \"\");\n}\n\nfunction escapeWithin(text, limit) {\n  const entities = { \"&\": \"&amp;\", \"<\": \"&lt;\", \">\": \"&gt;\" };\n  let result = \"\";\n  for (const character of text) {\n    const escaped = entities[character] ?? character;\n    if (result.length + escaped.length > limit - 1) return result + \"…\";\n    result += escaped;\n  }\n  return result;\n}\n\nfunction prepareMessage({ event, body, chatIds }) {\n  let issue = body;\n  let kind = event;\n  if (event === \"jira:issue_created\" || event === \"jira:issue_updated\") {\n    issue = body.issue;\n    const changes = body.changelog?.items;\n    kind =\n      event === \"jira:issue_created\"\n        ? \"created\"\n        : Array.isArray(changes) &&\n            changes.some(\n              (item) => item?.fieldId === \"assignee\" || item?.field?.toLowerCase() === \"assignee\",\n            )\n          ? \"change-assignee\"\n          : \"updated\";\n  }\n\n  const labels = {\n    created: \"🆕 New\",\n    updated: \"⚠️ Updated\",\n    \"change-assignee\": \"👩‍💻 Assigned to you\",\n  };\n  const fields = issue?.fields;\n  const accountId = fields?.assignee?.accountId;\n  if (\n    !Object.hasOwn(labels, kind) ||\n    typeof issue?.key !== \"string\" ||\n    !issue.key ||\n    typeof accountId !== \"string\" ||\n    !Object.hasOwn(chatIds, accountId)\n  )\n    return { send: false, chatId: null, text: null };\n\n  const chatId = String(chatIds[accountId]);\n  if (!/^-?[1-9]\\d*$/.test(chatId)) {\n    throw new Error(\"Set a numeric Telegram chat ID for the mapped Jira assignee\");\n  }\n\n  const label = labels[kind] + \" \" + escapeWithin(String(fields.issuetype?.name || \"issue\"), 120);\n  const project = escapeWithin(String(fields.project?.name || \"\"), 180);\n  const key = escapeWithin(issue.key, 120);\n  const title = escapeWithin(String(fields.summary || \"\"), 800);\n  const created = fields.created;\n  const createdValue =\n    typeof created === \"object\" && created !== null ? created.epochMillis : created;\n  const date = new Date(createdValue ?? NaN);\n  const createdLine = Number.isFinite(date.getTime())\n    ? \"\\nCreated: \" + date.toISOString().slice(0, 16).replace(\"T\", \" \") + \" UTC\"\n    : \"\";\n  const heading =\n    label + \"\\n\\nProject: \" + project + \"\\nKey: \" + key + \"\\nTitle: \" + title + \"\\nDescription: \";\n  const description = escapeWithin(\n    descriptionText(fields.description),\n    4096 - heading.length - createdLine.length,\n  );\n  return { send: true, chatId, text: heading + description + createdLine };\n}\n\nconst chatIds = {};\nreturn $input.all().flatMap(({ json }, index) => {\n  const event = json.headers?.type;\n  if (![\"created\", \"updated\", \"change-assignee\"].includes(event)) return [];\n  const { send, chatId, text } = prepareMessage({ event, body: json.body, chatIds });\n  return send ? [{ json: { chatId, text }, pairedItem: { item: index } }] : [];\n});\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "8efbed55-8642-440c-9ec7-8b93256a27f5",
+      "name": "Send alert",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        20,
+        0
+      ],
+      "parameters": {
+        "resource": "message",
+        "operation": "sendMessage",
+        "chatId": "={{ $json.chatId }}",
+        "text": "={{ $json.text }}",
+        "replyMarkup": "none",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "HTML",
+          "disable_web_page_preview": true
+        }
+      },
+      "typeVersion": 1.2
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "jira-webhook": {
+      "main": [
+        [
+          {
+            "node": "Map assignee and write alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Map assignee and write alert": {
+      "main": [
+        [
+          {
+            "node": "Send alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Notify Jira Assignees in Telegram",
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false
+}

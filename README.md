@@ -1199,6 +1199,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 ## Project Management
 
 - [Route Linear Bugs to Teams](workflows/route-linear-bugs-to-teams/) - Classify selected Linear bugs, move them to a matching team, or notify Slack when no team fits.
+- [Notify Jira Assignees in Telegram](workflows/notify-jira-assignees-in-telegram/) - Send a Telegram message to the mapped assignee when a Jira issue is created, updated, or reassigned.
 
 ## Shopping
 
