@@ -3,8 +3,28 @@
 Send weekly Outlook alerts with the number of open, active external projects that have a zero budgeted cost, grouped by company and cost center.
 
 <!-- template-actions:start -->
-[![n8n JSON](../../assets/n8n-json.svg)](templates/email-zero-budget-project-alerts.n8n.json)
+[![View in Open Flow](../../assets/view-in-openflow.svg)](https://openflow.run/templates/email-zero-budget-project-alerts/) [![n8n JSON](../../assets/n8n-json.svg)](templates/email-zero-budget-project-alerts.n8n.json)
 <!-- template-actions:end -->
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="preview-dark.png">
+  <img alt="Open Flow workflow" src="preview-light.png">
+</picture>
+
+## Setup
+
+1. Connect ERPNext with your site URL, API key and API secret. Use an API user with read access to all **Project** records covered by the report in each company, including the project status, type, active flag, company, cost center and custom budget field.
+2. In **Configure budget alerts**, enter the exact API fieldname for the numeric budgeted cost on **Project**. The default is `budgeted_project_cost`. Use the field that holds the budget values your team reports on. Set the exact cost center names and the Outlook recipient addresses for A, B and C. Set D to the cost center the workflow should skip.
+3. Select a Microsoft Outlook connection with send permission in **Send Outlook alert**. In **Sunday at 08:00**, set your reporting timezone. The template defaults to UTC. Check the routes and addresses with a test mailbox before publishing.
+
+## Behavior
+
+Each Sunday at 08:00, the workflow reads open, active external projects whose budgeted cost is exactly zero. It reads all matching pages before sending anything. Projects edited while the pages are being read can affect that week's totals. Each matching company and cost center gets its own plain-text alert with the project count. Blank, unmatched and D cost centers produce no mail.
+
+The same projects can appear in successive weekly reminders while their budgets remain zero. A failed ERPNext read stops the run before it sends mail. If an Outlook send fails or its result is unclear, the workflow stops. Check the run and Sent Items before replaying to avoid repeating messages Outlook already accepted.
+
+<details>
+<summary>In n8n</summary>
 
 ## Setup
 
@@ -17,6 +37,8 @@ Send weekly Outlook alerts with the number of open, active external projects tha
 MySQL counts open, active external projects with a budgeted cost of exactly zero. Each row represents one company and cost center. When a row matches a connected route, Outlook sends one email with the company, cost center, and count and asks the team to coordinate with Accounts. An empty result, a blank cost center, or an unmatched center produces no mail for those rows. Output D has no mail action.
 
 The report can send reminders for the same projects each week while the budget remains zero. If a run stops during email delivery, check Sent Items before retrying because some messages may already have been accepted.
+
+</details>
 
 <details>
 <summary>Inspiration &amp; credits</summary>
