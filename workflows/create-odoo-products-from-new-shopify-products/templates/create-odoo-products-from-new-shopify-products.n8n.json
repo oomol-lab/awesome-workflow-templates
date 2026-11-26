@@ -1,0 +1,472 @@
+{
+  "name": "Create Odoo Products for New Shopify Products",
+  "nodes": [
+    {
+      "id": "create-odoo-products-from-new-shopify-products-0",
+      "name": "On new Shopify product",
+      "type": "n8n-nodes-base.shopifyTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "topic": "products/create",
+        "authentication": "accessToken"
+      }
+    },
+    {
+      "id": "create-odoo-products-from-new-shopify-products-1",
+      "name": "Map product and choose Odoo database",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        260,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function exactProductId(value, graphId) {\n  if (typeof value === \"string\" && /^[1-9]\\d{0,19}$/.test(value)) return value;\n  if (typeof value === \"number\" && Number.isInteger(value) && value > 0) {\n    if (Number.isSafeInteger(value)) return String(value);\n    if (graphId && Number(graphId) === value) return graphId;\n  }\n  throw new Error(\"Shopify did not provide an exact parent product ID\");\n}\n\nfunction mapProduct(product) {\n  const variant = product?.variants?.[0];\n  if (!Array.isArray(product?.variants) || !variant || typeof variant !== \"object\") {\n    throw new Error(\"The Shopify product event has no first variant\");\n  }\n  const graphId =\n    typeof product.admin_graphql_api_id === \"string\"\n      ? /^gid:\\/\\/shopify\\/Product\\/([1-9]\\d{0,19})$/.exec(product.admin_graphql_api_id)?.[1]\n      : undefined;\n  const productId = exactProductId(variant.product_id, graphId);\n  if (\n    (graphId && graphId !== productId) ||\n    (product.id != null && exactProductId(product.id, graphId) !== productId)\n  ) {\n    throw new Error(\"The first Shopify variant belongs to a different parent product\");\n  }\n  if (typeof product.title !== \"string\" || !product.title.trim()) {\n    throw new Error(\"The Shopify product title is missing\");\n  }\n  const rawPrice = variant.price;\n  const price =\n    typeof rawPrice === \"string\" && /^\\d+(?:\\.\\d+)?$/.test(rawPrice.trim())\n      ? Number(rawPrice)\n      : rawPrice;\n  if (!Number.isFinite(price) || price < 0)\n    throw new Error(\"The first Shopify variant has an invalid price\");\n  const description = product.body_html ?? \"\";\n  if (typeof description !== \"string\")\n    throw new Error(\"The Shopify product description must be HTML text\");\n  return {\n    productId,\n    domain: [[\"default_code\", \"=\", productId]],\n    values: { name: product.title, default_code: productId, description, list_price: price },\n  };\n}\n\nconst instance = \"https://example.com\";\nconst database = \"your-odoo-database\";\nif (\n  !/^https:\\/\\/[a-z0-9.-]+(?::\\d{1,5})?(?:\\/[^\\s?#]*)?$/i.test(instance) ||\n  !/^[a-z0-9_.-]+$/i.test(database)\n) {\n  throw new Error(\"Enter the HTTPS Odoo instance URL and database name\");\n}\nreturn [\n  {\n    json: {\n      ...mapProduct($input.first().json),\n      base: instance.replace(/\\/+$/, \"\"),\n      database,\n    },\n  },\n];\n"
+      }
+    },
+    {
+      "id": "create-odoo-products-from-new-shopify-products-2",
+      "name": "Find the Odoo product",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        520,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Map product and choose Odoo database').first().json.base + \"/json/2/product.product/search_read\" }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendHeaders": true,
+        "specifyHeaders": "keypair",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Odoo-Database",
+              "value": "={{ $('Map product and choose Odoo database').first().json.database }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ { domain: $json.domain, fields: [\"id\", \"default_code\"], limit: 1 } }}",
+        "options": {
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "create-odoo-products-from-new-shopify-products-3",
+      "name": "Check the matching reference",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        780,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function positiveOdooId(id) {\n  if (!Number.isSafeInteger(id) || id <= 0)\n    throw new Error(\"Odoo did not confirm a valid record ID\");\n  return id;\n}\n\nfunction inspectProductLookup(records, productId) {\n  if (!Array.isArray(records) || records.length > 1)\n    throw new Error(\"Odoo returned an invalid product search result\");\n  if (records.length === 0) return { missing: true, result: { state: \"missing\", productId } };\n  const record = records[0];\n  if (record?.default_code !== productId)\n    throw new Error(\"Odoo returned a different product reference\");\n  return {\n    missing: false,\n    result: { state: \"already_exists\", productId, odooId: positiveOdooId(record.id) },\n  };\n}\n\nconst { body, statusCode } = $input.first().json;\nif (statusCode !== 200) throw new Error(\"Odoo did not confirm the product lookup\");\nreturn [\n  {\n    json: inspectProductLookup(\n      body,\n      $(\"Map product and choose Odoo database\").first().json.productId,\n    ),\n  },\n];\n"
+      }
+    },
+    {
+      "id": "create-odoo-products-from-new-shopify-products-4",
+      "name": "Odoo product missing?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1040,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "missing-odoo-product",
+              "leftValue": "={{ $json.missing }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "create-odoo-products-from-new-shopify-products-5",
+      "name": "Return the existing product",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1300,
+        260
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return [{ json: $input.first().json.result }];\n"
+      }
+    },
+    {
+      "id": "create-odoo-products-from-new-shopify-products-6",
+      "name": "Find the product reservation",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        1560,
+        0
+      ],
+      "parameters": {
+        "resource": "row",
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_RESERVATION_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "product_key",
+              "condition": "eq",
+              "keyValue": "={{ $('Map product and choose Odoo database').first().json.productId }}"
+            }
+          ]
+        },
+        "returnAll": false,
+        "limit": 1
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "id": "create-odoo-products-from-new-shopify-products-7",
+      "name": "Check for a pending creation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1820,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const productId = $(\"Map product and choose Odoo database\").first().json.productId;\nconst result = $input.first().json;\nif (Object.keys(result).length) {\n  if (result.product_key !== productId)\n    throw new Error(\"The reservation lookup returned the wrong product\");\n  throw new Error(\n    \"Odoo product \" +\n      productId +\n      \" has a pending create. Check its Odoo Internal Reference before retrying.\",\n  );\n}\nreturn [{ json: { productId } }];\n"
+      }
+    },
+    {
+      "id": "create-odoo-products-from-new-shopify-products-8",
+      "name": "Reserve this Shopify product",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        2080,
+        0
+      ],
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_RESERVATION_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "product_key": "={{ $('Map product and choose Odoo database').first().json.productId }}"
+          },
+          "schema": []
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "create-odoo-products-from-new-shopify-products-9",
+      "name": "Confirm this product reservation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2340,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const productId = $(\"Map product and choose Odoo database\").first().json.productId;\nif ($input.first().json.product_key !== productId)\n  throw new Error(\"The product reservation was not confirmed\");\nreturn [{ json: { productId } }];\n"
+      }
+    },
+    {
+      "id": "create-odoo-products-from-new-shopify-products-10",
+      "name": "Create the Odoo product",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2600,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Map product and choose Odoo database').first().json.base + \"/json/2/product.product/create\" }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendHeaders": true,
+        "specifyHeaders": "keypair",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Odoo-Database",
+              "value": "={{ $('Map product and choose Odoo database').first().json.database }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ { vals_list: [$('Map product and choose Odoo database').first().json.values] } }}",
+        "options": {
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "create-odoo-products-from-new-shopify-products-11",
+      "name": "Confirm the Odoo product ID",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2860,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function positiveOdooId(id) {\n  if (!Number.isSafeInteger(id) || id <= 0)\n    throw new Error(\"Odoo did not confirm a valid record ID\");\n  return id;\n}\n\nconst { body, statusCode } = $input.first().json;\nif (statusCode !== 200 || !Array.isArray(body) || body.length !== 1)\n  throw new Error(\"Odoo did not confirm one product creation\");\nreturn [\n  {\n    json: {\n      state: \"created\",\n      productId: $(\"Map product and choose Odoo database\").first().json.productId,\n      odooId: positiveOdooId(body[0]),\n    },\n  },\n];\n"
+      }
+    },
+    {
+      "id": "create-odoo-products-from-new-shopify-products-12",
+      "name": "Release the confirmed product reservation",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        3120,
+        0
+      ],
+      "parameters": {
+        "resource": "row",
+        "operation": "deleteRows",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_RESERVATION_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "product_key",
+              "condition": "eq",
+              "keyValue": "={{ $('Map product and choose Odoo database').first().json.productId }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "id": "create-odoo-products-from-new-shopify-products-13",
+      "name": "Return the created product",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3380,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return [{ json: $(\"Confirm the Odoo product ID\").first().json }];\n"
+      }
+    }
+  ],
+  "connections": {
+    "On new Shopify product": {
+      "main": [
+        [
+          {
+            "node": "Map product and choose Odoo database",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Map product and choose Odoo database": {
+      "main": [
+        [
+          {
+            "node": "Find the Odoo product",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find the Odoo product": {
+      "main": [
+        [
+          {
+            "node": "Check the matching reference",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check the matching reference": {
+      "main": [
+        [
+          {
+            "node": "Odoo product missing?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Odoo product missing?": {
+      "main": [
+        [
+          {
+            "node": "Find the product reservation",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Return the existing product",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find the product reservation": {
+      "main": [
+        [
+          {
+            "node": "Check for a pending creation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check for a pending creation": {
+      "main": [
+        [
+          {
+            "node": "Reserve this Shopify product",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve this Shopify product": {
+      "main": [
+        [
+          {
+            "node": "Confirm this product reservation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm this product reservation": {
+      "main": [
+        [
+          {
+            "node": "Create the Odoo product",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create the Odoo product": {
+      "main": [
+        [
+          {
+            "node": "Confirm the Odoo product ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm the Odoo product ID": {
+      "main": [
+        [
+          {
+            "node": "Release the confirmed product reservation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Release the confirmed product reservation": {
+      "main": [
+        [
+          {
+            "node": "Return the created product",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}
