@@ -1,0 +1,247 @@
+{
+  "name": "Push a Daily Local Temperature",
+  "nodes": [
+    {
+      "name": "Every day at 9 AM",
+      "id": "push-daily-local-temperature-clock",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 0 9 * * *"
+            }
+          ]
+        }
+      },
+      "position": [
+        0,
+        260
+      ]
+    },
+    {
+      "name": "Set the city and device",
+      "id": "push-daily-local-temperature-setup",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function weatherDestination(city, country, lat, lon, device) {\n  if (\n    typeof city !== \"string\" ||\n    !city.trim() ||\n    typeof country !== \"string\" ||\n    !/^[A-Z]{2}$/.test(country) ||\n    !Number.isFinite(lat) ||\n    Math.abs(lat) > 90 ||\n    !Number.isFinite(lon) ||\n    Math.abs(lon) > 180\n  ) {\n    throw new Error(\n      \"Set one city, its two-letter country code, and decimal latitude and longitude\",\n    );\n  }\n  if (\n    typeof device !== \"string\" ||\n    !/^[A-Za-z0-9_-]{1,25}$/.test(device) ||\n    device === \"YOUR_DEVICE_NAME\"\n  ) {\n    throw new Error(\"Set one named Pushover device\");\n  }\n  return { city: city.trim(), country, lat, lon, device };\n}\n\nconst { city, country, lat, lon, device } = {\n  city: \"Berlin\",\n  country: \"DE\",\n  lat: 52.52,\n  lon: 13.405,\n  device: \"YOUR_DEVICE_NAME\",\n};\nreturn { json: weatherDestination(city, country, lat, lon, device) };\n"
+      },
+      "position": [
+        230,
+        260
+      ]
+    },
+    {
+      "name": "Read the current weather",
+      "id": "push-daily-local-temperature-weather",
+      "type": "n8n-nodes-base.openWeatherMap",
+      "typeVersion": 1,
+      "parameters": {
+        "operation": "currentWeather",
+        "format": "metric",
+        "locationSelection": "coordinates",
+        "latitude": "={{ String($json.lat) }}",
+        "longitude": "={{ String($json.lon) }}"
+      },
+      "position": [
+        460,
+        260
+      ]
+    },
+    {
+      "name": "Check location and temperature",
+      "id": "push-daily-local-temperature-compose",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function celsiusReading(data, place) {\n  const degrees = data?.main?.temp;\n  const coords = data?.coord;\n  if (String(data?.cod) !== \"200\" || !Number.isFinite(degrees)) {\n    throw new Error(\"OpenWeather did not return a current numerical temperature\");\n  }\n  function normalizeCity(value) {\n    return typeof value === \"string\" ? value.normalize(\"NFKC\").trim().toLowerCase() : \"\";\n  }\n  if (\n    data.sys?.country !== place.country ||\n    normalizeCity(data.name) !== normalizeCity(place.city) ||\n    !Number.isFinite(coords?.lat) ||\n    !Number.isFinite(coords?.lon) ||\n    Math.abs(coords.lat - place.lat) > 0.005 ||\n    Math.abs(coords.lon - place.lon) > 0.005\n  ) {\n    throw new Error(\"OpenWeather did not confirm the configured city and coordinates\");\n  }\n  return {\n    device: place.device,\n    title: \"Today's Weather Update\",\n    message: \"Hey! The temperature outside is \" + degrees + \"°C.\",\n  };\n}\n\nconst place = $(\"Set the city and device\").first().json;\nreturn { json: celsiusReading($json, place) };\n"
+      },
+      "position": [
+        690,
+        260
+      ]
+    },
+    {
+      "name": "Verify the Pushover device",
+      "id": "push-daily-local-temperature-validate",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "method": "POST",
+        "url": "https://api.pushover.net/1/users/validate.json",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { device: $json.device } }}",
+        "options": {
+          "timeout": 15000,
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          }
+        }
+      },
+      "position": [
+        920,
+        260
+      ]
+    },
+    {
+      "name": "Confirm the device before sending",
+      "id": "push-daily-local-temperature-body",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function checkDevice(result, device) {\n  if (result?.status !== 1 || !Array.isArray(result.devices) || !result.devices.includes(device)) {\n    throw new Error(\"Pushover did not confirm that the configured device is active for this user\");\n  }\n}\n\nconst notification = $(\"Check location and temperature\").first().json;\ncheckDevice($json, notification.device);\nreturn { json: { ...notification, priority: 0 } };\n"
+      },
+      "position": [
+        1150,
+        260
+      ]
+    },
+    {
+      "name": "Send the weather notification",
+      "id": "push-daily-local-temperature-send",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "method": "POST",
+        "url": "https://api.pushover.net/1/messages.json",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {
+          "timeout": 15000,
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          }
+        }
+      },
+      "position": [
+        1380,
+        260
+      ]
+    },
+    {
+      "name": "Check the Pushover receipt",
+      "id": "push-daily-local-temperature-receipt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function checkPush(result) {\n  if (result?.status !== 1 || typeof result.request !== \"string\" || !result.request.trim()) {\n    throw new Error(\"Pushover did not confirm the notification\");\n  }\n  return result.request;\n}\n\nreturn { json: { requestId: checkPush($json) } };\n"
+      },
+      "position": [
+        1610,
+        260
+      ]
+    }
+  ],
+  "connections": {
+    "Every day at 9 AM": {
+      "main": [
+        [
+          {
+            "node": "Set the city and device",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set the city and device": {
+      "main": [
+        [
+          {
+            "node": "Read the current weather",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the current weather": {
+      "main": [
+        [
+          {
+            "node": "Check location and temperature",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check location and temperature": {
+      "main": [
+        [
+          {
+            "node": "Verify the Pushover device",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify the Pushover device": {
+      "main": [
+        [
+          {
+            "node": "Confirm the device before sending",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm the device before sending": {
+      "main": [
+        [
+          {
+            "node": "Send the weather notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send the weather notification": {
+      "main": [
+        [
+          {
+            "node": "Check the Pushover receipt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Berlin"
+  }
+}
