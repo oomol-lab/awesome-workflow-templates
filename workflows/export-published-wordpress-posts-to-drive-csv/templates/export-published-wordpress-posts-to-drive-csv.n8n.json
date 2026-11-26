@@ -1,0 +1,229 @@
+{
+  "name": "Export Published WordPress Posts to Drive CSV",
+  "nodes": [
+    {
+      "id": "export-published-wordpress-posts-to-drive-csv-0",
+      "name": "Export WordPress posts manually",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "export-published-wordpress-posts-to-drive-csv-1",
+      "name": "Read every published WordPress page",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        260,
+        300
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "https://example.com/wp-json/wp/v2/posts",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendQuery": true,
+        "specifyQuery": "keypair",
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "status",
+              "value": "publish"
+            },
+            {
+              "name": "orderby",
+              "value": "date"
+            },
+            {
+              "name": "order",
+              "value": "desc"
+            },
+            {
+              "name": "per_page",
+              "value": "10"
+            },
+            {
+              "name": "page",
+              "value": "1"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          },
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "pagination": {
+            "pagination": {
+              "paginationMode": "updateAParameterInEachRequest",
+              "parameters": {
+                "parameters": [
+                  {
+                    "type": "qs",
+                    "name": "page",
+                    "value": "={{ $pageCount + 1 }}"
+                  }
+                ]
+              },
+              "paginationCompleteWhen": "other",
+              "completeExpression": "={{ !/^\\d+$/.test(String($response.headers[\"x-wp-totalpages\"])) || $pageCount >= Number($response.headers[\"x-wp-totalpages\"]) }}",
+              "limitPagesFetched": false,
+              "requestInterval": 0
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "export-published-wordpress-posts-to-drive-csv-2",
+      "name": "Build the complete CSV",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        520,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function readCount(value, label) {\n  const n = typeof value === \"string\" && /^\\d+$/.test(value) ? Number(value) : value;\n  if (!Number.isSafeInteger(n) || n < 0)\n    throw new Error(\"WordPress did not provide a valid \" + label);\n  return n;\n}\n\nfunction csvText(value) {\n  // Keep spreadsheet control prefixes inert and escape CSV separators and quotes in one text cell.\n  const guarded = /^[\\t\\r\\n\\x00]|^[\\s\\u200b\\ufeff]*[=+\\-@＝＋－＠]/u.test(value)\n    ? \"'\" + value\n    : value;\n  return '\"' + guarded.replaceAll('\"', '\"\"') + '\"';\n}\n\nfunction pageOfPosts({ posts, pagination, previous, page, pageSize, maxBytes, header }) {\n  const total = readCount(pagination?.total, \"X-WP-Total\");\n  const pages = readCount(pagination?.totalPages, \"X-WP-TotalPages\");\n  const ids = new Set(previous?.ids ?? []);\n  if (\n    !Array.isArray(posts) ||\n    pages !== Math.ceil(total / pageSize) ||\n    page > Math.max(pages, 1) ||\n    (previous && (previous.total !== total || previous.pages !== pages)) ||\n    ids.size !== (page - 1) * pageSize ||\n    posts.length !== Math.min(pageSize, total - ids.size)\n  ) {\n    throw new Error(\"WordPress pagination changed or returned an incomplete post collection\");\n  }\n\n  const rows = [];\n  for (const post of posts) {\n    if (\n      !Number.isSafeInteger(post?.id) ||\n      post.id <= 0 ||\n      ids.has(post.id) ||\n      post.status !== \"publish\" ||\n      post.type !== \"post\" ||\n      typeof post.title?.rendered !== \"string\" ||\n      typeof post.link !== \"string\" ||\n      !post.link ||\n      typeof post.content?.rendered !== \"string\"\n    ) {\n      throw new Error(\"WordPress returned a duplicate or invalid published post\");\n    }\n    ids.add(post.id);\n    rows.push(\n      post.id +\n        \",\" +\n        [post.title.rendered, post.link, post.content.rendered].map(csvText).join(\",\") +\n        \"\\r\\n\",\n    );\n  }\n  const content = (previous ? \"\" : header) + rows.join(\"\");\n  const byteCount = (previous?.byteCount ?? 0) + new TextEncoder().encode(content).length;\n  if (byteCount > maxBytes)\n    throw new Error(\"The complete CSV exceeds this workflow’s upload size limit\");\n  return { ids: [...ids], total, pages, byteCount, text: (previous?.text ?? \"\") + content };\n}\n\nconst header = \"id,title,link,content\\r\\n\";\n\nlet state;\nconst pages = $input.all();\nfor (const [index, item] of pages.entries()) {\n  const response = item.json;\n  if (response.statusCode !== 200) throw new Error(\"WordPress did not return HTTP 200\");\n  const headers = response.headers;\n  const pagination = { total: headers?.[\"x-wp-total\"], totalPages: headers?.[\"x-wp-totalpages\"] };\n  state = pageOfPosts({\n    posts: response.body,\n    pagination,\n    previous: state,\n    page: index + 1,\n    pageSize: 10,\n    maxBytes: Number.MAX_SAFE_INTEGER,\n    header,\n  });\n}\nif (!state || pages.length !== Math.max(1, state.pages) || state.ids.length !== state.total) {\n  throw new Error(\"WordPress did not return the complete post collection\");\n}\nif (!state.total) return [];\nconst bytes = Buffer.from(state.text, \"utf8\");\nreturn [{ json: { base64: bytes.toString(\"base64\"), rows: state.total, byteCount: bytes.length } }];\n"
+      }
+    },
+    {
+      "id": "export-published-wordpress-posts-to-drive-csv-3",
+      "name": "Write the UTF-8 CSV binary",
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        780,
+        300
+      ],
+      "parameters": {
+        "operation": "toBinary",
+        "sourceProperty": "base64",
+        "binaryPropertyName": "data",
+        "options": {
+          "fileName": "Wordpress-Posts.csv",
+          "mimeType": "text/csv",
+          "addBOM": false
+        }
+      }
+    },
+    {
+      "id": "export-published-wordpress-posts-to-drive-csv-4",
+      "name": "Upload one CSV to Google Drive",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1040,
+        300
+      ],
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "file",
+        "operation": "upload",
+        "name": "Wordpress-Posts.csv",
+        "inputDataFieldName": "data",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "root"
+        },
+        "options": {
+          "simplifyOutput": false
+        }
+      }
+    },
+    {
+      "id": "export-published-wordpress-posts-to-drive-csv-5",
+      "name": "Confirm the uploaded CSV",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1300,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function driveReceipt(file, { folder, name, byteCount }) {\n  if (\n    !file?.id ||\n    file.name !== name ||\n    file.mimeType !== \"text/csv\" ||\n    String(file.size) !== String(byteCount) ||\n    !Array.isArray(file.parents) ||\n    !file.parents.length ||\n    (folder !== \"root\" && !file.parents.includes(folder))\n  ) {\n    throw new Error(\n      \"Google Drive did not confirm the complete CSV in the selected folder. Review Drive before retrying.\",\n    );\n  }\n  return { fileId: file.id, sizeBytes: byteCount };\n}\n\nconst { rows, byteCount } = $(\"Build the complete CSV\").first().json;\nconst folder = $(\"Upload one CSV to Google Drive\").params.folderId.value;\nconst receipt = driveReceipt($json, { folder, name: \"Wordpress-Posts.csv\", byteCount });\nreturn { json: { rows, ...receipt } };\n"
+      }
+    }
+  ],
+  "connections": {
+    "Export WordPress posts manually": {
+      "main": [
+        [
+          {
+            "node": "Read every published WordPress page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read every published WordPress page": {
+      "main": [
+        [
+          {
+            "node": "Build the complete CSV",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build the complete CSV": {
+      "main": [
+        [
+          {
+            "node": "Write the UTF-8 CSV binary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write the UTF-8 CSV binary": {
+      "main": [
+        [
+          {
+            "node": "Upload one CSV to Google Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload one CSV to Google Drive": {
+      "main": [
+        [
+          {
+            "node": "Confirm the uploaded CSV",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
