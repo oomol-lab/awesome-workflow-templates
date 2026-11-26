@@ -1218,6 +1218,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Generate an Image from a Form](workflows/generate-image-from-a-form/) - Generate an image from a prompt and selected size.
 - [Generate a Luma Video and Log It in Airtable](workflows/generate-luma-video-and-log-airtable/) - Submit a text-to-video request with a random camera motion and log the generation in Airtable.
 - [Generate Styled FLUX Images to S3](workflows/generate-styled-flux-images-to-s3/) - Generate a styled FLUX image and save it to an S3 bucket.
+- [Generate and Edit an OpenAI Image](workflows/generate-and-edit-an-openai-image/) - Generate an image from one prompt, edit the same image with a second prompt, and download the edited PNG.
 
 ## Human Resources
 

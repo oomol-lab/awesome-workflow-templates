@@ -1,0 +1,278 @@
+{
+  "name": "Generate and Edit an OpenAI Image",
+  "nodes": [
+    {
+      "id": "generate-and-edit-an-openai-image-0",
+      "name": "Start image generation",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "generate-and-edit-an-openai-image-1",
+      "name": "Set the two image prompts",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        245,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function imagePrompts(generation, edit) {\n  const prompts = [generation, edit].map((value) =>\n    typeof value === \"string\" ? value.trim() : \"\",\n  );\n  if (prompts.some((prompt) => !prompt)) {\n    throw new Error(\"Set both image prompts before running the workflow.\");\n  }\n  return { generationPrompt: prompts[0], editPrompt: prompts[1] };\n}\n\nreturn {\n  json: imagePrompts(\n    \"A cute red panda in an original nocturnal superhero costume, drawn as a colorful comic book illustration.\",\n    \"Add a horned mask to the red panda. Keep the pose, lighting, background, and composition.\",\n  ),\n};\n"
+      }
+    },
+    {
+      "id": "generate-and-edit-an-openai-image-2",
+      "name": "Generate the initial image",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        490,
+        300
+      ],
+      "parameters": {
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "method": "POST",
+        "url": "https://api.openai.com/v1/images/generations",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { ...{\"model\":\"gpt-image-2.5-sunburst\",\"n\":1,\"size\":\"1024x1024\",\"moderation\":\"auto\",\"background\":\"auto\",\"output_format\":\"png\"}, prompt: $json.generationPrompt } }}",
+        "options": {
+          "timeout": 180000,
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "generate-and-edit-an-openai-image-3",
+      "name": "Check the generated PNG",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        735,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function inspectPng(response, decode) {\n  const encoded =\n    Array.isArray(response?.data) && response.data.length === 1\n      ? response.data[0]?.b64_json\n      : undefined;\n  if (\n    typeof encoded !== \"string\" ||\n    !encoded ||\n    encoded.length > 10_000_000 ||\n    encoded.length % 4 !== 0 ||\n    !/^[A-Za-z0-9+/]+={0,2}$/.test(encoded) ||\n    (response.output_format && response.output_format !== \"png\")\n  ) {\n    throw new Error(\"OpenAI did not return one base64 PNG image\");\n  }\n  const bytes = decode(encoded);\n  const signature = [137, 80, 78, 71, 13, 10, 26, 10];\n  if (bytes.length < 45 || !signature.every((byte, index) => bytes[index] === byte)) {\n    throw new Error(\"OpenAI returned an invalid PNG signature\");\n  }\n\n  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);\n  let hasImageData = false;\n  let offset = 8;\n  while (offset + 12 <= bytes.length) {\n    const length = view.getUint32(offset);\n    const end = offset + 12 + length;\n    if (end > bytes.length) break;\n    const chunk = String.fromCharCode(...bytes.subarray(offset + 4, offset + 8));\n    if (\n      offset === 8 &&\n      (chunk !== \"IHDR\" ||\n        length !== 13 ||\n        view.getUint32(offset + 8) !== 1024 ||\n        view.getUint32(offset + 12) !== 1024)\n    ) {\n      throw new Error(\"OpenAI did not return the requested 1024 × 1024 PNG\");\n    }\n    if (chunk === \"IDAT\" && length > 0) hasImageData = true;\n    if (chunk === \"IEND\") {\n      if (hasImageData && length === 0 && end === bytes.length) return { bytes, encoded };\n      break;\n    }\n    offset = end;\n  }\n  throw new Error(\"OpenAI returned an incomplete PNG\");\n}\n\nconst { encoded } = inspectPng($json, (value) => Buffer.from(value, \"base64\"));\nreturn { json: { encoded } };\n"
+      }
+    },
+    {
+      "id": "generate-and-edit-an-openai-image-4",
+      "name": "Prepare the generated PNG",
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        980,
+        300
+      ],
+      "parameters": {
+        "operation": "toBinary",
+        "sourceProperty": "encoded",
+        "binaryPropertyName": "data",
+        "options": {
+          "fileName": "generated.png",
+          "mimeType": "image/png",
+          "addBOM": false
+        }
+      }
+    },
+    {
+      "id": "generate-and-edit-an-openai-image-5",
+      "name": "Edit the generated image",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1225,
+        300
+      ],
+      "parameters": {
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "method": "POST",
+        "url": "https://api.openai.com/v1/images/edits",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "image[]",
+              "parameterType": "formBinaryData",
+              "inputDataFieldName": "data"
+            },
+            {
+              "name": "prompt",
+              "value": "={{ $('Set the two image prompts').first().json.editPrompt }}"
+            },
+            {
+              "name": "model",
+              "value": "gpt-image-2.5-sunburst"
+            },
+            {
+              "name": "n",
+              "value": "1"
+            },
+            {
+              "name": "size",
+              "value": "1024x1024"
+            },
+            {
+              "name": "quality",
+              "value": "high"
+            },
+            {
+              "name": "output_format",
+              "value": "png"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 180000,
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "generate-and-edit-an-openai-image-6",
+      "name": "Check the edited PNG",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1470,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function inspectPng(response, decode) {\n  const encoded =\n    Array.isArray(response?.data) && response.data.length === 1\n      ? response.data[0]?.b64_json\n      : undefined;\n  if (\n    typeof encoded !== \"string\" ||\n    !encoded ||\n    encoded.length > 10_000_000 ||\n    encoded.length % 4 !== 0 ||\n    !/^[A-Za-z0-9+/]+={0,2}$/.test(encoded) ||\n    (response.output_format && response.output_format !== \"png\")\n  ) {\n    throw new Error(\"OpenAI did not return one base64 PNG image\");\n  }\n  const bytes = decode(encoded);\n  const signature = [137, 80, 78, 71, 13, 10, 26, 10];\n  if (bytes.length < 45 || !signature.every((byte, index) => bytes[index] === byte)) {\n    throw new Error(\"OpenAI returned an invalid PNG signature\");\n  }\n\n  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);\n  let hasImageData = false;\n  let offset = 8;\n  while (offset + 12 <= bytes.length) {\n    const length = view.getUint32(offset);\n    const end = offset + 12 + length;\n    if (end > bytes.length) break;\n    const chunk = String.fromCharCode(...bytes.subarray(offset + 4, offset + 8));\n    if (\n      offset === 8 &&\n      (chunk !== \"IHDR\" ||\n        length !== 13 ||\n        view.getUint32(offset + 8) !== 1024 ||\n        view.getUint32(offset + 12) !== 1024)\n    ) {\n      throw new Error(\"OpenAI did not return the requested 1024 × 1024 PNG\");\n    }\n    if (chunk === \"IDAT\" && length > 0) hasImageData = true;\n    if (chunk === \"IEND\") {\n      if (hasImageData && length === 0 && end === bytes.length) return { bytes, encoded };\n      break;\n    }\n    offset = end;\n  }\n  throw new Error(\"OpenAI returned an incomplete PNG\");\n}\n\nconst { encoded } = inspectPng($json, (value) => Buffer.from(value, \"base64\"));\nreturn { json: { encoded } };\n"
+      }
+    },
+    {
+      "id": "generate-and-edit-an-openai-image-7",
+      "name": "Prepare the edited PNG",
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        1715,
+        300
+      ],
+      "parameters": {
+        "operation": "toBinary",
+        "sourceProperty": "encoded",
+        "binaryPropertyName": "data",
+        "options": {
+          "fileName": "edited.png",
+          "mimeType": "image/png",
+          "addBOM": false
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Start image generation": {
+      "main": [
+        [
+          {
+            "node": "Set the two image prompts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set the two image prompts": {
+      "main": [
+        [
+          {
+            "node": "Generate the initial image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate the initial image": {
+      "main": [
+        [
+          {
+            "node": "Check the generated PNG",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check the generated PNG": {
+      "main": [
+        [
+          {
+            "node": "Prepare the generated PNG",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare the generated PNG": {
+      "main": [
+        [
+          {
+            "node": "Edit the generated image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit the generated image": {
+      "main": [
+        [
+          {
+            "node": "Check the edited PNG",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check the edited PNG": {
+      "main": [
+        [
+          {
+            "node": "Prepare the edited PNG",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
