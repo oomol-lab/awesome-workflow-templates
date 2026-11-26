@@ -1,0 +1,559 @@
+{
+  "name": "Render HTML and PDF Pages as PNGs",
+  "nodes": [
+    {
+      "id": "render-html-and-pdf-pages-as-png-0",
+      "name": "Run on demand",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "render-html-and-pdf-pages-as-png-1",
+      "name": "Set HTML and PDF URL",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function httpsUrl(value, label) {\n  if (\n    typeof value !== \"string\" ||\n    !/^https:\\/\\/[a-z0-9.-]+(?::\\d+)?(?:[/?][^\\s]*)?$/i.test(value)\n  ) {\n    throw new Error(label + \" must be an HTTPS URL without embedded credentials\");\n  }\n  return value.replace(/^https:/i, \"https:\");\n}\nconst html = \"<!doctype html><html><body><h1>Hello World</h1></body></html>\";\nconst pdfUrl = \"https://example.com/document.pdf\";\nif (!html.trim()) throw new Error(\"Enter HTML to render\");\nreturn [{ json: { html, pdfUrl: httpsUrl(pdfUrl, \"Source PDF\") } }];\n"
+      }
+    },
+    {
+      "id": "render-html-and-pdf-pages-as-png-2",
+      "name": "Render HTML as PDF",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        480,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.pdf.co/v1/pdf/convert/from/html",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ {html: $json.html, name: \"rendered-html.pdf\", async: false} }}",
+        "options": {
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "render-html-and-pdf-pages-as-png-3",
+      "name": "Check rendered PDF link",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function httpsUrl(value, label) {\n  if (\n    typeof value !== \"string\" ||\n    !/^https:\\/\\/[a-z0-9.-]+(?::\\d+)?(?:[/?][^\\s]*)?$/i.test(value)\n  ) {\n    throw new Error(label + \" must be an HTTPS URL without embedded credentials\");\n  }\n  return value.replace(/^https:/i, \"https:\");\n}\nconst body = $input.first().json;\nif (body.error !== false) throw new Error(\"PDF.co could not render the HTML\");\nreturn [{ json: { url: httpsUrl(body.url, \"Rendered PDF\") } }];\n"
+      }
+    },
+    {
+      "id": "render-html-and-pdf-pages-as-png-4",
+      "name": "Download rendered PDF",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        960,
+        0
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.url }}",
+        "authentication": "none",
+        "options": {
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "outputPropertyName": "data"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "render-html-and-pdf-pages-as-png-5",
+      "name": "Check rendered PDF bytes",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function requirePdf(bytes) {\n  if (bytes.length < 8 || String.fromCharCode(...bytes.subarray(0, 5)) !== \"%PDF-\") {\n    throw new Error(\"The HTML rendering response is not a PDF\");\n  }\n}\nconst item = $input.first();\nrequirePdf(await this.helpers.getBinaryDataBuffer(0, \"data\"));\nreturn [item];\n"
+      }
+    },
+    {
+      "id": "render-html-and-pdf-pages-as-png-6",
+      "name": "Get temporary PDF upload links",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1440,
+        0
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.pdf.co/v1/file/upload/get-presigned-url",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "name",
+              "value": "rendered-html.pdf"
+            },
+            {
+              "name": "contenttype",
+              "value": "application/pdf"
+            }
+          ]
+        },
+        "options": {
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "render-html-and-pdf-pages-as-png-7",
+      "name": "Prepare the PDF binary upload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1680,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function httpsUrl(value, label) {\n  if (\n    typeof value !== \"string\" ||\n    !/^https:\\/\\/[a-z0-9.-]+(?::\\d+)?(?:[/?][^\\s]*)?$/i.test(value)\n  ) {\n    throw new Error(label + \" must be an HTTPS URL without embedded credentials\");\n  }\n  return value.replace(/^https:/i, \"https:\");\n}\n\nfunction uploadLinks(body) {\n  if (body?.error !== false) throw new Error(\"PDF.co did not provide temporary upload links\");\n  return {\n    putUrl: httpsUrl(body.presignedUrl, \"PDF upload\"),\n    pdfUrl: httpsUrl(body.url, \"Temporary PDF download\"),\n  };\n}\nconst links = uploadLinks($input.first().json);\nconst rendered = $(\"Check rendered PDF bytes\").first();\nif (!rendered.binary?.data) throw new Error(\"Rendered PDF binary is missing\");\nreturn [\n  { json: links, binary: { data: { ...rendered.binary.data, mimeType: \"application/pdf\" } } },\n];\n"
+      }
+    },
+    {
+      "id": "render-html-and-pdf-pages-as-png-8",
+      "name": "Upload rendered PDF bytes",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1920,
+        0
+      ],
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ $json.putUrl }}",
+        "authentication": "none",
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "data",
+        "options": {
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "text",
+              "fullResponse": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "render-html-and-pdf-pages-as-png-9",
+      "name": "Select the uploaded PDF",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2160,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const { statusCode } = $input.first().json;\nif (statusCode < 200 || statusCode >= 300 || !Number.isInteger(statusCode))\n  throw new Error(\"PDF upload was not confirmed\");\nreturn [\n  { json: { source: \"html\", pdfUrl: $(\"Prepare the PDF binary upload\").first().json.pdfUrl } },\n];\n"
+      }
+    },
+    {
+      "id": "render-html-and-pdf-pages-as-png-10",
+      "name": "Select the source PDF URL",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        260
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return [{ json: { source: \"pdf-url\", pdfUrl: $input.first().json.pdfUrl } }];\n"
+      }
+    },
+    {
+      "id": "render-html-and-pdf-pages-as-png-11",
+      "name": "Collect both PDF sources",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        2640,
+        0
+      ],
+      "parameters": {
+        "mode": "append",
+        "numberInputs": 2
+      }
+    },
+    {
+      "id": "render-html-and-pdf-pages-as-png-12",
+      "name": "Count PDF pages",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2880,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.pdf.co/v1/pdf/info",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ {url: $json.pdfUrl, async: false} }}",
+        "options": {
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "render-html-and-pdf-pages-as-png-13",
+      "name": "Prepare all PDF pages",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3120,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function pageCount(value, source) {\n  if (!Number.isSafeInteger(value) || value < 1) {\n    throw new Error(\"PDF.co did not report a valid page count for \" + source);\n  }\n  return value;\n}\nreturn $input.all().map(({ json }, index) => {\n  const { source, pdfUrl } = $(\"Collect both PDF sources\").itemMatching(index).json;\n  if (json.error !== false) throw new Error(\"PDF.co could not inspect \" + source);\n  const count = pageCount(json.info?.PageCount, source);\n  return {\n    json: {\n      source,\n      count,\n      body: { url: pdfUrl, pages: count === 1 ? \"0\" : \"0-\" + (count - 1), async: false },\n    },\n    pairedItem: { item: index },\n  };\n});\n"
+      }
+    },
+    {
+      "id": "render-html-and-pdf-pages-as-png-14",
+      "name": "Render PDF pages as PNG",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3360,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.pdf.co/v1/pdf/convert/to/png",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.body }}",
+        "options": {
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "render-html-and-pdf-pages-as-png-15",
+      "name": "Index PNGs by source and page",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3600,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function httpsUrl(value, label) {\n  if (\n    typeof value !== \"string\" ||\n    !/^https:\\/\\/[a-z0-9.-]+(?::\\d+)?(?:[/?][^\\s]*)?$/i.test(value)\n  ) {\n    throw new Error(label + \" must be an HTTPS URL without embedded credentials\");\n  }\n  return value.replace(/^https:/i, \"https:\");\n}\n\nfunction listPages(body, count, source) {\n  if (body?.error !== false || !Array.isArray(body.urls)) {\n    throw new Error(\"PDF.co did not return PNG pages for \" + source);\n  }\n  if (body.urls.length !== count || new Set(body.urls).size !== count) {\n    throw new Error(\"PDF.co returned an incomplete or duplicate page list for \" + source);\n  }\n  return body.urls.map((url, index) => ({\n    source,\n    page: index + 1,\n    pageCount: count,\n    url: httpsUrl(url, \"PNG download\"),\n  }));\n}\nreturn $input.all().flatMap(({ json }, index) => {\n  const { source, count } = $(\"Prepare all PDF pages\").itemMatching(index).json;\n  return listPages(json, count, source).map((page) => ({\n    json: page,\n    pairedItem: { item: index },\n  }));\n});\n"
+      }
+    },
+    {
+      "id": "render-html-and-pdf-pages-as-png-16",
+      "name": "Download PNG pages",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3840,
+        0
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.url }}",
+        "authentication": "none",
+        "options": {
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "outputPropertyName": "data"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "render-html-and-pdf-pages-as-png-17",
+      "name": "Check PNG pages",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4080,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function requirePng(bytes, page) {\n  const signature = [137, 80, 78, 71, 13, 10, 26, 10];\n  if (\n    bytes.length <= signature.length ||\n    !signature.every((byte, index) => bytes[index] === byte)\n  ) {\n    throw new Error(page.source + \" page \" + page.page + \" did not download as PNG\");\n  }\n}\nconst items = $input.all();\nfor (const [index, item] of items.entries()) {\n  requirePng(await this.helpers.getBinaryDataBuffer(index, \"data\"), item.json);\n  item.binary.data.fileName = item.json.source + \"-page-\" + item.json.page + \".png\";\n  item.binary.data.mimeType = \"image/png\";\n  delete item.json.url;\n}\nreturn items;\n"
+      }
+    }
+  ],
+  "connections": {
+    "Run on demand": {
+      "main": [
+        [
+          {
+            "node": "Set HTML and PDF URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set HTML and PDF URL": {
+      "main": [
+        [
+          {
+            "node": "Render HTML as PDF",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Select the source PDF URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Render HTML as PDF": {
+      "main": [
+        [
+          {
+            "node": "Check rendered PDF link",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check rendered PDF link": {
+      "main": [
+        [
+          {
+            "node": "Download rendered PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download rendered PDF": {
+      "main": [
+        [
+          {
+            "node": "Check rendered PDF bytes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check rendered PDF bytes": {
+      "main": [
+        [
+          {
+            "node": "Get temporary PDF upload links",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get temporary PDF upload links": {
+      "main": [
+        [
+          {
+            "node": "Prepare the PDF binary upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare the PDF binary upload": {
+      "main": [
+        [
+          {
+            "node": "Upload rendered PDF bytes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload rendered PDF bytes": {
+      "main": [
+        [
+          {
+            "node": "Select the uploaded PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select the uploaded PDF": {
+      "main": [
+        [
+          {
+            "node": "Collect both PDF sources",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect both PDF sources": {
+      "main": [
+        [
+          {
+            "node": "Count PDF pages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Count PDF pages": {
+      "main": [
+        [
+          {
+            "node": "Prepare all PDF pages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare all PDF pages": {
+      "main": [
+        [
+          {
+            "node": "Render PDF pages as PNG",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Render PDF pages as PNG": {
+      "main": [
+        [
+          {
+            "node": "Index PNGs by source and page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Index PNGs by source and page": {
+      "main": [
+        [
+          {
+            "node": "Download PNG pages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download PNG pages": {
+      "main": [
+        [
+          {
+            "node": "Check PNG pages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select the source PDF URL": {
+      "main": [
+        [
+          {
+            "node": "Collect both PDF sources",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}
