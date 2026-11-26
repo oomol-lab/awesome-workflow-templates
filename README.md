@@ -65,6 +65,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Ecommerce](#ecommerce)
 - [CRM](#crm)
 - [Email](#email)
+- [Engineering](#engineering)
 - [Contribute](#contribute)
 - [Translations](#translations)
 - [Licensing](#licensing)
@@ -1284,6 +1285,10 @@ A growing collection of automation workflows for connecting apps and getting rep
 ## Email
 
 - [Send a Gmail Message With an Inline Image](workflows/send-gmail-with-inline-image/) - Send an HTML email in Gmail with a cloud-hosted image embedded in the message body.
+
+## Engineering
+
+- [Track Website Visual Regressions](workflows/track-website-visual-regressions/) - Save website screenshot baselines, compare them with fresh captures each week, and collect detected differences in one Linear issue.
 
 ## Contribute
 
