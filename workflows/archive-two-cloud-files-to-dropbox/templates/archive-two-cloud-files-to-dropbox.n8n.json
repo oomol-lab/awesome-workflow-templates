@@ -1,0 +1,210 @@
+{
+  "nodes": [
+    {
+      "name": "Start the archive",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {},
+      "typeVersion": 1,
+      "id": "archive-two-cloud-files-to-dropbox-0"
+    },
+    {
+      "name": "Set URLs, filenames, and Dropbox path",
+      "id": "archive-two-cloud-files-to-dropbox-1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function configureArchive({ firstUrl, firstName, secondUrl, secondName, destination }) {\n  const urls = [firstUrl, secondUrl];\n  if (\n    !urls.every(\n      (url) =>\n        typeof url === \"string\" && /^https:\\/\\/[a-z0-9.-]+(?::\\d{1,5})?\\/[^\\s#\\\\]*$/i.test(url),\n    ) ||\n    firstUrl === secondUrl\n  )\n    throw new Error(\"Enter two distinct direct HTTPS file URLs\");\n  const names = [firstName, secondName];\n  if (\n    !names.every(\n      (name) =>\n        typeof name === \"string\" &&\n        name.length > 0 &&\n        name.length <= 180 &&\n        name === name.trim() &&\n        !/[<>:\"/\\\\|?*\\u0000-\\u001f]/.test(name) &&\n        !name.endsWith(\".\") &&\n        !Object.hasOwn(Object.prototype, name),\n    ) ||\n    firstName.toLowerCase() === secondName.toLowerCase()\n  ) {\n    throw new Error(\"Use two distinct filenames without directory components\");\n  }\n  const parts = typeof destination === \"string\" ? destination.split(\"/\") : [];\n  if (\n    parts.length < 2 ||\n    parts[0] !== \"\" ||\n    destination.length > 512 ||\n    !/\\.zip$/i.test(parts.at(-1)) ||\n    parts\n      .slice(1)\n      .some((part) => !part || part === \".\" || part === \"..\" || /[\\\\\\u0000-\\u001f]/.test(part))\n  ) {\n    throw new Error(\"Enter a full Dropbox path ending in a ZIP filename\");\n  }\n  return { firstUrl, firstName, secondUrl, secondName, destination, archiveName: parts.at(-1) };\n}\nconst settings = {\n  firstUrl: \"https://www.rfc-editor.org/rfc/rfc2606.txt\",\n  firstName: \"rfc2606.txt\",\n  secondUrl: \"https://www.rfc-editor.org/rfc/rfc5737.txt\",\n  secondName: \"rfc5737.txt\",\n  destination: \"/images.zip\",\n};\nreturn [{ json: configureArchive(settings) }];\n"
+      },
+      "position": [
+        225,
+        0
+      ]
+    },
+    {
+      "name": "Download the first file",
+      "id": "archive-two-cloud-files-to-dropbox-2",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.firstUrl }}",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "fullResponse": true,
+              "outputPropertyName": "first"
+            }
+          }
+        }
+      },
+      "position": [
+        450,
+        0
+      ]
+    },
+    {
+      "name": "Download the second file",
+      "id": "archive-two-cloud-files-to-dropbox-3",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $('Set URLs, filenames, and Dropbox path').first().json.secondUrl }}",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "fullResponse": true,
+              "outputPropertyName": "second"
+            }
+          }
+        }
+      },
+      "position": [
+        675,
+        0
+      ]
+    },
+    {
+      "name": "Name both files for the ZIP",
+      "id": "archive-two-cloud-files-to-dropbox-4",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function validateDownload({ status, size }) {\n  if (status !== 200) throw new Error(\"Both downloads must return a complete file\");\n  if (!Number.isSafeInteger(size) || size < 0 || size > 1024 * 1024) {\n    throw new Error(\"Each source file must be at most 1 MiB\");\n  }\n}\nconst configuration = $(\"Set URLs, filenames, and Dropbox path\").first().json;\nconst item = $input.first();\nconst files = {};\nfor (const [key, status] of [\n  [\"first\", $(\"Download the first file\").first().json.statusCode],\n  [\"second\", item.json.statusCode],\n]) {\n  const bytes = await helpers.getBinaryDataBuffer(0, key);\n  validateDownload({ status, size: bytes.length });\n  const fileName = configuration[key + \"Name\"];\n  files[key] = {\n    ...item.binary[key],\n    fileName,\n    fileExtension: fileName.includes(\".\") ? fileName.split(\".\").at(-1) : \"\",\n  };\n}\nreturn [\n  {\n    json: { path: configuration.destination, archiveName: configuration.archiveName },\n    binary: files,\n  },\n];\n"
+      },
+      "position": [
+        900,
+        0
+      ]
+    },
+    {
+      "name": "Build the two-file ZIP",
+      "type": "n8n-nodes-base.compression",
+      "position": [
+        1125,
+        0
+      ],
+      "parameters": {
+        "operation": "compress",
+        "outputFormat": "zip",
+        "binaryPropertyName": "first,second",
+        "binaryPropertyOutput": "data",
+        "fileName": "={{ $json.archiveName }}"
+      },
+      "typeVersion": 1,
+      "id": "archive-two-cloud-files-to-dropbox-5"
+    },
+    {
+      "name": "Upload the ZIP to Dropbox",
+      "type": "n8n-nodes-base.dropbox",
+      "position": [
+        1350,
+        0
+      ],
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "file",
+        "operation": "upload",
+        "path": "={{ $json.path }}",
+        "binaryData": true,
+        "binaryPropertyName": "data"
+      },
+      "typeVersion": 1,
+      "id": "archive-two-cloud-files-to-dropbox-6"
+    }
+  ],
+  "connections": {
+    "Start the archive": {
+      "main": [
+        [
+          {
+            "node": "Set URLs, filenames, and Dropbox path",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set URLs, filenames, and Dropbox path": {
+      "main": [
+        [
+          {
+            "node": "Download the first file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download the first file": {
+      "main": [
+        [
+          {
+            "node": "Download the second file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download the second file": {
+      "main": [
+        [
+          {
+            "node": "Name both files for the ZIP",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Name both files for the ZIP": {
+      "main": [
+        [
+          {
+            "node": "Build the two-file ZIP",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build the two-file ZIP": {
+      "main": [
+        [
+          {
+            "node": "Upload the ZIP to Dropbox",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Archive Two Cloud Files to Dropbox",
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false,
+  "pinData": {}
+}

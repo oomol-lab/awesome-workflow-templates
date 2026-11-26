@@ -703,6 +703,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Optimise Google Drive Images with TinyPNG](workflows/optimise-google-drive-images-with-tinypng/) - Compress new images in one Google Drive folder and save optimised copies in a separate folder.
 - [Describe Webpage Screenshots with URLbox](workflows/describe-webpage-screenshots-with-urlbox/) - Capture a full-page screenshot and return its visual description with the original webpage name and URL.
 - [Analyze a Video URL with Gemini](workflows/analyze-video-from-a-url-with-gemini/) - Download a video, send the full file to Gemini, and return a description based on your instructions.
+- [Archive Two Cloud Files to Dropbox](workflows/archive-two-cloud-files-to-dropbox/) - Download two public files, put them in one ZIP with the names you choose, and save it to Dropbox.
 
 ## Content
 
