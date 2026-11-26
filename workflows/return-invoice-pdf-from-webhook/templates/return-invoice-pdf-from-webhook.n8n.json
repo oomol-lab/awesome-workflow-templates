@@ -1,0 +1,124 @@
+{
+  "nodes": [
+    {
+      "id": "a6d39cc4-b9c2-4eed-b4a6-46d622a87c14",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "position": [
+        -200,
+        -20
+      ],
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "invoice-pdf",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "5a8efc8a-c60b-4616-a17a-6275cc326978",
+      "name": "Set invoice details and build HTML",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        25,
+        -20
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function escapeHtml(text) {\n  const replacements = { \"&\": \"&amp;\", \"<\": \"&lt;\", \">\": \"&gt;\", '\"': \"&quot;\", \"'\": \"&#39;\" };\n  return String(text).replace(/[&<>\"']/g, (character) => replacements[character]);\n}\n\nfunction renderInvoice({ invoice }) {\n  const { number, billTo, from, email, details } = invoice;\n  const address = (text) => String(text).split(/\\r?\\n/).map(escapeHtml).join(\"<br>\");\n  if (!Array.isArray(details) || details.length === 0)\n    throw new Error(\"Add at least one invoice line item\");\n  let totalCents = 0;\n  const money = (cents) => \"$\" + (cents / 100).toFixed(2);\n  const rows = details\n    .map(({ description, price, qty }) => {\n      if (!Number.isFinite(price) || price < 0 || !Number.isSafeInteger(qty) || qty <= 0) {\n        throw new Error(\n          \"Invoice line items need a nonnegative unit price and a positive whole quantity\",\n        );\n      }\n      const unitCents = Math.round(price * 100);\n      const lineCents = unitCents * qty;\n      totalCents += lineCents;\n      if (!Number.isSafeInteger(totalCents))\n        throw new Error(\"Invoice amount exceeds the supported range\");\n      return (\n        \"<tr><td>\" +\n        escapeHtml(description) +\n        \"</td><td>\" +\n        money(unitCents) +\n        \"</td><td>\" +\n        qty +\n        \"</td><td>\" +\n        money(lineCents) +\n        \"</td></tr>\"\n      );\n    })\n    .join(\"\\n\");\n  const contact = escapeHtml(email);\n  return {\n    html: `<!doctype html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Invoice #${escapeHtml(number)}</title>\n<style>\n@page { size: Letter; margin: 15mm; }\n* { box-sizing: border-box; }\nbody { margin: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #152644; font: 13px/1.45 Arial, sans-serif; }\nheader { background: #164b8f; color: white; padding: 23px 25px; border-radius: 9px; }\nh1 { font-size: 34px; line-height: 1.1; margin: 0 0 5px; }\nheader p { margin: 0; }\n.parties { display: table; table-layout: fixed; width: 100%; margin: 24px 0; }\n.parties section { display: table-cell; width: 50%; }\nh2 { color: #164b8f; font-size: 14px; margin: 0 0 4px; }\ntable { width: 100%; border-collapse: collapse; }\nthead, tfoot { background: #eaf1fa; }\nth, td { padding: 11px 9px; border-bottom: 1px solid #e5ebf3; }\nth:first-child, td:first-child { text-align: left; }\nth:not(:first-child), td:not(:first-child) { text-align: right; white-space: nowrap; }\nthead { display: table-header-group; }\ntr { break-inside: avoid; }\nfooter { margin-top: 25px; color: #4a596d; }\nfooter p { margin: 5px 0; }\na { color: #164b8f; }\n</style>\n</head>\n<body>\n<header><h1>Invoice</h1><p>Invoice #${escapeHtml(number)}</p></header>\n<div class=\"parties\"><section><h2>Billed to</h2>${address(billTo)}</section>\n<section><h2>From</h2>${address(from)}<br>Email: ${contact}</section></div>\n<table>\n<thead><tr><th>Description</th><th>Unit price</th><th>Quantity</th><th>Total</th></tr></thead>\n<tbody>${rows}</tbody>\n<tfoot><tr><th colspan=\"3\">Total amount</th><td><strong>${money(totalCents)}</strong></td></tr></tfoot>\n</table>\n<footer><p>Thank you for doing business with us.</p><p><a href=\"mailto:${contact}\">Contact us</a></p></footer>\n</body>\n</html>`,\n  };\n}\n\nconst invoice = {\n  number: \"1\",\n  billTo: \"Example Customer\\nExample City, 00000\",\n  from: \"Example Studio\\nExample City, 00001\",\n  email: \"billing@example.com\",\n  details: [\n    {\n      description: \"Web Hosting\",\n      price: 150,\n      qty: 2,\n    },\n    {\n      description: \"Domain\",\n      price: 15,\n      qty: 5,\n    },\n  ],\n};\nreturn { json: renderInvoice({ invoice }) };\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "de602925-4d9d-4045-9d9d-ed37dfb65490",
+      "name": "HTML to PDF",
+      "type": "@custom-js/n8n-nodes-pdf-toolkit.html2Pdf",
+      "position": [
+        250,
+        -20
+      ],
+      "parameters": {
+        "operation": "html2Pdf",
+        "htmlInput": "={{ $json.html }}",
+        "outputFilename": "output.pdf"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "c7d1cc1d-88e3-463a-886f-182a2ba72b11",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        475,
+        -20
+      ],
+      "parameters": {
+        "respondWith": "binary",
+        "responseDataSource": "set",
+        "inputFieldName": "data",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/pdf"
+              },
+              {
+                "name": "Content-Disposition",
+                "value": "attachment; filename=\"output.pdf\""
+              },
+              {
+                "name": "Cache-Control",
+                "value": "no-store"
+              }
+            ]
+          }
+        }
+      },
+      "typeVersion": 1.1
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Set invoice details and build HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set invoice details and build HTML": {
+      "main": [
+        [
+          {
+            "node": "HTML to PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTML to PDF": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Return an Invoice PDF from a Webhook",
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false
+}
