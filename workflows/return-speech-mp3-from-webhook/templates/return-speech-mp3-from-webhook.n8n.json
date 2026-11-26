@@ -1,0 +1,255 @@
+{
+  "name": "Return Speech as an MP3 from a Webhook",
+  "nodes": [
+    {
+      "name": "Receive the speech request",
+      "id": "return-speech-mp3-from-webhook-hook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "generate_audio",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "position": [
+        0,
+        240
+      ]
+    },
+    {
+      "name": "Validate text and select a voice",
+      "id": "return-speech-mp3-from-webhook-input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function readSpeechText(body) {\n  const text = body?.text_to_convert;\n  return typeof text === \"string\" && /\\S/.test(text) && [...text].length <= 4096 ? text : null;\n}\n\nfunction speechVoice(id) {\n  if (typeof id !== \"string\" || !/^[A-Za-z0-9]{20}$/.test(id))\n    throw new Error(\"Set an ElevenLabs voice ID from your Voice Library\");\n  return id;\n}\n\nconst voiceId = \"6WwXjDDEMyNmFG95zycZ\";\nconst item = $input.first().json;\nconst text = /^application\\/json(?:;|$)/i.test(item.headers?.[\"content-type\"] ?? \"\")\n  ? readSpeechText(item.body)\n  : null;\nreturn [\n  {\n    json: {\n      valid: text !== null,\n      ...(text === null\n        ? {}\n        : {\n            url:\n              \"https://api.elevenlabs.io/v1/text-to-speech/\" +\n              speechVoice(voiceId) +\n              \"?output_format=mp3_44100_128\",\n            request: { text, model_id: \"eleven_multilingual_v2\" },\n          }),\n    },\n  },\n];\n"
+      },
+      "position": [
+        230,
+        240
+      ]
+    },
+    {
+      "name": "Text is valid?",
+      "id": "return-speech-mp3-from-webhook-valid",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "leftValue": ""
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.valid }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "position": [
+        460,
+        240
+      ]
+    },
+    {
+      "name": "Generate speech with ElevenLabs",
+      "id": "return-speech-mp3-from-webhook-speech",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.url }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.request }}",
+        "options": {
+          "timeout": 55000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "fullResponse": true,
+              "outputPropertyName": "data"
+            }
+          }
+        }
+      },
+      "position": [
+        690,
+        240
+      ]
+    },
+    {
+      "name": "Verify the MP3 bytes",
+      "id": "return-speech-mp3-from-webhook-check",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function checkSpeechBytes(bytes, mediaType) {\n  const mime = typeof mediaType === \"string\" ? mediaType.split(\";\")[0].toLowerCase().trim() : \"\";\n  if (\n    ![\"audio/mpeg\", \"audio/mp3\", \"application/octet-stream\"].includes(mime) ||\n    bytes.length < 24 ||\n    bytes.length > 8 * 1024 * 1024\n  ) {\n    throw new Error(\"The speech response is empty, has the wrong format, or exceeds 8 MiB\");\n  }\n  let offset = 0;\n  if (bytes[0] === 0x49 && bytes[1] === 0x44 && bytes[2] === 0x33) {\n    const length = bytes.subarray(6, 10);\n    if (length.some((byte) => byte > 0x7f))\n      throw new Error(\"The speech response has an invalid MP3 tag\");\n    offset = 10 + ((length[0] << 21) | (length[1] << 14) | (length[2] << 7) | length[3]);\n    if (bytes[3] === 4 && bytes[5] & 0x10) offset += 10;\n  }\n  // The selected output is MPEG-1 Layer III, 44.1 kHz. Check a complete first audio frame after optional ID3 metadata.\n  const frame = bytes.subarray(offset, offset + 4);\n  const bitrates = [0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, 0];\n  const bitrate = bitrates[frame[2] >> 4];\n  const frameSize = Math.floor((144000 * bitrate) / 44100) + ((frame[2] >> 1) & 1);\n  if (\n    frame.length !== 4 ||\n    frame[0] !== 0xff ||\n    (frame[1] & 0xfe) !== 0xfa ||\n    ((frame[2] >> 2) & 3) !== 0 ||\n    !bitrate ||\n    offset + frameSize > bytes.length\n  )\n    throw new Error(\"The speech response has no complete first MP3 frame\");\n}\n\nconst item = $input.first();\nif (item.json.statusCode !== 200 || !item.binary?.data)\n  throw new Error(\"ElevenLabs did not return the complete MP3\");\nconst bytes = await helpers.getBinaryDataBuffer(0, \"data\");\ncheckSpeechBytes(bytes, item.binary.data.mimeType);\nreturn [\n  {\n    json: {},\n    binary: { data: { ...item.binary.data, mimeType: \"audio/mpeg\", fileName: \"speech.mp3\" } },\n  },\n];\n"
+      },
+      "position": [
+        920,
+        240
+      ]
+    },
+    {
+      "name": "Return the MP3",
+      "id": "return-speech-mp3-from-webhook-reply",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "parameters": {
+        "respondWith": "binary",
+        "responseDataSource": "set",
+        "inputFieldName": "data",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Cache-Control",
+                "value": "no-store"
+              },
+              {
+                "name": "X-Content-Type-Options",
+                "value": "nosniff"
+              },
+              {
+                "name": "Content-Type",
+                "value": "audio/mpeg"
+              },
+              {
+                "name": "Content-Disposition",
+                "value": "attachment; filename=\"speech.mp3\""
+              }
+            ]
+          }
+        }
+      },
+      "position": [
+        1150,
+        240
+      ]
+    },
+    {
+      "name": "Return invalid input",
+      "id": "return-speech-mp3-from-webhook-invalid",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\"error\":\"Supply JSON with 1 to 4096 characters in text_to_convert.\"}",
+        "options": {
+          "responseCode": 400,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Cache-Control",
+                "value": "no-store"
+              },
+              {
+                "name": "X-Content-Type-Options",
+                "value": "nosniff"
+              }
+            ]
+          }
+        }
+      },
+      "position": [
+        1380,
+        425
+      ]
+    }
+  ],
+  "connections": {
+    "Receive the speech request": {
+      "main": [
+        [
+          {
+            "node": "Validate text and select a voice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate text and select a voice": {
+      "main": [
+        [
+          {
+            "node": "Text is valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Text is valid?": {
+      "main": [
+        [
+          {
+            "node": "Generate speech with ElevenLabs",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Return invalid input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate speech with ElevenLabs": {
+      "main": [
+        [
+          {
+            "node": "Verify the MP3 bytes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify the MP3 bytes": {
+      "main": [
+        [
+          {
+            "node": "Return the MP3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveExecutionProgress": false,
+    "saveDataSuccessExecution": "none",
+    "saveDataErrorExecution": "none",
+    "saveManualExecutions": false
+  },
+  "pinData": {}
+}

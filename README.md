@@ -1039,6 +1039,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Generate YouTube Metadata from Transcript and Document](workflows/generate-youtube-metadata-from-transcript-and-doc/) - Generate a video title, description and tags using a transcript and channel reference document.
 - [Summarize YouTube Video and Notify](workflows/summarize-youtube-video-and-notify/) - Summarize a YouTube transcript, return the video details and notify Telegram.
 - [Add Audio Narration to WordPress Articles](workflows/add-narration-to-wordpress-articles/) - Turn a WordPress article or its summary into MP3 audio and place the player above the existing post.
+- [Return Speech as an MP3 from a Webhook](workflows/return-speech-mp3-from-webhook/) - Send text to a webhook and get an AI-generated ElevenLabs MP3 in the same HTTP response.
 
 ## Recruiting
 
