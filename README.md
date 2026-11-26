@@ -355,6 +355,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Save WordPress Form Contacts to Mautic](workflows/save-wordpress-form-contacts-to-mautic/) - Save contacts from a WordPress form and add an email Do Not Contact entry when the submitted address fails a basic syntax check.
 - [Send Recent X Mentions to Slack](workflows/send-recent-x-mentions-to-slack/) - Find recent public X mentions and send a separate link to Slack for each matching post.
 - [Append Google Ads Keyword Ideas to Sheets](workflows/append-google-ads-keyword-ideas-to-sheets/) - Find keyword ideas in Google Ads and append search volume, competition, and bid estimates to Google Sheets.
+- [Create UTM Links and QR Codes in Airtable](workflows/create-utm-links-and-qr-codes-in-airtable/) - Build a tagged campaign URL, download its QR code as a PNG, and save the same link to Airtable.
 
 ## Support
 

@@ -1,0 +1,187 @@
+{
+  "name": "Create UTM Links and QR Codes in Airtable",
+  "nodes": [
+    {
+      "name": "Start campaign setup",
+      "id": "create-utm-links-and-qr-codes-in-airtable-start",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "parameters": {},
+      "position": [
+        0,
+        250
+      ]
+    },
+    {
+      "name": "Set campaign and Airtable fields",
+      "id": "create-utm-links-and-qr-codes-in-airtable-config",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function prepareCampaign({\n  website_url,\n  campaign_id,\n  campaign_source,\n  campaign_medium,\n  campaign_name,\n  campaign_term,\n  baseId,\n  tableId,\n}) {\n  const site = website_url.trim();\n  const parts = /^(https?:\\/\\/)([a-z0-9.-]+(?::\\d{1,5})?)(\\/[^?#]*)?(?:\\?([^#]*))?(#.*)?$/i.exec(\n    site,\n  );\n  if (!parts || /[\\s\\\\\\x00-\\x1f\\x7f]/.test(site) || /%(?![a-f0-9]{2})/i.test(site)) {\n    throw new Error(\"Enter a complete HTTP or HTTPS campaign URL without credentials\");\n  }\n  const [host, port] = parts[2].split(\":\");\n  if (\n    !host\n      .split(\".\")\n      .filter((label, index, all) => label || index !== all.length - 1)\n      .every((label) => /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/i.test(label)) ||\n    !/[a-z0-9]/i.test(host) ||\n    (port && (Number(port) < 1 || Number(port) > 65535))\n  ) {\n    throw new Error(\"Enter a campaign URL with a valid hostname and port\");\n  }\n  if (!/^app[A-Za-z0-9]{14}$/.test(baseId) || !/^tbl[A-Za-z0-9]{14}$/.test(tableId)) {\n    throw new Error(\"Set an Airtable base ID and table ID\");\n  }\n  const tags = {\n    utm_source: campaign_source.trim(),\n    utm_medium: campaign_medium.trim(),\n    utm_campaign: campaign_name.trim(),\n    utm_term: campaign_term.trim(),\n    utm_content: campaign_id.trim(),\n  };\n  if (!tags.utm_source || !tags.utm_medium || !tags.utm_campaign) {\n    throw new Error(\"Enter a campaign source, medium, and name\");\n  }\n  const replacements = Object.entries(tags).filter(([, text]) => text);\n  const overridden = new Set(replacements.map(([key]) => key));\n  const original = (parts[4] || \"\").split(\"&\").filter((entry) => {\n    if (!entry) return false;\n    const key = entry.split(\"=\", 1)[0];\n    try {\n      return !overridden.has(decodeURIComponent(key.replaceAll(\"+\", \" \")));\n    } catch {\n      return true;\n    }\n  });\n  const query = original.concat(\n    replacements.map(([key, text]) => key + \"=\" + encodeURIComponent(text)),\n  );\n  const url =\n    parts[1].toLowerCase() +\n    parts[2].toLowerCase() +\n    (parts[3] || \"/\") +\n    \"?\" +\n    query.join(\"&\") +\n    (parts[5] || \"\");\n  if (new TextEncoder().encode(url).length > 900)\n    throw new Error(\"Keep the campaign link within 900 UTF-8 bytes\");\n  return {\n    url,\n    endpoint: \"/v0/\" + baseId + \"/\" + tableId,\n    request: { performUpsert: { fieldsToMergeOn: [\"URL\"] }, records: [{ fields: { URL: url } }] },\n  };\n}\n\nconst settings = {\n  website_url: \"https://example.com/spring?ref=print#details\",\n  campaign_id: \"poster01\",\n  campaign_source: \"flyer\",\n  campaign_medium: \"print\",\n  campaign_name: \"spring-market\",\n  campaign_term: \"\",\n  baseId: \"YOUR_AIRTABLE_BASE_ID\",\n  tableId: \"YOUR_AIRTABLE_TABLE_ID\",\n};\nreturn [{ json: prepareCampaign(settings) }];\n"
+      },
+      "position": [
+        235,
+        250
+      ]
+    },
+    {
+      "name": "Download the campaign QR code",
+      "id": "create-utm-links-and-qr-codes-in-airtable-download",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://quickchart.io/qr",
+        "authentication": "none",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { text: $json.url, ...{\"size\":300,\"margin\":10,\"ecLevel\":\"H\",\"dark\":\"000000\",\"light\":\"FFFFFF\",\"format\":\"png\"} } }}",
+        "options": {
+          "timeout": 20000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "responseFormat": "file",
+              "outputPropertyName": "qr"
+            }
+          }
+        }
+      },
+      "position": [
+        470,
+        250
+      ]
+    },
+    {
+      "name": "Check the QR code PNG",
+      "id": "create-utm-links-and-qr-codes-in-airtable-check",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function checkQrPng(bytes, contentType, statusCode) {\n  const png = [137, 80, 78, 71, 13, 10, 26, 10];\n  const iend = [0, 0, 0, 0, 73, 69, 78, 68, 174, 66, 96, 130];\n  if (\n    statusCode !== 200 ||\n    contentType?.split(\";\")[0].trim().toLowerCase() !== \"image/png\" ||\n    bytes?.length < 45 ||\n    bytes?.length > 1024 * 1024 ||\n    !png.every((byte, index) => bytes?.[index] === byte) ||\n    !iend.every((byte, index) => bytes[bytes.length - iend.length + index] === byte)\n  ) {\n    throw new Error(\"QuickChart did not return a complete PNG\");\n  }\n  const header = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);\n  if (\n    header.getUint32(8) !== 13 ||\n    header.getUint32(12) !== 0x49484452 ||\n    header.getUint32(16) !== 300 ||\n    header.getUint32(20) !== 300\n  ) {\n    throw new Error(\"QuickChart did not return the requested 300-pixel QR code\");\n  }\n}\n\nconst item = $input.first();\nif (!item.binary?.qr) throw new Error(\"QuickChart QR code is missing\");\nconst bytes = await helpers.getBinaryDataBuffer(0, \"qr\");\ncheckQrPng(bytes, item.json.headers?.[\"content-type\"], item.json.statusCode);\nreturn [\n  {\n    json: $(\"Set campaign and Airtable fields\").first().json,\n    binary: { qr: { ...item.binary.qr, fileName: \"campaign-qr.png\" } },\n  },\n];\n"
+      },
+      "position": [
+        705,
+        250
+      ]
+    },
+    {
+      "name": "Upsert the campaign link in Airtable",
+      "id": "create-utm-links-and-qr-codes-in-airtable-save",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ \"https://api.airtable.com\" + $json.endpoint }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "airtableTokenApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.request }}",
+        "options": {
+          "timeout": 20000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true,
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "position": [
+        940,
+        250
+      ]
+    },
+    {
+      "name": "Campaign link and QR code",
+      "id": "create-utm-links-and-qr-codes-in-airtable-done",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function confirmCampaign({ body, statusCode, url }) {\n  if (statusCode !== 200)\n    throw new Error(\n      \"Airtable upsert failed with HTTP \" + statusCode + \". Check Airtable before retrying.\",\n    );\n  const record = body?.records?.[0];\n  const created = body?.createdRecords;\n  const updated = body?.updatedRecords;\n  if (\n    body?.details ||\n    body?.records?.length !== 1 ||\n    typeof record?.id !== \"string\" ||\n    !/^rec[A-Za-z0-9]{14}$/.test(record.id) ||\n    record.fields?.URL !== url ||\n    !Array.isArray(created) ||\n    !Array.isArray(updated) ||\n    created.length + updated.length !== 1 ||\n    (created[0] ?? updated[0]) !== record.id\n  ) {\n    throw new Error(\"Airtable did not confirm this campaign link. Check Airtable before retrying.\");\n  }\n  return { url, recordId: record.id, created: created.length === 1 };\n}\n\nconst saved = $input.first().json;\nconst qr = $(\"Check the QR code PNG\").first();\nreturn [{ json: confirmCampaign({ ...saved, url: qr.json.url }), binary: qr.binary }];\n"
+      },
+      "position": [
+        1175,
+        250
+      ]
+    }
+  ],
+  "active": false,
+  "connections": {
+    "Start campaign setup": {
+      "main": [
+        [
+          {
+            "node": "Set campaign and Airtable fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set campaign and Airtable fields": {
+      "main": [
+        [
+          {
+            "node": "Download the campaign QR code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download the campaign QR code": {
+      "main": [
+        [
+          {
+            "node": "Check the QR code PNG",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check the QR code PNG": {
+      "main": [
+        [
+          {
+            "node": "Upsert the campaign link in Airtable",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upsert the campaign link in Airtable": {
+      "main": [
+        [
+          {
+            "node": "Campaign link and QR code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}
