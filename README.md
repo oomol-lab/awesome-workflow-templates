@@ -66,6 +66,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [CRM](#crm)
 - [Email](#email)
 - [Engineering](#engineering)
+- [Data & Analytics](#data-&-analytics)
 - [Contribute](#contribute)
 - [Translations](#translations)
 - [Licensing](#licensing)
@@ -1296,6 +1297,10 @@ A growing collection of automation workflows for connecting apps and getting rep
 ## Engineering
 
 - [Track Website Visual Regressions](workflows/track-website-visual-regressions/) - Save website screenshot baselines, compare them with fresh captures each week, and collect detected differences in one Linear issue.
+
+## Data & Analytics
+
+- [Sync Google Sheets Contacts to PostgreSQL](workflows/sync-google-sheets-contacts-to-postgres/) - Sync contact names, towns and ages from Google Sheets into an existing PostgreSQL table every hour.
 
 ## Contribute
 

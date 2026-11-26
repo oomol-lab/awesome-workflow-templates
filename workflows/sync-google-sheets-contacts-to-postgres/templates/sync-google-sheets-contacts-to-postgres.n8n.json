@@ -1,0 +1,183 @@
+{
+  "name": "Sync Google Sheets Contacts to PostgreSQL",
+  "nodes": [
+    {
+      "id": "sync-google-sheets-contacts-to-postgres-schedule",
+      "name": "Run every hour",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 0 * * * *"
+            }
+          ]
+        }
+      },
+      "position": [
+        0,
+        240
+      ]
+    },
+    {
+      "id": "sync-google-sheets-contacts-to-postgres-config",
+      "name": "Set the source sheet and target table",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function syncContactSettings(config) {\n  const { spreadsheetId, tab, schema, table } = config;\n  if (\n    typeof spreadsheetId !== \"string\" ||\n    !/^[A-Za-z0-9_-]{10,150}$/.test(spreadsheetId) ||\n    spreadsheetId.startsWith(\"YOUR_\") ||\n    typeof tab !== \"string\" ||\n    !tab.trim() ||\n    tab.length > 100 ||\n    /[\\x00-\\x1f]/.test(tab)\n  )\n    throw Error(\"Set the Google spreadsheet ID and tab name.\");\n  for (const identifier of [schema, table]) {\n    if (\n      typeof identifier !== \"string\" ||\n      !/^[A-Za-z_][A-Za-z0-9_]{0,62}$/.test(identifier) ||\n      identifier.startsWith(\"YOUR_\")\n    ) {\n      throw Error(\n        \"Set the PostgreSQL schema and table using SQL identifier letters, numbers and underscores.\",\n      );\n    }\n  }\n  const range = \"'\" + tab.replaceAll(\"'\", \"''\") + \"'!A:AZ\";\n  const url =\n    \"https://sheets.googleapis.com/v4/spreadsheets/\" +\n    spreadsheetId +\n    \"/values/\" +\n    encodeURIComponent(range) +\n    \"?majorDimension=ROWS&valueRenderOption=UNFORMATTED_VALUE\";\n  return { ...config, url, relation: '\"' + schema + '\".\"' + table + '\"' };\n}\n\nconst settings = {\n  spreadsheetId: \"YOUR_SPREADSHEET_ID\",\n  tab: \"Contacts\",\n  schema: \"public\",\n  table: \"YOUR_TABLE_NAME\",\n};\nreturn [{ json: syncContactSettings(settings) }];\n"
+      },
+      "position": [
+        230,
+        240
+      ]
+    },
+    {
+      "id": "sync-google-sheets-contacts-to-postgres-read",
+      "name": "Read the Google Sheets contact rows",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.url }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "options": {
+          "timeout": 45000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "position": [
+        460,
+        240
+      ]
+    },
+    {
+      "id": "sync-google-sheets-contacts-to-postgres-prepare",
+      "name": "Validate and match the full contact names",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function readContactRows(reply, config) {\n  const range = typeof reply?.range === \"string\" ? reply.range : \"\";\n  const boundary = range.lastIndexOf(\"!\");\n  const tab = range.slice(0, boundary);\n  const sheetName =\n    tab.startsWith(\"'\") && tab.endsWith(\"'\") ? tab.slice(1, -1).replaceAll(\"''\", \"'\") : tab;\n  if (\n    boundary < 1 ||\n    sheetName !== config.tab ||\n    reply.majorDimension !== \"ROWS\" ||\n    !Array.isArray(reply.values) ||\n    !Array.isArray(reply.values[0]) ||\n    reply.values.length > 10001\n  )\n    throw Error(\"Expected the configured Sheets tab with a header and at most 10,000 rows.\");\n  const allowed = [\"first_name\", \"last_name\", \"town\", \"age\"];\n  const header = reply.values[0];\n  const indexes = allowed.map((label) => {\n    const index = header.indexOf(label);\n    if (index < 0 || header.lastIndexOf(label) !== index)\n      throw Error(\"The sheet needs one header for each contact field.\");\n    return index;\n  });\n  const result = [],\n    seen = new Set();\n  function text(value, required, row) {\n    if ((value == null || value === \"\") && !required) return null;\n    if (\n      typeof value !== \"string\" ||\n      (required && !value.trim()) ||\n      value.includes(\"\\u0000\") ||\n      value.length > 2000\n    ) {\n      throw Error(\"Invalid text field at sheet row \" + row + \".\");\n    }\n    return value;\n  }\n  for (let i = 1; i < reply.values.length; i++) {\n    const row = reply.values[i];\n    if (!Array.isArray(row)) throw Error(\"Invalid sheet row \" + (i + 1) + \".\");\n    const [first, last, town, age] = indexes.map((index) => row[index]);\n    if ([first, last, town, age].every((value) => value == null || value === \"\")) continue;\n    const rowNumber = i + 1;\n    const first_name = text(first, true, rowNumber),\n      last_name = text(last, true, rowNumber);\n    const key = JSON.stringify([first_name, last_name]);\n    if (seen.has(key)) throw Error(\"Duplicate full name at sheet row \" + rowNumber + \".\");\n    seen.add(key);\n    let years = null;\n    if (age != null && age !== \"\") {\n      years =\n        typeof age === \"number\"\n          ? age\n          : typeof age === \"string\" && /^\\d+$/.test(age)\n            ? Number(age)\n            : NaN;\n      if (!Number.isInteger(years) || years < 0 || years > 2147483647)\n        throw Error(\"Invalid integer age at sheet row \" + rowNumber + \".\");\n    }\n    result.push({ first_name, last_name, town: text(town, false, rowNumber), age: years });\n  }\n  return result;\n}\n\nfunction contactUpsert(relation) {\n  return `WITH source_rows AS (\n  SELECT first_name, last_name, town, age\n  FROM jsonb_to_recordset($1::jsonb)\n    AS uploaded(first_name text, last_name text, town text, age integer)\n), changed AS (\n  INSERT INTO ${relation} AS existing (first_name, last_name, town, age)\n  SELECT first_name, last_name, town, age\n  FROM source_rows\n  ORDER BY first_name, last_name\n  ON CONFLICT (first_name, last_name) DO UPDATE\n  SET town = EXCLUDED.town, age = EXCLUDED.age\n  WHERE (existing.town, existing.age) IS DISTINCT FROM (EXCLUDED.town, EXCLUDED.age)\n  RETURNING 1\n)\nSELECT (SELECT count(*)::int FROM source_rows) AS source_rows,\n       count(*)::int AS changed_rows\nFROM changed;`;\n}\n\nconst config = $(\"Set the source sheet and target table\").first().json;\nconst rows = readContactRows($input.first().json.body, config);\nconst payload = JSON.stringify(rows);\nif (Buffer.byteLength(payload, \"utf8\") > 1024 * 1024)\n  throw Error(\"Keep the validated batch within 1 MiB.\");\nreturn [{ json: { query: contactUpsert(config.relation), payload, sourceRows: rows.length } }];\n"
+      },
+      "position": [
+        690,
+        240
+      ]
+    },
+    {
+      "id": "sync-google-sheets-contacts-to-postgres-write",
+      "name": "Apply changes in PostgreSQL",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "parameters": {
+        "resource": "database",
+        "operation": "executeQuery",
+        "query": "={{ $json.query }}",
+        "options": {
+          "queryBatching": "transaction",
+          "queryReplacement": "={{ [$json.payload] }}"
+        }
+      },
+      "position": [
+        920,
+        240
+      ]
+    },
+    {
+      "id": "sync-google-sheets-contacts-to-postgres-check",
+      "name": "Return synchronization counts",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function checkContactReceipt(receipt, expected) {\n  if (\n    receipt?.source_rows !== expected ||\n    !Number.isInteger(receipt?.changed_rows) ||\n    receipt.changed_rows < 0 ||\n    receipt.changed_rows > expected\n  )\n    throw Error(\"PostgreSQL did not confirm the synchronization counts.\");\n  return { sourceRows: expected, changedRows: receipt.changed_rows };\n}\n\nconst expected = $(\"Validate and match the full contact names\").first().json.sourceRows;\nreturn [{ json: checkContactReceipt($input.first().json, expected) }];\n"
+      },
+      "position": [
+        1150,
+        240
+      ]
+    }
+  ],
+  "connections": {
+    "Run every hour": {
+      "main": [
+        [
+          {
+            "node": "Set the source sheet and target table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set the source sheet and target table": {
+      "main": [
+        [
+          {
+            "node": "Read the Google Sheets contact rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the Google Sheets contact rows": {
+      "main": [
+        [
+          {
+            "node": "Validate and match the full contact names",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate and match the full contact names": {
+      "main": [
+        [
+          {
+            "node": "Apply changes in PostgreSQL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apply changes in PostgreSQL": {
+      "main": [
+        [
+          {
+            "node": "Return synchronization counts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC",
+    "saveDataSuccessExecution": "none",
+    "saveDataErrorExecution": "none",
+    "saveManualExecutions": false,
+    "saveExecutionProgress": false
+  },
+  "pinData": {}
+}
