@@ -1,0 +1,229 @@
+{
+  "name": "Notify DingTalk Reviewers of New Azure DevOps Pull Requests",
+  "nodes": [
+    {
+      "id": "notify-dingtalk-on-azure-devops-pull-requests-hook",
+      "name": "Receive Azure DevOps PR events",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "notify-dingtalk-on-azure-devops-pull-requests",
+        "responseMode": "onReceived",
+        "authentication": "basicAuth",
+        "options": {}
+      },
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "id": "notify-dingtalk-on-azure-devops-pull-requests-filter",
+      "name": "Read the new pull request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function readPullRequest(body) {\n  if (body?.eventType !== \"git.pullrequest.created\") return null;\n  const { message, resource } = body;\n  if (\n    typeof message?.markdown !== \"string\" ||\n    !message.markdown.trim() ||\n    typeof resource?.createdBy?.uniqueName !== \"string\" ||\n    typeof resource.createdBy.displayName !== \"string\" ||\n    !Array.isArray(resource.reviewers)\n  ) {\n    throw new Error(\"The pull request event needs the full Azure DevOps resource and message\");\n  }\n  return {\n    markdown: message.markdown,\n    creator: resource.createdBy,\n    reviewers: resource.reviewers,\n  };\n}\nconst pullRequest = readPullRequest($input.first().json.body);\nreturn pullRequest ? [{ json: pullRequest }] : [];\n"
+      },
+      "position": [
+        240,
+        0
+      ]
+    },
+    {
+      "id": "notify-dingtalk-on-azure-devops-pull-requests-accounts",
+      "name": "Read the reviewer mapping",
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.2,
+      "parameters": {
+        "table": {
+          "__rl": true,
+          "mode": "list",
+          "value": "tfs_dingtalk_account_map",
+          "cachedResultName": "tfs_dingtalk_account_map"
+        },
+        "options": {
+          "outputColumns": [
+            "TfsAccount",
+            "UserName",
+            "DingTalkMobile"
+          ]
+        },
+        "operation": "select",
+        "returnAll": true
+      },
+      "position": [
+        480,
+        0
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "id": "notify-dingtalk-on-azure-devops-pull-requests-compose",
+      "name": "Build the DingTalk message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function makeMessage(pr, rows) {\n  const normalize = (value) => (typeof value === \"string\" ? value.trim().toLowerCase() : \"\");\n  const mapping = new Map();\n  for (const { TfsAccount, UserName, DingTalkMobile } of rows) {\n    const account = normalize(TfsAccount);\n    if (!account && !UserName && !DingTalkMobile) continue;\n    const mobile = typeof DingTalkMobile === \"string\" ? DingTalkMobile.trim() : \"\";\n    if (!account || mapping.has(account) || (DingTalkMobile && !/^\\+?\\d{6,15}$/.test(mobile))) {\n      throw new Error(\n        \"Use distinct TfsAccount values and mobile numbers stored as text in the reviewer mapping\",\n      );\n    }\n    mapping.set(account, {\n      name: typeof UserName === \"string\" ? UserName.trim() : \"\",\n      mobile,\n    });\n  }\n\n  function find(identity) {\n    const account = normalize(identity?.uniqueName);\n    const shortName = account.split(\"\\\\\").at(-1).split(\"@\")[0];\n    return mapping.get(account) ?? mapping.get(shortName);\n  }\n\n  const creatorName = find(pr.creator)?.name;\n  let text = pr.markdown;\n  if (creatorName && pr.creator.displayName)\n    text = text.replace(pr.creator.displayName, () => creatorName);\n\n  const isTeam = (reviewer) =>\n    reviewer?.isContainer === true ||\n    (reviewer?.isContainer == null &&\n      typeof reviewer?.uniqueName === \"string\" &&\n      reviewer.uniqueName.includes(\"团队\"));\n  const isAtAll = pr.reviewers.some(isTeam);\n  const people = pr.reviewers\n    .filter((reviewer) => !isTeam(reviewer))\n    .map(find)\n    .filter(Boolean);\n  const mobiles = [...new Set(people.map(({ mobile }) => mobile).filter(Boolean))];\n  const names = isAtAll ? [...new Set(people.map(({ name }) => name).filter(Boolean))] : [];\n  const mentions = isAtAll ? [\"所有人\", ...names] : mobiles;\n  if (mentions.length) text += \"\\n\\n请 @\" + mentions.join(\" @\") + \" 评审\";\n\n  return {\n    title: \"New PR Notify\",\n    text,\n    atMobiles: !isAtAll && mobiles.length ? mobiles : null,\n    isAtAll,\n  };\n}\nconst pr = $(\"Read the new pull request\").first().json;\nconst rows = $input.all().map(({ json }) => json);\nconst { title, text, atMobiles, isAtAll } = makeMessage(pr, rows);\nconst timestamp = String(Date.now());\nreturn [\n  {\n    json: {\n      timestamp,\n      body: {\n        msgtype: \"markdown\",\n        markdown: { title, text },\n        at: { ...(atMobiles ? { atMobiles } : {}), isAtAll },\n      },\n    },\n  },\n];\n"
+      },
+      "position": [
+        720,
+        0
+      ]
+    },
+    {
+      "id": "notify-dingtalk-on-azure-devops-pull-requests-sign",
+      "name": "Sign the DingTalk request",
+      "type": "n8n-nodes-base.crypto",
+      "typeVersion": 1,
+      "parameters": {
+        "action": "hmac",
+        "type": "SHA256",
+        "binaryData": false,
+        "encoding": "base64",
+        "value": "={{ $json.timestamp + '\\n' + $parameter.secret }}",
+        "dataPropertyName": "signature",
+        "secret": ""
+      },
+      "position": [
+        960,
+        0
+      ]
+    },
+    {
+      "id": "notify-dingtalk-on-azure-devops-pull-requests-send",
+      "name": "Notify the DingTalk group",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://oapi.dingtalk.com/robot/send",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "timestamp",
+              "value": "={{ $json.timestamp }}"
+            },
+            {
+              "name": "sign",
+              "value": "={{ $json.signature }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.body }}",
+        "options": {
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "position": [
+        1200,
+        0
+      ]
+    },
+    {
+      "id": "notify-dingtalk-on-azure-devops-pull-requests-confirm",
+      "name": "Check DingTalk delivery",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const response = $input.first().json;\nif (response.errcode !== 0)\n  throw new Error(\n    \"DingTalk rejected the message (\" +\n      (Number.isInteger(response.errcode) ? response.errcode : \"invalid response\") +\n      \")\",\n  );\nreturn [{ json: { delivered: true } }];\n"
+      },
+      "position": [
+        1440,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Receive Azure DevOps PR events": {
+      "main": [
+        [
+          {
+            "node": "Read the new pull request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the new pull request": {
+      "main": [
+        [
+          {
+            "node": "Read the reviewer mapping",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the reviewer mapping": {
+      "main": [
+        [
+          {
+            "node": "Build the DingTalk message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build the DingTalk message": {
+      "main": [
+        [
+          {
+            "node": "Sign the DingTalk request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sign the DingTalk request": {
+      "main": [
+        [
+          {
+            "node": "Notify the DingTalk group",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify the DingTalk group": {
+      "main": [
+        [
+          {
+            "node": "Check DingTalk delivery",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}
