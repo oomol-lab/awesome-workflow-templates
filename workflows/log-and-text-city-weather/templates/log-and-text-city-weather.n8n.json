@@ -1,0 +1,230 @@
+{
+  "name": "Log Weather Requests and Send an SMS",
+  "nodes": [
+    {
+      "id": "log-and-text-city-weather-0",
+      "name": "Accept weather requests",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "log-and-text-city-weather",
+        "authentication": "headerAuth",
+        "responseMode": "onReceived",
+        "options": {}
+      }
+    },
+    {
+      "id": "log-and-text-city-weather-1",
+      "name": "Validate the name, number, and city",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        260,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function prepareRequest(body, from) {\n  const name = typeof body?.name === \"string\" ? body.name.trim() : \"\";\n  const number = typeof body?.number === \"string\" ? body.number.trim() : \"\";\n  const city = typeof body?.city === \"string\" ? body.city.trim() : \"\";\n  const phone = /^\\+[1-9]\\d{6,14}$/;\n  if (\n    !name ||\n    name.length > 120 ||\n    !city ||\n    city.length > 180 ||\n    /[\\x00-\\x1f\\x7f]/.test(name + city) ||\n    !phone.test(number)\n  ) {\n    throw new Error(\n      \"Send nonempty name and city strings and an international phone number in E.164 format\",\n    );\n  }\n  if (typeof from !== \"string\" || !phone.test(from))\n    throw new Error(\"Configure an SMS-capable Twilio number in E.164 format\");\n  return { fields: { Name: name, Number: number, City: city }, from };\n}\n\nconst twilioNumber = \"YOUR_TWILIO_NUMBER\";\nconst enableWrites = false;\nif (!enableWrites)\n  throw new Error(\"Configure and verify Webhook Header authentication before enabling writes\");\nconst { fields, from } = prepareRequest($input.first().json.body, twilioNumber);\nreturn [{ json: { ...fields, from } }];\n"
+      }
+    },
+    {
+      "id": "log-and-text-city-weather-2",
+      "name": "Append the request to Airtable",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 1,
+      "position": [
+        520,
+        300
+      ],
+      "parameters": {
+        "authentication": "airtableTokenApi",
+        "operation": "append",
+        "application": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_AIRTABLE_BASE_ID"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_AIRTABLE_TABLE_ID"
+        },
+        "addAllFields": false,
+        "fields": [
+          "Name",
+          "Number",
+          "City"
+        ],
+        "options": {}
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "id": "log-and-text-city-weather-3",
+      "name": "Confirm the saved request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        780,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function verifyWeatherRow(record, expected) {\n  if (\n    typeof record?.id !== \"string\" ||\n    !/^rec[a-zA-Z0-9]+$/.test(record.id) ||\n    record.fields?.Name !== expected.Name ||\n    record.fields?.Number !== expected.Number ||\n    record.fields?.City !== expected.City\n  ) {\n    throw new Error(\"Airtable did not confirm the new row for this request\");\n  }\n  return record.id;\n}\n\nconst fields = $(\"Validate the name, number, and city\").first().json;\nconst rows = $input.all();\nif (rows.length !== 1) throw new Error(\"Airtable did not return one new record\");\nconst recordId = verifyWeatherRow(rows[0].json, fields);\nreturn [{ json: { recordId, city: fields.City, to: fields.Number, from: fields.from } }];\n"
+      }
+    },
+    {
+      "id": "log-and-text-city-weather-4",
+      "name": "Read current weather in metric units",
+      "type": "n8n-nodes-base.openWeatherMap",
+      "typeVersion": 1,
+      "position": [
+        1040,
+        300
+      ],
+      "parameters": {
+        "operation": "currentWeather",
+        "format": "metric",
+        "locationSelection": "cityName",
+        "cityName": "={{ $json.city }}",
+        "language": ""
+      }
+    },
+    {
+      "id": "log-and-text-city-weather-5",
+      "name": "Format the weather text",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1300,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function weatherMessage(weather, query) {\n  const { name, sys, main, wind } = weather ?? {};\n  const description = weather?.weather?.[0]?.description;\n  const country = typeof sys?.country === \"string\" ? sys.country : \"\";\n  const parts = query.split(\",\");\n  const qualifier = parts.at(-1)?.trim() ?? \"\";\n  if (\n    (weather?.cod !== 200 && weather?.cod !== \"200\") ||\n    typeof name !== \"string\" ||\n    !name.trim() ||\n    !/^[A-Z]{2}$/.test(country) ||\n    (parts.length > 1 && /^[a-z]{2}$/i.test(qualifier) && qualifier.toUpperCase() !== country) ||\n    typeof description !== \"string\" ||\n    !description.trim() ||\n    !Number.isFinite(main?.temp) ||\n    !Number.isFinite(main?.humidity) ||\n    main.humidity < 0 ||\n    main.humidity > 100 ||\n    !Number.isFinite(wind?.speed) ||\n    wind.speed < 0\n  ) {\n    throw new Error(\"OpenWeather did not confirm complete metric weather for the requested city\");\n  }\n  return (\n    \"The weather in \" +\n    name +\n    \", \" +\n    country +\n    \" is \" +\n    main.temp +\n    \" °C with \" +\n    description +\n    \". Humidity is \" +\n    main.humidity +\n    \"% and wind speed is \" +\n    wind.speed +\n    \" m/s.\"\n  );\n}\n\nconst entry = $(\"Confirm the saved request\").first().json;\nreturn [{ json: { ...entry, body: weatherMessage($input.first().json, entry.city) } }];\n"
+      }
+    },
+    {
+      "id": "log-and-text-city-weather-6",
+      "name": "Submit the weather SMS to Twilio",
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [
+        1560,
+        300
+      ],
+      "parameters": {
+        "resource": "sms",
+        "operation": "send",
+        "from": "={{ $json.from }}",
+        "to": "={{ $json.to }}",
+        "toWhatsapp": false,
+        "message": "={{ $json.body }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "log-and-text-city-weather-7",
+      "name": "Confirm the matching Twilio receipt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1820,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function verifySmsReceipt(sms, expected) {\n  if (\n    typeof sms?.sid !== \"string\" ||\n    !/^SM[0-9a-f]{32}$/i.test(sms.sid) ||\n    ![\"accepted\", \"queued\", \"sending\", \"sent\", \"delivered\"].includes(sms.status) ||\n    sms.to !== expected.to ||\n    sms.from !== expected.from ||\n    sms.body !== expected.body\n  ) {\n    throw new Error(\n      \"Twilio did not confirm submission to the requested number. Review Twilio before replaying.\",\n    );\n  }\n  return { messageSid: sms.sid, status: sms.status };\n}\n\nconst request = $(\"Format the weather text\").first().json;\nconst sms = $input.first().json;\nconst result = verifySmsReceipt(sms, request);\nreturn [{ json: { recordId: request.recordId, ...result } }];\n"
+      }
+    }
+  ],
+  "connections": {
+    "Accept weather requests": {
+      "main": [
+        [
+          {
+            "node": "Validate the name, number, and city",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate the name, number, and city": {
+      "main": [
+        [
+          {
+            "node": "Append the request to Airtable",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append the request to Airtable": {
+      "main": [
+        [
+          {
+            "node": "Confirm the saved request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm the saved request": {
+      "main": [
+        [
+          {
+            "node": "Read current weather in metric units",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read current weather in metric units": {
+      "main": [
+        [
+          {
+            "node": "Format the weather text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format the weather text": {
+      "main": [
+        [
+          {
+            "node": "Submit the weather SMS to Twilio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Submit the weather SMS to Twilio": {
+      "main": [
+        [
+          {
+            "node": "Confirm the matching Twilio receipt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

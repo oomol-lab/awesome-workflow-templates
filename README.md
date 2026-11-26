@@ -705,6 +705,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Analyze a Video URL with Gemini](workflows/analyze-video-from-a-url-with-gemini/) - Download a video, send the full file to Gemini, and return a description based on your instructions.
 - [Archive Two Cloud Files to Dropbox](workflows/archive-two-cloud-files-to-dropbox/) - Download two public files, put them in one ZIP with the names you choose, and save it to Dropbox.
 - [Create Formatted Posts on WordPress.com](workflows/create-formatted-wordpress-com-posts/) - Send a title and formatted article to WordPress.com and return the confirmed post ID.
+- [Log Weather Requests and Send an SMS](workflows/log-and-text-city-weather/) - Save an incoming name, number, and city to Airtable and text that number the current weather.
 
 ## Content
 
