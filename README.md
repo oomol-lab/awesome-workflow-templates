@@ -351,6 +351,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Score LinkedIn Companies in Google Sheets](workflows/score-linkedin-companies-in-google-sheets/) - Calculate ideal customer profile scores for LinkedIn company URLs and write the scores to their original Google Sheets rows.
 - [Verify Signups Before Adding to SendGrid](workflows/verify-signups-before-adding-to-sendgrid/) - Collect email signups, verify each address with Hunter, and add valid contacts to a SendGrid list.
 - [Save WordPress Form Contacts to Mautic](workflows/save-wordpress-form-contacts-to-mautic/) - Save contacts from a WordPress form and add an email Do Not Contact entry when the submitted address fails a basic syntax check.
+- [Send Recent X Mentions to Slack](workflows/send-recent-x-mentions-to-slack/) - Find recent public X mentions and send a separate link to Slack for each matching post.
 
 ## Support
 

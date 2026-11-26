@@ -1,0 +1,256 @@
+{
+  "name": "Send Recent X Mentions to Slack",
+  "nodes": [
+    {
+      "id": "send-recent-x-mentions-to-slack-0",
+      "name": "Every ten minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "1-59/10 * * * *"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "send-recent-x-mentions-to-slack-1",
+      "name": "Set X query and Slack channel",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        250,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function settings(query, channel, timestamp) {\n  const keyword = query.trim();\n  if (\n    !keyword ||\n    keyword === \"@YOUR_X_HANDLE\" ||\n    keyword.length > 512 ||\n    !/^[CG][A-Z0-9]{8,}$/.test(channel)\n  ) {\n    throw new Error(\"Set the X search query and a Slack channel ID\");\n  }\n  const time = typeof timestamp === \"string\" ? Date.parse(timestamp) : NaN;\n  if (!Number.isFinite(time)) throw new Error(\"The schedule did not provide a valid timestamp\");\n  const end = Math.floor(time / 600000) * 600000;\n  return { keyword, channel, start: end - 600000, end };\n}\n\nconst config = settings(\"@YOUR_X_HANDLE\", \"YOUR_SLACK_CHANNEL_ID\", $input.first().json.timestamp);\nreturn [\n  {\n    json: {\n      ...config,\n      startTime: new Date(config.start).toISOString(),\n      endTime: new Date(config.end + 1000).toISOString(),\n    },\n  },\n];\n"
+      }
+    },
+    {
+      "id": "send-recent-x-mentions-to-slack-2",
+      "name": "Search recent public posts",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        500,
+        300
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.x.com/2/tweets/search/recent",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "specifyQuery": "keypair",
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "query",
+              "value": "={{ $json.keyword }}"
+            },
+            {
+              "name": "start_time",
+              "value": "={{ $json.startTime }}"
+            },
+            {
+              "name": "end_time",
+              "value": "={{ $json.endTime }}"
+            },
+            {
+              "name": "max_results",
+              "value": "50"
+            },
+            {
+              "name": "sort_order",
+              "value": "recency"
+            },
+            {
+              "name": "post.fields",
+              "value": "created_at"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "send-recent-x-mentions-to-slack-3",
+      "name": "Select recent post IDs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        750,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function postRecord(id, date) {\n  const time = typeof date === \"string\" ? Date.parse(date) : NaN;\n  if (typeof id !== \"string\" || !/^[1-9]\\d{0,18}$/.test(id) || !Number.isFinite(time)) {\n    throw new Error(\"X returned a post without an exact string ID and creation time\");\n  }\n  return { id, time };\n}\n\nfunction includeRecent(previous, rows, limits) {\n  const recent = new Map(previous.map((row) => [row.id, row]));\n  for (const row of rows) {\n    if (row.time <= limits.start || row.time > limits.end) continue;\n    const earlier = recent.get(row.id);\n    if (earlier && earlier.time !== row.time)\n      throw new Error(\"X returned inconsistent creation times for the same post\");\n    recent.set(row.id, row);\n  }\n  return [...recent.values()]\n    .sort((a, b) => b.time - a.time || b.id.length - a.id.length || b.id.localeCompare(a.id))\n    .slice(0, 50);\n}\n\nfunction slackText(id) {\n  return \"New mention on X\\nhttps://x.com/i/web/status/\" + id;\n}\n\nconst config = $(\"Set X query and Slack channel\").first().json;\nconst body = $input.first().json;\nif (\n  !Number.isInteger(body.meta?.result_count) ||\n  body.errors?.length ||\n  (body.data !== undefined && !Array.isArray(body.data)) ||\n  (body.data?.length ?? 0) !== body.meta.result_count\n) {\n  throw new Error(\"X did not return a complete recent search response\");\n}\nreturn includeRecent(\n  [],\n  (body.data ?? []).map((post) => postRecord(post.id, post.created_at)),\n  config,\n).map(({ id }) => ({ json: { id, channel: config.channel, text: slackText(id) } }));\n"
+      }
+    },
+    {
+      "id": "send-recent-x-mentions-to-slack-4",
+      "name": "Take one mention",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1000,
+        300
+      ],
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      }
+    },
+    {
+      "id": "send-recent-x-mentions-to-slack-5",
+      "name": "Post the X link to Slack",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.3,
+      "position": [
+        1250,
+        300
+      ],
+      "parameters": {
+        "authentication": "accessToken",
+        "resource": "message",
+        "operation": "post",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.channel }}"
+        },
+        "messageType": "text",
+        "text": "={{ $json.text }}",
+        "otherOptions": {
+          "includeLinkToWorkflow": false,
+          "unfurl_links": false,
+          "unfurl_media": false
+        }
+      }
+    },
+    {
+      "id": "send-recent-x-mentions-to-slack-6",
+      "name": "Confirm the Slack message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1500,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function checkSlack(receipt, channel) {\n  if (receipt.channel !== channel || !/^\\d+\\.\\d+$/.test(receipt.ts ?? \"\")) {\n    throw new Error(\"Slack did not confirm the message. Check the channel before replaying.\");\n  }\n}\n\nconst { id, channel } = $(\"Take one mention\").item.json;\nif ($json.ok !== true) throw new Error(\"Slack rejected the message\");\nconst ts = $json.message_timestamp;\ncheckSlack({ channel: $json.channel, ts }, channel);\nreturn { json: { id, ts } };\n"
+      }
+    }
+  ],
+  "connections": {
+    "Every ten minutes": {
+      "main": [
+        [
+          {
+            "node": "Set X query and Slack channel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set X query and Slack channel": {
+      "main": [
+        [
+          {
+            "node": "Search recent public posts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search recent public posts": {
+      "main": [
+        [
+          {
+            "node": "Select recent post IDs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select recent post IDs": {
+      "main": [
+        [
+          {
+            "node": "Take one mention",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Take one mention": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Post the X link to Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Post the X link to Slack": {
+      "main": [
+        [
+          {
+            "node": "Confirm the Slack message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm the Slack message": {
+      "main": [
+        [
+          {
+            "node": "Take one mention",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC",
+    "saveDataErrorExecution": "none",
+    "saveDataSuccessExecution": "none",
+    "saveManualExecutions": false
+  }
+}
