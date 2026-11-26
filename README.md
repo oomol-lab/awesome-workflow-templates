@@ -345,6 +345,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Reddit Brand & Intent Radar](workflows/reddit-intent-monitor/) - Scan Reddit discussions on a schedule, filter high-intent buyer or feedback posts with AI, and send a Slack digest.
 - [Competitor Content Gap Brief](workflows/competitor-content-gap-brief/) - Fetch a competitor RSS feed, analyze recent topics for SEO content gaps, and post 3 article outlines to Slack.
 - [Score LinkedIn Companies in Google Sheets](workflows/score-linkedin-companies-in-google-sheets/) - Calculate ideal customer profile scores for LinkedIn company URLs and write the scores to their original Google Sheets rows.
+- [Verify Signups Before Adding to SendGrid](workflows/verify-signups-before-adding-to-sendgrid/) - Collect email signups, verify each address with Hunter, and add valid contacts to a SendGrid list.
 
 ## Support
 

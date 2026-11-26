@@ -1,0 +1,293 @@
+{
+  "name": "Verify Signups Before Adding to SendGrid",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "cfe4d91b-209c-49df-8483-141f5e27fba2",
+      "name": "Submit form",
+      "type": "n8n-nodes-base.formTrigger",
+      "position": [
+        80,
+        260
+      ],
+      "parameters": {
+        "formTitle": "Join the mailing list",
+        "formDescription": "Enter your email to subscribe.",
+        "responseMode": "onReceived",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Email",
+              "fieldType": "email",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {
+          "path": "join-mailing-list",
+          "buttonLabel": "Subscribe"
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "a691af9a-f66f-4fd1-ab82-3d3450098d67",
+      "name": "Verify email",
+      "type": "n8n-nodes-base.hunter",
+      "position": [
+        360,
+        260
+      ],
+      "parameters": {
+        "email": "={{ $json.Email }}",
+        "operation": "emailVerifier"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "b27e140e-7758-42d4-bf07-39b17f85fc82",
+      "name": "Verify email and configure list",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        620,
+        260
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function verify({ email, result }) {\n  const status = result?.status;\n  if (typeof status !== \"string\") throw new Error(\"Hunter did not return a verification status\");\n  if (status !== \"valid\") return { valid: false };\n  if (typeof result.email !== \"string\" || result.email.toLowerCase() !== email.toLowerCase()) {\n    throw new Error(\"Hunter verification does not match the submitted email\");\n  }\n  return { valid: true };\n}\n\nconst listId = \"YOUR_SENDGRID_LIST_ID\";\nreturn $input.all().flatMap(({ json }, index) => {\n  const email = $(\"Submit form\").itemMatching(index).json.Email;\n  const { valid } = verify({ email, result: json });\n  if (!valid) return [];\n  if (!/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(listId)) {\n    throw new Error(\"Set the SendGrid Marketing Contacts list ID\");\n  }\n  return [\n    {\n      json: { request: { list_ids: [listId], contacts: [{ email }] } },\n      pairedItem: { item: index },\n    },\n  ];\n});\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "30d816d9-7a91-47b2-8c06-da0b9114f375",
+      "name": "Add contact to list",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        940,
+        240
+      ],
+      "parameters": {
+        "method": "PUT",
+        "url": "https://api.sendgrid.com/v3/marketing/contacts",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "sendGridApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.request }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "name": "Read the SendGrid job ID",
+      "type": "n8n-nodes-base.code",
+      "id": "verify-signups-before-adding-to-sendgrid-code-1150",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function readJobId(reply) {\n  const id = reply?.job_id;\n  if (typeof id !== \"string\" || !/^[A-Za-z0-9_-]{1,128}$/.test(id)) {\n    throw new Error(\"SendGrid did not return a usable import job ID\");\n  }\n  return id;\n}\nif ($json.statusCode !== 202) throw new Error(\"SendGrid did not queue the contact upsert\");\nreturn { json: { jobId: readJobId($json.body) } };\n"
+      },
+      "position": [
+        1150,
+        240
+      ]
+    },
+    {
+      "name": "Wait for contact import",
+      "type": "n8n-nodes-base.wait",
+      "id": "verify-signups-before-adding-to-sendgrid-wait-1360",
+      "typeVersion": 1.1,
+      "parameters": {
+        "resume": "timeInterval",
+        "amount": 5,
+        "unit": "seconds"
+      },
+      "position": [
+        1360,
+        240
+      ]
+    },
+    {
+      "name": "Read SendGrid import status",
+      "type": "n8n-nodes-base.httpRequest",
+      "id": "verify-signups-before-adding-to-sendgrid-httpRequest-1570",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ \"https://api.sendgrid.com/v3/marketing/contacts/imports/\" + $(\"Read the SendGrid job ID\").first().json.jobId }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "sendGridApi",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "position": [
+        1570,
+        240
+      ]
+    },
+    {
+      "name": "Check import completion",
+      "type": "n8n-nodes-base.code",
+      "id": "verify-signups-before-adding-to-sendgrid-code-1780",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function checkImport({ response, jobId, attempt }) {\n  if (\n    (response?.id != null && response.id !== jobId) ||\n    (response?.job_type != null && response.job_type !== \"upsert\")\n  ) {\n    throw new Error(\"SendGrid returned a different import job\");\n  }\n  if (response?.status === \"pending\") {\n    if (attempt >= 12) throw new Error(\"SendGrid import still pending: \" + jobId);\n    return { pending: true, attempt };\n  }\n  if (\n    response?.status !== \"completed\" ||\n    (response.results?.requested_count != null && response.results.requested_count !== 1) ||\n    (response.results?.errored_count ?? 0) !== 0\n  ) {\n    throw new Error(\"SendGrid import did not complete successfully: \" + jobId);\n  }\n  return { pending: false, attempt };\n}\nconst jobId = $(\"Read the SendGrid job ID\").first().json.jobId;\nreturn { json: checkImport({ response: $json, jobId, attempt: $runIndex + 1 }) };\n"
+      },
+      "position": [
+        1780,
+        240
+      ]
+    },
+    {
+      "name": "Import still pending?",
+      "type": "n8n-nodes-base.if",
+      "id": "verify-signups-before-adding-to-sendgrid-if-1990",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.pending }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "position": [
+        1990,
+        240
+      ]
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Submit form": {
+      "main": [
+        [
+          {
+            "node": "Verify email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify email": {
+      "main": [
+        [
+          {
+            "node": "Verify email and configure list",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify email and configure list": {
+      "main": [
+        [
+          {
+            "node": "Add contact to list",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add contact to list": {
+      "main": [
+        [
+          {
+            "node": "Read the SendGrid job ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the SendGrid job ID": {
+      "main": [
+        [
+          {
+            "node": "Wait for contact import",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for contact import": {
+      "main": [
+        [
+          {
+            "node": "Read SendGrid import status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read SendGrid import status": {
+      "main": [
+        [
+          {
+            "node": "Check import completion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check import completion": {
+      "main": [
+        [
+          {
+            "node": "Import still pending?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Import still pending?": {
+      "main": [
+        [
+          {
+            "node": "Wait for contact import",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
