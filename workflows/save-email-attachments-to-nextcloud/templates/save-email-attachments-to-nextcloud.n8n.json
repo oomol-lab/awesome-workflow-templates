@@ -1,0 +1,85 @@
+{
+  "name": "Save Email Attachments to Nextcloud",
+  "nodes": [
+    {
+      "name": "Watch the invoices mailbox",
+      "type": "n8n-nodes-base.emailReadImap",
+      "typeVersion": 2,
+      "parameters": {
+        "format": "resolved",
+        "mailbox": "Invoices",
+        "postProcessAction": "read",
+        "dataPropertyAttachmentsPrefixName": "attachment_",
+        "options": {
+          "customEmailConfig": "[\"ALL\"]"
+        }
+      },
+      "id": "save-email-attachments-to-nextcloud-1",
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "name": "Name each attachment",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function sanitize(value, fallback) {\n  const safe = (value ?? \"\")\n    .replace(/[^A-Za-z0-9.&-]+/g, \"-\")\n    .replace(/^[.-]+|[.-]+$/g, \"\")\n    .slice(0, 60);\n  return safe || fallback;\n}\n\nreturn $input.all().flatMap(({ json, binary }, item) => {\n  const attachments = Object.values(binary ?? {});\n  if (!attachments.length) return [];\n\n  const uid = json.attributes?.uid;\n  if (!Number.isSafeInteger(uid) || uid < 1) throw new Error(\"The email has no valid IMAP UID\");\n\n  const timestamp = new Date(json.date ?? NaN);\n  const day = Number.isFinite(timestamp.getTime())\n    ? timestamp.toISOString().slice(0, 10)\n    : \"undated\";\n  const sender = json.from?.value?.[0];\n  const senderName = sanitize(sender?.name, \"\") || sanitize(sender?.address, \"unknown-sender\");\n\n  return attachments.map((file, index) => {\n    const originalName = file.fileName || \"\";\n    const suffix = originalName.match(/\\.[A-Za-z0-9]{1,15}$/);\n    const extension = suffix?.index > 0 ? suffix[0] : \"\";\n    const stem = sanitize(\n      extension ? originalName.slice(0, -extension.length) : originalName,\n      \"attachment\",\n    );\n    const fileName =\n      day + \"_\" + senderName + \"_\" + stem + \"_\" + uid + \"-\" + (index + 1) + extension;\n    return { json: { fileName }, binary: { file }, pairedItem: { item } };\n  });\n});\n"
+      },
+      "id": "save-email-attachments-to-nextcloud-2",
+      "position": [
+        240,
+        0
+      ]
+    },
+    {
+      "name": "Upload to Nextcloud",
+      "type": "n8n-nodes-base.nextCloud",
+      "typeVersion": 1,
+      "parameters": {
+        "authentication": "accessToken",
+        "resource": "file",
+        "operation": "upload",
+        "path": "={{ 'Documents/Invoices/' + $json.fileName }}",
+        "binaryDataUpload": true,
+        "binaryPropertyName": "file"
+      },
+      "id": "save-email-attachments-to-nextcloud-3",
+      "position": [
+        480,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Watch the invoices mailbox": {
+      "main": [
+        [
+          {
+            "node": "Name each attachment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Name each attachment": {
+      "main": [
+        [
+          {
+            "node": "Upload to Nextcloud",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false,
+  "pinData": {}
+}
