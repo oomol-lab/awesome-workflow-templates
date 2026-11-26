@@ -699,6 +699,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Archive ScanServJS Scans in Nextcloud](workflows/archive-scanservjs-scans-in-nextcloud/) - Copy completed scans from ScanServJS to a Nextcloud folder every hour, keeping their original filenames.
 - [Compress PDFs from HTML and a URL](workflows/compress-pdfs-from-html-and-url/) - Turn HTML into a compressed PDF and compress a second PDF from a download URL in the same manual run.
 - [Extract Text from HTML and a PDF URL](workflows/extract-text-from-html-and-pdf-url/) - Render HTML as a PDF, then extract its text and the text of a second PDF from a download URL.
+- [Optimise Google Drive Images with TinyPNG](workflows/optimise-google-drive-images-with-tinypng/) - Compress new images in one Google Drive folder and save optimised copies in a separate folder.
 
 ## Content
 

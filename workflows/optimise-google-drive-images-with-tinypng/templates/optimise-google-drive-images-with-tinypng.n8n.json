@@ -1,0 +1,271 @@
+{
+  "name": "Optimise Google Drive Images with TinyPNG",
+  "nodes": [
+    {
+      "id": "a6fac2bb-4079-4872-9cc9-17b1016d2fcc",
+      "name": "Watch the Drive input folder",
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "authentication": "oAuth2",
+        "event": "fileCreated",
+        "triggerOn": "specificFolder",
+        "folderToWatch": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_INPUT_FOLDER_ID"
+        },
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "typeVersion": 1
+    },
+    {
+      "name": "Set output folder and select images",
+      "id": "optimise-google-drive-images-with-tinypng-plan",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const imageExtensions = {\n  \"image/png\": \"png\",\n  \"image/jpeg\": \"jpg\",\n  \"image/webp\": \"webp\",\n  \"image/avif\": \"avif\",\n  \"image/jxl\": \"jxl\",\n  \"image/heic\": \"heic\",\n};\nfunction planImage(item, folderId) {\n  if (!Object.hasOwn(imageExtensions, item?.mimeType)) return null;\n  if (\n    typeof folderId !== \"string\" ||\n    folderId === \"YOUR_OUTPUT_FOLDER_ID\" ||\n    !/^[A-Za-z0-9_-]{2,512}$/.test(folderId)\n  ) {\n    throw new Error(\"Configure a Google Drive output folder\");\n  }\n  if (!Array.isArray(item.parents) || !item.parents.length || item.parents.includes(folderId)) {\n    throw new Error(\"Use a separate destination folder for optimised copies\");\n  }\n  const id = item.fileId ?? item.id;\n  if (typeof id !== \"string\" || !/^[A-Za-z0-9_-]+$/.test(id) || !item.name?.trim()) {\n    throw new Error(\"Drive event did not identify the image\");\n  }\n  const outputMime = item.mimeType === \"image/heic\" ? \"image/jpeg\" : item.mimeType;\n  const base = item.name.replace(/\\.(?:jpe?g|png|webp|avif|jxl|heic)$/i, \"\");\n  const extension =\n    outputMime === \"image/jpeg\" && /\\.jpeg$/i.test(item.name)\n      ? \"jpeg\"\n      : imageExtensions[outputMime];\n  return {\n    id,\n    inputMime: item.mimeType,\n    outputMime,\n    name: base + \"-optimised.\" + extension,\n    folderId,\n  };\n}\nconst folderId = \"YOUR_OUTPUT_FOLDER_ID\";\nreturn $input.all().flatMap(({ json }, index) => {\n  const image = planImage(json, folderId);\n  return image ? [{ json: image, pairedItem: { item: index } }] : [];\n});\n"
+      },
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "id": "a0cae553-e4c1-408b-b11a-ceda4ff1aaa4",
+      "name": "Download the Drive image",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "file",
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.id }}"
+        },
+        "options": {
+          "binaryPropertyName": "data"
+        }
+      },
+      "typeVersion": 3
+    },
+    {
+      "id": "006ba31a-f42b-460c-87e1-66c5345fb6d7",
+      "name": "Optimise the image in TinyPNG",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        660,
+        0
+      ],
+      "parameters": {
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "url": "https://api.tinify.com/shrink",
+        "method": "POST",
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "data",
+        "options": {
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "typeVersion": 4.1
+    },
+    {
+      "name": "Check the TinyPNG output reference",
+      "id": "optimise-google-drive-images-with-tinypng-link",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function checkShrink({ url, id, info, outputMime }) {\n  const match =\n    typeof url === \"string\" && /^https:\\/\\/api\\.tinify\\.com\\/output\\/([A-Za-z0-9_-]+)$/.exec(url);\n  if (!match || (id !== undefined && id !== match[1])) {\n    throw new Error(\"Tinify returned an invalid output URL\");\n  }\n  if (info?.type !== outputMime || !Number.isSafeInteger(info.size) || info.size < 1) {\n    throw new Error(\"Tinify returned invalid output metadata\");\n  }\n  return { imageId: match[1], size: info.size };\n}\nconst source = $(\"Set output folder and select images\").item.json;\nconst response = $input.item.json;\nif (response.statusCode !== 201) throw new Error(\"Tinify did not create an optimised image\");\nconst url = response.headers.location;\nconst { size } = checkShrink({ url, info: response.body.output, outputMime: source.outputMime });\nreturn { json: { url, size } };\n"
+      },
+      "position": [
+        880,
+        0
+      ]
+    },
+    {
+      "id": "e380304e-1c94-4841-bc1c-73047e4c2501",
+      "name": "Get the optimised TinyPNG image",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        1100,
+        0
+      ],
+      "parameters": {
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "url": "={{ $json.url }}",
+        "method": "GET",
+        "options": {
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "outputPropertyName": "data"
+            }
+          }
+        }
+      },
+      "typeVersion": 4.1
+    },
+    {
+      "name": "Verify and prepare the Drive copy",
+      "id": "optimise-google-drive-images-with-tinypng-verify",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function checkBytes({ bytes, mime, outputMime, expectedSize }) {\n  const at = (offset, length) => Array.from(bytes.subarray(offset, offset + length));\n  const ascii = (offset, length) => String.fromCharCode(...at(offset, length));\n  const signature = (expected) => expected.every((value, index) => bytes[index] === value);\n  const headers = {\n    \"image/png\": () => signature([137, 80, 78, 71, 13, 10, 26, 10]),\n    \"image/jpeg\": () => signature([255, 216, 255]),\n    \"image/webp\": () => ascii(0, 4) === \"RIFF\" && ascii(8, 4) === \"WEBP\",\n    \"image/avif\": () => ascii(4, 4) === \"ftyp\" && [\"avif\", \"avis\"].includes(ascii(8, 4)),\n    \"image/jxl\": () =>\n      signature([255, 10]) || signature([0, 0, 0, 12, 74, 88, 76, 32, 13, 10, 135, 10]),\n  };\n  if (\n    String(mime ?? \"\")\n      .split(\";\")[0]\n      .toLowerCase() !== outputMime ||\n    bytes.length !== expectedSize ||\n    !headers[outputMime]?.()\n  ) {\n    throw new Error(\"Tinify did not return the complete expected image\");\n  }\n}\nconst item = $input.item;\nconst source = $(\"Set output folder and select images\").item.json;\nconst bytes = await helpers.getBinaryDataBuffer($itemIndex, \"data\");\ncheckBytes({\n  bytes,\n  mime: item.binary.data.mimeType,\n  outputMime: source.outputMime,\n  expectedSize: item.json.size,\n});\nreturn { json: source, binary: item.binary };\n"
+      },
+      "position": [
+        1320,
+        0
+      ]
+    },
+    {
+      "id": "b69a925f-9938-4672-9329-4f8895ea9c79",
+      "name": "Save an optimised Drive copy",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [
+        1540,
+        0
+      ],
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "file",
+        "operation": "upload",
+        "inputDataFieldName": "data",
+        "name": "={{ $json.name }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.folderId }}"
+        },
+        "options": {}
+      },
+      "typeVersion": 3
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Watch the Drive input folder": {
+      "main": [
+        [
+          {
+            "node": "Set output folder and select images",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set output folder and select images": {
+      "main": [
+        [
+          {
+            "node": "Download the Drive image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download the Drive image": {
+      "main": [
+        [
+          {
+            "node": "Optimise the image in TinyPNG",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Optimise the image in TinyPNG": {
+      "main": [
+        [
+          {
+            "node": "Check the TinyPNG output reference",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check the TinyPNG output reference": {
+      "main": [
+        [
+          {
+            "node": "Get the optimised TinyPNG image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get the optimised TinyPNG image": {
+      "main": [
+        [
+          {
+            "node": "Verify and prepare the Drive copy",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify and prepare the Drive copy": {
+      "main": [
+        [
+          {
+            "node": "Save an optimised Drive copy",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
