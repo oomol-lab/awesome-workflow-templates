@@ -1,0 +1,431 @@
+{
+  "name": "Warn About Profanity in Telegram",
+  "nodes": [
+    {
+      "name": "Receive a Telegram message",
+      "id": "warn-about-profanity-in-telegram-hook",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        255
+      ],
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {
+          "download": false
+        }
+      }
+    },
+    {
+      "name": "Read the original message",
+      "id": "warn-about-profanity-in-telegram-select",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        218,
+        255
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function moderationMessage(body) {\n  const message = body?.message;\n  if (typeof message?.text !== \"string\" || !message.text.trim()) return { inspect: false };\n  if (\n    [...message.text].length > 4096 ||\n    !Number.isSafeInteger(message.chat?.id) ||\n    message.chat.id === 0 ||\n    !Number.isSafeInteger(message.message_id) ||\n    message.message_id < 1\n  ) {\n    throw new Error(\"Telegram did not provide a valid text message and reply target\");\n  }\n  const chatId = String(message.chat.id);\n  const messageId = message.message_id;\n  return {\n    inspect: true,\n    chatId,\n    messageId,\n    key: \"telegram-profanity:\" + chatId + \":\" + messageId,\n    request: {\n      document: { type: \"PLAIN_TEXT\", languageCode: \"en\", content: message.text },\n      modelVersion: \"MODEL_VERSION_1\",\n    },\n  };\n}\nreturn [{ json: moderationMessage($input.first().json) }];\n"
+      }
+    },
+    {
+      "name": "Text message?",
+      "id": "warn-about-profanity-in-telegram-text",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        436,
+        255
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "leftValue": ""
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.inspect }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "name": "Score profanity with Google Cloud",
+      "id": "warn-about-profanity-in-telegram-score",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        654,
+        255
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://language.googleapis.com/v2/documents:moderateText",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.request }}",
+        "options": {
+          "timeout": 20000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Set the profanity threshold",
+      "id": "warn-about-profanity-in-telegram-decide",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        872,
+        255
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function moderationDecision(reply, threshold) {\n  if (\n    typeof threshold !== \"number\" ||\n    !Number.isFinite(threshold) ||\n    threshold < 0 ||\n    threshold > 1\n  ) {\n    throw new Error(\"Set a profanity confidence threshold between 0 and 1\");\n  }\n  const categories = reply?.moderationCategories;\n  if (\n    reply?.languageSupported === false ||\n    (reply?.languageCode != null && reply.languageCode !== \"en\") ||\n    !Array.isArray(categories)\n  ) {\n    throw new Error(\"Google Cloud did not confirm an English moderation result\");\n  }\n  const profanity = categories.filter((category) => category?.name === \"Profanity\");\n  const score = profanity[0]?.confidence;\n  if (\n    profanity.length !== 1 ||\n    typeof score !== \"number\" ||\n    !Number.isFinite(score) ||\n    score < 0 ||\n    score > 1\n  ) {\n    throw new Error(\"Google Cloud did not return one valid Profanity confidence\");\n  }\n  return { warn: score > threshold };\n}\nconst threshold = 0.7;\nreturn [{ json: moderationDecision($input.first().json, threshold) }];\n"
+      }
+    },
+    {
+      "name": "Above the threshold?",
+      "id": "warn-about-profanity-in-telegram-above",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1090,
+        255
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "leftValue": ""
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.warn }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "name": "New warning?",
+      "id": "warn-about-profanity-in-telegram-fresh",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        1308,
+        255
+      ],
+      "parameters": {
+        "resource": "row",
+        "operation": "rowNotExists",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_WARNING_DELIVERY_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "warning_key",
+              "condition": "eq",
+              "keyValue": "={{ $('Read the original message').first().json.key }}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Reserve the warning",
+      "id": "warn-about-profanity-in-telegram-reserve",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        1526,
+        255
+      ],
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_WARNING_DELIVERY_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "warning_key": "={{ $('Read the original message').first().json.key }}",
+            "status": "pending",
+            "message_id": ""
+          },
+          "schema": []
+        },
+        "options": {}
+      }
+    },
+    {
+      "name": "Check the warning reservation",
+      "id": "warn-about-profanity-in-telegram-guard",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1744,
+        255
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const message = $(\"Read the original message\").first().json;\nconst reservation = $input.first().json;\nif (reservation.warning_key !== message.key || reservation.status !== \"pending\")\n  throw new Error(\"The intended warning was not reserved\");\nreturn [{ json: { chatId: message.chatId, messageId: message.messageId } }];\n"
+      }
+    },
+    {
+      "name": "Reply to the original message",
+      "id": "warn-about-profanity-in-telegram-send",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1962,
+        255
+      ],
+      "parameters": {
+        "resource": "message",
+        "operation": "sendMessage",
+        "replyMarkup": "none",
+        "chatId": "={{ $json.chatId }}",
+        "text": "I don't tolerate toxic language!",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "HTML",
+          "disable_web_page_preview": true,
+          "reply_to_message_id": "={{ $json.messageId }}"
+        }
+      }
+    },
+    {
+      "name": "Confirm the Telegram warning",
+      "id": "warn-about-profanity-in-telegram-receipt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2180,
+        255
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function moderationReceipt({ receipt, expectedChat, messageId: replyTo }) {\n  if (\n    !Number.isSafeInteger(receipt?.message_id) ||\n    receipt.message_id < 1 ||\n    String(receipt?.chat?.id) !== expectedChat ||\n    (receipt.reply_to_message != null && receipt.reply_to_message.message_id !== replyTo)\n  ) {\n    throw new Error(\"Telegram did not confirm the warning reply\");\n  }\n  return { chatId: expectedChat, messageId: String(receipt.message_id) };\n}\n\nconst response = $input.first().json;\nconst original = $(\"Read the original message\").first().json;\nif (response.ok !== true) throw new Error(\"Telegram did not confirm the warning reply\");\nreturn [\n  {\n    json: moderationReceipt({\n      receipt: response.result,\n      expectedChat: original.chatId,\n      messageId: original.messageId,\n    }),\n  },\n];\n"
+      }
+    },
+    {
+      "name": "Record the warning",
+      "id": "warn-about-profanity-in-telegram-record",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        2398,
+        255
+      ],
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_WARNING_DELIVERY_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "warning_key",
+              "condition": "eq",
+              "keyValue": "={{ $('Read the original message').first().json.key }}"
+            },
+            {
+              "keyName": "status",
+              "condition": "eq",
+              "keyValue": "pending"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "sent",
+            "message_id": "={{ $json.messageId }}"
+          },
+          "schema": []
+        },
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Receive a Telegram message": {
+      "main": [
+        [
+          {
+            "node": "Read the original message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the original message": {
+      "main": [
+        [
+          {
+            "node": "Text message?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Text message?": {
+      "main": [
+        [
+          {
+            "node": "Score profanity with Google Cloud",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Score profanity with Google Cloud": {
+      "main": [
+        [
+          {
+            "node": "Set the profanity threshold",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set the profanity threshold": {
+      "main": [
+        [
+          {
+            "node": "Above the threshold?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Above the threshold?": {
+      "main": [
+        [
+          {
+            "node": "New warning?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "New warning?": {
+      "main": [
+        [
+          {
+            "node": "Reserve the warning",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve the warning": {
+      "main": [
+        [
+          {
+            "node": "Check the warning reservation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check the warning reservation": {
+      "main": [
+        [
+          {
+            "node": "Reply to the original message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reply to the original message": {
+      "main": [
+        [
+          {
+            "node": "Confirm the Telegram warning",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm the Telegram warning": {
+      "main": [
+        [
+          {
+            "node": "Record the warning",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveExecutionProgress": false,
+    "saveDataSuccessExecution": "none",
+    "saveDataErrorExecution": "none",
+    "saveManualExecutions": false
+  },
+  "pinData": {}
+}
