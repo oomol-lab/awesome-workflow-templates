@@ -1,0 +1,618 @@
+{
+  "name": "Sync Asana Project Tasks to Notion",
+  "nodes": [
+    {
+      "id": "sync-asana-project-tasks-to-notion-hook",
+      "name": "Receive the Asana webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        220
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "sync-asana-project-tasks-to-notion",
+        "authentication": "none",
+        "responseMode": "responseNode",
+        "options": {
+          "rawBody": true
+        }
+      }
+    },
+    {
+      "id": "sync-asana-project-tasks-to-notion-admit",
+      "name": "Verify the raw Asana request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        210,
+        220
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function admitAsana(raw, headers, secret, crypto) {\n  const reply = (status, error) => ({\n    accepted: false,\n    handshake: false,\n    status,\n    response: { error },\n  });\n  const setup = headers?.[\"x-hook-secret\"];\n  if (!secret) {\n    if (\n      typeof setup === \"string\" &&\n      /^[a-f0-9]{32,128}$/i.test(setup) &&\n      !headers?.[\"x-hook-signature\"]\n    ) {\n      return { accepted: false, handshake: true, challenge: setup };\n    }\n    return reply(503, \"Configure the Asana webhook signing secret.\");\n  }\n  const supplied = headers?.[\"x-hook-signature\"];\n  if (\n    typeof supplied !== \"string\" ||\n    !/^[a-f0-9]{64}$/i.test(supplied) ||\n    !raw?.length ||\n    raw.length > 1048576\n  ) {\n    return reply(401, \"Invalid Asana webhook signature.\");\n  }\n  const expected = crypto.createHmac(\"sha256\", secret).update(raw).digest();\n  if (!crypto.timingSafeEqual(expected, Buffer.from(supplied, \"hex\")))\n    return reply(401, \"Invalid Asana webhook signature.\");\n  let body;\n  try {\n    body = JSON.parse(raw.toString(\"utf8\"));\n  } catch {\n    return reply(400, \"Invalid Asana event payload.\");\n  }\n  if (!Array.isArray(body?.events)) return reply(400, \"Invalid Asana event payload.\");\n  const gids = new Set();\n  for (const { resource, action } of body.events.filter(\n    (event) => event && typeof event === \"object\",\n  )) {\n    if (resource?.resource_type !== \"task\" || [\"deleted\", \"removed\"].includes(action)) continue;\n    if (typeof resource.gid !== \"string\" || !/^\\d{1,32}$/.test(resource.gid))\n      return reply(400, \"Invalid Asana task ID.\");\n    gids.add(resource.gid);\n  }\n  return { accepted: true, gids: [...gids] };\n}\nconst crypto = require(\"crypto\");\nlet raw, secret;\ntry {\n  raw = Buffer.from(await helpers.getBinaryDataBuffer(0, \"data\"));\n} catch {}\ntry {\n  secret = $env.ASANA_WEBHOOK_SECRET;\n} catch {\n  return {\n    json: {\n      accepted: false,\n      handshake: false,\n      status: 503,\n      response: { error: \"Signing secret configuration is unavailable.\" },\n    },\n  };\n}\nreturn { json: admitAsana(raw, $json.headers, secret, crypto) };\n"
+      }
+    },
+    {
+      "id": "sync-asana-project-tasks-to-notion-allow",
+      "name": "Is this a signed delivery?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        420,
+        220
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.accepted }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "rightValue": ""
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "sync-asana-project-tasks-to-notion-handshake",
+      "name": "Is this a registration handshake?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        630,
+        415
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.handshake }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "rightValue": ""
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "sync-asana-project-tasks-to-notion-echo",
+      "name": "Echo the registration challenge",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        850,
+        360
+      ],
+      "parameters": {
+        "respondWith": "noData",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Cache-Control",
+                "value": "no-store"
+              },
+              {
+                "name": "X-Hook-Secret",
+                "value": "={{ $json.challenge }}"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "sync-asana-project-tasks-to-notion-deny",
+      "name": "Reject the webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        850,
+        500
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json.response }}",
+        "options": {
+          "responseCode": "={{ $json.status }}",
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Cache-Control",
+                "value": "no-store"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "sync-asana-project-tasks-to-notion-ack",
+      "name": "Acknowledge Asana",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        630,
+        170
+      ],
+      "parameters": {
+        "respondWith": "noData",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Cache-Control",
+                "value": "no-store"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "sync-asana-project-tasks-to-notion-jobs",
+      "name": "Set the project and data source",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        850,
+        170
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const settings = {\n  projectId: \"YOUR_ASANA_PROJECT_GID\",\n  dataSourceId: \"YOUR_NOTION_DATA_SOURCE_ID\",\n};\nif (\n  !/^\\d{1,32}$/.test(settings.projectId) ||\n  !/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(settings.dataSourceId)\n) {\n  throw new Error(\"Configure the Asana project and Notion data source.\");\n}\nreturn $input.first().json.gids.map((gid) => ({ json: { gid, ...settings } }));\n"
+      }
+    },
+    {
+      "id": "sync-asana-project-tasks-to-notion-loop",
+      "name": "Handle one task at a time",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1060,
+        170
+      ],
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      }
+    },
+    {
+      "id": "sync-asana-project-tasks-to-notion-read",
+      "name": "Read the exact Asana task",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1270,
+        170
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ \"https://app.asana.com/api/1.0/tasks/\"+$json.gid+\"?opt_fields=gid,name,due_on,memberships.project.gid\" }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "asanaApi",
+        "options": {
+          "timeout": 20000,
+          "lowercaseHeaders": false,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "retryOnFail": false
+    },
+    {
+      "id": "sync-asana-project-tasks-to-notion-task",
+      "name": "Confirm the task and project",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1480,
+        170
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function checkedAsanaTask(status, response, gid, projectId) {\n  if (status === 404) return { next: false };\n  const task = response?.data;\n  if (\n    status !== 200 ||\n    task?.gid !== gid ||\n    typeof task.name !== \"string\" ||\n    !task.name.trim() ||\n    task.name.length > 2000 ||\n    !Array.isArray(task.memberships) ||\n    !(\n      task.due_on === null ||\n      (typeof task.due_on === \"string\" && /^\\d{4}-\\d{2}-\\d{2}$/.test(task.due_on))\n    )\n  ) {\n    throw new Error(\"Asana did not return scheduling data for task \" + gid + \".\");\n  }\n  if (!task.memberships.some((membership) => membership?.project?.gid === projectId))\n    return { next: false };\n  return { next: true, gid, name: task.name, due: task.due_on };\n}\n\nconst input = $(\"Handle one task at a time\").item.json;\nreturn {\n  json: {\n    ...checkedAsanaTask($json.statusCode, $json.body, input.gid, input.projectId),\n    dataSourceId: input.dataSourceId,\n  },\n};\n"
+      }
+    },
+    {
+      "id": "sync-asana-project-tasks-to-notion-gate",
+      "name": "Does the task belong to the project?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1690,
+        170
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.next }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "rightValue": ""
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "sync-asana-project-tasks-to-notion-skip",
+      "name": "Skip the unavailable task",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1900,
+        370
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return { json: { action: \"skipped\" } };\n"
+      }
+    },
+    {
+      "id": "sync-asana-project-tasks-to-notion-query",
+      "name": "Look up the exact Asana GID in Notion",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1900,
+        170
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ \"https://api.notion.com/v1/data_sources/\"+$json.dataSourceId+\"/query\" }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Notion-Version",
+              "value": "2025-09-03"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ ({page_size:2,filter:{property:\"Asana GID\",rich_text:{equals:$json.gid}}}) }}",
+        "options": {
+          "timeout": 20000,
+          "lowercaseHeaders": false,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "retryOnFail": false
+    },
+    {
+      "id": "sync-asana-project-tasks-to-notion-plan",
+      "name": "Choose create or update",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2110,
+        170
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function notionText(items) {\n  if (!Array.isArray(items)) return null;\n  const text = items.map((part) => part?.plain_text ?? part?.text?.content);\n  return text.every((part) => typeof part === \"string\") ? text.join(\"\") : null;\n}\n\nfunction planNotionTask(status, query, task, dataSourceId) {\n  if (\n    status !== 200 ||\n    !Array.isArray(query?.results) ||\n    query.has_more !== false ||\n    query.results.length > 1\n  ) {\n    throw new Error(\"Notion did not return a unique lookup for Asana task \" + task.gid + \".\");\n  }\n  const equalId = (a, b) =>\n    typeof a === \"string\" &&\n    a.replaceAll(\"-\", \"\").toLowerCase() === b.replaceAll(\"-\", \"\").toLowerCase();\n  const existing = query.results[0];\n  if (existing !== undefined) {\n    const prop = existing?.properties?.[\"Asana GID\"];\n    if (\n      existing?.object !== \"page\" ||\n      typeof existing.id !== \"string\" ||\n      !/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(existing.id) ||\n      existing.parent?.type !== \"data_source_id\" ||\n      !equalId(existing.parent.data_source_id, dataSourceId) ||\n      prop?.type !== \"rich_text\" ||\n      notionText(prop.rich_text) !== task.gid\n    ) {\n      throw new Error(\"The Notion page does not match Asana task \" + task.gid + \".\");\n    }\n  }\n  const block = (content) => [{ type: \"text\", text: { content } }];\n  const properties = {\n    Task: { title: block(task.name) },\n    Deadline: { date: task.due === null ? null : { start: task.due } },\n  };\n  const expect = { ...task, dataSourceId, pageId: existing?.id ?? null };\n  if (existing)\n    return { method: \"PATCH\", endpoint: \"/pages/\" + existing.id, body: { properties }, expect };\n  properties[\"Asana GID\"] = { rich_text: block(task.gid) };\n  return {\n    method: \"POST\",\n    endpoint: \"/pages\",\n    body: { parent: { type: \"data_source_id\", data_source_id: dataSourceId }, properties },\n    expect,\n  };\n}\n\nconst task = $(\"Confirm the task and project\").item.json;\nreturn { json: planNotionTask($json.statusCode, $json.body, task, task.dataSourceId) };\n"
+      }
+    },
+    {
+      "id": "sync-asana-project-tasks-to-notion-write",
+      "name": "Write the matching Notion page",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2320,
+        170
+      ],
+      "parameters": {
+        "method": "={{ $json.method }}",
+        "url": "={{ \"https://api.notion.com/v1\"+$json.endpoint }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Notion-Version",
+              "value": "2025-09-03"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.body }}",
+        "options": {
+          "timeout": 20000,
+          "lowercaseHeaders": false,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "retryOnFail": false
+    },
+    {
+      "id": "sync-asana-project-tasks-to-notion-confirm",
+      "name": "Confirm the task and deadline",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2530,
+        170
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function notionText(items) {\n  if (!Array.isArray(items)) return null;\n  const text = items.map((part) => part?.plain_text ?? part?.text?.content);\n  return text.every((part) => typeof part === \"string\") ? text.join(\"\") : null;\n}\n\nfunction confirmNotionTask(status, page, expected) {\n  const equalId = (a, b) =>\n    typeof a === \"string\" &&\n    a.replaceAll(\"-\", \"\").toLowerCase() === b.replaceAll(\"-\", \"\").toLowerCase();\n  const props = page?.properties;\n  const due = props?.Deadline?.date;\n  if (\n    (status !== 200 && status !== 201) ||\n    page?.object !== \"page\" ||\n    typeof page.id !== \"string\" ||\n    !page.id ||\n    (expected.pageId !== null && !equalId(page.id, expected.pageId)) ||\n    page.parent?.type !== \"data_source_id\" ||\n    !equalId(page.parent.data_source_id, expected.dataSourceId) ||\n    notionText(props?.[\"Asana GID\"]?.rich_text) !== expected.gid ||\n    notionText(props?.Task?.title) !== expected.name ||\n    (expected.due === null ? due !== null : due?.start !== expected.due)\n  ) {\n    throw new Error(\n      \"Notion did not confirm Asana task \" +\n        expected.gid +\n        \". Check the data source before retrying.\",\n    );\n  }\n  return {\n    asanaGid: expected.gid,\n    notionPageId: page.id,\n    action: expected.pageId === null ? \"created\" : \"updated\",\n  };\n}\n\nreturn {\n  json: confirmNotionTask(\n    $json.statusCode,\n    $json.body,\n    $(\"Choose create or update\").item.json.expect,\n  ),\n};\n"
+      }
+    }
+  ],
+  "connections": {
+    "Receive the Asana webhook": {
+      "main": [
+        [
+          {
+            "node": "Verify the raw Asana request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify the raw Asana request": {
+      "main": [
+        [
+          {
+            "node": "Is this a signed delivery?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is this a signed delivery?": {
+      "main": [
+        [
+          {
+            "node": "Acknowledge Asana",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Is this a registration handshake?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Acknowledge Asana": {
+      "main": [
+        [
+          {
+            "node": "Set the project and data source",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set the project and data source": {
+      "main": [
+        [
+          {
+            "node": "Handle one task at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Handle one task at a time": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Read the exact Asana task",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the exact Asana task": {
+      "main": [
+        [
+          {
+            "node": "Confirm the task and project",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm the task and project": {
+      "main": [
+        [
+          {
+            "node": "Does the task belong to the project?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Does the task belong to the project?": {
+      "main": [
+        [
+          {
+            "node": "Look up the exact Asana GID in Notion",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Skip the unavailable task",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Look up the exact Asana GID in Notion": {
+      "main": [
+        [
+          {
+            "node": "Choose create or update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Choose create or update": {
+      "main": [
+        [
+          {
+            "node": "Write the matching Notion page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write the matching Notion page": {
+      "main": [
+        [
+          {
+            "node": "Confirm the task and deadline",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is this a registration handshake?": {
+      "main": [
+        [
+          {
+            "node": "Echo the registration challenge",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reject the webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm the task and deadline": {
+      "main": [
+        [
+          {
+            "node": "Handle one task at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Skip the unavailable task": {
+      "main": [
+        [
+          {
+            "node": "Handle one task at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveExecutionProgress": false,
+    "saveManualExecutions": false,
+    "saveDataSuccessExecution": "none",
+    "saveDataErrorExecution": "none"
+  },
+  "pinData": {}
+}
