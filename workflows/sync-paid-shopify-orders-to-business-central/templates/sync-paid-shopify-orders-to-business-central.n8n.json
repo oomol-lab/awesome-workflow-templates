@@ -1,0 +1,690 @@
+{
+  "name": "Sync Paid Shopify Orders to Business Central",
+  "nodes": [
+    {
+      "id": "sync-paid-shopify-orders-to-business-central-schedule",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "name": "Check paid orders every five minutes",
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 */5 * * * *"
+            }
+          ]
+        }
+      },
+      "position": [
+        0,
+        260
+      ]
+    },
+    {
+      "id": "sync-paid-shopify-orders-to-business-central-setup",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "name": "Configure the store and company",
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function configureShopifyBC(settings, startedAt) {\n  const {\n    shopDomain,\n    tenantId,\n    environment,\n    companyId,\n    taxesAsLineItem,\n    discountsAsLineItem,\n    taxItemSku,\n    discountItemSku,\n  } = settings;\n  const guid = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;\n  if (\n    !/^[a-z\\d](?:[a-z\\d-]*[a-z\\d])?\\.myshopify\\.com$/i.test(shopDomain) ||\n    !guid.test(tenantId) ||\n    !guid.test(companyId) ||\n    typeof environment !== \"string\" ||\n    !environment.trim() ||\n    environment.length > 80 ||\n    typeof taxesAsLineItem !== \"boolean\" ||\n    typeof discountsAsLineItem !== \"boolean\" ||\n    (taxesAsLineItem && !taxItemSku?.trim()) ||\n    (discountsAsLineItem && !discountItemSku?.trim())\n  ) {\n    throw Error(\n      \"Configure the Shopify store, Business Central company and any enabled adjustment items.\",\n    );\n  }\n  const since = new Date(Date.parse(startedAt) - 86400000).toISOString();\n  const fields =\n    \"id,updated_at,created_at,source_name,financial_status,currency,customer,shipping_address,line_items,total_tax,total_discounts\";\n  const orders =\n    \"/orders.json?status=any&limit=30&updated_at_min=\" +\n    encodeURIComponent(since) +\n    \"&fields=\" +\n    encodeURIComponent(fields);\n  const bc =\n    \"https://api.businesscentral.dynamics.com/v2.0/\" +\n    tenantId +\n    \"/\" +\n    encodeURIComponent(environment) +\n    \"/api/v2.0/companies(\" +\n    companyId +\n    \")\";\n  return {\n    ...settings,\n    shopDomain: shopDomain.toLowerCase(),\n    bc,\n    orders,\n    scope: [\n      shopDomain.toLowerCase(),\n      tenantId.toLowerCase(),\n      environment,\n      companyId.toLowerCase(),\n    ].join(\"|\"),\n  };\n}\n\nconst settings = {\n  shopDomain: \"YOUR_STORE.myshopify.com\",\n  tenantId: \"YOUR_TENANT_ID\",\n  environment: \"Production\",\n  companyId: \"YOUR_COMPANY_ID\",\n  taxesAsLineItem: true,\n  discountsAsLineItem: true,\n  taxItemSku: \"\",\n  discountItemSku: \"\",\n};\nconst config = configureShopifyBC(settings, $input.first().json.timestamp);\nreturn [{ json: { config }, pairedItem: { item: 0 } }];\n"
+      },
+      "position": [
+        205,
+        260
+      ]
+    },
+    {
+      "id": "sync-paid-shopify-orders-to-business-central-page",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "name": "Choose the next Shopify page",
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const config = $(\"Configure the store and company\").first().json.config;\nreturn [\n  {\n    json: {\n      page: $input.first().json.page ?? { orders: [], pages: 0, seen: [], endpoint: config.orders },\n    },\n    pairedItem: { item: 0 },\n  },\n];\n"
+      },
+      "position": [
+        410,
+        260
+      ]
+    },
+    {
+      "id": "sync-paid-shopify-orders-to-business-central-orders",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "name": "Read Shopify orders",
+      "parameters": {
+        "method": "GET",
+        "url": "={{ \"https://\"+$('Configure the store and company').first().json.config.shopDomain+\"/admin/api/2026-10\"+($json.page.endpoint) }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "position": [
+        615,
+        260
+      ]
+    },
+    {
+      "id": "sync-paid-shopify-orders-to-business-central-collect",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "name": "Collect the paid orders",
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function shopPage(config, prior, response) {\n  if (response?.statusCode !== 200 || !Array.isArray(response.body?.orders))\n    throw Error(\"Shopify order listing was unsuccessful.\");\n  const { orders, pages, seen } = prior;\n  const paid = response.body.orders.filter((order) => order?.financial_status === \"paid\");\n  for (const order of paid) {\n    if (\n      !/^\\d+$/.test(String(order.id)) ||\n      (typeof order.id === \"number\" && !Number.isSafeInteger(order.id))\n    )\n      throw Error(\"Shopify order ID is not exact.\");\n  }\n  const candidates = orders.concat(\n    paid.filter((order) => !orders.some((older) => String(older.id) === String(order.id))),\n  );\n  const link = response.headers?.link ?? response.headers?.Link ?? \"\";\n  const matches = String(link).match(/<([^>]+)>;\\s*rel=[\"']next[\"']/i);\n  let endpoint = \"\";\n  if (matches) {\n    const prefix = \"https://\" + config.shopDomain + \"/admin/api/2026-10\";\n    if (!matches[1].startsWith(prefix + \"/orders.json?\") || !/[?&]page_info=[^&]+/.test(matches[1]))\n      throw Error(\"Shopify returned an unexpected pagination link.\");\n    endpoint = matches[1].slice(prefix.length);\n    if (seen.includes(endpoint) || pages >= 49)\n      throw Error(\"Shopify order pagination exceeded the run limit.\");\n  }\n  return {\n    orders: candidates,\n    pages: pages + 1,\n    seen: endpoint ? [...seen, endpoint] : seen,\n    endpoint,\n  };\n}\n\nconst config = $(\"Configure the store and company\").first().json.config;\nconst page = shopPage(\n  config,\n  $(\"Choose the next Shopify page\").item.json.page,\n  $input.first().json,\n);\nreturn [{ json: { page, more: !!page.endpoint }, pairedItem: { item: 0 } }];\n"
+      },
+      "position": [
+        820,
+        260
+      ]
+    },
+    {
+      "id": "sync-paid-shopify-orders-to-business-central-morePages",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "name": "More Shopify pages?",
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.more }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "position": [
+        1025,
+        260
+      ]
+    },
+    {
+      "id": "sync-paid-shopify-orders-to-business-central-queue",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "name": "Queue paid orders",
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return $input\n  .first()\n  .json.page.orders.map((order) => ({ json: { order }, pairedItem: { item: 0 } }));\n"
+      },
+      "position": [
+        1230,
+        260
+      ]
+    },
+    {
+      "id": "sync-paid-shopify-orders-to-business-central-loop",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "name": "Process one order at a time",
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "position": [
+        1435,
+        260
+      ]
+    },
+    {
+      "id": "sync-paid-shopify-orders-to-business-central-fulfill",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "name": "Read fulfillment locations",
+      "parameters": {
+        "method": "GET",
+        "url": "={{ \"https://\"+$('Configure the store and company').first().json.config.shopDomain+\"/admin/api/2026-10\"+(\"/orders/\"+$json.order.id+\"/fulfillment_orders.json\") }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "position": [
+        1640,
+        260
+      ]
+    },
+    {
+      "id": "sync-paid-shopify-orders-to-business-central-plan",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "name": "Map the order and its lines",
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function prepareBCOrder(order, fulfillment, config) {\n  const guid = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;\n  const id = (value) =>\n    typeof value === \"string\"\n      ? /^\\d+$/.test(value)\n        ? value\n        : \"\"\n      : Number.isSafeInteger(value) && value > 0\n        ? String(value)\n        : \"\";\n  const orderId = id(order.id);\n  const email = typeof order.customer?.email === \"string\" ? order.customer.email.trim() : \"\";\n  if (\n    !orderId ||\n    order.financial_status !== \"paid\" ||\n    !/^\\S+@\\S+\\.\\S+$/.test(email) ||\n    !/^\\d{4}-\\d{2}-\\d{2}T/.test(order.created_at ?? \"\") ||\n    !/^[A-Z]{3}$/.test(order.currency ?? \"\") ||\n    !Array.isArray(order.line_items) ||\n    !order.line_items.length ||\n    fulfillment?.statusCode !== 200 ||\n    !Array.isArray(fulfillment.body?.fulfillment_orders)\n  )\n    throw Error(\"Order, customer, or fulfillment data is incomplete.\");\n  const assigned = new Map();\n  const validLines = new Set(order.line_items.map((line) => id(line.id)));\n  if (validLines.has(\"\") || validLines.size !== order.line_items.length)\n    throw Error(\"Shopify line IDs are missing or repeated.\");\n  for (const group of fulfillment.body.fulfillment_orders) {\n    if (id(group.order_id) !== orderId || !Array.isArray(group.line_items))\n      throw Error(\"Fulfillment belongs to a different Shopify order.\");\n    const location = id(group.assigned_location_id);\n    for (const entry of group.line_items) {\n      const lineId = id(entry.line_item_id);\n      if (!validLines.has(lineId) || !location)\n        throw Error(\"Fulfillment line or location is invalid.\");\n      const locations = assigned.get(lineId) ?? new Set();\n      locations.add(location);\n      assigned.set(lineId, locations);\n    }\n  }\n  const money = (value) => {\n    if (\n      (typeof value !== \"string\" && typeof value !== \"number\") ||\n      !/^-?\\d+(?:\\.\\d{1,6})?$/.test(String(value)) ||\n      Math.abs(Number(value)) > 1000000000\n    )\n      throw Error(\"Order amount is invalid.\");\n    return Number(value);\n  };\n  const makeLine = ({ sku, title, quantity, price }) => {\n    if (typeof sku !== \"string\" || !sku.trim() || !Number.isSafeInteger(quantity) || quantity < 1)\n      throw Error(\"A Shopify line is missing an item SKU or quantity.\");\n    return {\n      lineObjectNumber: sku.trim(),\n      lineType: \"Item\",\n      quantity,\n      unitPrice: money(price),\n      ...(typeof title === \"string\" && title.length ? { description: title } : {}),\n    };\n  };\n  const lines = order.line_items.map(makeLine);\n  if (config.taxesAsLineItem)\n    lines.push(makeLine({ sku: config.taxItemSku, quantity: 1, price: order.total_tax }));\n  if (config.discountsAsLineItem)\n    lines.push(\n      makeLine({ sku: config.discountItemSku, quantity: 1, price: -money(order.total_discounts) }),\n    );\n  if (lines.length > 100) throw Error(\"Order has more than 100 Business Central lines.\");\n  const address = order.shipping_address ?? {};\n  const postal = Object.fromEntries(\n    Object.entries({\n      addressLine1: address.address1,\n      addressLine2: address.address2,\n      city: address.city,\n      state: address.province,\n      country: address.country_code,\n      postalCode: address.zip,\n      phoneNumber: address.phone,\n    }).filter(([, v]) => typeof v === \"string\" && v.trim()),\n  );\n  const displayName = [order.customer.first_name, order.customer.last_name]\n    .filter((value) => typeof value === \"string\" && value.trim())\n    .join(\" \")\n    .trim();\n  const kind = order.source_name === \"pos\" ? \"salesInvoices\" : \"salesOrders\";\n  const invoice = kind === \"salesInvoices\";\n  const document = {\n    externalDocumentNumber: orderId,\n    currencyCode: order.currency,\n    [invoice ? \"invoiceDate\" : \"orderDate\"]: order.created_at.slice(0, 10),\n    ...Object.fromEntries(\n      Object.entries({\n        sellToAddressLine1: address.address1,\n        sellToAddressLine2: address.address2,\n        sellToCity: address.city,\n        sellToState: address.province,\n        sellToCountry: address.country_code,\n        sellToPostCode: address.zip,\n      }).filter(([, v]) => typeof v === \"string\" && v.trim()),\n    ),\n  };\n  return {\n    orderId,\n    kind,\n    lineKind: invoice ? \"salesInvoiceLines\" : \"salesOrderLines\",\n    document,\n    lines,\n    email,\n    customer: {\n      displayName,\n      type: \"Person\",\n      email,\n      taxLiable: true,\n      currencyCode: order.currency,\n      ...postal,\n    },\n    locationCount: assigned.size,\n    phase: \"findDocument\",\n    lineIndex: 0,\n  };\n}\n\nconst config = $(\"Configure the store and company\").first().json.config;\nconst work = prepareBCOrder(\n  $(\"Process one order at a time\").item.json.order,\n  $input.first().json,\n  config,\n);\nreturn [{ json: { work, key: config.scope + \"|\" + work.orderId }, pairedItem: { item: 0 } }];\n"
+      },
+      "position": [
+        1845,
+        260
+      ]
+    },
+    {
+      "id": "sync-paid-shopify-orders-to-business-central-prior",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "name": "Find the order reservation",
+      "parameters": {
+        "resource": "row",
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_ORDER_IMPORT_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "scope_key",
+              "condition": "eq",
+              "keyValue": "={{ $json.key }}"
+            }
+          ]
+        },
+        "returnAll": false,
+        "limit": 1
+      },
+      "position": [
+        2050,
+        260
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "id": "sync-paid-shopify-orders-to-business-central-available",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "name": "Order needs a reservation?",
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ typeof $json.scope_key!=='string' }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "position": [
+        2255,
+        260
+      ]
+    },
+    {
+      "id": "sync-paid-shopify-orders-to-business-central-reserve",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "name": "Reserve the order before writes",
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_ORDER_IMPORT_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "scope_key": "={{ $('Map the order and its lines').item.json.key }}",
+            "status": "pending",
+            "document_id": "",
+            "stage": "reserved"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "position": [
+        2460,
+        260
+      ]
+    },
+    {
+      "id": "sync-paid-shopify-orders-to-business-central-first",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "name": "Prepare the first BC request",
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const plan = $(\"Map the order and its lines\").item.json;\nconst reservation = $input.first().json;\nif (reservation.scope_key !== plan.key || reservation.status !== \"pending\")\n  throw Error(\"The order reservation was not confirmed.\");\nreturn [{ json: plan, pairedItem: { item: 0 } }];\n"
+      },
+      "position": [
+        2665,
+        260
+      ]
+    },
+    {
+      "id": "sync-paid-shopify-orders-to-business-central-step",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "name": "Prepare the next BC request",
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function nextBCRequest(work, config) {\n  const literal = (value) =>\n    encodeURIComponent(\"'\" + value.replace(/'/g, \"''\") + \"'\").replace(/'/g, \"%27\");\n  const doc = \"/\" + work.kind;\n  const documentUrl = doc + \"(\" + work.documentId + \")\";\n  const operations = {\n    findDocument: () => ({\n      method: \"GET\",\n      path:\n        doc +\n        \"?$top=2&$filter=\" +\n        encodeURIComponent(\"externalDocumentNumber eq \") +\n        literal(work.orderId),\n    }),\n    findCustomer: () => ({\n      method: \"GET\",\n      path: \"/customers?$top=2&$filter=\" + encodeURIComponent(\"email eq \") + literal(work.email),\n    }),\n    createCustomer: () => ({ method: \"POST\", path: \"/customers\", body: work.customer }),\n    createDocument: () => ({\n      method: \"POST\",\n      path: doc,\n      body: { ...work.document, customerId: work.customerId },\n    }),\n    createLine: () => ({\n      method: \"POST\",\n      path: documentUrl + \"/\" + work.lineKind,\n      body: work.lines[work.lineIndex],\n    }),\n    checkCompensation: () => ({ method: \"GET\", path: documentUrl }),\n    deleteDocument: () => ({\n      method: \"DELETE\",\n      path: documentUrl,\n      headers: { \"If-Match\": work.etag },\n    }),\n  };\n  const { path, method, body, headers } = operations[work.phase]();\n  return { url: config.bc + path, method, headers: headers ?? {}, ...(body ? { body } : {}) };\n}\n\nconst payload = $input.first().json;\nreturn [\n  {\n    json: {\n      ...payload,\n      next: nextBCRequest(payload.work, $(\"Configure the store and company\").first().json.config),\n    },\n    pairedItem: { item: 0 },\n  },\n];\n"
+      },
+      "position": [
+        2870,
+        260
+      ]
+    },
+    {
+      "id": "sync-paid-shopify-orders-to-business-central-send",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "name": "Send the Business Central request",
+      "parameters": {
+        "method": "={{ $json.next.method }}",
+        "url": "={{ $json.next.url }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "oAuth2Api",
+        "sendHeaders": true,
+        "specifyHeaders": "json",
+        "jsonHeaders": "={{ JSON.stringify($json.next.headers) }}",
+        "sendBody": "={{ $json.next.method===\"POST\" }}",
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.next.body }}",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "text",
+              "outputPropertyName": "data",
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "position": [
+        3075,
+        260
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "sync-paid-shopify-orders-to-business-central-advance",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "name": "Check the Business Central outcome",
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function acceptBCResponse(work, response) {\n  const okId = (value) =>\n    typeof value === \"string\" && /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(value);\n  const result = (status) => ({\n    done: true,\n    outcome: {\n      orderId: work.orderId,\n      kind: work.kind,\n      status,\n      stage: work.phase,\n      fulfillmentLines: work.locationCount,\n      ...(work.documentId ? { documentId: work.documentId } : {}),\n    },\n  });\n  const next = (phase, fields = {}) => ({ done: false, work: { ...work, ...fields, phase } });\n  const { statusCode, body } = response ?? {};\n  const sameParent = (row) =>\n    okId(row?.id) &&\n    row.id === work.documentId &&\n    row.externalDocumentNumber === work.orderId &&\n    row.customerId === work.customerId;\n  const exactEmail = (row) =>\n    okId(row?.id) &&\n    typeof row.email === \"string\" &&\n    row.email.toLowerCase() === work.email.toLowerCase();\n  const list = () =>\n    statusCode === 200 &&\n    Array.isArray(body?.value) &&\n    body.value.length <= 1 &&\n    !body[\"@odata.nextLink\"]\n      ? body.value\n      : null;\n  switch (work.phase) {\n    case \"findDocument\": {\n      const matches = list();\n      if (!matches) return result(\"review_lookup\");\n      if (!matches.length) return next(\"findCustomer\");\n      return okId(matches[0]?.id) && matches[0].externalDocumentNumber === work.orderId\n        ? result(\"already_exists\")\n        : result(\"review_lookup\");\n    }\n    case \"findCustomer\": {\n      const matches = list();\n      if (!matches) return result(\"review_lookup\");\n      if (!matches.length)\n        return work.customer.displayName ? next(\"createCustomer\") : result(\"missing_customer_name\");\n      return exactEmail(matches[0])\n        ? next(\"createDocument\", { customerId: matches[0].id })\n        : result(\"review_lookup\");\n    }\n    case \"createCustomer\":\n      return statusCode === 201 && exactEmail(body)\n        ? next(\"createDocument\", { customerId: body.id })\n        : result(\"review_customer_create\");\n    case \"createDocument\":\n      return statusCode === 201 &&\n        okId(body?.id) &&\n        body.customerId === work.customerId &&\n        body.externalDocumentNumber === work.orderId\n        ? next(\"createLine\", { documentId: body.id })\n        : result(\"review_document_create\");\n    case \"createLine\":\n      if (statusCode === 201 && okId(body?.id) && body.documentId === work.documentId) {\n        return work.lineIndex + 1 < work.lines.length\n          ? next(\"createLine\", { lineIndex: work.lineIndex + 1 })\n          : result(\"created\");\n      }\n      if (\n        [400, 422].includes(statusCode) &&\n        typeof body?.error?.code === \"string\" &&\n        body.error.code\n      )\n        return next(\"checkCompensation\");\n      return result(\"review_line_create\");\n    case \"checkCompensation\": {\n      const etag = body?.[\"@odata.etag\"] ?? response?.headers?.etag;\n      const draft = [\"draft\", \"open\"].includes(String(body?.status ?? \"\").toLowerCase());\n      return statusCode === 200 &&\n        sameParent(body) &&\n        draft &&\n        typeof etag === \"string\" &&\n        /^(?:W\\/)?\"[^\"\\r\\n]+\"$/.test(etag)\n        ? next(\"deleteDocument\", { etag })\n        : result(\"review_before_cleanup\");\n    }\n    case \"deleteDocument\":\n      return result(statusCode === 204 ? \"rolled_back\" : \"review_cleanup\");\n    default:\n      throw Error(\"Unexpected Business Central phase.\");\n  }\n}\n\nconst original = $(\"Prepare the next BC request\").item.json,\n  response = $input.first().json;\nlet body;\ntry {\n  body = response.data ? JSON.parse(response.data) : null;\n} catch {}\nconst action = acceptBCResponse(original.work, {\n  statusCode: response.statusCode,\n  headers: response.headers,\n  body,\n});\nreturn [{ json: { ...action, key: original.key }, pairedItem: { item: 0 } }];\n"
+      },
+      "position": [
+        3280,
+        260
+      ]
+    },
+    {
+      "id": "sync-paid-shopify-orders-to-business-central-done",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "name": "Order import finished?",
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.done }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "position": [
+        3485,
+        260
+      ]
+    },
+    {
+      "id": "sync-paid-shopify-orders-to-business-central-record",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "name": "Record the order outcome",
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_ORDER_IMPORT_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "scope_key",
+              "condition": "eq",
+              "keyValue": "={{ $json.key }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "={{ $json.outcome.status }}",
+            "document_id": "={{ $json.outcome.documentId??\"\" }}",
+            "stage": "={{ $json.outcome.stage }}"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "position": [
+        3690,
+        260
+      ]
+    }
+  ],
+  "connections": {
+    "Check paid orders every five minutes": {
+      "main": [
+        [
+          {
+            "node": "Configure the store and company",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configure the store and company": {
+      "main": [
+        [
+          {
+            "node": "Choose the next Shopify page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Choose the next Shopify page": {
+      "main": [
+        [
+          {
+            "node": "Read Shopify orders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Shopify orders": {
+      "main": [
+        [
+          {
+            "node": "Collect the paid orders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect the paid orders": {
+      "main": [
+        [
+          {
+            "node": "More Shopify pages?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "More Shopify pages?": {
+      "main": [
+        [
+          {
+            "node": "Choose the next Shopify page",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Queue paid orders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Queue paid orders": {
+      "main": [
+        [
+          {
+            "node": "Process one order at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process one order at a time": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Read fulfillment locations",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read fulfillment locations": {
+      "main": [
+        [
+          {
+            "node": "Map the order and its lines",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Map the order and its lines": {
+      "main": [
+        [
+          {
+            "node": "Find the order reservation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find the order reservation": {
+      "main": [
+        [
+          {
+            "node": "Order needs a reservation?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Order needs a reservation?": {
+      "main": [
+        [
+          {
+            "node": "Reserve the order before writes",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Process one order at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve the order before writes": {
+      "main": [
+        [
+          {
+            "node": "Prepare the first BC request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare the first BC request": {
+      "main": [
+        [
+          {
+            "node": "Prepare the next BC request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare the next BC request": {
+      "main": [
+        [
+          {
+            "node": "Send the Business Central request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send the Business Central request": {
+      "main": [
+        [
+          {
+            "node": "Check the Business Central outcome",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check the Business Central outcome": {
+      "main": [
+        [
+          {
+            "node": "Order import finished?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Order import finished?": {
+      "main": [
+        [
+          {
+            "node": "Record the order outcome",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare the next BC request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record the order outcome": {
+      "main": [
+        [
+          {
+            "node": "Process one order at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC",
+    "saveDataSuccessExecution": "none",
+    "saveDataErrorExecution": "none",
+    "saveManualExecutions": false,
+    "saveExecutionProgress": false
+  },
+  "pinData": {}
+}

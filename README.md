@@ -795,6 +795,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Import Sheet Manufacturers to Shopware](workflows/import-sheet-manufacturers-to-shopware/) - Upsert manufacturers, translations and logo URLs from Google Sheets into Shopware.
 - [Track Zalando Swiss Prices](workflows/track-zalando-swiss-price-alerts/) - Track Zalando Switzerland product prices in Google Sheets and send a Gmail alert when a price reaches your CHF threshold.
 - [Report Weekly Shopify Orders](workflows/report-weekly-shopify-orders/) - Count open Shopify orders and total their prices for the preceding reporting week, then log and share the same result.
+- [Sync Paid Shopify Orders to Business Central](workflows/sync-paid-shopify-orders-to-business-central/) - Create unposted Business Central sales invoices for paid Shopify POS orders and sales orders for other paid Shopify orders.
 
 ## Utilities
 
