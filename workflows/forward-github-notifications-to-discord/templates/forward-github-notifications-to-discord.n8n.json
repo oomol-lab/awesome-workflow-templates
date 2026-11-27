@@ -1,0 +1,286 @@
+{
+  "name": "Forward GitHub Notifications to Discord",
+  "nodes": [
+    {
+      "id": "forward-github-notifications-to-discord-clock",
+      "name": "Check every minute",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        220
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "* * * * *"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "forward-github-notifications-to-discord-start",
+      "name": "Configure the inbox and destination",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        230,
+        220
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function pollWindow(at, saved, channel, mention) {\n  if (!/^\\d{17,20}$/.test(channel) || (mention && !/^\\d{17,20}$/.test(mention))) {\n    throw new Error(\"Configure a private Discord channel ID and optional user ID.\");\n  }\n  const scheduled = Date.parse(at);\n  if (!Number.isFinite(scheduled)) throw new Error(\"Missing schedule timestamp.\");\n  const now = Math.max(scheduled, Date.now());\n  if (saved?.nextAt > now) return null;\n  const before = Math.floor(now / 1000) * 1000;\n  const since = saved?.since ?? before - 60000;\n  return {\n    key: \"github-notifications:\" + channel,\n    channel,\n    mention,\n    now,\n    before,\n    since,\n    query: {\n      since: new Date(since).toISOString().replace(\".000Z\", \"Z\"),\n      before: new Date(before).toISOString().replace(\".000Z\", \"Z\"),\n      all: \"false\",\n      per_page: \"50\",\n    },\n  };\n}\n\nconst settings = {\n  channel: \"YOUR_DISCORD_CHANNEL_ID\",\n  mention: \"\",\n};\nconst state = $getWorkflowStaticData(\"global\");\nconst key = \"github-notifications:\" + settings.channel;\nconst window = pollWindow(\n  $input.first().json.timestamp,\n  state[key],\n  settings.channel,\n  settings.mention,\n);\nif (!window) return [];\nstate[key] = { since: window.since, nextAt: window.now + 60000 };\nreturn [{ json: { window } }];\n"
+      }
+    },
+    {
+      "id": "forward-github-notifications-to-discord-read",
+      "name": "Read the GitHub notifications",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        460,
+        220
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.github.com/notifications",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendQuery": true,
+        "specifyQuery": "json",
+        "jsonQuery": "={{ JSON.stringify({...$json.window.query,page:\"1\"}) }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "x-github-api-version",
+              "value": "2026-03-10"
+            },
+            {
+              "name": "user-agent",
+              "value": "github-notification-workflow"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 25000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "responseFormat": "json",
+              "neverError": true
+            }
+          },
+          "pagination": {
+            "pagination": {
+              "paginationMode": "updateAParameterInEachRequest",
+              "parameters": {
+                "parameters": [
+                  {
+                    "type": "qs",
+                    "name": "page",
+                    "value": "={{ (function nextNotificationPage(headers) {\n  const link = headers?.link ?? headers?.Link ?? '';\n  for (const segment of link.split(/,(?=\\s*<)/)) {\n    if (!/;\\s*rel=\"next\"\\s*$/i.test(segment)) continue;\n    const match = /^\\s*<https:\\/\\/api\\.github\\.com\\/notifications\\?([^<>]+)>\\s*;/i.exec(segment);\n    const pageText = match?.[1].match(/(?:^|&)page=(\\d+)(?:&|$)/)?.[1];\n    const page = Number(pageText);\n    if (!Number.isSafeInteger(page) || page < 2) throw new Error('Unexpected GitHub pagination link.');\n    return page;\n  }\n  return null;\n})($response.headers)??1 }}"
+                  }
+                ]
+              },
+              "paginationCompleteWhen": "other",
+              "completeExpression": "={{ $response.statusCode !== 200 || (function nextNotificationPage(headers) {\n  const link = headers?.link ?? headers?.Link ?? '';\n  for (const segment of link.split(/,(?=\\s*<)/)) {\n    if (!/;\\s*rel=\"next\"\\s*$/i.test(segment)) continue;\n    const match = /^\\s*<https:\\/\\/api\\.github\\.com\\/notifications\\?([^<>]+)>\\s*;/i.exec(segment);\n    const pageText = match?.[1].match(/(?:^|&)page=(\\d+)(?:&|$)/)?.[1];\n    const page = Number(pageText);\n    if (!Number.isSafeInteger(page) || page < 2) throw new Error('Unexpected GitHub pagination link.');\n    return page;\n  }\n  return null;\n})($response.headers)===null }}",
+              "limitPagesFetched": true,
+              "maxRequests": 20,
+              "requestInterval": 100
+            }
+          }
+        }
+      },
+      "retryOnFail": false,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "forward-github-notifications-to-discord-checkpoint",
+      "name": "Save the poll window",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        690,
+        220
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function nextNotificationPage(headers) {\n  const link = headers?.link ?? headers?.Link ?? \"\";\n  for (const segment of link.split(/,(?=\\s*<)/)) {\n    if (!/;\\s*rel=\"next\"\\s*$/i.test(segment)) continue;\n    const match = /^\\s*<https:\\/\\/api\\.github\\.com\\/notifications\\?([^<>]+)>\\s*;/i.exec(segment);\n    const pageText = match?.[1].match(/(?:^|&)page=(\\d+)(?:&|$)/)?.[1];\n    const page = Number(pageText);\n    if (!Number.isSafeInteger(page) || page < 2)\n      throw new Error(\"Unexpected GitHub pagination link.\");\n    return page;\n  }\n  return null;\n}\n\nfunction notificationLine(thread, window) {\n  if (thread?.unread !== true) return null;\n  const updated = Date.parse(thread.updated_at);\n  if (!Number.isFinite(updated))\n    throw new Error(\"GitHub returned a notification without a valid update date.\");\n  if (updated <= window.since || updated >= window.before) return null;\n  const safeText = (text, length) =>\n    String(text ?? \"\")\n      .replace(/[\\u0000-\\u001f\\u007f\\u202a-\\u202e\\u2066-\\u2069]/g, \" \")\n      .trim()\n      .slice(0, length)\n      .replace(/@/g, \"@\\u200b\")\n      .replace(/</g, \"‹\")\n      .replace(/>/g, \"›\")\n      .replace(/[\\\\`*_{}\\[\\]()#+.!|~]/g, \"\\\\$&\");\n  const reason = safeText(thread.reason, 60) || \"notification\";\n  const title = safeText(thread.subject?.title, 280) || \"Untitled notification\";\n  const url = thread.subject?.url;\n  const path =\n    typeof url === \"string\" &&\n    url.length <= 400 &&\n    /^https:\\/\\/api\\.github\\.com\\/repos\\/([A-Za-z0-9_.-]+\\/[A-Za-z0-9_.-]+)\\/(.+)$/.exec(url);\n  let link = \"\";\n  if (\n    path &&\n    /^[A-Za-z0-9._~/-]+$/.test(path[2]) &&\n    ![...path[1].split(\"/\"), ...path[2].split(\"/\")].some((x) => x === \".\" || x === \"..\")\n  ) {\n    const kind = /^(issues|pulls|discussions|commits)\\/([A-Za-z0-9]+)$/.exec(path[2]);\n    if (kind) {\n      const route = {\n        issues: \"issues\",\n        pulls: \"pull\",\n        discussions: \"discussions\",\n        commits: \"commit\",\n      }[kind[1]];\n      link = \"https://github.com/\" + path[1] + \"/\" + route + \"/\" + kind[2];\n    } else link = url;\n  }\n  if (typeof thread.id !== \"string\" || !thread.id)\n    throw new Error(\"GitHub returned a notification without an ID.\");\n  return {\n    id: thread.id + \":\" + updated,\n    line: \"- [\" + reason + \"] \" + title + (link ? \" <\" + link + \">\" : \"\"),\n  };\n}\n\nfunction readNotificationPage(previous, window, status, headers, body) {\n  const state = previous ?? { page: 0, interval: 60, lines: [], ids: [] };\n  const seconds = Number(headers?.[\"x-poll-interval\"]);\n  const retry = Number(headers?.[\"retry-after\"]);\n  const reset = Number(headers?.[\"x-ratelimit-reset\"]) - Math.floor(window.now / 1000);\n  const positive = (value) => (Number.isSafeInteger(value) && value > 0 ? value : 0);\n  state.interval = Math.max(\n    state.interval,\n    positive(seconds),\n    positive(retry),\n    (status === 403 || status === 429) && headers?.[\"x-ratelimit-remaining\"] === \"0\"\n      ? positive(reset)\n      : 0,\n  );\n  state.page++;\n  state.more = false;\n  if (status === 304 && state.page === 1) return state;\n  if (status !== 200 || !Array.isArray(body)) {\n    state.error = \"GitHub notification read failed\" + (status ? \" (HTTP \" + status + \").\" : \".\");\n    return state;\n  }\n  try {\n    const ids = new Set(state.ids);\n    for (const thread of body) {\n      const item = notificationLine(thread, window);\n      if (!item || ids.has(item.id)) continue;\n      ids.add(item.id);\n      state.lines.push(item.line);\n    }\n    state.ids = [...ids];\n    const next = nextNotificationPage(headers);\n    if (next !== null && (next !== state.page + 1 || state.page >= 20)) {\n      throw new Error(\"GitHub notification pagination did not complete.\");\n    }\n    state.more = next !== null;\n  } catch (cause) {\n    state.error = cause.message;\n  }\n  return state;\n}\n\nfunction notificationCheckpoint(window, state) {\n  return {\n    since: state.error ? window.since : window.before - 1000,\n    nextAt: Math.max(window.now, Date.now()) + state.interval * 1000,\n  };\n}\n\nfunction discordBatches(window, lines) {\n  if (!lines.length) return [];\n  const split = [];\n  let content =\n    \"Unread GitHub notifications\" + (window.mention ? \" <@\" + window.mention + \">\" : \"\") + \":\";\n  for (const line of lines) {\n    if (content.length + line.length + 1 > 1900) {\n      split.push(content);\n      content = \"Unread GitHub notifications (continued):\";\n    }\n    content += \"\\n\" + line;\n  }\n  split.push(content);\n  return split.map((text, index) => ({\n    content: text,\n    allowed_mentions: { parse: [], users: index === 0 && window.mention ? [window.mention] : [] },\n    flags: 4,\n  }));\n}\n\nconst window = $(\"Configure the inbox and destination\").first().json.window;\nlet state = null;\nfor (const { json: page } of $input.all()) {\n  state = readNotificationPage(state, window, page.statusCode, page.headers, page.body);\n  if (state.error) break;\n}\nif (state.more) state.error = \"GitHub notification pagination did not complete.\";\n$getWorkflowStaticData(\"global\")[window.key] = notificationCheckpoint(window, state);\nif (state.error) return [{ json: { status: \"read_failed\", errorMessage: state.error } }];\nreturn discordBatches(window, state.lines).map((message) => ({ json: { message } }));\n"
+      }
+    },
+    {
+      "id": "forward-github-notifications-to-discord-has",
+      "name": "Is there a message to send?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        920,
+        220
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ Boolean($json.message) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "forward-github-notifications-to-discord-send",
+      "name": "Post to the private channel",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1150,
+        220
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ \"https://discord.com/api/v10/channels/\"+$(\"Configure the inbox and destination\").first().json.window.channel+\"/messages\" }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.message }}",
+        "options": {
+          "timeout": 25000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "responseFormat": "json",
+              "neverError": true
+            }
+          }
+        }
+      },
+      "retryOnFail": false,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "forward-github-notifications-to-discord-checked",
+      "name": "Check the Discord receipt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1380,
+        220
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function discordConfirmed(reply, channel, content) {\n  return (\n    typeof reply?.id === \"string\" &&\n    !!reply.id &&\n    reply.channel_id === channel &&\n    reply.content === content\n  );\n}\n\nconst channel = $(\"Configure the inbox and destination\").first().json.window.channel;\nconst sent = $(\"Save the poll window\").all();\nreturn $input.all().map(({ json }, index) => ({\n  json: {\n    status:\n      json.statusCode === 200 &&\n      discordConfirmed(json.body, channel, sent[index]?.json.message?.content)\n        ? \"delivered\"\n        : \"delivery_unconfirmed\",\n  },\n}));\n"
+      }
+    }
+  ],
+  "connections": {
+    "Check every minute": {
+      "main": [
+        [
+          {
+            "node": "Configure the inbox and destination",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configure the inbox and destination": {
+      "main": [
+        [
+          {
+            "node": "Read the GitHub notifications",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the GitHub notifications": {
+      "main": [
+        [
+          {
+            "node": "Save the poll window",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save the poll window": {
+      "main": [
+        [
+          {
+            "node": "Is there a message to send?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is there a message to send?": {
+      "main": [
+        [
+          {
+            "node": "Post to the private channel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Post to the private channel": {
+      "main": [
+        [
+          {
+            "node": "Check the Discord receipt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC",
+    "saveDataSuccessExecution": "none",
+    "saveDataErrorExecution": "none",
+    "saveManualExecutions": false
+  },
+  "pinData": {}
+}

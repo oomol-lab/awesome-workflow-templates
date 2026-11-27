@@ -413,6 +413,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Check Completed Outputs with an Optional Keptick Receipt](workflows/check-output-with-keptick-receipt/) - Count distinct completed-record IDs, detect empty or invalid output, and optionally send a count-only receipt to Keptick.
 - [Public Page Automation Preflight](workflows/public-page-automation-preflight/) - Request an automation acceptance pack for a public page and return its evidence and review decision.
 - [Create a DigitalOcean Droplet](workflows/create-digitalocean-droplet/) - Submit a single DigitalOcean Droplet creation request and return its ID and provisioning receipt.
+- [Forward GitHub Notifications to Discord](workflows/forward-github-notifications-to-discord/) - Send unread GitHub notification summaries to a private Discord channel.
 
 ## Research
 
