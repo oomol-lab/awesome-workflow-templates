@@ -1123,6 +1123,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Add AI Summaries to WordPress Posts](workflows/prepend-wordpress-ai-summary-blocks/) - Add a four-point summary to recent WordPress articles, log each update in Google Sheets, and notify Slack.
 - [Research and Draft SEO Articles](workflows/research-and-draft-seo-articles/) - Research a submitted topic with Perplexity, draft an SEO article with sources, and reply to Telegram requests in the original chat.
 - [Preview a Webpage from a Structured Brief](workflows/preview-a-webpage-from-a-structured-brief/) - Describe a page in a webhook query and preview the generated mockup in the same browser request.
+- [Synthesize Audio from a Webhook](workflows/synthesize-audio-from-a-webhook/) - Turn submitted text into a downloadable MP3 and return it in the same POST response.
 
 ## Recruiting
 
