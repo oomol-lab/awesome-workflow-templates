@@ -1,0 +1,140 @@
+{
+  "name": "Download a PDF Attachment from a Webhook",
+  "active": false,
+  "nodes": [
+    {
+      "id": "download-pdf-attachment-from-webhook-hook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "name": "Receive the PDF download request",
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "download-pdf",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "position": [
+        0,
+        240
+      ]
+    },
+    {
+      "id": "download-pdf-attachment-from-webhook-download",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "name": "Download the configured PDF",
+      "parameters": {
+        "method": "GET",
+        "url": "https://files.example.invalid/my_document.pdf",
+        "authentication": "none",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "outputPropertyName": "data",
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "position": [
+        230,
+        240
+      ]
+    },
+    {
+      "id": "download-pdf-attachment-from-webhook-check",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "name": "Validate and name the PDF",
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function pdfFilename(status, bytes, mime) {\n  const type = String(mime ?? \"\")\n    .split(\";\", 1)[0]\n    .trim()\n    .toLowerCase();\n  if (\n    status !== 200 ||\n    ![\"application/pdf\", \"application/octet-stream\", \"application/x-pdf\"].includes(type) ||\n    bytes.length < 12 ||\n    bytes.length > 10 * 1024 * 1024 ||\n    String.fromCharCode(...bytes.subarray(0, 5)) !== \"%PDF-\" ||\n    !String.fromCharCode(...bytes.subarray(Math.max(0, bytes.length - 2048))).includes(\"%%EOF\")\n  ) {\n    throw Error(\"The upstream response did not contain a complete PDF of up to 10 MiB.\");\n  }\n  return \"my_document_\" + new Date().toISOString().slice(0, 10) + \".pdf\";\n}\nconst item = $input.first();\nconst bytes = await helpers.getBinaryDataBuffer(0, \"data\");\nconst filename = pdfFilename(item.json.statusCode, bytes, item.binary.data.mimeType);\nreturn [\n  {\n    json: { filename },\n    binary: { data: { ...item.binary.data, fileName: filename, mimeType: \"application/pdf\" } },\n    pairedItem: { item: 0 },\n  },\n];\n"
+      },
+      "position": [
+        460,
+        240
+      ]
+    },
+    {
+      "id": "download-pdf-attachment-from-webhook-reply",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "name": "Return the PDF attachment",
+      "parameters": {
+        "respondWith": "binary",
+        "responseDataSource": "set",
+        "inputFieldName": "data",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/pdf"
+              },
+              {
+                "name": "Content-Disposition",
+                "value": "={{ 'attachment; filename=\"' + $json.filename + '\"' }}"
+              },
+              {
+                "name": "Cache-Control",
+                "value": "no-store"
+              }
+            ]
+          }
+        }
+      },
+      "position": [
+        690,
+        240
+      ]
+    }
+  ],
+  "connections": {
+    "Receive the PDF download request": {
+      "main": [
+        [
+          {
+            "node": "Download the configured PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download the configured PDF": {
+      "main": [
+        [
+          {
+            "node": "Validate and name the PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate and name the PDF": {
+      "main": [
+        [
+          {
+            "node": "Return the PDF attachment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC"
+  },
+  "pinData": {}
+}

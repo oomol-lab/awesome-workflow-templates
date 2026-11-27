@@ -1,0 +1,218 @@
+{
+  "kind": "open-flow-workflow",
+  "version": 1,
+  "name": "Download a PDF Attachment from a Webhook",
+  "content": {
+    "modelVersion": 16,
+    "document": {
+      "bindings": {},
+      "graph": {
+        "nodes": {
+          "n_a628b3e41541f16a": {
+            "name": "Receive the PDF download request",
+            "kind": "webhook",
+            "bodyFields": [],
+            "method": "GET",
+            "options": {
+              "responseBody": {
+                "kind": "workflow-outputs",
+                "bodyFormat": "artifact",
+                "output": "pdf",
+                "timeoutMs": 60000
+              },
+              "responseHeaders": {
+                "Cache-Control": "no-store"
+              }
+            }
+          },
+          "n_5df6cff537e47d9e": {
+            "inputs": {
+              "url": {
+                "kind": "value",
+                "value": "https://files.example.invalid/my_document.pdf"
+              }
+            },
+            "name": "Download the configured PDF",
+            "kind": "task",
+            "task": {
+              "inputs": [
+                {
+                  "jsonSchema": {
+                    "type": "string"
+                  },
+                  "nullable": false,
+                  "handle": "url"
+                }
+              ],
+              "outputs": [
+                {
+                  "jsonSchema": {
+                    "contentMediaType": "oomol/artifact"
+                  },
+                  "nullable": false,
+                  "handle": "body"
+                },
+                {
+                  "jsonSchema": {
+                    "type": "integer"
+                  },
+                  "nullable": false,
+                  "handle": "statusCode"
+                },
+                {
+                  "jsonSchema": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    }
+                  },
+                  "nullable": false,
+                  "handle": "headers"
+                }
+              ],
+              "name": "Download the configured PDF",
+              "executor": {
+                "method": "GET",
+                "query": {
+                  "mode": "fields",
+                  "names": []
+                },
+                "headers": {
+                  "mode": "fields",
+                  "names": []
+                },
+                "bodyFormat": "none",
+                "authentication": {
+                  "type": "none"
+                },
+                "responseFormat": "artifact",
+                "statusPolicy": "success",
+                "kind": "http-request"
+              }
+            }
+          },
+          "n_648d7e4dfc5e3792": {
+            "inputs": {
+              "file": {
+                "kind": "sources",
+                "sources": [
+                  {
+                    "kind": "node",
+                    "nodeId": "n_5df6cff537e47d9e",
+                    "output": "body"
+                  }
+                ]
+              },
+              "statusCode": {
+                "kind": "sources",
+                "sources": [
+                  {
+                    "kind": "node",
+                    "nodeId": "n_5df6cff537e47d9e",
+                    "output": "statusCode"
+                  }
+                ]
+              }
+            },
+            "name": "Validate and name the PDF",
+            "kind": "task",
+            "task": {
+              "inputs": [
+                {
+                  "jsonSchema": {
+                    "contentMediaType": "oomol/artifact"
+                  },
+                  "nullable": false,
+                  "handle": "file"
+                },
+                {
+                  "jsonSchema": {
+                    "type": "integer"
+                  },
+                  "nullable": false,
+                  "handle": "statusCode"
+                }
+              ],
+              "outputs": [
+                {
+                  "jsonSchema": {
+                    "contentMediaType": "oomol/artifact"
+                  },
+                  "nullable": false,
+                  "handle": "pdf"
+                }
+              ],
+              "name": "Validate and name the PDF",
+              "moduleId": "n_aab93206e1c3e3da",
+              "capabilities": [
+                {
+                  "kind": "connector",
+                  "mode": "independent",
+                  "actions": []
+                }
+              ]
+            }
+          },
+          "n_cb7839b77cc5d8c2": {
+            "name": "Return the PDF attachment",
+            "kind": "outputs",
+            "outputDefs": [
+              {
+                "jsonSchema": {
+                  "contentMediaType": "oomol/artifact"
+                },
+                "nullable": false,
+                "handle": "pdf"
+              }
+            ],
+            "outputMappings": {
+              "pdf": {
+                "kind": "sources",
+                "sources": [
+                  {
+                    "kind": "node",
+                    "nodeId": "n_648d7e4dfc5e3792",
+                    "output": "pdf"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "edges": [
+          {
+            "source": "n_a628b3e41541f16a",
+            "target": "n_5df6cff537e47d9e"
+          },
+          {
+            "source": "n_5df6cff537e47d9e",
+            "target": "n_648d7e4dfc5e3792"
+          },
+          {
+            "source": "n_648d7e4dfc5e3792",
+            "target": "n_cb7839b77cc5d8c2"
+          }
+        ]
+      }
+    },
+    "modules": {
+      "n_aab93206e1c3e3da": {
+        "name": "Validate and name the PDF",
+        "imports": [],
+        "source": "function pdfFilename(status, bytes, mime) {\n  const type = String(mime ?? \"\")\n    .split(\";\", 1)[0]\n    .trim()\n    .toLowerCase();\n  if (\n    status !== 200 ||\n    ![\"application/pdf\", \"application/octet-stream\", \"application/x-pdf\"].includes(type) ||\n    bytes.length < 12 ||\n    bytes.length > 10 * 1024 * 1024 ||\n    String.fromCharCode(...bytes.subarray(0, 5)) !== \"%PDF-\" ||\n    !String.fromCharCode(...bytes.subarray(Math.max(0, bytes.length - 2048))).includes(\"%%EOF\")\n  ) {\n    throw Error(\"The upstream response did not contain a complete PDF of up to 10 MiB.\");\n  }\n  return \"my_document_\" + new Date().toISOString().slice(0, 10) + \".pdf\";\n}\nexport default async ({ file, statusCode }, context) => {\n  const bytes = await context.artifact.open(file);\n  const name = pdfFilename(statusCode, bytes, file.mediaType);\n  if (file.name === name && file.mediaType === \"application/pdf\") return { pdf: file };\n  return { pdf: await context.artifact.put(bytes, { name, mediaType: \"application/pdf\" }) };\n};\n"
+      }
+    },
+    "features": [
+      "http-request-artifacts",
+      "webhook-artifact-response"
+    ]
+  },
+  "presentation": {
+    "designer": {
+      "version": 1,
+      "flow": {
+        "direction": "vertical"
+      }
+    }
+  }
+}

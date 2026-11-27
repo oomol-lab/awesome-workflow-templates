@@ -754,6 +754,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Mark Processed Google Sheets Rows by ID](workflows/mark-processed-google-sheets-rows/) - Use Google Sheets as a work queue and mark only the rows the processing step reports as complete.
 - [Back Up a Google Sheet to Dropbox as XLS](workflows/export-google-sheet-xls-to-dropbox/) - Every 15 minutes, export the rows of a Google Sheets range as a legacy Excel workbook and replace a Dropbox file.
 - [Schedule Zoom Meetings for Calendar Events](workflows/schedule-zoom-meetings-for-calendar-events/) - Review the next 12 hours of Google Calendar and create Zoom meetings for eligible timed events.
+- [Download a PDF Attachment from a Webhook](workflows/download-pdf-attachment-from-webhook/) - Return a configured PDF as a dated attachment in the same GET request.
 
 ## Content
 
