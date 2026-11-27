@@ -1228,6 +1228,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Generate an Inline PNG from a Webhook](workflows/image-generation-webhook/) - Open an authenticated URL with an image prompt and view the generated PNG in your browser.
 - [Run a DaoXE Prompt with Model Fallback](workflows/daoxe-model-fallback/) - Send one prompt to a primary DaoXE model and use a second model if the first is temporarily unavailable.
 - [Draw Gemini Object Detections on an Image](workflows/annotate-images-with-gemini-object-detection/) - Find the objects you describe in a JPEG or PNG and draw the detected boxes over the original image.
+- [Enforce Structured Output for Five States](workflows/enforce-five-state-structured-output/) - Return a validated JSON list of five states and their three largest cities, with one correction when the first answer is invalid.
 
 ## E-commerce
 

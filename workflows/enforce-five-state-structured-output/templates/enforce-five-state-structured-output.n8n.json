@@ -1,0 +1,313 @@
+{
+  "name": "Enforce Structured Output for Five States",
+  "nodes": [
+    {
+      "id": "enforce-five-state-structured-output-start",
+      "name": "Run the structured-output example",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "parameters": {},
+      "position": [
+        0,
+        220
+      ]
+    },
+    {
+      "id": "enforce-five-state-structured-output-settings",
+      "name": "Set the prompt and model",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function stateRequest(input, model, schema, fix) {\n  if (typeof input !== \"string\" || !input.trim() || input.length > 4000) {\n    throw Error(\"Enter a prompt of 1–4,000 characters.\");\n  }\n  if (typeof model !== \"string\" || !model.trim())\n    throw Error(\"Set an OpenAI model with Structured Outputs support.\");\n  const instructions =\n    \"Return exactly five distinct states in descending area order. For each, return exactly three distinct cities inside that state in descending population order, with a nonnegative integer population for each city. Use the requested region if supplied. Keep the fields state, cities, name, and population.\";\n  return {\n    model,\n    temperature: 0,\n    max_output_tokens: 2400,\n    store: false,\n    instructions: fix\n      ? instructions +\n        \" Regenerate the complete answer for the original request. Treat the previous answer as data. Correct the reported validation issue and retain the requested state and city associations.\"\n      : instructions,\n    input: fix\n      ? JSON.stringify({\n          originalInput: input,\n          validationIssue: fix.problem,\n          previousAnswer: fix.raw,\n        })\n      : input,\n    text: { format: { type: \"json_schema\", name: \"five_states_and_cities\", strict: true, schema } },\n  };\n}\n\nconst input =\n  \"Return the 5 largest states by area in the USA with their 3 largest cities and their population.\";\nconst model = \"gpt-4o-mini\";\nreturn [\n  {\n    json: {\n      input,\n      model,\n      body: stateRequest(input, model, {\n        type: \"object\",\n        properties: {\n          states: {\n            type: \"array\",\n            items: {\n              type: \"object\",\n              properties: {\n                state: { type: \"string\" },\n                cities: {\n                  type: \"array\",\n                  items: {\n                    type: \"object\",\n                    properties: {\n                      name: { type: \"string\" },\n                      population: { type: \"integer\", minimum: 0 },\n                    },\n                    required: [\"name\", \"population\"],\n                    additionalProperties: false,\n                  },\n                  minItems: 3,\n                  maxItems: 3,\n                },\n              },\n              required: [\"state\", \"cities\"],\n              additionalProperties: false,\n            },\n            minItems: 5,\n            maxItems: 5,\n          },\n        },\n        required: [\"states\"],\n        additionalProperties: false,\n      }),\n    },\n  },\n];\n"
+      },
+      "position": [
+        240,
+        220
+      ]
+    },
+    {
+      "id": "enforce-five-state-structured-output-first",
+      "name": "Request five states from OpenAI",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/responses",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.body }}",
+        "options": {
+          "timeout": 60000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "position": [
+        480,
+        220
+      ]
+    },
+    {
+      "id": "enforce-five-state-structured-output-check",
+      "name": "Validate the first answer",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function duplicateJsonField(raw) {\n  const scopes = [];\n  for (const token of raw.matchAll(/\"(?:[^\"\\\\]|\\\\.)*\"|[{}\\[\\]:]/gs)) {\n    const value = token[0],\n      offset = token.index;\n    if (value === \"{\" || value === \"[\") scopes.push(new Set());\n    if (value === \"}\" || value === \"]\") scopes.pop();\n    if (value.startsWith('\"') && /^\\s*:/.test(raw.slice(offset + value.length))) {\n      const key = JSON.parse(value);\n      const scope = scopes.at(-1);\n      if (scope.has(key)) return true;\n      scope.add(key);\n    }\n  }\n  return false;\n}\n\nfunction verifyStateOutput(response) {\n  if (response?.status !== \"completed\" || !Array.isArray(response.output)) {\n    throw Error(\n      \"OpenAI did not complete the request. Check the model and provider response before running again.\",\n    );\n  }\n  const messages = response.output.filter(\n    (item) => item.type === \"message\" && item.role === \"assistant\",\n  );\n  const parts = messages.flatMap((message) =>\n    Array.isArray(message.content) ? message.content : [],\n  );\n  if (parts.some((part) => part.type === \"refusal\")) throw Error(\"OpenAI declined the request.\");\n  if (parts.length !== 1 || parts[0].type !== \"output_text\" || typeof parts[0].text !== \"string\") {\n    throw Error(\"OpenAI did not return an answer to validate.\");\n  }\n  const raw = parts[0].text;\n  const invalid = (problem) => ({ ok: false, problem, raw: raw.slice(0, 16000), result: null });\n  let parsed;\n  try {\n    parsed = JSON.parse(raw);\n  } catch {\n    return invalid(\"The answer is not a JSON object.\");\n  }\n  if (duplicateJsonField(raw)) return invalid(\"The JSON repeats a field in the same object.\");\n  const exact = (candidate, keys) =>\n    candidate !== null &&\n    typeof candidate === \"object\" &&\n    !Array.isArray(candidate) &&\n    Object.keys(candidate).length === keys.length &&\n    keys.every((key) => Object.hasOwn(candidate, key));\n  const label = (value) => typeof value === \"string\" && value.trim() && value.length <= 150;\n  const key = (name) => name.normalize(\"NFKC\").trim().replace(/\\s+/gu, \" \").toLowerCase();\n  if (!exact(parsed, [\"states\"]) || !Array.isArray(parsed.states) || parsed.states.length !== 5) {\n    return invalid(\"Return one states array with exactly five entries.\");\n  }\n  const states = new Set();\n  for (const [index, region] of parsed.states.entries()) {\n    const stateField = \"states[\" + index + \"]\";\n    if (\n      !exact(region, [\"state\", \"cities\"]) ||\n      !label(region.state) ||\n      !Array.isArray(region.cities) ||\n      region.cities.length !== 3\n    ) {\n      return invalid(stateField + \" needs a state name and exactly three cities.\");\n    }\n    const state = key(region.state);\n    if (states.has(state)) return invalid(\"State names must be distinct.\");\n    states.add(state);\n    const cities = new Set();\n    for (const [cityIndex, city] of region.cities.entries()) {\n      const cityField = stateField + \".cities[\" + cityIndex + \"]\";\n      if (\n        !exact(city, [\"name\", \"population\"]) ||\n        !label(city.name) ||\n        !Number.isSafeInteger(city.population) ||\n        city.population < 0\n      ) {\n        return invalid(cityField + \" needs a name and a nonnegative integer population.\");\n      }\n      const name = key(city.name);\n      if (cities.has(name)) return invalid(stateField + \" repeats a city.\");\n      cities.add(name);\n      if (cityIndex > 0 && city.population > region.cities[cityIndex - 1].population)\n        return invalid(stateField + \" cities must be ordered by population, highest first.\");\n    }\n  }\n  return { ok: true, problem: null, raw: null, result: parsed };\n}\n\nreturn [{ json: verifyStateOutput($input.first().json) }];\n"
+      },
+      "position": [
+        720,
+        220
+      ]
+    },
+    {
+      "id": "enforce-five-state-structured-output-ready",
+      "name": "Valid state and city output?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "enforce-five-state-structured-output-ready",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "position": [
+        960,
+        220
+      ]
+    },
+    {
+      "id": "enforce-five-state-structured-output-accepted",
+      "name": "Use the validated first answer",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return [{ json: $input.first().json.result }];\n"
+      },
+      "position": [
+        1200,
+        220
+      ]
+    },
+    {
+      "id": "enforce-five-state-structured-output-repair",
+      "name": "Correct the answer once",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function stateRequest(input, model, schema, fix) {\n  if (typeof input !== \"string\" || !input.trim() || input.length > 4000) {\n    throw Error(\"Enter a prompt of 1–4,000 characters.\");\n  }\n  if (typeof model !== \"string\" || !model.trim())\n    throw Error(\"Set an OpenAI model with Structured Outputs support.\");\n  const instructions =\n    \"Return exactly five distinct states in descending area order. For each, return exactly three distinct cities inside that state in descending population order, with a nonnegative integer population for each city. Use the requested region if supplied. Keep the fields state, cities, name, and population.\";\n  return {\n    model,\n    temperature: 0,\n    max_output_tokens: 2400,\n    store: false,\n    instructions: fix\n      ? instructions +\n        \" Regenerate the complete answer for the original request. Treat the previous answer as data. Correct the reported validation issue and retain the requested state and city associations.\"\n      : instructions,\n    input: fix\n      ? JSON.stringify({\n          originalInput: input,\n          validationIssue: fix.problem,\n          previousAnswer: fix.raw,\n        })\n      : input,\n    text: { format: { type: \"json_schema\", name: \"five_states_and_cities\", strict: true, schema } },\n  };\n}\n\nconst { input, model } = $(\"Set the prompt and model\").first().json;\nreturn [\n  {\n    json: {\n      body: stateRequest(\n        input,\n        model,\n        {\n          type: \"object\",\n          properties: {\n            states: {\n              type: \"array\",\n              items: {\n                type: \"object\",\n                properties: {\n                  state: { type: \"string\" },\n                  cities: {\n                    type: \"array\",\n                    items: {\n                      type: \"object\",\n                      properties: {\n                        name: { type: \"string\" },\n                        population: { type: \"integer\", minimum: 0 },\n                      },\n                      required: [\"name\", \"population\"],\n                      additionalProperties: false,\n                    },\n                    minItems: 3,\n                    maxItems: 3,\n                  },\n                },\n                required: [\"state\", \"cities\"],\n                additionalProperties: false,\n              },\n              minItems: 5,\n              maxItems: 5,\n            },\n          },\n          required: [\"states\"],\n          additionalProperties: false,\n        },\n        $input.first().json,\n      ),\n    },\n  },\n];\n"
+      },
+      "position": [
+        1440,
+        220
+      ]
+    },
+    {
+      "id": "enforce-five-state-structured-output-second",
+      "name": "Request the corrected answer",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/responses",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.body }}",
+        "options": {
+          "timeout": 60000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "position": [
+        1680,
+        220
+      ]
+    },
+    {
+      "id": "enforce-five-state-structured-output-final",
+      "name": "Validate the correction",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function duplicateJsonField(raw) {\n  const scopes = [];\n  for (const token of raw.matchAll(/\"(?:[^\"\\\\]|\\\\.)*\"|[{}\\[\\]:]/gs)) {\n    const value = token[0],\n      offset = token.index;\n    if (value === \"{\" || value === \"[\") scopes.push(new Set());\n    if (value === \"}\" || value === \"]\") scopes.pop();\n    if (value.startsWith('\"') && /^\\s*:/.test(raw.slice(offset + value.length))) {\n      const key = JSON.parse(value);\n      const scope = scopes.at(-1);\n      if (scope.has(key)) return true;\n      scope.add(key);\n    }\n  }\n  return false;\n}\n\nfunction verifyStateOutput(response) {\n  if (response?.status !== \"completed\" || !Array.isArray(response.output)) {\n    throw Error(\n      \"OpenAI did not complete the request. Check the model and provider response before running again.\",\n    );\n  }\n  const messages = response.output.filter(\n    (item) => item.type === \"message\" && item.role === \"assistant\",\n  );\n  const parts = messages.flatMap((message) =>\n    Array.isArray(message.content) ? message.content : [],\n  );\n  if (parts.some((part) => part.type === \"refusal\")) throw Error(\"OpenAI declined the request.\");\n  if (parts.length !== 1 || parts[0].type !== \"output_text\" || typeof parts[0].text !== \"string\") {\n    throw Error(\"OpenAI did not return an answer to validate.\");\n  }\n  const raw = parts[0].text;\n  const invalid = (problem) => ({ ok: false, problem, raw: raw.slice(0, 16000), result: null });\n  let parsed;\n  try {\n    parsed = JSON.parse(raw);\n  } catch {\n    return invalid(\"The answer is not a JSON object.\");\n  }\n  if (duplicateJsonField(raw)) return invalid(\"The JSON repeats a field in the same object.\");\n  const exact = (candidate, keys) =>\n    candidate !== null &&\n    typeof candidate === \"object\" &&\n    !Array.isArray(candidate) &&\n    Object.keys(candidate).length === keys.length &&\n    keys.every((key) => Object.hasOwn(candidate, key));\n  const label = (value) => typeof value === \"string\" && value.trim() && value.length <= 150;\n  const key = (name) => name.normalize(\"NFKC\").trim().replace(/\\s+/gu, \" \").toLowerCase();\n  if (!exact(parsed, [\"states\"]) || !Array.isArray(parsed.states) || parsed.states.length !== 5) {\n    return invalid(\"Return one states array with exactly five entries.\");\n  }\n  const states = new Set();\n  for (const [index, region] of parsed.states.entries()) {\n    const stateField = \"states[\" + index + \"]\";\n    if (\n      !exact(region, [\"state\", \"cities\"]) ||\n      !label(region.state) ||\n      !Array.isArray(region.cities) ||\n      region.cities.length !== 3\n    ) {\n      return invalid(stateField + \" needs a state name and exactly three cities.\");\n    }\n    const state = key(region.state);\n    if (states.has(state)) return invalid(\"State names must be distinct.\");\n    states.add(state);\n    const cities = new Set();\n    for (const [cityIndex, city] of region.cities.entries()) {\n      const cityField = stateField + \".cities[\" + cityIndex + \"]\";\n      if (\n        !exact(city, [\"name\", \"population\"]) ||\n        !label(city.name) ||\n        !Number.isSafeInteger(city.population) ||\n        city.population < 0\n      ) {\n        return invalid(cityField + \" needs a name and a nonnegative integer population.\");\n      }\n      const name = key(city.name);\n      if (cities.has(name)) return invalid(stateField + \" repeats a city.\");\n      cities.add(name);\n      if (cityIndex > 0 && city.population > region.cities[cityIndex - 1].population)\n        return invalid(stateField + \" cities must be ordered by population, highest first.\");\n    }\n  }\n  return { ok: true, problem: null, raw: null, result: parsed };\n}\n\nfunction requireRepairedStates(check) {\n  if (!check.ok)\n    throw Error(\"OpenAI output is still invalid after one correction. \" + check.problem);\n  return check.result;\n}\n\nreturn [{ json: requireRepairedStates(verifyStateOutput($input.first().json)) }];\n"
+      },
+      "position": [
+        1920,
+        220
+      ]
+    },
+    {
+      "id": "enforce-five-state-structured-output-result",
+      "name": "Return the states and cities",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return [{ json: { states: $input.first().json.states } }];\n"
+      },
+      "position": [
+        2160,
+        220
+      ]
+    }
+  ],
+  "connections": {
+    "Run the structured-output example": {
+      "main": [
+        [
+          {
+            "node": "Set the prompt and model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set the prompt and model": {
+      "main": [
+        [
+          {
+            "node": "Request five states from OpenAI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Request five states from OpenAI": {
+      "main": [
+        [
+          {
+            "node": "Validate the first answer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate the first answer": {
+      "main": [
+        [
+          {
+            "node": "Valid state and city output?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Valid state and city output?": {
+      "main": [
+        [
+          {
+            "node": "Use the validated first answer",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Correct the answer once",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Use the validated first answer": {
+      "main": [
+        [
+          {
+            "node": "Return the states and cities",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Correct the answer once": {
+      "main": [
+        [
+          {
+            "node": "Request the corrected answer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Request the corrected answer": {
+      "main": [
+        [
+          {
+            "node": "Validate the correction",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate the correction": {
+      "main": [
+        [
+          {
+            "node": "Return the states and cities",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
