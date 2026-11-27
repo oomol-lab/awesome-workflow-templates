@@ -1343,6 +1343,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 ## Data & Analytics
 
 - [Sync Google Sheets Contacts to PostgreSQL](workflows/sync-google-sheets-contacts-to-postgres/) - Sync contact names, towns and ages from Google Sheets into an existing PostgreSQL table every hour.
+- [Log Simulated Humidity to PostgreSQL](workflows/log-simulated-humidity-to-postgres/) - Generate a simulated humidity reading every minute and insert it into your PostgreSQL table.
 
 ## Contribute
 
