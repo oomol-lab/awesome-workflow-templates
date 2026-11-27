@@ -830,6 +830,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Stop an Example Batch Loop at Index Five](workflows/stop-an-example-batch-loop-at-index-five/) - Learn how a one-item batch loop stops at run index five.
 - [Create or Update a Dub Short Link](workflows/create-or-update-a-dub-short-link/) - Create a short link or update an existing link with the same domain and key.
 - [ZIP Multiple Input Files](workflows/zip-multiple-input-files/) - Combine multiple input files into a single ZIP archive.
+- [Get Google Keyword Suggestions](workflows/get-google-keyword-suggestions/) - Send a search phrase to a webhook and receive ordered US Google autocomplete suggestions as JSON.
 
 ## Analytics
 
