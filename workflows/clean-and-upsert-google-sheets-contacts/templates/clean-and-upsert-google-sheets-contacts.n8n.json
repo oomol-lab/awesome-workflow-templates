@@ -1,0 +1,314 @@
+{
+  "name": "Clean and Upsert Google Sheets Contacts",
+  "nodes": [
+    {
+      "id": "clean-and-upsert-google-sheets-contacts-start",
+      "name": "Run on demand",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "parameters": {},
+      "position": [
+        0,
+        200
+      ]
+    },
+    {
+      "id": "clean-and-upsert-google-sheets-contacts-config",
+      "name": "Set sheets and match key",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function contactSheetConfig(sourceId, sourceTab, targetId, targetTab, keyColumn) {\n  const id = (value) =>\n    typeof value === \"string\" && /^[A-Za-z0-9_-]{12,}$/.test(value) && !value.startsWith(\"YOUR_\");\n  if (\n    !id(sourceId) ||\n    !id(targetId) ||\n    !sourceTab.trim() ||\n    !targetTab.trim() ||\n    (sourceId === targetId && sourceTab.trim().toLowerCase() === targetTab.trim().toLowerCase()) ||\n    ![\"id\", \"email\"].includes(keyColumn)\n  ) {\n    throw new Error(\n      \"Configure different source and target tabs and choose id or email as the match key.\",\n    );\n  }\n  const quote = (tab) => \"'\" + tab.replace(/'/g, \"''\") + \"'\";\n  return {\n    sourceId,\n    targetId,\n    keyColumn,\n    sourceTab: sourceTab.trim(),\n    targetTab: targetTab.trim(),\n    sourceRange: quote(sourceTab.trim()) + \"!A:Z\",\n    targetRange: quote(targetTab.trim()) + \"!A:Z\",\n    targetPrefix: quote(targetTab.trim()),\n  };\n}\nconst settings = {\n  sourceId: \"YOUR_SOURCE_SPREADSHEET_ID\",\n  sourceTab: \"Sheet1\",\n  targetId: \"YOUR_TARGET_SPREADSHEET_ID\",\n  targetTab: \"Processed\",\n  keyColumn: \"choose-id-or-email\",\n};\nreturn [\n  {\n    json: contactSheetConfig(\n      settings.sourceId,\n      settings.sourceTab,\n      settings.targetId,\n      settings.targetTab,\n      settings.keyColumn,\n    ),\n  },\n];\n"
+      },
+      "position": [
+        220,
+        200
+      ]
+    },
+    {
+      "id": "clean-and-upsert-google-sheets-contacts-read",
+      "name": "Read source contacts",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ \"https://sheets.googleapis.com/v4/spreadsheets/\"+encodeURIComponent($(\"Set sheets and match key\").first().json.sourceId)+\"/values/\"+encodeURIComponent($(\"Set sheets and match key\").first().json.sourceRange)+\"?majorDimension=ROWS&valueRenderOption=UNFORMATTED_VALUE\" }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "position": [
+        440,
+        200
+      ],
+      "retryOnFail": false
+    },
+    {
+      "id": "clean-and-upsert-google-sheets-contacts-clean",
+      "name": "Clean the contact rows",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function parseA1(range) {\n  if (typeof range !== \"string\") return null;\n  const index = range.lastIndexOf(\"!\");\n  if (index < 1) return null;\n  const spelling = range.slice(0, index);\n  const tab =\n    spelling.startsWith(\"'\") && spelling.endsWith(\"'\")\n      ? spelling.slice(1, -1).replace(/''/g, \"'\")\n      : spelling;\n  const cells = range\n    .slice(index + 1)\n    .replace(/\\$/g, \"\")\n    .toUpperCase();\n  return { tab, cells };\n}\n\nfunction checkedRows(page, tab, headers) {\n  const got = parseA1(page.range);\n  const rows = page.values ?? [];\n  if (\n    got?.tab !== tab ||\n    !/^A(?:1)?(?::Z\\d*)?$/.test(got.cells) ||\n    page.majorDimension !== \"ROWS\" ||\n    !Array.isArray(rows) ||\n    rows.some((row) => !Array.isArray(row))\n  ) {\n    throw new Error(\"Sheets did not return the configured tab in row order.\");\n  }\n  if (!rows.length) return null;\n  if (headers.some((heading, i) => rows[0][i] !== heading))\n    throw new Error(\"Check the required headings in \" + tab + \".\");\n  return rows.slice(1);\n}\n\nfunction contactKey(value, keyColumn) {\n  if (keyColumn === \"id\" && Number.isSafeInteger(value)) return String(value);\n  if (typeof value !== \"string\" || !value.trim() || value.startsWith(\"=\")) return null;\n  return keyColumn === \"email\" ? value.toLowerCase() : value;\n}\n\nfunction cleanContacts(config, page, timestamp) {\n  const headings = [\"id\", \"name\", \"email\", \"status\"];\n  const rows = checkedRows(page, config.sourceTab, headings) ?? [];\n  const keyIndex = headings.indexOf(config.keyColumn);\n  const seen = new Set();\n  const clean = [];\n  for (const raw of rows) {\n    const name = raw[1] ? String(raw[1]).trim() : \"\";\n    const email = raw[2] ? String(raw[2]).toLowerCase() : \"\";\n    if (!name || !email.trim()) continue;\n    const next = [raw[0] ?? \"\", name, email, raw[3] || \"pending\", timestamp, true];\n    const key = contactKey(next[keyIndex], config.keyColumn);\n    if (key === null || seen.has(key))\n      throw new Error(\n        \"The source contains a missing, invalid or duplicate \" + config.keyColumn + \" match key.\",\n      );\n    seen.add(key);\n    clean.push(next);\n  }\n  return { rows: clean, timestamp };\n}\n\nconst clean = cleanContacts(\n  $(\"Set sheets and match key\").first().json,\n  $input.first().json,\n  new Date().toISOString(),\n);\nreturn [{ json: { clean, hasRows: clean.rows.length > 0 } }];\n"
+      },
+      "position": [
+        660,
+        200
+      ]
+    },
+    {
+      "id": "clean-and-upsert-google-sheets-contacts-gate",
+      "name": "Are there valid contacts?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.hasRows }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "position": [
+        880,
+        200
+      ]
+    },
+    {
+      "id": "clean-and-upsert-google-sheets-contacts-target",
+      "name": "Read the target contact keys",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ \"https://sheets.googleapis.com/v4/spreadsheets/\"+encodeURIComponent($(\"Set sheets and match key\").first().json.targetId)+\"/values/\"+encodeURIComponent($(\"Set sheets and match key\").first().json.targetRange)+\"?majorDimension=ROWS&valueRenderOption=FORMULA\" }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "position": [
+        1100,
+        200
+      ],
+      "retryOnFail": false
+    },
+    {
+      "id": "clean-and-upsert-google-sheets-contacts-plan",
+      "name": "Plan updates and new rows",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function parseA1(range) {\n  if (typeof range !== \"string\") return null;\n  const index = range.lastIndexOf(\"!\");\n  if (index < 1) return null;\n  const spelling = range.slice(0, index);\n  const tab =\n    spelling.startsWith(\"'\") && spelling.endsWith(\"'\")\n      ? spelling.slice(1, -1).replace(/''/g, \"'\")\n      : spelling;\n  const cells = range\n    .slice(index + 1)\n    .replace(/\\$/g, \"\")\n    .toUpperCase();\n  return { tab, cells };\n}\n\nfunction checkedRows(page, tab, headers) {\n  const got = parseA1(page.range);\n  const rows = page.values ?? [];\n  if (\n    got?.tab !== tab ||\n    !/^A(?:1)?(?::Z\\d*)?$/.test(got.cells) ||\n    page.majorDimension !== \"ROWS\" ||\n    !Array.isArray(rows) ||\n    rows.some((row) => !Array.isArray(row))\n  ) {\n    throw new Error(\"Sheets did not return the configured tab in row order.\");\n  }\n  if (!rows.length) return null;\n  if (headers.some((heading, i) => rows[0][i] !== heading))\n    throw new Error(\"Check the required headings in \" + tab + \".\");\n  return rows.slice(1);\n}\n\nfunction contactKey(value, keyColumn) {\n  if (keyColumn === \"id\" && Number.isSafeInteger(value)) return String(value);\n  if (typeof value !== \"string\" || !value.trim() || value.startsWith(\"=\")) return null;\n  return keyColumn === \"email\" ? value.toLowerCase() : value;\n}\n\nfunction planContacts(config, clean, page) {\n  const headers = [\"id\", \"name\", \"email\", \"status\", \"created_at\", \"processed\"];\n  const rows = checkedRows(page, config.targetTab, headers);\n  if (rows === null) throw new Error(\"Add the target headers before running.\");\n  const keyIndex = headers.indexOf(config.keyColumn);\n  const byKey = new Map();\n  for (const [i, row] of rows.entries()) {\n    if (row.every((cell) => cell === null || cell === undefined || cell === \"\")) continue;\n    const key = contactKey(row[keyIndex], config.keyColumn);\n    if (key === null || byKey.has(key))\n      throw new Error(\n        \"The target contains a missing, invalid or duplicate \" + config.keyColumn + \" match key.\",\n      );\n    byKey.set(key, i + 2);\n  }\n  let next = rows.length + 2;\n  let updated = 0;\n  const data = clean.rows.map((values) => {\n    const key = contactKey(values[keyIndex], config.keyColumn);\n    let row = byKey.get(key);\n    if (row === undefined) row = next++;\n    else updated++;\n    return {\n      range: config.targetPrefix + \"!A\" + row + \":F\" + row,\n      majorDimension: \"ROWS\",\n      values: [values],\n    };\n  });\n  return { data, updated, inserted: data.length - updated, timestamp: clean.timestamp };\n}\nreturn [\n  {\n    json: planContacts(\n      $(\"Set sheets and match key\").first().json,\n      $(\"Clean the contact rows\").first().json.clean,\n      $input.first().json,\n    ),\n  },\n];\n"
+      },
+      "position": [
+        1320,
+        200
+      ]
+    },
+    {
+      "id": "clean-and-upsert-google-sheets-contacts-write",
+      "name": "Write the exact contact rows",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "={{ \"https://sheets.googleapis.com/v4/spreadsheets/\"+encodeURIComponent($(\"Set sheets and match key\").first().json.targetId)+\"/values:batchUpdate\" }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ ({valueInputOption:\"RAW\",data:$json.data,includeValuesInResponse:true,responseValueRenderOption:\"UNFORMATTED_VALUE\"}) }}",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "position": [
+        1540,
+        200
+      ],
+      "retryOnFail": false
+    },
+    {
+      "id": "clean-and-upsert-google-sheets-contacts-confirm",
+      "name": "Confirm the Sheets result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function parseA1(range) {\n  if (typeof range !== \"string\") return null;\n  const index = range.lastIndexOf(\"!\");\n  if (index < 1) return null;\n  const spelling = range.slice(0, index);\n  const tab =\n    spelling.startsWith(\"'\") && spelling.endsWith(\"'\")\n      ? spelling.slice(1, -1).replace(/''/g, \"'\")\n      : spelling;\n  const cells = range\n    .slice(index + 1)\n    .replace(/\\$/g, \"\")\n    .toUpperCase();\n  return { tab, cells };\n}\n\nfunction confirmContactWrites(config, plan, receipt) {\n  const { spreadsheetId, totalUpdatedRows, totalUpdatedCells, responses } = receipt;\n  if (\n    spreadsheetId !== config.targetId ||\n    totalUpdatedRows !== plan.data.length ||\n    totalUpdatedCells !== 6 * plan.data.length ||\n    !Array.isArray(responses) ||\n    responses.length !== plan.data.length\n  ) {\n    throw new Error(\n      \"Sheets did not confirm the full update. Check the target before running again.\",\n    );\n  }\n  for (const [i, expected] of plan.data.entries()) {\n    const got = responses[i],\n      range = parseA1(expected.range),\n      updated = parseA1(got?.updatedRange),\n      result = parseA1(got?.updatedData?.range);\n    if (\n      updated?.tab !== range.tab ||\n      updated.cells !== range.cells ||\n      result?.tab !== range.tab ||\n      result.cells !== range.cells ||\n      got.updatedRows !== 1 ||\n      got.updatedCells !== 6 ||\n      JSON.stringify(got.updatedData?.values) !== JSON.stringify(expected.values)\n    ) {\n      throw new Error(\n        \"Sheets did not confirm each requested row. Check the target before running again.\",\n      );\n    }\n  }\n  return {\n    summary: \"Data processing completed successfully\",\n    processed_count: totalUpdatedRows,\n    updated_count: plan.updated,\n    inserted_count: plan.inserted,\n    timestamp: plan.timestamp,\n  };\n}\nreturn [\n  {\n    json: confirmContactWrites(\n      $(\"Set sheets and match key\").first().json,\n      $(\"Plan updates and new rows\").first().json,\n      $input.first().json,\n    ),\n  },\n];\n"
+      },
+      "position": [
+        1760,
+        200
+      ]
+    },
+    {
+      "id": "clean-and-upsert-google-sheets-contacts-zero",
+      "name": "Return zero processed rows",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const clean = $input.first().json.clean;\nreturn [\n  {\n    json: {\n      summary: \"No eligible contacts\",\n      processed_count: 0,\n      updated_count: 0,\n      inserted_count: 0,\n      timestamp: clean.timestamp,\n    },\n  },\n];\n"
+      },
+      "position": [
+        1100,
+        430
+      ]
+    }
+  ],
+  "connections": {
+    "Run on demand": {
+      "main": [
+        [
+          {
+            "node": "Set sheets and match key",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set sheets and match key": {
+      "main": [
+        [
+          {
+            "node": "Read source contacts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read source contacts": {
+      "main": [
+        [
+          {
+            "node": "Clean the contact rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clean the contact rows": {
+      "main": [
+        [
+          {
+            "node": "Are there valid contacts?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Are there valid contacts?": {
+      "main": [
+        [
+          {
+            "node": "Read the target contact keys",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Return zero processed rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the target contact keys": {
+      "main": [
+        [
+          {
+            "node": "Plan updates and new rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Plan updates and new rows": {
+      "main": [
+        [
+          {
+            "node": "Write the exact contact rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write the exact contact rows": {
+      "main": [
+        [
+          {
+            "node": "Confirm the Sheets result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}
