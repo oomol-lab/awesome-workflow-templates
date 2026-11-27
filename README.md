@@ -1083,6 +1083,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Generate an HTML Page from a Webhook](workflows/generate-html-page-from-webhook/) - Describe a page in a webhook query and preview the generated HTML in the same browser request.
 - [Generate Text with Local Ollama](workflows/generate-text-with-local-ollama/) - Run a prompt on your local Ollama model and see its full generation response.
 - [Announce New YouTube Videos with Caption Summaries](workflows/summarize-youtube-captions-to-discord/) - Post the title, watch link, and three points from your English caption master when your YouTube channel publishes a new video.
+- [Add AI Summaries to WordPress Posts](workflows/prepend-wordpress-ai-summary-blocks/) - Add a four-point summary to recent WordPress articles, log each update in Google Sheets, and notify Slack.
 
 ## Recruiting
 
