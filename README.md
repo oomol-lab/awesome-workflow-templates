@@ -750,6 +750,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Draft Replies to Outlook Threads](workflows/draft-outlook-thread-replies/) - Draft concise replies to emails from a configured Outlook sender and save each draft in its original conversation.
 - [Control Spotify With an MQTT Remote](workflows/control-spotify-with-an-mqtt-remote/) - Use an IKEA-style MQTT remote to control a configured Spotify Connect device and run two playback shortcuts.
 - [Show a Google Sheet as an HTML Table](workflows/show-google-sheet-as-html-table/) - Open a webhook URL to view the rows of a configured Google Sheets range as a browser table.
+- [Mark Processed Google Sheets Rows by ID](workflows/mark-processed-google-sheets-rows/) - Use Google Sheets as a work queue and mark only the rows the processing step reports as complete.
 
 ## Content
 

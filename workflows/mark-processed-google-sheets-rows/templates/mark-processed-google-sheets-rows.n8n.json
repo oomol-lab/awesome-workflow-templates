@@ -1,0 +1,307 @@
+{
+  "name": "Mark Processed Google Sheets Rows by ID",
+  "nodes": [
+    {
+      "id": "mark-processed-google-sheets-rows-manual",
+      "name": "Run on demand",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        220
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "mark-processed-google-sheets-rows-clock",
+      "name": "Run every five minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        235,
+        220
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "*/5 * * * *"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "mark-processed-google-sheets-rows-config",
+      "name": "Choose the spreadsheet tab",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        470,
+        220
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function sheetConfig(spreadsheetId, tab) {\n  if (\n    !/^[A-Za-z0-9_-]{12,}$/.test(spreadsheetId) ||\n    spreadsheetId.startsWith(\"YOUR_\") ||\n    !tab.trim()\n  ) {\n    throw new Error(\"Configure the spreadsheet ID and exact tab title.\");\n  }\n  return { spreadsheetId, tab, range: \"'\" + tab.replace(/'/g, \"''\") + \"'\" };\n}\n\nconst settings = {\n  spreadsheetId: \"YOUR_SPREADSHEET_ID\",\n  tab: \"Queue\",\n};\nreturn [{ json: { config: sheetConfig(settings.spreadsheetId, settings.tab) } }];\n"
+      }
+    },
+    {
+      "id": "mark-processed-google-sheets-rows-read",
+      "name": "Read the queue",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        705,
+        220
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ \"https://sheets.googleapis.com/v4/spreadsheets/\"+encodeURIComponent($(\"Choose the spreadsheet tab\").first().json.config.spreadsheetId)+\"/values\"+\"/\"+encodeURIComponent($(\"Choose the spreadsheet tab\").first().json.config.range)+\"?majorDimension=ROWS&valueRenderOption=FORMULA\" }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "retryOnFail": false
+    },
+    {
+      "id": "mark-processed-google-sheets-rows-candidates",
+      "name": "Find unprocessed rows",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        940,
+        220
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function a1Target(range) {\n  if (typeof range !== \"string\") return null;\n  const split = range.lastIndexOf(\"!\");\n  if (split < 1) return null;\n  const tab = range.slice(0, split);\n  return {\n    tab: tab.startsWith(\"'\") && tab.endsWith(\"'\") ? tab.slice(1, -1).replace(/''/g, \"'\") : tab,\n    cells: range\n      .slice(split + 1)\n      .replace(/\\$/g, \"\")\n      .toUpperCase(),\n  };\n}\n\nfunction readTable(config, range, majorDimension, values) {\n  const area =\n    range === config.range || range === config.tab\n      ? { tab: config.tab, cells: \"A1\" }\n      : a1Target(range);\n  if (\n    area?.tab !== config.tab ||\n    !/^A1(?::[A-Z]+\\d+)?$/.test(area.cells) ||\n    majorDimension !== \"ROWS\" ||\n    !Array.isArray(values)\n  ) {\n    throw new Error(\"Google Sheets did not return the configured tab starting at A1.\");\n  }\n\n  if (!values.length) return { candidates: [], marks: [], processedColumn: -1 };\n  const [header, ...rows] = values;\n  const idColumn = header.indexOf(\"ID\");\n  const processedColumn = header.indexOf(\"Processed\");\n  const namedHeadings = header.filter((value) => value !== \"\" && value !== null);\n  if (\n    idColumn < 0 ||\n    processedColumn < 0 ||\n    new Set(namedHeadings).size !== namedHeadings.length ||\n    namedHeadings.some((value) => typeof value !== \"string\")\n  ) {\n    throw new Error(\"Use unique text headings including ID and Processed.\");\n  }\n\n  const seen = new Set();\n  const candidates = [];\n  const marks = [];\n  for (const [i, row] of rows.entries()) {\n    const blank = (value) => value === null || value === undefined || value === \"\";\n    if (row.every(blank)) continue;\n    const rawId = row[idColumn];\n    if (\n      !(typeof rawId === \"string\" && rawId.trim() && !rawId.startsWith(\"=\")) &&\n      !Number.isSafeInteger(rawId)\n    ) {\n      throw new Error(\"Give each populated row a stable text or integer ID.\");\n    }\n    const id = String(rawId);\n    if (seen.has(id)) throw new Error(\"The sheet contains a duplicate ID.\");\n    seen.add(id);\n    const pending = blank(row[processedColumn]);\n    marks.push({ id, pending, row: i + 2 });\n    if (pending)\n      candidates.push({\n        id,\n        fields: Object.fromEntries(\n          header.flatMap((name, column) => (name ? [[name, row[column] ?? null]] : [])),\n        ),\n      });\n  }\n  return { candidates, marks, processedColumn };\n}\n\nconst source = $input.first().json;\nconst { candidates } = readTable(\n  $(\"Choose the spreadsheet tab\").first().json.config,\n  source.range,\n  source.majorDimension,\n  source.values ?? [],\n);\nreturn candidates.length ? [{ json: { candidates } }] : [];\n"
+      }
+    },
+    {
+      "id": "mark-processed-google-sheets-rows-process",
+      "name": "Example processing step",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1175,
+        220
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const { candidates } = $input.first().json;\nreturn [{ json: { completed: candidates.map((row) => row.id) } }];\n"
+      }
+    },
+    {
+      "id": "mark-processed-google-sheets-rows-lookup",
+      "name": "Read the same tab again",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1410,
+        220
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ \"https://sheets.googleapis.com/v4/spreadsheets/\"+encodeURIComponent($(\"Choose the spreadsheet tab\").first().json.config.spreadsheetId)+\"/values\"+\"/\"+encodeURIComponent($(\"Choose the spreadsheet tab\").first().json.config.range)+\"?majorDimension=ROWS&valueRenderOption=FORMULA\" }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "retryOnFail": false
+    },
+    {
+      "id": "mark-processed-google-sheets-rows-marks",
+      "name": "Prepare Processed cell updates",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1645,
+        220
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function a1Target(range) {\n  if (typeof range !== \"string\") return null;\n  const split = range.lastIndexOf(\"!\");\n  if (split < 1) return null;\n  const tab = range.slice(0, split);\n  return {\n    tab: tab.startsWith(\"'\") && tab.endsWith(\"'\") ? tab.slice(1, -1).replace(/''/g, \"'\") : tab,\n    cells: range\n      .slice(split + 1)\n      .replace(/\\$/g, \"\")\n      .toUpperCase(),\n  };\n}\n\nfunction readTable(config, range, majorDimension, values) {\n  const area =\n    range === config.range || range === config.tab\n      ? { tab: config.tab, cells: \"A1\" }\n      : a1Target(range);\n  if (\n    area?.tab !== config.tab ||\n    !/^A1(?::[A-Z]+\\d+)?$/.test(area.cells) ||\n    majorDimension !== \"ROWS\" ||\n    !Array.isArray(values)\n  ) {\n    throw new Error(\"Google Sheets did not return the configured tab starting at A1.\");\n  }\n\n  if (!values.length) return { candidates: [], marks: [], processedColumn: -1 };\n  const [header, ...rows] = values;\n  const idColumn = header.indexOf(\"ID\");\n  const processedColumn = header.indexOf(\"Processed\");\n  const namedHeadings = header.filter((value) => value !== \"\" && value !== null);\n  if (\n    idColumn < 0 ||\n    processedColumn < 0 ||\n    new Set(namedHeadings).size !== namedHeadings.length ||\n    namedHeadings.some((value) => typeof value !== \"string\")\n  ) {\n    throw new Error(\"Use unique text headings including ID and Processed.\");\n  }\n\n  const seen = new Set();\n  const candidates = [];\n  const marks = [];\n  for (const [i, row] of rows.entries()) {\n    const blank = (value) => value === null || value === undefined || value === \"\";\n    if (row.every(blank)) continue;\n    const rawId = row[idColumn];\n    if (\n      !(typeof rawId === \"string\" && rawId.trim() && !rawId.startsWith(\"=\")) &&\n      !Number.isSafeInteger(rawId)\n    ) {\n      throw new Error(\"Give each populated row a stable text or integer ID.\");\n    }\n    const id = String(rawId);\n    if (seen.has(id)) throw new Error(\"The sheet contains a duplicate ID.\");\n    seen.add(id);\n    const pending = blank(row[processedColumn]);\n    marks.push({ id, pending, row: i + 2 });\n    if (pending)\n      candidates.push({\n        id,\n        fields: Object.fromEntries(\n          header.flatMap((name, column) => (name ? [[name, row[column] ?? null]] : [])),\n        ),\n      });\n  }\n  return { candidates, marks, processedColumn };\n}\nfunction prepareMarks(config, candidates, completed, table, stamp) {\n  const eligible = new Set(candidates.map((row) => row.id));\n  if (\n    !Array.isArray(completed) ||\n    completed.some((id) => !eligible.has(id)) ||\n    new Set(completed).size !== completed.length\n  ) {\n    throw new Error(\"The processing step must return each successful candidate ID at most once.\");\n  }\n\n  const locations = new Map(table.marks.map((row) => [row.id, row]));\n  let index = table.processedColumn + 1;\n  let column = \"\";\n  while (index > 0) {\n    index--;\n    column = String.fromCharCode(65 + (index % 26)) + column;\n    index = Math.floor(index / 26);\n  }\n  const data = [];\n  for (const id of completed) {\n    const row = locations.get(id);\n    if (!row) throw new Error(\"A completed ID disappeared before it could be marked.\");\n    if (row.pending) data.push({ range: config.range + \"!\" + column + row.row, values: [[stamp]] });\n  }\n  return data;\n}\n\nconst source = $input.first().json,\n  config = $(\"Choose the spreadsheet tab\").first().json.config;\nconst table = readTable(config, source.range, source.majorDimension, source.values ?? []);\nconst batch = prepareMarks(\n  config,\n  $(\"Find unprocessed rows\").first().json.candidates,\n  $(\"Example processing step\").first().json.completed,\n  table,\n  new Date().toISOString(),\n);\nreturn batch.length ? [{ json: { batch } }] : [];\n"
+      }
+    },
+    {
+      "id": "mark-processed-google-sheets-rows-write",
+      "name": "Write Processed timestamps",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1880,
+        220
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ \"https://sheets.googleapis.com/v4/spreadsheets/\"+encodeURIComponent($(\"Choose the spreadsheet tab\").first().json.config.spreadsheetId)+\"/values\"+\":batchUpdate\" }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ ({data:$json.batch,valueInputOption:\"RAW\",includeValuesInResponse:true,responseValueRenderOption:\"UNFORMATTED_VALUE\"}) }}",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "retryOnFail": false
+    },
+    {
+      "id": "mark-processed-google-sheets-rows-confirm",
+      "name": "Verify the updated cells",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2115,
+        220
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function a1Target(range) {\n  if (typeof range !== \"string\") return null;\n  const split = range.lastIndexOf(\"!\");\n  if (split < 1) return null;\n  const tab = range.slice(0, split);\n  return {\n    tab: tab.startsWith(\"'\") && tab.endsWith(\"'\") ? tab.slice(1, -1).replace(/''/g, \"'\") : tab,\n    cells: range\n      .slice(split + 1)\n      .replace(/\\$/g, \"\")\n      .toUpperCase(),\n  };\n}\n\nfunction confirmMarks(config, data, receipt) {\n  if (\n    receipt?.spreadsheetId !== config.spreadsheetId ||\n    receipt.totalUpdatedCells !== data.length ||\n    !Array.isArray(receipt.responses) ||\n    receipt.responses.length !== data.length\n  ) {\n    throw new Error(\n      \"The sheet update was not confirmed. Review the Processed column before resuming.\",\n    );\n  }\n  for (let index = 0; index < data.length; index++) {\n    const { range, values } = data[index];\n    const response = receipt.responses[index];\n    const expected = a1Target(range);\n    const actual = a1Target(response?.updatedRange);\n    if (\n      actual?.tab !== expected.tab ||\n      ![expected.cells, expected.cells + \":\" + expected.cells].includes(actual.cells) ||\n      response.updatedCells !== 1 ||\n      JSON.stringify(response.updatedData?.values) !== JSON.stringify(values)\n    ) {\n      throw new Error(\"Google Sheets did not confirm the expected Processed cell and timestamp.\");\n    }\n  }\n}\n\nconst batch = $(\"Prepare Processed cell updates\").first().json.batch;\nconfirmMarks($(\"Choose the spreadsheet tab\").first().json.config, batch, $input.first().json);\nreturn [{ json: { marked: batch.length } }];\n"
+      }
+    }
+  ],
+  "connections": {
+    "Run every five minutes": {
+      "main": [
+        [
+          {
+            "node": "Choose the spreadsheet tab",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Choose the spreadsheet tab": {
+      "main": [
+        [
+          {
+            "node": "Read the queue",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the queue": {
+      "main": [
+        [
+          {
+            "node": "Find unprocessed rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find unprocessed rows": {
+      "main": [
+        [
+          {
+            "node": "Example processing step",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Example processing step": {
+      "main": [
+        [
+          {
+            "node": "Read the same tab again",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the same tab again": {
+      "main": [
+        [
+          {
+            "node": "Prepare Processed cell updates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Processed cell updates": {
+      "main": [
+        [
+          {
+            "node": "Write Processed timestamps",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write Processed timestamps": {
+      "main": [
+        [
+          {
+            "node": "Verify the updated cells",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run on demand": {
+      "main": [
+        [
+          {
+            "node": "Choose the spreadsheet tab",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC"
+  },
+  "pinData": {}
+}
