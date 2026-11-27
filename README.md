@@ -409,6 +409,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Read Immich Container Logs](workflows/read-immich-container-logs/) - Read the latest 1,000 lines of an Immich container through the Docker Engine API.
 - [Inspect Immich Dependency Stats](workflows/inspect-immich-dependent-container-stats/) - Inspect Immich dependency containers and read their resource statistics.
 - [Check Completed Outputs with an Optional Keptick Receipt](workflows/check-output-with-keptick-receipt/) - Count distinct completed-record IDs, detect empty or invalid output, and optionally send a count-only receipt to Keptick.
+- [Public Page Automation Preflight](workflows/public-page-automation-preflight/) - Request an automation acceptance pack for a public page and return its evidence and review decision.
 
 ## Research
 
