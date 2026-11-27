@@ -1,0 +1,120 @@
+{
+  "name": "Get Google Ads Keyword History",
+  "nodes": [
+    {
+      "id": "get-google-ads-keyword-history-start",
+      "name": "Start keyword research",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "parameters": {},
+      "position": [
+        0,
+        260
+      ]
+    },
+    {
+      "id": "get-google-ads-keyword-history-settings",
+      "name": "Set account and keywords",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function prepareHistoricalQuery({ customerId, managerId, keywords }) {\n  const isId = (value) => typeof value === \"string\" && /^\\d{10}$/.test(value);\n  if (!isId(customerId) || !(managerId === \"\" || isId(managerId)))\n    throw Error(\"Use 10-digit Google Ads account IDs without dashes.\");\n  if (\n    !Array.isArray(keywords) ||\n    !keywords.length ||\n    keywords.length > 20 ||\n    keywords.some((value) => typeof value !== \"string\" || !value.trim())\n  ) {\n    throw Error(\"Enter an array of 1 to 20 nonempty keywords.\");\n  }\n  return {\n    endpoint: \"/customers/\" + customerId + \":generateKeywordHistoricalMetrics\",\n    headers: managerId ? { \"login-customer-id\": managerId } : {},\n    body: { keywords: keywords.map((word) => word.trim()), keywordPlanNetwork: \"GOOGLE_SEARCH\" },\n  };\n}\nconst settings = {\n  customerId: \"YOUR_ADS_CUSTOMER_ID\",\n  managerId: \"\",\n  keywords: [\"desk lamp\", \"desk lamps\", \"task lighting\"],\n};\nreturn [{ json: prepareHistoricalQuery(settings), pairedItem: { item: 0 } }];\n"
+      },
+      "position": [
+        240,
+        260
+      ]
+    },
+    {
+      "id": "get-google-ads-keyword-history-metrics",
+      "name": "Get historical metrics from Google Ads",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "={{ \"https://googleads.googleapis.com/v26\" + $json.endpoint }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "oAuth2Api",
+        "sendHeaders": true,
+        "specifyHeaders": "json",
+        "jsonHeaders": "={{ JSON.stringify($json.headers) }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.body }}",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "position": [
+        480,
+        260
+      ]
+    },
+    {
+      "id": "get-google-ads-keyword-history-rows",
+      "name": "Read the returned keyword groups",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function returnedKeywordGroups({ statusCode, body }) {\n  if (\n    statusCode !== 200 ||\n    !body ||\n    typeof body !== \"object\" ||\n    Array.isArray(body) ||\n    body.error\n  ) {\n    throw Error(\"Google Ads did not return historical keyword metrics (HTTP \" + statusCode + \").\");\n  }\n  const rows = body.results ?? [];\n  if (\n    !Array.isArray(rows) ||\n    rows.some(\n      (row) =>\n        typeof row?.text !== \"string\" ||\n        !row.text ||\n        (row.closeVariants !== undefined &&\n          (!Array.isArray(row.closeVariants) ||\n            row.closeVariants.some((word) => typeof word !== \"string\"))) ||\n        (row.keywordMetrics !== undefined &&\n          (!row.keywordMetrics ||\n            typeof row.keywordMetrics !== \"object\" ||\n            Array.isArray(row.keywordMetrics))),\n    )\n  ) {\n    throw Error(\"Google Ads returned an unexpected keyword metrics response.\");\n  }\n  return rows;\n}\nreturn returnedKeywordGroups($input.first().json).map((json) => ({\n  json,\n  pairedItem: { item: 0 },\n}));\n"
+      },
+      "position": [
+        720,
+        260
+      ]
+    }
+  ],
+  "connections": {
+    "Start keyword research": {
+      "main": [
+        [
+          {
+            "node": "Set account and keywords",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set account and keywords": {
+      "main": [
+        [
+          {
+            "node": "Get historical metrics from Google Ads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get historical metrics from Google Ads": {
+      "main": [
+        [
+          {
+            "node": "Read the returned keyword groups",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}
