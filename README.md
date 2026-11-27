@@ -454,6 +454,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Collect Colt Press Releases in NocoDB](workflows/collect-colt-press-releases-in-nocodb/) - Collect recent Colt press releases, summarize them and save technical keywords to NocoDB.
 - [Rerank Brave Search Results with Gemini](workflows/rerank-brave-search-results-with-gemini/) - Refine a research question, search the web with Brave, and return up to ten ranked links with relevant snippets.
 - [Monitor RSS Topics and Send Summaries to Slack](workflows/triage-rss-articles-to-slack/) - Check followed RSS feeds for your topic, keep a Google Sheets history, and send English summaries of new matches to Slack.
+- [Research a Question with Jina DeepSearch](workflows/research-a-question-with-jina-deepsearch/) - Submit one research question in chat and receive a complete Markdown report with source citations.
 
 ## Productivity
 

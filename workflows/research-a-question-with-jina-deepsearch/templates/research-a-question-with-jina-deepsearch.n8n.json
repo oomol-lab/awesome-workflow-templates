@@ -1,0 +1,139 @@
+{
+  "name": "Research a Question with Jina DeepSearch",
+  "active": false,
+  "nodes": [
+    {
+      "id": "research-a-question-with-jina-deepsearch-chat",
+      "name": "Enter a research question",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        240
+      ],
+      "parameters": {
+        "public": false,
+        "mode": "hostedChat",
+        "authentication": "basicAuth",
+        "options": {
+          "responseMode": "lastNode"
+        }
+      }
+    },
+    {
+      "id": "research-a-question-with-jina-deepsearch-prepare",
+      "name": "Prepare the research request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        230,
+        240
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function buildResearchRequest(question) {\n  if (typeof question !== \"string\" || !question.trim()) throw Error(\"Enter a research question.\");\n  return {\n    model: \"jina-deepsearch-v1\",\n    reasoning_effort: \"low\",\n    stream: true,\n    messages: [\n      {\n        role: \"user\",\n        content:\n          \"Produce a clear, factual research report in Markdown. Cite the sources that support the main findings.\",\n      },\n      { role: \"assistant\", content: \"What would you like to research?\" },\n      { role: \"user\", content: question },\n    ],\n  };\n}\nreturn [\n  {\n    json: { request: buildResearchRequest($input.first().json.chatInput) },\n    pairedItem: { item: 0 },\n  },\n];\n"
+      }
+    },
+    {
+      "id": "research-a-question-with-jina-deepsearch-request",
+      "name": "Research with Jina DeepSearch",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        460,
+        240
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://deepsearch.jina.ai/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "text/event-stream"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.request }}",
+        "options": {
+          "timeout": 180000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "text",
+              "outputPropertyName": "data",
+              "fullResponse": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "research-a-question-with-jina-deepsearch-report",
+      "name": "Return the completed report",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        690,
+        240
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function completedResearchReport(body) {\n  if (typeof body !== \"string\" || !body.trim())\n    throw Error(\"Jina did not return a completed research stream.\");\n  const annotations = new Map();\n  const fragments = [];\n  let stopped = false;\n  let reasoningEnded = false;\n  const events = body.replace(/\\r\\n?/g, \"\\n\").split(/\\n{2,}/);\n  events.pop();\n  for (const event of events) {\n    const lines = event.split(\"\\n\");\n    if (lines.some((line) => /^event:\\s*error\\s*$/i.test(line)))\n      throw Error(\"Jina could not complete the research.\");\n    const data = lines\n      .filter((line) => line.startsWith(\"data:\"))\n      .map((line) => line.slice(5).replace(/^ /, \"\"))\n      .join(\"\\n\");\n    if (!data.trim()) continue;\n    if (data.trim() === \"[DONE]\") break;\n    let packet;\n    try {\n      packet = JSON.parse(data);\n    } catch {\n      throw Error(\"Jina returned an unreadable research event.\");\n    }\n    if (packet?.error) throw Error(\"Jina could not complete the research.\");\n    const choice = Array.isArray(packet?.choices)\n      ? packet.choices.find((x) => (x?.index ?? 0) === 0)\n      : null;\n    if (!choice) continue;\n    const { delta = {}, finish_reason: reason } = choice;\n    if (delta.type === \"error\" || (reason && ![\"stop\", \"thinking_end\"].includes(reason))) {\n      throw Error(\"Jina could not complete the research.\");\n    }\n    if (reason === \"thinking_end\") reasoningEnded = true;\n    const visible = delta.type === \"text\" || (!delta.type && reasoningEnded);\n    if (!stopped && visible && typeof delta.content === \"string\") fragments.push(delta.content);\n    if (!stopped && visible && Array.isArray(delta.annotations)) {\n      for (const { type, url_citation: citation } of delta.annotations.filter(\n        (value) => value && typeof value === \"object\",\n      )) {\n        const url = citation?.url;\n        if (\n          type === \"url_citation\" &&\n          typeof url === \"string\" &&\n          /^https?:\\/\\/[^\\s<>\"\\\\]+$/i.test(url) &&\n          !annotations.has(url)\n        ) {\n          const title =\n            typeof citation.title === \"string\"\n              ? citation.title\n                  .trim()\n                  .replace(/\\s+/g, \" \")\n                  .replace(/[<>&]/g, \"\")\n                  .replace(/[\\\\[\\]]/g, \"\\\\$&\")\n              : \"\";\n          annotations.set(url, title);\n        }\n      }\n    }\n    if (reason === \"stop\" && delta.type !== \"think\") stopped = true;\n  }\n  const answer = fragments.join(\"\").trim();\n  if (!stopped || !answer) throw Error(\"Jina did not return a completed research report.\");\n  const sources = [...annotations]\n    .filter(([url]) => !answer.includes(url))\n    .map(([url, title]) => (title ? \"- [\" + title + \"](<\" + url + \">)\" : \"- <\" + url + \">\"));\n  return sources.length ? answer + \"\\n\\n### Sources\\n\\n\" + sources.join(\"\\n\") : answer;\n}\nconst { data, headers, statusCode } = $input.first().json;\nif (\n  statusCode !== 200 ||\n  !/^text\\/event-stream(?:;|$)/i.test(String(headers?.[\"content-type\"] ?? \"\"))\n) {\n  throw Error(\"Jina did not return a successful research stream.\");\n}\nreturn [{ json: { output: completedResearchReport(data) }, pairedItem: { item: 0 } }];\n"
+      }
+    }
+  ],
+  "connections": {
+    "Enter a research question": {
+      "main": [
+        [
+          {
+            "node": "Prepare the research request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare the research request": {
+      "main": [
+        [
+          {
+            "node": "Research with Jina DeepSearch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Research with Jina DeepSearch": {
+      "main": [
+        [
+          {
+            "node": "Return the completed report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "executionTimeout": 240,
+    "saveDataErrorExecution": "none",
+    "saveDataSuccessExecution": "none",
+    "saveManualExecutions": false,
+    "saveExecutionProgress": false
+  },
+  "pinData": {}
+}
