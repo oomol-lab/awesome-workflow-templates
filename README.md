@@ -1151,6 +1151,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [RSS to Mastodon Poster](workflows/rss-to-mastodon-poster/) - Poll an RSS or Atom feed every 10 minutes, filter unseen items using persistent state, and publish new entries to Mastodon.
 - [Post RSS Articles with Image Cards to Bluesky](workflows/post-rss-image-cards-to-bluesky/) - Publish each new RSS article to Bluesky with its own link, title, description, and image thumbnail.
 - [Publish One Video with Native Social Captions](workflows/publish-video-to-selected-platforms/) - Use PostWire to write a distinct caption for each selected network and publish the same video to its approved accounts.
+- [Submit Social Videos with Blotato](workflows/submit-social-videos-with-blotato/) - Submit queued Google Sheets videos to connected social accounts with Blotato, and record the submissions on the original rows.
 
 ## Education
 

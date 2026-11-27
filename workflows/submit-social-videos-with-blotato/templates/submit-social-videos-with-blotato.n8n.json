@@ -1,0 +1,604 @@
+{
+  "name": "Submit Social Videos with Blotato",
+  "nodes": [
+    {
+      "id": "submit-social-videos-with-blotato-schedule",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "name": "Check the queue daily at 22:00",
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "daysInterval": 1,
+              "triggerAtHour": 22,
+              "triggerAtMinute": 0
+            }
+          ]
+        }
+      },
+      "position": [
+        0,
+        300
+      ]
+    },
+    {
+      "id": "submit-social-videos-with-blotato-setup",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "name": "Configure the sheet and destinations",
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function queueSettings(settings) {\n  const supported = [\n    \"instagram\",\n    \"youtube\",\n    \"tiktok\",\n    \"facebook\",\n    \"threads\",\n    \"twitter\",\n    \"linkedin\",\n    \"bluesky\",\n    \"pinterest\",\n  ];\n  const { spreadsheetId, sheetName, targets, tiktokAiGenerated } = settings;\n  if (\n    !/^[A-Za-z0-9_-]{10,}$/.test(spreadsheetId) ||\n    spreadsheetId.startsWith(\"YOUR_\") ||\n    typeof sheetName !== \"string\" ||\n    !sheetName.trim()\n  )\n    throw Error(\"Configure the publishing worksheet.\");\n  if (\n    !targets ||\n    typeof targets !== \"object\" ||\n    Object.keys(targets).some((key) => !supported.includes(key))\n  ) {\n    throw Error(\"Configure Blotato destinations by platform.\");\n  }\n  const destinations = supported.flatMap((platform) => {\n    const entry = targets[platform];\n    if (!entry?.accountId) return [];\n    if (\n      typeof entry.accountId !== \"string\" ||\n      !entry.accountId.trim() ||\n      (platform === \"facebook\" && (typeof entry.pageId !== \"string\" || !entry.pageId.trim())) ||\n      (platform === \"pinterest\" && (typeof entry.boardId !== \"string\" || !entry.boardId.trim()))\n    ) {\n      throw Error(\"Check the account and destination IDs for \" + platform + \".\");\n    }\n    return [\n      {\n        platform,\n        accountId: entry.accountId.trim(),\n        ...(platform === \"facebook\" ? { pageId: entry.pageId.trim() } : {}),\n        ...(platform === \"pinterest\" ? { boardId: entry.boardId.trim() } : {}),\n      },\n    ];\n  });\n  if (!destinations.length || typeof tiktokAiGenerated !== \"boolean\")\n    throw Error(\"Select at least one destination and set the TikTok AI label.\");\n  return {\n    spreadsheetId,\n    sheet: \"'\" + sheetName.replace(/'/g, \"''\") + \"'\",\n    destinations,\n    tiktokAiGenerated,\n  };\n}\n\nconst config = queueSettings({\n  spreadsheetId: \"YOUR_GOOGLE_SPREADSHEET_ID\",\n  sheetName: \"Publish Queue\",\n  tiktokAiGenerated: true,\n  targets: {\n    instagram: {\n      accountId: \"\",\n    },\n    youtube: {\n      accountId: \"\",\n    },\n    tiktok: {\n      accountId: \"\",\n    },\n    facebook: {\n      accountId: \"\",\n      pageId: \"\",\n    },\n    threads: {\n      accountId: \"\",\n    },\n    twitter: {\n      accountId: \"\",\n    },\n    linkedin: {\n      accountId: \"\",\n    },\n    bluesky: {\n      accountId: \"\",\n    },\n    pinterest: {\n      accountId: \"\",\n      boardId: \"\",\n    },\n  },\n});\nconst base = \"https://sheets.googleapis.com/v4/spreadsheets/\" + config.spreadsheetId;\nreturn [\n  {\n    json: {\n      config,\n      read:\n        base +\n        \"/values:batchGet?majorDimension=ROWS&valueRenderOption=UNFORMATTED_VALUE&ranges=\" +\n        encodeURIComponent(config.sheet),\n      write: base + \"/values:batchUpdate\",\n    },\n    pairedItem: { item: 0 },\n  },\n];\n"
+      },
+      "position": [
+        220,
+        300
+      ]
+    },
+    {
+      "id": "submit-social-videos-with-blotato-read",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "name": "Read the queue from Google Sheets",
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.read }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "position": [
+        440,
+        300
+      ]
+    },
+    {
+      "id": "submit-social-videos-with-blotato-rows",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "name": "Prepare eligible rows",
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function publicMedia(value) {\n  if (typeof value !== \"string\") return \"\";\n  const url = value.trim();\n  return /^https:\\/\\/(?:[a-z\\d](?:[a-z\\d-]*[a-z\\d])?\\.)+[a-z]{2,63}(?:[/?#][^\\s\\\\]*)?$/i.test(url)\n    ? url\n    : \"\";\n}\n\nfunction unquoteSheet(range) {\n  return range.replace(/^'(.*)'!/, (_match, tab) => tab.replace(/''/g, \"'\") + \"!\");\n}\n\nfunction queueRows(response, config) {\n  const ranges = response?.valueRanges;\n  if (\n    response?.spreadsheetId !== config.spreadsheetId ||\n    !Array.isArray(ranges) ||\n    ranges.length !== 1 ||\n    typeof ranges[0]?.range !== \"string\" ||\n    !unquoteSheet(ranges[0].range).startsWith(unquoteSheet(config.sheet + \"!\") + \"A1:\")\n  ) {\n    throw Error(\"Google Sheets did not return the configured publishing worksheet.\");\n  }\n  const values = ranges[0]?.values;\n  if (!Array.isArray(values) || !Array.isArray(values[0]))\n    throw Error(\"Add the queue headers in the first row.\");\n  const requiresImage = config.destinations.some(\n    ({ platform }) => platform === \"bluesky\" || platform === \"pinterest\",\n  );\n  const requiresTitle = config.destinations.some(({ platform }) => platform === \"youtube\");\n  const headers = values[0].map((value) => String(value ?? \"\").trim());\n  const required = [\n    \"URL VIDEO\",\n    \"DESCRIPTION\",\n    \"Titre\",\n    \"STATUS\",\n    \"SUBMISSION IDS\",\n    ...(requiresImage ? [\"IMAGE URL\"] : []),\n  ];\n  for (const header of required)\n    if (headers.filter((value) => value === header).length !== 1)\n      throw Error(\"Add exactly one column named \" + header + \".\");\n  const get = (row, name) => row[headers.indexOf(name)];\n  return values.slice(1).flatMap((row, index) => {\n    const rowNumber = index + 2,\n      status = String(get(row, \"STATUS\") ?? \"\")\n        .trim()\n        .toUpperCase();\n    const video = get(row, \"URL VIDEO\");\n    if (!video || (status && status !== \"READY\") || String(get(row, \"SUBMISSION IDS\") ?? \"\").trim())\n      return [];\n    const mediaUrl = publicMedia(video),\n      imageUrl = publicMedia(get(row, \"IMAGE URL\"));\n    const title = String(get(row, \"Titre\") ?? \"\").trim(),\n      text = String(get(row, \"DESCRIPTION\") ?? \"\");\n    if (!mediaUrl || (requiresImage && !imageUrl) || (requiresTitle && !title))\n      throw Error(\"Check the media URLs and title in row \" + rowNumber + \".\");\n    return [\n      {\n        rowNumber,\n        mediaUrl,\n        imageUrl,\n        title,\n        text,\n        statusColumn: headers.indexOf(\"STATUS\"),\n        receiptsColumn: headers.indexOf(\"SUBMISSION IDS\"),\n      },\n    ];\n  });\n}\n\nconst response = $input.first().json,\n  settings = $(\"Configure the sheet and destinations\").first().json;\nif (response.statusCode !== 200) throw Error(\"Google Sheets did not return the queue.\");\nreturn queueRows(response.body, settings.config).map((row) => ({\n  json: { row },\n  pairedItem: { item: 0 },\n}));\n"
+      },
+      "position": [
+        660,
+        300
+      ]
+    },
+    {
+      "id": "submit-social-videos-with-blotato-loop",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "name": "Process one video row at a time",
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "position": [
+        880,
+        300
+      ]
+    },
+    {
+      "id": "submit-social-videos-with-blotato-reserve",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "name": "Reserve the original row",
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Configure the sheet and destinations').first().json.write }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.request }}",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "position": [
+        1100,
+        300
+      ]
+    },
+    {
+      "id": "submit-social-videos-with-blotato-pick",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "name": "Choose the next queue action",
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function sheetCell(sheet, column, row) {\n  let letters = \"\";\n  for (let index = column + 1; index > 0; index = Math.floor((index - 1) / 26)) {\n    letters = String.fromCharCode(65 + ((index - 1) % 26)) + letters;\n  }\n  return sheet + \"!\" + letters + row;\n}\n\nfunction sheetRequest(config, row, status, receipts) {\n  const make = (column, content) => ({\n    range: sheetCell(config.sheet, column, row.rowNumber),\n    values: [[content]],\n  });\n  const data = [make(row.statusColumn, status)];\n  if (receipts) data.push(make(row.receiptsColumn, JSON.stringify(receipts)));\n  return {\n    spreadsheetId: config.spreadsheetId,\n    valueInputOption: \"RAW\",\n    includeValuesInResponse: true,\n    responseValueRenderOption: \"UNFORMATTED_VALUE\",\n    data,\n  };\n}\n\nfunction unquoteSheet(range) {\n  return range.replace(/^'(.*)'!/, (_match, tab) => tab.replace(/''/g, \"'\") + \"!\");\n}\n\nfunction checkSheet(response, request) {\n  if (\n    response?.spreadsheetId !== request.spreadsheetId ||\n    response.totalUpdatedCells !== request.data.length ||\n    response?.responses?.length !== request.data.length ||\n    request.data.some((cell, i) => {\n      const result = response.responses[i];\n      const exact = unquoteSheet(cell.range);\n      return (\n        result.updatedCells !== 1 ||\n        typeof result.updatedRange !== \"string\" ||\n        ![exact, exact + \":\" + exact.slice(exact.lastIndexOf(\"!\") + 1)].includes(\n          unquoteSheet(result.updatedRange),\n        ) ||\n        result.updatedData?.values?.[0]?.[0] !== cell.values[0][0]\n      );\n    })\n  )\n    throw Error(\"Google Sheets did not confirm the publishing status on the expected row.\");\n}\n\nconst row = $input.first().json.row,\n  config = $(\"Configure the sheet and destinations\").first().json.config;\nconst { spreadsheetId, ...request } = sheetRequest(config, row, \"SUBMITTING\");\nreturn [{ json: { row, request }, pairedItem: { item: 0 } }];\n"
+      },
+      "position": [
+        1320,
+        300
+      ]
+    },
+    {
+      "id": "submit-social-videos-with-blotato-confirm",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "name": "Confirm the row reservation",
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function sheetCell(sheet, column, row) {\n  let letters = \"\";\n  for (let index = column + 1; index > 0; index = Math.floor((index - 1) / 26)) {\n    letters = String.fromCharCode(65 + ((index - 1) % 26)) + letters;\n  }\n  return sheet + \"!\" + letters + row;\n}\n\nfunction sheetRequest(config, row, status, receipts) {\n  const make = (column, content) => ({\n    range: sheetCell(config.sheet, column, row.rowNumber),\n    values: [[content]],\n  });\n  const data = [make(row.statusColumn, status)];\n  if (receipts) data.push(make(row.receiptsColumn, JSON.stringify(receipts)));\n  return {\n    spreadsheetId: config.spreadsheetId,\n    valueInputOption: \"RAW\",\n    includeValuesInResponse: true,\n    responseValueRenderOption: \"UNFORMATTED_VALUE\",\n    data,\n  };\n}\n\nfunction unquoteSheet(range) {\n  return range.replace(/^'(.*)'!/, (_match, tab) => tab.replace(/''/g, \"'\") + \"!\");\n}\n\nfunction checkSheet(response, request) {\n  if (\n    response?.spreadsheetId !== request.spreadsheetId ||\n    response.totalUpdatedCells !== request.data.length ||\n    response?.responses?.length !== request.data.length ||\n    request.data.some((cell, i) => {\n      const result = response.responses[i];\n      const exact = unquoteSheet(cell.range);\n      return (\n        result.updatedCells !== 1 ||\n        typeof result.updatedRange !== \"string\" ||\n        ![exact, exact + \":\" + exact.slice(exact.lastIndexOf(\"!\") + 1)].includes(\n          unquoteSheet(result.updatedRange),\n        ) ||\n        result.updatedData?.values?.[0]?.[0] !== cell.values[0][0]\n      );\n    })\n  )\n    throw Error(\"Google Sheets did not confirm the publishing status on the expected row.\");\n}\n\nconst response = $input.first().json,\n  selected = $(\"Choose the next queue action\").item.json,\n  config = $(\"Configure the sheet and destinations\").first().json.config;\nif (response.statusCode !== 200) throw Error(\"Google Sheets refused the row reservation.\");\ncheckSheet(response.body, { ...selected.request, spreadsheetId: config.spreadsheetId });\nreturn [{ json: { url: selected.row.mediaUrl }, pairedItem: { item: 0 } }];\n"
+      },
+      "position": [
+        1540,
+        300
+      ]
+    },
+    {
+      "id": "submit-social-videos-with-blotato-upload",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "name": "Upload the video to Blotato",
+      "parameters": {
+        "method": "POST",
+        "url": "https://backend.blotato.com/v2/media",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {url:$json.url} }}",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "position": [
+        1760,
+        300
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "submit-social-videos-with-blotato-validateMedia",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "name": "Validate the uploaded media URL",
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function publicMedia(value) {\n  if (typeof value !== \"string\") return \"\";\n  const url = value.trim();\n  return /^https:\\/\\/(?:[a-z\\d](?:[a-z\\d-]*[a-z\\d])?\\.)+[a-z]{2,63}(?:[/?#][^\\s\\\\]*)?$/i.test(url)\n    ? url\n    : \"\";\n}\n\nconst response = $input.first().json;\nconst url = response.statusCode === 201 ? publicMedia(response.body?.url) : \"\";\nreturn [{ json: { url }, pairedItem: { item: 0 } }];\n"
+      },
+      "position": [
+        1980,
+        300
+      ]
+    },
+    {
+      "id": "submit-social-videos-with-blotato-uploaded",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "name": "Did Blotato accept the video?",
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ Boolean($json.url) }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "position": [
+        2200,
+        300
+      ]
+    },
+    {
+      "id": "submit-social-videos-with-blotato-make",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "name": "Prepare the destination requests",
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function publicMedia(value) {\n  if (typeof value !== \"string\") return \"\";\n  const url = value.trim();\n  return /^https:\\/\\/(?:[a-z\\d](?:[a-z\\d-]*[a-z\\d])?\\.)+[a-z]{2,63}(?:[/?#][^\\s\\\\]*)?$/i.test(url)\n    ? url\n    : \"\";\n}\n\nfunction makePosts(config, row, uploadedUrl) {\n  return config.destinations.map((destination) => {\n    const { platform, accountId, ...targetIds } = destination;\n    const target = { targetType: platform, ...targetIds };\n    if (platform === \"youtube\")\n      Object.assign(target, {\n        title: row.title,\n        privacyStatus: \"unlisted\",\n        shouldNotifySubscribers: false,\n      });\n    if (platform === \"tiktok\")\n      Object.assign(target, {\n        privacyLevel: \"PUBLIC_TO_EVERYONE\",\n        disabledComments: false,\n        disabledStitch: false,\n        disabledDuet: false,\n        isBrandedContent: false,\n        isYourBrand: false,\n        isAiGenerated: config.tiktokAiGenerated,\n      });\n    const mediaUrl =\n      platform === \"bluesky\" || platform === \"pinterest\" ? row.imageUrl : uploadedUrl;\n    return {\n      post: { accountId, target, content: { platform, text: row.text, mediaUrls: [mediaUrl] } },\n    };\n  });\n}\n\nfunction submissionReceipt(response, post) {\n  const id = response?.body?.postSubmissionId;\n  return response?.statusCode === 201 && typeof id === \"string\" && id.trim()\n    ? { platform: post.content.platform, postSubmissionId: id }\n    : { platform: post.content.platform, outcome: \"check_blotato\" };\n}\n\nfunction finalStatus(receipts) {\n  const ids = receipts.map((receipt) => receipt.postSubmissionId);\n  return ids.length && ids.every(Boolean) && new Set(ids).size === ids.length\n    ? \"SUBMITTED\"\n    : \"CHECK BLOTATO\";\n}\n\nconst config = $(\"Configure the sheet and destinations\").first().json.config,\n  row = $(\"Choose the next queue action\").item.json.row;\nconst url = $input.first().json.url;\nreturn makePosts(config, row, url).map((request) => ({ json: request, pairedItem: { item: 0 } }));\n"
+      },
+      "position": [
+        2420,
+        300
+      ]
+    },
+    {
+      "id": "submit-social-videos-with-blotato-post",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "name": "Submit the posts to Blotato",
+      "parameters": {
+        "method": "POST",
+        "url": "https://backend.blotato.com/v2/posts",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true,
+              "neverError": true
+            }
+          },
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 2500
+            }
+          }
+        }
+      },
+      "position": [
+        2640,
+        300
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "submit-social-videos-with-blotato-fold",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "name": "Collect the post submission IDs",
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function publicMedia(value) {\n  if (typeof value !== \"string\") return \"\";\n  const url = value.trim();\n  return /^https:\\/\\/(?:[a-z\\d](?:[a-z\\d-]*[a-z\\d])?\\.)+[a-z]{2,63}(?:[/?#][^\\s\\\\]*)?$/i.test(url)\n    ? url\n    : \"\";\n}\n\nfunction makePosts(config, row, uploadedUrl) {\n  return config.destinations.map((destination) => {\n    const { platform, accountId, ...targetIds } = destination;\n    const target = { targetType: platform, ...targetIds };\n    if (platform === \"youtube\")\n      Object.assign(target, {\n        title: row.title,\n        privacyStatus: \"unlisted\",\n        shouldNotifySubscribers: false,\n      });\n    if (platform === \"tiktok\")\n      Object.assign(target, {\n        privacyLevel: \"PUBLIC_TO_EVERYONE\",\n        disabledComments: false,\n        disabledStitch: false,\n        disabledDuet: false,\n        isBrandedContent: false,\n        isYourBrand: false,\n        isAiGenerated: config.tiktokAiGenerated,\n      });\n    const mediaUrl =\n      platform === \"bluesky\" || platform === \"pinterest\" ? row.imageUrl : uploadedUrl;\n    return {\n      post: { accountId, target, content: { platform, text: row.text, mediaUrls: [mediaUrl] } },\n    };\n  });\n}\n\nfunction submissionReceipt(response, post) {\n  const id = response?.body?.postSubmissionId;\n  return response?.statusCode === 201 && typeof id === \"string\" && id.trim()\n    ? { platform: post.content.platform, postSubmissionId: id }\n    : { platform: post.content.platform, outcome: \"check_blotato\" };\n}\n\nfunction finalStatus(receipts) {\n  const ids = receipts.map((receipt) => receipt.postSubmissionId);\n  return ids.length && ids.every(Boolean) && new Set(ids).size === ids.length\n    ? \"SUBMITTED\"\n    : \"CHECK BLOTATO\";\n}\nfunction sheetCell(sheet, column, row) {\n  let letters = \"\";\n  for (let index = column + 1; index > 0; index = Math.floor((index - 1) / 26)) {\n    letters = String.fromCharCode(65 + ((index - 1) % 26)) + letters;\n  }\n  return sheet + \"!\" + letters + row;\n}\n\nfunction sheetRequest(config, row, status, receipts) {\n  const make = (column, content) => ({\n    range: sheetCell(config.sheet, column, row.rowNumber),\n    values: [[content]],\n  });\n  const data = [make(row.statusColumn, status)];\n  if (receipts) data.push(make(row.receiptsColumn, JSON.stringify(receipts)));\n  return {\n    spreadsheetId: config.spreadsheetId,\n    valueInputOption: \"RAW\",\n    includeValuesInResponse: true,\n    responseValueRenderOption: \"UNFORMATTED_VALUE\",\n    data,\n  };\n}\n\nfunction unquoteSheet(range) {\n  return range.replace(/^'(.*)'!/, (_match, tab) => tab.replace(/''/g, \"'\") + \"!\");\n}\n\nfunction checkSheet(response, request) {\n  if (\n    response?.spreadsheetId !== request.spreadsheetId ||\n    response.totalUpdatedCells !== request.data.length ||\n    response?.responses?.length !== request.data.length ||\n    request.data.some((cell, i) => {\n      const result = response.responses[i];\n      const exact = unquoteSheet(cell.range);\n      return (\n        result.updatedCells !== 1 ||\n        typeof result.updatedRange !== \"string\" ||\n        ![exact, exact + \":\" + exact.slice(exact.lastIndexOf(\"!\") + 1)].includes(\n          unquoteSheet(result.updatedRange),\n        ) ||\n        result.updatedData?.values?.[0]?.[0] !== cell.values[0][0]\n      );\n    })\n  )\n    throw Error(\"Google Sheets did not confirm the publishing status on the expected row.\");\n}\n\nconst config = $(\"Configure the sheet and destinations\").first().json.config,\n  row = $(\"Choose the next queue action\").itemMatching(0).json.row;\nconst receipts = $input\n  .all()\n  .map((item, i) =>\n    submissionReceipt(item.json, $(\"Prepare the destination requests\").itemMatching(i).json.post),\n  );\nconst status =\n  receipts.length === config.destinations.length ? finalStatus(receipts) : \"CHECK BLOTATO\";\nconst { spreadsheetId, ...request } = sheetRequest(config, row, status, receipts);\nreturn [{ json: { request, rowNumber: row.rowNumber, status, receipts }, pairedItem: { item: 0 } }];\n"
+      },
+      "position": [
+        2860,
+        300
+      ]
+    },
+    {
+      "id": "submit-social-videos-with-blotato-hold",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "name": "Record an unconfirmed upload",
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function sheetCell(sheet, column, row) {\n  let letters = \"\";\n  for (let index = column + 1; index > 0; index = Math.floor((index - 1) / 26)) {\n    letters = String.fromCharCode(65 + ((index - 1) % 26)) + letters;\n  }\n  return sheet + \"!\" + letters + row;\n}\n\nfunction sheetRequest(config, row, status, receipts) {\n  const make = (column, content) => ({\n    range: sheetCell(config.sheet, column, row.rowNumber),\n    values: [[content]],\n  });\n  const data = [make(row.statusColumn, status)];\n  if (receipts) data.push(make(row.receiptsColumn, JSON.stringify(receipts)));\n  return {\n    spreadsheetId: config.spreadsheetId,\n    valueInputOption: \"RAW\",\n    includeValuesInResponse: true,\n    responseValueRenderOption: \"UNFORMATTED_VALUE\",\n    data,\n  };\n}\n\nfunction unquoteSheet(range) {\n  return range.replace(/^'(.*)'!/, (_match, tab) => tab.replace(/''/g, \"'\") + \"!\");\n}\n\nfunction checkSheet(response, request) {\n  if (\n    response?.spreadsheetId !== request.spreadsheetId ||\n    response.totalUpdatedCells !== request.data.length ||\n    response?.responses?.length !== request.data.length ||\n    request.data.some((cell, i) => {\n      const result = response.responses[i];\n      const exact = unquoteSheet(cell.range);\n      return (\n        result.updatedCells !== 1 ||\n        typeof result.updatedRange !== \"string\" ||\n        ![exact, exact + \":\" + exact.slice(exact.lastIndexOf(\"!\") + 1)].includes(\n          unquoteSheet(result.updatedRange),\n        ) ||\n        result.updatedData?.values?.[0]?.[0] !== cell.values[0][0]\n      );\n    })\n  )\n    throw Error(\"Google Sheets did not confirm the publishing status on the expected row.\");\n}\n\nconst config = $(\"Configure the sheet and destinations\").first().json.config,\n  row = $(\"Choose the next queue action\").item.json.row,\n  status = \"CHECK BLOTATO\",\n  receipts = [{ outcome: \"upload_unconfirmed\" }];\nconst { spreadsheetId, ...request } = sheetRequest(config, row, status, receipts);\nreturn [{ json: { request, rowNumber: row.rowNumber, status, receipts }, pairedItem: { item: 0 } }];\n"
+      },
+      "position": [
+        3080,
+        300
+      ]
+    },
+    {
+      "id": "submit-social-videos-with-blotato-write",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "name": "Write the status and submission IDs",
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Configure the sheet and destinations').first().json.write }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.request }}",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "position": [
+        3300,
+        300
+      ]
+    },
+    {
+      "id": "submit-social-videos-with-blotato-finish",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "name": "Confirm the original row update",
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function sheetCell(sheet, column, row) {\n  let letters = \"\";\n  for (let index = column + 1; index > 0; index = Math.floor((index - 1) / 26)) {\n    letters = String.fromCharCode(65 + ((index - 1) % 26)) + letters;\n  }\n  return sheet + \"!\" + letters + row;\n}\n\nfunction sheetRequest(config, row, status, receipts) {\n  const make = (column, content) => ({\n    range: sheetCell(config.sheet, column, row.rowNumber),\n    values: [[content]],\n  });\n  const data = [make(row.statusColumn, status)];\n  if (receipts) data.push(make(row.receiptsColumn, JSON.stringify(receipts)));\n  return {\n    spreadsheetId: config.spreadsheetId,\n    valueInputOption: \"RAW\",\n    includeValuesInResponse: true,\n    responseValueRenderOption: \"UNFORMATTED_VALUE\",\n    data,\n  };\n}\n\nfunction unquoteSheet(range) {\n  return range.replace(/^'(.*)'!/, (_match, tab) => tab.replace(/''/g, \"'\") + \"!\");\n}\n\nfunction checkSheet(response, request) {\n  if (\n    response?.spreadsheetId !== request.spreadsheetId ||\n    response.totalUpdatedCells !== request.data.length ||\n    response?.responses?.length !== request.data.length ||\n    request.data.some((cell, i) => {\n      const result = response.responses[i];\n      const exact = unquoteSheet(cell.range);\n      return (\n        result.updatedCells !== 1 ||\n        typeof result.updatedRange !== \"string\" ||\n        ![exact, exact + \":\" + exact.slice(exact.lastIndexOf(\"!\") + 1)].includes(\n          unquoteSheet(result.updatedRange),\n        ) ||\n        result.updatedData?.values?.[0]?.[0] !== cell.values[0][0]\n      );\n    })\n  )\n    throw Error(\"Google Sheets did not confirm the publishing status on the expected row.\");\n}\n\nconst response = $input.first().json;\nconst fold = $(\"Collect the post submission IDs\").isExecuted,\n  hold = $(\"Record an unconfirmed upload\").isExecuted;\nconst matched = (node) => {\n  try {\n    return $(node).itemMatching(0).json;\n  } catch {\n    return null;\n  }\n};\nconst origin =\n  (fold && matched(\"Collect the post submission IDs\")) ||\n  (hold && matched(\"Record an unconfirmed upload\"));\nif (response.statusCode !== 200 || !origin)\n  throw Error(\"Google Sheets did not confirm the queue outcome.\");\ncheckSheet(response.body, {\n  ...origin.request,\n  spreadsheetId: $(\"Configure the sheet and destinations\").first().json.config.spreadsheetId,\n});\nreturn [\n  {\n    json: { rowNumber: origin.rowNumber, status: origin.status, receipts: origin.receipts },\n    pairedItem: { item: 0 },\n  },\n];\n"
+      },
+      "position": [
+        3520,
+        300
+      ]
+    },
+    {
+      "id": "submit-social-videos-with-blotato-delay",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "name": "Space out Blotato requests",
+      "parameters": {
+        "resume": "timeInterval",
+        "amount": 2.5,
+        "unit": "seconds"
+      },
+      "position": [
+        3740,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Check the queue daily at 22:00": {
+      "main": [
+        [
+          {
+            "node": "Configure the sheet and destinations",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configure the sheet and destinations": {
+      "main": [
+        [
+          {
+            "node": "Read the queue from Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the queue from Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Prepare eligible rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare eligible rows": {
+      "main": [
+        [
+          {
+            "node": "Process one video row at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process one video row at a time": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Choose the next queue action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Choose the next queue action": {
+      "main": [
+        [
+          {
+            "node": "Reserve the original row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve the original row": {
+      "main": [
+        [
+          {
+            "node": "Confirm the row reservation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm the row reservation": {
+      "main": [
+        [
+          {
+            "node": "Upload the video to Blotato",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload the video to Blotato": {
+      "main": [
+        [
+          {
+            "node": "Validate the uploaded media URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate the uploaded media URL": {
+      "main": [
+        [
+          {
+            "node": "Did Blotato accept the video?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Did Blotato accept the video?": {
+      "main": [
+        [
+          {
+            "node": "Prepare the destination requests",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Record an unconfirmed upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare the destination requests": {
+      "main": [
+        [
+          {
+            "node": "Submit the posts to Blotato",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Submit the posts to Blotato": {
+      "main": [
+        [
+          {
+            "node": "Collect the post submission IDs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect the post submission IDs": {
+      "main": [
+        [
+          {
+            "node": "Write the status and submission IDs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write the status and submission IDs": {
+      "main": [
+        [
+          {
+            "node": "Confirm the original row update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm the original row update": {
+      "main": [
+        [
+          {
+            "node": "Space out Blotato requests",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Space out Blotato requests": {
+      "main": [
+        [
+          {
+            "node": "Process one video row at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record an unconfirmed upload": {
+      "main": [
+        [
+          {
+            "node": "Write the status and submission IDs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC"
+  },
+  "active": false,
+  "pinData": {},
+  "tags": []
+}
