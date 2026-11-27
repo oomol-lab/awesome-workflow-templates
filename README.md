@@ -1216,6 +1216,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Receive MQTT Topic Messages](workflows/receive-mqtt-topic-messages/) - Keep an MQTT subscription open and inspect each incoming message with its original topic.
 - [Format a US Phone Number](workflows/format-us-phone-number/) - Call this workflow to normalize a US phone number and return its dialing formats and extension.
 - [Save Qualys Reports to TheHive](workflows/save-qualys-reports-to-thehive/) - File each finished Qualys PDF report in its own TheHive case.
+- [Email PRISM Elastic Alerts](workflows/email-prism-elastic-alerts/) - Read an authorized PRISM alert feed and send each alert to an Outlook recipient.
 
 ## AI
 

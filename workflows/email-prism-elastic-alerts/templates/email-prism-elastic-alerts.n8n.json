@@ -1,0 +1,485 @@
+{
+  "name": "Email PRISM Elastic Alerts",
+  "active": false,
+  "nodes": [
+    {
+      "id": "email-prism-elastic-alerts-schedule",
+      "name": "Check at midnight UTC",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "daysInterval": 1,
+              "triggerAtHour": 0,
+              "triggerAtMinute": 0
+            }
+          ]
+        }
+      },
+      "position": [
+        0,
+        330
+      ]
+    },
+    {
+      "id": "email-prism-elastic-alerts-config",
+      "name": "Set the alert feed and recipient",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function alertSettings(feedUrl, recipient, scheduledAt) {\n  const url =\n    typeof feedUrl === \"string\" &&\n    /^https:\\/\\/([a-z0-9-]+(?:\\.[a-z0-9-]+)*)(?::(\\d{1,5}))?(?:\\/[^\\s\\\\#]*)?$/i.exec(feedUrl);\n  if (\n    !url ||\n    url[1].toLowerCase().endsWith(\".invalid\") ||\n    (url[2] && (Number(url[2]) < 1 || Number(url[2]) > 65535))\n  ) {\n    throw Error(\"Configure the final HTTPS PRISM alert feed without embedded credentials.\");\n  }\n  if (\n    typeof recipient !== \"string\" ||\n    recipient.length > 254 ||\n    !/^[^\\s@,;<>]+@[^\\s@,;<>]+\\.[^\\s@,;<>]+$/.test(recipient)\n  ) {\n    throw Error(\"Configure one authorized Outlook recipient.\");\n  }\n  const timestamp = Date.parse(scheduledAt);\n  if (!Number.isFinite(timestamp)) throw Error(\"The schedule did not provide a valid time.\");\n  return { feedUrl, recipient, day: new Date(timestamp).toISOString().slice(0, 10) };\n}\n\nconst settings = {\n  feedUrl: \"https://prism.example.invalid/alerts\",\n  recipient: \"\",\n};\nreturn [\n  {\n    json: alertSettings(settings.feedUrl, settings.recipient, $input.first().json.timestamp),\n    pairedItem: { item: 0 },\n  },\n];\n"
+      },
+      "position": [
+        225,
+        330
+      ]
+    },
+    {
+      "id": "email-prism-elastic-alerts-read",
+      "name": "Read PRISM alerts",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.feedUrl }}",
+        "authentication": "none",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "position": [
+        450,
+        330
+      ]
+    },
+    {
+      "id": "email-prism-elastic-alerts-parse",
+      "name": "Validate the alert feed",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function alertMessages(body, statusCode, config) {\n  if (statusCode !== 200) throw Error(\"The alert feed did not return a complete JSON response.\");\n  const empty =\n    body && typeof body === \"object\" && !Array.isArray(body) && Object.keys(body).length === 0;\n  const alerts = Array.isArray(body) ? body : empty ? [] : [body];\n  if (alerts.length > 100) throw Error(\"The alert feed exceeded 100 records.\");\n  const field = (value, limit) =>\n    typeof value === \"string\" && value.trim() && value.length <= limit;\n  const html = (value) =>\n    String(value)\n      .replaceAll(\"&\", \"&amp;\")\n      .replaceAll(\"<\", \"&lt;\")\n      .replaceAll(\">\", \"&gt;\")\n      .replaceAll('\"', \"&quot;\")\n      .replaceAll(\"'\", \"&#39;\")\n      .replace(/\\r\\n|\\r|\\n/g, \"<br>\");\n  return alerts.map((alert) => {\n    const { alert_name: name, severity, timestamp, alert_message: details } = alert ?? {};\n    if (\n      !field(name, 200) ||\n      /[\\r\\n\\u0000]/.test(name) ||\n      !(field(severity, 60) || Number.isFinite(severity)) ||\n      !field(timestamp, 100) ||\n      !field(details, 8000)\n    ) {\n      throw Error(\"An alert is missing its name, severity, timestamp or details.\");\n    }\n    return {\n      fingerprint: JSON.stringify([\n        config.feedUrl,\n        config.recipient,\n        name,\n        severity,\n        timestamp,\n        details,\n      ]),\n      subject: \"PRISM Elastic Alert: \" + name,\n      body:\n        \"Hello,<br><br>An alert has been triggered:<br><strong>Alert Name:</strong> \" +\n        html(name) +\n        \"<br><strong>Severity:</strong> \" +\n        html(severity) +\n        \"<br><strong>Timestamp:</strong> \" +\n        html(timestamp) +\n        \"<br><br>Details:<br>\" +\n        html(details) +\n        \"<br><br>Regards,<br>PRISM Alert System\",\n      recipient: config.recipient,\n    };\n  });\n}\n\nconst config = $(\"Set the alert feed and recipient\").first().json,\n  response = $input.first().json;\nreturn alertMessages(response.body, response.statusCode, config).map((json) => ({\n  json,\n  pairedItem: { item: 0 },\n}));\n"
+      },
+      "position": [
+        675,
+        330
+      ]
+    },
+    {
+      "id": "email-prism-elastic-alerts-hash",
+      "name": "Hash each alert identity",
+      "type": "n8n-nodes-base.crypto",
+      "typeVersion": 1,
+      "parameters": {
+        "action": "hash",
+        "type": "SHA256",
+        "binaryData": false,
+        "value": "={{ $json.fingerprint }}",
+        "dataPropertyName": "key",
+        "encoding": "hex"
+      },
+      "position": [
+        900,
+        330
+      ]
+    },
+    {
+      "id": "email-prism-elastic-alerts-loop",
+      "name": "Process one alert at a time",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "position": [
+        1125,
+        330
+      ]
+    },
+    {
+      "id": "email-prism-elastic-alerts-check",
+      "name": "Read the previous email attempt",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_ALERT_SEND_LEDGER_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "key",
+              "condition": "eq",
+              "keyValue": "={{ $json.key }}"
+            }
+          ]
+        },
+        "returnAll": false,
+        "limit": 2
+      },
+      "position": [
+        1350,
+        330
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "id": "email-prism-elastic-alerts-ready",
+      "name": "Ready to send?",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const queued = $(\"Process one alert at a time\").all(1, $runIndex)[0].json,\n  day = $(\"Set the alert feed and recipient\").first().json.day;\nconst rows = $input.all(),\n  last = rows[0].json;\nif (\n  rows.length !== 1 ||\n  (last.key && (last.key !== queued.key || ![\"pending\", \"accepted\"].includes(last.state)))\n)\n  throw Error(\"Check the alert ledger row.\");\nconst ready = !last.key || (last.state === \"accepted\" && last.day < day);\nconst { key, subject, body, recipient } = queued;\nreturn [{ json: { key, subject, body, recipient, day, ready }, pairedItem: { item: 0 } }];\n"
+      },
+      "position": [
+        1575,
+        330
+      ]
+    },
+    {
+      "id": "email-prism-elastic-alerts-remaining",
+      "name": "More alerts?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.ready }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "position": [
+        1800,
+        330
+      ]
+    },
+    {
+      "id": "email-prism-elastic-alerts-reserve",
+      "name": "Reserve the selected alert",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "upsert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_ALERT_SEND_LEDGER_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "key",
+              "condition": "eq",
+              "keyValue": "={{ $json.key }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "key": "={{ $json.key }}",
+            "day": "={{ $json.day }}",
+            "state": "pending"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "position": [
+        2025,
+        330
+      ]
+    },
+    {
+      "id": "email-prism-elastic-alerts-mail",
+      "name": "Send the Outlook alert",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://graph.microsoft.com/v1.0/me/sendMail",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "microsoftOutlookOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ ({message:{subject:$('Ready to send?').item.json.subject,body:{contentType:'HTML',content:$('Ready to send?').item.json.body},\n      toRecipients:[{emailAddress:{address:$('Ready to send?').item.json.recipient}}]},saveToSentItems:true}) }}",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "text",
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "position": [
+        2250,
+        330
+      ]
+    },
+    {
+      "id": "email-prism-elastic-alerts-confirm",
+      "name": "Check the Graph acceptance",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const mail = $input.first().json,\n  attempt = $(\"Reserve the selected alert\").item.json;\nif (mail.statusCode !== 202 || attempt.state !== \"pending\")\n  throw Error(\"Outlook did not confirm acceptance.\");\nreturn [{ json: { key: attempt.key, state: \"accepted\" }, pairedItem: { item: 0 } }];\n"
+      },
+      "position": [
+        2475,
+        330
+      ]
+    },
+    {
+      "id": "email-prism-elastic-alerts-accepted",
+      "name": "Record Outlook acceptance",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_ALERT_SEND_LEDGER_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "key",
+              "condition": "eq",
+              "keyValue": "={{ $json.key }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "state": "accepted"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "position": [
+        2700,
+        330
+      ]
+    }
+  ],
+  "connections": {
+    "Check at midnight UTC": {
+      "main": [
+        [
+          {
+            "node": "Set the alert feed and recipient",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set the alert feed and recipient": {
+      "main": [
+        [
+          {
+            "node": "Read PRISM alerts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read PRISM alerts": {
+      "main": [
+        [
+          {
+            "node": "Validate the alert feed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate the alert feed": {
+      "main": [
+        [
+          {
+            "node": "Hash each alert identity",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hash each alert identity": {
+      "main": [
+        [
+          {
+            "node": "Process one alert at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process one alert at a time": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Read the previous email attempt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the previous email attempt": {
+      "main": [
+        [
+          {
+            "node": "Ready to send?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ready to send?": {
+      "main": [
+        [
+          {
+            "node": "More alerts?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "More alerts?": {
+      "main": [
+        [
+          {
+            "node": "Reserve the selected alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Process one alert at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve the selected alert": {
+      "main": [
+        [
+          {
+            "node": "Send the Outlook alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send the Outlook alert": {
+      "main": [
+        [
+          {
+            "node": "Check the Graph acceptance",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check the Graph acceptance": {
+      "main": [
+        [
+          {
+            "node": "Record Outlook acceptance",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record Outlook acceptance": {
+      "main": [
+        [
+          {
+            "node": "Process one alert at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC"
+  },
+  "pinData": {}
+}
