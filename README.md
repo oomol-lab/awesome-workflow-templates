@@ -1258,6 +1258,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Save Qualys Reports to TheHive](workflows/save-qualys-reports-to-thehive/) - File each finished Qualys PDF report in its own TheHive case.
 - [Email PRISM Elastic Alerts](workflows/email-prism-elastic-alerts/) - Read an authorized PRISM alert feed and send each alert to an Outlook recipient.
 - [Back Up Zigbee2MQTT to SFTP](workflows/back-up-zigbee2mqtt-to-sftp/) - Request a weekly Zigbee2MQTT backup and save the resulting ZIP on an SFTP server.
+- [Trigger a Netlify Build from a Webhook](workflows/trigger-netlify-build-from-webhook/) - Queue a build of a fixed Git-linked Netlify site and return its build and deploy IDs.
 
 ## AI
 

@@ -1,0 +1,246 @@
+{
+  "name": "Trigger a Netlify Build from a Webhook",
+  "nodes": [
+    {
+      "id": "trigger-netlify-build-from-webhook-hook",
+      "name": "Receive the build request",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "netlify-build",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "position": [
+        0,
+        210
+      ]
+    },
+    {
+      "id": "trigger-netlify-build-from-webhook-plan",
+      "name": "Validate the title and fixed site",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function planBuild(body, siteId, enabled) {\n  if (!enabled || typeof siteId !== \"string\" || !/^[a-z0-9-]{8,80}$/i.test(siteId)) {\n    return {\n      ready: false,\n      siteId: \"\",\n      title: \"\",\n      status: 503,\n      body: {\n        error: \"Configure the Netlify site and webhook authentication before enabling builds.\",\n      },\n    };\n  }\n  const title = typeof body?.data?.title === \"string\" ? body.data.title.trim() : \"\";\n  if (!title || title.length > 200 || /[\\u0000-\\u001f\\u007f]/.test(title)) {\n    return {\n      ready: false,\n      siteId: \"\",\n      title: \"\",\n      status: 400,\n      body: { error: \"Send data.title with 1–200 characters on one line.\" },\n    };\n  }\n  return { ready: true, siteId, title };\n}\nconst siteId = \"YOUR_NETLIFY_SITE_ID\";\nconst enableBuilds = false;\nreturn [{ json: planBuild($input.first().json.body, siteId, enableBuilds) }];\n"
+      },
+      "position": [
+        210,
+        210
+      ]
+    },
+    {
+      "id": "trigger-netlify-build-from-webhook-gate",
+      "name": "May the build run?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.ready }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "position": [
+        420,
+        210
+      ]
+    },
+    {
+      "id": "trigger-netlify-build-from-webhook-build",
+      "name": "Queue the Netlify build",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "={{ \"https://api.netlify.com/api/v1/sites/\"+$json.siteId+\"/builds\" }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "netlifyApi",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "title",
+              "value": "={{ $json.title }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 25000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "position": [
+        630,
+        210
+      ],
+      "retryOnFail": false,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "trigger-netlify-build-from-webhook-receipt",
+      "name": "Check the Netlify receipt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function buildReceipt(build, siteId, title) {\n  const validId = (id) => typeof id === \"string\" && /^[a-z0-9_-]{1,128}$/i.test(id);\n  if (\n    !validId(build?.id) ||\n    !validId(build?.deploy_id) ||\n    (build.site_id != null && build.site_id !== siteId)\n  ) {\n    return {\n      status: 502,\n      body: {\n        error: \"Netlify did not confirm the build. Check the site before repeating the request.\",\n      },\n    };\n  }\n  return { status: 202, body: { siteId, title, buildId: build.id, deployId: build.deploy_id } };\n}\nconst plan = $(\"Validate the title and fixed site\").first().json;\nconst { statusCode, body } = $input.first().json;\nreturn [{ json: buildReceipt(statusCode === 200 ? body : null, plan.siteId, plan.title) }];\n"
+      },
+      "position": [
+        840,
+        210
+      ]
+    },
+    {
+      "id": "trigger-netlify-build-from-webhook-reject",
+      "name": "Return the request error",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const plan = $input.first().json;\nreturn [{ json: { status: plan.status, body: plan.body } }];\n"
+      },
+      "position": [
+        1050,
+        210
+      ]
+    },
+    {
+      "id": "trigger-netlify-build-from-webhook-reply",
+      "name": "Return the build receipt",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json.body) }}",
+        "options": {
+          "responseCode": "={{ $json.status }}",
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Cache-Control",
+                "value": "no-store"
+              }
+            ]
+          }
+        }
+      },
+      "position": [
+        1260,
+        210
+      ]
+    }
+  ],
+  "connections": {
+    "Receive the build request": {
+      "main": [
+        [
+          {
+            "node": "Validate the title and fixed site",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate the title and fixed site": {
+      "main": [
+        [
+          {
+            "node": "May the build run?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "May the build run?": {
+      "main": [
+        [
+          {
+            "node": "Queue the Netlify build",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Return the request error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Queue the Netlify build": {
+      "main": [
+        [
+          {
+            "node": "Check the Netlify receipt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check the Netlify receipt": {
+      "main": [
+        [
+          {
+            "node": "Return the build receipt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Return the request error": {
+      "main": [
+        [
+          {
+            "node": "Return the build receipt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataSuccessExecution": "none",
+    "saveManualExecutions": false
+  },
+  "pinData": {}
+}
