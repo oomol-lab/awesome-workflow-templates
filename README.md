@@ -982,6 +982,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Summarize YouTube Videos on Discord](workflows/summarize-youtube-videos-on-discord/) - Summarize a channel’s new video captions and post the video to Discord.
 - [Describe Telegram Photos with OpenAI](workflows/describe-telegram-photos-with-openai/) - Describe a Telegram photo with OpenAI and reply in the same chat. Ask for a photo after other messages.
 - [Warn About Profanity in Telegram](workflows/warn-about-profanity-in-telegram/) - Score English Telegram messages for profanity and reply to messages above your confidence threshold.
+- [Reply to Fiwano Messages](workflows/reply-to-fiwano-messages/) - Echo text and acknowledge attachments on the original WhatsApp, Instagram, or Messenger conversation.
 
 ## Customer Support
 

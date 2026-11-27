@@ -1,0 +1,241 @@
+{
+  "name": "Reply to Fiwano Messages",
+  "nodes": [
+    {
+      "id": "reply-to-fiwano-messages-trigger",
+      "name": "Receive Fiwano messages",
+      "type": "n8n-nodes-fiwano.fiwanoTrigger",
+      "typeVersion": 1,
+      "parameters": {
+        "autoSetup": "manual",
+        "events": [
+          "message.received"
+        ],
+        "webhookSecret": "={{ (() => { throw new Error(\"Configure the Fiwano webhook secret before enabling the trigger\"); })() }}"
+      },
+      "position": [
+        0,
+        280
+      ]
+    },
+    {
+      "id": "reply-to-fiwano-messages-prepare",
+      "name": "Check the channel and compose the reply",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const allowedChannels = [];\nconst event = $input.first().json;\nconst data = event.data;\nconst limits = new Map([\n  [\"whatsapp\", 4096],\n  [\"instagram\", 1000],\n  [\"facebook\", 2000],\n]);\nconst limit = limits.get(event.channel_type);\nif (\n  event.event !== \"message.received\" ||\n  !limit ||\n  typeof event.channel_id !== \"string\" ||\n  !allowedChannels.includes(event.channel_id) ||\n  !data ||\n  typeof data.message_id !== \"string\" ||\n  !data.message_id.trim() ||\n  data.message_id.length > 512 ||\n  typeof data.from !== \"string\" ||\n  !/^\\+?[0-9]{3,30}$/.test(data.from) ||\n  (event.channel_type !== \"whatsapp\" && data.from.startsWith(\"+\"))\n)\n  return [];\nlet text;\nif (data.type === \"text\" && typeof data.text === \"string\" && data.text.trim()) {\n  let copy = data.text.slice(0, limit - 24);\n  if (/[\\uD800-\\uDBFF]$/.test(copy)) copy = copy.slice(0, -1);\n  if (copy !== data.text) copy += \"…\";\n  text = 'You said: \"' + copy + '\" 👋';\n} else if (\n  [\"image\", \"audio\", \"video\", \"document\", \"sticker\", \"file\", \"share\"].includes(data.type)\n) {\n  const mime =\n    typeof data.media?.mime_type === \"string\" &&\n    /^[a-z0-9.+-]+\\/[a-z0-9.+-]+$/i.test(data.media.mime_type) &&\n    data.media.mime_type.length <= 100\n      ? data.media.mime_type\n      : \"attachment\";\n  text = \"Got your \" + data.type + \" 📎 — \" + mime + \". Thanks!\";\n} else {\n  return [];\n}\nreturn [\n  {\n    json: {\n      key: JSON.stringify([event.channel_id, data.message_id]),\n      channel: event.channel_id,\n      recipient: data.from,\n      text,\n    },\n  },\n];\n"
+      },
+      "position": [
+        215,
+        280
+      ]
+    },
+    {
+      "id": "reply-to-fiwano-messages-prior",
+      "name": "Skip messages already handled",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "rowNotExists",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_FIWANO_REPLY_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "event_key",
+              "condition": "eq",
+              "keyValue": "={{ $('Check the channel and compose the reply').first().json.key }}"
+            }
+          ]
+        }
+      },
+      "position": [
+        430,
+        280
+      ]
+    },
+    {
+      "id": "reply-to-fiwano-messages-reserve",
+      "name": "Reserve this reply",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_FIWANO_REPLY_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "event_key": "={{ $('Check the channel and compose the reply').first().json.key }}",
+            "status": "pending",
+            "receipt": ""
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "position": [
+        645,
+        280
+      ]
+    },
+    {
+      "id": "reply-to-fiwano-messages-send",
+      "name": "Reply on the original channel",
+      "type": "n8n-nodes-fiwano.fiwano",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "errorOnSendFailure": true,
+        "channelId": "={{ $('Check the channel and compose the reply').first().json.channel }}",
+        "recipient": "={{ $('Check the channel and compose the reply').first().json.recipient }}",
+        "text": "={{ $('Check the channel and compose the reply').first().json.text }}"
+      },
+      "position": [
+        860,
+        280
+      ]
+    },
+    {
+      "id": "reply-to-fiwano-messages-receipt",
+      "name": "Check the Fiwano receipt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const value = $input.first().json;\nif (\n  ![\"sent\", \"queued\"].includes(value.status) ||\n  value.success !== true ||\n  typeof value.message_id !== \"string\" ||\n  !/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(value.message_id)\n) {\n  throw Error(\"Fiwano did not confirm or queue the reply. Check the dashboard before retrying.\");\n}\nreturn [{ json: { receipt: value.message_id, status: value.status } }];\n"
+      },
+      "position": [
+        1075,
+        280
+      ]
+    },
+    {
+      "id": "reply-to-fiwano-messages-record",
+      "name": "Record the Fiwano receipt",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_FIWANO_REPLY_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "event_key",
+              "condition": "eq",
+              "keyValue": "={{ $('Check the channel and compose the reply').first().json.key }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "={{ $json.status }}",
+            "receipt": "={{ $json.receipt }}"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "position": [
+        1290,
+        280
+      ]
+    }
+  ],
+  "active": false,
+  "connections": {
+    "Receive Fiwano messages": {
+      "main": [
+        [
+          {
+            "node": "Check the channel and compose the reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check the channel and compose the reply": {
+      "main": [
+        [
+          {
+            "node": "Skip messages already handled",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Skip messages already handled": {
+      "main": [
+        [
+          {
+            "node": "Reserve this reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve this reply": {
+      "main": [
+        [
+          {
+            "node": "Reply on the original channel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reply on the original channel": {
+      "main": [
+        [
+          {
+            "node": "Check the Fiwano receipt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check the Fiwano receipt": {
+      "main": [
+        [
+          {
+            "node": "Record the Fiwano receipt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveExecutionProgress": false,
+    "saveDataErrorExecution": "none",
+    "saveDataSuccessExecution": "none",
+    "saveManualExecutions": false
+  },
+  "pinData": {}
+}
