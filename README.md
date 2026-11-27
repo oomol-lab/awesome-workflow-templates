@@ -738,6 +738,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Email Recent RSS Articles Every Hour](workflows/email-hourly-rss-articles/) - Check selected publisher feeds at half past each hour and email each article published in the preceding hour.
 - [Sync Outlook Calendar Events to Notion](workflows/sync-outlook-calendar-events-to-notion/) - Sync your primary Outlook calendar to a Notion data source, matching each event by its Outlook ID.
 - [Summarize Zoom Meetings and Record Follow-ups](workflows/zoom-meeting-summary-and-follow-up/) - Review recent Zoom cloud transcripts, email formal minutes, create the owner’s ClickUp tasks, and calendar a confirmed follow-up.
+- [Receive New IMAP Email](workflows/receive-imap-inbox-mail/) - Listen for incoming mail in an IMAP mailbox and expose each unread message with its headers and text bodies.
 
 ## Content
 
