@@ -1,0 +1,146 @@
+{
+  "name": "Back Up a Google Sheet to Dropbox as XLS",
+  "nodes": [
+    {
+      "id": "export-google-sheet-xls-to-dropbox-interval",
+      "name": "Run every 15 minutes",
+      "type": "n8n-nodes-base.interval",
+      "typeVersion": 1,
+      "parameters": {
+        "unit": "minutes",
+        "interval": 15
+      },
+      "position": [
+        0,
+        220
+      ]
+    },
+    {
+      "id": "export-google-sheet-xls-to-dropbox-read",
+      "name": "Read the Google Sheets range",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 1,
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "sheet",
+        "operation": "read",
+        "sheetId": "",
+        "range": "",
+        "rawData": false,
+        "keyRow": 0,
+        "dataStartRow": 1,
+        "options": {
+          "valueRenderMode": "UNFORMATTED_VALUE"
+        }
+      },
+      "position": [
+        235,
+        220
+      ]
+    },
+    {
+      "id": "export-google-sheet-xls-to-dropbox-validate",
+      "name": "Check legacy Excel limits",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function checkXlsLimits(items) {\n  if (items.length > 65535)\n    throw new Error(\"Legacy XLS supports at most 65,535 data rows and one header row.\");\n  const headings = new Set();\n  for (const { json } of items) {\n    for (const [heading, cell] of Object.entries(json)) {\n      headings.add(heading);\n      if (heading.length > 32767 || (typeof cell === \"string\" && cell.length > 32767)) {\n        throw new Error(\"An XLS cell exceeds the format’s text limit.\");\n      }\n    }\n  }\n  if (headings.size > 256) throw new Error(\"Legacy XLS supports at most 256 columns.\");\n  return items;\n}\nreturn checkXlsLimits($input.all());\n"
+      },
+      "position": [
+        470,
+        220
+      ]
+    },
+    {
+      "id": "export-google-sheet-xls-to-dropbox-convert",
+      "name": "Create the XLS workbook",
+      "type": "n8n-nodes-base.spreadsheetFile",
+      "typeVersion": 1,
+      "parameters": {
+        "operation": "toFile",
+        "fileFormat": "xls",
+        "binaryPropertyName": "data",
+        "options": {
+          "headerRow": true,
+          "sheetName": "Sheet",
+          "fileName": "spreadsheet.xls"
+        }
+      },
+      "position": [
+        705,
+        220
+      ]
+    },
+    {
+      "id": "export-google-sheet-xls-to-dropbox-upload",
+      "name": "Overwrite the Dropbox file",
+      "type": "n8n-nodes-base.dropbox",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "file",
+        "operation": "upload",
+        "authentication": "oAuth2",
+        "path": "/my-sheets/prices.xls",
+        "binaryData": true,
+        "binaryPropertyName": "data"
+      },
+      "position": [
+        940,
+        220
+      ],
+      "retryOnFail": false
+    }
+  ],
+  "connections": {
+    "Run every 15 minutes": {
+      "main": [
+        [
+          {
+            "node": "Read the Google Sheets range",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the Google Sheets range": {
+      "main": [
+        [
+          {
+            "node": "Check legacy Excel limits",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check legacy Excel limits": {
+      "main": [
+        [
+          {
+            "node": "Create the XLS workbook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create the XLS workbook": {
+      "main": [
+        [
+          {
+            "node": "Overwrite the Dropbox file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}
