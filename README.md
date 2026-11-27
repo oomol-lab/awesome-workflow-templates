@@ -380,6 +380,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Create or Comment on GitHub Issues from Zendesk](workflows/zendesk-ticket-to-github-issue/) - Create a GitHub issue for a Zendesk ticket or add a comment to its linked issue.
 - [Create or Comment on Jira Issues from Zendesk](workflows/zendesk-ticket-to-jira-issue/) - Create a Jira Cloud issue for a Zendesk ticket or add a comment to its linked issue.
 - [Support Ticket Triage & Draft Reply](workflows/support-ticket-triage-draft/) - Classify incoming support tickets by category and urgency, draft a customer reply, and escalate urgent cases to Slack.
+- [Create Clockify Projects for Syncro Tickets](workflows/syncro-ticket-clockify-project/) - Create a Clockify project for a Syncro ticket and return the created project in the same webhook response.
 
 ## Development
 

@@ -1,0 +1,239 @@
+{
+  "name": "Create Clockify Projects for Syncro Tickets",
+  "nodes": [
+    {
+      "id": "syncro-ticket-clockify-project-hook",
+      "name": "Receive a Syncro ticket",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "replace-with-a-private-syncro-callback-path",
+        "authentication": "none",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "position": [
+        0,
+        230
+      ]
+    },
+    {
+      "id": "syncro-ticket-clockify-project-prepare",
+      "name": "Set workspace and read ticket fields",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function prepareProject(payload, workspaceId) {\n  const fields = payload?.attributes;\n  const identifier = (value) =>\n    (typeof value === \"string\" && value.trim().length > 0) || Number.isSafeInteger(value);\n  if (\n    !fields ||\n    !identifier(fields.number) ||\n    !identifier(fields.id) ||\n    typeof fields.customer_business_then_name !== \"string\" ||\n    !fields.customer_business_then_name.trim()\n  ) {\n    return {\n      ready: false,\n      status: 400,\n      response: { error: \"Supply the Syncro ticket number, customer name and ID.\" },\n    };\n  }\n  if (\n    typeof workspaceId !== \"string\" ||\n    !/^[A-Za-z0-9_-]+$/.test(workspaceId) ||\n    workspaceId === \"YOUR_CLOCKIFY_WORKSPACE_ID\"\n  ) {\n    return {\n      ready: false,\n      status: 503,\n      response: { error: \"Select a Clockify workspace before enabling this webhook.\" },\n    };\n  }\n  const name =\n    \"Ticket \" + fields.number + \" - \" + fields.customer_business_then_name + \" [\" + fields.id + \"]\";\n  return {\n    ready: true,\n    endpoint: \"/workspaces/\" + workspaceId + \"/projects\",\n    request: { name },\n    name,\n    workspaceId,\n  };\n}\nconst workspaceId = \"YOUR_CLOCKIFY_WORKSPACE_ID\";\nreturn [{ json: prepareProject($input.first().json.body, workspaceId) }];\n"
+      },
+      "position": [
+        220,
+        230
+      ]
+    },
+    {
+      "id": "syncro-ticket-clockify-project-gate",
+      "name": "Can the project be created?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.ready }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "position": [
+        440,
+        230
+      ]
+    },
+    {
+      "id": "syncro-ticket-clockify-project-create",
+      "name": "Create the Clockify project",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "={{ \"https://api.clockify.me/api/v1\"+$json.endpoint }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "clockifyApi",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.request }}",
+        "options": {
+          "timeout": 25000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "position": [
+        660,
+        230
+      ],
+      "retryOnFail": false,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "syncro-ticket-clockify-project-receipt",
+      "name": "Check Clockify project creation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function projectReceipt(status, response, expected) {\n  if (\n    status !== 201 ||\n    !response ||\n    typeof response !== \"object\" ||\n    Array.isArray(response) ||\n    typeof response.id !== \"string\" ||\n    !response.id.trim() ||\n    response.name !== expected.name ||\n    response.workspaceId !== expected.workspaceId\n  ) {\n    return {\n      status: 502,\n      body: {\n        error:\n          \"Clockify did not confirm the project. Check the workspace before sending this ticket again.\",\n      },\n    };\n  }\n  return { status: 200, body: [response] };\n}\nconst { statusCode, body } = $input.first().json;\nreturn [\n  {\n    json: projectReceipt(statusCode, body, $(\"Set workspace and read ticket fields\").first().json),\n  },\n];\n"
+      },
+      "position": [
+        880,
+        230
+      ]
+    },
+    {
+      "id": "syncro-ticket-clockify-project-invalid",
+      "name": "Return the ticket or setup error",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const plan = $input.first().json;\nreturn [{ json: { status: plan.status, body: plan.response } }];\n"
+      },
+      "position": [
+        1100,
+        230
+      ]
+    },
+    {
+      "id": "syncro-ticket-clockify-project-reply",
+      "name": "Return the JSON response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json.body) }}",
+        "options": {
+          "responseCode": "={{ $json.status }}",
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Cache-Control",
+                "value": "no-store"
+              }
+            ]
+          }
+        }
+      },
+      "position": [
+        1320,
+        230
+      ]
+    }
+  ],
+  "connections": {
+    "Receive a Syncro ticket": {
+      "main": [
+        [
+          {
+            "node": "Set workspace and read ticket fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set workspace and read ticket fields": {
+      "main": [
+        [
+          {
+            "node": "Can the project be created?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Can the project be created?": {
+      "main": [
+        [
+          {
+            "node": "Create the Clockify project",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Return the ticket or setup error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create the Clockify project": {
+      "main": [
+        [
+          {
+            "node": "Check Clockify project creation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Clockify project creation": {
+      "main": [
+        [
+          {
+            "node": "Return the JSON response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Return the ticket or setup error": {
+      "main": [
+        [
+          {
+            "node": "Return the JSON response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}
