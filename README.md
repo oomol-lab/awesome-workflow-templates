@@ -742,6 +742,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Summarize Zoom Meetings and Record Follow-ups](workflows/zoom-meeting-summary-and-follow-up/) - Review recent Zoom cloud transcripts, email formal minutes, create the owner’s ClickUp tasks, and calendar a confirmed follow-up.
 - [Receive New IMAP Email](workflows/receive-imap-inbox-mail/) - Listen for incoming mail in an IMAP mailbox and expose each unread message with its headers and text bodies.
 - [Draft Replies to Outlook Threads](workflows/draft-outlook-thread-replies/) - Draft concise replies to emails from a configured Outlook sender and save each draft in its original conversation.
+- [Control Spotify With an MQTT Remote](workflows/control-spotify-with-an-mqtt-remote/) - Use an IKEA-style MQTT remote to control a configured Spotify Connect device and run two playback shortcuts.
 
 ## Content
 

@@ -1,0 +1,497 @@
+{
+  "name": "Control Spotify With an MQTT Remote",
+  "active": false,
+  "pinData": {},
+  "nodes": [
+    {
+      "id": "control-spotify-with-an-mqtt-remote-trigger",
+      "name": "Receive MQTT remote actions",
+      "type": "n8n-nodes-base.mqttTrigger",
+      "typeVersion": 1,
+      "parameters": {
+        "topics": "YOUR_REMOTE_ACTION_TOPIC",
+        "options": {
+          "jsonParseBody": true,
+          "onlyMessage": false,
+          "parallelProcessing": true
+        }
+      },
+      "position": [
+        0,
+        300
+      ]
+    },
+    {
+      "id": "control-spotify-with-an-mqtt-remote-setup",
+      "name": "Set the Spotify device and shortcuts",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function remoteEvent(event, settings) {\n  const commands = [\n    \"arrow_left_click\",\n    \"arrow_right_click\",\n    \"brightness_up_click\",\n    \"brightness_down_click\",\n    \"toggle\",\n    \"brightness_up_hold\",\n    \"brightness_down_hold\",\n  ];\n  if (!commands.includes(event?.message) || typeof event.topic !== \"string\" || !event.topic)\n    return null;\n  if (event.message === \"arrow_left_click\" || event.message === \"arrow_right_click\")\n    return { command: event.message, arrow: true };\n  if (typeof settings.deviceName !== \"string\" || !settings.deviceName.trim())\n    throw Error(\"Set the exact Spotify Connect device name.\");\n  if (\n    event.message === \"brightness_up_hold\" &&\n    !/^spotify:track:[A-Za-z0-9]{22}$/.test(settings.trackUri ?? \"\")\n  ) {\n    throw Error(\"Set a Spotify track URI for the volume, queue and skip shortcut.\");\n  }\n  if (\n    event.message === \"brightness_down_hold\" &&\n    (typeof settings.playlistName !== \"string\" || !settings.playlistName.trim())\n  ) {\n    throw Error(\"Set the exact playlist name for the playlist shortcut.\");\n  }\n  return { command: event.message, arrow: false, ...settings };\n}\n\nconst settings = {\n  deviceName: \"\",\n  trackUri: \"\",\n  playlistName: \"\",\n};\nconst job = remoteEvent($input.first().json, settings);\nreturn job ? [{ json: job, pairedItem: { item: 0 } }] : [];\n"
+      },
+      "position": [
+        225,
+        300
+      ]
+    },
+    {
+      "id": "control-spotify-with-an-mqtt-remote-arrow",
+      "name": "Is this a track arrow?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.arrow }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "position": [
+        450,
+        300
+      ]
+    },
+    {
+      "id": "control-spotify-with-an-mqtt-remote-arrowPlan",
+      "name": "Send the arrow to the active player",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const operation = $input.first().json.command === \"arrow_left_click\" ? \"previous\" : \"next\";\nreturn [\n  {\n    json: { method: \"POST\", url: \"https://api.spotify.com/v1/me/player/\" + operation, body: null },\n    pairedItem: { item: 0 },\n  },\n];\n"
+      },
+      "position": [
+        675,
+        300
+      ]
+    },
+    {
+      "id": "control-spotify-with-an-mqtt-remote-playback",
+      "name": "Read Spotify playback state",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.spotify.com/v1/me/player",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "spotifyOAuth2Api",
+        "options": {
+          "timeout": 20000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "text",
+              "fullResponse": true,
+              "outputPropertyName": "data"
+            }
+          }
+        }
+      },
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "id": "control-spotify-with-an-mqtt-remote-devices",
+      "name": "List Spotify Connect devices",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.spotify.com/v1/me/player/devices",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "spotifyOAuth2Api",
+        "options": {
+          "timeout": 20000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "position": [
+        1125,
+        300
+      ]
+    },
+    {
+      "id": "control-spotify-with-an-mqtt-remote-select",
+      "name": "Match the configured device",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function readSpotifyPlayback(response) {\n  if (response.statusCode === 204) return null;\n  if (response.statusCode !== 200 || typeof response.data !== \"string\")\n    throw Error(\"Spotify did not return playback state.\");\n  let playback;\n  try {\n    playback = JSON.parse(response.data);\n  } catch {\n    throw Error(\"Spotify returned invalid playback state.\");\n  }\n  if (!playback || typeof playback !== \"object\" || typeof playback.is_playing !== \"boolean\")\n    throw Error(\"Spotify returned invalid playback state.\");\n  return playback;\n}\nfunction remoteContext(job, playback, devices) {\n  if (devices.statusCode !== 200 || !Array.isArray(devices.body?.devices))\n    throw Error(\"Spotify did not return available devices.\");\n  const matches = devices.body.devices.filter((device) => device?.name === job.deviceName);\n  if (matches.length !== 1)\n    throw Error(\"The configured Spotify device is unavailable or its name is ambiguous.\");\n  const device = matches[0];\n  if (\n    typeof device.id !== \"string\" ||\n    !device.id ||\n    device.id.length > 250 ||\n    device.is_restricted !== false\n  ) {\n    throw Error(\"The configured Spotify device cannot be controlled.\");\n  }\n  const selected = playback?.device?.id === device.id;\n  const isPlaying = selected && playback.is_playing;\n  const volume =\n    selected && Number.isInteger(playback.device.volume_percent)\n      ? playback.device.volume_percent\n      : device.volume_percent;\n  const canSetVolume =\n    device.supports_volume !== false && (!selected || playback.device.supports_volume !== false);\n  return { ...job, deviceId: device.id, needsTransfer: !selected, isPlaying, volume, canSetVolume };\n}\n\nconst state = readSpotifyPlayback($(\"Read Spotify playback state\").first().json);\nreturn [\n  {\n    json: remoteContext(\n      $(\"Set the Spotify device and shortcuts\").first().json,\n      state,\n      $input.first().json,\n    ),\n    pairedItem: { item: 0 },\n  },\n];\n"
+      },
+      "position": [
+        1350,
+        300
+      ]
+    },
+    {
+      "id": "control-spotify-with-an-mqtt-remote-needsPlaylist",
+      "name": "Is this the playlist shortcut?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.command === 'brightness_down_hold' }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "position": [
+        1575,
+        300
+      ]
+    },
+    {
+      "id": "control-spotify-with-an-mqtt-remote-playlists",
+      "name": "Read the Spotify playlist pages",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.spotify.com/v1/me/playlists?limit=50",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "spotifyOAuth2Api",
+        "options": {
+          "timeout": 20000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          },
+          "pagination": {
+            "pagination": {
+              "paginationMode": "responseContainsNextURL",
+              "nextURL": "={{ (() => {\n  const next=$response.body?.next;\n  if(next==null)return \"https://api.spotify.com/v1/me/playlists?limit=50\";\n  if(typeof next!=='string'||!/^https:\\/\\/api\\.spotify\\.com\\/v1\\/me\\/playlists\\?(?:limit=\\d+&offset=\\d+|offset=\\d+&limit=\\d+)$/.test(next))\n   throw Error('Spotify returned an invalid playlist continuation.');\n  return next;\n })() }}",
+              "paginationCompleteWhen": "other",
+              "completeExpression": "={{ $response.body?.next === null }}",
+              "limitPagesFetched": true,
+              "maxRequests": 20,
+              "requestInterval": 0
+            }
+          }
+        }
+      },
+      "position": [
+        1800,
+        300
+      ]
+    },
+    {
+      "id": "control-spotify-with-an-mqtt-remote-commands",
+      "name": "Plan playback commands",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function remoteRequests(job, playlist = null) {\n  const write = (method, operation, query = {}, body = null) => ({\n    method,\n    url:\n      \"https://api.spotify.com/v1/me/player/\" +\n      operation +\n      \"?\" +\n      Object.entries({ device_id: job.deviceId, ...query })\n        .map(([name, value]) => name + \"=\" + encodeURIComponent(value))\n        .join(\"&\"),\n    body,\n  });\n  const volume = (value) => write(\"PUT\", \"volume\", { volume_percent: value });\n  const step = (amount) => {\n    if (!job.canSetVolume || !Number.isInteger(job.volume) || job.volume < 0 || job.volume > 100)\n      throw Error(\"The target device did not return a usable volume.\");\n    return volume(amount > 0 ? Math.min(job.volume + 5, 100) : Math.max(job.volume - 5, 20));\n  };\n  let requests;\n  switch (job.command) {\n    case \"brightness_up_click\":\n      requests = [step(5)];\n      break;\n    case \"brightness_down_click\":\n      requests = [step(-5)];\n      break;\n    case \"toggle\":\n      requests = [write(\"PUT\", job.isPlaying ? \"pause\" : \"play\")];\n      break;\n    case \"brightness_up_hold\":\n      if (!job.canSetVolume) throw Error(\"The target device does not support setting volume.\");\n      requests = [volume(80), write(\"POST\", \"queue\", { uri: job.trackUri }), write(\"POST\", \"next\")];\n      break;\n    case \"brightness_down_hold\":\n      if (!playlist) throw Error(\"The playlist shortcut did not resolve a playlist.\");\n      requests = [write(\"PUT\", \"play\", {}, { context_uri: playlist })];\n      break;\n    default:\n      throw Error(\"Unsupported remote command.\");\n  }\n  if (job.needsTransfer)\n    requests.unshift({\n      method: \"PUT\",\n      url: \"https://api.spotify.com/v1/me/player\",\n      body: { device_ids: [job.deviceId], play: true },\n    });\n  return requests;\n}\n\nreturn remoteRequests($input.first().json).map((json) => ({ json, pairedItem: { item: 0 } }));\n"
+      },
+      "position": [
+        2025,
+        300
+      ]
+    },
+    {
+      "id": "control-spotify-with-an-mqtt-remote-playlistCommands",
+      "name": "Plan the playlist shortcut",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function playlistContext(pages, playlistName) {\n  if (!pages.length || pages.at(-1).body?.next !== null)\n    throw Error(\"Spotify did not return a complete playlist list.\");\n  const matches = [];\n  for (const { statusCode, body } of pages) {\n    if (statusCode !== 200 || !Array.isArray(body?.items))\n      throw Error(\"Spotify returned an invalid playlist page.\");\n    matches.push(...body.items.filter((item) => item?.name === playlistName));\n  }\n  if (\n    matches.length !== 1 ||\n    typeof matches[0].id !== \"string\" ||\n    !/^[A-Za-z0-9]{22}$/.test(matches[0].id)\n  ) {\n    throw Error(\"The configured Spotify playlist is unavailable or its name is ambiguous.\");\n  }\n  return \"spotify:playlist:\" + matches[0].id;\n}\nfunction remoteRequests(job, playlist = null) {\n  const write = (method, operation, query = {}, body = null) => ({\n    method,\n    url:\n      \"https://api.spotify.com/v1/me/player/\" +\n      operation +\n      \"?\" +\n      Object.entries({ device_id: job.deviceId, ...query })\n        .map(([name, value]) => name + \"=\" + encodeURIComponent(value))\n        .join(\"&\"),\n    body,\n  });\n  const volume = (value) => write(\"PUT\", \"volume\", { volume_percent: value });\n  const step = (amount) => {\n    if (!job.canSetVolume || !Number.isInteger(job.volume) || job.volume < 0 || job.volume > 100)\n      throw Error(\"The target device did not return a usable volume.\");\n    return volume(amount > 0 ? Math.min(job.volume + 5, 100) : Math.max(job.volume - 5, 20));\n  };\n  let requests;\n  switch (job.command) {\n    case \"brightness_up_click\":\n      requests = [step(5)];\n      break;\n    case \"brightness_down_click\":\n      requests = [step(-5)];\n      break;\n    case \"toggle\":\n      requests = [write(\"PUT\", job.isPlaying ? \"pause\" : \"play\")];\n      break;\n    case \"brightness_up_hold\":\n      if (!job.canSetVolume) throw Error(\"The target device does not support setting volume.\");\n      requests = [volume(80), write(\"POST\", \"queue\", { uri: job.trackUri }), write(\"POST\", \"next\")];\n      break;\n    case \"brightness_down_hold\":\n      if (!playlist) throw Error(\"The playlist shortcut did not resolve a playlist.\");\n      requests = [write(\"PUT\", \"play\", {}, { context_uri: playlist })];\n      break;\n    default:\n      throw Error(\"Unsupported remote command.\");\n  }\n  if (job.needsTransfer)\n    requests.unshift({\n      method: \"PUT\",\n      url: \"https://api.spotify.com/v1/me/player\",\n      body: { device_ids: [job.deviceId], play: true },\n    });\n  return requests;\n}\n\nconst job = $(\"Match the configured device\").first().json;\nreturn remoteRequests(\n  job,\n  playlistContext(\n    $input.all().map((item) => item.json),\n    job.playlistName,\n  ),\n).map((json) => ({ json, pairedItem: { item: 0 } }));\n"
+      },
+      "position": [
+        2250,
+        300
+      ]
+    },
+    {
+      "id": "control-spotify-with-an-mqtt-remote-each",
+      "name": "Send one command at a time",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "position": [
+        2475,
+        300
+      ]
+    },
+    {
+      "id": "control-spotify-with-an-mqtt-remote-send",
+      "name": "Send the targeted Spotify command",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "={{ $json.method }}",
+        "url": "={{ $json.url }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "spotifyOAuth2Api",
+        "sendBody": "={{ $json.body!==null }}",
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.body }}",
+        "options": {
+          "timeout": 20000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "text",
+              "fullResponse": true,
+              "outputPropertyName": "data"
+            }
+          }
+        }
+      },
+      "position": [
+        2700,
+        300
+      ]
+    },
+    {
+      "id": "control-spotify-with-an-mqtt-remote-ack",
+      "name": "Check Spotify accepted the command",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "if ($input.first().json.statusCode !== 204)\n  throw Error(\"Spotify did not confirm the command. Check playback before repeating it.\");\nreturn [{ json: { accepted: true }, pairedItem: { item: 0 } }];\n"
+      },
+      "position": [
+        2925,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Receive MQTT remote actions": {
+      "main": [
+        [
+          {
+            "node": "Set the Spotify device and shortcuts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set the Spotify device and shortcuts": {
+      "main": [
+        [
+          {
+            "node": "Is this a track arrow?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is this a track arrow?": {
+      "main": [
+        [
+          {
+            "node": "Send the arrow to the active player",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Read Spotify playback state",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send the arrow to the active player": {
+      "main": [
+        [
+          {
+            "node": "Send one command at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Spotify playback state": {
+      "main": [
+        [
+          {
+            "node": "List Spotify Connect devices",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List Spotify Connect devices": {
+      "main": [
+        [
+          {
+            "node": "Match the configured device",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Match the configured device": {
+      "main": [
+        [
+          {
+            "node": "Is this the playlist shortcut?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is this the playlist shortcut?": {
+      "main": [
+        [
+          {
+            "node": "Read the Spotify playlist pages",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Plan playback commands",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the Spotify playlist pages": {
+      "main": [
+        [
+          {
+            "node": "Plan the playlist shortcut",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Plan the playlist shortcut": {
+      "main": [
+        [
+          {
+            "node": "Send one command at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Plan playback commands": {
+      "main": [
+        [
+          {
+            "node": "Send one command at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send one command at a time": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Send the targeted Spotify command",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send the targeted Spotify command": {
+      "main": [
+        [
+          {
+            "node": "Check Spotify accepted the command",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Spotify accepted the command": {
+      "main": [
+        [
+          {
+            "node": "Send one command at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
