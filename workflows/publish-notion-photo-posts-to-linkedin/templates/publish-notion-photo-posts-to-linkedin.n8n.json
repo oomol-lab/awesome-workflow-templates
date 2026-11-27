@@ -1,0 +1,1048 @@
+{
+  "name": "Publish Scheduled Notion Photos to LinkedIn",
+  "nodes": [
+    {
+      "id": "publish-notion-photo-posts-to-linkedin-trigger",
+      "name": "Check daily for scheduled posts",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        250
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 0 15 * * *"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "publish-notion-photo-posts-to-linkedin-settings",
+      "name": "Set Notion and LinkedIn IDs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        235,
+        250
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function notionId(value) {\n  if (typeof value !== \"string\") throw Error(\"A Notion ID is missing.\");\n  const compact = value.replace(/-/g, \"\").toLowerCase();\n  if (!/^[a-f0-9]{32}$/.test(compact)) throw Error(\"A Notion ID is invalid.\");\n  return compact.replace(/^(.{8})(.{4})(.{4})(.{4})(.{12})$/, \"$1-$2-$3-$4-$5\");\n}\n\nfunction settings(dataSource, author, at) {\n  if (typeof author !== \"string\" || !/^urn:li:person:[A-Za-z0-9_-]{1,80}$/.test(author)) {\n    throw Error(\"Set the LinkedIn person URN you intend to post as.\");\n  }\n  const date = new Date(at);\n  if (!Number.isFinite(date.getTime())) throw Error(\"The schedule timestamp is unavailable.\");\n  return { dataSource: notionId(dataSource), author, date: date.toISOString().slice(0, 10) };\n}\n\nfunction checksForDate(config) {\n  return {\n    filter: { property: \"Date\", date: { equals: config.date } },\n    sorts: [{ timestamp: \"created_time\", direction: \"ascending\" }],\n    page_size: 100,\n  };\n}\n\nconst { dataSource, author } = {\n  dataSource: \"YOUR_NOTION_DATA_SOURCE_ID\",\n  author: \"YOUR_LINKEDIN_PERSON_URN\",\n};\nconst config = settings(dataSource, author, $input.first().json.timestamp);\nreturn [{ json: { ...config, query: checksForDate(config) }, pairedItem: { item: 0 } }];\n"
+      }
+    },
+    {
+      "id": "publish-notion-photo-posts-to-linkedin-member",
+      "name": "Read the connected LinkedIn member",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        470,
+        250
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.linkedin.com/v2/userinfo",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "linkedInOAuth2Api",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "publish-notion-photo-posts-to-linkedin-identity",
+      "name": "Confirm the posting account",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        705,
+        250
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function checkMember(member, author) {\n  if (\"urn:li:person:\" + member?.sub !== author)\n    throw Error(\"LinkedIn authorization does not match the configured member.\");\n}\n\nconst config = $(\"Set Notion and LinkedIn IDs\").first().json;\ncheckMember($input.first().json.body, config.author);\nreturn [{ json: config, pairedItem: { item: 0 } }];\n"
+      }
+    },
+    {
+      "id": "publish-notion-photo-posts-to-linkedin-queue",
+      "name": "Find today’s Notion pages",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        940,
+        250
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ \"https://api.notion.com/v1/data_sources/\" + $json.dataSource + \"/query\" }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ ({...$json.query,result_type:\"page\"}) }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Notion-Version",
+              "value": "2026-03-11"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          },
+          "pagination": {
+            "pagination": {
+              "paginationMode": "updateAParameterInEachRequest",
+              "parameters": {
+                "parameters": [
+                  {
+                    "type": "body",
+                    "name": "start_cursor",
+                    "value": "={{ $response.body?.next_cursor }}"
+                  }
+                ]
+              },
+              "paginationCompleteWhen": "other",
+              "completeExpression": "={{ $response.body?.has_more !== true }}",
+              "limitPagesFetched": true,
+              "maxRequests": 10,
+              "requestInterval": 350
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "publish-notion-photo-posts-to-linkedin-next",
+      "name": "Select a scheduled page",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1175,
+        250
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function notionId(value) {\n  if (typeof value !== \"string\") throw Error(\"A Notion ID is missing.\");\n  const compact = value.replace(/-/g, \"\").toLowerCase();\n  if (!/^[a-f0-9]{32}$/.test(compact)) throw Error(\"A Notion ID is invalid.\");\n  return compact.replace(/^(.{8})(.{4})(.{4})(.{4})(.{12})$/, \"$1-$2-$3-$4-$5\");\n}\n\nfunction checksForDate(config) {\n  return {\n    filter: { property: \"Date\", date: { equals: config.date } },\n    sorts: [{ timestamp: \"created_time\", direction: \"ascending\" }],\n    page_size: 100,\n  };\n}\n\nfunction checkedPages(pages, config) {\n  const ids = new Set();\n  const pending = [];\n  for (const page of pages) {\n    const pageId = notionId(page?.id);\n    if (\n      page.object !== \"page\" ||\n      page.archived === true ||\n      page.in_trash === true ||\n      page.parent?.type !== \"data_source_id\" ||\n      notionId(page.parent.data_source_id) !== config.dataSource ||\n      page.properties?.Date?.type !== \"date\" ||\n      page.properties.Date.date?.start !== config.date ||\n      page.properties.Date.date.end !== null ||\n      page.properties?.Status?.type !== \"select\" ||\n      !Number.isFinite(Date.parse(page.created_time)) ||\n      ids.has(pageId)\n    ) {\n      throw Error(\"Notion returned an unexpected page for the configured date or data source.\");\n    }\n    ids.add(pageId);\n    if (page.properties.Status.select?.name !== \"Published\") {\n      pending.push({\n        pageId,\n        created: page.created_time,\n        key: \"linkedin-notion-page:\" + config.dataSource + \":\" + pageId,\n      });\n    }\n  }\n  return pending.sort(\n    (a, b) => a.created.localeCompare(b.created) || a.pageId.localeCompare(b.pageId),\n  );\n}\n\nasync function collectNotion(fetchPage, label) {\n  const rows = [];\n  const seen = new Set();\n  let cursor;\n  for (let index = 0; index < 10; index++) {\n    const page = await fetchPage(cursor);\n    if (\n      !Array.isArray(page?.results) ||\n      typeof page.has_more !== \"boolean\" ||\n      page.results.length > 100 ||\n      page.request_status?.type === \"incomplete\"\n    ) {\n      throw Error(\"Notion returned an invalid \" + label + \" list.\");\n    }\n    rows.push(...page.results);\n    if (page.has_more === false && page.next_cursor === null) return rows;\n    if (\n      !page.has_more ||\n      typeof page.next_cursor !== \"string\" ||\n      !page.next_cursor ||\n      seen.has(page.next_cursor)\n    ) {\n      throw Error(\"Notion returned an incomplete \" + label + \" list.\");\n    }\n    cursor = page.next_cursor;\n    seen.add(cursor);\n  }\n  throw Error(\"Notion returned more than ten pages of \" + label + \".\");\n}\n\nconst parts = $input.all();\nlet offset = 0;\nconst collected = await collectNotion(() => {\n  const response = parts[offset++]?.json;\n  if (response?.statusCode !== 200) throw Error(\"Notion did not confirm the scheduled posts page.\");\n  return response.body;\n}, \"scheduled posts\");\nif (offset !== parts.length) throw Error(\"Unexpected extra pages from Notion.\");\n\nconst config = $(\"Set Notion and LinkedIn IDs\").first().json;\nreturn checkedPages(collected, config).map((row) => ({ json: row, pairedItem: { item: 0 } }));\n"
+      }
+    },
+    {
+      "id": "publish-notion-photo-posts-to-linkedin-loop",
+      "name": "Process one page at a time",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1410,
+        250
+      ],
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      }
+    },
+    {
+      "id": "publish-notion-photo-posts-to-linkedin-fresh",
+      "name": "Check a previous attempt",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        1645,
+        250
+      ],
+      "parameters": {
+        "resource": "row",
+        "operation": "rowNotExists",
+        "dataTableId": {
+          "__rl": true,
+          "value": "YOUR_NOTION_LINKEDIN_RECEIPT_TABLE_ID",
+          "mode": "id"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "request_key",
+              "condition": "eq",
+              "keyValue": "={{ $json.key }}"
+            }
+          ]
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "id": "publish-notion-photo-posts-to-linkedin-canPublish",
+      "name": "Can this page be posted?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1880,
+        250
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "leftValue": ""
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ Boolean($json.pageId) }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "publish-notion-photo-posts-to-linkedin-pageRequest",
+      "name": "Select the exact Notion page",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2115,
+        250
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return [{ json: $input.first().json, pairedItem: { item: 0 } }];\n"
+      }
+    },
+    {
+      "id": "publish-notion-photo-posts-to-linkedin-blocks",
+      "name": "List this page’s blocks",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2350,
+        250
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ \"https://api.notion.com/v1/blocks/\" + $json.pageId + \"/children\" }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendQuery": true,
+        "specifyQuery": "keypair",
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "page_size",
+              "value": "100"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Notion-Version",
+              "value": "2026-03-11"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          },
+          "pagination": {
+            "pagination": {
+              "paginationMode": "updateAParameterInEachRequest",
+              "parameters": {
+                "parameters": [
+                  {
+                    "type": "qs",
+                    "name": "start_cursor",
+                    "value": "={{ $response.body?.next_cursor }}"
+                  }
+                ]
+              },
+              "paginationCompleteWhen": "other",
+              "completeExpression": "={{ $response.body?.has_more !== true }}",
+              "limitPagesFetched": true,
+              "maxRequests": 10,
+              "requestInterval": 350
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "publish-notion-photo-posts-to-linkedin-prepare",
+      "name": "Compose this page’s post",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2585,
+        250
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function notionId(value) {\n  if (typeof value !== \"string\") throw Error(\"A Notion ID is missing.\");\n  const compact = value.replace(/-/g, \"\").toLowerCase();\n  if (!/^[a-f0-9]{32}$/.test(compact)) throw Error(\"A Notion ID is invalid.\");\n  return compact.replace(/^(.{8})(.{4})(.{4})(.{4})(.{12})$/, \"$1-$2-$3-$4-$5\");\n}\n\nfunction hostedNotionImage(file) {\n  const url = file?.url;\n  const expires = Date.parse(file?.expiry_time);\n  if (\n    typeof url !== \"string\" ||\n    url.length > 8000 ||\n    !Number.isFinite(expires) ||\n    expires <= Date.now() ||\n    /[\\s\\\\#]/.test(url) ||\n    !/^https:\\/\\/(?:(?:prod-files-secure|secure\\.notion-static\\.com)\\.s3(?:[.-][a-z0-9-]+)?\\.amazonaws\\.com\\/[^?]+|s3(?:[.-][a-z0-9-]+)?\\.amazonaws\\.com\\/(?:prod-files-secure|secure\\.notion-static\\.com)\\/[^?]+)\\?/i.test(\n      url,\n    )\n  ) {\n    throw Error(\"The first image must be an unexpired, Notion-hosted file URL.\");\n  }\n  return url;\n}\n\nfunction notionPost(blocks, pageId) {\n  const texts = [];\n  const ids = new Set();\n  let firstImage;\n  for (const block of blocks) {\n    const id = notionId(block?.id);\n    if (\n      block.object !== \"block\" ||\n      block.parent?.type !== \"page_id\" ||\n      notionId(block.parent.page_id) !== pageId ||\n      ids.has(id) ||\n      typeof block.type !== \"string\"\n    ) {\n      throw Error(\"Notion returned a block from a different page or repeated a block.\");\n    }\n    ids.add(id);\n    const data = block[block.type];\n    if (block.type === \"image\" && data?.type === \"file\" && firstImage === undefined)\n      firstImage = data.file;\n    else if (\n      [\"child_page\", \"child_database\"].includes(block.type) &&\n      typeof data?.title === \"string\"\n    )\n      texts.push(data.title);\n    else if (block.type !== \"image\") {\n      const text = data?.rich_text ?? data?.text;\n      if (Array.isArray(text))\n        texts.push(text.map((part) => part?.plain_text ?? part?.text?.content ?? \"\").join(\"\"));\n    }\n  }\n  const text = texts\n    .reduce(\n      (combined, line, index) =>\n        index ? combined + (line.startsWith(\"-\") ? \"\\n\\n\" : \"\\n\") + line : line,\n      \"\",\n    )\n    .trim();\n  if (!text || text.length > 3000)\n    throw Error(\"Provide one to 3,000 characters of text in the post page.\");\n  return { text, imageUrl: hostedNotionImage(firstImage) };\n}\n\nasync function collectNotion(fetchPage, label) {\n  const rows = [];\n  const seen = new Set();\n  let cursor;\n  for (let index = 0; index < 10; index++) {\n    const page = await fetchPage(cursor);\n    if (\n      !Array.isArray(page?.results) ||\n      typeof page.has_more !== \"boolean\" ||\n      page.results.length > 100 ||\n      page.request_status?.type === \"incomplete\"\n    ) {\n      throw Error(\"Notion returned an invalid \" + label + \" list.\");\n    }\n    rows.push(...page.results);\n    if (page.has_more === false && page.next_cursor === null) return rows;\n    if (\n      !page.has_more ||\n      typeof page.next_cursor !== \"string\" ||\n      !page.next_cursor ||\n      seen.has(page.next_cursor)\n    ) {\n      throw Error(\"Notion returned an incomplete \" + label + \" list.\");\n    }\n    cursor = page.next_cursor;\n    seen.add(cursor);\n  }\n  throw Error(\"Notion returned more than ten pages of \" + label + \".\");\n}\n\nconst parts = $input.all();\nlet offset = 0;\nconst collected = await collectNotion(() => {\n  const response = parts[offset++]?.json;\n  if (response?.statusCode !== 200) throw Error(\"Notion did not confirm the page blocks page.\");\n  return response.body;\n}, \"page blocks\");\nif (offset !== parts.length) throw Error(\"Unexpected extra pages from Notion.\");\n\nconst row = $(\"Select the exact Notion page\").itemMatching(0).json;\nconst config = $(\"Set Notion and LinkedIn IDs\").first().json;\nreturn [\n  {\n    json: { ...notionPost(collected, row.pageId), row, author: config.author },\n    pairedItem: { item: 0 },\n  },\n];\n"
+      }
+    },
+    {
+      "id": "publish-notion-photo-posts-to-linkedin-download",
+      "name": "Download the first photo",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2820,
+        250
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.imageUrl }}",
+        "authentication": "none",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "fullResponse": true,
+              "outputPropertyName": "data"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "publish-notion-photo-posts-to-linkedin-statusInput",
+      "name": "Validate the Notion photo bytes",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3055,
+        250
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function verifyBytes(bytes, mimeType) {\n  const mime = typeof mimeType === \"string\" ? mimeType.split(\";\")[0].trim().toLowerCase() : \"\";\n  const png = [137, 80, 78, 71, 13, 10, 26, 10].every((byte, index) => bytes[index] === byte);\n  const jpeg = bytes[0] === 255 && bytes[1] === 216 && bytes[2] === 255;\n  const gif =\n    bytes[0] === 71 &&\n    bytes[1] === 73 &&\n    bytes[2] === 70 &&\n    bytes[3] === 56 &&\n    [55, 57].includes(bytes[4]) &&\n    bytes[5] === 97;\n  if (\n    bytes.length < 16 ||\n    bytes.length > 10 * 1024 * 1024 ||\n    !(\n      (mime === \"image/png\" && png) ||\n      (mime === \"image/jpeg\" && jpeg) ||\n      (mime === \"image/gif\" && gif)\n    )\n  ) {\n    throw Error(\"The Notion file must be a JPEG, PNG, or GIF up to 10 MiB.\");\n  }\n}\n\nconst data = $input.first();\nconst plan = $(\"Compose this page’s post\").itemMatching(0).json;\nverifyBytes(await helpers.getBinaryDataBuffer(0, \"data\"), data.binary?.data?.mimeType);\nreturn [{ json: plan, binary: data.binary, pairedItem: { item: 0 } }];\n"
+      }
+    },
+    {
+      "id": "publish-notion-photo-posts-to-linkedin-reserve",
+      "name": "Validate and reserve this photo",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        3290,
+        250
+      ],
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "value": "YOUR_NOTION_LINKEDIN_RECEIPT_TABLE_ID",
+          "mode": "id"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "request_key": "={{ $json.row.key }}"
+          },
+          "schema": []
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "publish-notion-photo-posts-to-linkedin-init",
+      "name": "Initialize the LinkedIn image",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3525,
+        250
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.linkedin.com/rest/images?action=initializeUpload",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "linkedInOAuth2Api",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ ({initializeUploadRequest:{owner:$(\"Compose this page’s post\").itemMatching(0).json.author}}) }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Restli-Protocol-Version",
+              "value": "2.0.0"
+            },
+            {
+              "name": "LinkedIn-Version",
+              "value": "202605"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "publish-notion-photo-posts-to-linkedin-asset",
+      "name": "Verify the upload slot",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3760,
+        250
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function imageUpload(body, status) {\n  const value = body?.value;\n  const image = value?.image;\n  const url = value?.uploadUrl;\n  const expiry = value?.uploadUrlExpiresAt;\n  if (\n    status !== 200 ||\n    typeof image !== \"string\" ||\n    !/^urn:li:image:[A-Za-z0-9_-]{1,150}$/.test(image) ||\n    typeof url !== \"string\" ||\n    !Number.isSafeInteger(expiry) ||\n    expiry <= Date.now() ||\n    /[\\s#\\\\]/.test(url) ||\n    !url.startsWith(\n      \"https://www.linkedin.com/dms-uploads/\" +\n        image.slice(\"urn:li:image:\".length) +\n        \"/uploaded-image/0?\",\n    )\n  ) {\n    throw Error(\"LinkedIn did not confirm an upload slot for that image.\");\n  }\n  return {\n    image,\n    uploadUrl: url,\n    statusUrl: \"https://api.linkedin.com/rest/images/\" + encodeURIComponent(image),\n  };\n}\n\nconst { body, statusCode } = $input.first().json;\nconst { json: plan, binary } = $(\"Validate the Notion photo bytes\").itemMatching(0);\nreturn [{ json: { ...plan, ...imageUpload(body, statusCode) }, binary, pairedItem: { item: 0 } }];\n"
+      }
+    },
+    {
+      "id": "publish-notion-photo-posts-to-linkedin-upload",
+      "name": "Upload the photo bytes",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3995,
+        250
+      ],
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ $json.uploadUrl }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "linkedInOAuth2Api",
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "data",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "text",
+              "fullResponse": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "publish-notion-photo-posts-to-linkedin-processed",
+      "name": "Count image status checks",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4230,
+        250
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const asset = $(\"Verify the upload slot\").itemMatching(0).json;\nconst previous = $input.first().json.count ?? 0;\nreturn [{ json: { ...asset, count: previous + 1 }, pairedItem: { item: 0 } }];\n"
+      }
+    },
+    {
+      "id": "publish-notion-photo-posts-to-linkedin-status",
+      "name": "Read the image status",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4465,
+        250
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.statusUrl }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "linkedInOAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Restli-Protocol-Version",
+              "value": "2.0.0"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "publish-notion-photo-posts-to-linkedin-ready",
+      "name": "Verify the image status",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4700,
+        250
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function imageAvailable(body, status, image, author, count) {\n  if (status !== 200 || body?.id !== image || body.owner !== author) {\n    throw Error(\"LinkedIn did not confirm the same uploaded image and member.\");\n  }\n  if (body.status === \"AVAILABLE\") return true;\n  if (![\"WAITING_UPLOAD\", \"PROCESSING\"].includes(body.status) || count >= 10) {\n    throw Error(\"LinkedIn did not finish processing the image. No post was attempted.\");\n  }\n  return false;\n}\n\nfunction photoPost(author, commentary, image) {\n  const text = commentary.replace(/[\\\\()[\\]{}<>@|~_*]/gu, (character) => \"\\\\\" + character);\n  return {\n    author,\n    commentary: text,\n    visibility: \"PUBLIC\",\n    lifecycleState: \"PUBLISHED\",\n    distribution: {\n      feedDistribution: \"MAIN_FEED\",\n      targetEntities: [],\n      thirdPartyDistributionChannels: [],\n    },\n    content: { media: { id: image } },\n    isReshareDisabledByAuthor: false,\n  };\n}\n\nconst { body, statusCode } = $input.first().json;\nconst asset = $(\"Count image status checks\").itemMatching(0).json;\nconst ready = imageAvailable(body, statusCode, asset.image, asset.author, asset.count);\nreturn [\n  {\n    json: {\n      ...asset,\n      ready,\n      post: ready ? photoPost(asset.author, asset.text, asset.image) : null,\n    },\n    pairedItem: { item: 0 },\n  },\n];\n"
+      }
+    },
+    {
+      "id": "publish-notion-photo-posts-to-linkedin-reserved",
+      "name": "Is this image available?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        4935,
+        250
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "leftValue": ""
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.ready }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "publish-notion-photo-posts-to-linkedin-wait",
+      "name": "Wait for image processing",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        5170,
+        250
+      ],
+      "parameters": {
+        "resume": "timeInterval",
+        "amount": 5,
+        "unit": "seconds"
+      }
+    },
+    {
+      "id": "publish-notion-photo-posts-to-linkedin-post",
+      "name": "Publish the photo post",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        5405,
+        250
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.linkedin.com/rest/posts",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "linkedInOAuth2Api",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.post }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Restli-Protocol-Version",
+              "value": "2.0.0"
+            },
+            {
+              "name": "LinkedIn-Version",
+              "value": "202605"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "text",
+              "fullResponse": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "publish-notion-photo-posts-to-linkedin-receipt",
+      "name": "Confirm the LinkedIn post",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5640,
+        250
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function postReceipt(status, headers) {\n  const postId = headers?.[\"x-restli-id\"];\n  if (\n    status !== 201 ||\n    typeof postId !== \"string\" ||\n    !/^urn:li:(?:share|ugcPost):[1-9]\\d*$/.test(postId)\n  ) {\n    throw Error(\n      \"LinkedIn did not confirm publication. Check the profile before clearing the reservation.\",\n    );\n  }\n  return postId;\n}\n\nconst data = $input.first().json;\nconst result = $(\"Verify the image status\").itemMatching(0).json;\nreturn [\n  {\n    json: { row: result.row, postId: postReceipt(data.statusCode, data.headers) },\n    pairedItem: { item: 0 },\n  },\n];\n"
+      }
+    },
+    {
+      "id": "publish-notion-photo-posts-to-linkedin-notion",
+      "name": "Mark the same page Published",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        5875,
+        250
+      ],
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ \"https://api.notion.com/v1/pages/\" + $json.row.pageId }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ {\"properties\":{\"Status\":{\"select\":{\"name\":\"Published\"}}}} }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Notion-Version",
+              "value": "2026-03-11"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "publish-notion-photo-posts-to-linkedin-complete",
+      "name": "Confirm the Notion status",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        6110,
+        250
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function notionId(value) {\n  if (typeof value !== \"string\") throw Error(\"A Notion ID is missing.\");\n  const compact = value.replace(/-/g, \"\").toLowerCase();\n  if (!/^[a-f0-9]{32}$/.test(compact)) throw Error(\"A Notion ID is invalid.\");\n  return compact.replace(/^(.{8})(.{4})(.{4})(.{4})(.{12})$/, \"$1-$2-$3-$4-$5\");\n}\n\nfunction confirmNotion(page, pageId, dataSource) {\n  if (\n    page?.object !== \"page\" ||\n    notionId(page?.id) !== pageId ||\n    page.parent?.type !== \"data_source_id\" ||\n    notionId(page.parent.data_source_id) !== dataSource ||\n    page.properties?.Status?.select?.name !== \"Published\"\n  ) {\n    throw Error(\n      \"Notion did not confirm Published on the same page. The LinkedIn post must not be sent again.\",\n    );\n  }\n}\n\nconst { body, statusCode } = $input.first().json;\nif (statusCode !== 200) throw Error(\"Notion did not confirm the status update.\");\nconst { row, postId } = $(\"Confirm the LinkedIn post\").itemMatching(0).json;\nconst config = $(\"Set Notion and LinkedIn IDs\").first().json;\nconfirmNotion(body, row.pageId, config.dataSource);\nreturn [{ json: { status: \"published\", pageId: row.pageId, postId }, pairedItem: { item: 0 } }];\n"
+      }
+    }
+  ],
+  "connections": {
+    "Check daily for scheduled posts": {
+      "main": [
+        [
+          {
+            "node": "Set Notion and LinkedIn IDs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Notion and LinkedIn IDs": {
+      "main": [
+        [
+          {
+            "node": "Read the connected LinkedIn member",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the connected LinkedIn member": {
+      "main": [
+        [
+          {
+            "node": "Confirm the posting account",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm the posting account": {
+      "main": [
+        [
+          {
+            "node": "Find today’s Notion pages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find today’s Notion pages": {
+      "main": [
+        [
+          {
+            "node": "Select a scheduled page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select a scheduled page": {
+      "main": [
+        [
+          {
+            "node": "Process one page at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process one page at a time": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Check a previous attempt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check a previous attempt": {
+      "main": [
+        [
+          {
+            "node": "Can this page be posted?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Can this page be posted?": {
+      "main": [
+        [
+          {
+            "node": "Select the exact Notion page",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Process one page at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select the exact Notion page": {
+      "main": [
+        [
+          {
+            "node": "List this page’s blocks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List this page’s blocks": {
+      "main": [
+        [
+          {
+            "node": "Compose this page’s post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compose this page’s post": {
+      "main": [
+        [
+          {
+            "node": "Download the first photo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download the first photo": {
+      "main": [
+        [
+          {
+            "node": "Validate the Notion photo bytes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate the Notion photo bytes": {
+      "main": [
+        [
+          {
+            "node": "Validate and reserve this photo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate and reserve this photo": {
+      "main": [
+        [
+          {
+            "node": "Initialize the LinkedIn image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Initialize the LinkedIn image": {
+      "main": [
+        [
+          {
+            "node": "Verify the upload slot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify the upload slot": {
+      "main": [
+        [
+          {
+            "node": "Upload the photo bytes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload the photo bytes": {
+      "main": [
+        [
+          {
+            "node": "Count image status checks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Count image status checks": {
+      "main": [
+        [
+          {
+            "node": "Read the image status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the image status": {
+      "main": [
+        [
+          {
+            "node": "Verify the image status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify the image status": {
+      "main": [
+        [
+          {
+            "node": "Is this image available?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is this image available?": {
+      "main": [
+        [
+          {
+            "node": "Publish the photo post",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait for image processing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for image processing": {
+      "main": [
+        [
+          {
+            "node": "Count image status checks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Publish the photo post": {
+      "main": [
+        [
+          {
+            "node": "Confirm the LinkedIn post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm the LinkedIn post": {
+      "main": [
+        [
+          {
+            "node": "Mark the same page Published",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark the same page Published": {
+      "main": [
+        [
+          {
+            "node": "Confirm the Notion status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm the Notion status": {
+      "main": [
+        [
+          {
+            "node": "Process one page at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC"
+  },
+  "pinData": {}
+}
