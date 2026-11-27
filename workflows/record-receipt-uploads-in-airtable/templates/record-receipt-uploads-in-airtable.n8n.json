@@ -1,0 +1,668 @@
+{
+  "name": "Record Receipt Uploads in Airtable",
+  "nodes": [
+    {
+      "id": "record-receipt-uploads-in-airtable-hook",
+      "name": "Receive an authenticated receipt",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        220
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "record-receipt-uploads-in-airtable",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {
+          "rawBody": true
+        }
+      }
+    },
+    {
+      "id": "record-receipt-uploads-in-airtable-prepare",
+      "name": "Set destinations and check the file",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        210,
+        220
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function receiptConfig(settings, raw, now) {\n  const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;\n  if (\n    !uuid.test(settings.modelId) ||\n    !/^app[A-Za-z0-9]{14}$/.test(settings.baseId) ||\n    !/^tbl[A-Za-z0-9]{14}$/.test(settings.tableId)\n  ) {\n    return {\n      next: false,\n      status: 503,\n      body: { error: \"Configure the Mindee model and Airtable destination.\" },\n    };\n  }\n  if (!raw?.length)\n    return {\n      next: false,\n      status: 400,\n      body: { error: \"Send a receipt file as the raw request body.\" },\n    };\n  if (raw.length > 10 * 1024 * 1024)\n    return {\n      next: false,\n      status: 413,\n      body: { error: \"The receipt exceeds the 10 MiB upload limit.\" },\n    };\n  const hex = raw.subarray(0, 12).toString(\"hex\");\n  const magic = raw.subarray(0, 12).toString(\"ascii\");\n  let filetype;\n  if (hex.startsWith(\"255044462d\")) filetype = [\"application/pdf\", \"pdf\"];\n  else if (hex.startsWith(\"ffd8ff\")) filetype = [\"image/jpeg\", \"jpg\"];\n  else if (hex.startsWith(\"89504e470d0a1a0a\")) filetype = [\"image/png\", \"png\"];\n  else if (magic.startsWith(\"RIFF\") && magic.slice(8, 12) === \"WEBP\")\n    filetype = [\"image/webp\", \"webp\"];\n  else if (hex.startsWith(\"49492a00\") || hex.startsWith(\"4d4d002a\"))\n    filetype = [\"image/tiff\", \"tiff\"];\n  else if (magic.slice(4, 8) === \"ftyp\" && /^(heic|heix|hevc|hevx)$/.test(magic.slice(8, 12)))\n    filetype = [\"image/heic\", \"heic\"];\n  else if (magic.slice(4, 8) === \"ftyp\" && /^(mif1|msf1)$/.test(magic.slice(8, 12)))\n    filetype = [\"image/heif\", \"heif\"];\n  if (!filetype)\n    return { next: false, status: 415, body: { error: \"Send a supported PDF or receipt image.\" } };\n  return {\n    next: true,\n    ...settings,\n    deadline: now + 55000,\n    mimeType: filetype[0],\n    fileName: \"receipt.\" + filetype[1],\n  };\n}\nconst settings = {\n  modelId: \"YOUR_MINDEE_MODEL_ID\",\n  baseId: \"YOUR_AIRTABLE_BASE_ID\",\n  tableId: \"YOUR_AIRTABLE_TABLE_ID\",\n  fieldNames: {\n    category: \"purchase_category\",\n    date: \"date\",\n    currency: \"currency\",\n    locale: \"locale\",\n    merchant: \"supplier_name\",\n    time: \"time\",\n    total: \"total_amount\",\n  },\n};\nlet raw;\ntry {\n  raw = await helpers.getBinaryDataBuffer(0, \"data\");\n} catch {}\nconst config = receiptConfig(settings, raw, Date.now());\nif (!config.next) return { json: config };\nreturn {\n  json: config,\n  binary: {\n    receipt: { ...$input.item.binary.data, mimeType: config.mimeType, fileName: config.fileName },\n  },\n};\n"
+      }
+    },
+    {
+      "id": "record-receipt-uploads-in-airtable-valid",
+      "name": "Is the receipt ready to upload?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        420,
+        220
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.next }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "record-receipt-uploads-in-airtable-enqueue",
+      "name": "Send the receipt bytes to Mindee",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        630,
+        220
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api-v2.mindee.net/v2/products/extraction/enqueue",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model_id",
+              "value": "={{ $json.modelId }}"
+            },
+            {
+              "parameterType": "formBinaryData",
+              "name": "file",
+              "inputDataFieldName": "receipt"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 8000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "retryOnFail": false,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "record-receipt-uploads-in-airtable-job",
+      "name": "Check the Mindee job receipt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        840,
+        220
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function mindeeJob(status, data, config) {\n  const job = data?.job;\n  if (\n    status !== 202 ||\n    !/^([0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/i.test(\n      job?.id ?? \"\",\n    ) ||\n    job.model_id?.toLowerCase?.() !== config.modelId.toLowerCase()\n  ) {\n    return { next: false, status: 502, body: { error: \"Mindee did not confirm the receipt job.\" } };\n  }\n  return { next: true, id: job.id };\n}\nreturn {\n  json: mindeeJob(\n    $json.statusCode,\n    $json.body,\n    $(\"Set destinations and check the file\").first().json,\n  ),\n};\n"
+      }
+    },
+    {
+      "id": "record-receipt-uploads-in-airtable-jobGate",
+      "name": "Was a job accepted?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1050,
+        220
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.next }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "record-receipt-uploads-in-airtable-wait",
+      "name": "Wait three seconds",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1260,
+        220
+      ],
+      "parameters": {
+        "resume": "timeInterval",
+        "amount": 3,
+        "unit": "seconds"
+      }
+    },
+    {
+      "id": "record-receipt-uploads-in-airtable-poll",
+      "name": "Read the same Mindee job",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1470,
+        220
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ \"https://api-v2.mindee.net/v2/jobs/\"+$(\"Check the Mindee job receipt\").first().json.id+\"?redirect=false\" }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 4000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "retryOnFail": false,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "record-receipt-uploads-in-airtable-state",
+      "name": "Check job status and time remaining",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1680,
+        220
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function mindeeStatus(status, data, expected, config, attempt, now) {\n  const job = data?.job;\n  if (\n    status !== 200 ||\n    job?.id !== expected.id ||\n    job?.model_id?.toLowerCase?.() !== config.modelId.toLowerCase()\n  ) {\n    return {\n      again: false,\n      next: false,\n      status: 502,\n      body: { error: \"Mindee did not confirm the same receipt job.\" },\n    };\n  }\n  if (job.status === \"Failed\")\n    return {\n      again: false,\n      next: false,\n      status: 502,\n      body: { error: \"Mindee could not process this receipt.\" },\n    };\n  if (now + 12000 >= config.deadline || (job.status === \"Processing\" && attempt >= 8)) {\n    return {\n      again: false,\n      next: false,\n      status: 504,\n      body: {\n        error: \"Mindee did not finish in the time available. No Airtable write was attempted.\",\n      },\n    };\n  }\n  if (job.status === \"Processing\") return { again: true, next: false };\n  const resultPattern =\n    /^https:\\/\\/api-v2\\.mindee\\.net\\/v2\\/(?:products\\/extraction\\/results|inferences)\\/([0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/i;\n  const link = typeof job.result_url === \"string\" ? job.result_url.match(resultPattern) : null;\n  if (job.status !== \"Processed\" || !link)\n    return {\n      again: false,\n      next: false,\n      status: 502,\n      body: { error: \"Mindee did not return a usable inference link.\" },\n    };\n  return { again: false, next: true, resultId: link[1], resultUrl: job.result_url };\n}\nreturn {\n  json: mindeeStatus(\n    $json.statusCode,\n    $json.body,\n    $(\"Check the Mindee job receipt\").first().json,\n    $(\"Set destinations and check the file\").first().json,\n    $runIndex + 1,\n    Date.now(),\n  ),\n};\n"
+      }
+    },
+    {
+      "id": "record-receipt-uploads-in-airtable-again",
+      "name": "Check the job again?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1890,
+        220
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.again }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "record-receipt-uploads-in-airtable-resultGate",
+      "name": "Is an inference ready?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2100,
+        220
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.next }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "record-receipt-uploads-in-airtable-result",
+      "name": "Read the linked Mindee inference",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2310,
+        220
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.resultUrl }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 5000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "retryOnFail": false,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "record-receipt-uploads-in-airtable-fields",
+      "name": "Validate the seven receipt fields",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2520,
+        220
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function receiptFields(status, data, state, job, config, now) {\n  if (now + 7000 >= config.deadline) {\n    return {\n      next: false,\n      status: 504,\n      body: {\n        error: \"The receipt exceeded the processing deadline. No Airtable write was attempted.\",\n      },\n    };\n  }\n  const inference = data?.inference;\n  if (\n    status !== 200 ||\n    inference?.id !== state.resultId ||\n    inference?.job?.id !== job.id ||\n    inference?.model?.id?.toLowerCase?.() !== config.modelId.toLowerCase()\n  ) {\n    return {\n      next: false,\n      status: 502,\n      body: { error: \"Mindee did not return the inference for this receipt.\" },\n    };\n  }\n  const extract = inference.result?.fields;\n  const fields = {};\n  for (const [target, source] of Object.entries(config.fieldNames)) {\n    const parsed = extract?.[source];\n    const item = parsed?.value;\n    if (\n      parsed?.error ||\n      (target === \"total\" ? !Number.isFinite(item) : typeof item !== \"string\" || !item.trim())\n    ) {\n      return {\n        next: false,\n        status: 422,\n        body: { error: \"A required receipt field was missing or unreadable.\", field: target },\n      };\n    }\n    fields[target] = item;\n  }\n  if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(fields.date) || !/^[A-Z]{3}$/.test(fields.currency)) {\n    return {\n      next: false,\n      status: 422,\n      body: { error: \"The receipt needs an ISO date and three-letter currency code.\" },\n    };\n  }\n  return { next: true, fields };\n}\nreturn {\n  json: receiptFields(\n    $json.statusCode,\n    $json.body,\n    $(\"Check job status and time remaining\").last(0, -1).json,\n    $(\"Check the Mindee job receipt\").first().json,\n    $(\"Set destinations and check the file\").first().json,\n    Date.now(),\n  ),\n};\n"
+      }
+    },
+    {
+      "id": "record-receipt-uploads-in-airtable-writeGate",
+      "name": "Are the expense fields ready?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2730,
+        220
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.next }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "record-receipt-uploads-in-airtable-write",
+      "name": "Create the Airtable receipt",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2940,
+        220
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ \"https://api.airtable.com/v0/\"+$(\"Set destinations and check the file\").first().json.baseId+\"/\"+$(\"Set destinations and check the file\").first().json.tableId }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "airtableTokenApi",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ ({records:[{fields:$json.fields}],typecast:false}) }}",
+        "options": {
+          "timeout": 6500,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "retryOnFail": false,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "record-receipt-uploads-in-airtable-confirm",
+      "name": "Confirm the Airtable receipt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3150,
+        220
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function confirmedExpense(status, data, expected) {\n  const record = Array.isArray(data?.records) && data.records.length === 1 ? data.records[0] : null;\n  if (\n    (status !== 200 && status !== 201) ||\n    !/^rec[A-Za-z0-9]+$/.test(record?.id ?? \"\") ||\n    data.details ||\n    record.details ||\n    Object.entries(expected).some(([key, value]) => record.fields?.[key] !== value)\n  ) {\n    return {\n      status: 502,\n      body: {\n        error: \"Airtable did not confirm the receipt. Check the table before submitting again.\",\n      },\n    };\n  }\n  const fields = Object.fromEntries(Object.keys(expected).map((key) => [key, record.fields[key]]));\n  const { currency, total, category, merchant, date, time } = fields;\n  return {\n    status: 200,\n    body: [\n      {\n        data: fields,\n        message: `You spent ${currency} ${total} on ${category} at ${merchant} on ${date} at ${time}`,\n      },\n    ],\n  };\n}\nreturn {\n  json: confirmedExpense(\n    $json.statusCode,\n    $json.body,\n    $(\"Validate the seven receipt fields\").first().json.fields,\n  ),\n};\n"
+      }
+    },
+    {
+      "id": "record-receipt-uploads-in-airtable-reply",
+      "name": "Return the final receipt response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        3360,
+        380
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json.body) }}",
+        "options": {
+          "responseCode": "={{ $json.status }}",
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Cache-Control",
+                "value": "no-store"
+              }
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Receive an authenticated receipt": {
+      "main": [
+        [
+          {
+            "node": "Set destinations and check the file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set destinations and check the file": {
+      "main": [
+        [
+          {
+            "node": "Is the receipt ready to upload?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send the receipt bytes to Mindee": {
+      "main": [
+        [
+          {
+            "node": "Check the Mindee job receipt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check the Mindee job receipt": {
+      "main": [
+        [
+          {
+            "node": "Was a job accepted?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait three seconds": {
+      "main": [
+        [
+          {
+            "node": "Read the same Mindee job",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the same Mindee job": {
+      "main": [
+        [
+          {
+            "node": "Check job status and time remaining",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check job status and time remaining": {
+      "main": [
+        [
+          {
+            "node": "Check the job again?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the linked Mindee inference": {
+      "main": [
+        [
+          {
+            "node": "Validate the seven receipt fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate the seven receipt fields": {
+      "main": [
+        [
+          {
+            "node": "Are the expense fields ready?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create the Airtable receipt": {
+      "main": [
+        [
+          {
+            "node": "Confirm the Airtable receipt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm the Airtable receipt": {
+      "main": [
+        [
+          {
+            "node": "Return the final receipt response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is the receipt ready to upload?": {
+      "main": [
+        [
+          {
+            "node": "Send the receipt bytes to Mindee",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Return the final receipt response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Was a job accepted?": {
+      "main": [
+        [
+          {
+            "node": "Wait three seconds",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Return the final receipt response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check the job again?": {
+      "main": [
+        [
+          {
+            "node": "Wait three seconds",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Is an inference ready?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is an inference ready?": {
+      "main": [
+        [
+          {
+            "node": "Read the linked Mindee inference",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Return the final receipt response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Are the expense fields ready?": {
+      "main": [
+        [
+          {
+            "node": "Create the Airtable receipt",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Return the final receipt response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "executionTimeout": 65,
+    "saveExecutionProgress": false,
+    "saveManualExecutions": false,
+    "saveDataSuccessExecution": "none",
+    "saveDataErrorExecution": "none"
+  },
+  "pinData": {}
+}

@@ -762,6 +762,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Save Discord Links to Notion](workflows/save-discord-link-to-notion/) - Use a Discord slash command to save a webpage’s title and URL in Notion.
 - [Clean and Upsert Google Sheets Contacts](workflows/clean-and-upsert-google-sheets-contacts/) - Clean contact rows in one Google Sheets tab and update or add them in a separate tab.
 - [Sync Discord Scheduled Events to Google Calendar](workflows/sync-discord-scheduled-events-to-google-calendar/) - Add or update events in one Google Calendar using the original Discord event IDs.
+- [Record Receipt Uploads in Airtable](workflows/record-receipt-uploads-in-airtable/) - Send a receipt file to a webhook and receive a summary after its extracted fields are saved in Airtable.
 
 ## Content
 
