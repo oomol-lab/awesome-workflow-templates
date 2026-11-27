@@ -1,0 +1,275 @@
+{
+  "name": "Schedule Zoom Meetings for Calendar Events",
+  "nodes": [
+    {
+      "id": "schedule-zoom-meetings-for-calendar-events-manual",
+      "name": "Run on demand",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "parameters": {},
+      "position": [
+        0,
+        220
+      ]
+    },
+    {
+      "id": "schedule-zoom-meetings-for-calendar-events-daily",
+      "name": "Run daily at 07:00 UTC",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 7 * * *"
+            }
+          ]
+        }
+      },
+      "position": [
+        215,
+        220
+      ]
+    },
+    {
+      "id": "schedule-zoom-meetings-for-calendar-events-config",
+      "name": "Choose the calendar and 12-hour window",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function calendarWindow(calendarId, now = new Date()) {\n  if (\n    typeof calendarId !== \"string\" ||\n    !calendarId.trim() ||\n    calendarId === \"YOUR_GOOGLE_CALENDAR_ID\"\n  ) {\n    throw new Error(\"Enter the Google Calendar ID.\");\n  }\n  const from = new Date(now);\n  const until = new Date(from.getTime() + 12 * 60 * 60 * 1000);\n  const query = {\n    timeMin: from.toISOString(),\n    timeMax: until.toISOString(),\n    singleEvents: \"true\",\n    showDeleted: \"false\",\n    fields:\n      \"nextPageToken,timeZone,items(id,status,transparency,summary,start(dateTime,timeZone),end(dateTime))\",\n  };\n  return { endpoint: \"/calendars/\" + encodeURIComponent(calendarId.trim()) + \"/events\", query };\n}\n\nconst calendarId = \"YOUR_GOOGLE_CALENDAR_ID\";\nreturn [{ json: calendarWindow(calendarId, $input.first().json.timestamp ?? undefined) }];\n"
+      },
+      "position": [
+        430,
+        220
+      ]
+    },
+    {
+      "id": "schedule-zoom-meetings-for-calendar-events-read",
+      "name": "Read Calendar events",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ \"https://www.googleapis.com/calendar/v3\"+$json.endpoint }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleCalendarOAuth2Api",
+        "sendQuery": true,
+        "specifyQuery": "json",
+        "jsonQuery": "={{ JSON.stringify($json.query) }}",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          },
+          "pagination": {
+            "pagination": {
+              "paginationMode": "updateAParameterInEachRequest",
+              "parameters": {
+                "parameters": [
+                  {
+                    "type": "qs",
+                    "name": "pageToken",
+                    "value": "={{ $response.body?.nextPageToken }}"
+                  }
+                ]
+              },
+              "paginationCompleteWhen": "other",
+              "completeExpression": "={{ !$response.body?.nextPageToken }}",
+              "limitPagesFetched": true,
+              "maxRequests": 100,
+              "requestInterval": 100
+            }
+          }
+        }
+      },
+      "position": [
+        645,
+        220
+      ]
+    },
+    {
+      "id": "schedule-zoom-meetings-for-calendar-events-select",
+      "name": "Select events for Zoom",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function collectCalendarPage(state, status, page) {\n  if (\n    status !== 200 ||\n    !page ||\n    typeof page !== \"object\" ||\n    Array.isArray(page) ||\n    (page.items !== undefined && !Array.isArray(page.items))\n  ) {\n    throw new Error(\"Google Calendar did not return a valid event page.\");\n  }\n  const old = state ?? { events: [], tokens: [], timezone: null };\n  const cursor = page.nextPageToken ?? null;\n  if (cursor !== null && (typeof cursor !== \"string\" || !cursor || old.tokens.includes(cursor))) {\n    throw new Error(\"Google Calendar returned an invalid or repeated page token.\");\n  }\n  const tokens = cursor === null ? old.tokens : [...old.tokens, cursor];\n  if (cursor && tokens.length >= 100) {\n    throw new Error(\"The Calendar query exceeded 100 pages.\");\n  }\n  return {\n    events: [...old.events, ...(page.items ?? [])],\n    tokens,\n    cursor,\n    timezone: old.timezone ?? page.timeZone ?? \"UTC\",\n  };\n}\n\nfunction selectMeetings(window, state) {\n  if (!state || state.cursor !== null) throw new Error(\"Calendar pagination is incomplete.\");\n  const start = Date.parse(window.query.timeMin);\n  const end = Date.parse(window.query.timeMax);\n  const seen = new Set();\n  const meetings = [];\n  for (const event of state.events) {\n    if (!event || typeof event !== \"object\" || Array.isArray(event))\n      throw new Error(\"Invalid Calendar event.\");\n    const { id, summary, status, transparency } = event;\n    if (\n      status === \"cancelled\" ||\n      transparency === \"transparent\" ||\n      typeof summary !== \"string\" ||\n      !summary.trim() ||\n      /signal|minute meeting|in person/i.test(summary) ||\n      !event.start?.dateTime ||\n      !event.end?.dateTime\n    )\n      continue;\n    const startMs = Date.parse(event.start.dateTime);\n    const endMs = Date.parse(event.end.dateTime);\n    if (\n      !Number.isFinite(startMs) ||\n      !Number.isFinite(endMs) ||\n      endMs <= startMs ||\n      typeof id !== \"string\" ||\n      !id\n    )\n      throw new Error(\"A timed Calendar event has invalid scheduling data.\");\n    if (startMs < start || startMs >= end || seen.has(id)) continue;\n    const topic = \"Meeting with \" + summary;\n    const duration = Math.ceil((endMs - startMs) / 60000);\n    if (topic.length > 200 || duration > 1440)\n      throw new Error(\"A Calendar event exceeds the Zoom meeting limits.\");\n    seen.add(id);\n    meetings.push({\n      eventId: id,\n      topic,\n      startTime: new Date(startMs).toISOString().replace(/\\.000Z$/, \"Z\"),\n      duration,\n      timezone: event.start.timeZone || state.timezone,\n    });\n  }\n  return meetings;\n}\n\nlet state = null;\nfor (const { json } of $input.all()) state = collectCalendarPage(state, json.statusCode, json.body);\nreturn selectMeetings($(\"Choose the calendar and 12-hour window\").first().json, state).map(\n  (event) => ({ json: event }),\n);\n"
+      },
+      "position": [
+        860,
+        220
+      ]
+    },
+    {
+      "id": "schedule-zoom-meetings-for-calendar-events-iteration",
+      "name": "Prepare the next Zoom meeting",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "position": [
+        1075,
+        220
+      ]
+    },
+    {
+      "id": "schedule-zoom-meetings-for-calendar-events-create",
+      "name": "Create the scheduled Zoom meeting",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.zoom.us/v2/users/me/meetings",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "zoomOAuth2Api",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ ({topic:$json.topic,type:2,start_time:$json.startTime,duration:$json.duration,timezone:$json.timezone}) }}",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "position": [
+        1290,
+        220
+      ]
+    },
+    {
+      "id": "schedule-zoom-meetings-for-calendar-events-confirm",
+      "name": "Verify the Zoom response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function confirmMeeting(event, meeting) {\n  if (\n    (typeof meeting?.id !== \"string\" && !Number.isSafeInteger(meeting?.id)) ||\n    !/^\\d+$/.test(String(meeting.id)) ||\n    meeting.topic !== event.topic ||\n    Date.parse(meeting.startTime) !== Date.parse(event.startTime) ||\n    meeting.duration !== event.duration\n  ) {\n    throw new Error(\"Zoom did not confirm the requested meeting. Check Zoom before running again.\");\n  }\n  return {\n    calendarEventId: event.eventId,\n    zoomMeetingId: String(meeting.id),\n    ...(meeting.joinUrl ? { joinUrl: meeting.joinUrl } : {}),\n  };\n}\n\nconst { statusCode, body } = $input.first().json;\nif (statusCode !== 201) throw new Error(\"Zoom did not confirm creation.\");\nconst event = $(\"Prepare the next Zoom meeting\").item.json;\nreturn [\n  {\n    json: confirmMeeting(event, {\n      id: body.id,\n      topic: body.topic,\n      startTime: body.start_time,\n      duration: body.duration,\n      joinUrl: body.join_url,\n    }),\n  },\n];\n"
+      },
+      "position": [
+        1505,
+        220
+      ]
+    }
+  ],
+  "connections": {
+    "Run daily at 07:00 UTC": {
+      "main": [
+        [
+          {
+            "node": "Choose the calendar and 12-hour window",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Choose the calendar and 12-hour window": {
+      "main": [
+        [
+          {
+            "node": "Read Calendar events",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Calendar events": {
+      "main": [
+        [
+          {
+            "node": "Select events for Zoom",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select events for Zoom": {
+      "main": [
+        [
+          {
+            "node": "Prepare the next Zoom meeting",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run on demand": {
+      "main": [
+        [
+          {
+            "node": "Choose the calendar and 12-hour window",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare the next Zoom meeting": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Create the scheduled Zoom meeting",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create the scheduled Zoom meeting": {
+      "main": [
+        [
+          {
+            "node": "Verify the Zoom response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify the Zoom response": {
+      "main": [
+        [
+          {
+            "node": "Prepare the next Zoom meeting",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC"
+  },
+  "pinData": {}
+}

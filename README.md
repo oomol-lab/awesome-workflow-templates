@@ -753,6 +753,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Show a Google Sheet as an HTML Table](workflows/show-google-sheet-as-html-table/) - Open a webhook URL to view the rows of a configured Google Sheets range as a browser table.
 - [Mark Processed Google Sheets Rows by ID](workflows/mark-processed-google-sheets-rows/) - Use Google Sheets as a work queue and mark only the rows the processing step reports as complete.
 - [Back Up a Google Sheet to Dropbox as XLS](workflows/export-google-sheet-xls-to-dropbox/) - Every 15 minutes, export the rows of a Google Sheets range as a legacy Excel workbook and replace a Dropbox file.
+- [Schedule Zoom Meetings for Calendar Events](workflows/schedule-zoom-meetings-for-calendar-events/) - Review the next 12 hours of Google Calendar and create Zoom meetings for eligible timed events.
 
 ## Content
 
