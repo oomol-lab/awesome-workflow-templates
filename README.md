@@ -1008,6 +1008,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Approve AI-Drafted Email Replies](workflows/approve-drafted-inbox-replies/) - Summarize an incoming IMAP email, draft a reply, and ask for approval before sending it to the original sender.
 - [Route Telegram Support to Freshdesk and Monday.com](workflows/triage-telegram-support-to-freshdesk-and-monday/) - Create a Freshdesk ticket from an approved Telegram chat, acknowledge it in the same chat, and file it in the matching monday.com group.
 - [Approve Knowledge-Based Email Replies](workflows/approve-knowledge-based-email-replies/) - Summarize incoming IMAP mail, draft a reply using Qdrant evidence, and send the exact approved revision by SMTP.
+- [Draft Fastmail Replies from IMAP](workflows/draft-fastmail-replies-from-imap/) - Draft a reply to each eligible unread IMAP email with OpenAI and save it in Fastmail for review.
 
 ## Finance
 
