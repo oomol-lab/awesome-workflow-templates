@@ -14,7 +14,7 @@ Submit a single DigitalOcean Droplet creation request and return its ID and prov
 ## Setup
 
 1. Bind your personal access token as the secret variable `DIGITALOCEAN_TOKEN` in **Request Droplet creation**. The token needs `droplet:create` and `image:read` access. Pick the account or team where you want to create the Droplet.
-2. Run the workflow and enter a Droplet `name`, a `region` slug, a `size` slug, and an `image` slug or numeric ID available to that account. Each accepted request can provision a billable Droplet. [DigitalOcean create Droplet API](https://docs.digitalocean.com/reference/api/reference/droplets/#post-create-a-new-droplet)
+2. Run the workflow and enter a Droplet `name`, a `region` slug, a `size` slug, and an `image` slug or numeric ID available to that account. Each accepted request can provision a billable Droplet. [DigitalOcean create Droplet API](https://docs.digitalocean.com/reference/api/reference/droplets/#droplets_create)
 
 ## Behavior
 
