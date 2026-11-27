@@ -1,0 +1,393 @@
+{
+  "name": "Convert Sheet Images to WebP in Drive",
+  "nodes": [
+    {
+      "id": "convert-sheet-images-to-webp-in-drive-start",
+      "name": "Run manually",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "parameters": {},
+      "position": [
+        0,
+        240
+      ]
+    },
+    {
+      "id": "convert-sheet-images-to-webp-in-drive-settings",
+      "name": "Set the sheet, folder, and download origin",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function imageSettings({ spreadsheet, tab, folder, origin }) {\n  if (\n    !/^[A-Za-z0-9_-]{8,}$/.test(spreadsheet) ||\n    !tab.trim() ||\n    !/^[A-Za-z0-9_-]{8,}$/.test(folder) ||\n    [spreadsheet, folder].some((id) => id.startsWith(\"YOUR_\"))\n  ) {\n    throw Error(\"Configure the spreadsheet ID, sheet tab, and Drive folder ID.\");\n  }\n  if (\n    !/^https:\\/\\/(?:[a-z0-9-]+\\.)+[a-z]{2,63}$/.test(origin) ||\n    /\\.(?:invalid|local|localhost)$/.test(origin)\n  ) {\n    throw Error(\"Set the exact HTTPS origin for your signed ApyHub download links.\");\n  }\n  const prefix = \"'\" + tab.replaceAll(\"'\", \"''\") + \"'!\";\n  return { spreadsheet, folder, origin, prefix, range: prefix + \"A1:C\" };\n}\nconst settings = {\n  spreadsheet: \"YOUR_SPREADSHEET_ID\",\n  tab: \"Images\",\n  folder: \"YOUR_DRIVE_FOLDER_ID\",\n  origin: \"https://downloads.example.invalid\",\n};\nreturn [{ json: imageSettings(settings) }];\n"
+      },
+      "position": [
+        220,
+        240
+      ]
+    },
+    {
+      "id": "convert-sheet-images-to-webp-in-drive-read",
+      "name": "Read the image queue",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "method": "GET",
+        "url": "={{ \"https://sheets.googleapis.com/v4/spreadsheets/\" + encodeURIComponent($json.spreadsheet) + '/values/' + encodeURIComponent($json.range) + '?majorDimension=ROWS&valueRenderOption=UNFORMATTED_VALUE' }}",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true,
+              "outputPropertyName": "data"
+            }
+          }
+        }
+      },
+      "position": [
+        440,
+        240
+      ]
+    },
+    {
+      "id": "convert-sheet-images-to-webp-in-drive-plan",
+      "name": "Select the first pending image",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function firstImage(values, config) {\n  if (!Array.isArray(values) || [\"FROM\", \"TO\", \"DONE\"].some((cell, i) => values[0]?.[i] !== cell)) {\n    throw Error(\"Expected FROM, TO, and DONE in columns A, B, and C.\");\n  }\n  const index = values.findIndex(\n    (row, i) => i > 0 && (row[2] === undefined || row[2] === null || row[2] === \"\"),\n  );\n  if (index < 0) return null;\n  const raw = values[index][0];\n  if (typeof raw !== \"string\" || !raw.trim()) return null;\n  const image = raw.trim();\n  const path = /^https:\\/\\/(?:[a-z0-9-]+\\.)+[a-z]{2,63}(\\/[^\\s?#]+)(?:[?#][^\\s]*)?$/i.exec(image);\n  if (!path) return null;\n  let tail;\n  try {\n    tail = decodeURIComponent(path[1].split(\"/\").at(-1));\n  } catch {\n    return null;\n  }\n  const match = /^([^/\\\\\\u0000-\\u001f]{1,180})\\.(jpg|jpeg|png)$/i.exec(tail);\n  if (!match) return null;\n  const format = match[2].toLowerCase() === \"png\" ? \"png\" : \"jpeg\";\n  const row = index + 1;\n  const filename = match[1] + \".webp\";\n  const endpoint =\n    \"https://api.eu.apyhub.com/apyhub/convert-\" +\n    format +\n    \"-to-webp/url/link?output=\" +\n    encodeURIComponent(filename);\n  return { source: image, filename, row, range: config.prefix + \"B\" + row + \":C\" + row, endpoint };\n}\n\nconst config = $(\"Set the sheet, folder, and download origin\").first().json;\nif ($input.first().json.statusCode !== 200) throw Error(\"Sheets did not return the image queue.\");\nconst job = firstImage($input.first().json.body.values, config);\nreturn job ? [{ json: { job, request: { url: job.source } } }] : [];\n"
+      },
+      "position": [
+        660,
+        240
+      ]
+    },
+    {
+      "id": "convert-sheet-images-to-webp-in-drive-convert",
+      "name": "Convert the image with ApyHub",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.job.endpoint }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.request }}",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true,
+              "outputPropertyName": "data"
+            }
+          }
+        }
+      },
+      "position": [
+        880,
+        240
+      ]
+    },
+    {
+      "id": "convert-sheet-images-to-webp-in-drive-link",
+      "name": "Check the signed WebP link",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function resultLink(result, config) {\n  if (typeof result?.data !== \"string\") throw Error(\"ApyHub did not return a signed WebP URL.\");\n  if (!result.data.startsWith(config.origin + \"/\") || /[\\s#\\\\]/.test(result.data))\n    throw Error(\"ApyHub returned an unapproved download origin.\");\n  return result.data;\n}\nreturn [\n  {\n    json: {\n      url: resultLink(\n        $input.first().json.body,\n        $(\"Set the sheet, folder, and download origin\").first().json,\n      ),\n    },\n  },\n];\n"
+      },
+      "position": [
+        1100,
+        240
+      ]
+    },
+    {
+      "id": "convert-sheet-images-to-webp-in-drive-download",
+      "name": "Download the WebP bytes",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.url }}",
+        "authentication": "none",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "fullResponse": true,
+              "outputPropertyName": "data"
+            }
+          }
+        }
+      },
+      "position": [
+        1320,
+        240
+      ]
+    },
+    {
+      "id": "convert-sheet-images-to-webp-in-drive-encode",
+      "name": "Verify and prepare the WebP",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function checkWebP(bytes, mime, status) {\n  const contentType = String(mime).split(\";\")[0].trim().toLowerCase();\n  const stringAt = (offset) => String.fromCharCode(...bytes.subarray(offset, offset + 4));\n  const riffLength = bytes[4] + bytes[5] * 256 + bytes[6] * 65536 + bytes[7] * 16777216;\n  if (\n    status !== 200 ||\n    ![\"image/webp\", \"application/octet-stream\"].includes(contentType) ||\n    bytes.length < 20 ||\n    bytes.length > 2 * 1024 * 1024 ||\n    stringAt(0) !== \"RIFF\" ||\n    stringAt(8) !== \"WEBP\" ||\n    ![\"VP8 \", \"VP8L\", \"VP8X\"].includes(stringAt(12)) ||\n    riffLength + 8 !== bytes.length\n  ) {\n    throw Error(\"The download is not a complete WebP of up to 2 MiB.\");\n  }\n}\n\nconst item = $input.first();\nconst job = $(\"Select the first pending image\").first().json.job;\nconst data = item.binary?.data;\nif (!data) throw Error(\"ApyHub did not send a WebP file.\");\ncheckWebP(await helpers.getBinaryDataBuffer(0, \"data\"), data.mimeType, item.json.statusCode);\nreturn [\n  {\n    json: {\n      filename: job.filename,\n      folder: $(\"Set the sheet, folder, and download origin\").first().json.folder,\n    },\n    binary: { data: { ...data, mimeType: \"image/webp\", fileName: job.filename } },\n  },\n];\n"
+      },
+      "position": [
+        1540,
+        240
+      ]
+    },
+    {
+      "id": "convert-sheet-images-to-webp-in-drive-upload",
+      "name": "Save the WebP in Drive",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "file",
+        "operation": "upload",
+        "inputDataFieldName": "data",
+        "name": "={{ $json.filename }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.folder }}"
+        },
+        "options": {
+          "fields": [
+            "id",
+            "name"
+          ]
+        }
+      },
+      "position": [
+        1760,
+        240
+      ]
+    },
+    {
+      "id": "convert-sheet-images-to-webp-in-drive-mark",
+      "name": "Prepare the linked row update",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function updateRow(file, job, link) {\n  if (typeof file.id !== \"string\" || !file.id || file.name !== job.filename)\n    throw Error(\"Drive did not confirm the selected WebP upload.\");\n  return { range: job.range, values: [[link, \"x\"]], fileId: file.id, row: job.row };\n}\n\nconst update = updateRow(\n  $input.first().json,\n  $(\"Select the first pending image\").first().json.job,\n  $(\"Check the signed WebP link\").first().json.url,\n);\nreturn [\n  {\n    json: {\n      ...update,\n      spreadsheet: $(\"Set the sheet, folder, and download origin\").first().json.spreadsheet,\n      request: { majorDimension: \"ROWS\", values: update.values },\n    },\n  },\n];\n"
+      },
+      "position": [
+        1980,
+        240
+      ]
+    },
+    {
+      "id": "convert-sheet-images-to-webp-in-drive-update",
+      "name": "Mark the source row done",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "method": "PUT",
+        "url": "={{ \"https://sheets.googleapis.com/v4/spreadsheets/\" + encodeURIComponent($json.spreadsheet) + '/values/' + encodeURIComponent($json.range) + '?valueInputOption=RAW' }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.request }}",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true,
+              "outputPropertyName": "data"
+            }
+          }
+        }
+      },
+      "position": [
+        2200,
+        240
+      ]
+    },
+    {
+      "id": "convert-sheet-images-to-webp-in-drive-confirm",
+      "name": "Check the row update receipt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function verifyUpdate(receipt, update, spreadsheet) {\n  const range = String(receipt?.updatedRange ?? \"\");\n  const bang = range.lastIndexOf(\"!\");\n  const requestedBang = update.range.lastIndexOf(\"!\");\n  const tab = (name) => (name[0] === \"'\" ? name.slice(1, -1).replaceAll(\"''\", \"'\") : name);\n  if (\n    receipt?.spreadsheetId !== spreadsheet ||\n    receipt?.updatedCells !== 2 ||\n    bang < 0 ||\n    tab(range.slice(0, bang)) !== tab(update.range.slice(0, requestedBang)) ||\n    range.slice(bang) !== update.range.slice(requestedBang)\n  ) {\n    throw Error(\n      \"Sheets did not confirm the two cells on the selected row. Check Drive and Sheets before retrying.\",\n    );\n  }\n  return { row: update.row, driveFileId: update.fileId };\n}\n\nconst update = $(\"Prepare the linked row update\").first().json;\nreturn [{ json: verifyUpdate($input.first().json.body, update, update.spreadsheet) }];\n"
+      },
+      "position": [
+        2420,
+        240
+      ]
+    }
+  ],
+  "connections": {
+    "Run manually": {
+      "main": [
+        [
+          {
+            "node": "Set the sheet, folder, and download origin",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set the sheet, folder, and download origin": {
+      "main": [
+        [
+          {
+            "node": "Read the image queue",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the image queue": {
+      "main": [
+        [
+          {
+            "node": "Select the first pending image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select the first pending image": {
+      "main": [
+        [
+          {
+            "node": "Convert the image with ApyHub",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert the image with ApyHub": {
+      "main": [
+        [
+          {
+            "node": "Check the signed WebP link",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check the signed WebP link": {
+      "main": [
+        [
+          {
+            "node": "Download the WebP bytes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download the WebP bytes": {
+      "main": [
+        [
+          {
+            "node": "Verify and prepare the WebP",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify and prepare the WebP": {
+      "main": [
+        [
+          {
+            "node": "Save the WebP in Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save the WebP in Drive": {
+      "main": [
+        [
+          {
+            "node": "Prepare the linked row update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare the linked row update": {
+      "main": [
+        [
+          {
+            "node": "Mark the source row done",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark the source row done": {
+      "main": [
+        [
+          {
+            "node": "Check the row update receipt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "none",
+    "saveDataSuccessExecution": "none",
+    "saveManualExecutions": false
+  },
+  "pinData": {}
+}
