@@ -1,0 +1,313 @@
+{
+  "name": "Post Blablagues Images to X",
+  "nodes": [
+    {
+      "id": "post-blablagues-images-to-x-schedule",
+      "name": "Run daily at 17:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 0 17 * * *"
+            }
+          ]
+        }
+      },
+      "position": [
+        0,
+        240
+      ]
+    },
+    {
+      "id": "post-blablagues-images-to-x-request",
+      "name": "Get an image joke from Blablagues",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.blablagues.net/?rub=images",
+        "authentication": "none",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "text",
+              "outputPropertyName": "body",
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "position": [
+        225,
+        240
+      ]
+    },
+    {
+      "id": "post-blablagues-images-to-x-record",
+      "name": "Check the image URL and caption",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function parseBlablagues(body, extraImageHost = \"\") {\n  let payload;\n  try {\n    payload = JSON.parse(body);\n  } catch {\n    throw Error(\"Blablagues did not return a JSON image record.\");\n  }\n  const { media, text } = payload?.data?.content ?? {};\n  const host =\n    typeof media === \"string\"\n      ? /^https:\\/\\/([a-z0-9.-]+)\\/[^#\\s\\\\]+$/i.exec(media)?.[1].toLowerCase()\n      : \"\";\n  const allowed =\n    host === \"blablagues.net\" ||\n    Boolean(host?.endsWith(\".blablagues.net\")) ||\n    (Boolean(host) &&\n      /^(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z]{2,63}$/i.test(extraImageHost) &&\n      host === extraImageHost.toLowerCase());\n  if (!allowed || typeof text !== \"string\")\n    throw Error(\"Blablagues did not return an approved image URL and its caption.\");\n  const credit = \"https://www.blablagues.net/\";\n  return { url: media, text: text.trim() ? text.trim() + \"\\n\\n\" + credit : credit };\n}\nconst item = $input.first().json;\nconst extraImageHost = \"\";\nif (item.statusCode !== 200) throw Error(\"Blablagues did not return a successful image record.\");\nreturn [{ json: parseBlablagues(item.body, extraImageHost), pairedItem: { item: 0 } }];\n"
+      },
+      "position": [
+        450,
+        240
+      ]
+    },
+    {
+      "id": "post-blablagues-images-to-x-image",
+      "name": "Download the returned image",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.url }}",
+        "authentication": "none",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "outputPropertyName": "data",
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "position": [
+        675,
+        240
+      ]
+    },
+    {
+      "id": "post-blablagues-images-to-x-inspect",
+      "name": "Validate the downloaded image",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function checkImage(bytes, mime) {\n  const type = String(mime ?? \"\")\n    .split(\";\", 1)[0]\n    .trim()\n    .toLowerCase();\n  if (bytes.length < 12 || bytes.length > 2 * 1024 * 1024)\n    throw Error(\"The image must be within 2 MiB.\");\n  const png = [137, 80, 78, 71, 13, 10, 26, 10].every((byte, i) => bytes[i] === byte);\n  const jpeg = bytes[0] === 255 && bytes[1] === 216 && bytes[2] === 255;\n  const webp =\n    bytes[0] === 82 &&\n    bytes[1] === 73 &&\n    bytes[2] === 70 &&\n    bytes[3] === 70 &&\n    bytes[8] === 87 &&\n    bytes[9] === 69 &&\n    bytes[10] === 66 &&\n    bytes[11] === 80;\n  const gif =\n    bytes[0] === 71 &&\n    bytes[1] === 73 &&\n    bytes[2] === 70 &&\n    bytes[3] === 56 &&\n    (bytes[4] === 55 || bytes[4] === 57) &&\n    bytes[5] === 97;\n  if (type === \"image/gif\" && gif) return { mimeType: type, fileName: \"blablagues.gif\" };\n  if (type === \"image/png\" && png) return { mimeType: type, fileName: \"blablagues.png\" };\n  if (type === \"image/jpeg\" && jpeg) return { mimeType: type, fileName: \"blablagues.jpg\" };\n  if (type === \"image/webp\" && webp) return { mimeType: type, fileName: \"blablagues.webp\" };\n  throw Error(\"Blablagues did not return a valid PNG, JPEG, GIF or WebP image.\");\n}\nconst item = $input.first();\nif (item.json.statusCode !== 200) throw Error(\"Blablagues did not return a complete image.\");\nconst bytes = await helpers.getBinaryDataBuffer(0, \"data\");\nconst metadata = checkImage(bytes, item.binary.data.mimeType);\nreturn [\n  {\n    json: {},\n    binary: {\n      data: { ...item.binary.data, fileName: metadata.fileName, mimeType: metadata.mimeType },\n    },\n    pairedItem: { item: 0 },\n  },\n];\n"
+      },
+      "position": [
+        900,
+        240
+      ]
+    },
+    {
+      "id": "post-blablagues-images-to-x-upload",
+      "name": "Upload this image to X",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.x.com/2/media/upload",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "oAuth2Api",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "media",
+              "inputDataFieldName": "data"
+            },
+            {
+              "name": "media_category",
+              "value": "tweet_image"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "position": [
+        1125,
+        240
+      ]
+    },
+    {
+      "id": "post-blablagues-images-to-x-media",
+      "name": "Check the X media receipt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function confirmUpload(id, raw) {\n  const processing = raw?.data?.processing_info;\n  if (\n    typeof id !== \"string\" ||\n    !/^\\d+$/.test(id) ||\n    (processing && processing.state !== \"succeeded\")\n  ) {\n    throw Error(\"X did not confirm a ready media upload.\");\n  }\n  return [id];\n}\nconst upload = $input.first().json;\nconst ids = confirmUpload(upload.data?.id, upload);\nreturn [\n  {\n    json: { text: $(\"Check the image URL and caption\").item.json.text, media: { media_ids: ids } },\n    pairedItem: { item: 0 },\n  },\n];\n"
+      },
+      "position": [
+        1350,
+        240
+      ]
+    },
+    {
+      "id": "post-blablagues-images-to-x-post",
+      "name": "Publish the image and caption on X",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.x.com/2/tweets",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "oAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "position": [
+        1575,
+        240
+      ]
+    },
+    {
+      "id": "post-blablagues-images-to-x-receipt",
+      "name": "Confirm the X post",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function confirmPost(id) {\n  if (typeof id !== \"string\" || !/^\\d+$/.test(id))\n    throw Error(\"X did not confirm the post. Check the account before retrying.\");\n  return id;\n}\nreturn [{ json: { id: confirmPost($input.first().json.data?.id) }, pairedItem: { item: 0 } }];\n"
+      },
+      "position": [
+        1800,
+        240
+      ]
+    }
+  ],
+  "active": false,
+  "connections": {
+    "Run daily at 17:00": {
+      "main": [
+        [
+          {
+            "node": "Get an image joke from Blablagues",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get an image joke from Blablagues": {
+      "main": [
+        [
+          {
+            "node": "Check the image URL and caption",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check the image URL and caption": {
+      "main": [
+        [
+          {
+            "node": "Download the returned image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download the returned image": {
+      "main": [
+        [
+          {
+            "node": "Validate the downloaded image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate the downloaded image": {
+      "main": [
+        [
+          {
+            "node": "Upload this image to X",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload this image to X": {
+      "main": [
+        [
+          {
+            "node": "Check the X media receipt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check the X media receipt": {
+      "main": [
+        [
+          {
+            "node": "Publish the image and caption on X",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Publish the image and caption on X": {
+      "main": [
+        [
+          {
+            "node": "Confirm the X post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Paris"
+  },
+  "pinData": {}
+}

@@ -1156,6 +1156,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Post RSS Articles with Image Cards to Bluesky](workflows/post-rss-image-cards-to-bluesky/) - Publish each new RSS article to Bluesky with its own link, title, description, and image thumbnail.
 - [Publish One Video with Native Social Captions](workflows/publish-video-to-selected-platforms/) - Use PostWire to write a distinct caption for each selected network and publish the same video to its approved accounts.
 - [Submit Social Videos with Blotato](workflows/submit-social-videos-with-blotato/) - Submit queued Google Sheets videos to connected social accounts with Blotato, and record the submissions on the original rows.
+- [Post Blablagues Images to X](workflows/post-blablagues-images-to-x/) - Get a random image and its caption from Blablagues each day and publish them together on X.
 
 ## Education
 
