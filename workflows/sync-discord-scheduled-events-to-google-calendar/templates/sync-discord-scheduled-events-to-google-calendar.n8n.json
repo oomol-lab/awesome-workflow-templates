@@ -1,0 +1,318 @@
+{
+  "name": "Sync Discord Scheduled Events to Google Calendar",
+  "nodes": [
+    {
+      "id": "sync-discord-scheduled-events-to-google-calendar-schedule",
+      "name": "Check Discord daily",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "daysInterval": 1,
+              "triggerAtHour": 0,
+              "triggerAtMinute": 0
+            }
+          ]
+        }
+      },
+      "position": [
+        0,
+        240
+      ]
+    },
+    {
+      "id": "sync-discord-scheduled-events-to-google-calendar-setup",
+      "name": "Select the server and calendar",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function configure(config) {\n  const { guildId, calendarId } = config;\n  if (\n    typeof guildId !== \"string\" ||\n    !/^\\d{17,20}$/.test(guildId) ||\n    typeof calendarId !== \"string\" ||\n    !calendarId ||\n    calendarId.startsWith(\"YOUR_\") ||\n    /[/\\\\?#%\\s]/.test(calendarId)\n  ) {\n    throw Error(\"Set a Discord server ID and a Google Calendar ID.\");\n  }\n  return { guildId, collection: \"/calendars/\" + encodeURIComponent(calendarId) + \"/events\" };\n}\nconst settings = { guildId: \"YOUR_DISCORD_GUILD_ID\", calendarId: \"YOUR_GOOGLE_CALENDAR_ID\" };\nreturn [{ json: configure(settings) }];\n"
+      },
+      "position": [
+        205,
+        240
+      ]
+    },
+    {
+      "id": "sync-discord-scheduled-events-to-google-calendar-discord",
+      "name": "List Discord scheduled events",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ \"https://discord.com/api/v10/guilds/\" + $json.guildId + \"/scheduled-events?with_user_count=true\" }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 15000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true,
+              "neverError": false
+            }
+          }
+        }
+      },
+      "position": [
+        410,
+        240
+      ]
+    },
+    {
+      "id": "sync-discord-scheduled-events-to-google-calendar-rows",
+      "name": "Map the Discord events",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function collect(items, config) {\n  if (!Array.isArray(items)) throw Error(\"Discord returned an invalid scheduled event list.\");\n  const events = [],\n    results = [],\n    ids = new Set();\n  for (const event of items) {\n    const {\n      id,\n      guild_id,\n      name,\n      scheduled_start_time,\n      scheduled_end_time,\n      description,\n      entity_metadata,\n    } = event;\n    if (\n      typeof id !== \"string\" ||\n      !/^\\d{17,20}$/.test(id) ||\n      guild_id !== config.guildId ||\n      ids.has(id)\n    ) {\n      throw Error(\"Discord returned an invalid or mismatched event. No Calendar writes were made.\");\n    }\n    ids.add(id);\n    const start = Date.parse(scheduled_start_time),\n      end = Date.parse(scheduled_end_time);\n    if (\n      typeof name !== \"string\" ||\n      !name.trim() ||\n      !/^\\d{4}-\\d\\d-\\d\\dT.*(?:Z|[+-]\\d\\d:\\d\\d)$/.test(scheduled_start_time ?? \"\") ||\n      !/^\\d{4}-\\d\\d-\\d\\dT.*(?:Z|[+-]\\d\\d:\\d\\d)$/.test(scheduled_end_time ?? \"\") ||\n      !Number.isFinite(start) ||\n      !Number.isFinite(end) ||\n      end <= start\n    ) {\n      results.push({ eventId: id, status: \"invalid_event_time\" });\n      continue;\n    }\n    const location = entity_metadata?.location ?? \"\";\n    if (typeof location !== \"string\" || (description != null && typeof description !== \"string\")) {\n      results.push({ eventId: id, status: \"invalid_event_details\" });\n      continue;\n    }\n    events.push({\n      id,\n      collection: config.collection,\n      endpoint: config.collection + \"/\" + id,\n      mapped: {\n        summary: name,\n        description: description ?? \"\",\n        location,\n        start: { dateTime: scheduled_start_time },\n        end: { dateTime: scheduled_end_time },\n      },\n    });\n  }\n  return { events, results };\n}\nconst reply = $input.first().json,\n  config = $(\"Select the server and calendar\").first().json;\nif (reply.statusCode !== 200) throw Error(\"Discord did not return the scheduled event list.\");\nreturn collect(reply.body, config).events.map((event) => ({\n  json: event,\n  pairedItem: { item: 0 },\n}));\n"
+      },
+      "position": [
+        615,
+        240
+      ]
+    },
+    {
+      "id": "sync-discord-scheduled-events-to-google-calendar-get",
+      "name": "Find the same Calendar event",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ \"https://www.googleapis.com/calendar/v3\" + $json.endpoint + \"?fields=id%2Cetag%2Cstatus%2Csummary%2Clocation%2Cdescription%2Cstart(dateTime)%2Cend(dateTime)\" }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "oAuth2Api",
+        "options": {
+          "timeout": 15000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "position": [
+        820,
+        240
+      ]
+    },
+    {
+      "id": "sync-discord-scheduled-events-to-google-calendar-decide",
+      "name": "Compare the Calendar event",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function sameFields(saved, mapped) {\n  return (\n    saved.summary === mapped.summary &&\n    (saved.description ?? \"\") === mapped.description &&\n    (saved.location ?? \"\") === mapped.location &&\n    Date.parse(saved.start?.dateTime) === Date.parse(mapped.start.dateTime) &&\n    Date.parse(saved.end?.dateTime) === Date.parse(mapped.end.dateTime)\n  );\n}\nfunction decide(event, status, body) {\n  const fail = (value) => ({\n    method: \"\",\n    endpoint: \"\",\n    tag: \"\",\n    payload: {},\n    result: { eventId: event.id, status: value },\n  });\n  const miss =\n    status === 404 &&\n    body?.error?.code === 404 &&\n    (body.error.status === \"NOT_FOUND\" ||\n      (Array.isArray(body.error.errors) &&\n        body.error.errors.some((error) => error?.reason === \"notFound\")));\n  if (miss)\n    return {\n      method: \"POST\",\n      endpoint: event.collection,\n      tag: \"\",\n      payload: { id: event.id, ...event.mapped },\n      result: {},\n    };\n  if (status !== 200 || body?.id !== event.id) return fail(\"lookup_unconfirmed\");\n  if (body.status === \"cancelled\") return fail(\"cancelled_target\");\n  if (sameFields(body, event.mapped)) return fail(\"unchanged\");\n  if (typeof body.etag !== \"string\" || !/^\"[^\"\\r\\n]+\"$/.test(body.etag))\n    return fail(\"etag_unconfirmed\");\n  return {\n    method: \"PATCH\",\n    endpoint: event.endpoint,\n    tag: body.etag,\n    payload: event.mapped,\n    result: {},\n  };\n}\nconst event = $(\"Map the Discord events\").item.json;\nreturn {\n  json: { event, ...decide(event, $json.statusCode, $json.body) },\n  pairedItem: { item: $itemIndex },\n};\n"
+      },
+      "position": [
+        1025,
+        240
+      ]
+    },
+    {
+      "id": "sync-discord-scheduled-events-to-google-calendar-change",
+      "name": "Does this event need a write?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.method !== \"\" }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "position": [
+        1230,
+        240
+      ]
+    },
+    {
+      "id": "sync-discord-scheduled-events-to-google-calendar-write",
+      "name": "Write the Calendar event",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "={{ $json.method }}",
+        "url": "={{ \"https://www.googleapis.com/calendar/v3\" + $json.endpoint + \"?fields=id%2Cetag%2Cstatus%2Csummary%2Clocation%2Cdescription%2Cstart(dateTime)%2Cend(dateTime)&sendUpdates=none\" }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "oAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.payload }}",
+        "sendHeaders": "={{ $json.method === \"PATCH\" }}",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "If-Match",
+              "value": "={{ $json.tag }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 15000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "position": [
+        1435,
+        240
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "sync-discord-scheduled-events-to-google-calendar-advance",
+      "name": "Verify and report the event",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function sameFields(saved, mapped) {\n  return (\n    saved.summary === mapped.summary &&\n    (saved.description ?? \"\") === mapped.description &&\n    (saved.location ?? \"\") === mapped.location &&\n    Date.parse(saved.start?.dateTime) === Date.parse(mapped.start.dateTime) &&\n    Date.parse(saved.end?.dateTime) === Date.parse(mapped.end.dateTime)\n  );\n}\nfunction confirmed(event, method, status, body) {\n  const ok =\n    (status === 200 || (method === \"POST\" && status === 201)) &&\n    body?.id === event.id &&\n    sameFields(body, event.mapped);\n  return {\n    eventId: event.id,\n    status: ok\n      ? method === \"POST\"\n        ? \"created\"\n        : \"updated\"\n      : status === 409 || status === 412\n        ? \"write_conflict\"\n        : \"write_unconfirmed\",\n  };\n}\nconst plan = $(\"Compare the Calendar event\").item.json;\nreturn {\n  json: confirmed(plan.event, plan.method, $json.statusCode, $json.body),\n  pairedItem: { item: $itemIndex },\n};\n"
+      },
+      "position": [
+        1640,
+        240
+      ]
+    }
+  ],
+  "connections": {
+    "Check Discord daily": {
+      "main": [
+        [
+          {
+            "node": "Select the server and calendar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select the server and calendar": {
+      "main": [
+        [
+          {
+            "node": "List Discord scheduled events",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List Discord scheduled events": {
+      "main": [
+        [
+          {
+            "node": "Map the Discord events",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Map the Discord events": {
+      "main": [
+        [
+          {
+            "node": "Find the same Calendar event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find the same Calendar event": {
+      "main": [
+        [
+          {
+            "node": "Compare the Calendar event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compare the Calendar event": {
+      "main": [
+        [
+          {
+            "node": "Does this event need a write?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Does this event need a write?": {
+      "main": [
+        [
+          {
+            "node": "Write the Calendar event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write the Calendar event": {
+      "main": [
+        [
+          {
+            "node": "Verify and report the event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC"
+  },
+  "pinData": {}
+}

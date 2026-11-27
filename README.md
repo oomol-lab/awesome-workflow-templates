@@ -761,6 +761,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Create Clockify Clients from New Notion Pages](workflows/create-clockify-clients-from-notion/) - Create a Clockify client using the Name field of each new page in one Notion data source.
 - [Save Discord Links to Notion](workflows/save-discord-link-to-notion/) - Use a Discord slash command to save a webpage’s title and URL in Notion.
 - [Clean and Upsert Google Sheets Contacts](workflows/clean-and-upsert-google-sheets-contacts/) - Clean contact rows in one Google Sheets tab and update or add them in a separate tab.
+- [Sync Discord Scheduled Events to Google Calendar](workflows/sync-discord-scheduled-events-to-google-calendar/) - Add or update events in one Google Calendar using the original Discord event IDs.
 
 ## Content
 
