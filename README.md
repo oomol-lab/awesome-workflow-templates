@@ -1056,6 +1056,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [List Incoming TRON USDT Transfers](workflows/list-incoming-tron-usdt-transfers/) - Check a TRON wallet every 15 minutes and list older incoming USDT transfers with their confirmation and execution status.
 - [Create and Email Pennylane Invoices](workflows/create-and-email-pennylane-invoices/) - Create a finalized Pennylane invoice from an authenticated request and wait for Pennylane to accept its email.
 - [Process Pennylane Invoice Requests](workflows/process-pennylane-invoice-requests/) - Issue a finalized Pennylane invoice from a Basic-auth POST and optionally wait for confirmation that its email was accepted.
+- [Log Telegram Invoices and Report Spending](workflows/log-telegram-invoices-and-report-spending/) - Read invoice photos from Telegram, record the line items in Notion, and send spending charts to a configured chat.
 
 ## Community
 
