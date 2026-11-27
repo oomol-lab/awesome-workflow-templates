@@ -1,0 +1,874 @@
+{
+  "name": "Track Zalando Swiss Prices",
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Zurich"
+  },
+  "nodes": [
+    {
+      "id": "track-zalando-swiss-price-alerts-form",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "name": "Add or update a tracked product",
+      "parameters": {
+        "path": "track-zalando-swiss-price-alerts",
+        "formTitle": "Track a Zalando Switzerland product",
+        "formDescription": "Enter the Swiss product page and a price threshold in CHF.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "link",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "price_alert",
+              "fieldType": "number",
+              "requiredField": true
+            }
+          ]
+        },
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "position": [
+        0,
+        300
+      ]
+    },
+    {
+      "id": "track-zalando-swiss-price-alerts-schedule",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "name": "Check prices daily in Zurich",
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "daysInterval": 1,
+              "triggerAtHour": 0,
+              "triggerAtMinute": 0
+            }
+          ]
+        }
+      },
+      "position": [
+        225,
+        300
+      ]
+    },
+    {
+      "id": "track-zalando-swiss-price-alerts-formInput",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "name": "Read the product and threshold",
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const item = $input.first().json;\nreturn [\n  {\n    json: { scheduledAt: item.submittedAt ?? new Date().toISOString(), submission: item },\n    pairedItem: { item: 0 },\n  },\n];\n"
+      },
+      "position": [
+        450,
+        300
+      ]
+    },
+    {
+      "id": "track-zalando-swiss-price-alerts-tick",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "name": "Read the scheduled time",
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return [{ json: { scheduledAt: $input.first().json.timestamp }, pairedItem: { item: 0 } }];\n"
+      },
+      "position": [
+        675,
+        300
+      ]
+    },
+    {
+      "id": "track-zalando-swiss-price-alerts-config",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "name": "Set the spreadsheet and recipient",
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function productLink(value) {\n  const raw = typeof value === \"string\" ? value.trim() : \"\";\n  const match =\n    /^https:\\/\\/(?:www\\.)?zalando\\.ch(\\/[a-z0-9/%._~-]+\\.html)(\\?[^#\\s\\\\]*)?(?:#[^\\s\\\\]*)?$/i.exec(\n      raw,\n    );\n  if (\n    !match ||\n    raw.length > 2048 ||\n    /%(?![a-f\\d]{2})/i.test(raw) ||\n    /%(?:00|2f|5c)/i.test(match[1]) ||\n    match[1].split(\"/\").some((segment) => /^\\.{1,2}$/.test(segment.replace(/%2e/gi, \".\")))\n  ) {\n    throw Error(\"Enter the product page URL from the Swiss Zalando store.\");\n  }\n  return \"https://www.zalando.ch\" + match[1] + (match[2] ?? \"\");\n}\nfunction chfCents(input) {\n  if (typeof input !== \"number\" && typeof input !== \"string\") return null;\n  const plain = String(input)\n    .trim()\n    .replace(/[\\u00a0\\u202f\\u2007]/g, \" \");\n  const grouped = /^\\d{1,3}(['\\u2019 ])\\d{3}(?:\\1\\d{3})*(?:[.,]\\d{1,2})?$/.test(plain);\n  const number = grouped ? plain.replace(/['\\u2019 ]/g, \"\") : plain;\n  if (!/^\\d{1,8}(?:[.,]\\d{1,2})?$/.test(number)) return null;\n  const [whole, decimal = \"\"] = number.split(/[.,]/);\n  return Number(whole) * 100 + Number(decimal.padEnd(2, \"0\"));\n}\nfunction watchConfig(entry, spreadsheetId, recipient) {\n  if (\n    !/^[A-Za-z0-9_-]{15,150}$/.test(spreadsheetId) ||\n    spreadsheetId === \"YOUR_GOOGLE_SPREADSHEET_ID\"\n  )\n    throw Error(\"Set the Google spreadsheet ID.\");\n  if (typeof recipient !== \"string\" || !/^[-a-z0-9._+]+@[-a-z0-9.]+\\.[a-z]{2,}$/i.test(recipient))\n    throw Error(\"Set the Gmail recipient.\");\n  const time = new Date(entry.scheduledAt);\n  if (!Number.isFinite(time.getTime()))\n    throw Error(\"The workflow did not receive the trigger timestamp.\");\n  const parts = new Intl.DateTimeFormat(\"en-CA\", {\n    timeZone: \"Europe/Zurich\",\n    year: \"numeric\",\n    month: \"2-digit\",\n    day: \"2-digit\",\n  }).formatToParts(time);\n  const date = [\"year\", \"month\", \"day\"]\n    .map((part) => parts.find((x) => x.type === part).value)\n    .join(\"-\");\n  let registration = null;\n  if (entry.submission) {\n    const link = productLink(entry.submission.link),\n      threshold = chfCents(entry.submission.price_alert);\n    if (threshold === null) throw Error(\"Enter a CHF threshold with at most two decimal places.\");\n    registration = { link, threshold };\n  }\n  return { spreadsheetId, recipient, date, registration };\n}\nfunction workbookRanges() {\n  return [\"'Links'!A1:E\", \"'Pricing History'!A1:F\"];\n}\n\nconst settings = {\n  spreadsheetId: \"YOUR_GOOGLE_SPREADSHEET_ID\",\n  recipient: \"\",\n};\nconst config = watchConfig($input.first().json, settings.spreadsheetId, settings.recipient);\nconst read =\n  \"https://sheets.googleapis.com/v4/spreadsheets/\" +\n  config.spreadsheetId +\n  \"/values:batchGet?majorDimension=ROWS&valueRenderOption=UNFORMATTED_VALUE&\" +\n  workbookRanges()\n    .map((r) => \"ranges=\" + encodeURIComponent(r))\n    .join(\"&\");\nreturn [\n  {\n    json: {\n      config,\n      read,\n      write:\n        \"https://sheets.googleapis.com/v4/spreadsheets/\" +\n        config.spreadsheetId +\n        \"/values:batchUpdate\",\n    },\n    pairedItem: { item: 0 },\n  },\n];\n"
+      },
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "id": "track-zalando-swiss-price-alerts-load",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "name": "Read the tracked products and history",
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.read }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "position": [
+        1125,
+        300
+      ]
+    },
+    {
+      "id": "track-zalando-swiss-price-alerts-readPlan",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "name": "Plan the workbook rows",
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function productLink(value) {\n  const raw = typeof value === \"string\" ? value.trim() : \"\";\n  const match =\n    /^https:\\/\\/(?:www\\.)?zalando\\.ch(\\/[a-z0-9/%._~-]+\\.html)(\\?[^#\\s\\\\]*)?(?:#[^\\s\\\\]*)?$/i.exec(\n      raw,\n    );\n  if (\n    !match ||\n    raw.length > 2048 ||\n    /%(?![a-f\\d]{2})/i.test(raw) ||\n    /%(?:00|2f|5c)/i.test(match[1]) ||\n    match[1].split(\"/\").some((segment) => /^\\.{1,2}$/.test(segment.replace(/%2e/gi, \".\")))\n  ) {\n    throw Error(\"Enter the product page URL from the Swiss Zalando store.\");\n  }\n  return \"https://www.zalando.ch\" + match[1] + (match[2] ?? \"\");\n}\nfunction chfCents(input) {\n  if (typeof input !== \"number\" && typeof input !== \"string\") return null;\n  const plain = String(input)\n    .trim()\n    .replace(/[\\u00a0\\u202f\\u2007]/g, \" \");\n  const grouped = /^\\d{1,3}(['\\u2019 ])\\d{3}(?:\\1\\d{3})*(?:[.,]\\d{1,2})?$/.test(plain);\n  const number = grouped ? plain.replace(/['\\u2019 ]/g, \"\") : plain;\n  if (!/^\\d{1,8}(?:[.,]\\d{1,2})?$/.test(number)) return null;\n  const [whole, decimal = \"\"] = number.split(/[.,]/);\n  return Number(whole) * 100 + Number(decimal.padEnd(2, \"0\"));\n}\nfunction planWorkbook(reply, config) {\n  const ranges = reply?.valueRanges;\n  if (reply?.spreadsheetId !== config.spreadsheetId || ranges?.length !== 2)\n    throw Error(\"Google Sheets returned the wrong workbook or tabs.\");\n  const [live, history] = ranges;\n  const header = (range, name, fields) => {\n    if (\n      typeof range?.range !== \"string\" ||\n      range.range.split(\"!\")[0].replace(/^'|'$/g, \"\") !== name ||\n      !Array.isArray(range.values) ||\n      fields.some((field, i) => range.values[0]?.[i] !== field)\n    ) {\n      throw Error(\"Set the documented headers in the \" + name + \" tab.\");\n    }\n  };\n  header(live, \"Links\", [\"link\", \"price_alert\", \"price\", \"name\", \"update\"]);\n  header(history, \"Pricing History\", [\"price\", \"name\", \"link\", \"update\", \"key\", \"currency\"]);\n  const products = [],\n    links = new Set();\n  for (const [index, row] of live.values.slice(1).entries()) {\n    if (!row?.[0]) continue;\n    const link = productLink(row[0]),\n      threshold = chfCents(row[1]);\n    if (threshold === null || links.has(link))\n      throw Error(\"Check for duplicate links or an invalid CHF threshold in Links.\");\n    links.add(link);\n    products.push({ link, threshold, row: index + 2 });\n  }\n  const historyRows = new Map();\n  for (const [index, row] of history.values.slice(1).entries()) {\n    const key = row?.[4];\n    if (!key) continue;\n    if (typeof key !== \"string\" || historyRows.has(key))\n      throw Error(\"Pricing History contains an invalid or duplicate key.\");\n    historyRows.set(key, index + 2);\n  }\n  const change = config.registration;\n  let registration = null;\n  if (change) {\n    const current = products.find((record) => record.link === change.link);\n    if (current) current.threshold = change.threshold;\n    else products.push({ ...change, row: live.values.length + 1 });\n    const row = current?.row ?? live.values.length + 1;\n    registration = {\n      range: \"'Links'!A\" + row + \":B\" + row,\n      values: [[change.link, change.threshold / 100]],\n    };\n  }\n  let next = history.values.length + 1;\n  return {\n    registration,\n    products: products.map((product) => {\n      const key = config.date + \" | \" + product.link;\n      return { ...product, key, historyRow: historyRows.get(key) ?? next++ };\n    }),\n  };\n}\nfunction sheetWrite(data, spreadsheetId) {\n  return {\n    spreadsheetId,\n    data,\n    valueInputOption: \"RAW\",\n    includeValuesInResponse: true,\n    responseValueRenderOption: \"UNFORMATTED_VALUE\",\n  };\n}\n\nconst response = $input.first().json,\n  setup = $(\"Set the spreadsheet and recipient\").first().json;\nif (response.statusCode !== 200) throw Error(\"Google Sheets did not return the tracking workbook.\");\nconst plan = planWorkbook(response.body, setup.config);\nconst { spreadsheetId: unused, ...request } = sheetWrite(\n  plan.registration ? [plan.registration] : [],\n  setup.config.spreadsheetId,\n);\nreturn [{ json: { plan, write: setup.write, request }, pairedItem: { item: 0 } }];\n"
+      },
+      "position": [
+        1350,
+        300
+      ]
+    },
+    {
+      "id": "track-zalando-swiss-price-alerts-registered",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "name": "Registering a form product?",
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ Boolean($json.plan.registration) }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "position": [
+        1575,
+        300
+      ]
+    },
+    {
+      "id": "track-zalando-swiss-price-alerts-register",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "name": "Save the URL and threshold",
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.write }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.request }}",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "position": [
+        1800,
+        300
+      ]
+    },
+    {
+      "id": "track-zalando-swiss-price-alerts-confirmReg",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "name": "Confirm the tracked product",
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function checkedSheet(reply, spreadsheetId, data) {\n  if (\n    reply?.spreadsheetId !== spreadsheetId ||\n    !Array.isArray(reply.responses) ||\n    reply.responses.length !== data.length\n  ) {\n    throw Error(\"Google Sheets did not confirm the intended write.\");\n  }\n  const canonical = (value) =>\n    typeof value === \"string\" ? value.replace(/^'([^']+)'!/, \"$1!\") : \"\";\n  for (const [index, entry] of data.entries()) {\n    const result = reply.responses[index];\n    if (\n      canonical(result.updatedRange) !== canonical(entry.range) ||\n      result.updatedRows !== 1 ||\n      JSON.stringify(result.updatedData?.values) !== JSON.stringify(entry.values)\n    ) {\n      throw Error(\"Google Sheets did not confirm the values in the intended row.\");\n    }\n  }\n}\n\nconst response = $input.first().json,\n  setup = $(\"Set the spreadsheet and recipient\").first().json,\n  plan = $(\"Plan the workbook rows\").first().json.plan;\nif (response.statusCode !== 200) throw Error(\"Google Sheets did not confirm registration.\");\ncheckedSheet(response.body, setup.config.spreadsheetId, [plan.registration]);\nreturn [{ json: { ok: true }, pairedItem: { item: 0 } }];\n"
+      },
+      "position": [
+        2025,
+        300
+      ]
+    },
+    {
+      "id": "track-zalando-swiss-price-alerts-queue",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "name": "Prepare the tracked products",
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return $(\"Plan the workbook rows\")\n  .first()\n  .json.plan.products.map((product) => ({ json: { product }, pairedItem: { item: 0 } }));\n"
+      },
+      "position": [
+        2250,
+        300
+      ]
+    },
+    {
+      "id": "track-zalando-swiss-price-alerts-loop",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "name": "Check one product at a time",
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "position": [
+        2475,
+        300
+      ]
+    },
+    {
+      "id": "track-zalando-swiss-price-alerts-page",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "name": "Read the Swiss product page",
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.product.link }}",
+        "authentication": "none",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "text",
+              "outputPropertyName": "data",
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "position": [
+        2700,
+        300
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "track-zalando-swiss-price-alerts-parse",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "name": "Read the product title and CHF price",
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function productLink(value) {\n  const raw = typeof value === \"string\" ? value.trim() : \"\";\n  const match =\n    /^https:\\/\\/(?:www\\.)?zalando\\.ch(\\/[a-z0-9/%._~-]+\\.html)(\\?[^#\\s\\\\]*)?(?:#[^\\s\\\\]*)?$/i.exec(\n      raw,\n    );\n  if (\n    !match ||\n    raw.length > 2048 ||\n    /%(?![a-f\\d]{2})/i.test(raw) ||\n    /%(?:00|2f|5c)/i.test(match[1]) ||\n    match[1].split(\"/\").some((segment) => /^\\.{1,2}$/.test(segment.replace(/%2e/gi, \".\")))\n  ) {\n    throw Error(\"Enter the product page URL from the Swiss Zalando store.\");\n  }\n  return \"https://www.zalando.ch\" + match[1] + (match[2] ?? \"\");\n}\nfunction chfCents(input) {\n  if (typeof input !== \"number\" && typeof input !== \"string\") return null;\n  const plain = String(input)\n    .trim()\n    .replace(/[\\u00a0\\u202f\\u2007]/g, \" \");\n  const grouped = /^\\d{1,3}(['\\u2019 ])\\d{3}(?:\\1\\d{3})*(?:[.,]\\d{1,2})?$/.test(plain);\n  const number = grouped ? plain.replace(/['\\u2019 ]/g, \"\") : plain;\n  if (!/^\\d{1,8}(?:[.,]\\d{1,2})?$/.test(number)) return null;\n  const [whole, decimal = \"\"] = number.split(/[.,]/);\n  return Number(whole) * 100 + Number(decimal.padEnd(2, \"0\"));\n}\nfunction zalandoObservation(html, statusCode, link) {\n  if (statusCode !== 200 || typeof html !== \"string\") return null;\n  const decode = (text) =>\n    text.replace(/&(?:amp|quot|lt|gt|apos|nbsp|#(?:x[0-9a-f]+|\\d+));/gi, (entity) => {\n      const named = {\n        \"&amp;\": \"&\",\n        \"&quot;\": '\"',\n        \"&lt;\": \"<\",\n        \"&gt;\": \">\",\n        \"&apos;\": \"'\",\n        \"&nbsp;\": \" \",\n      };\n      if (entity[1] !== \"#\") return named[entity.toLowerCase()];\n      const hex = entity[2].toLowerCase() === \"x\",\n        cp = Number.parseInt(entity.slice(hex ? 3 : 2, -1), hex ? 16 : 10);\n      return Number.isSafeInteger(cp) && cp > 0 && cp < 0x110000 && (cp < 0xd800 || cp > 0xdfff)\n        ? String.fromCodePoint(cp)\n        : \"\";\n    });\n  const attrs = (tag) => {\n    const values = new Map();\n    for (const match of tag.matchAll(/([a-z][\\w:-]*)\\s*=\\s*(?:\"([^\"]*)\"|'([^']*)')/gi)) {\n      values.set(match[1].toLowerCase(), decode(match[2] ?? match[3]));\n    }\n    return values;\n  };\n  const head = /<head(?:\\s[^>]*)?>([\\s\\S]*?)<\\/head>/i.exec(html)?.[1] ?? html;\n  for (const match of head.matchAll(/<link\\b[^>]*>/gi)) {\n    const fields = attrs(match[0]);\n    if (fields.get(\"rel\")?.toLowerCase() !== \"canonical\" || !fields.get(\"href\")) continue;\n    try {\n      if (productLink(fields.get(\"href\")).split(\"?\")[0] !== link.split(\"?\")[0]) return null;\n    } catch {\n      return null;\n    }\n  }\n  const prices = new Set();\n  for (const match of head.matchAll(/<meta\\b[^>]*>/gi)) {\n    const fields = attrs(match[0]),\n      label = fields.get(\"name\") ?? fields.get(\"property\");\n    if (label?.toLowerCase() !== \"twitter:data1\") continue;\n    const contents = fields.get(\"content\")?.trim() ?? \"\";\n    const price = /^(?:CHF\\s+(.+)|(.+?)\\s+CHF)$/i.exec(contents);\n    if (!price) continue;\n    const amount = chfCents(price[1] ?? price[2]);\n    if (amount === null) return null;\n    prices.add(amount);\n  }\n  const title = /<title(?:\\s[^>]*)?>([\\s\\S]*?)<\\/title>/i.exec(head)?.[1];\n  const name =\n    title &&\n    decode(title)\n      .replace(/\\s*[|–-]\\s*Zalando(?:\\.ch)?\\s*$/i, \"\")\n      .trim()\n      .replace(/\\s+/g, \" \");\n  if (\n    prices.size !== 1 ||\n    !name ||\n    name.length > 300 ||\n    /[\\u0000-\\u001f]/.test(name) ||\n    /^Zalando(?:\\.ch)?$/i.test(name)\n  )\n    return null;\n  return { name, price: [...prices][0] };\n}\nfunction observationWrites(product, observation, date) {\n  const row = product.row,\n    history = product.historyRow;\n  return [\n    {\n      range: \"'Links'!C\" + row + \":E\" + row,\n      values: [[observation.price / 100, observation.name, date]],\n    },\n    {\n      range: \"'Pricing History'!A\" + history + \":F\" + history,\n      values: [[observation.price / 100, observation.name, product.link, date, product.key, \"CHF\"]],\n    },\n  ];\n}\nfunction priceNotice(product, observation, recipient) {\n  if (observation.price > product.threshold) return null;\n  return {\n    to: recipient,\n    subject: \"Price reduction: \" + observation.name,\n    isHtml: false,\n    body:\n      observation.name +\n      \"\\nCurrent price: CHF \" +\n      (observation.price / 100).toFixed(2) +\n      \"\\nAlert threshold: CHF \" +\n      (product.threshold / 100).toFixed(2) +\n      \"\\n\\n\" +\n      product.link,\n  };\n}\nfunction sheetWrite(data, spreadsheetId) {\n  return {\n    spreadsheetId,\n    data,\n    valueInputOption: \"RAW\",\n    includeValuesInResponse: true,\n    responseValueRenderOption: \"UNFORMATTED_VALUE\",\n  };\n}\n\nconst row = $(\"Check one product at a time\").item.json.product,\n  setup = $(\"Set the spreadsheet and recipient\").first().json;\nconst response = $input.first().json,\n  observation = zalandoObservation(response.data, response.statusCode, row.link);\nconst data = observation ? observationWrites(row, observation, setup.config.date) : [];\nconst { spreadsheetId: unused, ...request } = sheetWrite(data, setup.config.spreadsheetId);\nreturn [\n  {\n    json: {\n      data,\n      request,\n      write: setup.write,\n      url: row.link,\n      available: Boolean(observation),\n      alert: observation ? priceNotice(row, observation, setup.config.recipient) : null,\n      key: JSON.stringify([\n        \"zalando-price-alert\",\n        setup.config.spreadsheetId,\n        setup.config.recipient,\n        row.key,\n      ]),\n    },\n    pairedItem: { item: 0 },\n  },\n];\n"
+      },
+      "position": [
+        2925,
+        300
+      ]
+    },
+    {
+      "id": "track-zalando-swiss-price-alerts-hasPrice",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "name": "Is there a usable price?",
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.available }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "position": [
+        3150,
+        300
+      ]
+    },
+    {
+      "id": "track-zalando-swiss-price-alerts-write",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "name": "Update Links and Pricing History",
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.write }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.request }}",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "position": [
+        3375,
+        300
+      ]
+    },
+    {
+      "id": "track-zalando-swiss-price-alerts-decision",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "name": "Confirm the price rows",
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function checkedSheet(reply, spreadsheetId, data) {\n  if (\n    reply?.spreadsheetId !== spreadsheetId ||\n    !Array.isArray(reply.responses) ||\n    reply.responses.length !== data.length\n  ) {\n    throw Error(\"Google Sheets did not confirm the intended write.\");\n  }\n  const canonical = (value) =>\n    typeof value === \"string\" ? value.replace(/^'([^']+)'!/, \"$1!\") : \"\";\n  for (const [index, entry] of data.entries()) {\n    const result = reply.responses[index];\n    if (\n      canonical(result.updatedRange) !== canonical(entry.range) ||\n      result.updatedRows !== 1 ||\n      JSON.stringify(result.updatedData?.values) !== JSON.stringify(entry.values)\n    ) {\n      throw Error(\"Google Sheets did not confirm the values in the intended row.\");\n    }\n  }\n}\n\nconst response = $input.first().json,\n  row = $(\"Read the product title and CHF price\").item.json,\n  config = $(\"Set the spreadsheet and recipient\").first().json.config;\nif (response.statusCode !== 200) throw Error(\"Google Sheets did not confirm the observation.\");\ncheckedSheet(response.body, config.spreadsheetId, row.data);\nreturn [{ json: { key: row.key, alert: row.alert }, pairedItem: { item: 0 } }];\n"
+      },
+      "position": [
+        3600,
+        300
+      ]
+    },
+    {
+      "id": "track-zalando-swiss-price-alerts-qualifies",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "name": "Does this price meet the threshold?",
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ Boolean($json.alert) }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "position": [
+        3825,
+        300
+      ]
+    },
+    {
+      "id": "track-zalando-swiss-price-alerts-previous",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "name": "Check the earlier alert",
+      "parameters": {
+        "resource": "row",
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_ZALANDO_ALERT_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "key",
+              "condition": "eq",
+              "keyValue": "={{ $json.key }}"
+            }
+          ]
+        },
+        "returnAll": false,
+        "limit": 1
+      },
+      "position": [
+        4050,
+        300
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "id": "track-zalando-swiss-price-alerts-fresh",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "name": "New alert for this day?",
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ Object.keys($json).length===0 }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "position": [
+        4275,
+        300
+      ]
+    },
+    {
+      "id": "track-zalando-swiss-price-alerts-hold",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "name": "Reserve the Gmail alert",
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_ZALANDO_ALERT_DATA_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "key": "={{ $('Confirm the price rows').item.json.key }}",
+            "status": "pending",
+            "messageId": ""
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "position": [
+        4500,
+        300
+      ]
+    },
+    {
+      "id": "track-zalando-swiss-price-alerts-mail",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "name": "Send the Gmail price alert",
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "sendTo": "={{ $('Confirm the price rows').item.json.alert.to }}",
+        "subject": "={{ $('Confirm the price rows').item.json.alert.subject }}",
+        "emailType": "text",
+        "message": "={{ $('Confirm the price rows').item.json.alert.body }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "position": [
+        4725,
+        300
+      ]
+    },
+    {
+      "id": "track-zalando-swiss-price-alerts-receipt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "name": "Confirm the Gmail response",
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const response = $input.first().json,\n  row = $(\"Reserve the Gmail alert\").item.json;\nif (row.status !== \"pending\" || typeof response.id !== \"string\" || !response.id)\n  throw Error(\"Check Gmail before retrying this alert.\");\nreturn [{ json: { key: row.key, messageId: response.id }, pairedItem: { item: 0 } }];\n"
+      },
+      "position": [
+        4950,
+        300
+      ]
+    },
+    {
+      "id": "track-zalando-swiss-price-alerts-record",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "name": "Record the Gmail message ID",
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_ZALANDO_ALERT_DATA_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "key",
+              "condition": "eq",
+              "keyValue": "={{ $json.key }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "sent",
+            "messageId": "={{ $json.messageId }}"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "position": [
+        5175,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Add or update a tracked product": {
+      "main": [
+        [
+          {
+            "node": "Read the product and threshold",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the product and threshold": {
+      "main": [
+        [
+          {
+            "node": "Set the spreadsheet and recipient",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set the spreadsheet and recipient": {
+      "main": [
+        [
+          {
+            "node": "Read the tracked products and history",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the tracked products and history": {
+      "main": [
+        [
+          {
+            "node": "Plan the workbook rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Plan the workbook rows": {
+      "main": [
+        [
+          {
+            "node": "Registering a form product?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Registering a form product?": {
+      "main": [
+        [
+          {
+            "node": "Save the URL and threshold",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare the tracked products",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save the URL and threshold": {
+      "main": [
+        [
+          {
+            "node": "Confirm the tracked product",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm the tracked product": {
+      "main": [
+        [
+          {
+            "node": "Prepare the tracked products",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare the tracked products": {
+      "main": [
+        [
+          {
+            "node": "Check one product at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check prices daily in Zurich": {
+      "main": [
+        [
+          {
+            "node": "Read the scheduled time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the scheduled time": {
+      "main": [
+        [
+          {
+            "node": "Set the spreadsheet and recipient",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check one product at a time": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Read the Swiss product page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the Swiss product page": {
+      "main": [
+        [
+          {
+            "node": "Read the product title and CHF price",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the product title and CHF price": {
+      "main": [
+        [
+          {
+            "node": "Is there a usable price?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is there a usable price?": {
+      "main": [
+        [
+          {
+            "node": "Update Links and Pricing History",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Check one product at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Links and Pricing History": {
+      "main": [
+        [
+          {
+            "node": "Confirm the price rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm the price rows": {
+      "main": [
+        [
+          {
+            "node": "Does this price meet the threshold?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Does this price meet the threshold?": {
+      "main": [
+        [
+          {
+            "node": "Check the earlier alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Check one product at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check the earlier alert": {
+      "main": [
+        [
+          {
+            "node": "New alert for this day?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "New alert for this day?": {
+      "main": [
+        [
+          {
+            "node": "Reserve the Gmail alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Check one product at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve the Gmail alert": {
+      "main": [
+        [
+          {
+            "node": "Send the Gmail price alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send the Gmail price alert": {
+      "main": [
+        [
+          {
+            "node": "Confirm the Gmail response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm the Gmail response": {
+      "main": [
+        [
+          {
+            "node": "Record the Gmail message ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record the Gmail message ID": {
+      "main": [
+        [
+          {
+            "node": "Check one product at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
