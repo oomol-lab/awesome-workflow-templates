@@ -933,6 +933,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Review GitLab Merge Request Diffs](workflows/review-gitlab-merge-request-diffs/) - Review changed merge request files when a GitLab note requests a review.
 - [Encode GitHub Contributors with GCF](workflows/encode-github-contributors-with-gcf/) - Encode GitHub contributor data as GCF, compare estimated token counts, and decode it back to JSON.
 - [Notify DingTalk Reviewers of New Azure DevOps Pull Requests](workflows/notify-dingtalk-on-azure-devops-pull-requests/) - Post new Azure DevOps pull requests to a DingTalk group and mention the reviewers listed in the account map.
+- [Track GitHub Releases in GitLab](workflows/track-github-releases-in-gitlab/) - Check one GitHub repository each week and open a GitLab issue for its newest release when the version has no existing issue.
 
 ## Communication
 
