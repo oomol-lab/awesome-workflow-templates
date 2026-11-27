@@ -1,0 +1,695 @@
+{
+  "name": "Sync Outlook Calendar Events to Notion",
+  "nodes": [
+    {
+      "id": "sync-outlook-calendar-events-to-notion-trigger",
+      "name": "Check every five minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 5
+            }
+          ]
+        }
+      },
+      "position": [
+        0,
+        250
+      ]
+    },
+    {
+      "id": "sync-outlook-calendar-events-to-notion-settings",
+      "name": "Set the Notion data source",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function notionId(value) {\n  if (\n    typeof value !== \"string\" ||\n    !/^([0-9a-f]{32}|[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12})$/i.test(value)\n  )\n    return \"\";\n  return value\n    .toLowerCase()\n    .replaceAll(\"-\", \"\")\n    .replace(/^(.{8})(.{4})(.{4})(.{4})/, \"$1-$2-$3-$4-\");\n}\n\nfunction calendarWindow(at, dataSourceId) {\n  const start = Date.parse(at);\n  if (!Number.isFinite(start)) throw Error(\"The schedule did not provide a valid timestamp.\");\n  const source = notionId(dataSourceId);\n  if (!source) throw Error(\"Set the Notion data source ID in the workflow settings.\");\n  return {\n    dataSourceId: source,\n    startDateTime: new Date(start).toISOString(),\n    endDateTime: new Date(start + 365 * 86400000).toISOString(),\n  };\n}\n\nconst win = calendarWindow($input.first().json.timestamp, \"YOUR_NOTION_DATA_SOURCE_ID\");\nconst query =\n  \"?startDateTime=\" +\n  encodeURIComponent(win.startDateTime) +\n  \"&endDateTime=\" +\n  encodeURIComponent(win.endDateTime) +\n  \"&$top=100&$select=\" +\n  encodeURIComponent(\"id,subject,start,end,webLink,isCancelled\");\nreturn [{ json: { ...win, url: \"https://graph.microsoft.com/v1.0/me/calendarView\" + query } }];\n"
+      },
+      "position": [
+        183,
+        250
+      ]
+    },
+    {
+      "id": "sync-outlook-calendar-events-to-notion-calendar",
+      "name": "Read the Outlook calendar view",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.url }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "oAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Prefer",
+              "value": "outlook.timezone=\"UTC\""
+            }
+          ]
+        },
+        "options": {
+          "timeout": 15000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          },
+          "pagination": {
+            "pagination": {
+              "paginationMode": "responseContainsNextURL",
+              "nextURL": "={{ (()=>{function graphContinuation(href) {\n  if (typeof href!=='string'||href.length>12000||!/^https:\\/\\/graph\\.microsoft\\.com\\/v1\\.0\\/me\\/calendarView\\?[^#\\s\\\\]+$/i.test(href)) {\n    throw Error('Outlook returned a paging URL outside the primary calendar view.');\n  }\n  return href;\n};const next=$response.body?.[\"@odata.nextLink\"];return next==null?$json.url:graphContinuation(next);})() }}",
+              "paginationCompleteWhen": "other",
+              "completeExpression": "={{ $response.body?.[\"@odata.nextLink\"] == null }}",
+              "limitPagesFetched": true,
+              "maxRequests": 20,
+              "requestInterval": 0
+            }
+          }
+        }
+      },
+      "position": [
+        366,
+        250
+      ]
+    },
+    {
+      "id": "sync-outlook-calendar-events-to-notion-rows",
+      "name": "Check all calendar pages",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function graphContinuation(href) {\n  if (\n    typeof href !== \"string\" ||\n    href.length > 12000 ||\n    !/^https:\\/\\/graph\\.microsoft\\.com\\/v1\\.0\\/me\\/calendarView\\?[^#\\s\\\\]+$/i.test(href)\n  ) {\n    throw Error(\"Outlook returned a paging URL outside the primary calendar view.\");\n  }\n  return href;\n}\n\nfunction normalizedCalendarEvents(records) {\n  if (records.length > 2000)\n    throw Error(\"The calendar window exceeds 2,000 events. No Notion writes were made.\");\n  const result = new Map();\n  const utc = (value) => {\n    const date = value?.dateTime;\n    if (\n      !/^(UTC|Etc\\/UTC)$/i.test(value?.timeZone ?? \"\") ||\n      typeof date !== \"string\" ||\n      !/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,7})?(?:Z|\\+00:00)?$/.test(date)\n    )\n      return NaN;\n    return Date.parse(/(?:Z|\\+00:00)$/.test(date) ? date : date + \"Z\");\n  };\n  for (const raw of records) {\n    if (typeof raw?.id !== \"string\" || !raw.id.trim() || raw.id.length > 2000)\n      throw Error(\"Outlook returned an event without a usable ID.\");\n    const start = utc(raw.start),\n      end = utc(raw.end);\n    if (\n      !Number.isFinite(start) ||\n      !Number.isFinite(end) ||\n      end < start ||\n      typeof raw.subject !== \"string\" ||\n      raw.subject.length > 2000 ||\n      typeof raw.webLink !== \"string\" ||\n      raw.webLink.length > 2000 ||\n      !/^https:\\/\\/[^\\s]+$/.test(raw.webLink)\n    ) {\n      throw Error(\n        \"Outlook returned an event without a complete UTC date, title or link. No Notion writes were made.\",\n      );\n    }\n    const event = {\n      id: raw.id,\n      title: raw.subject,\n      start: new Date(start).toISOString(),\n      end: new Date(end).toISOString(),\n      link: raw.webLink,\n    };\n    if (result.has(event.id) && JSON.stringify(result.get(event.id)) !== JSON.stringify(event))\n      throw Error(\"Outlook returned conflicting copies of an event.\");\n    result.set(event.id, event);\n  }\n  return [...result.values()];\n}\n\nconst dataSourceId = $(\"Set the Notion data source\").first().json.dataSourceId;\nconst pages = $input.all().map((item) => item.json);\nconst all = [],\n  links = new Set();\nfor (const [index, page] of pages.entries()) {\n  if (page.statusCode !== 200 || !Array.isArray(page.body?.value))\n    throw Error(\"Outlook returned an invalid calendar page.\");\n  const next = page.body[\"@odata.nextLink\"];\n  if ((index === pages.length - 1) !== (next == null))\n    throw Error(\n      \"The Outlook calendar view did not complete within 20 pages. No Notion writes were made.\",\n    );\n  if (next != null) {\n    const url = graphContinuation(next);\n    if (links.has(url)) throw Error(\"Outlook repeated a calendar paging URL.\");\n    links.add(url);\n  }\n  all.push(...page.body.value);\n}\nreturn normalizedCalendarEvents(all).map((event) => ({\n  json: { event, dataSourceId, key: dataSourceId + \"|\" + event.id },\n  pairedItem: { item: 0 },\n}));\n"
+      },
+      "position": [
+        549,
+        250
+      ]
+    },
+    {
+      "id": "sync-outlook-calendar-events-to-notion-next",
+      "name": "Select the next Outlook event",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "position": [
+        732,
+        250
+      ]
+    },
+    {
+      "id": "sync-outlook-calendar-events-to-notion-pace",
+      "name": "Pause between Notion events",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "parameters": {
+        "resume": "timeInterval",
+        "amount": 1,
+        "unit": "seconds"
+      },
+      "position": [
+        915,
+        250
+      ]
+    },
+    {
+      "id": "sync-outlook-calendar-events-to-notion-find",
+      "name": "Find the Notion page by Event ID",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "={{ \"https://api.notion.com/v1/data_sources/\" + $json.dataSourceId + \"/query\" }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Notion-Version",
+              "value": "2026-03-11"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {filter:{property:\"Event ID\",rich_text:{equals:$json.event.id}},page_size:2,result_type:\"page\"} }}",
+        "options": {
+          "timeout": 15000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "position": [
+        1098,
+        250
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "sync-outlook-calendar-events-to-notion-decide",
+      "name": "Check the exact match",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function notionId(value) {\n  if (\n    typeof value !== \"string\" ||\n    !/^([0-9a-f]{32}|[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12})$/i.test(value)\n  )\n    return \"\";\n  return value\n    .toLowerCase()\n    .replaceAll(\"-\", \"\")\n    .replace(/^(.{8})(.{4})(.{4})(.{4})/, \"$1-$2-$3-$4-\");\n}\n\nfunction notionPageText(items) {\n  if (\n    !Array.isArray(items) ||\n    items.some(\n      (item) => item.type !== \"text\" || typeof (item.plain_text ?? item.text?.content) !== \"string\",\n    )\n  )\n    return null;\n  return items.map((item) => item.plain_text ?? item.text.content).join(\"\");\n}\n\nfunction checkedNotionPage(page, event, dataSourceId, pageId = \"\") {\n  const id = notionId(page?.id);\n  if (\n    page?.object !== \"page\" ||\n    !id ||\n    (pageId && id !== pageId) ||\n    page.in_trash === true ||\n    page.archived === true ||\n    page.parent?.type !== \"data_source_id\" ||\n    notionId(page.parent?.data_source_id) !== dataSourceId ||\n    notionPageText(page.properties?.[\"Event ID\"]?.rich_text) !== event.id\n  ) {\n    throw Error(\"Notion did not identify the exact event page in this data source.\");\n  }\n  const props = page.properties;\n  const current = props.Date?.date;\n  const same =\n    notionPageText(props.Name?.title) === event.title &&\n    props.Link?.url === event.link &&\n    Date.parse(current?.start) === Date.parse(event.start) &&\n    Date.parse(current?.end) === Date.parse(event.end);\n  return { id, same };\n}\nfunction matchedNotionEvent(list, event, source) {\n  if (\n    list?.object !== \"list\" ||\n    !Array.isArray(list.results) ||\n    list.has_more !== false ||\n    list.next_cursor != null ||\n    list.results.length > 1 ||\n    list.request_status?.type === \"incomplete\" ||\n    list.request_status?.type === \"partial\"\n  ) {\n    throw Error(\"Notion did not return one complete, unambiguous event search.\");\n  }\n  return list.results.length ? checkedNotionPage(list.results[0], event, source) : null;\n}\n\nfunction eventProperties(event) {\n  const text = (content) => ({ type: \"text\", text: { content } });\n  return {\n    \"Event ID\": { rich_text: [text(event.id)] },\n    Name: { title: event.title ? [text(event.title)] : [] },\n    Date: { date: { start: event.start, end: event.end, time_zone: null } },\n    Link: { url: event.link },\n  };\n}\n\nfunction notionEventFilter(event) {\n  return { property: \"Event ID\", rich_text: { equals: event.id } };\n}\n\nconst job = $(\"Select the next Outlook event\").all(1, $runIndex)[0].json;\nconst response = $input.first().json;\nlet page;\ntry {\n  if (response.statusCode !== 200) throw Error(\"Could not query Notion.\");\n  page = matchedNotionEvent(response.body, job.event, job.dataSourceId);\n} catch {\n  return [\n    { json: { ...job, status: \"lookup_unconfirmed\", needsWrite: false }, pairedItem: { item: 0 } },\n  ];\n}\nif (page?.same)\n  return [\n    {\n      json: { ...job, pageId: page.id, status: \"unchanged\", needsWrite: false },\n      pairedItem: { item: 0 },\n    },\n  ];\nconst properties = eventProperties(job.event);\nconst base = \"https://api.notion.com/v1/pages\";\nreturn [\n  {\n    json: {\n      ...job,\n      needsWrite: true,\n      pageId: page?.id ?? \"\",\n      method: page ? \"PATCH\" : \"POST\",\n      url: page ? base + \"/\" + page.id : base,\n      body: page\n        ? { properties: { Name: properties.Name, Date: properties.Date, Link: properties.Link } }\n        : { parent: { type: \"data_source_id\", data_source_id: job.dataSourceId }, properties },\n    },\n    pairedItem: { item: 0 },\n  },\n];\n"
+      },
+      "position": [
+        1281,
+        250
+      ]
+    },
+    {
+      "id": "sync-outlook-calendar-events-to-notion-needs",
+      "name": "Does the event need a write?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.needsWrite }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "position": [
+        1464,
+        250
+      ]
+    },
+    {
+      "id": "sync-outlook-calendar-events-to-notion-prior",
+      "name": "Check for an unresolved write",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_NOTION_WRITES_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "request_key",
+              "condition": "eq",
+              "keyValue": "={{ $json.key }}"
+            }
+          ]
+        },
+        "limit": 1,
+        "returnAll": false
+      },
+      "position": [
+        1647,
+        250
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "id": "sync-outlook-calendar-events-to-notion-guard",
+      "name": "Check the reservation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const job = $(\"Check the exact match\").item.json;\nconst allowed = Object.keys($input.first().json).length === 0;\nreturn [\n  {\n    json: { ...job, allowed, status: allowed ? \"pending\" : \"pending_review\" },\n    pairedItem: { item: 0 },\n  },\n];\n"
+      },
+      "position": [
+        1830,
+        250
+      ]
+    },
+    {
+      "id": "sync-outlook-calendar-events-to-notion-allowed",
+      "name": "May this event be written?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.allowed }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "position": [
+        2013,
+        250
+      ]
+    },
+    {
+      "id": "sync-outlook-calendar-events-to-notion-reserve",
+      "name": "Reserve the Notion write",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_NOTION_WRITES_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "request_key": "={{ $json.key }}"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "position": [
+        2196,
+        250
+      ]
+    },
+    {
+      "id": "sync-outlook-calendar-events-to-notion-write",
+      "name": "Create or update the Notion page",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "={{ $('Check the exact match').item.json.method }}",
+        "url": "={{ $('Check the exact match').item.json.url }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Notion-Version",
+              "value": "2026-03-11"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $('Check the exact match').item.json.body }}",
+        "options": {
+          "timeout": 15000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "position": [
+        2379,
+        250
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "sync-outlook-calendar-events-to-notion-receipt",
+      "name": "Check the Notion write receipt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function notionId(value) {\n  if (\n    typeof value !== \"string\" ||\n    !/^([0-9a-f]{32}|[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12})$/i.test(value)\n  )\n    return \"\";\n  return value\n    .toLowerCase()\n    .replaceAll(\"-\", \"\")\n    .replace(/^(.{8})(.{4})(.{4})(.{4})/, \"$1-$2-$3-$4-\");\n}\n\nfunction notionPageText(items) {\n  if (\n    !Array.isArray(items) ||\n    items.some(\n      (item) => item.type !== \"text\" || typeof (item.plain_text ?? item.text?.content) !== \"string\",\n    )\n  )\n    return null;\n  return items.map((item) => item.plain_text ?? item.text.content).join(\"\");\n}\n\nfunction checkedNotionPage(page, event, dataSourceId, pageId = \"\") {\n  const id = notionId(page?.id);\n  if (\n    page?.object !== \"page\" ||\n    !id ||\n    (pageId && id !== pageId) ||\n    page.in_trash === true ||\n    page.archived === true ||\n    page.parent?.type !== \"data_source_id\" ||\n    notionId(page.parent?.data_source_id) !== dataSourceId ||\n    notionPageText(page.properties?.[\"Event ID\"]?.rich_text) !== event.id\n  ) {\n    throw Error(\"Notion did not identify the exact event page in this data source.\");\n  }\n  const props = page.properties;\n  const current = props.Date?.date;\n  const same =\n    notionPageText(props.Name?.title) === event.title &&\n    props.Link?.url === event.link &&\n    Date.parse(current?.start) === Date.parse(event.start) &&\n    Date.parse(current?.end) === Date.parse(event.end);\n  return { id, same };\n}\n\nconst job = $(\"Check the exact match\").item.json;\nconst response = $input.first().json;\ntry {\n  if (response.statusCode !== 200 && response.statusCode !== 201)\n    throw Error(\"Notion did not confirm the write.\");\n  const saved = checkedNotionPage(response.body, job.event, job.dataSourceId, job.pageId);\n  if (saved.same)\n    return [\n      {\n        json: { ...job, ok: true, pageId: saved.id, status: job.pageId ? \"updated\" : \"created\" },\n        pairedItem: { item: 0 },\n      },\n    ];\n} catch {}\nreturn [{ json: { ...job, ok: false, status: \"pending_review\" }, pairedItem: { item: 0 } }];\n"
+      },
+      "position": [
+        2562,
+        250
+      ]
+    },
+    {
+      "id": "sync-outlook-calendar-events-to-notion-confirmed",
+      "name": "Did Notion confirm the change?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "position": [
+        2745,
+        250
+      ]
+    },
+    {
+      "id": "sync-outlook-calendar-events-to-notion-clear",
+      "name": "Clear the confirmed reservation",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "deleteRows",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_NOTION_WRITES_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "request_key",
+              "condition": "eq",
+              "keyValue": "={{ $json.key }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "position": [
+        2928,
+        250
+      ]
+    },
+    {
+      "id": "sync-outlook-calendar-events-to-notion-finish",
+      "name": "Finish this event",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const current = $input.first().json;\nconst row = current.event ? current : $(\"Check the Notion write receipt\").item.json;\nreturn [\n  {\n    json: { eventId: row.event.id, status: row.status, pageId: row.pageId ?? \"\" },\n    pairedItem: { item: 0 },\n  },\n];\n"
+      },
+      "position": [
+        3111,
+        250
+      ]
+    }
+  ],
+  "connections": {
+    "Check every five minutes": {
+      "main": [
+        [
+          {
+            "node": "Set the Notion data source",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set the Notion data source": {
+      "main": [
+        [
+          {
+            "node": "Read the Outlook calendar view",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the Outlook calendar view": {
+      "main": [
+        [
+          {
+            "node": "Check all calendar pages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check all calendar pages": {
+      "main": [
+        [
+          {
+            "node": "Select the next Outlook event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select the next Outlook event": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Pause between Notion events",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pause between Notion events": {
+      "main": [
+        [
+          {
+            "node": "Find the Notion page by Event ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find the Notion page by Event ID": {
+      "main": [
+        [
+          {
+            "node": "Check the exact match",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check the exact match": {
+      "main": [
+        [
+          {
+            "node": "Does the event need a write?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Does the event need a write?": {
+      "main": [
+        [
+          {
+            "node": "Check for an unresolved write",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Finish this event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check for an unresolved write": {
+      "main": [
+        [
+          {
+            "node": "Check the reservation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check the reservation": {
+      "main": [
+        [
+          {
+            "node": "May this event be written?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "May this event be written?": {
+      "main": [
+        [
+          {
+            "node": "Reserve the Notion write",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Finish this event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve the Notion write": {
+      "main": [
+        [
+          {
+            "node": "Create or update the Notion page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create or update the Notion page": {
+      "main": [
+        [
+          {
+            "node": "Check the Notion write receipt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check the Notion write receipt": {
+      "main": [
+        [
+          {
+            "node": "Did Notion confirm the change?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Did Notion confirm the change?": {
+      "main": [
+        [
+          {
+            "node": "Clear the confirmed reservation",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Finish this event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clear the confirmed reservation": {
+      "main": [
+        [
+          {
+            "node": "Finish this event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Finish this event": {
+      "main": [
+        [
+          {
+            "node": "Select the next Outlook event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC",
+    "saveDataErrorExecution": "none",
+    "saveDataSuccessExecution": "none",
+    "saveManualExecutions": false
+  },
+  "pinData": {}
+}

@@ -733,6 +733,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Summarize IMAP Emails and Send Them to LINE](workflows/summarize-imap-emails-and-send-to-line/) - Summarize each unread IMAP email with OpenRouter and send its actions and deadlines to one configured LINE user.
 - [Follow Up on Fireflies Project Meetings](workflows/plan-fireflies-meeting-followup/) - Turn a completed Fireflies project meeting into Airtable tasks, individual summaries, and a confirmed Google Meet follow-up.
 - [Email Recent RSS Articles Every Hour](workflows/email-hourly-rss-articles/) - Check selected publisher feeds at half past each hour and email each article published in the preceding hour.
+- [Sync Outlook Calendar Events to Notion](workflows/sync-outlook-calendar-events-to-notion/) - Sync your primary Outlook calendar to a Notion data source, matching each event by its Outlook ID.
 
 ## Content
 
