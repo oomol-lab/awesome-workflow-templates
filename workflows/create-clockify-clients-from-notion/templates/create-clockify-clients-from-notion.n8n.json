@@ -1,0 +1,689 @@
+{
+  "name": "Create Clockify Clients from New Notion Pages",
+  "active": false,
+  "nodes": [
+    {
+      "id": "create-clockify-clients-from-notion-schedule",
+      "name": "Check Notion every minute",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 1
+            }
+          ]
+        }
+      },
+      "position": [
+        0,
+        250
+      ]
+    },
+    {
+      "id": "create-clockify-clients-from-notion-setup",
+      "name": "Set Notion and Clockify IDs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function configure(settings, at) {\n  const { dataSourceId, workspaceId, nameProperty } = settings;\n  const uuid = String(dataSourceId).replace(/-/g, \"\").toLowerCase();\n  const oid = String(workspaceId).toLowerCase();\n  if (\n    !/^[0-9a-f]{32}$/.test(uuid) ||\n    !/^[0-9a-f]{24}$/.test(oid) ||\n    typeof nameProperty !== \"string\" ||\n    !nameProperty.trim()\n  ) {\n    throw Error(\"Configure the Notion data source ID, Clockify workspace ID and name property.\");\n  }\n  const time = Date.parse(at);\n  if (!Number.isFinite(time)) throw Error(\"The scheduled time is missing.\");\n  const source = uuid.replace(/^(........)(....)(....)(....)(............)$/, \"$1-$2-$3-$4-$5\");\n  return {\n    source,\n    workspaceId: oid,\n    nameProperty,\n    key: \"notion-clockify:\" + source + \"|\" + oid,\n    upper: new Date(Math.floor(time / 60000) * 60000).toISOString(),\n  };\n}\nconst settings = {\n  dataSourceId: \"YOUR_NOTION_DATA_SOURCE_ID\",\n  workspaceId: \"YOUR_CLOCKIFY_WORKSPACE_ID\",\n  nameProperty: \"Name\",\n};\nreturn [{ json: configure(settings, $input.first().json.timestamp) }];\n"
+      },
+      "position": [
+        225,
+        250
+      ]
+    },
+    {
+      "id": "create-clockify-clients-from-notion-checkpoint",
+      "name": "Read the last successful poll",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_NOTION_CLOCKIFY_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "scope_key",
+              "condition": "eq",
+              "keyValue": "={{ $json.key }}"
+            }
+          ]
+        },
+        "limit": 2,
+        "returnAll": false
+      },
+      "position": [
+        450,
+        250
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "id": "create-clockify-clients-from-notion-poll",
+      "name": "Set the creation-time window",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function windowFor(config, previous) {\n  const baseline = previous?.baseline ?? config.upper;\n  const last = previous?.upper ?? config.upper;\n  if (!Number.isFinite(Date.parse(baseline)) || !Number.isFinite(Date.parse(last)))\n    throw Error(\"Invalid polling checkpoint.\");\n  const lower = new Date(Math.max(Date.parse(baseline), Date.parse(last) - 60000)).toISOString();\n  return { ...config, baseline, lower, first: previous == null, skip: config.upper <= last };\n}\nfunction range(win) {\n  return {\n    and: [\n      { timestamp: \"created_time\", created_time: { on_or_after: win.lower } },\n      { timestamp: \"created_time\", created_time: { before: win.upper } },\n    ],\n  };\n}\nconst previous = $input.all().filter((item) => item.json.scope_key);\nif (previous.length > 1) throw Error(\"More than one checkpoint exists for this configuration.\");\nconst win = windowFor(\n  $(\"Set Notion and Clockify IDs\").first().json,\n  previous.length ? JSON.parse(previous[0].json.value) : null,\n);\nreturn [{ json: { ...win, filter: range(win) } }];\n"
+      },
+      "position": [
+        675,
+        250
+      ]
+    },
+    {
+      "id": "create-clockify-clients-from-notion-baseline",
+      "name": "Can the Notion query be skipped?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.skip }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "position": [
+        900,
+        250
+      ]
+    },
+    {
+      "id": "create-clockify-clients-from-notion-scan",
+      "name": "Read new Notion pages",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "={{ \"https://api.notion.com/v1/data_sources/\" + $json.source + \"/query\" }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Notion-Version",
+              "value": "2026-03-11"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {filter:$json.filter,page_size:100,result_type:\"page\",sorts:[{timestamp:\"created_time\",direction:\"ascending\"}]} }}",
+        "options": {
+          "timeout": 15000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          },
+          "pagination": {
+            "pagination": {
+              "paginationMode": "updateAParameterInEachRequest",
+              "parameters": {
+                "parameters": [
+                  {
+                    "type": "body",
+                    "name": "start_cursor",
+                    "value": "={{ $response?.body?.next_cursor ?? undefined }}"
+                  }
+                ]
+              },
+              "paginationCompleteWhen": "other",
+              "completeExpression": "={{ $response.body?.has_more !== true }}",
+              "limitPagesFetched": true,
+              "maxRequests": 50,
+              "requestInterval": 350
+            }
+          }
+        }
+      },
+      "position": [
+        1125,
+        250
+      ]
+    },
+    {
+      "id": "create-clockify-clients-from-notion-ready",
+      "name": "Collect complete Notion results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function collectRows(pages, win) {\n  const queued = new Map(),\n    cursors = new Set();\n  for (const [index, page] of pages.entries()) {\n    if (\n      !Array.isArray(page?.results) ||\n      page.has_more !== index < pages.length - 1 ||\n      (page.has_more\n        ? typeof page.next_cursor !== \"string\" || !page.next_cursor || cursors.has(page.next_cursor)\n        : page.next_cursor !== null) ||\n      (page.request_status && page.request_status.type !== \"complete\" && !page.has_more)\n    ) {\n      throw Error(\n        \"The Notion query did not return a complete set of pages. The checkpoint was kept.\",\n      );\n    }\n    if (page.has_more) cursors.add(page.next_cursor);\n    for (const row of page.results) {\n      const created = Date.parse(row.created_time);\n      if (row.object !== \"page\" || !Number.isFinite(created))\n        throw Error(\"Notion returned an invalid page.\");\n      if (created < Date.parse(win.lower) || created >= Date.parse(win.upper)) continue;\n      const pageId = String(row.id).toLowerCase();\n      if (\n        !/^[0-9a-f-]{36}$/.test(pageId) ||\n        row.parent?.type !== \"data_source_id\" ||\n        String(row.parent.data_source_id).replace(/-/g, \"\").toLowerCase() !==\n          win.source.replace(/-/g, \"\")\n      ) {\n        throw Error(\"Notion returned a page outside the configured data source.\");\n      }\n      if (queued.has(pageId)) continue;\n      const property = row.properties?.[win.nameProperty];\n      const parts =\n        property?.type === \"title\"\n          ? property.title\n          : property?.type === \"rich_text\"\n            ? property.rich_text\n            : null;\n      const name = Array.isArray(parts)\n        ? parts\n            .map((part) => part.plain_text ?? part.text?.content ?? \"\")\n            .join(\"\")\n            .trim()\n        : \"\";\n      queued.set(pageId, {\n        pageId,\n        name,\n        key: win.key + \"|\" + pageId,\n        eligible: name.length > 0 && [...name].length <= 100,\n      });\n    }\n  }\n  return [...queued.values()];\n}\nconst pages = $input.all().map(({ json }) => {\n  if (json.statusCode !== 200) throw Error(\"The Notion poll failed.\");\n  return json.body;\n});\nconst rows = collectRows(pages, $(\"Set the creation-time window\").first().json);\nreturn [{ json: { stop: true } }, ...rows.map((row) => ({ json: row }))];\n"
+      },
+      "position": [
+        1350,
+        250
+      ]
+    },
+    {
+      "id": "create-clockify-clients-from-notion-next",
+      "name": "Select one Notion page",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "position": [
+        0,
+        430
+      ]
+    },
+    {
+      "id": "create-clockify-clients-from-notion-empty",
+      "name": "Should this item be skipped?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.stop===true || !$json.eligible }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "position": [
+        225,
+        430
+      ]
+    },
+    {
+      "id": "create-clockify-clients-from-notion-existing",
+      "name": "Find this page reservation",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_NOTION_CLOCKIFY_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "scope_key",
+              "condition": "eq",
+              "keyValue": "={{ $json.key }}"
+            }
+          ]
+        },
+        "limit": 1,
+        "returnAll": false
+      },
+      "position": [
+        450,
+        430
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "id": "create-clockify-clients-from-notion-previous",
+      "name": "Was this page already reserved?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ Boolean($json.scope_key) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "position": [
+        675,
+        430
+      ]
+    },
+    {
+      "id": "create-clockify-clients-from-notion-reserve",
+      "name": "Reserve this page ID",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_NOTION_CLOCKIFY_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "scope_key": "={{ $('Select one Notion page').first(1,-1).json.key }}",
+            "status": "pending_review",
+            "value": ""
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "position": [
+        900,
+        430
+      ]
+    },
+    {
+      "id": "create-clockify-clients-from-notion-create",
+      "name": "Create the Clockify client",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "={{ \"https://api.clockify.me/api/v1/workspaces/\" + $('Set the creation-time window').first().json.workspaceId + \"/clients\" }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {name:$('Select one Notion page').first(1,-1).json.name} }}",
+        "options": {
+          "timeout": 15000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "responseFormat": "json",
+              "neverError": true
+            }
+          }
+        }
+      },
+      "position": [
+        1125,
+        430
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "create-clockify-clients-from-notion-confirm",
+      "name": "Verify the Clockify receipt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function outcome(row, ws, status, body) {\n  return status === 201 &&\n    typeof body?.id === \"string\" &&\n    body.id.length > 0 &&\n    body.workspaceId === ws &&\n    body.name === row.name\n    ? { pageId: row.pageId, status: \"created\", clientId: body.id }\n    : { pageId: row.pageId, status: \"pending_review\" };\n}\nconst row = $(\"Select one Notion page\").first(1, -1).json,\n  response = $input.first().json;\nreturn [\n  {\n    json: {\n      ...outcome(\n        row,\n        $(\"Set the creation-time window\").first().json.workspaceId,\n        response.statusCode,\n        response.body,\n      ),\n      key: row.key,\n    },\n  },\n];\n"
+      },
+      "position": [
+        1350,
+        430
+      ]
+    },
+    {
+      "id": "create-clockify-clients-from-notion-record",
+      "name": "Save the client outcome",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_NOTION_CLOCKIFY_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "scope_key",
+              "condition": "eq",
+              "keyValue": "={{ $json.key }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "={{ $json.status }}",
+            "value": "={{ $json.clientId ?? \"\" }}"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "position": [
+        0,
+        610
+      ]
+    },
+    {
+      "id": "create-clockify-clients-from-notion-commit",
+      "name": "Save the polling checkpoint",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "upsert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_NOTION_CLOCKIFY_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "scope_key",
+              "condition": "eq",
+              "keyValue": "={{ $('Set the creation-time window').first().json.key }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "scope_key": "={{ $('Set the creation-time window').first().json.key }}",
+            "status": "checkpoint",
+            "value": "={{ JSON.stringify({baseline:$('Set the creation-time window').first().json.baseline,upper:$('Set the creation-time window').first().json.upper}) }}"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "position": [
+        225,
+        610
+      ]
+    },
+    {
+      "id": "create-clockify-clients-from-notion-finalize",
+      "name": "Prepare the successful checkpoint",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const win = $(\"Set the creation-time window\").first().json;\nreturn win.first || !win.skip ? [{ json: { key: win.key } }] : [];\n"
+      },
+      "position": [
+        450,
+        610
+      ]
+    }
+  ],
+  "connections": {
+    "Check Notion every minute": {
+      "main": [
+        [
+          {
+            "node": "Set Notion and Clockify IDs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Notion and Clockify IDs": {
+      "main": [
+        [
+          {
+            "node": "Read the last successful poll",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the last successful poll": {
+      "main": [
+        [
+          {
+            "node": "Set the creation-time window",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set the creation-time window": {
+      "main": [
+        [
+          {
+            "node": "Can the Notion query be skipped?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Can the Notion query be skipped?": {
+      "main": [
+        [
+          {
+            "node": "Prepare the successful checkpoint",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Read new Notion pages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read new Notion pages": {
+      "main": [
+        [
+          {
+            "node": "Collect complete Notion results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect complete Notion results": {
+      "main": [
+        [
+          {
+            "node": "Select one Notion page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select one Notion page": {
+      "main": [
+        [
+          {
+            "node": "Prepare the successful checkpoint",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Should this item be skipped?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Should this item be skipped?": {
+      "main": [
+        [
+          {
+            "node": "Select one Notion page",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Find this page reservation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find this page reservation": {
+      "main": [
+        [
+          {
+            "node": "Was this page already reserved?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Was this page already reserved?": {
+      "main": [
+        [
+          {
+            "node": "Select one Notion page",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reserve this page ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve this page ID": {
+      "main": [
+        [
+          {
+            "node": "Create the Clockify client",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create the Clockify client": {
+      "main": [
+        [
+          {
+            "node": "Verify the Clockify receipt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify the Clockify receipt": {
+      "main": [
+        [
+          {
+            "node": "Save the client outcome",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save the client outcome": {
+      "main": [
+        [
+          {
+            "node": "Select one Notion page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare the successful checkpoint": {
+      "main": [
+        [
+          {
+            "node": "Save the polling checkpoint",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC",
+    "saveDataErrorExecution": "none",
+    "saveDataSuccessExecution": "none",
+    "saveManualExecutions": false
+  },
+  "pinData": {}
+}

@@ -757,6 +757,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Schedule Zoom Meetings for Calendar Events](workflows/schedule-zoom-meetings-for-calendar-events/) - Review the next 12 hours of Google Calendar and create Zoom meetings for eligible timed events.
 - [Download a PDF Attachment from a Webhook](workflows/download-pdf-attachment-from-webhook/) - Return a configured PDF as a dated attachment in the same GET request.
 - [Create Google Meet Links from Slack](workflows/create-google-meet-links-from-slack/) - Run /meet in Slack to create a Google Meet space and post the join link in the same conversation.
+- [Create Clockify Clients from New Notion Pages](workflows/create-clockify-clients-from-notion/) - Create a Clockify client using the Name field of each new page in one Notion data source.
 
 ## Content
 
