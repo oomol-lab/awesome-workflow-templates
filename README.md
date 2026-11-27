@@ -756,6 +756,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Back Up a Google Sheet to Dropbox as XLS](workflows/export-google-sheet-xls-to-dropbox/) - Every 15 minutes, export the rows of a Google Sheets range as a legacy Excel workbook and replace a Dropbox file.
 - [Schedule Zoom Meetings for Calendar Events](workflows/schedule-zoom-meetings-for-calendar-events/) - Review the next 12 hours of Google Calendar and create Zoom meetings for eligible timed events.
 - [Download a PDF Attachment from a Webhook](workflows/download-pdf-attachment-from-webhook/) - Return a configured PDF as a dated attachment in the same GET request.
+- [Create Google Meet Links from Slack](workflows/create-google-meet-links-from-slack/) - Run /meet in Slack to create a Google Meet space and post the join link in the same conversation.
 
 ## Content
 

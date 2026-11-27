@@ -1,0 +1,371 @@
+{
+  "name": "Create Google Meet Links from Slack",
+  "nodes": [
+    {
+      "id": "create-google-meet-links-from-slack-hook",
+      "name": "Receive the Slack command",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        180
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "create-google-meet-links-from-slack",
+        "authentication": "none",
+        "responseMode": "responseNode",
+        "options": {
+          "rawBody": true
+        }
+      }
+    },
+    {
+      "id": "create-google-meet-links-from-slack-raw",
+      "name": "Read the signed request bytes",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        180
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function slackSignatureInput(headers, raw, nowSeconds) {\n  const timestamp = headers?.[\"x-slack-request-timestamp\"];\n  const signature = headers?.[\"x-slack-signature\"];\n  if (\n    typeof timestamp !== \"string\" ||\n    !/^\\d{10}$/.test(timestamp) ||\n    Math.abs(nowSeconds - Number(timestamp)) > 300 ||\n    typeof signature !== \"string\" ||\n    !/^v0=[a-f0-9]{64}$/.test(signature) ||\n    typeof raw !== \"string\" ||\n    !/^[\\x20-\\x7e]{1,16384}$/.test(raw) ||\n    !/^application\\/x-www-form-urlencoded(?:\\s*;|$)/i.test(headers?.[\"content-type\"] ?? \"\")\n  ) {\n    return { ready: false, base: \"v0:invalid\", signature: \"\" };\n  }\n  return {\n    ready: true,\n    base: \"v0:\" + timestamp + \":\" + raw,\n    signature,\n    raw,\n    retry: /^\\d+$/.test(headers[\"x-slack-retry-num\"] ?? \"\"),\n  };\n}\n\nlet raw = \"\";\ntry {\n  const bytes = await helpers.getBinaryDataBuffer(0, \"data\");\n  if (bytes.length <= 16384 && !bytes.some((byte) => byte < 32 || byte > 126))\n    raw = Buffer.from(bytes).toString(\"ascii\");\n} catch {}\nreturn { json: slackSignatureInput($json.headers, raw, Math.floor(Date.now() / 1000)) };\n"
+      }
+    },
+    {
+      "id": "create-google-meet-links-from-slack-hmac",
+      "name": "Compute the Slack signature",
+      "type": "n8n-nodes-base.crypto",
+      "typeVersion": 1,
+      "position": [
+        440,
+        180
+      ],
+      "parameters": {
+        "action": "hmac",
+        "type": "SHA256",
+        "encoding": "hex",
+        "binaryData": false,
+        "value": "={{ $json.base }}",
+        "dataPropertyName": "digest",
+        "secret": "={{ $env.SLACK_SIGNING_SECRET?.length >= 16 ? $env.SLACK_SIGNING_SECRET : null }}"
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "create-google-meet-links-from-slack-admit",
+      "name": "Verify Slack and select the conversation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        180
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function equalSignature(received, digest) {\n  if (\n    typeof digest !== \"string\" ||\n    !/^[a-f0-9]{64}$/.test(digest) ||\n    typeof received !== \"string\" ||\n    received.length !== 67\n  )\n    return false;\n  const expected = \"v0=\" + digest;\n  let difference = 0;\n  for (let i = 0; i < expected.length; i++)\n    difference |= received.charCodeAt(i) ^ expected.charCodeAt(i);\n  return difference === 0;\n}\n\nfunction parseSlackForm(raw) {\n  const decoded = Object.create(null);\n  const unescape = (value) => decodeURIComponent(value.replaceAll(\"+\", \" \"));\n  for (const pair of raw.split(\"&\")) {\n    const separator = pair.indexOf(\"=\");\n    if (separator < 0) throw new Error(\"Malformed Slack command.\");\n    const key = unescape(pair.slice(0, separator));\n    if (!key || Object.hasOwn(decoded, key)) throw new Error(\"Repeated Slack command field.\");\n    decoded[key] = unescape(pair.slice(separator + 1));\n  }\n  return decoded;\n}\n\nfunction admitMeet(prepared, digest, workspaceId) {\n  if (!prepared.ready || !equalSignature(prepared.signature, digest)) {\n    return { accepted: false, status: 401, response: { error: \"Invalid Slack signature.\" } };\n  }\n  let form;\n  try {\n    form = parseSlackForm(prepared.raw);\n  } catch {\n    return { accepted: false, status: 400, response: { error: \"Invalid Slack command.\" } };\n  }\n  if (form.command !== \"/meet\" || !/^[CGD][A-Z0-9]{3,}$/.test(form.channel_id ?? \"\")) {\n    return {\n      accepted: false,\n      status: 400,\n      response: { error: \"Expected /meet in a Slack conversation.\" },\n    };\n  }\n  if (!/^T[A-Z0-9]{3,}$/.test(workspaceId) || form.team_id !== workspaceId) {\n    return {\n      accepted: false,\n      status: 403,\n      response: { error: \"This Slack workspace is not configured.\" },\n    };\n  }\n  if (prepared.retry)\n    return {\n      accepted: false,\n      status: 200,\n      response: { response_type: \"ephemeral\", text: \"This command has already been received.\" },\n    };\n  return { accepted: true, channel: form.channel_id };\n}\nconst workspaceId = \"YOUR_SLACK_WORKSPACE_ID\";\nreturn {\n  json: admitMeet($(\"Read the signed request bytes\").first().json, $json.digest, workspaceId),\n};\n"
+      }
+    },
+    {
+      "id": "create-google-meet-links-from-slack-gate",
+      "name": "Is the command authorized?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        880,
+        180
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "create-google-meet-links-from-slack-allowed",
+              "leftValue": "={{ $json.accepted }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "create-google-meet-links-from-slack-ack",
+      "name": "Acknowledge the command",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1100,
+        180
+      ],
+      "parameters": {
+        "respondWith": "noData",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Cache-Control",
+                "value": "no-store"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "create-google-meet-links-from-slack-reject",
+      "name": "Return the command error",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1100,
+        385
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json.response }}",
+        "options": {
+          "responseCode": "={{ $json.status }}",
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Cache-Control",
+                "value": "no-store"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "create-google-meet-links-from-slack-meet",
+      "name": "Create the Google Meet space",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1320,
+        180
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://meet.googleapis.com/v2/spaces",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "oAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{}",
+        "options": {
+          "timeout": 20000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "retryOnFail": false,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "create-google-meet-links-from-slack-message",
+      "name": "Read and format the join link",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1540,
+        180
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function slackMessage(channel, status, space) {\n  if (\n    (status !== 200 && status !== 201) ||\n    typeof space?.meetingUri !== \"string\" ||\n    !/^https:\\/\\/meet\\.google\\.com\\/[a-z]+-[a-z]+-[a-z]+$/.test(space.meetingUri)\n  ) {\n    throw new Error(\"Google Meet did not return a confirmed join link. No link was posted.\");\n  }\n  return {\n    channel,\n    text: \"Join me here: \" + space.meetingUri,\n    unfurl_links: false,\n    unfurl_media: false,\n    allowed_mentions: { parse: [] },\n  };\n}\nreturn {\n  json: slackMessage(\n    $(\"Verify Slack and select the conversation\").first().json.channel,\n    $json.statusCode,\n    $json.body,\n  ),\n};\n"
+      }
+    },
+    {
+      "id": "create-google-meet-links-from-slack-slack",
+      "name": "Post the link to Slack",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1760,
+        180
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://slack.com/api/chat.postMessage",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "slackApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {
+          "timeout": 20000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "retryOnFail": false,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "create-google-meet-links-from-slack-receipt",
+      "name": "Confirm Slack accepted the message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1980,
+        180
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const channel = $(\"Verify Slack and select the conversation\").first().json.channel;\nconst { statusCode, body } = $json;\nif (\n  statusCode !== 200 ||\n  body?.ok !== true ||\n  body.channel !== channel ||\n  typeof body.ts !== \"string\" ||\n  !body.ts\n) {\n  throw new Error(\n    \"Slack did not confirm the message. Check the conversation before running the command again.\",\n  );\n}\nreturn { json: { channel, messageTimestamp: body.ts } };\n"
+      }
+    }
+  ],
+  "connections": {
+    "Receive the Slack command": {
+      "main": [
+        [
+          {
+            "node": "Read the signed request bytes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the signed request bytes": {
+      "main": [
+        [
+          {
+            "node": "Compute the Slack signature",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compute the Slack signature": {
+      "main": [
+        [
+          {
+            "node": "Verify Slack and select the conversation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify Slack and select the conversation": {
+      "main": [
+        [
+          {
+            "node": "Is the command authorized?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is the command authorized?": {
+      "main": [
+        [
+          {
+            "node": "Acknowledge the command",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Return the command error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Acknowledge the command": {
+      "main": [
+        [
+          {
+            "node": "Create the Google Meet space",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create the Google Meet space": {
+      "main": [
+        [
+          {
+            "node": "Read and format the join link",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read and format the join link": {
+      "main": [
+        [
+          {
+            "node": "Post the link to Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Post the link to Slack": {
+      "main": [
+        [
+          {
+            "node": "Confirm Slack accepted the message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "saveExecutionProgress": false,
+    "saveManualExecutions": false,
+    "saveDataSuccessExecution": "none",
+    "saveDataErrorExecution": "none"
+  }
+}
