@@ -251,6 +251,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Back Up n8n Workflows by ID to GitHub](workflows/back-up-n8n-workflows-by-id-to-github/) - Back up n8n workflows to GitHub by workflow ID, updating files only when their contents change.
 - [Email Zero-Budget Project Alerts](workflows/email-zero-budget-project-alerts/) - Send weekly Outlook alerts with the number of open, active external projects that have a zero budgeted cost, grouped by company and cost center.
 - [Create Azure DevOps Tasks from Elasticsearch Alerts](workflows/elasticsearch-alert-to-azure-devops-task/) - Count matching Elasticsearch documents each day and create an Azure DevOps Task when there is at least one match.
+- [Monitor Disk Space with SSH](workflows/monitor-disk-space-with-ssh/) - Check one remote host every 30 minutes and send disk usage changes to Telegram, with email as a fallback.
 
 ## Marketing
 

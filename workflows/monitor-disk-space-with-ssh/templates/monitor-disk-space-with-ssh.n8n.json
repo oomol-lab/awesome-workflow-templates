@@ -1,0 +1,226 @@
+{
+  "name": "Monitor Disk Space with SSH",
+  "nodes": [
+    {
+      "id": "monitor-disk-space-with-ssh-trigger",
+      "name": "Check every 30 minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 */30 * * * *"
+            }
+          ]
+        }
+      },
+      "position": [
+        0,
+        260
+      ]
+    },
+    {
+      "id": "monitor-disk-space-with-ssh-ssh",
+      "name": "Read remote disk usage",
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "parameters": {
+        "authentication": "password",
+        "resource": "command",
+        "operation": "execute",
+        "command": "df -P",
+        "cwd": "/"
+      },
+      "position": [
+        224,
+        260
+      ]
+    },
+    {
+      "id": "monitor-disk-space-with-ssh-parse",
+      "name": "Evaluate disk thresholds",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function checkDiskUsage(response, { warning, critical }, previous = {}) {\n  if (\n    !Number.isInteger(warning) ||\n    !Number.isInteger(critical) ||\n    warning < 1 ||\n    critical <= warning ||\n    critical > 100\n  ) {\n    throw Error(\"Set whole-number disk thresholds with 1 ≤ warning < critical ≤ 100.\");\n  }\n  if (response.code !== 0 || response.signal || typeof response.stdout !== \"string\") {\n    throw Error(\"The remote df -P command did not complete successfully.\");\n  }\n  const [header, ...lines] = response.stdout.trim().split(/\\r?\\n/);\n  const format =\n    /^Filesystem\\s+(512|1024|1K)-blocks\\s+Used\\s+Available\\s+(?:Capacity|Use%)\\s+Mounted on$/i.exec(\n      header.trim(),\n    );\n  const rows = lines.filter((line) => line.trim());\n  if (!format || !rows.length)\n    throw Error(\"The remote host did not return a compatible df -P table.\");\n  const blockBytes = format[1] === \"512\" ? 512 : 1024;\n  const levels = new Map(Object.entries(previous));\n  const mounts = new Set();\n  const alerts = [];\n  for (const line of rows) {\n    const match = /^\\s*(.*?)\\s+(\\d+)\\s+(-?\\d+)\\s+(-?\\d+)\\s+(\\d+)%\\s+(.+?)\\s*$/.exec(line);\n    if (!match) throw Error(\"A remote df -P row has an unexpected format.\");\n    const [, device, , , available, percentage, mount] = match;\n    const usedPct = Number(percentage);\n    if (\n      !device ||\n      !mount ||\n      !Number.isSafeInteger(usedPct) ||\n      !Number.isSafeInteger(Number(available)) ||\n      mounts.has(mount)\n    )\n      throw Error(\"A remote df -P row has an invalid or repeated mount.\");\n    mounts.add(mount);\n    const level = usedPct >= critical ? \"critical\" : usedPct >= warning ? \"warning\" : \"ok\";\n    if (level === (levels.get(mount) ?? \"ok\")) continue;\n    if (level === \"ok\") {\n      levels.delete(mount);\n      alerts.push(\"[OK] \" + mount + \" back below threshold (\" + usedPct + \"%)\");\n    } else {\n      levels.set(mount, level);\n      const free = ((Number(available) * blockBytes) / 1073741824).toFixed(1);\n      const severity = level === \"critical\" ? \"[CRITICAL]\" : \"[WARNING]\";\n      alerts.push(\n        severity + \" \" + mount + \" (\" + device + \"): \" + usedPct + \"% used, \" + free + \" GiB free\",\n      );\n    }\n  }\n  return {\n    hasAlerts: alerts.length > 0,\n    message: alerts.join(\"\\n\"),\n    levels: Object.fromEntries(levels),\n  };\n}\nconst thresholds = { warning: 80, critical: 90 };\nconst state = $getWorkflowStaticData(\"global\");\nconst result = checkDiskUsage($input.first().json, thresholds, state.diskLevels);\nreturn [{ json: result, pairedItem: { item: 0 } }];\n"
+      },
+      "position": [
+        448,
+        260
+      ]
+    },
+    {
+      "id": "monitor-disk-space-with-ssh-gate",
+      "name": "Did any mount change severity?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.hasAlerts }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "position": [
+        672,
+        260
+      ]
+    },
+    {
+      "id": "monitor-disk-space-with-ssh-send",
+      "name": "Send the Telegram alert",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "parameters": {
+        "resource": "message",
+        "operation": "sendMessage",
+        "chatId": "YOUR_TELEGRAM_CHAT_ID",
+        "text": "={{ $json.message.replace(/&/g, \"&amp;\").replace(/</g, \"&lt;\").replace(/>/g, \"&gt;\") }}",
+        "additionalFields": {
+          "parse_mode": "HTML",
+          "appendAttribution": false
+        }
+      },
+      "position": [
+        896,
+        260
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "id": "monitor-disk-space-with-ssh-fallback",
+      "name": "Email the same alert",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "parameters": {
+        "resource": "email",
+        "operation": "send",
+        "fromEmail": "watchdog@example.invalid",
+        "toEmail": "operator@example.invalid",
+        "subject": "Disk space watchdog alert",
+        "emailFormat": "text",
+        "text": "={{ $('Evaluate disk thresholds').item.json.message }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "position": [
+        1120,
+        260
+      ]
+    },
+    {
+      "id": "monitor-disk-space-with-ssh-commit",
+      "name": "Save the delivered severity levels",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const receipt = $input.first().json;\nconst telegramDelivered = receipt.ok === true && Number.isInteger(receipt.result?.message_id);\nconst smtpAccepted = Array.isArray(receipt.accepted) && receipt.accepted.length > 0;\nif (!telegramDelivered && !smtpAccepted) {\n  throw Error(\"The notification service did not return a delivery receipt.\");\n}\nconst alert = $(\"Evaluate disk thresholds\").item.json;\n$getWorkflowStaticData(\"global\").diskLevels = alert.levels;\nreturn [{ json: { message: alert.message }, pairedItem: { item: 0 } }];\n"
+      },
+      "position": [
+        1344,
+        260
+      ]
+    }
+  ],
+  "active": false,
+  "connections": {
+    "Check every 30 minutes": {
+      "main": [
+        [
+          {
+            "node": "Read remote disk usage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read remote disk usage": {
+      "main": [
+        [
+          {
+            "node": "Evaluate disk thresholds",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Evaluate disk thresholds": {
+      "main": [
+        [
+          {
+            "node": "Did any mount change severity?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Did any mount change severity?": {
+      "main": [
+        [
+          {
+            "node": "Send the Telegram alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send the Telegram alert": {
+      "main": [
+        [
+          {
+            "node": "Save the delivered severity levels",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Email the same alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email the same alert": {
+      "main": [
+        [
+          {
+            "node": "Save the delivered severity levels",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC"
+  },
+  "pinData": {}
+}
