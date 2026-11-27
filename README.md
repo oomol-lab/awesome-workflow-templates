@@ -789,6 +789,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Fulfill Aged Shopify Orders](workflows/fulfill-aged-shopify-orders/) - Find unfulfilled Shopify orders older than one day and create fulfillments with customer notifications.
 - [Import Sheet Manufacturers to Shopware](workflows/import-sheet-manufacturers-to-shopware/) - Upsert manufacturers, translations and logo URLs from Google Sheets into Shopware.
 - [Track Zalando Swiss Prices](workflows/track-zalando-swiss-price-alerts/) - Track Zalando Switzerland product prices in Google Sheets and send a Gmail alert when a price reaches your CHF threshold.
+- [Report Weekly Shopify Orders](workflows/report-weekly-shopify-orders/) - Count open Shopify orders and total their prices for the preceding reporting week, then log and share the same result.
 
 ## Utilities
 

@@ -1,0 +1,290 @@
+{
+  "name": "Report Weekly Shopify Orders",
+  "nodes": [
+    {
+      "id": "report-weekly-shopify-orders-schedule",
+      "name": "Run on Monday at 10:00 UTC",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 10 * * 1"
+            }
+          ]
+        }
+      },
+      "position": [
+        0,
+        220
+      ]
+    },
+    {
+      "id": "report-weekly-shopify-orders-config",
+      "name": "Set report destinations",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function reportConfig(at, spreadsheetId, range, channelId, shop = null) {\n  if (\n    !/^[A-Za-z0-9_-]{10,}$/.test(spreadsheetId) ||\n    spreadsheetId.startsWith(\"YOUR_\") ||\n    !range.trim() ||\n    !/^[CG][A-Z0-9]{8,}$/.test(channelId)\n  ) {\n    throw new Error(\"Configure the report spreadsheet, A1 range and Slack channel ID.\");\n  }\n  if (shop !== null && !/^[a-z0-9][a-z0-9-]*\\.myshopify\\.com$/.test(shop)) {\n    throw new Error(\"Configure the Shopify myshopify.com hostname.\");\n  }\n\n  const end = new Date(at);\n  const timestamp = end.getTime();\n  if (!Number.isFinite(timestamp)) throw new Error(\"The schedule timestamp is missing.\");\n  end.setUTCDate(end.getUTCDate() - ((end.getUTCDay() + 6) % 7));\n  end.setUTCHours(10, 0, 0, 0);\n  if (end.getTime() > timestamp) end.setUTCDate(end.getUTCDate() - 7);\n  const start = new Date(end.getTime() - 7 * 86400000);\n  return {\n    weekStart: start.toISOString(),\n    weekEnd: end.toISOString(),\n    spreadsheetId,\n    range,\n    channelId,\n    shop,\n  };\n}\n\nfunction orderQuery(config, cursor) {\n  const query = `query WeeklyOrderTotals($filter: String!, $after: String) {\n    shop { currencyCode myshopifyDomain }\n    orders(first: 100, after: $after, query: $filter, sortKey: CREATED_AT) {\n      nodes { id createdAt closed cancelledAt totalPriceSet { shopMoney { amount currencyCode } } }\n      pageInfo { hasNextPage endCursor }\n    }\n  }`;\n  const filter =\n    \"status:open AND created_at:>='\" +\n    config.weekStart +\n    \"' AND created_at:<'\" +\n    config.weekEnd +\n    \"'\";\n  return { query, variables: { filter, after: cursor } };\n}\n\nconst settings = {\n  spreadsheetId: \"YOUR_SPREADSHEET_ID\",\n  range: \"'Weekly'!A:E\",\n  channelId: \"YOUR_SLACK_CHANNEL_ID\",\n  shop: \"your-shop.myshopify.com\",\n};\nconst config = reportConfig(\n  $input.first().json.timestamp,\n  settings.spreadsheetId,\n  settings.range,\n  settings.channelId,\n  settings.shop,\n);\nreturn [{ json: { config, request: orderQuery(config, null) } }];\n"
+      },
+      "position": [
+        235,
+        220
+      ]
+    },
+    {
+      "id": "report-weekly-shopify-orders-read",
+      "name": "Read Shopify order totals",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "={{ \"https://\" + $(\"Set report destinations\").first().json.config.shop + \"/admin/api/2026-10/graphql.json\" }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "shopifyAccessTokenApi",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.request }}",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          },
+          "pagination": {
+            "pagination": {
+              "paginationMode": "updateAParameterInEachRequest",
+              "parameters": {
+                "parameters": [
+                  {
+                    "type": "body",
+                    "name": "variables",
+                    "value": "={{ ({after:$response.body?.data?.orders?.pageInfo?.endCursor ?? null}) }}"
+                  }
+                ]
+              },
+              "paginationCompleteWhen": "other",
+              "completeExpression": "={{ $response.body?.errors?.length > 0 || $response.body?.data?.orders?.pageInfo?.hasNextPage !== true || ! $response.body?.data?.orders?.pageInfo?.endCursor }}",
+              "limitPagesFetched": true,
+              "maxRequests": 250,
+              "requestInterval": 100
+            }
+          }
+        }
+      },
+      "position": [
+        470,
+        220
+      ],
+      "retryOnFail": false
+    },
+    {
+      "id": "report-weekly-shopify-orders-report",
+      "name": "Calculate the weekly report",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function collectOrders(state, config, status, response) {\n  if (\n    status !== 200 ||\n    (response?.errors && (!Array.isArray(response.errors) || response.errors.length))\n  ) {\n    throw new Error(\"Shopify rejected the order query.\");\n  }\n  const { shop, orders } = response?.data ?? {};\n  const { currencyCode: currency, myshopifyDomain } = shop ?? {};\n  const { hasNextPage, endCursor } = orders?.pageInfo ?? {};\n  if (\n    !/^[A-Z]{3}$/.test(currency ?? \"\") ||\n    !myshopifyDomain ||\n    (config.shop && config.shop !== myshopifyDomain) ||\n    (state && (state.currency !== currency || state.domain !== myshopifyDomain)) ||\n    !Array.isArray(orders?.nodes) ||\n    typeof hasNextPage !== \"boolean\"\n  ) {\n    throw new Error(\"Shopify returned an incomplete or mismatched order page.\");\n  }\n\n  const seen = new Set(state?.ids ?? []);\n  const cursors = state?.cursors ?? [];\n  if (\n    hasNextPage &&\n    (cursors.length >= 249 ||\n      !orders.nodes.length ||\n      typeof endCursor !== \"string\" ||\n      !endCursor ||\n      cursors.includes(endCursor))\n  ) {\n    throw new Error(\"Shopify order pagination did not advance.\");\n  }\n\n  let sum = BigInt(state?.sum ?? \"0\");\n  let scale = state?.scale ?? 2;\n  for (const order of orders.nodes) {\n    const id = order?.id;\n    const created = Date.parse(order?.createdAt);\n    const amount = order?.totalPriceSet?.shopMoney;\n    const parts =\n      typeof amount?.amount === \"string\" && /^(\\d+)(?:\\.(\\d{1,12}))?$/.exec(amount.amount);\n    if (\n      typeof id !== \"string\" ||\n      !id ||\n      seen.has(id) ||\n      order.closed !== false ||\n      order.cancelledAt !== null ||\n      !Number.isFinite(created) ||\n      created < Date.parse(config.weekStart) ||\n      created >= Date.parse(config.weekEnd) ||\n      amount?.currencyCode !== currency ||\n      !parts\n    ) {\n      throw new Error(\"Shopify returned a duplicate, ineligible or invalid-money order.\");\n    }\n    const decimals = parts[2] ?? \"\";\n    const nextScale = Math.max(scale, decimals.length);\n    sum =\n      sum * 10n ** BigInt(nextScale - scale) +\n      BigInt(parts[1] + decimals) * 10n ** BigInt(nextScale - decimals.length);\n    scale = nextScale;\n    seen.add(id);\n  }\n  return {\n    currency,\n    domain: myshopifyDomain,\n    ids: [...seen],\n    sum: String(sum),\n    scale,\n    cursor: hasNextPage ? endCursor : null,\n    cursors: hasNextPage ? [...cursors, endCursor] : cursors,\n  };\n}\n\nfunction weeklyReport(config, state) {\n  if (!state || state.cursor !== null || state.ids.length >= 25000) {\n    throw new Error(\"The Shopify order list is incomplete or reached the pagination limit.\");\n  }\n  const decimal = state.sum.padStart(state.scale + 1, \"0\");\n  const ordersSum = decimal.slice(0, -state.scale) + \".\" + decimal.slice(-state.scale);\n  const totalOrders = state.ids.length;\n  const { weekStart, weekEnd } = config;\n  const { currency } = state;\n  return {\n    values: [[totalOrders, ordersSum, currency, weekStart, weekEnd]],\n    text:\n      \"Shopify weekly report (\" +\n      weekStart +\n      \" to \" +\n      weekEnd +\n      \", end excluded): \" +\n      totalOrders +\n      \" open orders, \" +\n      currency +\n      \" \" +\n      ordersSum +\n      \" total.\",\n    summary: { weekStart, weekEnd, totalOrders, ordersSum, currency },\n  };\n}\n\nconst config = $(\"Set report destinations\").first().json.config;\nlet state = null;\nfor (const { json: page } of $input.all())\n  state = collectOrders(state, config, page.statusCode, page.body);\nreturn [{ json: { report: weeklyReport(config, state) } }];\n"
+      },
+      "position": [
+        705,
+        220
+      ]
+    },
+    {
+      "id": "report-weekly-shopify-orders-sheet",
+      "name": "Append the weekly report",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "={{ \"https://sheets.googleapis.com/v4/spreadsheets/\"+encodeURIComponent($(\"Set report destinations\").first().json.config.spreadsheetId)+\"/values/\"+encodeURIComponent($(\"Set report destinations\").first().json.config.range)+\":append?valueInputOption=RAW&insertDataOption=INSERT_ROWS&includeValuesInResponse=true&responseValueRenderOption=UNFORMATTED_VALUE\" }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ ({majorDimension:\"ROWS\",values:$json.report.values}) }}",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "position": [
+        940,
+        220
+      ],
+      "retryOnFail": false
+    },
+    {
+      "id": "report-weekly-shopify-orders-confirm",
+      "name": "Verify the spreadsheet row",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function confirmSheet(config, report, receipt) {\n  if (\n    receipt?.spreadsheetId !== config.spreadsheetId ||\n    receipt.updatedRows !== 1 ||\n    !receipt.updatedRange ||\n    JSON.stringify(receipt.updatedData?.values) !== JSON.stringify(report.values)\n  ) {\n    throw new Error(\n      \"The spreadsheet append was not confirmed. Check the report sheet before retrying.\",\n    );\n  }\n}\n\nconst { statusCode, body } = $input.first().json;\nif (statusCode !== 200) throw new Error(\"The spreadsheet append was not confirmed.\");\nconfirmSheet(\n  $(\"Set report destinations\").first().json.config,\n  $(\"Calculate the weekly report\").first().json.report,\n  { spreadsheetId: body?.spreadsheetId, ...body?.updates },\n);\nreturn [{ json: {} }];\n"
+      },
+      "position": [
+        1175,
+        220
+      ]
+    },
+    {
+      "id": "report-weekly-shopify-orders-slack",
+      "name": "Send the weekly report",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://slack.com/api/chat.postMessage",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "slackApi",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ ({channel:$(\"Set report destinations\").first().json.config.channelId,text:$(\"Calculate the weekly report\").first().json.report.text,unfurl_links:false,unfurl_media:false}) }}",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "position": [
+        1410,
+        220
+      ],
+      "retryOnFail": false
+    },
+    {
+      "id": "report-weekly-shopify-orders-done",
+      "name": "Confirm the Slack message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function confirmSlack(config, channelId, ts) {\n  if (channelId !== config.channelId || typeof ts !== \"string\" || !ts) {\n    throw new Error(\n      \"The Slack message was not confirmed. Check the channel and report sheet before retrying.\",\n    );\n  }\n}\n\nconst { statusCode, body } = $input.first().json;\nif (statusCode !== 200 || body?.ok !== true) throw new Error(\"Slack did not confirm the message.\");\nconfirmSlack($(\"Set report destinations\").first().json.config, body.channel, body.ts);\nreturn [{ json: $(\"Calculate the weekly report\").first().json.report.summary }];\n"
+      },
+      "position": [
+        1645,
+        220
+      ]
+    }
+  ],
+  "connections": {
+    "Run on Monday at 10:00 UTC": {
+      "main": [
+        [
+          {
+            "node": "Set report destinations",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set report destinations": {
+      "main": [
+        [
+          {
+            "node": "Read Shopify order totals",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Shopify order totals": {
+      "main": [
+        [
+          {
+            "node": "Calculate the weekly report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculate the weekly report": {
+      "main": [
+        [
+          {
+            "node": "Append the weekly report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append the weekly report": {
+      "main": [
+        [
+          {
+            "node": "Verify the spreadsheet row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify the spreadsheet row": {
+      "main": [
+        [
+          {
+            "node": "Send the weekly report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send the weekly report": {
+      "main": [
+        [
+          {
+            "node": "Confirm the Slack message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC"
+  },
+  "pinData": {}
+}
