@@ -1,0 +1,532 @@
+{
+  "name": "Save Discord Links to Notion",
+  "nodes": [
+    {
+      "id": "save-discord-link-to-notion-hook",
+      "name": "Receive the Discord interaction",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "save-discord-link-to-notion",
+        "authentication": "none",
+        "responseMode": "responseNode",
+        "options": {
+          "rawBody": true
+        }
+      },
+      "position": [
+        0,
+        240
+      ]
+    },
+    {
+      "id": "save-discord-link-to-notion-admit",
+      "name": "Verify Discord and approve the URL",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function admitDiscord(raw, headers, settings, crypto, URL, now) {\n  const fail = (status, error) => ({ accepted: false, status, reply: { error } });\n  const stamp = headers?.[\"x-signature-timestamp\"],\n    hex = headers?.[\"x-signature-ed25519\"];\n  if (\n    !Buffer.isBuffer(raw) ||\n    raw.length === 0 ||\n    raw.length > 65536 ||\n    !/^application\\/json(?:\\s*;|$)/i.test(headers?.[\"content-type\"] ?? \"\") ||\n    typeof stamp !== \"string\" ||\n    !/^\\d{10}$/.test(stamp) ||\n    Math.abs(now - Number(stamp)) > 300 ||\n    typeof hex !== \"string\" ||\n    !/^[0-9a-f]{128}$/i.test(hex) ||\n    typeof settings.publicKey !== \"string\" ||\n    !/^[0-9a-f]{64}$/i.test(settings.publicKey)\n  ) {\n    return fail(401, \"Invalid Discord signature.\");\n  }\n  const spki = Buffer.from(\"302a300506032b6570032100\" + settings.publicKey, \"hex\");\n  const key = crypto.createPublicKey({ key: spki, format: \"der\", type: \"spki\" });\n  if (\n    !crypto.verify(\n      null,\n      Buffer.concat([Buffer.from(stamp, \"ascii\"), raw]),\n      key,\n      Buffer.from(hex, \"hex\"),\n    )\n  ) {\n    return fail(401, \"Invalid Discord signature.\");\n  }\n  let body;\n  try {\n    body = JSON.parse(raw.toString(\"utf8\"));\n  } catch {\n    return fail(400, \"Invalid Discord interaction body.\");\n  }\n  const snowflake = (value) => typeof value === \"string\" && /^\\d{17,20}$/.test(value);\n  if (\n    !snowflake(settings.applicationId) ||\n    (body?.type === 1 &&\n      body.application_id !== undefined &&\n      body.application_id !== settings.applicationId)\n  ) {\n    return fail(403, \"Discord application is not configured.\");\n  }\n  if (body?.type === 1) return { accepted: false, status: 200, reply: { type: 1 } };\n  if (\n    body?.type !== 2 ||\n    body.application_id !== settings.applicationId ||\n    !snowflake(body.id) ||\n    !snowflake(settings.guildId) ||\n    body.guild_id !== settings.guildId ||\n    body.data?.name !== settings.command ||\n    !/^[A-Za-z0-9_-]{16,512}$/.test(body.token ?? \"\")\n  ) {\n    return fail(403, \"Command is not authorized for this application and server.\");\n  }\n  const explain = (content) => ({\n    accepted: false,\n    status: 200,\n    reply: { type: 4, data: { content, flags: 64 } },\n  });\n  const option = body.data.options?.[0];\n  if (!/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(settings.dataSourceId)) {\n    return explain(\"The Notion data source has not been configured.\");\n  }\n  if (\n    option?.name !== \"url\" ||\n    option.type !== 3 ||\n    typeof option.value !== \"string\" ||\n    option.value.length > 2000\n  ) {\n    return explain(\"Enter a URL on an approved public website.\");\n  }\n  let url;\n  try {\n    const value = option.value.trim();\n    url = new URL(/^[a-z][a-z0-9+.-]*:\\/\\//i.test(value) ? value : \"https://\" + value);\n  } catch {\n    return explain(\"Enter a URL on an approved public website.\");\n  }\n  if (\n    url.protocol !== \"https:\" ||\n    url.username ||\n    url.password ||\n    url.port ||\n    !settings.allowedHosts.includes(url.hostname) ||\n    !/^(?:[a-z0-9-]+\\.)+[a-z][a-z0-9-]+$/i.test(url.hostname)\n  ) {\n    return explain(\"Enter a URL on an approved public website.\");\n  }\n  url.hash = \"\";\n  if (url.href.length > 2000) return explain(\"Enter a shorter URL.\");\n  return {\n    accepted: true,\n    url: url.href,\n    dataSourceId: settings.dataSourceId,\n    replyUrl:\n      \"https://discord.com/api/v10/webhooks/\" +\n      settings.applicationId +\n      \"/\" +\n      encodeURIComponent(body.token) +\n      \"/messages/@original\",\n  };\n}\nconst settings = {\n  publicKey: \"YOUR_DISCORD_PUBLIC_KEY\",\n  applicationId: \"YOUR_DISCORD_APPLICATION_ID\",\n  guildId: \"YOUR_DISCORD_SERVER_ID\",\n  command: \"save-link\",\n  allowedHosts: [],\n  dataSourceId: \"YOUR_NOTION_DATA_SOURCE_ID\",\n};\nconst crypto = require(\"crypto\");\nconst { URL } = require(\"url\");\nlet raw = null;\ntry {\n  raw = Buffer.from(await helpers.getBinaryDataBuffer(0, \"data\"));\n} catch {}\nreturn {\n  json: admitDiscord(raw, $json.headers, settings, crypto, URL, Math.floor(Date.now() / 1000)),\n};\n"
+      },
+      "position": [
+        210,
+        240
+      ]
+    },
+    {
+      "id": "save-discord-link-to-notion-gate",
+      "name": "Is this an approved link?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.accepted }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "rightValue": ""
+            }
+          ]
+        },
+        "options": {}
+      },
+      "position": [
+        420,
+        240
+      ]
+    },
+    {
+      "id": "save-discord-link-to-notion-instant",
+      "name": "Respond to the ping or rejected command",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json.reply }}",
+        "options": {
+          "responseCode": "={{ $json.status }}",
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Cache-Control",
+                "value": "no-store"
+              }
+            ]
+          }
+        }
+      },
+      "position": [
+        650,
+        420
+      ]
+    },
+    {
+      "id": "save-discord-link-to-notion-ack",
+      "name": "Defer the command reply",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ ({type:5}) }}",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Cache-Control",
+                "value": "no-store"
+              }
+            ]
+          }
+        }
+      },
+      "position": [
+        650,
+        160
+      ]
+    },
+    {
+      "id": "save-discord-link-to-notion-read",
+      "name": "Read the approved web page",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $(\"Verify Discord and approve the URL\").first().json.url }}",
+        "authentication": "none",
+        "options": {
+          "timeout": 15000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "text",
+              "fullResponse": true,
+              "neverError": true,
+              "outputPropertyName": "data"
+            }
+          }
+        }
+      },
+      "position": [
+        860,
+        160
+      ],
+      "onError": "continueRegularOutput",
+      "retryOnFail": false
+    },
+    {
+      "id": "save-discord-link-to-notion-html",
+      "name": "Check the HTML response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const { statusCode, headers, data } = $json;\nconst type = headers?.[\"content-type\"] ?? \"\";\nconst html =\n  statusCode === 200 &&\n  /^text\\/html(?:\\s*;|$)/i.test(type) &&\n  typeof data === \"string\" &&\n  data.length <= 1000000\n    ? data\n    : \"\";\nreturn { json: { html } };\n"
+      },
+      "position": [
+        1070,
+        160
+      ]
+    },
+    {
+      "id": "save-discord-link-to-notion-title",
+      "name": "Extract the page title",
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1.2,
+      "parameters": {
+        "operation": "extractHtmlContent",
+        "sourceData": "json",
+        "dataPropertyName": "html",
+        "extractionValues": {
+          "values": [
+            {
+              "key": "title",
+              "cssSelector": "head > title",
+              "returnValue": "text",
+              "returnArray": false
+            }
+          ]
+        },
+        "options": {}
+      },
+      "position": [
+        1280,
+        160
+      ]
+    },
+    {
+      "id": "save-discord-link-to-notion-plan",
+      "name": "Prepare the Notion bookmark",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function bookmark(data, rawTitle) {\n  const title = typeof rawTitle === \"string\" ? rawTitle.trim() : \"\";\n  if (!title || title.length > 2000)\n    return {\n      create: false,\n      message: \"Could not read an HTML title from that URL. No bookmark was added.\",\n    };\n  return {\n    create: true,\n    title,\n    body: {\n      parent: { type: \"data_source_id\", data_source_id: data.dataSourceId },\n      properties: {\n        Name: { type: \"title\", title: [{ type: \"text\", text: { content: title } }] },\n        Link: { type: \"url\", url: data.url },\n      },\n    },\n  };\n}\nreturn { json: bookmark($(\"Verify Discord and approve the URL\").first().json, $json.title) };\n"
+      },
+      "position": [
+        1490,
+        160
+      ]
+    },
+    {
+      "id": "save-discord-link-to-notion-writeGate",
+      "name": "Is a title available?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.create }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "rightValue": ""
+            }
+          ]
+        },
+        "options": {}
+      },
+      "position": [
+        1700,
+        160
+      ]
+    },
+    {
+      "id": "save-discord-link-to-notion-write",
+      "name": "Create the Notion page",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.notion.com/v1/pages",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Notion-Version",
+              "value": "2025-09-03"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.body }}",
+        "options": {
+          "timeout": 15000,
+          "lowercaseHeaders": false,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "position": [
+        1910,
+        160
+      ],
+      "onError": "continueRegularOutput",
+      "retryOnFail": false
+    },
+    {
+      "id": "save-discord-link-to-notion-receipt",
+      "name": "Confirm the exact Notion page",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function confirmedBookmark(data, bookmark, status, page) {\n  const normalize = (value) =>\n    typeof value === \"string\" ? value.toLowerCase().replaceAll(\"-\", \"\") : \"\";\n  const title = page?.properties?.Name?.title;\n  const actualTitle = Array.isArray(title)\n    ? title.map((part) => part?.plain_text ?? part?.text?.content ?? \"\").join(\"\")\n    : null;\n  if (\n    (status !== 200 && status !== 201) ||\n    page?.object !== \"page\" ||\n    typeof page.id !== \"string\" ||\n    !page.id ||\n    page.parent?.type !== \"data_source_id\" ||\n    normalize(page.parent.data_source_id) !== normalize(data.dataSourceId) ||\n    actualTitle !== bookmark.title ||\n    page.properties?.Link?.url !== data.url\n  ) {\n    return {\n      message: \"Notion did not confirm the bookmark. Check the data source before trying again.\",\n    };\n  }\n  return { message: \"Added Link to notion\" };\n}\nreturn {\n  json: confirmedBookmark(\n    $(\"Verify Discord and approve the URL\").first().json,\n    $(\"Prepare the Notion bookmark\").first().json,\n    $json.statusCode,\n    $json.body,\n  ),\n};\n"
+      },
+      "position": [
+        2120,
+        160
+      ]
+    },
+    {
+      "id": "save-discord-link-to-notion-digest",
+      "name": "Prepare the Discord result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return { json: { content: $json.message, allowed_mentions: { parse: [] } } };\n"
+      },
+      "position": [
+        2340,
+        280
+      ]
+    },
+    {
+      "id": "save-discord-link-to-notion-reply",
+      "name": "Edit this Discord interaction reply",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ $(\"Verify Discord and approve the URL\").first().json.replyUrl }}",
+        "authentication": "none",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {
+          "timeout": 15000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "position": [
+        2550,
+        280
+      ],
+      "onError": "continueRegularOutput",
+      "retryOnFail": false
+    },
+    {
+      "id": "save-discord-link-to-notion-confirm",
+      "name": "Verify the Discord reply",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const { statusCode, body } = $json;\nif (\n  statusCode !== 200 ||\n  typeof body?.id !== \"string\" ||\n  !body.id ||\n  body.content !== $(\"Prepare the Discord result\").first().json.content\n) {\n  throw new Error(\n    \"Discord did not confirm the interaction reply. Check Notion and Discord before running the command again.\",\n  );\n}\nreturn { json: { replied: true } };\n"
+      },
+      "position": [
+        2760,
+        280
+      ]
+    }
+  ],
+  "connections": {
+    "Receive the Discord interaction": {
+      "main": [
+        [
+          {
+            "node": "Verify Discord and approve the URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify Discord and approve the URL": {
+      "main": [
+        [
+          {
+            "node": "Is this an approved link?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is this an approved link?": {
+      "main": [
+        [
+          {
+            "node": "Defer the command reply",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond to the ping or rejected command",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Defer the command reply": {
+      "main": [
+        [
+          {
+            "node": "Read the approved web page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the approved web page": {
+      "main": [
+        [
+          {
+            "node": "Check the HTML response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check the HTML response": {
+      "main": [
+        [
+          {
+            "node": "Extract the page title",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract the page title": {
+      "main": [
+        [
+          {
+            "node": "Prepare the Notion bookmark",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare the Notion bookmark": {
+      "main": [
+        [
+          {
+            "node": "Is a title available?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is a title available?": {
+      "main": [
+        [
+          {
+            "node": "Create the Notion page",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare the Discord result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create the Notion page": {
+      "main": [
+        [
+          {
+            "node": "Confirm the exact Notion page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm the exact Notion page": {
+      "main": [
+        [
+          {
+            "node": "Prepare the Discord result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare the Discord result": {
+      "main": [
+        [
+          {
+            "node": "Edit this Discord interaction reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit this Discord interaction reply": {
+      "main": [
+        [
+          {
+            "node": "Verify the Discord reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveExecutionProgress": false,
+    "saveManualExecutions": false,
+    "saveDataSuccessExecution": "none",
+    "saveDataErrorExecution": "none"
+  },
+  "pinData": {}
+}
