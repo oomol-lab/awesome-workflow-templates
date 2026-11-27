@@ -1,0 +1,229 @@
+{
+  "name": "Check Completed Outputs with an Optional Keptick Receipt",
+  "nodes": [
+    {
+      "id": "check-output-with-keptick-receipt-start",
+      "name": "Supply completed records",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        250
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "check-output-with-keptick-receipt-config",
+      "name": "Configure check",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        235,
+        250
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return [\n  {\n    json: {\n      demoCase: \"healthy\",\n      minimumItems: 1,\n      recordIdField: \"recordId\",\n      sendReceipt: false,\n      testReceipt: true,\n    },\n  },\n];\n"
+      }
+    },
+    {
+      "id": "check-output-with-keptick-receipt-demo",
+      "name": "Choose the records to check",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        470,
+        250
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function demoRecords(demoCase) {\n  if (demoCase === \"empty\") return [];\n  if (demoCase === \"invalid\") return [{ unexpectedField: \"fictional\" }];\n  if (demoCase === \"duplicates\")\n    return [\"DEMO-001\", \"DEMO-001\", \"DEMO-002\"].map((recordId) => ({ recordId }));\n  if (demoCase === \"healthy\")\n    return [\"DEMO-001\", \"DEMO-002\", \"DEMO-003\"].map((recordId) => ({ recordId }));\n  throw new Error(\"Set demoCase to healthy, empty, invalid, or duplicates.\");\n}\n\nreturn demoRecords($(\"Configure check\").first().json.demoCase).map((json) => ({ json }));\n"
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "id": "check-output-with-keptick-receipt-check",
+      "name": "Check completed outputs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        705,
+        250
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function checkOutputs({ records, minimumItems, recordIdField }) {\n  const minimum = Number(minimumItems);\n  if (!Number.isSafeInteger(minimum) || minimum < 0 || minimum > 1000000000)\n    throw new Error(\"minimumItems must be a non-negative integer, at most 1000000000.\");\n  const field = String(recordIdField || \"\").trim();\n  if (!field) throw new Error(\"Set recordIdField to the field identifying a completed output.\");\n  if (\n    !Array.isArray(records) ||\n    records.some((record) => !record || typeof record !== \"object\" || Array.isArray(record))\n  )\n    throw new Error(\"records must be an array of objects.\");\n  const rows = records.filter((record) => Object.keys(record).length > 0);\n  const keys = new Set();\n  let invalidItems = 0;\n  for (const row of rows) {\n    const value = row[field];\n    const valid =\n      (typeof value === \"string\" && value.trim().length > 0) ||\n      (typeof value === \"number\" && Number.isFinite(value));\n    if (!valid) {\n      invalidItems++;\n      continue;\n    }\n    keys.add(String(value).trim());\n  }\n  const items = keys.size;\n  const duplicateItems = rows.length - invalidItems - items;\n  return {\n    checkPassed: items >= minimum && invalidItems === 0,\n    checkStatus: invalidItems ? \"invalid_output\" : items < minimum ? \"below_minimum\" : \"healthy\",\n    minimumItems: minimum,\n    items,\n    invalidItems,\n    duplicateItems,\n  };\n}\nfunction receiptReport(result, eventId, testReceipt) {\n  const { checkPassed, items, minimumItems, invalidItems, duplicateItems } = result;\n  return {\n    ...result,\n    receipt: {\n      eventId,\n      success: checkPassed,\n      items,\n      test: testReceipt === true,\n      message:\n        \"Output check: \" +\n        items +\n        \" distinct IDs; minimum \" +\n        minimumItems +\n        \"; \" +\n        invalidItems +\n        \" invalid; \" +\n        duplicateItems +\n        \" duplicates.\",\n    },\n  };\n}\n\nconst { minimumItems, recordIdField, testReceipt } = $(\"Configure check\").first().json;\nconst result = checkOutputs({\n  records: $input.all().map((item) => item.json),\n  minimumItems,\n  recordIdField,\n});\nreturn [\n  {\n    json: receiptReport(\n      result,\n      \"n8n:\" + $workflow.id + \":\" + $execution.id + \":\" + $runIndex,\n      testReceipt,\n    ),\n  },\n];\n"
+      }
+    },
+    {
+      "id": "check-output-with-keptick-receipt-enabled",
+      "name": "Send a receipt?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        940,
+        250
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "leftValue": ""
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $(\"Configure check\").first().json.sendReceipt }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "check-output-with-keptick-receipt-local",
+      "name": "Return the local result",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1175,
+        250
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "check-output-with-keptick-receipt-send",
+      "name": "Send count-only receipt",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1410,
+        250
+      ],
+      "parameters": {
+        "method": "POST",
+        "authentication": "none",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.receipt }}",
+        "url": "={{ (function validReceiptUrl(url) {\n  return typeof url === 'string' &&\n    /^https:\\/\\/keptick\\.aifirm\\.app\\/api\\/v1\\/ingest\\/[A-Za-z0-9._~-]{1,256}$/.test(url) &&\n    !url.endsWith('/REPLACE_WITH_YOUR_PRIVATE_TOKEN') && !url.endsWith('/.') && !url.endsWith('/..');\n})($env.KEPTICK_RECEIPT_URL) ? $env.KEPTICK_RECEIPT_URL : \"\" }}",
+        "options": {
+          "timeout": 15000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "retryOnFail": false
+    },
+    {
+      "id": "check-output-with-keptick-receipt-confirmed",
+      "name": "Return the confirmed result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1645,
+        250
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function confirmedReceipt(report, reply) {\n  if (reply?.received !== true) throw new Error(\"The receiver did not confirm this receipt.\");\n  return {\n    ...report,\n    receiptAccepted: true,\n    duplicateReceipt: reply.duplicate === true,\n    monitorStatus: reply.status || null,\n  };\n}\n\nreturn [{ json: confirmedReceipt($(\"Check completed outputs\").first().json, $input.first().json) }];\n"
+      }
+    }
+  ],
+  "connections": {
+    "Supply completed records": {
+      "main": [
+        [
+          {
+            "node": "Configure check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configure check": {
+      "main": [
+        [
+          {
+            "node": "Choose the records to check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Choose the records to check": {
+      "main": [
+        [
+          {
+            "node": "Check completed outputs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check completed outputs": {
+      "main": [
+        [
+          {
+            "node": "Send a receipt?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a receipt?": {
+      "main": [
+        [
+          {
+            "node": "Send count-only receipt",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Return the local result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send count-only receipt": {
+      "main": [
+        [
+          {
+            "node": "Return the confirmed result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}
