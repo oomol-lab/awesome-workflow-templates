@@ -1,0 +1,574 @@
+{
+  "name": "Schedule WordPress Articles with Pexels Photos",
+  "nodes": [
+    {
+      "id": "schedule-wordpress-articles-with-pexels-schedule",
+      "name": "Run Sun, Tue, Thu at noon",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 0 12 * * 0,2,4"
+            }
+          ]
+        }
+      },
+      "position": [
+        0,
+        260
+      ]
+    },
+    {
+      "id": "schedule-wordpress-articles-with-pexels-setup",
+      "name": "Set brief and destinations",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function prepareArticleSlot({ scheduledAt, brief, spreadsheetId, sheetName, postStatus }) {\n  const date = new Date(scheduledAt);\n  if (typeof scheduledAt !== \"string\" || !Number.isFinite(date.getTime()))\n    throw Error(\"The trigger did not supply a schedule timestamp.\");\n  if (typeof brief !== \"string\" || !brief.trim() || brief.length > 4000)\n    throw Error(\"Set an editorial brief up to 4,000 characters.\");\n  if (\n    !/^[A-Za-z0-9_-]{12,}$/.test(spreadsheetId) ||\n    spreadsheetId === \"YOUR_SPREADSHEET_ID\" ||\n    typeof sheetName !== \"string\" ||\n    !sheetName.trim() ||\n    sheetName.length > 100 ||\n    /[\\x00-\\x1f\\x7f]/.test(sheetName)\n  ) {\n    throw Error(\"Set the spreadsheet ID and an existing sheet tab.\");\n  }\n  if (![\"publish\", \"draft\"].includes(postStatus))\n    throw Error(\"Choose publish or draft for WordPress.\");\n  const stamp = date.toISOString().slice(0, 16).replace(/\\D/g, \"\");\n  return {\n    slug: \"scheduled-article-\" + stamp,\n    spreadsheetId,\n    sheetName,\n    range: \"'\" + sheetName.replaceAll(\"'\", \"''\") + \"'!A:C\",\n    postStatus,\n    brief: brief.trim(),\n    delayMs: Math.max(1, Math.floor(Math.random() * (6 * 60 * 60 * 1000))),\n  };\n}\n\nfunction articleResponseRequest({ brief }) {\n  const text = { type: \"string\" };\n  const list = { type: \"array\", items: text };\n  const section = {\n    type: \"object\",\n    additionalProperties: false,\n    required: [\"heading\", \"subheading\", \"paragraphs\", \"bullets\"],\n    properties: { heading: text, subheading: text, paragraphs: list, bullets: list },\n  };\n  return {\n    model: \"gpt-6-luna\",\n    store: false,\n    max_output_tokens: 9000,\n    instructions:\n      \"Write a complete article from the editor’s brief. Return plain text in every field. Include a short introduction, three to six factual, useful sections with one or more paragraphs, and a conclusion with practical advice. Use subheadings and bullet lists when useful. Give three to five concrete English image search keywords. Do not invent research, statistics, quotes, links or firsthand claims.\",\n    input: brief,\n    text: {\n      format: {\n        type: \"json_schema\",\n        name: \"scheduled_article\",\n        strict: true,\n        schema: {\n          type: \"object\",\n          additionalProperties: false,\n          required: [\"title\", \"introduction\", \"sections\", \"conclusion\", \"keywords\"],\n          properties: {\n            title: text,\n            introduction: text,\n            sections: { type: \"array\", items: section },\n            conclusion: text,\n            keywords: list,\n          },\n        },\n      },\n    },\n  };\n}\n\nconst settings = {\n  brief: \"\",\n  spreadsheetId: \"YOUR_SPREADSHEET_ID\",\n  sheetName: \"Sheet1\",\n  postStatus: \"publish\",\n  siteUrl: \"https://wordpress.example.invalid\",\n};\nif (\n  !/^https:\\/\\/[A-Za-z0-9-]+(?:\\.[A-Za-z0-9-]+)+(?::[0-9]{1,5})?(?:\\/[A-Za-z0-9_-]+)*$/.test(\n    settings.siteUrl,\n  ) ||\n  settings.siteUrl.includes(\".invalid\")\n)\n  throw Error(\"Set a trusted HTTPS WordPress site URL without a trailing slash.\");\nconst slot = prepareArticleSlot({ scheduledAt: $input.first().json.timestamp, ...settings });\nreturn [\n  {\n    json: {\n      slot,\n      siteUrl: settings.siteUrl,\n      delayMs: slot.delayMs,\n      request: articleResponseRequest(slot),\n    },\n  },\n];\n"
+      },
+      "position": [
+        230,
+        260
+      ]
+    },
+    {
+      "id": "schedule-wordpress-articles-with-pexels-delay",
+      "name": "Wait up to six hours",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "parameters": {
+        "resume": "timeInterval",
+        "amount": "={{ $json.delayMs / 1000 }}",
+        "unit": "seconds"
+      },
+      "position": [
+        460,
+        260
+      ]
+    },
+    {
+      "id": "schedule-wordpress-articles-with-pexels-model",
+      "name": "Write the article",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/responses",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.request }}",
+        "options": {
+          "timeout": 120000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "position": [
+        690,
+        260
+      ]
+    },
+    {
+      "id": "schedule-wordpress-articles-with-pexels-render",
+      "name": "Prepare article and search terms",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function structuredDraftReply(reply) {\n  const messages = reply?.output?.filter((x) => x?.type === \"message\");\n  const contents = messages?.[0]?.content;\n  if (\n    reply?.status !== \"completed\" ||\n    messages?.length !== 1 ||\n    messages[0].role !== \"assistant\" ||\n    messages[0].status !== \"completed\" ||\n    contents?.length !== 1 ||\n    contents[0].type !== \"output_text\"\n  ) {\n    throw Error(\"OpenAI did not complete the article request\");\n  }\n  return JSON.parse(contents[0].text);\n}\n\nfunction escapeDraftHtml(value) {\n  return value\n    .replaceAll(\"&\", \"&amp;\")\n    .replaceAll(\"<\", \"&lt;\")\n    .replaceAll(\">\", \"&gt;\")\n    .replaceAll('\"', \"&quot;\")\n    .replaceAll(\"'\", \"&#39;\");\n}\n\nfunction renderScheduledArticle(article, escape) {\n  function text(input, max, empty = false) {\n    if (\n      typeof input !== \"string\" ||\n      (!empty && !input.trim()) ||\n      input.length > max ||\n      /[\\x00-\\x08\\x0b\\x0c\\x0e-\\x1f\\x7f]/.test(input)\n    )\n      throw Error(\"The model did not return a complete article.\");\n    return input.trim();\n  }\n  const title = text(article?.title, 240);\n  if (/[<>\\r\\n]/.test(title)) throw Error(\"The article title must be plain text.\");\n  if (\n    !Array.isArray(article.sections) ||\n    article.sections.length < 3 ||\n    article.sections.length > 6 ||\n    !Array.isArray(article.keywords) ||\n    article.keywords.length < 3 ||\n    article.keywords.length > 5\n  ) {\n    throw Error(\"The article needs three to six sections and three to five image keywords.\");\n  }\n  const keywords = article.keywords.map((keyword) => text(keyword, 28));\n  if (keywords.some((keyword) => !/^[A-Za-z0-9][A-Za-z0-9 -]*$/.test(keyword)))\n    throw Error(\"Image keywords must be plain English search terms.\");\n  const paragraph = (value) => \"<p>\" + escape(text(value, 3600)) + \"</p>\";\n  const sections = article.sections\n    .map((section) => {\n      if (\n        !Array.isArray(section.paragraphs) ||\n        !section.paragraphs.length ||\n        section.paragraphs.length > 5 ||\n        !Array.isArray(section.bullets) ||\n        section.bullets.length > 8\n      )\n        throw Error(\"The article has an incomplete section.\");\n      const heading = \"<h2>\" + escape(text(section.heading, 150)) + \"</h2>\";\n      const subheading = text(section.subheading, 150, true);\n      const bullets = section.bullets\n        .map((bullet) => \"<li>\" + escape(text(bullet, 500)) + \"</li>\")\n        .join(\"\");\n      return (\n        heading +\n        (subheading ? \"<h3>\" + escape(subheading) + \"</h3>\" : \"\") +\n        section.paragraphs.map(paragraph).join(\"\") +\n        (bullets ? \"<ul>\" + bullets + \"</ul>\" : \"\")\n      );\n    })\n    .join(\"\\n\");\n  const content =\n    \"<h1>\" +\n    escape(title) +\n    \"</h1>\" +\n    paragraph(article.introduction) +\n    \"\\n\" +\n    sections +\n    \"\\n<h2>Conclusion</h2>\" +\n    paragraph(article.conclusion);\n  if (content.length > 45000)\n    throw Error(\"The rendered article exceeds the sheet cell size budget.\");\n  return { title, content, query: keywords.join(\" \"), logKeywords: keywords.join(\"+\") };\n}\n\nconst { slot, siteUrl } = $(\"Set brief and destinations\").first().json;\nconst article = renderScheduledArticle(\n  structuredDraftReply($input.first().json.body),\n  escapeDraftHtml,\n);\nconst sheetUrl =\n  \"https://sheets.googleapis.com/v4/spreadsheets/\" +\n  slot.spreadsheetId +\n  \"/values/\" +\n  encodeURIComponent(slot.range) +\n  \":append?valueInputOption=RAW&insertDataOption=INSERT_ROWS\";\nreturn [\n  {\n    json: {\n      slot,\n      siteUrl,\n      article,\n      sheetUrl,\n      log: {\n        majorDimension: \"ROWS\",\n        values: [[article.title, article.content, article.logKeywords]],\n      },\n    },\n  },\n];\n"
+      },
+      "position": [
+        920,
+        260
+      ]
+    },
+    {
+      "id": "schedule-wordpress-articles-with-pexels-prior",
+      "name": "Check this schedule slot",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_ARTICLE_ATTEMPTS_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "request_key",
+              "condition": "eq",
+              "keyValue": "={{ $json.slot.slug }}"
+            }
+          ]
+        },
+        "returnAll": false,
+        "limit": 1
+      },
+      "position": [
+        1150,
+        260
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "id": "schedule-wordpress-articles-with-pexels-new",
+      "name": "Is this the first attempt?",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return Object.keys($input.first().json).length\n  ? []\n  : [{ json: $(\"Prepare article and search terms\").first().json, pairedItem: { item: 0 } }];\n"
+      },
+      "position": [
+        1380,
+        260
+      ]
+    },
+    {
+      "id": "schedule-wordpress-articles-with-pexels-reserve",
+      "name": "Reserve this schedule slot",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_ARTICLE_ATTEMPTS_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "request_key": "={{ $json.slot.slug }}",
+            "status": "pending",
+            "receipt": ""
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "position": [
+        1610,
+        260
+      ]
+    },
+    {
+      "id": "schedule-wordpress-articles-with-pexels-log",
+      "name": "Append the article to Google Sheets",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Prepare article and search terms').first().json.sheetUrl }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $('Prepare article and search terms').first().json.log }}",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "position": [
+        1840,
+        260
+      ]
+    },
+    {
+      "id": "schedule-wordpress-articles-with-pexels-sheet",
+      "name": "Confirm the Google Sheets row",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function confirmedArticleRow(reply, slot) {\n  const range =\n    typeof reply?.updatedRange === \"string\" && reply.updatedRange.match(/^(.*)!A([1-9]\\d*):C\\2$/);\n  const tab = range && range[1].replace(/^'(.*)'$/, \"$1\").replaceAll(\"''\", \"'\");\n  if (\n    reply?.spreadsheetId !== slot.spreadsheetId ||\n    reply.updatedRows !== 1 ||\n    reply.updatedColumns !== 3 ||\n    reply.updatedCells !== 3 ||\n    tab !== slot.sheetName\n  )\n    throw Error(\n      \"Google Sheets did not confirm the expected article row. Check the log before recovery.\",\n    );\n  return reply.updatedRange;\n}\n\nconst job = $(\"Prepare article and search terms\").first().json;\nconst body = $input.first().json.body;\nconst sheetRange = confirmedArticleRow(\n  { ...body.updates, spreadsheetId: body.spreadsheetId },\n  job.slot,\n);\nreturn [{ json: { ...job, sheetRange } }];\n"
+      },
+      "position": [
+        2070,
+        260
+      ]
+    },
+    {
+      "id": "schedule-wordpress-articles-with-pexels-logged",
+      "name": "Record the sheet receipt",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_ARTICLE_ATTEMPTS_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "request_key",
+              "condition": "eq",
+              "keyValue": "={{ $json.slot.slug }}"
+            },
+            {
+              "keyName": "status",
+              "condition": "eq",
+              "keyValue": "pending"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "logged",
+            "receipt": "={{ $json.sheetRange }}"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "position": [
+        2300,
+        260
+      ]
+    },
+    {
+      "id": "schedule-wordpress-articles-with-pexels-photos",
+      "name": "Find a landscape photo",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ 'https://api.pexels.com/v1/search?orientation=landscape&per_page=1&page=1&query=' + encodeURIComponent($('Confirm the Google Sheets row').first().json.article.query) }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "position": [
+        2530,
+        260
+      ]
+    },
+    {
+      "id": "schedule-wordpress-articles-with-pexels-post",
+      "name": "Add the photo and credit",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function escapeDraftHtml(value) {\n  return value\n    .replaceAll(\"&\", \"&amp;\")\n    .replaceAll(\"<\", \"&lt;\")\n    .replaceAll(\">\", \"&gt;\")\n    .replaceAll('\"', \"&quot;\")\n    .replaceAll(\"'\", \"&#39;\");\n}\n\nfunction articlePost(article, slot, photos, escape) {\n  const photo = Array.isArray(photos) && photos[0];\n  if (\n    !photo ||\n    !Number.isSafeInteger(photo.id) ||\n    photo.id < 1 ||\n    typeof photo.photographer !== \"string\" ||\n    !photo.photographer.trim() ||\n    photo.photographer.length > 160 ||\n    typeof photo.url !== \"string\" ||\n    typeof photo.src?.landscape !== \"string\" ||\n    !new RegExp(\"^https://www\\\\.pexels\\\\.com/photo/(?:[A-Za-z0-9-]+-)?\" + photo.id + \"/?$\").test(\n      photo.url,\n    ) ||\n    !new RegExp(\n      \"^https://images\\\\.pexels\\\\.com/photos/\" + photo.id + \"/[A-Za-z0-9_.-]+(?:\\\\?[^\\\\s<>\\\"']+)?$\",\n    ).test(photo.src.landscape)\n  ) {\n    throw Error(\"Pexels did not return a usable landscape photo with matching image and credit.\");\n  }\n  const alt =\n    typeof photo.alt === \"string\" && photo.alt.trim()\n      ? photo.alt.slice(0, 300)\n      : \"Photo by \" + photo.photographer;\n  const media =\n    '<figure><img src=\"' +\n    escape(photo.src.landscape) +\n    '\" alt=\"' +\n    escape(alt) +\n    '\">' +\n    '<figcaption><a href=\"' +\n    escape(photo.url) +\n    '\">Photo by ' +\n    escape(photo.photographer) +\n    \" on Pexels</a></figcaption></figure>\";\n  return {\n    title: article.title,\n    content: media + \"\\n\" + article.content,\n    slug: slot.slug,\n    status: slot.postStatus,\n  };\n}\n\nconst { article, slot, siteUrl, sheetRange } = $(\"Confirm the Google Sheets row\").first().json;\nconst post = articlePost(article, slot, $input.first().json.body.photos, escapeDraftHtml);\nreturn [{ json: { post, slot, sheetRange, url: siteUrl + \"/wp-json/wp/v2/posts\" } }];\n"
+      },
+      "position": [
+        2760,
+        260
+      ]
+    },
+    {
+      "id": "schedule-wordpress-articles-with-pexels-save",
+      "name": "Create the WordPress post",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.url }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.post }}",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "position": [
+        2990,
+        260
+      ]
+    },
+    {
+      "id": "schedule-wordpress-articles-with-pexels-finish",
+      "name": "Confirm the WordPress receipt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function confirmedArticlePost(post, slot) {\n  if (\n    !Number.isSafeInteger(post?.id) ||\n    post.id < 1 ||\n    post.slug !== slot.slug ||\n    post.status !== slot.postStatus\n  ) {\n    throw Error(\"WordPress did not confirm the expected post. Check its slug before recovery.\");\n  }\n  return { postId: post.id, slug: post.slug, status: post.status };\n}\n\nconst { slot, sheetRange } = $(\"Add the photo and credit\").first().json;\nconst receipt = confirmedArticlePost($input.first().json.body, slot);\nreturn [{ json: { ...receipt, sheetRange } }];\n"
+      },
+      "position": [
+        3220,
+        260
+      ]
+    },
+    {
+      "id": "schedule-wordpress-articles-with-pexels-record",
+      "name": "Record the confirmed post",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_ARTICLE_ATTEMPTS_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "request_key",
+              "condition": "eq",
+              "keyValue": "={{ $json.slug }}"
+            },
+            {
+              "keyName": "status",
+              "condition": "eq",
+              "keyValue": "logged"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "confirmed",
+            "receipt": "={{ JSON.stringify($json) }}"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "position": [
+        3450,
+        260
+      ]
+    }
+  ],
+  "connections": {
+    "Run Sun, Tue, Thu at noon": {
+      "main": [
+        [
+          {
+            "node": "Set brief and destinations",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set brief and destinations": {
+      "main": [
+        [
+          {
+            "node": "Wait up to six hours",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait up to six hours": {
+      "main": [
+        [
+          {
+            "node": "Write the article",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write the article": {
+      "main": [
+        [
+          {
+            "node": "Prepare article and search terms",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare article and search terms": {
+      "main": [
+        [
+          {
+            "node": "Check this schedule slot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check this schedule slot": {
+      "main": [
+        [
+          {
+            "node": "Is this the first attempt?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is this the first attempt?": {
+      "main": [
+        [
+          {
+            "node": "Reserve this schedule slot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve this schedule slot": {
+      "main": [
+        [
+          {
+            "node": "Append the article to Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append the article to Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Confirm the Google Sheets row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm the Google Sheets row": {
+      "main": [
+        [
+          {
+            "node": "Record the sheet receipt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record the sheet receipt": {
+      "main": [
+        [
+          {
+            "node": "Find a landscape photo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find a landscape photo": {
+      "main": [
+        [
+          {
+            "node": "Add the photo and credit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add the photo and credit": {
+      "main": [
+        [
+          {
+            "node": "Create the WordPress post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create the WordPress post": {
+      "main": [
+        [
+          {
+            "node": "Confirm the WordPress receipt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm the WordPress receipt": {
+      "main": [
+        [
+          {
+            "node": "Record the confirmed post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "timezone": "Asia/Taipei",
+    "executionOrder": "v1",
+    "saveExecutionProgress": false
+  },
+  "pinData": {}
+}
