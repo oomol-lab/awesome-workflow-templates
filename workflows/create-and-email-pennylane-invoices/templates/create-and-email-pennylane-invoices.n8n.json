@@ -1,0 +1,856 @@
+{
+  "name": "Create and Email Pennylane Invoices",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "create-and-email-pennylane-invoices",
+        "responseMode": "responseNode",
+        "options": {},
+        "authentication": "basicAuth"
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        250
+      ],
+      "id": "402c4d14-ab30-4baf-85b5-daec4ceb06f4",
+      "name": "Receive Invoice Request"
+    },
+    {
+      "id": "validate-pennylane",
+      "name": "Validate Invoice Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        215,
+        250
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "/*\nMIT License\nCopyright (c) 2026 Gauthier Huguenin\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in\nall copies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\nTHE SOFTWARE.\n*/\n\nfunction validatePennylaneInvoice(input, now = Date.now()) {\n  const reject = (error, details, statusCode = 400) => ({\n    accepted: false,\n    data: {},\n    filter: \"\",\n    customer: {},\n    body: { success: false, error, details },\n    statusCode,\n  });\n  if (!input || typeof input !== \"object\" || Array.isArray(input))\n    return reject(\"invalid_payload\", [\"A JSON object is required.\"]);\n  if (input.send_email !== undefined && input.send_email !== false)\n    return reject(\n      \"email_not_supported\",\n      [\"Omit send_email or set it to false. This workflow creates invoices without sending email.\"],\n      422,\n    );\n  const errors = [];\n  if (typeof input.customer_name !== \"string\" || !input.customer_name.trim())\n    errors.push(\"customer_name is required\");\n  if (\n    typeof input.customer_email !== \"string\" ||\n    !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(input.customer_email)\n  )\n    errors.push(\"customer_email must be a valid email address\");\n  if (!Array.isArray(input.items) || !input.items.length)\n    errors.push(\"items must be a nonempty array\");\n  else\n    input.items.forEach((item, index) => {\n      if (!item || typeof item !== \"object\" || Array.isArray(item)) {\n        errors.push(\"items[\" + index + \"] must be an object\");\n        return;\n      }\n      if (typeof item.label !== \"string\" || !item.label.trim())\n        errors.push(\"items[\" + index + \"].label is required\");\n      if (\n        typeof item.quantity !== \"number\" ||\n        !Number.isFinite(item.quantity) ||\n        item.quantity <= 0\n      )\n        errors.push(\"items[\" + index + \"].quantity must be a number > 0\");\n      if (\n        typeof item.unit_price !== \"number\" ||\n        !Number.isFinite(item.unit_price) ||\n        item.unit_price <= 0 ||\n        !/^\\d+\\.\\d{2}$/.test(item.unit_price.toFixed(2))\n      )\n        errors.push(\n          \"items[\" +\n            index +\n            \"].unit_price must be a positive finite number representable with two decimal places\",\n        );\n      if (\n        item.vat_rate !== undefined &&\n        (typeof item.vat_rate !== \"string\" || !item.vat_rate.trim())\n      )\n        errors.push(\"items[\" + index + \"].vat_rate must be a nonempty Pennylane VAT code\");\n    });\n  if (\n    input.customer_country !== undefined &&\n    (typeof input.customer_country !== \"string\" || !/^[A-Z]{2}$/.test(input.customer_country))\n  )\n    errors.push(\"customer_country must be an uppercase two-letter country code\");\n  if (\n    input.currency !== undefined &&\n    (typeof input.currency !== \"string\" || !/^[A-Z]{3}$/.test(input.currency))\n  )\n    errors.push(\"currency must be an uppercase three-letter currency code\");\n  if (\n    input.reference !== undefined &&\n    input.reference !== null &&\n    (typeof input.reference !== \"string\" || !input.reference.trim())\n  )\n    errors.push(\"reference must be nonempty text when supplied\");\n  if (\n    input.due_date !== undefined &&\n    (typeof input.due_date !== \"string\" ||\n      !/^\\d{4}-\\d{2}-\\d{2}$/.test(input.due_date) ||\n      !Number.isFinite(Date.parse(input.due_date + \"T00:00:00Z\")) ||\n      new Date(input.due_date + \"T00:00:00Z\").toISOString().slice(0, 10) !== input.due_date)\n  )\n    errors.push(\"due_date must be a real date in YYYY-MM-DD format\");\n  if (errors.length) return reject(\"invalid_payload\", errors);\n  const data = {\n    customer_name: input.customer_name.trim(),\n    customer_email: input.customer_email.toLowerCase(),\n    customer_address: typeof input.customer_address === \"string\" ? input.customer_address : \"\",\n    customer_postal_code:\n      typeof input.customer_postal_code === \"string\" ? input.customer_postal_code : \"00000\",\n    customer_city: typeof input.customer_city === \"string\" ? input.customer_city : \"Non renseigné\",\n    customer_country: input.customer_country ?? \"FR\",\n    currency: input.currency ?? \"EUR\",\n    reference: input.reference ?? null,\n    items: input.items.map((item) => ({\n      label: item.label.trim(),\n      quantity: item.quantity,\n      unit_price: item.unit_price,\n      vat_rate: item.vat_rate ?? \"FR_200\",\n    })),\n    due_date: input.due_date ?? new Date(now + 30 * 86400000).toISOString().slice(0, 10),\n    invoice_date: new Date(now).toISOString().slice(0, 10),\n    send_email: false,\n  };\n  return {\n    accepted: true,\n    data,\n    filter: JSON.stringify([{ field: \"emails\", operator: \"in\", value: [data.customer_email] }]),\n    customer: {\n      name: data.customer_name,\n      emails: [data.customer_email],\n      billing_address: {\n        address: data.customer_address,\n        postal_code: data.customer_postal_code,\n        city: data.customer_city,\n        country_alpha2: data.customer_country,\n      },\n    },\n    body: {},\n    statusCode: 200,\n  };\n}\n\nfunction authorizePennylaneInvoice({ body, headers, expectedAuthorization }) {\n  const credentials = (header) => {\n    if (typeof header !== \"string\") return \"\";\n    const match = /^ *Basic +([A-Za-z0-9+/]+={0,2}) *$/i.exec(header);\n    if (!match) return \"\";\n    const decoded = Buffer.from(match[1], \"base64\").toString(\"utf8\");\n    const separator = decoded.indexOf(\":\");\n    return separator > 0 && separator < decoded.length - 1 && !/[\\r\\n]/.test(decoded)\n      ? decoded\n      : \"\";\n  };\n  const expected = credentials(expectedAuthorization);\n  if (!expected)\n    throw new Error(\n      \"Configure the protected webhook Basic authorization secret with a nonempty username and password before enabling this workflow.\",\n    );\n  const values = Object.entries(headers ?? {}).filter(\n    ([name]) => name.toLowerCase() === \"authorization\",\n  );\n  const received = values.length === 1 ? credentials(values[0][1]) : \"\";\n  // Compare decoded username/password without returning either credential.\n  let difference = received.length ^ expected.length;\n  for (let index = 0; index < Math.max(received.length, expected.length); index++)\n    difference |= (received.charCodeAt(index) || 0) ^ (expected.charCodeAt(index) || 0);\n  if (difference !== 0)\n    return {\n      accepted: false,\n      data: {},\n      filter: \"\",\n      customer: {},\n      body: { success: false, error: \"unauthorized\" },\n      statusCode: 401,\n    };\n  return validatePennylaneInvoice(body);\n}\n\nconst input = $input.first().json.body;\nconst reject = (error, details) => [\n  { json: { accepted: false, body: { success: false, error, details }, statusCode: 422 } },\n];\nif (input?.send_email !== true) return reject(\"email_required\", \"Set send_email to true.\");\nif (\n  typeof input.reference !== \"string\" ||\n  !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/.test(input.reference)\n)\n  return reject(\n    \"reference_required\",\n    \"Set a stable invoice reference (up to 100 letters, digits or . _ : -).\",\n  );\nconst validated = validatePennylaneInvoice({ ...input, send_email: false });\nif (validated.accepted) {\n  const rates = new Set([\n    \"FR_1_05\",\n    \"FR_1_75\",\n    \"FR_09\",\n    \"FR_21\",\n    \"FR_40\",\n    \"FR_50\",\n    \"FR_55\",\n    \"FR_60\",\n    \"FR_65\",\n    \"FR_85\",\n    \"FR_92\",\n    \"FR_100\",\n    \"FR_130\",\n    \"FR_15_385\",\n    \"FR_160\",\n    \"FR_196\",\n    \"FR_200\",\n    \"AD_10\",\n    \"AD_45\",\n    \"AD_95\",\n    \"AT_100\",\n    \"AT_130\",\n    \"AT_190\",\n    \"AT_200\",\n    \"BE_60\",\n    \"BE_120\",\n    \"BE_210\",\n    \"BG_90\",\n    \"BG_200\",\n    \"CH_25\",\n    \"CH_37\",\n    \"CH_77\",\n    \"CH_26\",\n    \"CH_38\",\n    \"CH_81\",\n    \"CY_30\",\n    \"CY_50\",\n    \"CY_80\",\n    \"CY_90\",\n    \"CY_190\",\n    \"CZ_100\",\n    \"CZ_120\",\n    \"CZ_150\",\n    \"CZ_210\",\n    \"DE_70\",\n    \"DE_190\",\n    \"DK_250\",\n    \"EE_90\",\n    \"EE_200\",\n    \"EE_220\",\n    \"EE_240\",\n    \"ES_40\",\n    \"ES_70\",\n    \"ES_100\",\n    \"ES_210\",\n    \"FI_100\",\n    \"FI_135\",\n    \"FI_140\",\n    \"FI_240\",\n    \"FI_255\",\n    \"GB_50\",\n    \"GB_200\",\n    \"GR_60\",\n    \"GR_130\",\n    \"GR_170\",\n    \"GR_240\",\n    \"GR_40\",\n    \"HR_50\",\n    \"HR_130\",\n    \"HR_250\",\n    \"HU_50\",\n    \"HU_180\",\n    \"HU_270\",\n    \"IE_48\",\n    \"IE_90\",\n    \"IE_135\",\n    \"IE_210\",\n    \"IE_230\",\n    \"IT_40\",\n    \"IT_50\",\n    \"IT_100\",\n    \"IT_220\",\n    \"LT_50\",\n    \"LT_90\",\n    \"LT_120\",\n    \"LT_210\",\n    \"LU_30\",\n    \"LU_70\",\n    \"LU_80\",\n    \"LU_120\",\n    \"LU_130\",\n    \"LU_140\",\n    \"LU_160\",\n    \"LU_170\",\n    \"LV_50\",\n    \"LV_120\",\n    \"LV_210\",\n    \"MC_09\",\n    \"MC_21\",\n    \"MC_55\",\n    \"MC_85\",\n    \"MC_100\",\n    \"MC_200\",\n    \"MT_50\",\n    \"MT_70\",\n    \"MT_120\",\n    \"MT_180\",\n    \"MU_150\",\n    \"NL_90\",\n    \"NL_210\",\n    \"PL_50\",\n    \"PL_80\",\n    \"PL_230\",\n    \"PT_60\",\n    \"PT_130\",\n    \"PT_160\",\n    \"PT_180\",\n    \"PT_220\",\n    \"PT_230\",\n    \"RO_50\",\n    \"RO_90\",\n    \"RO_110\",\n    \"RO_190\",\n    \"RO_210\",\n    \"SE_60\",\n    \"SE_120\",\n    \"SE_250\",\n    \"SI_50\",\n    \"SI_95\",\n    \"SI_220\",\n    \"SK_50\",\n    \"SK_100\",\n    \"SK_190\",\n    \"SK_200\",\n    \"SK_230\",\n    \"NO_120\",\n    \"NO_150\",\n    \"NO_250\",\n    \"DE_70_BU0002\",\n    \"DE_190_BU0003\",\n    \"DE_70_BU0008\",\n    \"DE_190_BU0009\",\n    \"DE_intracom_70_BU0012\",\n    \"DE_intracom_190_BU0013\",\n    \"DE_190_electronic_BU0226\",\n    \"exempt\",\n    \"DE_intracom_exempt_BU0011\",\n    \"DE_intracom_exempt_BU0047\",\n    \"DE_intracom_exempt_BU0233\",\n    \"DE_exempt_BU0001\",\n    \"DE_exempt_BU0181\",\n    \"DE_exempt_BU0490\",\n    \"intracom_21\",\n    \"intracom_55\",\n    \"intracom_85\",\n    \"intracom_100\",\n    \"crossborder\",\n    \"ES_intracom_sales_goods\",\n    \"ES_intracom_sales_services\",\n    \"DE_intracom_70_BU0018\",\n    \"DE_intracom_190_BU0019\",\n    \"DE_intracom_190_BU0506\",\n    \"extracom\",\n    \"DE_extracom_BU0173\",\n    \"DE_extracom_BU0191\",\n    \"DE_extracom_190_BU0511\",\n    \"ES_isp_sales\",\n    \"ES_suplido\",\n    \"FR_85_construction\",\n    \"FR_100_construction\",\n    \"FR_200_construction\",\n    \"DE_exempt_construction_BU0046\",\n    \"DE_70_construction_BU0091\",\n    \"DE_190_construction_BU0094\",\n    \"DE_190_construction_BU0526\",\n    \"DE_190_construction_BU0546\",\n    \"ES_isp_purchases_210\",\n    \"ES_isp_purchases_100\",\n    \"mixed\",\n  ]);\n  for (const line of validated.data.items) {\n    if (line.vat_rate === \"FR_055\") line.vat_rate = \"FR_55\";\n    if (!rates.has(line.vat_rate))\n      return reject(\n        \"invalid_vat_rate\",\n        \"Use the appropriate VAT code from the Pennylane API reference.\",\n      );\n  }\n}\nreturn [{ json: validated }];\n"
+      }
+    },
+    {
+      "id": "accepted-pennylane",
+      "name": "Invoice Request Accepted?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        430,
+        250
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "accepted-pennylane-case",
+              "leftValue": "={{ $json.accepted }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "reject-pennylane",
+      "name": "Return Rejected Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        645,
+        250
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function pennylaneInvoiceReply({ body, statusCode, data, rejected }) {\n  const headers = {\n    \"Cache-Control\": \"no-store\",\n    ...(statusCode === 401 ? { \"WWW-Authenticate\": 'Basic realm=\"Webhook\"' } : {}),\n  };\n  if (rejected) return { body, statusCode, headers };\n  if (\n    statusCode !== 201 ||\n    !body ||\n    typeof body !== \"object\" ||\n    !Number.isSafeInteger(body.id) ||\n    body.id <= 0 ||\n    typeof body.invoice_number !== \"string\" ||\n    !body.invoice_number.trim() ||\n    typeof body.currency_amount !== \"string\" ||\n    !body.currency_amount.trim() ||\n    (body.public_file_url !== null && typeof body.public_file_url !== \"string\")\n  )\n    throw new Error(\n      \"Pennylane did not confirm a completed invoice with its documented HTTP 201 fields.\",\n    );\n  return {\n    body: {\n      success: true,\n      invoice_id: String(body.id),\n      invoice_number: body.invoice_number,\n      amount: body.currency_amount,\n      customer: data.customer_name,\n      public_url: body.public_file_url || null,\n      email_sent: false,\n    },\n    statusCode: 200,\n    headers,\n  };\n}\n\nreturn [\n  {\n    json: pennylaneInvoiceReply({\n      body: $json.body,\n      statusCode: $json.statusCode,\n      data: {},\n      rejected: true,\n    }),\n  },\n];\n"
+      }
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://app.pennylane.com/api/external/v2/customers",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "filter",
+              "value": "={{ $('Validate Invoice Request').first().json.filter }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 15000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        860,
+        250
+      ],
+      "id": "5440a265-819f-42d4-8c26-d83cb51eb219",
+      "name": "Find Customer by Email"
+    },
+    {
+      "id": "select-pennylane",
+      "name": "Select First Matching Customer",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1075,
+        250
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function selectPennylaneCustomer({ body, statusCode, data }) {\n  if (statusCode !== 200 || !body || typeof body !== \"object\" || !Array.isArray(body.items))\n    throw new Error(\"Pennylane customer lookup did not return its documented list response.\");\n  if (!body.items.length) return { found: false, customerId: 0 };\n  const id = body.items[0]?.id;\n  if (!Number.isSafeInteger(id) || id <= 0)\n    throw new Error(\"The first matching Pennylane customer has no valid integer ID.\");\n  const emails = body.items[0].emails;\n  if (\n    !Array.isArray(emails) ||\n    !emails.some(\n      (email) => typeof email === \"string\" && email.trim().toLowerCase() === data.customer_email,\n    )\n  )\n    throw new Error(\n      \"The first returned Pennylane customer does not contain the requested email. No invoice was created.\",\n    );\n  return { found: true, customerId: id };\n}\n\nif (\n  $json.body?.has_more !== false ||\n  $json.body?.next_cursor != null ||\n  $json.body?.items?.length > 1\n)\n  throw Error(\"Pennylane did not return one unambiguous customer result.\");\nreturn [\n  {\n    json: selectPennylaneCustomer({\n      ...$json,\n      data: $(\"Validate Invoice Request\").first().json.data,\n    }),\n  },\n];\n"
+      }
+    },
+    {
+      "id": "new-pennylane",
+      "name": "Create a New Customer?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1290,
+        250
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "new-pennylane-case",
+              "leftValue": "={{ !$json.found }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://app.pennylane.com/api/external/v2/company_customers",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $('Validate Invoice Request').first().json.customer }}",
+        "options": {
+          "timeout": 15000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1505,
+        250
+      ],
+      "id": "106b531c-143f-4de7-ba98-8ede691a0d01",
+      "name": "Create Company Customer"
+    },
+    {
+      "id": "created-pennylane",
+      "name": "Build Invoice for New Customer",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1720,
+        250
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function buildPennylaneInvoice({ data, mode, body, statusCode, customerId }) {\n  let id = customerId;\n  if (mode === \"created\") {\n    if (statusCode !== 201 || !body || typeof body !== \"object\")\n      throw new Error(\"Pennylane did not confirm customer creation with HTTP 201.\");\n    id = body.id;\n  } else if (mode !== \"existing\") throw new Error(\"Unknown customer selection path.\");\n  if (!Number.isSafeInteger(id) || id <= 0)\n    throw new Error(\"A valid Pennylane customer ID is required before creating an invoice.\");\n  const payload = {\n    customer_id: id,\n    date: data.invoice_date,\n    deadline: data.due_date,\n    currency: data.currency,\n    invoice_lines: data.items.map((item) => ({\n      label: item.label,\n      quantity: item.quantity,\n      unit: \"piece\",\n      raw_currency_unit_price: String(item.unit_price.toFixed(2)),\n      vat_rate: item.vat_rate,\n    })),\n    draft: false,\n  };\n  if (data.reference) payload.external_reference = data.reference;\n  return { payload };\n}\n\nif (\n  !$json.body?.emails?.some(\n    (email) =>\n      typeof email === \"string\" &&\n      email.toLowerCase() === $(\"Validate Invoice Request\").first().json.data.customer_email,\n  )\n)\n  throw Error(\"Pennylane did not confirm the intended customer email.\");\nreturn [\n  {\n    json: buildPennylaneInvoice({\n      data: $(\"Validate Invoice Request\").first().json.data,\n      mode: \"created\",\n      body: $json.body,\n      statusCode: $json.statusCode,\n      customerId: 0,\n    }),\n  },\n];\n"
+      }
+    },
+    {
+      "id": "existing-pennylane",
+      "name": "Build Invoice for Existing Customer",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1935,
+        250
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function buildPennylaneInvoice({ data, mode, body, statusCode, customerId }) {\n  let id = customerId;\n  if (mode === \"created\") {\n    if (statusCode !== 201 || !body || typeof body !== \"object\")\n      throw new Error(\"Pennylane did not confirm customer creation with HTTP 201.\");\n    id = body.id;\n  } else if (mode !== \"existing\") throw new Error(\"Unknown customer selection path.\");\n  if (!Number.isSafeInteger(id) || id <= 0)\n    throw new Error(\"A valid Pennylane customer ID is required before creating an invoice.\");\n  const payload = {\n    customer_id: id,\n    date: data.invoice_date,\n    deadline: data.due_date,\n    currency: data.currency,\n    invoice_lines: data.items.map((item) => ({\n      label: item.label,\n      quantity: item.quantity,\n      unit: \"piece\",\n      raw_currency_unit_price: String(item.unit_price.toFixed(2)),\n      vat_rate: item.vat_rate,\n    })),\n    draft: false,\n  };\n  if (data.reference) payload.external_reference = data.reference;\n  return { payload };\n}\n\nreturn [\n  {\n    json: buildPennylaneInvoice({\n      data: $(\"Validate Invoice Request\").first().json.data,\n      mode: \"existing\",\n      body: {},\n      statusCode: 200,\n      customerId: $json.customerId,\n    }),\n  },\n];\n"
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://app.pennylane.com/api/external/v2/customer_invoices",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.payload }}",
+        "options": {
+          "timeout": 15000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        2150,
+        250
+      ],
+      "id": "c33bd39f-5043-418c-88f9-0aaa8bc25c9d",
+      "name": "Create Finalized Invoice"
+    },
+    {
+      "id": "confirm-pennylane",
+      "name": "Confirm Created Invoice",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2365,
+        250
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function pennylaneInvoiceReply({ body, statusCode, data, rejected }) {\n  const headers = {\n    \"Cache-Control\": \"no-store\",\n    ...(statusCode === 401 ? { \"WWW-Authenticate\": 'Basic realm=\"Webhook\"' } : {}),\n  };\n  if (rejected) return { body, statusCode, headers };\n  if (\n    statusCode !== 201 ||\n    !body ||\n    typeof body !== \"object\" ||\n    !Number.isSafeInteger(body.id) ||\n    body.id <= 0 ||\n    typeof body.invoice_number !== \"string\" ||\n    !body.invoice_number.trim() ||\n    typeof body.currency_amount !== \"string\" ||\n    !body.currency_amount.trim() ||\n    (body.public_file_url !== null && typeof body.public_file_url !== \"string\")\n  )\n    throw new Error(\n      \"Pennylane did not confirm a completed invoice with its documented HTTP 201 fields.\",\n    );\n  return {\n    body: {\n      success: true,\n      invoice_id: String(body.id),\n      invoice_number: body.invoice_number,\n      amount: body.currency_amount,\n      customer: data.customer_name,\n      public_url: body.public_file_url || null,\n      email_sent: false,\n    },\n    statusCode: 200,\n    headers,\n  };\n}\n\nconst candidates = [\"Build Invoice for New Customer\", \"Build Invoice for Existing Customer\"];\nconst prepared = candidates.flatMap((name) => ($(name).isExecuted ? $(name).all() : []));\nconst expected = prepared[0]?.json?.payload;\nif (\n  prepared.length !== 1 ||\n  !expected ||\n  $json.body?.customer?.id !== expected.customer_id ||\n  $json.body?.draft !== false ||\n  $json.body?.currency !== expected.currency ||\n  $json.body?.external_reference !== expected.external_reference\n) {\n  throw Error(\n    \"Pennylane did not confirm the intended finalized invoice. Check its reference before recovery.\",\n  );\n}\nreturn [\n  {\n    json: pennylaneInvoiceReply({\n      body: $json.body,\n      statusCode: $json.statusCode,\n      data: $(\"Validate Invoice Request\").first().json.data,\n      rejected: false,\n    }),\n  },\n];\n"
+      }
+    },
+    {
+      "id": "respond-pennylane",
+      "name": "Invoice Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        2580,
+        250
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json.body }}",
+        "options": {
+          "responseCode": "={{ $json.statusCode }}",
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Cache-Control",
+                "value": "no-store"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## MIT License notice\n\nCopyright (c) 2026 Gauthier Huguenin\n\nPermission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the \"Software\"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.",
+        "height": 720,
+        "width": 720
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2795,
+        250
+      ],
+      "id": "47e18308-e272-430e-b4d6-88727f9f3661",
+      "name": "MIT License Notice"
+    },
+    {
+      "id": "create-and-email-pennylane-invoices-lookup",
+      "name": "Look Up the Invoice Reference",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "parameters": {
+        "method": "GET",
+        "url": "https://app.pennylane.com/api/external/v2/customer_invoices",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "filter",
+              "value": "={{ JSON.stringify([{field:\"external_reference\",operator:\"eq\",value:$('Validate Invoice Request').first().json.data.reference}]) }}"
+            },
+            {
+              "name": "limit",
+              "value": "2"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 15000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "position": [
+        3010,
+        250
+      ]
+    },
+    {
+      "id": "create-and-email-pennylane-invoices-prior",
+      "name": "Check the Request Reservation",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_INVOICE_REFERENCE_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "request_key",
+              "condition": "eq",
+              "keyValue": "={{ $('Validate Invoice Request').first().json.data.reference }}"
+            }
+          ]
+        },
+        "limit": 1,
+        "returnAll": false
+      },
+      "position": [
+        3225,
+        250
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "id": "create-and-email-pennylane-invoices-gate",
+      "name": "Can This Reference Be Used?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ (()=>{const lookup=$('Look Up the Invoice Reference').first().json;\nif (lookup.statusCode!==200||!Array.isArray(lookup.body?.items)||lookup.body.has_more!==false||lookup.body.next_cursor!=null) throw Error('Could not verify the invoice reference in Pennylane.');\nreturn lookup.body.items.length===0&&Object.keys($json).length===0;})() }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "position": [
+        3440,
+        250
+      ]
+    },
+    {
+      "id": "create-and-email-pennylane-invoices-hold",
+      "name": "Reserve the Invoice Reference",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_INVOICE_REFERENCE_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "request_key": "={{ $('Validate Invoice Request').first().json.data.reference }}"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "position": [
+        3655,
+        250
+      ]
+    },
+    {
+      "id": "create-and-email-pennylane-invoices-conflict",
+      "name": "Report the Existing Reference",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return [\n  {\n    json: {\n      statusCode: 409,\n      body: {\n        success: false,\n        error: \"reference_already_used\",\n        message:\n          \"Check this reference and its email history in Pennylane. No new writes were made.\",\n      },\n    },\n  },\n];\n"
+      },
+      "position": [
+        3870,
+        250
+      ]
+    },
+    {
+      "id": "create-and-email-pennylane-invoices-attempt",
+      "name": "Start Email Delivery",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return [{ json: { attempt: 1 } }];\n"
+      },
+      "position": [
+        4085,
+        250
+      ]
+    },
+    {
+      "id": "create-and-email-pennylane-invoices-wait",
+      "name": "Wait One Minute for the PDF",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "parameters": {
+        "resume": "timeInterval",
+        "amount": 1,
+        "unit": "minutes"
+      },
+      "position": [
+        4300,
+        250
+      ]
+    },
+    {
+      "id": "create-and-email-pennylane-invoices-send",
+      "name": "Send to the Matched Customer Email",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'https://app.pennylane.com/api/external/v2/customer_invoices/' + $('Confirm Created Invoice').first().json.body.invoice_id + '/send_by_email' }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {recipients:[$('Validate Invoice Request').first().json.data.customer_email]} }}",
+        "options": {
+          "timeout": 15000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "responseFormat": "text",
+              "neverError": true
+            }
+          }
+        }
+      },
+      "position": [
+        4515,
+        250
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "create-and-email-pennylane-invoices-evaluate",
+      "name": "Read the Email Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const attempt = $(\"Wait One Minute for the PDF\").all(0, $runIndex)[0].json.attempt;\nconst status = $input.first().json.statusCode ?? null;\nconst confirmed = $(\"Confirm Created Invoice\").first().json.body;\nif (status === 204)\n  return [{ json: { body: { ...confirmed, email_sent: true }, statusCode: 200, retry: false } }];\nif (status === 409 && attempt < 5) return [{ json: { attempt: attempt + 1, retry: true } }];\nconst rejected = [400, 401, 403, 404, 409, 422].includes(status);\nreturn [\n  {\n    json: {\n      statusCode: 200,\n      retry: false,\n      body: {\n        ...confirmed,\n        success: false,\n        invoice_created: true,\n        email_sent: rejected ? false : null,\n        status_code: status,\n        message: rejected\n          ? \"Invoice created, but Pennylane did not accept the email.\"\n          : \"Invoice created, but email acceptance is unknown. Verify in Pennylane before attempting recovery.\",\n      },\n    },\n  },\n];\n"
+      },
+      "position": [
+        4730,
+        250
+      ]
+    },
+    {
+      "id": "create-and-email-pennylane-invoices-retry",
+      "name": "Is the PDF Still Preparing?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.retry }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "position": [
+        4945,
+        250
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Receive Invoice Request": {
+      "main": [
+        [
+          {
+            "node": "Validate Invoice Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Invoice Request": {
+      "main": [
+        [
+          {
+            "node": "Invoice Request Accepted?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Invoice Request Accepted?": {
+      "main": [
+        [
+          {
+            "node": "Look Up the Invoice Reference",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Return Rejected Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Return Rejected Request": {
+      "main": [
+        [
+          {
+            "node": "Invoice Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Customer by Email": {
+      "main": [
+        [
+          {
+            "node": "Select First Matching Customer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select First Matching Customer": {
+      "main": [
+        [
+          {
+            "node": "Create a New Customer?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a New Customer?": {
+      "main": [
+        [
+          {
+            "node": "Create Company Customer",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Invoice for Existing Customer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Company Customer": {
+      "main": [
+        [
+          {
+            "node": "Build Invoice for New Customer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Invoice for New Customer": {
+      "main": [
+        [
+          {
+            "node": "Create Finalized Invoice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Invoice for Existing Customer": {
+      "main": [
+        [
+          {
+            "node": "Create Finalized Invoice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Finalized Invoice": {
+      "main": [
+        [
+          {
+            "node": "Confirm Created Invoice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm Created Invoice": {
+      "main": [
+        [
+          {
+            "node": "Start Email Delivery",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Look Up the Invoice Reference": {
+      "main": [
+        [
+          {
+            "node": "Check the Request Reservation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check the Request Reservation": {
+      "main": [
+        [
+          {
+            "node": "Can This Reference Be Used?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Can This Reference Be Used?": {
+      "main": [
+        [
+          {
+            "node": "Reserve the Invoice Reference",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Report the Existing Reference",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve the Invoice Reference": {
+      "main": [
+        [
+          {
+            "node": "Find Customer by Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Report the Existing Reference": {
+      "main": [
+        [
+          {
+            "node": "Invoice Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start Email Delivery": {
+      "main": [
+        [
+          {
+            "node": "Wait One Minute for the PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait One Minute for the PDF": {
+      "main": [
+        [
+          {
+            "node": "Send to the Matched Customer Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send to the Matched Customer Email": {
+      "main": [
+        [
+          {
+            "node": "Read the Email Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the Email Result": {
+      "main": [
+        [
+          {
+            "node": "Is the PDF Still Preparing?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is the PDF Still Preparing?": {
+      "main": [
+        [
+          {
+            "node": "Wait One Minute for the PDF",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Invoice Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "none",
+    "saveDataSuccessExecution": "none",
+    "saveManualExecutions": false
+  },
+  "tags": []
+}
