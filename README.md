@@ -1005,6 +1005,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Copy Zendesk Comments to Pipedrive Notes](workflows/copy-zendesk-comments-to-pipedrive-notes/) - Copy new comments from email-channel Zendesk tickets to matching Pipedrive contacts.
 - [Create Zendesk Tickets for Shopify Order Updates](workflows/create-zendesk-tickets-for-shopify-order-updates/) - Create an open Zendesk ticket for a Shopify order update when the order has no open ticket.
 - [Approve AI-Drafted Email Replies](workflows/approve-drafted-inbox-replies/) - Summarize an incoming IMAP email, draft a reply, and ask for approval before sending it to the original sender.
+- [Route Telegram Support to Freshdesk and Monday.com](workflows/triage-telegram-support-to-freshdesk-and-monday/) - Create a Freshdesk ticket from an approved Telegram chat, acknowledge it in the same chat, and file it in the matching monday.com group.
 
 ## Finance
 

@@ -1,0 +1,331 @@
+{
+  "name": "Route Telegram Support to Freshdesk and Monday.com",
+  "nodes": [
+    {
+      "id": "triage-telegram-support-to-freshdesk-and-monday-trigger",
+      "name": "Receive Telegram messages",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      }
+    },
+    {
+      "id": "triage-telegram-support-to-freshdesk-and-monday-prepare",
+      "name": "Authorize the support request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        230,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function telegramSupportPlan(update, settings) {\n  const message = update?.message;\n  const chatId = message?.chat?.id;\n  const userId = message?.from?.id;\n  const messageId = message?.message_id;\n  if (\n    !Number.isSafeInteger(chatId) ||\n    !Number.isSafeInteger(userId) ||\n    userId <= 0 ||\n    !Number.isSafeInteger(messageId) ||\n    messageId <= 0 ||\n    message.sender_chat ||\n    message.from?.is_bot !== false ||\n    typeof message.text !== \"string\" ||\n    !message.text.trim()\n  )\n    return null;\n  const privateChat = message.chat.type === \"private\" && chatId === userId;\n  const groupChat = [\"group\", \"supergroup\"].includes(message.chat.type) && chatId < 0;\n  if (!privateChat && !groupChat) return null;\n  const threadId = message.is_topic_message === true ? message.message_thread_id : null;\n  if (\n    message.is_topic_message === true &&\n    (!groupChat || !Number.isSafeInteger(threadId) || threadId <= 0)\n  )\n    return null;\n  const email = settings.requesters?.[chatId + \":\" + userId];\n  if (typeof email !== \"string\" || !/^[a-z0-9._%+-]+@[a-z0-9.-]+\\.[a-z]{2,63}$/i.test(email))\n    return null;\n  if (\n    !/^[1-9][0-9]{0,19}$/.test(settings.boardId) ||\n    !/^[a-zA-Z0-9_]+$/.test(settings.refundGroup) ||\n    !/^[a-zA-Z0-9_]+$/.test(settings.complaintGroup) ||\n    settings.refundGroup === settings.complaintGroup ||\n    !/^[1-9][0-9]{0,15}$/.test(settings.botId)\n  )\n    throw Error(\"Set the Telegram bot user ID and monday board and two distinct group IDs\");\n  const text = message.text;\n  if (text.length > 8192) throw Error(\"Unexpected Telegram text length\");\n  const refund = text.includes(\"refund\");\n  const type = refund ? \"refund\" : \"complaint\";\n  const subject = Array.from(text.replace(/\\s+/g, \" \").trim()).slice(0, 255).join(\"\");\n  const description =\n    \"<p>\" +\n    text\n      .replaceAll(\"&\", \"&amp;\")\n      .replaceAll(\"<\", \"&lt;\")\n      .replaceAll(\">\", \"&gt;\")\n      .replace(/\\r\\n?|\\n/g, \"<br>\") +\n    \"</p>\";\n  const reply = refund\n    ? \"Hi, thanks for sending this. We will review your request for refund as soon as possible 💶 💵 💷\"\n    : \"Hi, thanks for sending this. We will review your complaint as soon as possible 📬 ☀️ ✅\";\n  return {\n    key: \"telegram:\" + settings.botId + \":\" + chatId + \":\" + messageId,\n    chatId: String(chatId),\n    messageId,\n    botId: String(settings.botId),\n    threadId,\n    type,\n    subject,\n    boardId: String(settings.boardId),\n    groupId: refund ? settings.refundGroup : settings.complaintGroup,\n    reply,\n    ticket: { email, subject, description, tags: [type], status: 3, priority: 1, source: 2 },\n  };\n}\n\nconst settings = {\n  requesters: {},\n  callbackUrl: \"\",\n  botId: \"\",\n  boardId: \"\",\n  refundGroup: \"\",\n  complaintGroup: \"\",\n  freshdeskDomain: \"\",\n};\nconst plan = telegramSupportPlan($input.first().json, settings);\nif (!plan) return [];\nif (!/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(settings.freshdeskDomain))\n  throw Error(\"Set the Freshdesk subdomain\");\nreturn [\n  {\n    json: {\n      ...plan,\n      ticketUrl: \"https://\" + settings.freshdeskDomain + \".freshdesk.com/api/v2/tickets\",\n    },\n  },\n];\n"
+      }
+    },
+    {
+      "id": "triage-telegram-support-to-freshdesk-and-monday-fresh",
+      "name": "Skip previously reserved requests",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        460,
+        0
+      ],
+      "parameters": {
+        "resource": "row",
+        "operation": "rowNotExists",
+        "dataTableId": {
+          "__rl": true,
+          "value": "YOUR_REQUEST_RECEIPTS_TABLE_ID",
+          "mode": "id"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "request_key",
+              "condition": "eq",
+              "keyValue": "={{ $json.key }}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "triage-telegram-support-to-freshdesk-and-monday-hold",
+      "name": "Reserve the Telegram message",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        690,
+        0
+      ],
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "value": "YOUR_REQUEST_RECEIPTS_TABLE_ID",
+          "mode": "id"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "request_key": "={{ $json.key }}"
+          },
+          "schema": []
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "triage-telegram-support-to-freshdesk-and-monday-ticket",
+      "name": "Create the Freshdesk ticket",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        920,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $(\"Authorize the support request\").first().json.ticketUrl }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $(\"Authorize the support request\").first().json.ticket }}",
+        "options": {
+          "timeout": 20000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "triage-telegram-support-to-freshdesk-and-monday-checkTicket",
+      "name": "Confirm the Freshdesk ticket",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1150,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function confirmFreshdeskSupportTicket(plan, body) {\n  if (\n    !Number.isSafeInteger(body?.id) ||\n    body.id <= 0 ||\n    body.subject !== plan.ticket.subject ||\n    (typeof body.email === \"string\" && body.email.toLowerCase() !== plan.ticket.email.toLowerCase())\n  ) {\n    throw Error(\"Check Freshdesk before repeating ticket creation\");\n  }\n  return { id: body.id, subject: body.subject };\n}\n\nif ($json.statusCode !== 201) throw Error(\"Check Freshdesk before repeating ticket creation\");\nreturn {\n  json: confirmFreshdeskSupportTicket($(\"Authorize the support request\").first().json, $json.body),\n};\n"
+      }
+    },
+    {
+      "id": "triage-telegram-support-to-freshdesk-and-monday-reply",
+      "name": "Acknowledge in the same Telegram chat",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        230
+      ],
+      "parameters": {
+        "resource": "message",
+        "operation": "sendMessage",
+        "chatId": "={{ $(\"Authorize the support request\").first().json.chatId }}",
+        "text": "={{ $(\"Authorize the support request\").first().json.reply }}",
+        "replyMarkup": "none",
+        "additionalFields": "={{ ({appendAttribution:false, ...($(\"Authorize the support request\").first().json.threadId===null?{}:{message_thread_id:$(\"Authorize the support request\").first().json.threadId})}) }}"
+      }
+    },
+    {
+      "id": "triage-telegram-support-to-freshdesk-and-monday-checkReply",
+      "name": "Confirm the Telegram reply",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        230,
+        230
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function confirmTelegramSupportReply(plan, result) {\n  const messageId = result?.messageId ?? result?.message_id;\n  const threadId = result?.messageThreadId ?? result?.message_thread_id;\n  if (\n    !Number.isSafeInteger(messageId) ||\n    messageId <= 0 ||\n    String(result.chat?.id) !== plan.chatId ||\n    String(result.from?.id) !== plan.botId ||\n    result.text !== plan.reply ||\n    (plan.threadId !== null && threadId !== undefined && threadId !== plan.threadId)\n  ) {\n    throw Error(\"Check the original Telegram conversation before resending\");\n  }\n  return messageId;\n}\n\nfunction mondaySupportItem(plan, ticket) {\n  return {\n    board_id: plan.boardId,\n    group_id: plan.groupId,\n    item_name: plan.type === \"refund\" ? ticket.subject : plan.subject,\n  };\n}\n\nconst plan = $(\"Authorize the support request\").first().json;\nconst ticket = $(\"Confirm the Freshdesk ticket\").first().json;\nconst replyId = confirmTelegramSupportReply(plan, $json.result ?? $json);\nreturn { json: { ticketId: ticket.id, replyId, item: mondaySupportItem(plan, ticket) } };\n"
+      }
+    },
+    {
+      "id": "triage-telegram-support-to-freshdesk-and-monday-monday",
+      "name": "Create the item in the matching group",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        460,
+        230
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.monday.com/v2",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "API-Version",
+              "value": "2026-04"
+            }
+          ]
+        },
+        "jsonBody": "={{ ({query: \"mutation SupportItem($board_id: ID!, $group_id: String!, $item_name: String!) { create_item(board_id: $board_id, group_id: $group_id, item_name: $item_name) { id name board { id } group { id } } }\", variables: $json.item}) }}",
+        "options": {
+          "timeout": 20000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "triage-telegram-support-to-freshdesk-and-monday-checkMonday",
+      "name": "Confirm the monday item",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        690,
+        230
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function confirmMondaySupportItem(expected, item) {\n  if (\n    !/^[1-9][0-9]{0,19}$/.test(String(item?.id)) ||\n    String(item.board?.id) !== expected.board_id ||\n    item.group?.id !== expected.group_id ||\n    item.name !== expected.item_name\n  ) {\n    throw Error(\"Check the configured monday group before creating another item\");\n  }\n  return String(item.id);\n}\n\nif ($json.errors?.length)\n  throw Error(\"Check the configured monday group before creating another item\");\nconst receipt = $(\"Confirm the Telegram reply\").first().json;\nreturn {\n  json: {\n    type: $(\"Authorize the support request\").first().json.type,\n    chatId: $(\"Authorize the support request\").first().json.chatId,\n    messageId: $(\"Authorize the support request\").first().json.messageId,\n    ticketId: receipt.ticketId,\n    telegramReplyId: receipt.replyId,\n    mondayItemId: confirmMondaySupportItem(receipt.item, $json.data?.create_item),\n  },\n};\n"
+      }
+    }
+  ],
+  "connections": {
+    "Receive Telegram messages": {
+      "main": [
+        [
+          {
+            "node": "Authorize the support request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Authorize the support request": {
+      "main": [
+        [
+          {
+            "node": "Skip previously reserved requests",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Skip previously reserved requests": {
+      "main": [
+        [
+          {
+            "node": "Reserve the Telegram message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve the Telegram message": {
+      "main": [
+        [
+          {
+            "node": "Create the Freshdesk ticket",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create the Freshdesk ticket": {
+      "main": [
+        [
+          {
+            "node": "Confirm the Freshdesk ticket",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm the Freshdesk ticket": {
+      "main": [
+        [
+          {
+            "node": "Acknowledge in the same Telegram chat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Acknowledge in the same Telegram chat": {
+      "main": [
+        [
+          {
+            "node": "Confirm the Telegram reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm the Telegram reply": {
+      "main": [
+        [
+          {
+            "node": "Create the item in the matching group",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create the item in the matching group": {
+      "main": [
+        [
+          {
+            "node": "Confirm the monday item",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
