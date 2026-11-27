@@ -741,6 +741,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Sync Outlook Calendar Events to Notion](workflows/sync-outlook-calendar-events-to-notion/) - Sync your primary Outlook calendar to a Notion data source, matching each event by its Outlook ID.
 - [Summarize Zoom Meetings and Record Follow-ups](workflows/zoom-meeting-summary-and-follow-up/) - Review recent Zoom cloud transcripts, email formal minutes, create the owner’s ClickUp tasks, and calendar a confirmed follow-up.
 - [Receive New IMAP Email](workflows/receive-imap-inbox-mail/) - Listen for incoming mail in an IMAP mailbox and expose each unread message with its headers and text bodies.
+- [Draft Replies to Outlook Threads](workflows/draft-outlook-thread-replies/) - Draft concise replies to emails from a configured Outlook sender and save each draft in its original conversation.
 
 ## Content
 
