@@ -1079,6 +1079,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Draft WordPress Posts in Your Brand Voice](workflows/draft-wordpress-posts-in-brand-voice/) - Analyze recent brand articles for structure and voice, then write a new WordPress draft from your brief.
 - [Schedule WordPress Articles with Pexels Photos](workflows/schedule-wordpress-articles-with-pexels/) - Generate articles on a schedule, log them in Google Sheets, and publish them to WordPress with credited Pexels photos.
 - [Generate an HTML Page from a Webhook](workflows/generate-html-page-from-webhook/) - Describe a page in a webhook query and preview the generated HTML in the same browser request.
+- [Generate Text with Local Ollama](workflows/generate-text-with-local-ollama/) - Run a prompt on your local Ollama model and see its full generation response.
 
 ## Recruiting
 
