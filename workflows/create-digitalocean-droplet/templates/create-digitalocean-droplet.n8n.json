@@ -1,0 +1,150 @@
+{
+  "name": "Create a DigitalOcean Droplet",
+  "nodes": [
+    {
+      "id": "create-digitalocean-droplet-manual",
+      "name": "Run manually",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        260
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "create-digitalocean-droplet-settings",
+      "name": "Set Droplet parameters",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        235,
+        260
+      ],
+      "parameters": {
+        "jsCode": "return [{ json: { name: \"\", region: \"\", size: \"\", image: \"\" } }];\n"
+      }
+    },
+    {
+      "id": "create-digitalocean-droplet-validate",
+      "name": "Validate Droplet parameters",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        470,
+        260
+      ],
+      "parameters": {
+        "jsCode": "function dropletRequest(config) {\n  const required = (key) => {\n    const value = config[key];\n    if (typeof value !== \"string\" || !value.trim())\n      throw new Error(\"Supply a nonempty \" + key + \".\");\n    return value.trim();\n  };\n  const { image } = config;\n  if (!(typeof image === \"string\" && image.trim()) && !(Number.isSafeInteger(image) && image > 0)) {\n    throw new Error(\"Supply an image slug or positive integer image ID.\");\n  }\n  const imageValue = typeof image === \"string\" ? image.trim() : image;\n  const normalized =\n    typeof imageValue === \"string\" && /^\\d+$/.test(imageValue) ? Number(imageValue) : imageValue;\n  if (typeof normalized === \"number\" && !(Number.isSafeInteger(normalized) && normalized > 0)) {\n    throw new Error(\"Supply a positive integer image ID.\");\n  }\n  return {\n    name: required(\"name\"),\n    region: required(\"region\"),\n    size: required(\"size\"),\n    image: normalized,\n  };\n}\nreturn [{ json: dropletRequest($input.first().json), pairedItem: { item: 0 } }];\n"
+      }
+    },
+    {
+      "id": "create-digitalocean-droplet-request",
+      "name": "Request Droplet creation",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        705,
+        260
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.digitalocean.com/v2/droplets",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {
+          "timeout": 30000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "retryOnFail": false
+    },
+    {
+      "id": "create-digitalocean-droplet-receipt",
+      "name": "Confirm the acceptance receipt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        940,
+        260
+      ],
+      "parameters": {
+        "jsCode": "function acceptedDroplet(status, body, expectedName) {\n  if (\n    status !== 202 ||\n    !Number.isSafeInteger(body?.droplet?.id) ||\n    body.droplet.id <= 0 ||\n    body.droplet.name !== expectedName\n  ) {\n    throw new Error(\n      \"DigitalOcean did not return a matching acceptance receipt. Check the account before running again.\",\n    );\n  }\n  return {\n    statusCode: status,\n    accepted: true,\n    dropletId: body.droplet.id,\n    droplet: body.droplet,\n    ...(body.links ? { links: body.links } : {}),\n  };\n}\nconst { statusCode, body } = $input.first().json;\nreturn [\n  {\n    json: acceptedDroplet(\n      statusCode,\n      body,\n      $(\"Validate Droplet parameters\").itemMatching(0).json.name,\n    ),\n  },\n];\n"
+      }
+    }
+  ],
+  "connections": {
+    "Run manually": {
+      "main": [
+        [
+          {
+            "node": "Set Droplet parameters",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Droplet parameters": {
+      "main": [
+        [
+          {
+            "node": "Validate Droplet parameters",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Droplet parameters": {
+      "main": [
+        [
+          {
+            "node": "Request Droplet creation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Request Droplet creation": {
+      "main": [
+        [
+          {
+            "node": "Confirm the acceptance receipt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}
