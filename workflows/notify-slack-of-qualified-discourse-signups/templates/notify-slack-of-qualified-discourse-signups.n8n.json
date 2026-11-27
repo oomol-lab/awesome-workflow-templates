@@ -1,0 +1,521 @@
+{
+  "name": "Notify Slack About Qualified Discourse Signups",
+  "nodes": [
+    {
+      "id": "notify-slack-of-qualified-discourse-signups-hook",
+      "name": "Receive signed Discourse user events",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "discourse-qualified-signup",
+        "authentication": "none",
+        "responseMode": "responseNode",
+        "options": {
+          "rawBody": true
+        }
+      },
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "id": "notify-slack-of-qualified-discourse-signups-raw",
+      "name": "Read the original request bytes",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function prepareDiscourseSignature(raw, headers) {\n  const signature = headers?.[\"x-discourse-event-signature\"];\n  if (\n    !raw ||\n    raw.length > 65536 ||\n    typeof signature !== \"string\" ||\n    !/^sha256=[a-f0-9]{64}$/.test(signature) ||\n    !/^application\\/json(?:\\s*;|$)/i.test(headers[\"content-type\"] ?? \"\")\n  ) {\n    return { raw: \"\", signature: \"\" };\n  }\n  const text = raw.toString(\"utf8\");\n  if (!Buffer.from(text, \"utf8\").equals(raw)) return { raw: \"\", signature: \"\" };\n  return {\n    raw: text,\n    signature: signature.slice(7),\n    event: headers[\"x-discourse-event\"],\n    kind: headers[\"x-discourse-event-type\"],\n    forum: headers[\"x-discourse-instance\"],\n  };\n}\n\nlet bytes;\ntry {\n  bytes = await helpers.getBinaryDataBuffer($itemIndex, \"data\");\n} catch {}\nreturn { json: prepareDiscourseSignature(bytes, $json.headers) };\n"
+      },
+      "position": [
+        250,
+        0
+      ]
+    },
+    {
+      "id": "notify-slack-of-qualified-discourse-signups-hmac",
+      "name": "Compute Discourse HMAC",
+      "type": "n8n-nodes-base.crypto",
+      "typeVersion": 1,
+      "parameters": {
+        "action": "hmac",
+        "type": "SHA256",
+        "binaryData": false,
+        "encoding": "hex",
+        "dataPropertyName": "computed",
+        "value": "={{ $json.raw }}",
+        "secret": "={{ $env.DISCOURSE_SIGNING_SECRET?.length >= 24 ? $env.DISCOURSE_SIGNING_SECRET : null }}"
+      },
+      "position": [
+        500,
+        0
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "notify-slack-of-qualified-discourse-signups-verify",
+      "name": "Verify event and authorize the signup",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function normalizedWorkEmail(value) {\n  const email = typeof value === \"string\" ? value.trim().toLowerCase() : \"\";\n  return /^[a-z0-9._%+-]+@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z]{2,63}$/.test(email)\n    ? email\n    : \"\";\n}\n\nfunction admitDiscourseSignup(prepared, computed, settings) {\n  if (!prepared.signature || typeof computed !== \"string\" || !/^[a-f0-9]{64}$/.test(computed))\n    return { status: 401 };\n  let difference = 0;\n  for (let i = 0; i < 64; i++)\n    difference |= prepared.signature.charCodeAt(i) ^ computed.charCodeAt(i);\n  if (difference) return { status: 401 };\n  const forum = typeof settings.forum === \"string\" ? settings.forum.replace(/\\/$/, \"\") : \"\";\n  if (\n    !/^https:\\/\\/(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z]{2,63}(?:\\/[a-z0-9._-]+)*$/i.test(\n      forum,\n    ) ||\n    prepared.forum?.replace(/\\/$/, \"\") !== forum ||\n    prepared.kind !== \"user\" ||\n    prepared.event !== \"user_created\"\n  )\n    return { status: 200 };\n  let user;\n  try {\n    user = JSON.parse(prepared.raw)?.user;\n  } catch {\n    return { status: 400 };\n  }\n  const email = normalizedWorkEmail(user?.email);\n  if (!email || !Number.isSafeInteger(user?.id) || user.id < 1 || user.staged === true)\n    return { status: 200 };\n  const domain = email.split(\"@\")[1];\n  if (/^(gmail|yahoo|hotmail|proton)(\\.|mail\\.)/i.test(domain)) return { status: 200 };\n  if (!/^C[A-Z0-9]{6,}$/.test(settings.channel) && !/^G[A-Z0-9]{6,}$/.test(settings.channel))\n    return { status: 200 };\n  if (\n    !Number.isInteger(settings.minEmployees) ||\n    settings.minEmployees < 1 ||\n    !Number.isInteger(settings.maxGlobalRank) ||\n    settings.maxGlobalRank < 1\n  )\n    return { status: 200 };\n  return {\n    status: 200,\n    signup: {\n      key: forum + \":\" + user.id,\n      email,\n      domain,\n      channel: settings.channel,\n      minEmployees: settings.minEmployees,\n      maxGlobalRank: settings.maxGlobalRank,\n    },\n  };\n}\n\nconst settings = {\n  forum: \"\",\n  channel: \"\",\n  minEmployees: 30,\n  maxGlobalRank: 100000,\n};\nreturn {\n  json: admitDiscourseSignup(\n    $(\"Read the original request bytes\").first().json,\n    $json.computed,\n    settings,\n  ),\n};\n"
+      },
+      "position": [
+        750,
+        0
+      ]
+    },
+    {
+      "id": "notify-slack-of-qualified-discourse-signups-ack",
+      "name": "Acknowledge the signed delivery",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "parameters": {
+        "respondWith": "noData",
+        "options": {
+          "responseCode": "={{ $json.status }}",
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Cache-Control",
+                "value": "no-store"
+              }
+            ]
+          }
+        }
+      },
+      "position": [
+        1000,
+        0
+      ]
+    },
+    {
+      "id": "notify-slack-of-qualified-discourse-signups-select",
+      "name": "Select the authorized business email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const signup = $(\"Verify event and authorize the signup\").first().json.signup;\nreturn signup ? [{ json: signup }] : [];\n"
+      },
+      "position": [
+        1250,
+        0
+      ]
+    },
+    {
+      "id": "notify-slack-of-qualified-discourse-signups-fresh",
+      "name": "Skip signup already reserved for Slack",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "rowNotExists",
+        "dataTableId": {
+          "__rl": true,
+          "value": "YOUR_SIGNUP_RECEIPTS_TABLE_ID",
+          "mode": "id"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "signup_key",
+              "condition": "eq",
+              "keyValue": "={{ $json.key }}"
+            }
+          ]
+        }
+      },
+      "position": [
+        1500,
+        0
+      ]
+    },
+    {
+      "id": "notify-slack-of-qualified-discourse-signups-enrich",
+      "name": "Match the email and organization with Hunter",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ \"https://api.hunter.io/v2/combined/find?email=\" + encodeURIComponent($json.email) }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 15000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "position": [
+        1750,
+        0
+      ]
+    },
+    {
+      "id": "notify-slack-of-qualified-discourse-signups-company",
+      "name": "Check exact matching and employee count",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function normalizedWorkEmail(value) {\n  const email = typeof value === \"string\" ? value.trim().toLowerCase() : \"\";\n  return /^[a-z0-9._%+-]+@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z]{2,63}$/.test(email)\n    ? email\n    : \"\";\n}\n\nfunction cleanSlackText(value, limit) {\n  return typeof value === \"string\"\n    ? value\n        .replace(/[\\u0000-\\u001f\\u007f]/g, \" \")\n        .replace(/\\s+/g, \" \")\n        .trim()\n        .slice(0, limit)\n    : \"\";\n}\n\nfunction qualifiedCompany(response, signup) {\n  if (response?.statusCode === 404 || response?.statusCode === 451) return null;\n  if (response?.statusCode !== 200) throw Error(\"Hunter enrichment unavailable\");\n  const { person, company } = response.body?.data ?? {};\n  if (\n    normalizedWorkEmail(person?.email) !== signup.email ||\n    person?.employment?.domain?.toLowerCase() !== signup.domain ||\n    company?.domain?.toLowerCase() !== signup.domain\n  )\n    return null;\n  const count = company.metrics?.employeesCount;\n  if (!Number.isInteger(count) || count < signup.minEmployees) return null;\n  const name = cleanSlackText(person.name?.fullName, 180);\n  const employer = cleanSlackText(person.employment?.name ?? company.name, 180);\n  if (!name || !employer) return null;\n  const title = cleanSlackText(person.employment?.title, 160);\n  const industry = cleanSlackText(company.category?.industry, 160);\n  const handle = typeof person.linkedin?.handle === \"string\" ? person.linkedin.handle : \"\";\n  const linkedIn = /^(?:in|pub)\\/[a-z0-9_-]+(?:\\/[a-z0-9_-]+){0,3}\\/?$/i.test(handle)\n    ? \"https://www.linkedin.com/\" + handle\n    : null;\n  return { ...signup, count, name, employer, title, industry, linkedIn };\n}\n\nfunction rankingWindow(at) {\n  const now = new Date(at);\n  if (!Number.isFinite(now.getTime())) throw Error(\"Invalid execution time\");\n  const period = (delta) =>\n    new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + delta, 1))\n      .toISOString()\n      .slice(0, 7);\n  return { start: period(-3), end: period(-1) };\n}\n\nconst company = qualifiedCompany(\n  $input.first().json,\n  $(\"Select the authorized business email\").first().json,\n);\nreturn company ? [{ json: { company, period: rankingWindow(Date.now()) } }] : [];\n"
+      },
+      "position": [
+        0,
+        230
+      ]
+    },
+    {
+      "id": "notify-slack-of-qualified-discourse-signups-rank",
+      "name": "Read Similarweb worldwide ranking",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ \"https://api.similarweb.com/v5/website-analysis/websites/website-rank?domain=\" + encodeURIComponent($json.company.domain) + \"&start_date=\" + $json.period.start + \"&end_date=\" + $json.period.end + \"&granularity=monthly&web_source=total&country=ww&metrics=country_rank&format=json\" }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 15000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "position": [
+        250,
+        230
+      ]
+    },
+    {
+      "id": "notify-slack-of-qualified-discourse-signups-message",
+      "name": "Check the ranking and prepare the Slack notice",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function slackDiscourseNotice(response, qualified, period) {\n  if (response?.statusCode !== 200) throw Error(\"Similarweb rank unavailable\");\n  const payload = response.body;\n  if (\n    payload?.meta?.status?.toLowerCase() !== \"success\" ||\n    payload.meta.request?.domain?.toLowerCase() !== qualified.domain ||\n    ![\"ww\", \"world\"].includes(payload.meta.request?.country?.toLowerCase())\n  )\n    return null;\n  const rows = Array.isArray(payload.data) ? payload.data : [];\n  const byDate = new Map();\n  for (const row of rows) {\n    if (typeof row?.date !== \"string\" || !/^\\d{4}-\\d{2}-01$/.test(row.date)) return null;\n    const month = row.date.slice(0, 7);\n    if (month < period.start || month > period.end || byDate.has(month)) return null;\n    byDate.set(month, row.country_rank);\n  }\n  const month = [...byDate.keys()].sort().at(-1);\n  const rank = byDate.get(month);\n  if (!Number.isInteger(rank) || rank < 1 || rank > qualified.maxGlobalRank) return null;\n  const lines = [\n    \"Qualified Discourse signup\",\n    qualified.name + (qualified.title ? \" · \" + qualified.title : \"\"),\n    qualified.employer + (qualified.industry ? \" · \" + qualified.industry : \"\"),\n    \"Work email: \" + qualified.email,\n    \"Employees: \" + qualified.count + \" · Similarweb worldwide rank: \" + rank + \" (\" + month + \")\",\n  ];\n  const blocks = [{ type: \"section\", text: { type: \"plain_text\", text: lines.join(\"\\n\") } }];\n  if (qualified.linkedIn)\n    blocks.push({\n      type: \"actions\",\n      elements: [\n        {\n          type: \"button\",\n          action_id: \"open_linkedin\",\n          text: { type: \"plain_text\", text: \"Open LinkedIn profile\" },\n          url: qualified.linkedIn,\n        },\n      ],\n    });\n  return {\n    key: qualified.key,\n    request: {\n      channel: qualified.channel,\n      text: \"Qualified Discourse signup\",\n      blocks,\n      unfurl_links: false,\n      unfurl_media: false,\n    },\n  };\n}\n\nconst { company, period } = $(\"Check exact matching and employee count\").first().json;\nconst notice = slackDiscourseNotice($input.first().json, company, period);\nreturn notice ? [{ json: notice }] : [];\n"
+      },
+      "position": [
+        500,
+        230
+      ]
+    },
+    {
+      "id": "notify-slack-of-qualified-discourse-signups-slackChannel",
+      "name": "Read the configured Slack channel",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ \"https://slack.com/api/conversations.info?channel=\" + encodeURIComponent($json.request.channel) }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "slackOAuth2Api",
+        "options": {
+          "timeout": 15000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "position": [
+        750,
+        230
+      ]
+    },
+    {
+      "id": "notify-slack-of-qualified-discourse-signups-privateChannel",
+      "name": "Verify the private Slack destination",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const response = $input.first().json;\nconst notice = $(\"Check the ranking and prepare the Slack notice\").first().json;\nconst channel = response.channel;\nif (\n  response.ok !== true ||\n  channel?.id !== notice.request.channel ||\n  channel.is_private !== true ||\n  (channel.is_channel !== true && channel.is_group !== true) ||\n  channel.is_archived !== false ||\n  channel.is_shared !== false ||\n  channel.is_ext_shared !== false ||\n  channel.is_pending_ext_shared !== false\n)\n  return [];\nreturn [{ json: notice }];\n"
+      },
+      "position": [
+        1000,
+        230
+      ]
+    },
+    {
+      "id": "notify-slack-of-qualified-discourse-signups-hold",
+      "name": "Reserve the qualified signup",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "value": "YOUR_SIGNUP_RECEIPTS_TABLE_ID",
+          "mode": "id"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "signup_key": "={{ $json.key }}"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "position": [
+        1250,
+        230
+      ]
+    },
+    {
+      "id": "notify-slack-of-qualified-discourse-signups-send",
+      "name": "Post to the private Slack channel",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://slack.com/api/chat.postMessage",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "slackOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $(\"Check the ranking and prepare the Slack notice\").first().json.request }}",
+        "options": {
+          "timeout": 15000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "position": [
+        1500,
+        230
+      ]
+    },
+    {
+      "id": "notify-slack-of-qualified-discourse-signups-receipt",
+      "name": "Confirm the Slack result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "if (\n  $json.ok !== true ||\n  $json.channel !==\n    $(\"Check the ranking and prepare the Slack notice\").first().json.request.channel ||\n  !/^\\d+\\.\\d+$/.test($json.ts)\n) {\n  throw Error(\"Inspect the destination Slack channel before retrying\");\n}\nreturn { json: { status: \"posted\", channel: $json.channel, ts: $json.ts } };\n"
+      },
+      "position": [
+        1750,
+        230
+      ]
+    }
+  ],
+  "connections": {
+    "Receive signed Discourse user events": {
+      "main": [
+        [
+          {
+            "node": "Read the original request bytes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the original request bytes": {
+      "main": [
+        [
+          {
+            "node": "Compute Discourse HMAC",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compute Discourse HMAC": {
+      "main": [
+        [
+          {
+            "node": "Verify event and authorize the signup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify event and authorize the signup": {
+      "main": [
+        [
+          {
+            "node": "Acknowledge the signed delivery",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Acknowledge the signed delivery": {
+      "main": [
+        [
+          {
+            "node": "Select the authorized business email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select the authorized business email": {
+      "main": [
+        [
+          {
+            "node": "Skip signup already reserved for Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Skip signup already reserved for Slack": {
+      "main": [
+        [
+          {
+            "node": "Match the email and organization with Hunter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Match the email and organization with Hunter": {
+      "main": [
+        [
+          {
+            "node": "Check exact matching and employee count",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check exact matching and employee count": {
+      "main": [
+        [
+          {
+            "node": "Read Similarweb worldwide ranking",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Similarweb worldwide ranking": {
+      "main": [
+        [
+          {
+            "node": "Check the ranking and prepare the Slack notice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check the ranking and prepare the Slack notice": {
+      "main": [
+        [
+          {
+            "node": "Read the configured Slack channel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the configured Slack channel": {
+      "main": [
+        [
+          {
+            "node": "Verify the private Slack destination",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify the private Slack destination": {
+      "main": [
+        [
+          {
+            "node": "Reserve the qualified signup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve the qualified signup": {
+      "main": [
+        [
+          {
+            "node": "Post to the private Slack channel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Post to the private Slack channel": {
+      "main": [
+        [
+          {
+            "node": "Confirm the Slack result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataSuccessExecution": "none",
+    "saveDataErrorExecution": "none",
+    "saveExecutionProgress": false,
+    "saveManualExecutions": false
+  }
+}
