@@ -1212,6 +1212,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Receive AMQP 1.0 Messages](workflows/receive-amqp-one-messages/) - Listen for messages on an AMQP 1.0 queue or topic and inspect the original broker message.
 - [Receive MQTT Topic Messages](workflows/receive-mqtt-topic-messages/) - Keep an MQTT subscription open and inspect each incoming message with its original topic.
 - [Format a US Phone Number](workflows/format-us-phone-number/) - Call this workflow to normalize a US phone number and return its dialing formats and extension.
+- [Save Qualys Reports to TheHive](workflows/save-qualys-reports-to-thehive/) - File each finished Qualys PDF report in its own TheHive case.
 
 ## AI
 
