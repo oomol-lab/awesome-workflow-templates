@@ -369,6 +369,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Publish Scheduled Notion Photos to LinkedIn](workflows/publish-notion-photo-posts-to-linkedin/) - Publish each Notion page scheduled for today as a LinkedIn post with its first photo, then mark that page Published.
 - [Get Google Ads Keyword History](workflows/get-google-ads-keyword-history/) - Look up historical Google Search metrics for an existing keyword list and keep Google Ads’ grouped variants and raw values.
 - [Insert a Line in Recent YouTube Video Descriptions](workflows/insert-a-line-in-youtube-video-descriptions/) - Insert a line between two markers in the latest three uploads on your YouTube channel.
+- [Update Your X Profile Banner from an Image](workflows/update-x-profile-banner-from-an-image/) - Download a PNG or JPEG and submit it as the profile banner for your connected X account.
 
 ## Support
 

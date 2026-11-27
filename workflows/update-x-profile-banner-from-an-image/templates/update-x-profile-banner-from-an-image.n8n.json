@@ -1,0 +1,178 @@
+{
+  "name": "Update Your X Profile Banner from an Image",
+  "nodes": [
+    {
+      "id": "update-x-profile-banner-from-an-image-start",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "name": "Run the banner update",
+      "parameters": {},
+      "position": [
+        0,
+        240
+      ]
+    },
+    {
+      "id": "update-x-profile-banner-from-an-image-setup",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "name": "Set the banner image URL",
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const url = \"https://images.example.invalid/banner.png\";\nif (!/^https:\\/\\/[a-z0-9-]+(?:\\.[a-z0-9-]+)+\\//i.test(url) || /[\\s\\\\#]/.test(url))\n  throw Error(\"Use a direct HTTPS image URL without credentials.\");\nreturn [{ json: { url } }];\n"
+      },
+      "position": [
+        225,
+        240
+      ]
+    },
+    {
+      "id": "update-x-profile-banner-from-an-image-download",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "name": "Download the banner image",
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.url }}",
+        "authentication": "none",
+        "options": {
+          "timeout": 15000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "fullResponse": true,
+              "outputPropertyName": "data"
+            }
+          }
+        }
+      },
+      "position": [
+        450,
+        240
+      ]
+    },
+    {
+      "id": "update-x-profile-banner-from-an-image-validate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "name": "Validate the image bytes",
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function imageType(bytes, mime) {\n  if (bytes.length < 16 || bytes.length > 2097152)\n    throw Error(\"Choose a complete image up to 2 MiB.\");\n  const png =\n    bytes[0] === 137 &&\n    bytes.subarray(1, 8).equals(Buffer.from([80, 78, 71, 13, 10, 26, 10])) &&\n    bytes.subarray(12, 16).toString(\"ascii\") === \"IHDR\" &&\n    bytes.subarray(-8, -4).toString(\"ascii\") === \"IEND\";\n  const jpeg =\n    bytes[0] === 255 &&\n    bytes[1] === 216 &&\n    bytes[2] === 255 &&\n    bytes.at(-2) === 255 &&\n    bytes.at(-1) === 217;\n  const wanted = png ? \"image/png\" : jpeg ? \"image/jpeg\" : \"\";\n  if (!wanted || (mime !== wanted && mime !== \"application/octet-stream\"))\n    throw Error(\"The response is not a complete PNG or JPEG.\");\n  return { mimeType: wanted, fileName: png ? \"banner.png\" : \"banner.jpg\" };\n}\nconst item = $input.first();\nif (item.json.statusCode !== 200) throw Error(\"The image download was not complete.\");\nconst raw = await helpers.getBinaryDataBuffer(0, \"data\");\nconst mime = String(item.binary.data.mimeType ?? \"\")\n  .split(\";\", 1)[0]\n  .toLowerCase();\nconst properties = imageType(raw, mime);\nreturn [\n  {\n    json: { imageBytes: raw.length },\n    binary: { data: { ...item.binary.data, ...properties } },\n    pairedItem: { item: 0 },\n  },\n];\n"
+      },
+      "position": [
+        675,
+        240
+      ]
+    },
+    {
+      "id": "update-x-profile-banner-from-an-image-upload",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "name": "Upload to the connected X account",
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "https://api.twitter.com/1.1/account/update_profile_banner.json",
+        "authentication": "oAuth1",
+        "jsonParameters": true,
+        "sendBinaryData": true,
+        "binaryPropertyName": "banner:data",
+        "responseFormat": "string",
+        "dataPropertyName": "response",
+        "options": {
+          "bodyContentType": "multipart-form-data",
+          "fullResponse": true,
+          "followRedirect": false,
+          "followAllRedirects": false,
+          "timeout": 20000
+        }
+      },
+      "position": [
+        900,
+        240
+      ]
+    },
+    {
+      "id": "update-x-profile-banner-from-an-image-receipt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "name": "Report the upload response",
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const reply = $input.first().json;\nif (![200, 201, 202].includes(reply.statusCode))\n  throw Error(\"X did not acknowledge the upload. Verify your profile before retrying.\");\nreturn [{ json: { status: \"accepted\", httpStatus: reply.statusCode } }];\n"
+      },
+      "position": [
+        1125,
+        240
+      ]
+    }
+  ],
+  "connections": {
+    "Run the banner update": {
+      "main": [
+        [
+          {
+            "node": "Set the banner image URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set the banner image URL": {
+      "main": [
+        [
+          {
+            "node": "Download the banner image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download the banner image": {
+      "main": [
+        [
+          {
+            "node": "Validate the image bytes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate the image bytes": {
+      "main": [
+        [
+          {
+            "node": "Upload to the connected X account",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload to the connected X account": {
+      "main": [
+        [
+          {
+            "node": "Report the upload response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataSuccessExecution": "none"
+  },
+  "pinData": {}
+}
