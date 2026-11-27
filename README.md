@@ -767,6 +767,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Record Receipt Uploads in Airtable](workflows/record-receipt-uploads-in-airtable/) - Send a receipt file to a webhook and receive a summary after its extracted fields are saved in Airtable.
 - [Sync Asana Project Tasks to Notion](workflows/sync-asana-project-tasks-to-notion/) - Create or update the matching Notion page when a task changes in the configured Asana project.
 - [Return a Captioned Image from a Webhook](workflows/return-a-captioned-image-from-a-webhook/) - Draw a supplied name over a configured image and return the edited JPEG in the same GET response.
+- [Send a Daily News, Email, and Task Digest](workflows/send-daily-news-email-and-task-digest/) - Send one Gmail message with the top stories, recent Gmail messages, and active Todoist tasks each day.
 
 ## Content
 
