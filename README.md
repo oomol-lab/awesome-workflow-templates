@@ -172,6 +172,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Notify Slack About Qualified Discourse Signups](workflows/notify-slack-of-qualified-discourse-signups/) - Match new Discourse members to their employers and alert a private Slack channel when the employer meets your size and traffic criteria.
 - [Qualify Contact Form Leads with Hunter and MadKudu](workflows/qualify-contact-form-leads/) - Verify a business email, check its MadKudu customer fit, and alert an internal recipient in Gmail when the score clears your threshold.
 - [Classify Lemlist Email Replies](workflows/classify-lemlist-email-replies/) - Classify campaign email replies, alert Slack, and update the matching Lemlist lead when appropriate.
+- [Alert Slack When a New HubSpot Company Site Is Unavailable](workflows/alert-slack-when-a-new-hubspot-company-site-is-unavailable/) - Check the HTTPS domain on each new HubSpot company and notify one Slack channel if the check fails.
 
 ## Operations
 

@@ -1,0 +1,632 @@
+{
+  "name": "Alert Slack When a New HubSpot Company Site Is Unavailable",
+  "nodes": [
+    {
+      "id": "alert-slack-when-a-new-hubspot-company-site-is-unavailable-hook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "name": "Receive HubSpot creation events",
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "alert-slack-when-a-new-hubspot-company-site-is-unavailable",
+        "responseMode": "responseNode",
+        "options": {
+          "rawBody": true
+        }
+      },
+      "position": [
+        0,
+        240
+      ]
+    },
+    {
+      "id": "alert-slack-when-a-new-hubspot-company-site-is-unavailable-setup",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "name": "Set the account, webhook URL and channel",
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function idString(value) {\n  return typeof value === \"string\" && /^[1-9][0-9]{0,23}$/.test(value)\n    ? value\n    : Number.isSafeInteger(value) && value > 0\n      ? String(value)\n      : \"\";\n}\nfunction signatureInput(meta, raw, config, now) {\n  const headers = meta.headers ?? {};\n  const hasV3 = Object.hasOwn(headers, \"x-hubspot-signature-v3\");\n  const version = hasV3 ? \"v3\" : headers[\"x-hubspot-signature-version\"] === \"v1\" ? \"v1\" : \"\";\n  const rawText = raw.toString(\"utf8\");\n  const expected =\n    version === \"v3\"\n      ? headers[\"x-hubspot-signature-v3\"]\n      : version === \"v1\"\n        ? headers[\"x-hubspot-signature\"]\n        : \"\";\n  const stamp = headers[\"x-hubspot-request-timestamp\"];\n  const validBytes =\n    raw.length > 0 && raw.length <= 1024 * 1024 && Buffer.from(rawText, \"utf8\").equals(raw);\n  const validV3 =\n    version === \"v3\" &&\n    typeof expected === \"string\" &&\n    /^[A-Za-z0-9+/]{43}=$/.test(expected) &&\n    typeof stamp === \"string\" &&\n    /^\\d{13}$/.test(stamp) &&\n    Math.abs(now - Number(stamp)) <= 300000;\n  const validV1 =\n    version === \"v1\" && typeof expected === \"string\" && /^[a-f0-9]{64}$/.test(expected);\n  const passed = validBytes && (validV3 || validV1) && Object.keys(meta.query ?? {}).length === 0;\n  const bytes = validV3\n    ? Buffer.concat([\n        Buffer.from(\"POST\" + config.webhookUrl, \"utf8\"),\n        raw,\n        Buffer.from(stamp, \"ascii\"),\n      ])\n    : Buffer.alloc(0);\n  return {\n    json: { version, expected: passed ? expected : \"\", rawText: passed ? rawText : \"\", config },\n    binary: { data: { data: bytes.toString(\"base64\"), mimeType: \"application/octet-stream\" } },\n  };\n}\nconst config = {\n  portalId: \"YOUR_HUBSPOT_ACCOUNT_ID\",\n  webhookUrl:\n    \"https://YOUR_N8N_HOST/webhook/alert-slack-when-a-new-hubspot-company-site-is-unavailable\",\n  channel: \"YOUR_SLACK_CHANNEL_ID\",\n};\nif (\n  !idString(config.portalId) ||\n  !/^https:\\/\\/[a-z0-9.-]+(?:\\/[A-Za-z0-9_/-]+)+$/i.test(config.webhookUrl) ||\n  config.webhookUrl.includes(\"YOUR_\") ||\n  !/^C[A-Z0-9]+$|^G[A-Z0-9]+$/.test(config.channel)\n) {\n  throw Error(\"Configure the HubSpot account, production webhook URL and Slack channel.\");\n}\nconst item = $input.first();\nconst raw = await helpers.getBinaryDataBuffer(0, \"data\");\nreturn [signatureInput(item.json, raw, config, Date.now())];\n"
+      },
+      "position": [
+        225,
+        240
+      ]
+    },
+    {
+      "id": "alert-slack-when-a-new-hubspot-company-site-is-unavailable-legacy",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "name": "Is this a classic signature?",
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.version === \"v1\" }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "position": [
+        450,
+        240
+      ]
+    },
+    {
+      "id": "alert-slack-when-a-new-hubspot-company-site-is-unavailable-v1",
+      "type": "n8n-nodes-base.crypto",
+      "typeVersion": 1,
+      "name": "Verify classic signatures",
+      "parameters": {
+        "action": "hash",
+        "type": "SHA256",
+        "binaryData": false,
+        "encoding": "hex",
+        "dataPropertyName": "digest",
+        "value": "={{ (()=>{throw Error(\"Configure the HubSpot app client secret\")})() + $json.rawText }}"
+      },
+      "position": [
+        675,
+        240
+      ]
+    },
+    {
+      "id": "alert-slack-when-a-new-hubspot-company-site-is-unavailable-v3",
+      "type": "n8n-nodes-base.crypto",
+      "typeVersion": 1,
+      "name": "Verify v3 signatures",
+      "parameters": {
+        "action": "hmac",
+        "type": "SHA256",
+        "binaryData": true,
+        "binaryPropertyName": "data",
+        "encoding": "base64",
+        "dataPropertyName": "digest",
+        "secret": "={{ (()=>{throw Error(\"Configure the HubSpot app client secret\")})() }}"
+      },
+      "position": [
+        900,
+        240
+      ]
+    },
+    {
+      "id": "alert-slack-when-a-new-hubspot-company-site-is-unavailable-verify",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "name": "Verify the delivery and select companies",
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function idString(value) {\n  return typeof value === \"string\" && /^[1-9][0-9]{0,23}$/.test(value)\n    ? value\n    : Number.isSafeInteger(value) && value > 0\n      ? String(value)\n      : \"\";\n}\nfunction compareDigest(expected, digest) {\n  if (\n    typeof expected !== \"string\" ||\n    !expected ||\n    typeof digest !== \"string\" ||\n    expected.length !== digest.length\n  )\n    return false;\n  let diff = 0;\n  for (let index = 0; index < expected.length; index++)\n    diff |= expected.charCodeAt(index) ^ digest.charCodeAt(index);\n  return diff === 0;\n}\nfunction selectEvents(events, config) {\n  if (!Array.isArray(events) || events.length > 100) return null;\n  const ids = new Set();\n  for (const event of events) {\n    if (!event || typeof event !== \"object\") return null;\n    if (\n      event.subscriptionType !== \"company.creation\" &&\n      !(event.subscriptionType === \"object.creation\" && event.objectTypeId === \"0-2\")\n    )\n      continue;\n    if (idString(event.portalId) !== config.portalId) continue;\n    const id = idString(event.objectId);\n    if (!id) return null;\n    ids.add(id);\n  }\n  return [...ids].map((id) => ({ id, key: config.portalId + \":\" + id, channel: config.channel }));\n}\nconst { expected, digest, rawText, config } = $input.first().json;\nif (!compareDigest(expected, digest)) return [{ json: { status: 401, events: [] } }];\nlet events;\ntry {\n  events = selectEvents(JSON.parse(rawText), config);\n} catch {\n  events = null;\n}\nreturn [{ json: { status: events === null ? 400 : 204, events: events ?? [] } }];\n"
+      },
+      "position": [
+        1125,
+        240
+      ]
+    },
+    {
+      "id": "alert-slack-when-a-new-hubspot-company-site-is-unavailable-ack",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "name": "Acknowledge HubSpot",
+      "parameters": {
+        "respondWith": "noData",
+        "options": {
+          "responseCode": "={{ $json.status }}"
+        }
+      },
+      "position": [
+        1350,
+        240
+      ]
+    },
+    {
+      "id": "alert-slack-when-a-new-hubspot-company-site-is-unavailable-jobs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "name": "Prepare the new company IDs",
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return $input.first().json.events.map((json) => ({ json, pairedItem: { item: 0 } }));\n"
+      },
+      "position": [
+        1575,
+        240
+      ]
+    },
+    {
+      "id": "alert-slack-when-a-new-hubspot-company-site-is-unavailable-get",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "name": "Read the same HubSpot company",
+      "parameters": {
+        "method": "GET",
+        "url": "={{ \"https://api.hubapi.com/crm/objects/2026-09/companies/\" + $json.id + \"?properties=name,domain,website\" }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "options": {
+          "timeout": 8000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "position": [
+        0,
+        415
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "alert-slack-when-a-new-hubspot-company-site-is-unavailable-company",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "name": "Select its HTTPS domain",
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function idString(value) {\n  return typeof value === \"string\" && /^[1-9][0-9]{0,23}$/.test(value)\n    ? value\n    : Number.isSafeInteger(value) && value > 0\n      ? String(value)\n      : \"\";\n}\nfunction companySite(record, event) {\n  if (idString(record?.id) !== event.id || record.archived === true) return null;\n  const { name, domain, website } = record.properties ?? {};\n  const match =\n    typeof domain === \"string\" &&\n    /^(?:https?:\\/\\/)?([a-z0-9.-]+)(?:[/?#][^\\s]*)?$/i.exec(domain.trim());\n  const host = match?.[1].toLowerCase();\n  const parts = host?.split(\".\");\n  if (\n    !host ||\n    host.length > 253 ||\n    parts.length < 2 ||\n    !/[a-z]/.test(parts.at(-1)) ||\n    parts.some((part) => !/^([a-z0-9]|[a-z0-9][a-z0-9-]{0,61}[a-z0-9])$/.test(part)) ||\n    /(?:^|\\.)(?:local|localhost|internal|lan|home|test|invalid|onion|arpa)$/.test(host)\n  )\n    return null;\n  const line = (value, limit) =>\n    typeof value === \"string\"\n      ? value\n          .replace(/[\\x00-\\x1f\\x7f]/g, \" \")\n          .trim()\n          .slice(0, limit)\n      : \"\";\n  return {\n    ...event,\n    name: line(name, 240) || \"(unnamed company)\",\n    website: line(website, 500) || \"https://\" + host,\n    url: \"https://\" + host + \"/\",\n  };\n}\nreturn $input.all().flatMap(({ json }, index) => {\n  if (json.statusCode !== 200) return [];\n  const result = companySite(json.body, $(\"Prepare the new company IDs\").itemMatching(index).json);\n  return result ? [{ json: result, pairedItem: { item: index } }] : [];\n});\n"
+      },
+      "position": [
+        225,
+        415
+      ]
+    },
+    {
+      "id": "alert-slack-when-a-new-hubspot-company-site-is-unavailable-known",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "name": "Skip companies already checked",
+      "parameters": {
+        "resource": "row",
+        "operation": "rowNotExists",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_COMPANY_CHECK_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "company_key",
+              "condition": "eq",
+              "keyValue": "={{ $json.key }}"
+            }
+          ]
+        }
+      },
+      "position": [
+        450,
+        415
+      ]
+    },
+    {
+      "id": "alert-slack-when-a-new-hubspot-company-site-is-unavailable-reserve",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "name": "Reserve this company check",
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_COMPANY_CHECK_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "company_key": "={{ $json.key }}",
+            "status": "pending",
+            "receipt": ""
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "position": [
+        675,
+        415
+      ]
+    },
+    {
+      "id": "alert-slack-when-a-new-hubspot-company-site-is-unavailable-site",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "name": "Check the company site",
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $(\"Select its HTTPS domain\").item.json.url }}",
+        "authentication": "none",
+        "options": {
+          "timeout": 8000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "text",
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "position": [
+        900,
+        415
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "alert-slack-when-a-new-hubspot-company-site-is-unavailable-classify",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "name": "Classify the site response",
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function siteResult(job, reply) {\n  const status =\n    Number.isInteger(reply.statusCode) && reply.statusCode >= 100 && reply.statusCode <= 599\n      ? reply.statusCode\n      : null;\n  const result =\n    status === 200 ? \"healthy\" : status === null ? \"No HTTP response\" : \"HTTP \" + status;\n  const text = [\n    \"New HubSpot company website check failed\",\n    \"Company: \" + job.name,\n    \"Website: \" + job.website,\n    \"HubSpot company ID: \" + job.id,\n    \"Check result: \" + result,\n  ].join(\"\\n\");\n  return {\n    key: job.key,\n    healthy: status === 200,\n    state: \"healthy\",\n    message: {\n      channel: job.channel,\n      text,\n      mrkdwn: false,\n      unfurl_links: false,\n      unfurl_media: false,\n    },\n  };\n}\nconst job = $(\"Select its HTTPS domain\").item.json;\nreturn { json: { ...siteResult(job, $json), receipt: \"\" }, pairedItem: { item: $itemIndex } };\n"
+      },
+      "position": [
+        1125,
+        415
+      ]
+    },
+    {
+      "id": "alert-slack-when-a-new-hubspot-company-site-is-unavailable-alert",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "name": "Does Slack need an alert?",
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ !$json.healthy }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "position": [
+        1350,
+        415
+      ]
+    },
+    {
+      "id": "alert-slack-when-a-new-hubspot-company-site-is-unavailable-post",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "name": "Send the availability alert",
+      "parameters": {
+        "method": "POST",
+        "url": "https://slack.com/api/chat.postMessage",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.message }}",
+        "options": {
+          "timeout": 8000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "position": [
+        1575,
+        415
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "alert-slack-when-a-new-hubspot-company-site-is-unavailable-confirm",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "name": "Check the Slack receipt",
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function slackReceipt(job, reply) {\n  const body = reply.body ?? {};\n  const sent =\n    reply.statusCode === 200 &&\n    body.ok === true &&\n    body.channel === job.message.channel &&\n    /^\\d+\\.\\d+$/.test(body.ts ?? \"\");\n  return {\n    key: job.key,\n    state: sent ? \"alert_sent\" : \"alert_unconfirmed\",\n    receipt: sent ? body.ts : \"\",\n  };\n}\nreturn {\n  json: slackReceipt($(\"Classify the site response\").item.json, $json),\n  pairedItem: { item: $itemIndex },\n};\n"
+      },
+      "position": [
+        0,
+        590
+      ]
+    },
+    {
+      "id": "alert-slack-when-a-new-hubspot-company-site-is-unavailable-save",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "name": "Record the result",
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_COMPANY_CHECK_TABLE_ID"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "company_key",
+              "condition": "eq",
+              "keyValue": "={{ $json.key }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "={{ $json.state }}",
+            "receipt": "={{ $json.receipt }}"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "position": [
+        225,
+        590
+      ]
+    }
+  ],
+  "connections": {
+    "Receive HubSpot creation events": {
+      "main": [
+        [
+          {
+            "node": "Set the account, webhook URL and channel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set the account, webhook URL and channel": {
+      "main": [
+        [
+          {
+            "node": "Is this a classic signature?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is this a classic signature?": {
+      "main": [
+        [
+          {
+            "node": "Verify classic signatures",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Verify v3 signatures",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify classic signatures": {
+      "main": [
+        [
+          {
+            "node": "Verify the delivery and select companies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify the delivery and select companies": {
+      "main": [
+        [
+          {
+            "node": "Acknowledge HubSpot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Acknowledge HubSpot": {
+      "main": [
+        [
+          {
+            "node": "Prepare the new company IDs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare the new company IDs": {
+      "main": [
+        [
+          {
+            "node": "Read the same HubSpot company",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the same HubSpot company": {
+      "main": [
+        [
+          {
+            "node": "Select its HTTPS domain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select its HTTPS domain": {
+      "main": [
+        [
+          {
+            "node": "Skip companies already checked",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Skip companies already checked": {
+      "main": [
+        [
+          {
+            "node": "Reserve this company check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve this company check": {
+      "main": [
+        [
+          {
+            "node": "Check the company site",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check the company site": {
+      "main": [
+        [
+          {
+            "node": "Classify the site response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classify the site response": {
+      "main": [
+        [
+          {
+            "node": "Does Slack need an alert?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Does Slack need an alert?": {
+      "main": [
+        [
+          {
+            "node": "Send the availability alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Record the result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send the availability alert": {
+      "main": [
+        [
+          {
+            "node": "Check the Slack receipt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check the Slack receipt": {
+      "main": [
+        [
+          {
+            "node": "Record the result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify v3 signatures": {
+      "main": [
+        [
+          {
+            "node": "Verify the delivery and select companies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "none",
+    "saveDataSuccessExecution": "none",
+    "saveManualExecutions": false,
+    "saveExecutionProgress": false
+  },
+  "pinData": {}
+}
