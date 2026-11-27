@@ -1,0 +1,171 @@
+{
+  "name": "Back Up Zigbee2MQTT to SFTP",
+  "nodes": [
+    {
+      "id": "back-up-zigbee2mqtt-to-sftp-clock",
+      "name": "Run Monday at 02:45 UTC",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        110
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "45 2 * * 1"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "back-up-zigbee2mqtt-to-sftp-publish",
+      "name": "Request a Zigbee2MQTT backup",
+      "type": "n8n-nodes-base.mqtt",
+      "typeVersion": 1,
+      "position": [
+        235,
+        110
+      ],
+      "parameters": {
+        "topic": "zigbee2mqtt/bridge/request/backup",
+        "sendInputData": false,
+        "message": "={{ \"\" }}",
+        "options": {
+          "qos": 0,
+          "retain": false
+        }
+      },
+      "retryOnFail": false
+    },
+    {
+      "id": "back-up-zigbee2mqtt-to-sftp-subscribe",
+      "name": "Receive backup responses",
+      "type": "n8n-nodes-base.mqttTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        380
+      ],
+      "parameters": {
+        "topics": "zigbee2mqtt/bridge/response/backup",
+        "options": {
+          "jsonParseBody": false,
+          "onlyMessage": false,
+          "parallelProcessing": true
+        }
+      }
+    },
+    {
+      "id": "back-up-zigbee2mqtt-to-sftp-validate",
+      "name": "Validate the ZIP and choose its destination",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        235,
+        380
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function backupMessage(item, expectedTopic, directory, executionId, at) {\n  if (item.topic !== expectedTopic || typeof item.message !== \"string\")\n    throw new Error(\"The MQTT message is not a backup response for this topic.\");\n  let result;\n  try {\n    result = JSON.parse(item.message);\n  } catch {\n    throw new Error(\"The MQTT backup response is invalid JSON.\");\n  }\n  if (result?.status !== \"ok\") throw new Error(\"Zigbee2MQTT did not report a successful backup.\");\n  const encoded = result.data?.zip;\n  if (typeof encoded !== \"string\" || !encoded)\n    throw new Error(\"The backup response is missing its ZIP.\");\n  const bytes = Buffer.from(encoded, \"base64\");\n  if (bytes.toString(\"base64\") !== encoded) throw new Error(\"The backup ZIP is not valid Base64.\");\n  if (\n    bytes.length < 22 ||\n    ![\"504b0304\", \"504b0506\"].includes(bytes.subarray(0, 4).toString(\"hex\"))\n  ) {\n    throw new Error(\"The backup does not contain ZIP bytes.\");\n  }\n  let complete = false;\n  for (let i = bytes.length - 22; i >= Math.max(0, bytes.length - 65557); i--) {\n    if (\n      bytes.readUInt32LE(i) === 0x06054b50 &&\n      i + 22 + bytes.readUInt16LE(i + 20) === bytes.length\n    ) {\n      complete = true;\n      break;\n    }\n  }\n  if (!complete) throw new Error(\"The backup ZIP archive is incomplete.\");\n  const folder = directory.trim().replace(/\\/+$/, \"\");\n  if (\n    !folder ||\n    !folder\n      .split(\"/\")\n      .filter(Boolean)\n      .every((segment) => segment !== \".\" && segment !== \"..\" && /^[A-Za-z0-9_. -]+$/.test(segment))\n  ) {\n    throw new Error(\"Configure a valid SFTP directory.\");\n  }\n  if (typeof executionId !== \"string\" || !/^\\d+$/.test(executionId))\n    throw new Error(\"The workflow did not supply a unique execution ID.\");\n  const stamp = new Date(at).toISOString().replaceAll(\":\", \"_\");\n  const fileName = \"zigbee_backup_\" + stamp + \"_\" + executionId + \".zip\";\n  return { zip: encoded, fileName, path: folder + \"/\" + fileName };\n}\nconst backupDirectory = \"zigbee_backups\";\nconst expectedTopic = \"zigbee2mqtt/bridge/response/backup\";\nreturn { json: backupMessage($json, expectedTopic, backupDirectory, $execution.id, Date.now()) };\n"
+      }
+    },
+    {
+      "id": "back-up-zigbee2mqtt-to-sftp-binary",
+      "name": "Convert the backup to ZIP bytes",
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        470,
+        380
+      ],
+      "parameters": {
+        "operation": "toBinary",
+        "sourceProperty": "zip",
+        "binaryPropertyName": "backup",
+        "options": {
+          "fileName": "={{ $json.fileName }}",
+          "mimeType": "application/zip",
+          "addBOM": false
+        }
+      }
+    },
+    {
+      "id": "back-up-zigbee2mqtt-to-sftp-upload",
+      "name": "Upload the ZIP to SFTP",
+      "type": "n8n-nodes-base.ftp",
+      "typeVersion": 1,
+      "position": [
+        705,
+        380
+      ],
+      "parameters": {
+        "protocol": "sftp",
+        "operation": "upload",
+        "binaryData": true,
+        "binaryPropertyName": "backup",
+        "path": "={{ $(\"Validate the ZIP and choose its destination\").item.json.path }}"
+      },
+      "retryOnFail": false
+    }
+  ],
+  "connections": {
+    "Run Monday at 02:45 UTC": {
+      "main": [
+        [
+          {
+            "node": "Request a Zigbee2MQTT backup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Receive backup responses": {
+      "main": [
+        [
+          {
+            "node": "Validate the ZIP and choose its destination",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate the ZIP and choose its destination": {
+      "main": [
+        [
+          {
+            "node": "Convert the backup to ZIP bytes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert the backup to ZIP bytes": {
+      "main": [
+        [
+          {
+            "node": "Upload the ZIP to SFTP",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC",
+    "saveExecutionProgress": false,
+    "saveManualExecutions": false,
+    "saveDataSuccessExecution": "none",
+    "saveDataErrorExecution": "none"
+  },
+  "pinData": {}
+}
