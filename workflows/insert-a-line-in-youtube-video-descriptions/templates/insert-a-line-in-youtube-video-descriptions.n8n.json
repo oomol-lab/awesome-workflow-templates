@@ -1,0 +1,329 @@
+{
+  "name": "Insert a Line in Recent YouTube Video Descriptions",
+  "nodes": [
+    {
+      "id": "insert-a-line-in-youtube-video-descriptions-start",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "name": "Run manually",
+      "parameters": {},
+      "position": [
+        0,
+        240
+      ]
+    },
+    {
+      "id": "insert-a-line-in-youtube-video-descriptions-setup",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "name": "Set the channel and description lines",
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function configure(settings) {\n  const { channelId, rowBefore, rowAfter, rowToInsert } = settings;\n  if (\n    !/^UC[A-Za-z0-9_-]{22}$/.test(channelId) ||\n    [rowBefore, rowAfter, rowToInsert].some(\n      (line) => typeof line !== \"string\" || !line.trim() || /[\\r\\n]/.test(line),\n    ) ||\n    rowBefore.trim() === rowAfter.trim() ||\n    [rowBefore.trim(), rowAfter.trim()].includes(rowToInsert.trim()) ||\n    /[<>]/.test(rowToInsert)\n  ) {\n    throw Error(\"Enter a YouTube channel ID and three distinct, nonempty single lines.\");\n  }\n  return { channelId, rowBefore: rowBefore.trim(), rowAfter: rowAfter.trim(), rowToInsert };\n}\nconst settings = {\n  channelId: \"YOUR_YOUTUBE_CHANNEL_ID\",\n  rowBefore: \"Resources\",\n  rowAfter: \"Credits\",\n  rowToInsert: \"https://example.com/resources\",\n};\nreturn [{ json: configure(settings) }];\n"
+      },
+      "position": [
+        230,
+        240
+      ]
+    },
+    {
+      "id": "insert-a-line-in-youtube-video-descriptions-channel",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "name": "Check the connected YouTube channel",
+      "parameters": {
+        "method": "GET",
+        "url": "https://www.googleapis.com/youtube/v3/channels?part=contentDetails&mine=true",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "oAuth2Api",
+        "options": {
+          "timeout": 15000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true,
+              "neverError": false
+            }
+          }
+        }
+      },
+      "position": [
+        460,
+        240
+      ]
+    },
+    {
+      "id": "insert-a-line-in-youtube-video-descriptions-owned",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "name": "Select the verified uploads playlist",
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function ownedUploads(channels, channelId) {\n  const matches = Array.isArray(channels) ? channels.filter((ch) => ch.id === channelId) : [];\n  const playlist = matches[0]?.contentDetails?.relatedPlaylists?.uploads;\n  if (\n    matches.length !== 1 ||\n    typeof playlist !== \"string\" ||\n    !/^UU[A-Za-z0-9_-]{22}$/.test(playlist)\n  ) {\n    throw Error(\n      \"The connected YouTube account did not confirm the configured channel and uploads playlist.\",\n    );\n  }\n  return playlist;\n}\nconst packet = $input.first().json;\nif (packet.statusCode !== 200) throw Error(\"YouTube did not confirm the channel.\");\nconst settings = $(\"Set the channel and description lines\").first().json;\nconst playlistId = ownedUploads(packet.body?.items, settings.channelId);\nreturn [{ json: { playlistId } }];\n"
+      },
+      "position": [
+        690,
+        240
+      ]
+    },
+    {
+      "id": "insert-a-line-in-youtube-video-descriptions-uploads",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "name": "Read the channel uploads playlist",
+      "parameters": {
+        "method": "GET",
+        "url": "={{ \"https://www.googleapis.com/youtube/v3/playlistItems?part=contentDetails&maxResults=3&playlistId=\" + encodeURIComponent($json.playlistId) }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "oAuth2Api",
+        "options": {
+          "timeout": 15000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true,
+              "neverError": false
+            }
+          }
+        }
+      },
+      "position": [
+        920,
+        240
+      ]
+    },
+    {
+      "id": "insert-a-line-in-youtube-video-descriptions-select",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "name": "Select those video IDs",
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function selectedVideos(items, playlist) {\n  if (!Array.isArray(items) || items.length > 3)\n    throw Error(\"YouTube returned an unexpected uploads list.\");\n  const ids = items.map((row) => {\n    const id = row.contentDetails?.videoId;\n    if (\n      !/^[A-Za-z0-9_-]{11}$/.test(id ?? \"\") ||\n      (row.snippet?.playlistId && row.snippet.playlistId !== playlist)\n    ) {\n      throw Error(\"The uploads list contains an invalid video.\");\n    }\n    return id;\n  });\n  if (new Set(ids).size !== ids.length) throw Error(\"The uploads list contains a repeated video.\");\n  return ids;\n}\nconst packet = $input.first().json,\n  playlist = $(\"Select the verified uploads playlist\").first().json.playlistId;\nif (packet.statusCode !== 200) throw Error(\"YouTube did not return the uploads playlist.\");\nconst ids = selectedVideos(packet.body?.items, playlist);\nreturn ids.length ? [{ json: { ids, joined: ids.join(\",\") } }] : [];\n"
+      },
+      "position": [
+        1150,
+        240
+      ]
+    },
+    {
+      "id": "insert-a-line-in-youtube-video-descriptions-videos",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "name": "Read the selected video snippets",
+      "parameters": {
+        "method": "GET",
+        "url": "={{ \"https://www.googleapis.com/youtube/v3/videos?part=snippet&id=\" + encodeURIComponent($json.joined) }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "oAuth2Api",
+        "options": {
+          "timeout": 15000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true,
+              "neverError": false
+            }
+          }
+        }
+      },
+      "position": [
+        0,
+        400
+      ]
+    },
+    {
+      "id": "insert-a-line-in-youtube-video-descriptions-plan",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "name": "Plan exact description updates",
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function planUpdates(videos, ids, settings) {\n  if (\n    !Array.isArray(videos) ||\n    videos.some((video) => !ids.includes(video.id)) ||\n    new Set(videos.map((video) => video.id)).size !== videos.length\n  ) {\n    throw Error(\"YouTube returned unexpected video IDs.\");\n  }\n  const jobs = [],\n    results = [];\n  for (const id of ids) {\n    const video = videos.find((item) => item.id === id);\n    const snippet = video?.snippet;\n    const result = (status) => results.push({ videoId: id, status });\n    if (!snippet || snippet.channelId !== settings.channelId) {\n      result(\"ownership_unconfirmed\");\n      continue;\n    }\n    if (\n      typeof snippet.description !== \"string\" ||\n      typeof snippet.title !== \"string\" ||\n      !snippet.title ||\n      !/^\\d+$/.test(snippet.categoryId ?? \"\") ||\n      (Object.hasOwn(snippet, \"tags\") &&\n        (!Array.isArray(snippet.tags) || snippet.tags.some((tag) => typeof tag !== \"string\"))) ||\n      (Object.hasOwn(snippet, \"defaultLanguage\") && typeof snippet.defaultLanguage !== \"string\")\n    ) {\n      result(\"snippet_unconfirmed\");\n      continue;\n    }\n    const pieces = snippet.description.split(/(\\r\\n|\\r|\\n)/);\n    const rows = pieces.filter((_, index) => index % 2 === 0);\n    const before = rows.findIndex((line) => line.trim() === settings.rowBefore);\n    const after = rows.findIndex((line) => line.trim() === settings.rowAfter);\n    if (before < 0 || after <= before) {\n      result(\"markers_not_ordered\");\n      continue;\n    }\n    if (rows.includes(settings.rowToInsert)) {\n      result(\"already_present\");\n      continue;\n    }\n    const raw = video.etag;\n    if (typeof raw !== \"string\" || !/^\"?[A-Za-z0-9_+/=-]+\"?$/.test(raw)) {\n      result(\"etag_unconfirmed\");\n      continue;\n    }\n    const etag = '\"' + raw.replaceAll('\"', \"\") + '\"';\n    const separator = pieces[2 * before + 1];\n    pieces.splice(2 * before + 2, 0, settings.rowToInsert, separator);\n    const description = pieces.join(\"\");\n    const body = {\n      id,\n      snippet: { title: snippet.title, categoryId: snippet.categoryId, description },\n    };\n    for (const field of [\"tags\", \"defaultLanguage\"])\n      if (Object.hasOwn(snippet, field)) body.snippet[field] = snippet[field];\n    jobs.push({ videoId: id, channelId: settings.channelId, etag, body });\n  }\n  return { jobs, results };\n}\nconst packet = $input.first().json;\nif (packet.statusCode !== 200) throw Error(\"YouTube did not return the selected videos.\");\nconst settings = $(\"Set the channel and description lines\").first().json;\nconst ids = $(\"Select those video IDs\").first().json.ids;\nreturn planUpdates(packet.body?.items, ids, settings).jobs.map((job) => ({\n  json: job,\n  pairedItem: { item: 0 },\n}));\n"
+      },
+      "position": [
+        230,
+        400
+      ]
+    },
+    {
+      "id": "insert-a-line-in-youtube-video-descriptions-write",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "name": "Update the video snippet",
+      "parameters": {
+        "method": "PUT",
+        "url": "https://www.googleapis.com/youtube/v3/videos?part=snippet",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "oAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.body }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "If-Match",
+              "value": "={{ $json.etag }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 15000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "position": [
+        460,
+        400
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "insert-a-line-in-youtube-video-descriptions-confirm",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "name": "Check the update receipt",
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function checkedReceipt(job, status, body) {\n  if (status === 412) return { videoId: job.videoId, status: \"changed_since_read\" };\n  const same =\n    body?.id === job.videoId &&\n    body.snippet?.channelId === job.channelId &&\n    Object.entries(job.body.snippet).every(\n      ([key, val]) => JSON.stringify(val) === JSON.stringify(body.snippet[key]),\n    );\n  return {\n    videoId: job.videoId,\n    status: status === 200 && same ? \"updated\" : \"update_unconfirmed\",\n  };\n}\nconst job = $(\"Plan exact description updates\").item.json;\nreturn {\n  json: checkedReceipt(job, $json.statusCode, $json.body),\n  pairedItem: { item: $itemIndex },\n};\n"
+      },
+      "position": [
+        690,
+        400
+      ]
+    }
+  ],
+  "connections": {
+    "Run manually": {
+      "main": [
+        [
+          {
+            "node": "Set the channel and description lines",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set the channel and description lines": {
+      "main": [
+        [
+          {
+            "node": "Check the connected YouTube channel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check the connected YouTube channel": {
+      "main": [
+        [
+          {
+            "node": "Select the verified uploads playlist",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select the verified uploads playlist": {
+      "main": [
+        [
+          {
+            "node": "Read the channel uploads playlist",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the channel uploads playlist": {
+      "main": [
+        [
+          {
+            "node": "Select those video IDs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select those video IDs": {
+      "main": [
+        [
+          {
+            "node": "Read the selected video snippets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the selected video snippets": {
+      "main": [
+        [
+          {
+            "node": "Plan exact description updates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Plan exact description updates": {
+      "main": [
+        [
+          {
+            "node": "Update the video snippet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update the video snippet": {
+      "main": [
+        [
+          {
+            "node": "Check the update receipt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}
