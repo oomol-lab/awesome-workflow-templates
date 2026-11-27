@@ -766,6 +766,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Sync Discord Scheduled Events to Google Calendar](workflows/sync-discord-scheduled-events-to-google-calendar/) - Add or update events in one Google Calendar using the original Discord event IDs.
 - [Record Receipt Uploads in Airtable](workflows/record-receipt-uploads-in-airtable/) - Send a receipt file to a webhook and receive a summary after its extracted fields are saved in Airtable.
 - [Sync Asana Project Tasks to Notion](workflows/sync-asana-project-tasks-to-notion/) - Create or update the matching Notion page when a task changes in the configured Asana project.
+- [Return a Captioned Image from a Webhook](workflows/return-a-captioned-image-from-a-webhook/) - Draw a supplied name over a configured image and return the edited JPEG in the same GET response.
 
 ## Content
 
