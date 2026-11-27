@@ -169,6 +169,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Verify and Enrich Form Leads in HubSpot](workflows/verify-and-enrich-form-leads-in-hubspot/) - Collect business email addresses and save matching professional and company details to HubSpot after Hunter verifies the email.
 - [Track Hot Leads from Google Sheets](workflows/track-hot-leads-from-sheets/) - Send new lead alerts to Slack and Gmail, save contacts in HubSpot, and remind an administrator about hot leads awaiting follow-up.
 - [Notify Slack About Qualified Discourse Signups](workflows/notify-slack-of-qualified-discourse-signups/) - Match new Discourse members to their employers and alert a private Slack channel when the employer meets your size and traffic criteria.
+- [Qualify Contact Form Leads with Hunter and MadKudu](workflows/qualify-contact-form-leads/) - Verify a business email, check its MadKudu customer fit, and alert an internal recipient in Gmail when the score clears your threshold.
 
 ## Operations
 
