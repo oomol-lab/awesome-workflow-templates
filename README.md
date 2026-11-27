@@ -983,6 +983,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Describe Telegram Photos with OpenAI](workflows/describe-telegram-photos-with-openai/) - Describe a Telegram photo with OpenAI and reply in the same chat. Ask for a photo after other messages.
 - [Warn About Profanity in Telegram](workflows/warn-about-profanity-in-telegram/) - Score English Telegram messages for profanity and reply to messages above your confidence threshold.
 - [Reply to Fiwano Messages](workflows/reply-to-fiwano-messages/) - Echo text and acknowledge attachments on the original WhatsApp, Instagram, or Messenger conversation.
+- [Describe Telegram Photos with Groq](workflows/describe-telegram-photos-with-groq/) - Describe a Telegram photo with Groq and return the description to the original chat.
 
 ## Customer Support
 
