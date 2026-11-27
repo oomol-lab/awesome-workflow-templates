@@ -731,6 +731,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Summarize New Drive Recordings in Notion](workflows/summarize-new-drive-recordings-in-notion/) - Watch a private Google Drive folder for new audio, transcribe it, and save a summary under a chosen Notion page.
 - [Describe a List of Webpage Screenshots](workflows/analyze-page-screenshots/) - Capture a full-page screenshot for each named URL and return a short visual description with its original name and URL.
 - [Summarize IMAP Emails and Send Them to LINE](workflows/summarize-imap-emails-and-send-to-line/) - Summarize each unread IMAP email with OpenRouter and send its actions and deadlines to one configured LINE user.
+- [Follow Up on Fireflies Project Meetings](workflows/plan-fireflies-meeting-followup/) - Turn a completed Fireflies project meeting into Airtable tasks, individual summaries, and a confirmed Google Meet follow-up.
 
 ## Content
 
