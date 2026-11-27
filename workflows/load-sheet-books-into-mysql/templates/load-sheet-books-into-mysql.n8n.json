@@ -1,0 +1,128 @@
+{
+  "name": "Load Google Sheets Book Rows into MySQL",
+  "nodes": [
+    {
+      "id": "load-sheet-books-into-mysql-schedule",
+      "name": "Run each Monday at 05:00",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [
+        0,
+        260
+      ],
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "mode": "everyWeek",
+              "hour": 5,
+              "minute": 0,
+              "weekday": "1"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "load-sheet-books-into-mysql-sheet",
+      "name": "Read title and price from Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 1,
+      "position": [
+        230,
+        260
+      ],
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "sheet",
+        "operation": "read",
+        "sheetId": "",
+        "range": "",
+        "rawData": false,
+        "keyRow": 0,
+        "dataStartRow": 1,
+        "options": {
+          "valueRenderMode": "UNFORMATTED_VALUE"
+        }
+      }
+    },
+    {
+      "id": "load-sheet-books-into-mysql-validate",
+      "name": "Validate the sheet rows",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        260
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function bookRows(items) {\n  return items.map(({ json }, index) => {\n    const { title, price } = json;\n    const isDecimal =\n      typeof price === \"string\" && /^[+-]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)$/.test(price.trim());\n    if (typeof title !== \"string\" || !title.trim() || (!Number.isFinite(price) && !isDecimal)) {\n      throw new Error(\"Check the title and price in sheet data row \" + (index + 1) + \".\");\n    }\n    return { json: { title, price }, pairedItem: { item: index } };\n  });\n}\nreturn bookRows($input.all());\n"
+      }
+    },
+    {
+      "id": "load-sheet-books-into-mysql-sql",
+      "name": "Insert rows into MySQL",
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 1,
+      "position": [
+        690,
+        260
+      ],
+      "parameters": {
+        "operation": "insert",
+        "table": {
+          "__rl": true,
+          "mode": "name",
+          "value": "books"
+        },
+        "columns": "title, price",
+        "options": {
+          "ignore": true,
+          "priority": "LOW_PRIORITY"
+        }
+      },
+      "retryOnFail": false
+    }
+  ],
+  "connections": {
+    "Run each Monday at 05:00": {
+      "main": [
+        [
+          {
+            "node": "Read title and price from Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read title and price from Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Validate the sheet rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate the sheet rows": {
+      "main": [
+        [
+          {
+            "node": "Insert rows into MySQL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}

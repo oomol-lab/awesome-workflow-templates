@@ -67,6 +67,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Email](#email)
 - [Engineering](#engineering)
 - [Data & Analytics](#data-&-analytics)
+- [Data Operations](#data-operations)
 - [Contribute](#contribute)
 - [Translations](#translations)
 - [Licensing](#licensing)
@@ -1344,6 +1345,10 @@ A growing collection of automation workflows for connecting apps and getting rep
 
 - [Sync Google Sheets Contacts to PostgreSQL](workflows/sync-google-sheets-contacts-to-postgres/) - Sync contact names, towns and ages from Google Sheets into an existing PostgreSQL table every hour.
 - [Log Simulated Humidity to PostgreSQL](workflows/log-simulated-humidity-to-postgres/) - Generate a simulated humidity reading every minute and insert it into your PostgreSQL table.
+
+## Data Operations
+
+- [Load Google Sheets Book Rows into MySQL](workflows/load-sheet-books-into-mysql/) - Insert book titles and prices from a Google Sheets range into an existing MySQL table each Monday.
 
 ## Contribute
 
