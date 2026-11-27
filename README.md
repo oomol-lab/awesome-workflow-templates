@@ -735,6 +735,7 @@ A growing collection of automation workflows for connecting apps and getting rep
 - [Follow Up on Fireflies Project Meetings](workflows/plan-fireflies-meeting-followup/) - Turn a completed Fireflies project meeting into Airtable tasks, individual summaries, and a confirmed Google Meet follow-up.
 - [Email Recent RSS Articles Every Hour](workflows/email-hourly-rss-articles/) - Check selected publisher feeds at half past each hour and email each article published in the preceding hour.
 - [Sync Outlook Calendar Events to Notion](workflows/sync-outlook-calendar-events-to-notion/) - Sync your primary Outlook calendar to a Notion data source, matching each event by its Outlook ID.
+- [Summarize Zoom Meetings and Record Follow-ups](workflows/zoom-meeting-summary-and-follow-up/) - Review recent Zoom cloud transcripts, email formal minutes, create the owner’s ClickUp tasks, and calendar a confirmed follow-up.
 
 ## Content
 
